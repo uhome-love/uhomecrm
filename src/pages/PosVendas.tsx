@@ -62,7 +62,7 @@ export default function PosVendas() {
             subtitle="Acompanhamento após assinatura"
             icon={<Heart size={18} strokeWidth={1.5} />}
             actions={
-              <Button onClick={() => setAddOpen(true)} className="bg-[#4F46E5] hover:bg-[#4338CA] text-white gap-1.5 h-9">
+              <Button onClick={() => setAddOpen(true)} className="bg-[#4969FF] hover:bg-[#3350E6] text-white gap-1.5 h-9">
                 <Plus className="h-4 w-4" /> Novo Cliente
               </Button>
             }

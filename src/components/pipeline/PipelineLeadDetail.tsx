@@ -700,7 +700,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               {/* v2 - homi tab styling */}
               <div className="p-4 flex flex-col gap-4">
                 {/* Briefing compacto */}
-                <div style={{ background: 'var(--muted)', borderRadius: 8, padding: '10px 14px', borderLeft: '3px solid #4F46E5', marginBottom: 16 }}>
+                <div style={{ background: 'var(--muted)', borderRadius: 8, padding: '10px 14px', borderLeft: '3px solid #4969FF', marginBottom: 16 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 3 }}>
                     {lead.nome} · {currentStage?.nome || 'N/A'} · {daysSinceCreation}d sem contato
                   </div>
@@ -713,7 +713,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
                   <button
                     onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Gere uma mensagem de WhatsApp de apresentação para ' + lead.nome + ' sobre ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE as mensagens prontas para copiar, nada mais.'); }}
-                    style={{ padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#4F46E5', color: '#fff', border: 'none', cursor: 'pointer' }}
+                    style={{ padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#4969FF', color: '#fff', border: 'none', cursor: 'pointer' }}
                   >
                     Gerar mensagem
                   </button>
@@ -748,7 +748,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                       setHomiOpen(true);
                       setHomiInitialPrompt('O cliente disse: "' + msg + '". Gere uma resposta personalizada para ' + lead.nome + ' sobre ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE a resposta pronta para copiar.');
                     }}
-                    style={{ padding: 10, borderRadius: 8, fontSize: 13, fontWeight: 600, background: '#4F46E5', color: '#fff', border: 'none', cursor: 'pointer', width: '100%' }}
+                    style={{ padding: 10, borderRadius: 8, fontSize: 13, fontWeight: 600, background: '#4969FF', color: '#fff', border: 'none', cursor: 'pointer', width: '100%' }}
                   >
                     Gerar resposta com IA
                   </button>

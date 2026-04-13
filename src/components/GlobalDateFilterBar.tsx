@@ -45,7 +45,7 @@ export default function GlobalDateFilterBar({ variant = "inline", className }: P
           className={cn(
             "px-3 py-1.5 text-[13px] font-medium rounded-[7px] transition-all",
             period === p.key
-              ? "bg-[#4F46E5] text-white"
+              ? "bg-[#4969FF] text-white"
               : "text-[#71717a] hover:text-[#0a0a0a] hover:bg-[#e8e8f0] dark:hover:text-white dark:hover:bg-white/[0.08]"
           )}
         >
@@ -59,7 +59,7 @@ export default function GlobalDateFilterBar({ variant = "inline", className }: P
             className={cn(
               "px-3 py-1.5 text-[13px] font-medium rounded-[7px] transition-all flex items-center gap-1.5",
               period === "custom"
-                ? "bg-[#4F46E5] text-white"
+                ? "bg-[#4969FF] text-white"
                 : "text-[#71717a] hover:text-[#0a0a0a] hover:bg-[#e8e8f0] dark:hover:text-white dark:hover:bg-white/[0.08]"
             )}
           >

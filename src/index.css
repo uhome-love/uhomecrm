@@ -9,21 +9,21 @@
     /* ── UhomeSales Design System v2.0 ── */
 
     /* Brand */
-    --brand-dark: 222 73% 17%;       /* #0D1B4B azul-escuro */
-    --brand-medium: 210 79% 42%;     /* #1565C0 azul-medio */
+    --brand-dark: 228 60% 18%;       /* #142057 deep indigo */
+    --brand-medium: 228 100% 64%;    /* #4969FF UHome indigo */
     --brand-homi: 187 100% 42%;      /* #00BCD4 ciano-homi */
 
-    /* Primary (Blue Uhome #3B82F6) */
-    --primary-50:  214 100% 97%;
-    --primary-100: 214  95% 93%;
-    --primary-200: 213  97% 87%;
-    --primary-300: 212  96% 78%;
-    --primary-400: 213  94% 68%;
-    --primary-500: 217  91% 60%;     /* #3B82F6 */
-    --primary-600: 221  83% 53%;     /* #2563EB hover */
-    --primary-700: 224  76% 45%;
-    --primary-800: 226  71% 37%;
-    --primary-900: 222  47% 11%;
+    /* Primary (UHome Indigo #4969FF) */
+    --primary-50:  228 100% 97%;     /* #F0F2FF */
+    --primary-100: 228 100% 93%;     /* #DEE3FF */
+    --primary-200: 228 100% 86%;     /* #BCC7FF */
+    --primary-300: 228 100% 76%;     /* #8D9FFF */
+    --primary-400: 228 100% 70%;     /* #6B84FF */
+    --primary-500: 228 100% 64%;     /* #4969FF */
+    --primary-600: 228 90% 55%;      /* #3350E6 */
+    --primary-700: 228 80% 46%;      /* #2640BF */
+    --primary-800: 228 70% 37%;      /* #1E3399 */
+    --primary-900: 228 50% 18%;      /* #17204D */
 
     /* Success */
     --success-50:  142  76% 97%;
@@ -96,23 +96,23 @@
     --ring:                var(--primary-400);
 
     /* ── Border radius system ── */
-    --radius:     0.625rem;   /* 10px — base */
+    --radius:     0.75rem;    /* 12px — base */
     --radius-xs:  0.25rem;
-    --radius-sm:  0.375rem;
-    --radius-md:  0.625rem;
-    --radius-lg:  0.875rem;
+    --radius-sm:  0.5rem;
+    --radius-md:  0.75rem;
+    --radius-lg:  1rem;
     --radius-xl:  1.25rem;
     --radius-2xl: 1.5rem;
     --radius-full: 9999px;
 
     /* ── Sidebar — deep slate ── */
-    --sidebar-background:  218 44% 8%;    /* #0B1221 */
+    --sidebar-background:  225 50% 6%;    /* #0D1124 */
     --sidebar-foreground:  215 20% 75%;   /* #A8B4C8 */
     --sidebar-primary:     var(--primary-500);
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent:      218 30% 14%;   /* #19243A hover item */
+    --sidebar-accent:      225 30% 12%;   /* #19243A hover item */
     --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border:      218 30% 13%;   /* divisorias sutis */
+    --sidebar-border:      225 30% 10%;   /* divisorias sutis */
     --sidebar-ring:        var(--primary-500);
 
     /* ── Purple / Info ── */
@@ -143,7 +143,7 @@
     --gradient-brand:    linear-gradient(135deg, hsl(var(--primary-500)), hsl(var(--primary-700)));
     --gradient-brand-soft: linear-gradient(135deg, hsl(var(--primary-50)), hsl(var(--primary-100)));
     --gradient-hero:     linear-gradient(135deg, hsl(var(--neutral-900)), hsl(var(--primary-900)));
-    --gradient-sidebar:  linear-gradient(180deg, hsl(218 44% 8%), hsl(222 47% 11%));
+    --gradient-sidebar:  linear-gradient(180deg, hsl(225 50% 4%), hsl(225 50% 7%));
     --gradient-success:  linear-gradient(135deg, hsl(var(--success-500)), hsl(var(--success-700)));
     --gradient-danger:   linear-gradient(135deg, hsl(var(--danger-500)), hsl(var(--danger-700)));
     --gradient-warning:  linear-gradient(135deg, hsl(var(--warning-500)), hsl(var(--warning-700)));
@@ -171,7 +171,7 @@
     /* ── Pipeline Design System (Pipedrive-style) ── */
 
     /* Stage Colors */
-    --stage-novo-lead: 217 91% 60%;
+    --stage-novo-lead: 228 100% 64%;
     --stage-sem-contato: 38 92% 50%;
     --stage-contato: 239 84% 67%;
     --stage-busca: 258 90% 66%;
@@ -204,41 +204,41 @@
 
   /* Dark mode (mantido mas nao usado por padrao) */
   .dark {
-    --background:          218 44% 8%;
+    --background:          225 50% 5%;      /* #0A0E1A deep slate */
     --foreground:          210 40% 96%;
-    --card:                218 35% 11%;
+    --card:                225 40% 9%;      /* #12162A */
     --card-foreground:     210 40% 96%;
-    --popover:             218 35% 11%;
+    --popover:             225 40% 9%;
     --popover-foreground:  210 40% 96%;
     --primary:             var(--primary-500);
     --primary-foreground:  0 0% 100%;
-    --secondary:           218 30% 16%;
+    --secondary:           225 30% 14%;
     --secondary-foreground: 215 20% 75%;
-    --muted:               218 30% 14%;
+    --muted:               225 30% 12%;
     --muted-foreground:    215 20% 55%;
-    --accent:              218 30% 16%;
+    --accent:              225 30% 14%;
     --accent-foreground:   210 40% 96%;
     --destructive:         0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border:              218 30% 16%;
-    --input:               218 30% 16%;
+    --border:              225 25% 15%;
+    --input:               225 25% 15%;
     --ring:                var(--primary-400);
-    --sidebar-background:  218 44% 6%;
-    --sidebar-border:      218 30% 10%;
+    --sidebar-background:  225 50% 4%;      /* #080B15 */
+    --sidebar-border:      225 30% 10%;
 
     /* Pipeline Dark Mode Tokens */
-    --pipeline-card-bg: 218 35% 13%;
-    --pipeline-card-border: 218 30% 20%;
-    --pipeline-card-border-hover: 213 94% 68%;
+    --pipeline-card-bg: 225 40% 11%;
+    --pipeline-card-border: 225 25% 18%;
+    --pipeline-card-border-hover: 228 100% 70%;
     --pipeline-text-primary: 210 40% 96%;
     --pipeline-text-secondary: 215 20% 65%;
     --pipeline-text-muted: 215 20% 55%;
-    --pipeline-column-bg: 218 35% 11%;
-    --pipeline-column-border: 218 30% 18%;
-    --pipeline-tab-bg: 218 30% 14%;
-    --pipeline-tab-active-bg: 218 35% 16%;
-    --pipeline-progress-track: 218 30% 18%;
-    --pipeline-empty-icon-bg: 239 84% 67%;
+    --pipeline-column-bg: 225 40% 9%;
+    --pipeline-column-border: 225 25% 16%;
+    --pipeline-tab-bg: 225 30% 12%;
+    --pipeline-tab-active-bg: 225 35% 15%;
+    --pipeline-progress-track: 225 25% 16%;
+    --pipeline-empty-icon-bg: 228 100% 64%;
   }
 }
 
@@ -656,13 +656,13 @@ main[class*="flex-1"],
   --arena-scoreboard-border: rgba(0,0,0,0.08);
   --arena-card-bg: rgba(255,255,255,0.9);
   --arena-card-border: rgba(0,0,0,0.08);
-  --arena-card-hover-border: rgba(59,130,246,0.3);
+  --arena-card-hover-border: rgba(73,105,255,0.3);
   --arena-text: #1E293B;
   --arena-text-muted: #64748B;
   --arena-text-subtle: #94A3B8;
   --arena-subtle-bg: rgba(0,0,0,0.04);
-  --arena-particle-color: #3B82F6;
-  --arena-floor-glow: rgba(59,130,246,0.04);
+  --arena-particle-color: #4969FF;
+  --arena-floor-glow: rgba(73,105,255,0.04);
   --arena-vignette: rgba(255,255,255,0.3);
   --arena-progress-track: rgba(0,0,0,0.08);
   --arena-tab-bg: rgba(0,0,0,0.06);
@@ -676,13 +676,13 @@ main[class*="flex-1"],
   --arena-scoreboard-border: rgba(255,255,255,0.08);
   --arena-card-bg: #161B22;
   --arena-card-border: rgba(255,255,255,0.08);
-  --arena-card-hover-border: rgba(59,130,246,0.4);
+  --arena-card-hover-border: rgba(73,105,255,0.4);
   --arena-text: #FFFFFF;
   --arena-text-muted: #9CA3AF;
   --arena-text-subtle: #6B7280;
   --arena-subtle-bg: rgba(255,255,255,0.06);
-  --arena-particle-color: #60A5FA;
-  --arena-floor-glow: rgba(59,130,246,0.06);
+  --arena-particle-color: #6B84FF;
+  --arena-floor-glow: rgba(73,105,255,0.06);
   --arena-vignette: rgba(0,0,0,0.4);
   --arena-progress-track: rgba(255,255,255,0.1);
   --arena-tab-bg: rgba(255,255,255,0.06);
@@ -711,7 +711,7 @@ main[class*="flex-1"],
 }
 .arena-card:hover {
   border-color: var(--arena-card-hover-border);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 20px rgba(73, 105, 255, 0.08);
 }
 
 /* Botão verde de iniciar call */
@@ -734,7 +734,7 @@ main[class*="flex-1"],
 
 /* Título gradient */
 .arena-title-gradient {
-  background: linear-gradient(135deg, #60A5FA, #A78BFA);
+  background: linear-gradient(135deg, #6B84FF, #A78BFA);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -791,7 +791,7 @@ main[class*="flex-1"],
 /* Glow nas barras de progresso */
 .arena-bar-glow-orange { box-shadow: 0 0 6px rgba(249, 115, 22, 0.15); }
 .arena-bar-glow-green { box-shadow: 0 0 6px rgba(34, 197, 94, 0.15); }
-.arena-bar-glow-blue { box-shadow: 0 0 6px rgba(59, 130, 246, 0.15); }
+.arena-bar-glow-blue { box-shadow: 0 0 6px rgba(73, 105, 255, 0.15); }
 
 /* Pulse glow para CTA */
 @keyframes pulse-glow {

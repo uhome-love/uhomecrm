@@ -114,7 +114,7 @@ export default function EscalaDiariaPage() {
                   <div className="flex items-center gap-3">
                     <div
                       className="h-5 w-5 rounded-full shadow-sm"
-                      style={{ backgroundColor: segmento.cor || "#3b82f6" }}
+                      style={{ backgroundColor: segmento.cor || "#4969FF" }}
                     />
                     <div>
                       <CardTitle className="text-lg">{segmento.nome}</CardTitle>

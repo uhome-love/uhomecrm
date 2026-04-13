@@ -38,8 +38,8 @@ const TIPO_LABELS: Record<string, string> = {
 
 const TIPO_CONFIG: Record<string, { emoji: string; borderColor: string; bgUnread: string }> = {
   radar_intencao: { emoji: "🚨", borderColor: "#EA580C", bgUnread: "#FFF3E6" },
-  leads: { emoji: "⚡", borderColor: "#3B82F6", bgUnread: "#EFF6FF" },
-  lead_roleta: { emoji: "⚡", borderColor: "#3B82F6", bgUnread: "#EFF6FF" },
+  leads: { emoji: "⚡", borderColor: "#4969FF", bgUnread: "#EFF6FF" },
+  lead_roleta: { emoji: "⚡", borderColor: "#4969FF", bgUnread: "#EFF6FF" },
   lead_timeout: { emoji: "⚠️", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
   lead_sem_contato: { emoji: "⚠️", borderColor: "#F59E0B", bgUnread: "#FFFBEB" },
   lead_parado: { emoji: "⚠️", borderColor: "#F59E0B", bgUnread: "#FFFBEB" },
@@ -61,7 +61,7 @@ const TIPO_CONFIG: Record<string, { emoji: string; borderColor: string; bgUnread
   gerente_sem_visita: { emoji: "⚠️", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
   relatorio_semanal: { emoji: "📋", borderColor: "#6B7280", bgUnread: "#F9FAFB" },
   xp_conquista: { emoji: "🎉", borderColor: "#F59E0B", bgUnread: "#FFFBEB" },
-  mensagem_gerente: { emoji: "💬", borderColor: "#3B82F6", bgUnread: "#EFF6FF" },
+  mensagem_gerente: { emoji: "💬", borderColor: "#4969FF", bgUnread: "#EFF6FF" },
   corretor_ajuda: { emoji: "💬", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
   zero_ligacoes: { emoji: "⚠️", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
   alertas: { emoji: "⚠️", borderColor: "#EF4444", bgUnread: "#FEF2F2" },

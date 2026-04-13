@@ -211,12 +211,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         src={avatarUrl}
                         alt={nome || "Avatar"}
                         className="rounded-full object-cover shrink-0"
-                        style={{ width: 36, height: 36, border: "2px solid #4F46E5" }}
+                        style={{ width: 36, height: 36, border: "2px solid #4969FF" }}
                       />
                     ) : (
                       <div
                         className="flex items-center justify-center rounded-full font-bold text-white text-[11px] shrink-0"
-                        style={{ width: 36, height: 36, background: "#4F46E5", border: "2px solid #4F46E5" }}
+                        style={{ width: 36, height: 36, background: "#4969FF", border: "2px solid #4969FF" }}
                       >
                         {nome ? nome.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : <User className="h-4 w-4" />}
                       </div>

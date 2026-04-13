@@ -43,7 +43,7 @@ export default function MelnickDayLayout({ data }: Props) {
           <h2 className="text-2xl sm:text-3xl font-black text-slate-800">
             {imoveis.length} empreendimento{imoveis.length !== 1 ? "s" : ""} selecionado{imoveis.length !== 1 ? "s" : ""}
           </h2>
-          <div className="mt-4 mx-auto w-16 h-1 rounded-full" style={{ background: "linear-gradient(90deg, #3b82f6, #f59e0b)" }} />
+          <div className="mt-4 mx-auto w-16 h-1 rounded-full" style={{ background: "linear-gradient(90deg, #4969FF, #f59e0b)" }} />
         </motion.div>
 
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">

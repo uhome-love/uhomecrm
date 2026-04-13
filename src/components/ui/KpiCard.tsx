@@ -21,7 +21,7 @@ interface KpiCardProps {
 
 const VALUE_COLORS: Record<KpiVariant, string> = {
   default:   "text-[#0a0a0a] dark:text-[#fafafa]",
-  highlight: "text-[#4F46E5] dark:text-[#818cf8]",
+  highlight: "text-[#4969FF] dark:text-[#6B84FF]",
   success:   "text-[#10b981] dark:text-[#34d399]",
   warning:   "text-[#f59e0b] dark:text-[#fbbf24]",
   danger:    "text-[#ef4444] dark:text-[#f87171]",
@@ -54,10 +54,10 @@ export function KpiCard({
       className={cn(
         "bg-[#f7f7fb] dark:bg-[#141e30]",
         "border border-[#e8e8f0] dark:border-white/[0.07] shadow-none",
-        "border-l-[3px] border-l-[#4F46E5]",
+        "border-l-[3px] border-l-[#4969FF]",
         "rounded-[14px] p-4 pl-4",
         "flex flex-col gap-2",
-        onClick && "cursor-pointer hover:border-[#e0e0e0] dark:hover:border-white/[0.12] hover:border-l-[#4338CA] transition-colors",
+        onClick && "cursor-pointer hover:border-[#e0e0e0] dark:hover:border-white/[0.12] hover:border-l-[#3350E6] transition-colors",
         className
       )}
     >

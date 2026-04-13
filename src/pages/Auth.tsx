@@ -185,7 +185,7 @@ export default function Auth() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#0A0F1E" }}>
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "#3B82F6" }} />
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "#4969FF" }} />
       </div>
     );
   }
@@ -266,7 +266,7 @@ export default function Auth() {
                 </div>
 
                 <div className="flex items-center gap-3 pt-1">
-                  <Button type="submit" disabled={submitting} className="h-12 flex-1 gap-2 font-black text-sm border-0 rounded-xl text-white" style={{ background: "linear-gradient(135deg, #3B82F6, #2563EB)", letterSpacing: "0.05em", animation: submitting ? "none" : "pulse-glow-blue 2s ease-in-out infinite" }}>
+                  <Button type="submit" disabled={submitting} className="h-12 flex-1 gap-2 font-black text-sm border-0 rounded-xl text-white" style={{ background: "linear-gradient(135deg, #4969FF, #3350E6)", letterSpacing: "0.05em", animation: submitting ? "none" : "pulse-glow-blue 2s ease-in-out infinite" }}>
                     {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /><span>Entrando...</span></> : <>{isLogin ? "ENTRAR" : "CRIAR CONTA"}<ArrowRight className="h-4 w-4" /></>}
                   </Button>
                   {isLogin && (

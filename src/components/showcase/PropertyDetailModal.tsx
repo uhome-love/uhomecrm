@@ -211,7 +211,7 @@ export default function PropertyDetailModal({ item, corretor, open, onClose, onT
                   <img src={corretor.avatar_url} alt={corretor.nome} className="w-12 h-12 rounded-full object-cover" style={{ border: "2px solid #e2e8f0" }} />
                 ) : (
                   <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white"
-                    style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}>
+                    style={{ background: "linear-gradient(135deg, #4969FF, #6366f1)" }}>
                     {corretor.nome.charAt(0)}
                   </div>
                 )}

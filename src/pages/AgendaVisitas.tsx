@@ -62,7 +62,7 @@ const PERIOD_OPTIONS: { key: Period; label: string }[] = [
 
 const STATUS_PILL_COLORS: Record<string, string> = {
   marcada: "bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30",
-  confirmada: "bg-[#3b82f6]/15 text-[#3b82f6] border-[#3b82f6]/30",
+  confirmada: "bg-[#4969FF]/15 text-[#4969FF] border-[#4969FF]/30",
   realizada: "bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30",
   reagendada: "bg-[#f97316]/15 text-[#f97316] border-[#f97316]/30",
   no_show: "bg-[#ef4444]/15 text-[#ef4444] border-[#ef4444]/30",
@@ -71,7 +71,7 @@ const STATUS_PILL_COLORS: Record<string, string> = {
 
 const STATUS_DOT_COLORS: Record<string, string> = {
   marcada: "bg-[#f59e0b]",
-  confirmada: "bg-[#3b82f6]",
+  confirmada: "bg-[#4969FF]",
   realizada: "bg-[#10b981]",
   reagendada: "bg-[#f97316]",
   no_show: "bg-[#ef4444]",
@@ -119,15 +119,15 @@ function MiniWeekCalendar({
             onClick={() => onDayClick(d.key)}
             className={cn(
               "flex flex-col items-center gap-0.5 py-2 px-1 rounded-[10px] transition-all",
-              today && !active && "bg-[#4F46E5]/5",
-              active && "bg-[#4F46E5]/10 ring-1 ring-[#4F46E5]/30",
+              today && !active && "bg-[#4969FF]/5",
+              active && "bg-[#4969FF]/10 ring-1 ring-[#4969FF]/30",
               !today && !active && "hover:bg-[#f7f7fb] dark:hover:bg-white/5"
             )}
           >
             <span className="text-[10px] font-medium text-[#a1a1aa]">{DAY_NAMES[i]}</span>
             <span className={cn(
               "text-[14px] font-bold w-7 h-7 flex items-center justify-center rounded-full",
-              today ? "bg-[#4F46E5] text-white" : "text-[#0a0a0a] dark:text-[#fafafa]"
+              today ? "bg-[#4969FF] text-white" : "text-[#0a0a0a] dark:text-[#fafafa]"
             )}>
               {format(d.date, "d")}
             </span>
@@ -166,7 +166,7 @@ function VisitaCompactCard({
         isColleague
           ? "bg-[#f7f7fb]/60 dark:bg-white/3 border-[#e8e8f0]/60 dark:border-white/5"
           : "bg-white dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/8",
-        "hover:border-[#4F46E5]/30"
+        "hover:border-[#4969FF]/30"
       )}
       onClick={() => onEdit(visita)}
     >
@@ -197,7 +197,7 @@ function VisitaCompactCard({
       {showCorretor && visita.corretor_nome && (
         <span className={cn(
           "text-[11px] font-medium truncate hidden sm:block max-w-[100px]",
-          isColleague ? "text-[#4F46E5]" : "text-[#71717a]"
+          isColleague ? "text-[#4969FF]" : "text-[#71717a]"
         )}>
           {visita.corretor_nome.split(" ")[0]}
         </span>
@@ -266,13 +266,13 @@ function DayGroup({
       <div className="flex items-center gap-2 px-1 py-1.5">
         <span className={cn(
           "text-[13px] font-bold tracking-[-0.2px]",
-          today ? "text-[#4F46E5]" : "text-[#0a0a0a] dark:text-[#fafafa]"
+          today ? "text-[#4969FF]" : "text-[#0a0a0a] dark:text-[#fafafa]"
         )}>
           {dayLabel}
         </span>
         <span className="text-[12px] text-[#a1a1aa]">· {dateLabel}</span>
         {today && (
-          <span className="text-[10px] font-bold bg-[#4F46E5] text-white px-2 py-0.5 rounded-full">HOJE</span>
+          <span className="text-[10px] font-bold bg-[#4969FF] text-white px-2 py-0.5 rounded-full">HOJE</span>
         )}
         <div className="flex-1" />
         <span className="text-[11px] text-[#a1a1aa]">
@@ -478,7 +478,7 @@ export default function AgendaVisitas() {
 
       {/* ═══════ HEADER: Title + Search + Toggle + Nova Visita ═══════ */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="w-7 h-7 rounded-[7px] bg-[#4F46E5] flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center shrink-0">
           <CalendarDays size={13} strokeWidth={1.5} className="text-white" />
         </div>
         <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#0a0a0a] dark:text-[#fafafa]">
@@ -492,7 +492,7 @@ export default function AgendaVisitas() {
             placeholder="Buscar cliente, empreend. ou corretor..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="text-[12px] pl-8 pr-3 h-[32px] w-full bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] focus:border-[#4F46E5] transition-all outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
+            className="text-[12px] pl-8 pr-3 h-[32px] w-full bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] focus:border-[#4969FF] transition-all outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
           />
           {searchTerm && (
             <button onClick={() => setSearchTerm("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#a1a1aa] hover:text-[#71717a]">
@@ -511,7 +511,7 @@ export default function AgendaVisitas() {
               className={cn(
                 "text-[11px] font-medium px-2.5 py-1 rounded-[6px] transition-all flex items-center gap-1",
                 showOnlyMine
-                  ? "bg-[#4F46E5] text-white"
+                  ? "bg-[#4969FF] text-white"
                   : "text-[#71717a] hover:text-[#0a0a0a] dark:hover:text-white"
               )}
             >
@@ -522,7 +522,7 @@ export default function AgendaVisitas() {
               className={cn(
                 "text-[11px] font-medium px-2.5 py-1 rounded-[6px] transition-all flex items-center gap-1",
                 !showOnlyMine
-                  ? "bg-[#4F46E5] text-white"
+                  ? "bg-[#4969FF] text-white"
                   : "text-[#71717a] hover:text-[#0a0a0a] dark:hover:text-white"
               )}
             >
@@ -544,7 +544,7 @@ export default function AgendaVisitas() {
         {/* Nova Visita */}
         <button
           onClick={() => setShowTypeSelector(true)}
-          className="h-[32px] px-4 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors"
+          className="h-[32px] px-4 bg-[#4969FF] hover:bg-[#3350E6] text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors"
         >
           <Plus size={13} strokeWidth={2} /> Nova Visita
         </button>
@@ -556,7 +556,7 @@ export default function AgendaVisitas() {
           { key: "marcadas", label: "Marcadas", value: kpis.marcadas, color: "text-[#f59e0b]", border: "border-l-[#f59e0b]" },
           { key: "realizadas", label: "Realizadas", value: kpis.realizadas, color: "text-[#10b981]", border: "border-l-[#10b981]" },
           { key: "no_show", label: "No-show", value: kpis.noShow, color: "text-[#ef4444]", border: "border-l-[#ef4444]" },
-          { key: "taxa", label: "Taxa realização", value: `${kpis.taxa}%`, color: "text-[#4F46E5]", border: "border-l-[#4F46E5]" },
+          { key: "taxa", label: "Taxa realização", value: `${kpis.taxa}%`, color: "text-[#4969FF]", border: "border-l-[#4969FF]" },
         ].map(kpi => (
           <button
             key={kpi.key}
@@ -568,7 +568,7 @@ export default function AgendaVisitas() {
               "bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 border-l-[3px] rounded-[10px] p-3 text-left transition-all",
               kpi.border,
               kpi.key !== "taxa" && "cursor-pointer hover:border-[#d4d4d8] dark:hover:border-white/15",
-              kpiFilter === kpi.key && "ring-2 ring-[#4F46E5]/30 bg-[#4F46E5]/[0.02]"
+              kpiFilter === kpi.key && "ring-2 ring-[#4969FF]/30 bg-[#4969FF]/[0.02]"
             )}
           >
             <p className="text-[10px] font-medium text-[#a1a1aa] uppercase tracking-wide">{kpi.label}</p>
@@ -581,9 +581,9 @@ export default function AgendaVisitas() {
       {(kpiFilter || searchTerm) && (
         <div className="flex items-center gap-2">
           {kpiFilter && (
-            <span className="text-[11px] bg-[#4F46E5]/10 text-[#4F46E5] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <span className="text-[11px] bg-[#4969FF]/10 text-[#4969FF] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
               Filtro: {kpiFilter === "marcadas" ? "Marcadas" : kpiFilter === "realizadas" ? "Realizadas" : "No-show"}
-              <button onClick={() => setKpiFilter(null)} className="hover:text-[#4338CA]"><X size={10} /></button>
+              <button onClick={() => setKpiFilter(null)} className="hover:text-[#3350E6]"><X size={10} /></button>
             </span>
           )}
           {searchTerm && (
@@ -610,7 +610,7 @@ export default function AgendaVisitas() {
             className={cn(
               "px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-all",
               period === p.key
-                ? "bg-[#4F46E5] text-white"
+                ? "bg-[#4969FF] text-white"
                 : "text-[#71717a] bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 hover:text-[#0a0a0a] dark:hover:text-white"
             )}
           >
@@ -633,14 +633,14 @@ export default function AgendaVisitas() {
             type="date"
             value={customFrom}
             onChange={e => setCustomFrom(e.target.value)}
-            className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4F46E5] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+            className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
           />
           <label className="text-[12px] font-medium text-[#71717a]">Até:</label>
           <input
             type="date"
             value={customTo}
             onChange={e => setCustomTo(e.target.value)}
-            className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4F46E5] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+            className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
           />
           <button
             disabled={!customFrom || !customTo}
@@ -654,7 +654,7 @@ export default function AgendaVisitas() {
             className={cn(
               "h-[32px] px-4 text-[12px] font-semibold rounded-[8px] transition-all",
               customFrom && customTo
-                ? "bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+                ? "bg-[#4969FF] hover:bg-[#3350E6] text-white"
                 : "bg-[#e8e8f0] text-[#a1a1aa] cursor-not-allowed"
             )}
           >

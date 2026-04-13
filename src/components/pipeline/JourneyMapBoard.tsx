@@ -45,7 +45,7 @@ const PHASE_THEMES: Record<string, PhaseTheme> = {
   atendimento: {
     name: "Primeiro Contato",
     icon: "⚡",
-    color: "#3B82F6",
+    color: "#4969FF",
     headerBg: "rgba(30,58,138,0.4)",
     headerBorder: "rgba(59,130,246,0.4)",
     glow: "0 0 20px rgba(59,130,246,0.15)",
@@ -144,7 +144,7 @@ const formatVGV = (value: number) => {
 
 // Confetti for Boss Final
 function spawnConfetti() {
-  const colors = ["#F59E0B", "#10B981", "#3B82F6", "#FFFFFF"];
+  const colors = ["#F59E0B", "#10B981", "#4969FF", "#FFFFFF"];
   const container = document.createElement("div");
   container.style.cssText = "position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden";
   document.body.appendChild(container);

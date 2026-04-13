@@ -182,7 +182,7 @@ export default function LeadMatchesWidget({ leadId, leadNome, leadTelefone }: Pr
                   {p.titulo || p.empreendimento || `Cód. ${p.codigo}`}
                 </p>
                 {p.valor_venda && (
-                  <p style={{ fontSize: 12, fontWeight: 600, color: "#4F46E5", margin: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "#4969FF", margin: 0 }}>
                     {formatCurrency(Number(p.valor_venda))}
                   </p>
                 )}

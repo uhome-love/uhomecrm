@@ -108,7 +108,7 @@ export default function CeoOverview() {
           {/* Resumo Executivo */}
           <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-4 w-4 text-[#4F46E5]" />
+              <Zap className="h-4 w-4 text-[#4969FF]" />
               <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Resumo executivo</h3>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -201,7 +201,7 @@ export default function CeoOverview() {
           {/* Saúde da Operação */}
           <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Activity className="h-4 w-4 text-[#4F46E5]" />
+              <Activity className="h-4 w-4 text-[#4969FF]" />
               <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Saúde da operação</h3>
             </div>
             <SaudeOperacao />
@@ -216,7 +216,7 @@ function TeamComparisonTable({ gerentes, expandedTeam, setExpandedTeam }: { gere
   return (
     <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] overflow-hidden">
       <div className="px-4 py-3 border-b border-[#f0f0f0] dark:border-white/[0.07] flex items-center gap-2">
-        <BarChart3 className="h-4 w-4 text-[#4F46E5]" />
+        <BarChart3 className="h-4 w-4 text-[#4969FF]" />
         <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Performance por equipe</h3>
       </div>
       <table className="w-full text-xs">
@@ -303,7 +303,7 @@ function FunnelSection({ t }: { t: any }) {
   return (
     <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] p-4">
       <div className="flex items-center gap-2 mb-3">
-        <BarChart3 className="h-4 w-4 text-[#4F46E5]" />
+        <BarChart3 className="h-4 w-4 text-[#4969FF]" />
         <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Conversão do funil</h3>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">

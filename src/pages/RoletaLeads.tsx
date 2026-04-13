@@ -84,10 +84,10 @@ function CeoView() {
         onTabChange={setActiveTab}
         actions={
           <>
-            <Button variant="outline" size="sm" className="border-[#4F46E5] text-[#4F46E5]" onClick={() => setShowIncluirModal(true)}>
+            <Button variant="outline" size="sm" className="border-[#4969FF] text-[#4969FF]" onClick={() => setShowIncluirModal(true)}>
               <UserPlus className="h-3.5 w-3.5 mr-1" /> Incluir na Roleta
             </Button>
-            <Button variant="outline" size="sm" className="border-[#4F46E5] text-[#4F46E5]" onClick={() => reload()}>
+            <Button variant="outline" size="sm" className="border-[#4969FF] text-[#4969FF]" onClick={() => reload()}>
               <RefreshCw className="h-3.5 w-3.5 mr-1" /> Atualizar
             </Button>
           </>
@@ -96,13 +96,13 @@ function CeoView() {
 
       {/* Leads acumulados (madrugada) */}
       {windowInfo.janela === "madrugada" && leadsAcumulados > 0 && (
-        <Card className="border-[#4F46E5]/30 bg-[#4F46E5]/5">
+        <Card className="border-[#4969FF]/30 bg-[#4969FF]/5">
           <CardContent className="flex items-center justify-between py-4">
             <div>
               <p className="font-semibold text-lg">{leadsAcumulados} leads acumulados</p>
               <p className="text-sm text-muted-foreground">Aguardando distribuição na roleta da manhã</p>
             </div>
-            <Button className="bg-[#4F46E5] hover:bg-[#4338CA] text-white">
+            <Button className="bg-[#4969FF] hover:bg-[#3350E6] text-white">
               <Rocket className="h-4 w-4 mr-1" /> Disparar para roleta da manhã
             </Button>
           </CardContent>
@@ -182,9 +182,9 @@ function CeoView() {
                 // Already sorted by leads_recebidos ascending from the hook
                 const segFila = fila.filter(f => f.segmento_id === seg.id);
                 return (
-                  <Card key={seg.id} className="border-l-[3px] border-l-[#4F46E5]">
+                  <Card key={seg.id} className="border-l-[3px] border-l-[#4969FF]">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-bold text-[#4F46E5]">{seg.nome}</CardTitle>
+                      <CardTitle className="text-sm font-bold text-[#4969FF]">{seg.nome}</CardTitle>
                       {seg.campanhas.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {seg.campanhas.map(c => (

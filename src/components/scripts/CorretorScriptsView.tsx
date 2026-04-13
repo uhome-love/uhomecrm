@@ -116,14 +116,14 @@ export default function CorretorScriptsView() {
             onClick={() => navigate("/marketplace")}
             className="mt-5 inline-flex items-center gap-2 font-semibold text-white"
             style={{
-              background: "#2563EB",
+              background: "#3350E6",
               borderRadius: 8,
               padding: "10px 20px",
               fontSize: 14,
               transition: "background 0.2s",
             }}
             onMouseEnter={e => { e.currentTarget.style.background = "#1D4ED8"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#2563EB"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#3350E6"; }}
           >
             <ShoppingBag className="h-4 w-4" /> Ver Marketplace
           </button>

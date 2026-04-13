@@ -380,7 +380,7 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
 
             <div className="space-y-2 mt-4">
               <Button
-                className="w-full gap-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+                className="w-full gap-2 bg-[#4969FF] hover:bg-[#3350E6] text-white"
                 disabled={isSearching}
                 onClick={() => onUpdateMatch?.(form)}
               >

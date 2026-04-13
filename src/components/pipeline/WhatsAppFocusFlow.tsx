@@ -290,7 +290,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
                   onClick={() => { setShowFreeText(!showFreeText); setEditingIdx(null); }}
                   style={{
                     display: "flex", alignItems: "center", gap: 4,
-                    fontSize: 11, fontWeight: 600, color: showFreeText ? "#64748b" : "#4F46E5",
+                    fontSize: 11, fontWeight: 600, color: showFreeText ? "#64748b" : "#4969FF",
                     background: "none", border: "none", cursor: "pointer",
                   }}
                 >
@@ -343,7 +343,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
               ) : (
                 messages.map((msg, i) => (
                   <div key={i} style={{
-                    border: editingIdx === i ? "1px solid #4F46E5" : "1px solid #e8e8f0",
+                    border: editingIdx === i ? "1px solid #4969FF" : "1px solid #e8e8f0",
                     borderRadius: 10, padding: "12px 14px",
                     background: editingIdx === i ? "#f5f3ff" : "#fafafa",
                   }}>
@@ -364,7 +364,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
                         style={{
                           display: "flex", alignItems: "center", gap: 3,
                           fontSize: 10, fontWeight: 600,
-                          color: editingIdx === i ? "#4F46E5" : "#94a3b8",
+                          color: editingIdx === i ? "#4969FF" : "#94a3b8",
                           background: "none", border: "none", cursor: "pointer",
                         }}
                       >
@@ -507,7 +507,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
                 disabled={saving}
                 style={{
                   padding: "8px 20px", borderRadius: 8, border: "none",
-                  background: "#4F46E5", fontSize: 12, fontWeight: 600, color: "#fff",
+                  background: "#4969FF", fontSize: 12, fontWeight: 600, color: "#fff",
                   cursor: saving ? "wait" : "pointer", opacity: saving ? 0.7 : 1,
                 }}
               >

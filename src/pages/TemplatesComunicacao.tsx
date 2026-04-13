@@ -121,14 +121,14 @@ export default function TemplatesComunicacao() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-black flex items-center gap-2" style={{ fontSize: 28, color: "#1F2937" }}>
-            <MessageSquare className="h-7 w-7" style={{ color: "#3B82F6" }} />
+            <MessageSquare className="h-7 w-7" style={{ color: "#4969FF" }} />
             💬 Templates de Comunicação
           </h1>
           <p className="text-sm mt-1" style={{ color: "#9CA3AF" }}>
             Gerencie os templates de mensagens para a equipe
           </p>
         </div>
-        <Button onClick={handleNew} className="gap-2 font-semibold" style={{ background: "#2563EB", borderRadius: 10 }}>
+        <Button onClick={handleNew} className="gap-2 font-semibold" style={{ background: "#3350E6", borderRadius: 10 }}>
           <Plus className="h-4 w-4" /> Novo Template
         </Button>
       </div>
@@ -223,7 +223,7 @@ export default function TemplatesComunicacao() {
           <span className="text-5xl">💬</span>
           <p className="font-bold text-xl mt-3" style={{ color: "#374151" }}>Nenhum template encontrado</p>
           <p className="text-sm mt-1" style={{ color: "#9CA3AF" }}>Crie o primeiro template para sua equipe!</p>
-          <Button onClick={handleNew} className="mt-4 gap-2 font-semibold" style={{ background: "#2563EB", borderRadius: 10 }}>
+          <Button onClick={handleNew} className="mt-4 gap-2 font-semibold" style={{ background: "#3350E6", borderRadius: 10 }}>
             <Plus className="h-4 w-4" /> Criar template
           </Button>
         </div>
@@ -282,7 +282,7 @@ export default function TemplatesComunicacao() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditModal(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving} style={{ background: "#2563EB" }}>
+            <Button onClick={handleSave} disabled={saving} style={{ background: "#3350E6" }}>
               {saving ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>

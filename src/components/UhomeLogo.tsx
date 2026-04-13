@@ -41,7 +41,7 @@ function UhomeIcon({ size }: { size: number }) {
       </defs>
 
       {/* Outer glow */}
-      <circle cx="50" cy="50" r="49" fill="none" stroke="#3B82F6" strokeWidth="1" opacity="0.3" />
+      <circle cx="50" cy="50" r="49" fill="none" stroke="#4969FF" strokeWidth="1" opacity="0.3" />
 
       {/* Main sphere */}
       <circle cx="50" cy="50" r="47" fill={`url(#sphere-${id})`} />
@@ -81,10 +81,10 @@ function HomiTaglineIcon({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className="inline-block align-middle" style={{ marginTop: -1 }}>
       {/* Body */}
-      <rect x="5" y="10" width="14" height="11" rx="4" fill="#4F46E5" />
+      <rect x="5" y="10" width="14" height="11" rx="4" fill="#4969FF" />
       {/* Head / hood */}
-      <path d="M12 2 L5 9 L19 9 Z" fill="#4F46E5" />
-      <rect x="6" y="7" width="12" height="6" rx="2" fill="#4F46E5" />
+      <path d="M12 2 L5 9 L19 9 Z" fill="#4969FF" />
+      <rect x="6" y="7" width="12" height="6" rx="2" fill="#4969FF" />
       {/* Face visor */}
       <rect x="7.5" y="8" width="9" height="5" rx="2" fill="#0F172A" />
       {/* Eyes */}
@@ -142,7 +142,7 @@ export default function UhomeLogo({ size = "md", showTagline = false, className 
       <div className={cn(isVertical ? "text-center" : "flex flex-col")}>
         <span className={cn(c.textClass, "font-extrabold tracking-tight leading-tight")}>
           <span style={{ color: "#9ca3af", fontWeight: 800 }}>Uhome</span>
-          <span style={{ color: "#4F46E5", fontWeight: 800 }}>Sales</span>
+          <span style={{ color: "#4969FF", fontWeight: 800 }}>Sales</span>
         </span>
         {showTagline && (
           <span className={cn(c.taglineClass, "leading-tight flex items-center", isVertical ? "justify-center" : "")} style={{ color: "#a1a1aa", fontSize: 11, gap: 4 }}>

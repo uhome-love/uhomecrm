@@ -331,11 +331,11 @@ export default function PropertyMap({
         }
         .cluster-small {
           width: 36px; height: 36px;
-          background: #4F46E5;
+          background: #4969FF;
         }
         .cluster-medium {
           width: 44px; height: 44px;
-          background: #4338CA;
+          background: #3350E6;
         }
         .cluster-large {
           width: 52px; height: 52px;

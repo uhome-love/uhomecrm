@@ -307,12 +307,12 @@ export default function Sidebar({
     ? "bg-white/[0.04] border border-white/[0.07] hover:bg-white/[0.08]"
     : "bg-[#fafafa] border border-[#ebebeb] hover:bg-[#f3f3f3]";
   const itemBase  = isDark
-    ? "text-[#a1a1aa] hover:bg-[rgba(99,102,241,0.08)] hover:text-[#818cf8]"
-    : "text-[#3f3f46] hover:bg-[rgba(79,70,229,0.08)] hover:text-[#4F46E5]";
+    ? "text-[#a1a1aa] hover:bg-[rgba(99,102,241,0.08)] hover:text-[#6B84FF]"
+    : "text-[#3f3f46] hover:bg-[rgba(79,70,229,0.08)] hover:text-[#4969FF]";
   const itemOn  = isDark
-    ? "bg-[#4F46E5] text-white font-medium"
-    : "bg-[#4F46E5] text-white font-medium";
-  const iconDef   = isDark ? "text-[#818cf8]"  : "text-[#4F46E5]";
+    ? "bg-[#4969FF] text-white font-medium"
+    : "bg-[#4969FF] text-white font-medium";
+  const iconDef   = isDark ? "text-[#6B84FF]"  : "text-[#4969FF]";
   const iconOn    = "text-white";
 
   // Render full nav content (reused in both aside and mobile sheet)
@@ -327,11 +327,11 @@ export default function Sidebar({
             onClick={() => setCampOpen(v => !v)}
             className={cn("w-full flex items-center gap-2.5 px-3 py-[9px] rounded-[9px] transition-all text-left", camp)}
           >
-            <div className="w-[7px] h-[7px] rounded-full bg-[#4F46E5] flex-shrink-0" />
+            <div className="w-[7px] h-[7px] rounded-full bg-[#4969FF] flex-shrink-0" />
             <span className={cn("text-[12px] font-medium flex-1 tracking-[-0.1px]", tx)}>
               Campanhas ativas
             </span>
-            <span className="text-[10px] font-bold bg-[#4F46E5] text-white rounded-full px-[7px] py-px">
+            <span className="text-[10px] font-bold bg-[#4969FF] text-white rounded-full px-[7px] py-px">
               {CAMPAIGNS.length}
             </span>
             <ChevronRight
@@ -418,7 +418,7 @@ export default function Sidebar({
         );
       })}
       <div className={cn("mt-auto px-3 py-3 flex items-center gap-2.5", foot)}>
-        <div className="w-[28px] h-[28px] rounded-full bg-[#4F46E5] flex items-center justify-center flex-shrink-0 text-white text-[9px] font-bold">
+        <div className="w-[28px] h-[28px] rounded-full bg-[#4969FF] flex items-center justify-center flex-shrink-0 text-white text-[9px] font-bold">
           {userInitials}
         </div>
         <div className="flex-1 min-w-0">
@@ -501,7 +501,7 @@ export default function Sidebar({
               {isDark ? <Sun size={12} strokeWidth={1.5} /> : <Moon size={12} strokeWidth={1.5} />}
             </button>
           )}
-          <div className="w-[28px] h-[28px] rounded-full bg-[#4F46E5] flex items-center justify-center text-white text-[9px] font-bold">
+          <div className="w-[28px] h-[28px] rounded-full bg-[#4969FF] flex items-center justify-center text-white text-[9px] font-bold">
             {userInitials}
           </div>
         </div>

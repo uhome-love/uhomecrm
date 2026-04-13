@@ -8,7 +8,7 @@ export type DisponibilidadeStatus = "offline" | "na_empresa" | "em_pausa" | "em_
 
 export const SEGMENTOS_OFICIAIS = [
   { nome: "MCMV / até R$500k", badge: "S1 · MCMV", cor: "#16A34A", empreendimentos: ["Open Bosque"] },
-  { nome: "Médio-Alto Padrão", badge: "S2 · Médio-Alto", cor: "#2563EB", empreendimentos: ["Orygem", "Las Casas", "Casa Tua"] },
+  { nome: "Médio-Alto Padrão", badge: "S2 · Médio-Alto", cor: "#3350E6", empreendimentos: ["Orygem", "Las Casas", "Casa Tua"] },
   { nome: "Altíssimo Padrão", badge: "S3 · Alto Padrão", cor: "#7C3AED", empreendimentos: ["Lake Eyre"] },
   { nome: "Investimento", badge: "S4 · Investimento", cor: "#B45309", empreendimentos: ["Casa Bastian", "Shift"] },
 ] as const;

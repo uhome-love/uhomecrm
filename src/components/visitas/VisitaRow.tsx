@@ -42,7 +42,7 @@ function addToCalendar(v: Visita) {
 
 const STATUS_BADGE_STYLES: Record<string, string> = {
   marcada: "text-[#f59e0b] bg-[#fffbeb] border-[#fde68a]",
-  confirmada: "text-[#3b82f6] bg-[#eff6ff] border-[#bfdbfe]",
+  confirmada: "text-[#4969FF] bg-[#eff6ff] border-[#bfdbfe]",
   realizada: "text-[#10b981] bg-[#f0fdf4] border-[#bbf7d0]",
   reagendada: "text-[#6366f1] bg-[#eef2ff] border-[#c7d2fe]",
   cancelada: "text-[#52525b] bg-[#f7f7fb] border-[#e8e8f0]",
@@ -51,7 +51,7 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
 
 const STATUS_LINE_COLORS: Record<string, string> = {
   marcada: "bg-[#f59e0b]",
-  confirmada: "bg-[#3b82f6]",
+  confirmada: "bg-[#4969FF]",
   realizada: "bg-[#10b981]",
   reagendada: "bg-[#6366f1]",
   cancelada: "bg-[#71717a]",

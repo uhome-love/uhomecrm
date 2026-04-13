@@ -6,7 +6,7 @@ const DEFAULT_META = 20;
 
 const EQUIPES = [
   { nome: "Gabrielle", cor: "#9333EA", corClara: "#F3E8FF", corBorda: "#7C3AED", emoji: "💜", id: "gabrielle" },
-  { nome: "Bruno Schuler", cor: "#2563EB", corClara: "#EFF6FF", corBorda: "#1D4ED8", emoji: "💙", id: "bruno" },
+  { nome: "Bruno Schuler", cor: "#3350E6", corClara: "#EFF6FF", corBorda: "#1D4ED8", emoji: "💙", id: "bruno" },
   { nome: "Gabriel", cor: "#16A34A", corClara: "#F0FDF4", corBorda: "#15803D", emoji: "💚", id: "gabriel" },
 ];
 
@@ -77,7 +77,7 @@ function Confetti({ active }) {
       vy: 2 + Math.random() * 3,
       vx: (Math.random() - 0.5) * 2,
       size: 6 + Math.random() * 8,
-      color: ["#9333EA", "#2563EB", "#16A34A", "#F59E0B", "#EF4444"][Math.floor(Math.random() * 5)],
+      color: ["#9333EA", "#3350E6", "#16A34A", "#F59E0B", "#EF4444"][Math.floor(Math.random() * 5)],
       rot: Math.random() * 360,
       rotV: (Math.random() - 0.5) * 6,
     }));
@@ -583,7 +583,7 @@ export default function PlacarDoDia() {
                 </div>
               ) : (
                 ultimasVisitas.map((v, i) => {
-                  const corBolinha = v.equipe === "gabrielle" ? "#9333EA" : v.equipe === "bruno" ? "#2563EB" : v.equipe === "gabriel" ? "#16A34A" : "#666";
+                  const corBolinha = v.equipe === "gabrielle" ? "#9333EA" : v.equipe === "bruno" ? "#3350E6" : v.equipe === "gabriel" ? "#16A34A" : "#666";
                   return (
                     <div
                       key={`${v.corretor}-${v.hora}-${i}`}

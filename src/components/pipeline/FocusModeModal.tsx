@@ -45,7 +45,7 @@ const QUICK_MESSAGES = [
 type CriteriaType = FocusCriteria;
 
 const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { value: "all", label: "Todos", description: "Todos os leads que precisam de atenção", icon: <Target className="w-5 h-5" />, color: "#4F46E5" },
+  { value: "all", label: "Todos", description: "Todos os leads que precisam de atenção", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
   { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
   { value: "no_tasks", label: "Sem tarefas", description: "Leads sem nenhuma tarefa agendada", icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
   { value: "stagnant", label: "Desatualizados", description: "Leads parados na mesma etapa há 5+ dias", icon: <Clock className="w-5 h-5" />, color: "#F97316" },
@@ -399,7 +399,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-2 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}>
               <Zap className="w-4 h-4 text-white" />
             </div>
             <span className="text-white font-bold text-sm sm:text-base">Modo Foco</span>
@@ -415,7 +415,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
               <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
                 <div
                   className="h-1.5 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${progressPercent}%`, background: "linear-gradient(90deg, #4F46E5, #7C3AED)" }}
+                  style={{ width: `${progressPercent}%`, background: "linear-gradient(90deg, #4969FF, #7C3AED)" }}
                 />
               </div>
             </div>
@@ -456,7 +456,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
               >
                 {/* Title */}
                 <div className="text-center space-y-2">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto" style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}>
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto" style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}>
                     <Zap className="w-7 h-7 text-white" />
                   </div>
                   <h2 className="text-white font-bold text-xl">Configurar Modo Foco</h2>
@@ -532,7 +532,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                   onClick={handleStartFocus}
                   disabled={stagesLoading}
                   className="w-full h-12 text-sm font-bold gap-2 rounded-xl"
-                  style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff" }}
+                  style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)", color: "#fff" }}
                 >
                   {stagesLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -562,7 +562,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                 <Button onClick={() => setConfigPhase(true)} variant="outline" className="text-gray-300 border-gray-600 hover:bg-white/5">
                   <Filter className="w-4 h-4 mr-1" /> Mudar filtros
                 </Button>
-                <Button onClick={onClose} style={{ background: "#4F46E5" }}>
+                <Button onClick={onClose} style={{ background: "#4969FF" }}>
                   Fechar
                 </Button>
               </div>
@@ -583,7 +583,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                   <div className="flex items-center gap-3">
                     <div
                       className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0"
-                      style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}
+                      style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}
                     >
                       {currentLead.name.charAt(0).toUpperCase()}
                     </div>
@@ -708,7 +708,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                           onClick={() => handleRegisterActivity("mensagem")}
                           disabled={saving || !followUpText.trim() || activityRegistered}
                           className="flex-1 gap-2 text-xs h-9"
-                          style={{ background: activityRegistered ? "#22c55e" : "#4F46E5" }}
+                          style={{ background: activityRegistered ? "#22c55e" : "#4969FF" }}
                         >
                           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : activityRegistered ? <Check className="w-3.5 h-3.5" /> : <MessageCircle className="w-3.5 h-3.5" />}
                           {activityRegistered ? "Registrado ✓" : "Registrar"}
@@ -758,7 +758,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                         onClick={() => handleRegisterActivity("ligacao")}
                         disabled={saving || !activityNote.trim() || activityRegistered}
                         className="w-full gap-2 text-xs h-9"
-                        style={{ background: activityRegistered ? "#22c55e" : "#4F46E5" }}
+                        style={{ background: activityRegistered ? "#22c55e" : "#4969FF" }}
                       >
                         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : activityRegistered ? <Check className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
                         {activityRegistered ? "Ligação registrada ✓" : "Registrar ligação"}
@@ -800,7 +800,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                         onClick={handleCreateTask}
                         disabled={saving || !taskTitle.trim()}
                         className="w-full gap-2 text-xs h-9"
-                        style={{ background: "#4F46E5" }}
+                        style={{ background: "#4969FF" }}
                       >
                         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                         Criar tarefa
@@ -892,7 +892,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     onClick={goToNext}
                     className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-lg transition-colors"
                     style={{
-                      background: (activityRegistered || taskCreated) ? "linear-gradient(135deg, #4F46E5, #7C3AED)" : "transparent",
+                      background: (activityRegistered || taskCreated) ? "linear-gradient(135deg, #4969FF, #7C3AED)" : "transparent",
                       color: (activityRegistered || taskCreated) ? "#fff" : "#6b7280",
                       fontWeight: (activityRegistered || taskCreated) ? 600 : 400,
                     }}

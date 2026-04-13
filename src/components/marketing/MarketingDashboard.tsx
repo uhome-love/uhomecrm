@@ -19,7 +19,7 @@ import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 const CANAL_COLORS: Record<string, string> = {
-  meta_ads: "#3b82f6",
+  meta_ads: "#4969FF",
   tiktok_ads: "#06b6d4",
   portal_zap: "#f59e0b",
   portal_imovelweb: "#ef4444",
@@ -179,7 +179,7 @@ export default function MarketingDashboard() {
             <Button
               variant="outline"
               size="sm"
-              className="border-[#4F46E5] text-[#4F46E5]"
+              className="border-[#4969FF] text-[#4969FF]"
               onClick={async () => { await syncNow(); reload(); }}
               disabled={syncing}
             >
@@ -187,7 +187,7 @@ export default function MarketingDashboard() {
               {syncing ? "Sincronizando..." : "Sincronizar Meta Ads"}
             </Button>
             <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileUpload} />
-            <Button size="sm" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white" onClick={() => fileRef.current?.click()} disabled={importing}>
+            <Button size="sm" className="bg-[#4969FF] hover:bg-[#3350E6] text-white" onClick={() => fileRef.current?.click()} disabled={importing}>
               {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
               {importing ? "Importando..." : "Importar Relatório"}
             </Button>

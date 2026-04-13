@@ -304,7 +304,7 @@ function buildReportHTML(
   th { background: #f5f5f5; padding: 6px 4px; text-align: center; font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 2px solid #ddd; }
   td { padding: 5px 4px; text-align: center; border-bottom: 1px solid #eee; }
   tr:hover { background: #fafafa; }
-  .total-row td { font-weight: 700; background: #f0f4ff; border-top: 2px solid #3b82f6; }
+  .total-row td { font-weight: 700; background: #f0f4ff; border-top: 2px solid #4969FF; }
   .group-header { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px; }
   .blue { color: #2563eb; }
   .green { color: #16a34a; }

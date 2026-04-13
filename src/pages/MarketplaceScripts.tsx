@@ -153,9 +153,9 @@ function SubmitDialog({ onSubmit, submitting }: { onSubmit: (data: any) => void;
       <DialogTrigger asChild>
         <Button
           className="gap-1.5 font-semibold"
-          style={{ background: "#2563EB", color: "#fff" }}
+          style={{ background: "#3350E6", color: "#fff" }}
           onMouseEnter={e => { e.currentTarget.style.background = "#1D4ED8"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "#2563EB"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "#3350E6"; }}
         >
           <Plus className="h-4 w-4" /> Publicar Material
         </Button>
@@ -236,14 +236,14 @@ function EmptyExploreState({ hasFilter, search, onClearFilters, onOpenPublish }:
         onClick={onOpenPublish}
         className="inline-flex items-center gap-2 font-semibold text-white"
         style={{
-          background: "#2563EB",
+          background: "#3350E6",
           borderRadius: 10,
           padding: "10px 24px",
           fontSize: 15,
           transition: "background 0.2s",
         }}
         onMouseEnter={e => { e.currentTarget.style.background = "#1D4ED8"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "#2563EB"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "#3350E6"; }}
       >
         <Plus className="h-5 w-5" /> Publicar meu primeiro script
       </button>
@@ -303,7 +303,7 @@ export default function MarketplacePage() {
         </div>
         <div className="flex-1">
           <h1 className="font-black" style={{ fontSize: 28 }}>
-            Marketplace <span style={{ background: "linear-gradient(135deg, #2563EB, #3B82F6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>de Scripts</span>
+            Marketplace <span style={{ background: "linear-gradient(135deg, #3350E6, #4969FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>de Scripts</span>
           </h1>
           <p className="text-gray-400" style={{ fontSize: 14 }}>Base de conhecimento coletiva — os melhores scripts e argumentos do time</p>
         </div>

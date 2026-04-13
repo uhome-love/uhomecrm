@@ -4,7 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 type Modulo = "pipeline" | "agenda" | "negocios" | "pos_vendas";
 
 const STEPS: { key: Modulo; label: string; color: string }[] = [
-  { key: "pipeline", label: "Pipeline", color: "#3B82F6" },
+  { key: "pipeline", label: "Pipeline", color: "#4969FF" },
   { key: "agenda", label: "Agenda", color: "#F59E0B" },
   { key: "negocios", label: "Negócio", color: "#22C55E" },
   { key: "pos_vendas", label: "Pós-venda", color: "#8B5CF6" },

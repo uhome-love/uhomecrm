@@ -170,7 +170,7 @@ export function GreetingBar({
   return (
     <div
       className={cn(
-        "relative flex items-center gap-4 rounded-[14px] bg-[#4F46E5] px-6 py-[18px] overflow-hidden",
+        "relative flex items-center gap-4 rounded-[14px] bg-[#4969FF] px-6 py-[18px] overflow-hidden",
         className
       )}
     >
@@ -242,7 +242,7 @@ export function GreetingBar({
                 className={cn(
                   "flex w-full items-center gap-2 rounded-[7px] px-[10px] py-2",
                   "text-[13px] font-medium text-[#3f3f46] transition-colors hover:bg-[#f4f4f8]",
-                  filter === key && "bg-[#f0f0ff] font-semibold text-[#4F46E5]"
+                  filter === key && "bg-[#f0f0ff] font-semibold text-[#4969FF]"
                 )}
               >
                 {label}
@@ -256,7 +256,7 @@ export function GreetingBar({
               className={cn(
                 "flex w-full items-center gap-2 rounded-[7px] px-[10px] py-2",
                 "text-[13px] font-medium text-[#3f3f46] transition-colors hover:bg-[#f4f4f8]",
-                filter === "personalizado" && "bg-[#f0f0ff] font-semibold text-[#4F46E5]"
+                filter === "personalizado" && "bg-[#f0f0ff] font-semibold text-[#4969FF]"
               )}
             >
               Personalizado
@@ -270,18 +270,18 @@ export function GreetingBar({
                     type="date"
                     value={dateRange.from}
                     onChange={(e) => handleRangeChange("from", e.target.value)}
-                    className="h-[30px] flex-1 rounded-[6px] border border-[#e8e8f0] bg-[#f7f7fb] px-2 text-[11px] text-[#0a0a0f] outline-none focus:border-[#4F46E5] focus:bg-white"
+                    className="h-[30px] flex-1 rounded-[6px] border border-[#e8e8f0] bg-[#f7f7fb] px-2 text-[11px] text-[#0a0a0f] outline-none focus:border-[#4969FF] focus:bg-white"
                   />
                   <span className="text-[11px] text-[#a1a1aa] font-medium">—</span>
                   <input
                     type="date"
                     value={dateRange.to}
                     onChange={(e) => handleRangeChange("to", e.target.value)}
-                    className="h-[30px] flex-1 rounded-[6px] border border-[#e8e8f0] bg-[#f7f7fb] px-2 text-[11px] text-[#0a0a0f] outline-none focus:border-[#4F46E5] focus:bg-white"
+                    className="h-[30px] flex-1 rounded-[6px] border border-[#e8e8f0] bg-[#f7f7fb] px-2 text-[11px] text-[#0a0a0f] outline-none focus:border-[#4969FF] focus:bg-white"
                   />
                   <button
                     onClick={handleRangeApply}
-                    className="h-[30px] rounded-[6px] bg-[#4F46E5] px-2.5 text-[11px] font-semibold text-white hover:bg-[#4338CA] transition-colors whitespace-nowrap"
+                    className="h-[30px] rounded-[6px] bg-[#4969FF] px-2.5 text-[11px] font-semibold text-white hover:bg-[#3350E6] transition-colors whitespace-nowrap"
                   >
                     OK
                   </button>

@@ -14,7 +14,7 @@ export default function CampaignHeader({ vitrine, corretor, badgeText = "Sele√ß√
     <header className="relative overflow-hidden">
       {/* Navy gradient background */}
       <div className="absolute inset-0" style={{
-        background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #1e40af 70%, #3b82f6 100%)",
+        background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #1e40af 70%, #4969FF 100%)",
       }} />
       <div className="absolute inset-0" style={{
         background: "radial-gradient(ellipse at 30% 20%, rgba(251,191,36,0.15) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(59,130,246,0.2) 0%, transparent 50%)",

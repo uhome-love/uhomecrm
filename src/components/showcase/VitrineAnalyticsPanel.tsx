@@ -19,7 +19,7 @@ interface Interacao {
 }
 
 const EVENT_LABELS: Record<string, { label: string; icon: any; color: string }> = {
-  vitrine_opened: { label: "Abriu vitrine", icon: Eye, color: "#3b82f6" },
+  vitrine_opened: { label: "Abriu vitrine", icon: Eye, color: "#4969FF" },
   card_click: { label: "Clicou no card", icon: MousePointerClick, color: "#6366f1" },
   detail_click: { label: "Viu detalhes", icon: Eye, color: "#8b5cf6" },
   favorite: { label: "Favoritou", icon: Heart, color: "#ef4444" },
@@ -121,7 +121,7 @@ export default function VitrineAnalyticsPanel({ vitrineId, imovelNames = {} }: P
               const barWidth = maxTotal > 0 ? (item.total / maxTotal) * 100 : 0;
               return (
                 <div key={item.id} className="px-4 py-3 flex items-center gap-3 relative overflow-hidden">
-                  <div className="absolute inset-y-0 left-0 opacity-[0.06]" style={{ width: `${barWidth}%`, background: "#3b82f6" }} />
+                  <div className="absolute inset-y-0 left-0 opacity-[0.06]" style={{ width: `${barWidth}%`, background: "#4969FF" }} />
                   <span className="text-lg w-8 text-center relative z-10">{medals[idx] || `${idx + 1}º`}</span>
                   <div className="flex-1 relative z-10">
                     <p className="text-sm font-bold text-slate-800">{name}</p>

@@ -414,7 +414,7 @@ export default function VendasRealizadas() {
                     className={cn(
                       "text-xs py-2 px-1 rounded-lg font-medium transition-all",
                       selectedMonth === i
-                        ? "bg-[#4F46E5] text-white"
+                        ? "bg-[#4969FF] text-white"
                         : "hover:bg-[#f5f5f5] dark:hover:bg-white/[0.06] text-[#0a0a0a] dark:text-[#fafafa]",
                       i > new Date().getMonth() && selectedYear >= new Date().getFullYear()
                         ? "opacity-40 pointer-events-none"

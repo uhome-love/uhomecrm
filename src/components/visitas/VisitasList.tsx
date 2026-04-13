@@ -107,7 +107,7 @@ function DateGroupCard({
   return (
     <div className={cn(
       "rounded-[12px] border overflow-hidden bg-white dark:bg-[#141e30]",
-      g.isToday ? "border-[#4F46E5]/30" : "border-[#e8e8f0] dark:border-white/10"
+      g.isToday ? "border-[#4969FF]/30" : "border-[#e8e8f0] dark:border-white/10"
     )}>
       {/* Day header */}
       <button
@@ -115,7 +115,7 @@ function DateGroupCard({
         className={cn(
           "w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-colors",
           g.isToday
-            ? "bg-[#4F46E5]/5 hover:bg-[#4F46E5]/8"
+            ? "bg-[#4969FF]/5 hover:bg-[#4969FF]/8"
             : g.isPast
               ? "bg-[#f7f7fb] dark:bg-white/3 hover:bg-[#f0f0f5]"
               : "hover:bg-[#f7f7fb] dark:hover:bg-white/3"
@@ -135,7 +135,7 @@ function DateGroupCard({
           </span>
           <span className="text-[12px] text-[#a1a1aa]">· {g.label}</span>
           {g.isToday && (
-            <span className="text-[10px] font-bold bg-[#4F46E5] text-white px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold bg-[#4969FF] text-white px-2 py-0.5 rounded-full">
               HOJE
             </span>
           )}

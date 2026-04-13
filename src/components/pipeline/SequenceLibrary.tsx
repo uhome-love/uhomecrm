@@ -134,7 +134,7 @@ const STAGE_LABELS: Record<string, string> = {
 const CANAL_ICONS: Record<string, { icon: typeof MessageSquare; label: string; color: string }> = {
   whatsapp: { icon: MessageSquare, label: "WhatsApp", color: "#22C55E" },
   ligacao: { icon: Phone, label: "Ligação", color: "#F59E0B" },
-  email: { icon: MessageSquare, label: "E-mail", color: "#3B82F6" },
+  email: { icon: MessageSquare, label: "E-mail", color: "#4969FF" },
 };
 
 const TIPO_ICONS: Record<string, any> = {

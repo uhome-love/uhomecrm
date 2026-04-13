@@ -124,7 +124,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     setSegmentos((data || []).map(s => ({
       id: s.id,
       nome: s.nome,
-      cor: s.cor || "#3b82f6",
+      cor: s.cor || "#4969FF",
       ordem: s.ordem,
     })));
   }, []);

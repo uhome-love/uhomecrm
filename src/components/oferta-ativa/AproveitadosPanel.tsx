@@ -239,7 +239,7 @@ export default function AproveitadosPanel() {
                 <button
                   className="h-8 text-xs gap-1.5 px-4 rounded-lg font-semibold flex items-center transition-shadow disabled:opacity-50"
                   style={{
-                    background: "linear-gradient(135deg, #3B82F6, #6366F1)",
+                    background: "linear-gradient(135deg, #4969FF, #6366F1)",
                     color: "#fff",
                     borderRadius: 8,
                     border: "none",

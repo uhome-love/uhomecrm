@@ -34,7 +34,7 @@ export interface CorretorInfo {
 
 export const NEGOCIOS_FASES = [
   { key: "novo_negocio", label: "Novo Negócio", cor: "#0EA5E9", icon: "" },
-  { key: "proposta", label: "Proposta", cor: "#3B82F6", icon: "" },
+  { key: "proposta", label: "Proposta", cor: "#4969FF", icon: "" },
   { key: "negociacao", label: "Negociação", cor: "#F59E0B", icon: "" },
   { key: "documentacao", label: "Contrato Gerado", cor: "#8B5CF6", icon: "" },
   { key: "assinado", label: "Assinado", cor: "#22C55E", icon: "" },

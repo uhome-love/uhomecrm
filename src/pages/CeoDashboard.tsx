@@ -38,25 +38,25 @@ const FRASES = [
 ];
 
 const ORIGIN_COLORS: Record<string, string> = {
-  meta_ads: "#3b82f6", "Meta Ads": "#3b82f6",
+  meta_ads: "#4969FF", "Meta Ads": "#4969FF",
   "TikTok Ads": "#ec4899",
   "Landing Page": "#10b981",
   imovelweb: "#f97316", ImovelWeb: "#f97316",
   site_uhome: "#06b6d4", "Site - uhome.com.br": "#06b6d4",
   jetimob: "#6366f1", indicacao: "#8b5cf6",
   whatsapp: "#22c55e", rd_station: "#f59e0b",
-  "Oferta Ativa": "#4F46E5",
+  "Oferta Ativa": "#4969FF",
 };
-const FALLBACK_COLORS = ["#3b82f6","#ec4899","#10b981","#f97316","#06b6d4","#6366f1","#8b5cf6","#f59e0b","#ef4444","#14b8a6"];
+const FALLBACK_COLORS = ["#4969FF","#ec4899","#10b981","#f97316","#06b6d4","#6366f1","#8b5cf6","#f59e0b","#ef4444","#14b8a6"];
 
 // ─── Section Label ───
 function SectionLabel({ children, icon: Icon }: { children: string; icon: any }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <div className="h-7 w-7 rounded-lg bg-[#4F46E5]/10 flex items-center justify-center">
-        <Icon className="h-3.5 w-3.5 text-[#4F46E5]" />
+      <div className="h-7 w-7 rounded-lg bg-[#4969FF]/10 flex items-center justify-center">
+        <Icon className="h-3.5 w-3.5 text-[#4969FF]" />
       </div>
-      <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#4F46E5]">{children}</span>
+      <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#4969FF]">{children}</span>
     </div>
   );
 }
@@ -69,7 +69,7 @@ const MiniKpi = forwardRef<HTMLDivElement, {
 }>(({ label, value, sub, variant = "default", onClick }, ref) => {
   const colors = {
     default: "text-foreground",
-    highlight: "text-[#4F46E5]",
+    highlight: "text-[#4969FF]",
     success: "text-[#10b981]",
     warning: "text-[#f59e0b]",
   };
@@ -77,7 +77,7 @@ const MiniKpi = forwardRef<HTMLDivElement, {
     <div
       ref={ref}
       onClick={onClick}
-      className={`bg-[#f7f7fb] dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/[0.07] rounded-xl p-3.5 border-l-[3px] border-l-[#4F46E5] ${onClick ? "cursor-pointer hover:border-[#d0d0d8] dark:hover:border-white/[0.12] transition-colors" : ""}`}
+      className={`bg-[#f7f7fb] dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/[0.07] rounded-xl p-3.5 border-l-[3px] border-l-[#4969FF] ${onClick ? "cursor-pointer hover:border-[#d0d0d8] dark:hover:border-white/[0.12] transition-colors" : ""}`}
     >
       <p className="text-[10px] font-medium text-[#a1a1aa] dark:text-[#52525b] tracking-wide mb-1 truncate">{label}</p>
       <p className={`text-xl font-[800] leading-none tracking-tight ${colors[variant]}`}>{value}</p>
@@ -291,7 +291,7 @@ export default function CeoDashboard() {
 
   // Pipeline funnel totals
   const funnelTotal = pipelineStages.reduce((a, s) => a + s.count, 0) || 1;
-  const funnelColors = ["#4F46E5","#6366f1","#818cf8","#a5b4fc","#c7d2fe","#22c55e","#ef4444","#10b981","#f59e0b"];
+  const funnelColors = ["#4969FF","#6366f1","#6B84FF","#a5b4fc","#c7d2fe","#22c55e","#ef4444","#10b981","#f59e0b"];
 
   // Negocio funnel order
   const negFunnelOrder = ["novo_negocio","proposta","negociacao","documentacao","assinado","vendido","distrato"];
@@ -301,7 +301,7 @@ export default function CeoDashboard() {
     vendido:"Vendido", distrato:"Caiu"
   };
   const negFunnelColors: Record<string,string> = {
-    novo_negocio:"#0EA5E9", proposta:"#3B82F6", negociacao:"#F59E0B",
+    novo_negocio:"#0EA5E9", proposta:"#4969FF", negociacao:"#F59E0B",
     documentacao:"#8B5CF6", assinado:"#22C55E",
     vendido:"#16A34A", distrato:"#EF4444"
   };
@@ -333,17 +333,17 @@ export default function CeoDashboard() {
             size="sm"
             variant="outline"
             onClick={() => navigate("/pipeline-leads")}
-            className="gap-1.5 text-xs border-[#4F46E5]/30 text-[#4F46E5] hover:bg-[#4F46E5]/5"
+            className="gap-1.5 text-xs border-[#4969FF]/30 text-[#4969FF] hover:bg-[#4969FF]/5"
           >
             <Inbox className="h-3.5 w-3.5" />
             Fila CEO
-            {filaCeoCount > 0 && <Badge className="bg-[#4F46E5] text-white text-[10px] px-1.5 py-0 ml-1">{filaCeoCount}</Badge>}
+            {filaCeoCount > 0 && <Badge className="bg-[#4969FF] text-white text-[10px] px-1.5 py-0 ml-1">{filaCeoCount}</Badge>}
           </Button>
           <Button
             size="sm"
             onClick={() => setDispatchOpen(true)}
             disabled={filaCeoCount === 0}
-            className="gap-1.5 text-xs bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+            className="gap-1.5 text-xs bg-[#4969FF] hover:bg-[#3350E6] text-white"
           >
             <Rocket className="h-3.5 w-3.5" />
             Disparar Roleta
@@ -366,12 +366,12 @@ export default function CeoDashboard() {
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
       {localPendentes.length > 0 && (
-        <Card className="border-[#4F46E5]/40 bg-[#f7f7fb] dark:bg-[#141e30]">
+        <Card className="border-[#4969FF]/40 bg-[#f7f7fb] dark:bg-[#141e30]">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2">
                 Aprovações Pendentes
-                <Badge className="bg-[#4F46E5] text-white text-[10px]">{localPendentes.length}</Badge>
+                <Badge className="bg-[#4969FF] text-white text-[10px]">{localPendentes.length}</Badge>
               </CardTitle>
               {localPendentes.length > 1 && (
                 <Button size="sm" onClick={aprovarTodos} className="bg-[#10b981] hover:bg-[#059669] text-white text-xs">
@@ -387,7 +387,7 @@ export default function CeoDashboard() {
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
                       {c.avatar && <AvatarImage src={c.avatar} />}
-                      <AvatarFallback className="text-xs bg-[#4F46E5]/10 text-[#4F46E5]">
+                      <AvatarFallback className="text-xs bg-[#4969FF]/10 text-[#4969FF]">
                         {(c.corretor_nome || "C").substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -395,7 +395,7 @@ export default function CeoDashboard() {
                       <p className="font-medium text-sm">{c.corretor_nome}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <Badge variant="outline" className="text-[10px]">{c.janela}</Badge>
-                        <Badge className="text-[10px] bg-[#4F46E5]/10 text-[#4F46E5] border-0">{c.seg1_nome}</Badge>
+                        <Badge className="text-[10px] bg-[#4969FF]/10 text-[#4969FF] border-0">{c.seg1_nome}</Badge>
                         {c.seg2_nome && <Badge className="text-[10px] bg-muted text-muted-foreground border-0">{c.seg2_nome}</Badge>}
                       </div>
                     </div>
@@ -439,7 +439,7 @@ export default function CeoDashboard() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                  <Building2 className="h-3.5 w-3.5 text-[#4F46E5]" /> Leads por Empreendimento
+                  <Building2 className="h-3.5 w-3.5 text-[#4969FF]" /> Leads por Empreendimento
                 </CardTitle>
                 {campanhas.some(c => c.empreendimento === "Sem empreendimento") && (
                   <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1" onClick={() => setBulkEmpOpen(true)}>Corrigir</Button>
@@ -462,7 +462,7 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <Megaphone className="h-3.5 w-3.5 text-[#4F46E5]" /> Leads por Origem
+                <Megaphone className="h-3.5 w-3.5 text-[#4969FF]" /> Leads por Origem
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -481,7 +481,7 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <Users className="h-3.5 w-3.5 text-[#4F46E5]" /> Leads por Corretor
+                <Users className="h-3.5 w-3.5 text-[#4969FF]" /> Leads por Corretor
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -494,7 +494,7 @@ export default function CeoDashboard() {
                 {leadsPorCorretor.length === 0 && <p className="text-xs text-[#a1a1aa] text-center py-4">Sem dados</p>}
               </div>
               {leadsPorCorretor.length > 6 && (
-                <Button variant="ghost" size="sm" className="w-full mt-2 text-[10px] text-[#4F46E5] hover:text-[#4F46E5]/80" onClick={() => setShowAllCorretorLeads(!showAllCorretorLeads)}>
+                <Button variant="ghost" size="sm" className="w-full mt-2 text-[10px] text-[#4969FF] hover:text-[#4969FF]/80" onClick={() => setShowAllCorretorLeads(!showAllCorretorLeads)}>
                   {showAllCorretorLeads ? "Ver menos" : `Ver mais (${leadsPorCorretor.length})`}
                 </Button>
               )}
@@ -552,13 +552,13 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <CalendarCheck className="h-3.5 w-3.5 text-[#4F46E5]" /> Agenda de Visitas
+                <CalendarCheck className="h-3.5 w-3.5 text-[#4969FF]" /> Agenda de Visitas
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-[#4F46E5]">{totalVisitasCriadas}</p>
+                  <p className="text-2xl font-[800] text-[#4969FF]">{totalVisitasCriadas}</p>
                   <p className="text-[10px] text-[#a1a1aa] mt-0.5">Total Visitas (Novas)</p>
                 </div>
                 <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
@@ -692,7 +692,7 @@ export default function CeoDashboard() {
                   {teams.sort((a, b) => b.ligacoes - a.ligacoes).map(t => (
                     <tr key={t.gerente_id} className="border-b border-[#e8e8f0]/50 dark:border-white/[0.04] hover:bg-white/50 dark:hover:bg-white/[0.02] transition-colors">
                       <td className="py-2 font-medium text-foreground">{t.gerente_nome}</td>
-                      <td className="py-2 text-right font-semibold text-[#4F46E5]">{t.ligacoes}</td>
+                      <td className="py-2 text-right font-semibold text-[#4969FF]">{t.ligacoes}</td>
                       <td className="py-2 text-right text-[#10b981] font-semibold">{t.aproveitados}</td>
                       <td className="py-2 text-right">{t.taxa}%</td>
                       <td className="py-2 text-right">{t.visitasMarcadas}</td>
@@ -702,9 +702,9 @@ export default function CeoDashboard() {
                     </tr>
                   ))}
                   {teams.length > 0 && (
-                    <tr className="bg-[#4F46E5]/5 font-semibold">
-                      <td className="py-2 text-[#4F46E5]">Total</td>
-                      <td className="py-2 text-right text-[#4F46E5]">{totalTeam.ligacoes}</td>
+                    <tr className="bg-[#4969FF]/5 font-semibold">
+                      <td className="py-2 text-[#4969FF]">Total</td>
+                      <td className="py-2 text-right text-[#4969FF]">{totalTeam.ligacoes}</td>
                       <td className="py-2 text-right text-[#10b981]">{totalTeam.aproveitados}</td>
                       <td className="py-2 text-right">{totalTeam.ligacoes > 0 ? Math.round((totalTeam.aproveitados / totalTeam.ligacoes) * 100) : 0}%</td>
                       <td className="py-2 text-right">{totalTeam.visitasMarcadas}</td>
@@ -744,7 +744,7 @@ export default function CeoDashboard() {
                         <td className="py-1.5 font-bold text-[#a1a1aa]">{i + 1}</td>
                         <td className="py-1.5 font-medium text-foreground">{c.nome}</td>
                         <td className="py-1.5 text-[#a1a1aa]">{c.gerente_nome}</td>
-                        <td className="py-1.5 text-right font-semibold text-[#4F46E5]">{c.ligacoes}</td>
+                        <td className="py-1.5 text-right font-semibold text-[#4969FF]">{c.ligacoes}</td>
                         <td className="py-1.5 text-right text-[#10b981] font-semibold">{c.aproveitados}</td>
                         <td className="py-1.5 text-right">{c.taxa}%</td>
                       </tr>
@@ -767,13 +767,13 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <Megaphone className="h-3.5 w-3.5 text-[#4F46E5]" /> Marketing
+                <Megaphone className="h-3.5 w-3.5 text-[#4969FF]" /> Marketing
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
                 <span className="text-[11px] text-[#71717a]">Total Leads Gerados</span>
-                <span className="text-sm font-bold text-[#4F46E5]">{totalLeadsPeriodo}</span>
+                <span className="text-sm font-bold text-[#4969FF]">{totalLeadsPeriodo}</span>
               </div>
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
                 <span className="text-[11px] text-[#71717a]">Origens Ativas</span>
@@ -783,7 +783,7 @@ export default function CeoDashboard() {
                 <span className="text-[11px] text-[#71717a]">Top Origem</span>
                 <span className="text-sm font-bold">{origens[0]?.origem || "—"}</span>
               </div>
-              <Button variant="outline" size="sm" className="w-full text-xs text-[#4F46E5] border-[#4F46E5]/20" onClick={() => navigate("/marketing")}>
+              <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/marketing")}>
                 Ver Marketing
               </Button>
             </CardContent>
@@ -793,7 +793,7 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <UserCheck className="h-3.5 w-3.5 text-[#4F46E5]" /> RH & Equipe
+                <UserCheck className="h-3.5 w-3.5 text-[#4969FF]" /> RH & Equipe
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -809,7 +809,7 @@ export default function CeoDashboard() {
                 <span className="text-[11px] text-[#71717a]">Total Corretores</span>
                 <span className="text-sm font-bold">{corretoresRank.length}</span>
               </div>
-              <Button variant="outline" size="sm" className="w-full text-xs text-[#4F46E5] border-[#4F46E5]/20" onClick={() => navigate("/rh")}>
+              <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/rh")}>
                 Ver RH
               </Button>
             </CardContent>
@@ -819,7 +819,7 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <Eye className="h-3.5 w-3.5 text-[#4F46E5]" /> Alertas & Atenção
+                <Eye className="h-3.5 w-3.5 text-[#4969FF]" /> Alertas & Atenção
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -845,7 +845,7 @@ export default function CeoDashboard() {
                   <span>VGV em risco (parados &gt;15d): {formatBRLCompact(vgvEmRisco)}</span>
                 </div>
               )}
-              <Button variant="outline" size="sm" className="w-full text-xs text-[#4F46E5] border-[#4F46E5]/20 mt-2" onClick={() => navigate("/relatorio-semanal")}>
+              <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20 mt-2" onClick={() => navigate("/relatorio-semanal")}>
                 Ver Relatório Geral
               </Button>
             </CardContent>
