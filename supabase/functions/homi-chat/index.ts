@@ -73,6 +73,12 @@ serve(async (req) => {
     const knowledge = await loadEnterpriseKnowledge(supabase);
     const allEmpreendimentos = formatForList(knowledge);
 
+    // Build detailed knowledge for each empreendimento
+    const detailedKnowledge = knowledge
+      .filter(r => r.nome || r.codigo)
+      .map(r => formatForAssistant(knowledge, r.nome || r.codigo))
+      .join("\n\n---\n\n");
+
     // ── RAG: search knowledge base ──
     let ragContext = "";
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
