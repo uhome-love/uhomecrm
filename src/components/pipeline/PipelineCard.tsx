@@ -1,7 +1,6 @@
 import { memo, useState, useMemo, useEffect } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
-import { Phone, MessageCircle, Handshake, ArrowRightLeft, FileText, Flame, Snowflake, ThermometerSun, Undo2, ChevronDown } from "lucide-react";
-import { getScoreTooltip } from "@/lib/scoreTemperatureLabels";
+import { Phone, MessageCircle, Handshake, ArrowRightLeft, FileText, Undo2, ChevronDown } from "lucide-react";
 import { calculateLeadScore } from "@/lib/leadScoring";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
@@ -110,13 +109,6 @@ const PipelineCard = memo(function PipelineCard({
     stage_changed_at: lead.stage_changed_at,
   }), [lead.telefone, lead.email, lead.empreendimento, lead.valor_estimado, lead.origem, lead.temperatura, lead.created_at, lead.stage_changed_at]);
 
-  const tempConfig = useMemo(() => {
-    const t = lead.temperatura;
-    if (t === "quente") return { icon: Flame, cls: "text-orange-500", bg: "bg-orange-500/10", label: "Quente" };
-    if (t === "morno") return { icon: ThermometerSun, cls: "text-amber-500", bg: "bg-amber-500/10", label: "Morno" };
-    if (t === "frio") return { icon: Snowflake, cls: "text-blue-400", bg: "bg-blue-400/10", label: "Frio" };
-    return null;
-  }, [lead.temperatura]);
 
   // Determine stripe color based on status
   const stripeGradient = useMemo(() => {
@@ -322,28 +314,17 @@ const PipelineCard = memo(function PipelineCard({
                   </span>
                 ));
               }
-              // Fallback: show origin tag
-              if (originTag) {
-                return (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em",
-                    padding: "2px 6px", borderRadius: 4,
-                    background: originTag.label === "NOVO" ? "hsl(var(--primary-50))" : originTag.bg,
-                    color: originTag.label === "NOVO" ? "#4F46E5" : originTag.color,
-                  }}>
-                    {originTag.label}
-                  </span>
-                );
-              }
-              return null;
+              // Fallback: show "Preencher" alert
+              return (
+                <span style={{
+                  fontSize: 10, fontWeight: 700,
+                  padding: "2px 6px", borderRadius: 4,
+                  background: "rgba(234,179,8,0.15)", color: "#A16207",
+                }}>
+                  ⚠️ Preencher
+                </span>
+              );
             })()}
-            {tempConfig && (
-              <span className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold ${tempConfig.bg} ${tempConfig.cls}`}
-                title={lead.oportunidade_score != null ? getScoreTooltip(lead.oportunidade_score) : tempConfig.label}
-              >
-                <tempConfig.icon className="h-2.5 w-2.5" />
-              </span>
-            )}
             {semContatoAlert && (
               <span style={{
                 fontSize: 9, fontWeight: 700,
