@@ -184,12 +184,6 @@ export default function CorretorDashboard() {
         </div>
       </motion.div>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 6. OPORTUNIDADES DO DIA                                           */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}>
-        <OportunidadesLista />
-      </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 5. META DO DIA + TAREFAS (lado a lado)                             */}
