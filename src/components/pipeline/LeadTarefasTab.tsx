@@ -73,9 +73,8 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   const [editHora, setEditHora] = useState("");
   const [editObs, setEditObs] = useState("");
 
-  // Completion prompt
-  const [completingId, setCompletingId] = useState<string | null>(null);
-  const [completionNote, setCompletionNote] = useState("");
+  // Completion prompt — now uses TaskCompletionDialog
+  const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
 
   const today = startOfDay(new Date());
   const pendentes = tarefas.filter(t => t.status === "pendente");
@@ -126,13 +125,12 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   };
 
   const handleConcluir = async (tarefa: PipelineTarefa) => {
-    setCompletingId(tarefa.id);
-    setCompletionNote("");
+    setCompletingTarefa(tarefa);
   };
 
-  const confirmConcluir = async () => {
-    if (!completingId) return;
-    await onToggleTarefa(completingId, "pendente");
+  const handleCompletionConfirm = async (obs: string, novaTarefa?: { tipo: string; vence_em: string; hora_vencimento: string; obs: string }) => {
+    if (!completingTarefa) return;
+    await onToggleTarefa(completingTarefa.id, "pendente");
 
     // Update lead
     await supabase.from("pipeline_leads").update({
@@ -141,11 +139,11 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     } as any).eq("id", leadId);
 
     // Register in history if note provided
-    if (completionNote.trim()) {
+    if (obs.trim()) {
       await supabase.from("pipeline_atividades").insert({
         pipeline_lead_id: leadId,
         tipo: "followup",
-        titulo: completionNote.trim(),
+        titulo: obs.trim(),
         descricao: null,
         data: todayBRT(),
         hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
@@ -155,13 +153,25 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
       } as any);
     }
 
-    toast.success("Tarefa concluída ✅");
-    setCompletingId(null);
-    setCompletionNote("");
+    // Create new task if requested
+    if (novaTarefa) {
+      const titulo = `${TIPO_LABELS[novaTarefa.tipo] || novaTarefa.tipo}: ${leadNome}`;
+      await onAddTarefa({
+        tipo: novaTarefa.tipo,
+        titulo,
+        descricao: novaTarefa.obs || null,
+        vence_em: novaTarefa.vence_em,
+        hora_vencimento: novaTarefa.hora_vencimento || null,
+      } as any);
+    }
+
+    toast.success(novaTarefa ? "Tarefa concluída e nova criada ✅" : "Tarefa concluída ✅");
+    setCompletingTarefa(null);
     onReload();
+
     // Only prompt next action if no more pending tasks remain after this one
-    const remainingPending = pendentes.filter(t => t.id !== completingId);
-    if (remainingPending.length === 0) {
+    const remainingPending = pendentes.filter(t => t.id !== completingTarefa.id);
+    if (remainingPending.length === 0 && !novaTarefa) {
       onNextAction?.();
     }
   };
