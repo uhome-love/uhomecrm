@@ -4400,6 +4400,45 @@ export type Database = {
         }
         Relationships: []
       }
+      nurturing_cadencias: {
+        Row: {
+          canal: string
+          created_at: string
+          delay_dias: number
+          descricao: string | null
+          id: string
+          is_active: boolean
+          stage_tipo: string
+          step_number: number
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          canal: string
+          created_at?: string
+          delay_dias?: number
+          descricao?: string | null
+          id?: string
+          is_active?: boolean
+          stage_tipo: string
+          step_number: number
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          canal?: string
+          created_at?: string
+          delay_dias?: number
+          descricao?: string | null
+          id?: string
+          is_active?: boolean
+          stage_tipo?: string
+          step_number?: number
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       oa_events: {
         Row: {
           attempt_id: string | null
