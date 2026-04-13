@@ -196,6 +196,10 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
     setObs("");
     setTaskType("whatsapp");
     setTaskTime("10:00");
+    setShowFreeText(false);
+    setFreeText("");
+    setEditingIdx(null);
+    setEditedBody("");
     const d = new Date();
     d.setDate(d.getDate() + 1);
     setTaskDate(d.toISOString().split("T")[0]);
