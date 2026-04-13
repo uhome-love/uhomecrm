@@ -63,8 +63,8 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
   }
 
   if (stageTipo === "contato_inicial") {
-    return (
-      <div className="flex items-center gap-4 px-5 py-2 border-b border-border/30 bg-muted/20 flex-wrap">
+    return wrapper(
+      <>
         <div className="flex items-center gap-2">
           <Label className="text-xs text-muted-foreground">Impressão:</Label>
           <Select value={flags.impressao || ""} onValueChange={(v) => setFlag("impressao", v)}>
@@ -85,13 +85,13 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </>
     );
   }
 
   if (stageTipo === "busca") {
-    return (
-      <div className="flex items-center gap-3 px-5 py-2 border-b border-border/30 bg-muted/20">
+    return wrapper(
+      <>
         <Label className="text-xs text-muted-foreground">Status:</Label>
         <Select value={flags.status_busca || ""} onValueChange={(v) => setFlag("status_busca", v)}>
           <SelectTrigger className="h-7 w-36 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
@@ -100,13 +100,13 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
             <SelectItem value="imoveis_enviados" className="text-xs">📨 Imóveis enviados</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </>
     );
   }
 
   if (stageTipo === "aquecimento") {
-    return (
-      <div className="flex items-center gap-3 px-5 py-2 border-b border-border/30 bg-muted/20">
+    return wrapper(
+      <>
         <Label className="text-xs text-muted-foreground">Prazo recontato:</Label>
         <Select value={flags.prazo || ""} onValueChange={(v) => setFlag("prazo", v)}>
           <SelectTrigger className="h-7 w-24 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
@@ -116,13 +116,13 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
             <SelectItem value="90" className="text-xs">90 dias</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </>
     );
   }
 
   if (stageTipo === "visita") {
-    return (
-      <div className="flex items-center gap-3 px-5 py-2 border-b border-border/30 bg-muted/20">
+    return wrapper(
+      <>
         <Label className="text-xs text-muted-foreground">Status visita:</Label>
         <Select value={flags.status_visita || ""} onValueChange={(v) => setFlag("status_visita", v)}>
           <SelectTrigger className="h-7 w-32 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
@@ -133,13 +133,13 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
             <SelectItem value="reagendada" className="text-xs">🔁 Reagendada</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </>
     );
   }
 
   if (stageTipo === "pos_visita") {
-    return (
-      <div className="flex items-center gap-4 px-5 py-2 border-b border-border/30 bg-muted/20 flex-wrap">
+    return wrapper(
+      <>
         <div className="flex items-center gap-1.5">
           <Checkbox checked={flags.feedback_coletado === "sim"} onCheckedChange={() => toggleFlag("feedback_coletado")} className="h-3.5 w-3.5" />
           <Label className="text-[10px] text-muted-foreground cursor-pointer">Feedback</Label>
@@ -160,7 +160,7 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
             <SelectItem value="baixo" className="text-xs">❄️ Baixo</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </>
     );
   }
 
