@@ -47,7 +47,7 @@ function getCalcTemp(lead: PipelineLead): CalcTemp {
     return { emoji: "🟡", label: "Morno", bg: "bg-[#F59E0B]/15", border: "border-[#F59E0B]/30", text: "text-[#F59E0B]" };
   }
   if (hours < 72) {
-    return { emoji: "🔵", label: "Frio", bg: "bg-[#3B82F6]/15", border: "border-[#3B82F6]/30", text: "text-[#3B82F6]" };
+    return { emoji: "🔵", label: "Frio", bg: "bg-[#4969FF]/15", border: "border-[#4969FF]/30", text: "text-[#4969FF]" };
   }
   return { emoji: "❄️", label: "Gelado", bg: "bg-[#6B7280]/15", border: "border-[#6B7280]/30", text: "text-[#6B7280]" };
 }

@@ -124,7 +124,7 @@ function ListaRow({
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${stats?.pct ?? 0}%`,
-              background: "linear-gradient(90deg, #3B82F6, #22C55E)",
+              background: "linear-gradient(90deg, #4969FF, #22C55E)",
             }}
           />
         </div>
@@ -219,7 +219,7 @@ function CampaignRow({
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${pct}%`,
-              background: "linear-gradient(90deg, #3B82F6, #22C55E)",
+              background: "linear-gradient(90deg, #4969FF, #22C55E)",
             }}
           />
         </div>

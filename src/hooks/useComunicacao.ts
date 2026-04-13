@@ -28,7 +28,7 @@ export interface LeadContext {
 }
 
 const TIPO_CONFIG: Record<string, { label: string; color: string; emoji: string }> = {
-  contato_inicial: { label: "Contato Inicial", color: "#3B82F6", emoji: "📞" },
+  contato_inicial: { label: "Contato Inicial", color: "#4969FF", emoji: "📞" },
   follow_up_ligacao: { label: "Follow Up", color: "#F59E0B", emoji: "📲" },
   follow_up_visita: { label: "Follow Up Visita", color: "#F59E0B", emoji: "🏠" },
   proposta: { label: "Proposta", color: "#22C55E", emoji: "📋" },

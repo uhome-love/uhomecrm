@@ -165,7 +165,7 @@ export default function MissionBriefingDrawer({
               <Button
                 className="flex-1 gap-1.5 font-bold"
                 onClick={handleAdvance}
-                style={{ background: theme?.color || "#3B82F6" }}
+                style={{ background: theme?.color || "#4969FF" }}
               >
                 Avançar fase <ArrowRight className="h-4 w-4" />
               </Button>

@@ -53,7 +53,7 @@ const COLUMNS: { key: TarefaStatus; label: string; emoji: string; color: string;
 const PRIORIDADE_CONFIG: Record<TarefaPrioridade, { label: string; color: string; border: string; badge: string }> = {
   urgente: { label: "🔴 Urgente", color: "#EF4444", border: "4px solid #EF4444", badge: "bg-red-100 text-red-700 border-red-200" },
   alta: { label: "🟠 Alta", color: "#F59E0B", border: "4px solid #F59E0B", badge: "bg-amber-100 text-amber-700 border-amber-200" },
-  media: { label: "🔵 Média", color: "#3B82F6", border: "4px solid #3B82F6", badge: "bg-blue-100 text-blue-700 border-blue-200" },
+  media: { label: "🔵 Média", color: "#4969FF", border: "4px solid #4969FF", badge: "bg-blue-100 text-blue-700 border-blue-200" },
   baixa: { label: "⚪ Baixa", color: "#9CA3AF", border: "4px solid #9CA3AF", badge: "bg-gray-100 text-gray-600 border-gray-200" },
 };
 

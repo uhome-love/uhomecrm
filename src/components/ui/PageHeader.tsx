@@ -33,7 +33,7 @@ export function PageHeader({
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           {icon && (
-            <div className="w-9 h-9 rounded-[10px] bg-[#4F46E5]/10 flex items-center justify-center flex-shrink-0 text-[#4F46E5]">
+            <div className="w-9 h-9 rounded-[10px] bg-[#4969FF]/10 flex items-center justify-center flex-shrink-0 text-[#4969FF]">
               {icon}
             </div>
           )}
@@ -68,7 +68,7 @@ export function PageHeader({
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[13px] font-medium transition-all",
                 activeTab === tab.value
-                  ? "bg-[#4F46E5] text-white"
+                  ? "bg-[#4969FF] text-white"
                   : "text-[#71717a] hover:text-[#0a0a0a] hover:bg-[#f5f5f5] dark:hover:text-[#fafafa] dark:hover:bg-white/[0.06]"
               )}
             >

@@ -152,7 +152,7 @@ export default function RankingOfertaAtivaTab({ period, dateRange }: { period: "
                     className="transition-colors"
                     style={{
                       background: isMe ? "#EFF6FF" : "transparent",
-                      borderLeft: isMe ? "3px solid #3B82F6" : "3px solid transparent",
+                      borderLeft: isMe ? "3px solid #4969FF" : "3px solid transparent",
                       borderBottom: "1px solid #F3F4F6",
                     }}
                     onMouseEnter={e => { if (!isMe) e.currentTarget.style.background = "#F9FAFB"; }}
@@ -183,7 +183,7 @@ export default function RankingOfertaAtivaTab({ period, dateRange }: { period: "
                         {isMe && (
                           <span
                             className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0"
-                            style={{ background: "#DBEAFE", color: "#2563EB" }}
+                            style={{ background: "#DBEAFE", color: "#3350E6" }}
                           >
                             ← você
                           </span>

@@ -16,7 +16,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 
 const ETAPAS = [
-  { key: "novo_lead", label: "Novo Lead", color: "#3B82F6" },
+  { key: "novo_lead", label: "Novo Lead", color: "#4969FF" },
   { key: "contato_iniciado", label: "Contato Iniciado", color: "#8B5CF6" },
   { key: "interessado", label: "Interessado", color: "#F59E0B" },
   { key: "entrevista_marcada", label: "Entrevista Marcada", color: "#F97316" },
@@ -90,7 +90,7 @@ export default function RhRecrutamento() {
         subtitle="Pipeline de recrutamento"
         icon={<Users size={18} strokeWidth={1.5} />}
         actions={
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white gap-1">
+          <Button onClick={() => setDialogOpen(true)} size="sm" className="bg-[#4969FF] hover:bg-[#3350E6] text-white gap-1">
             <Plus size={14} /> Novo Candidato
           </Button>
         }

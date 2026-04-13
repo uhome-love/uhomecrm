@@ -91,7 +91,7 @@ export default function CorretorDashboard() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div
           className="rounded-2xl p-5 text-white relative overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED, #2563EB)" }}
+          style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED, #3350E6)" }}
         >
           <div className="flex items-center gap-4">
             {avatarSrc ? (

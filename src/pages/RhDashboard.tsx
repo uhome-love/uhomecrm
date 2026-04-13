@@ -64,9 +64,9 @@ export default function RhDashboard() {
       title: "Recrutamento",
       subtitle: "Kanban de candidatos",
       route: "/rh/recrutamento",
-      borderLeft: "#3B82F6",
-      iconBg: "#3B82F6",
-      linkColor: "#2563EB",
+      borderLeft: "#4969FF",
+      iconBg: "#4969FF",
+      linkColor: "#3350E6",
     },
     {
       icon: MessageSquare,
@@ -123,7 +123,7 @@ export default function RhDashboard() {
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Candidatos", value: stats.candidatos, color: "#3B82F6" },
+          { label: "Candidatos", value: stats.candidatos, color: "#4969FF" },
           { label: "Entrevistas marcadas", value: stats.entrevistas, color: "#F59E0B" },
           { label: "Conversas 1:1", value: stats.conversas, color: "#8B5CF6" },
           { label: "Reservas hoje", value: stats.reservasHoje, color: "#10B981" },

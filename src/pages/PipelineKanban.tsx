@@ -299,7 +299,7 @@ export default function PipelineKanban() {
         <div className="md:hidden">
           {/* Line 1: Title + filters + novo */}
           <div className="flex items-center gap-2 h-[46px] px-3">
-            <div className="h-6 w-6 rounded-md bg-[#4F46E5] flex items-center justify-center shrink-0">
+            <div className="h-6 w-6 rounded-md bg-[#4969FF] flex items-center justify-center shrink-0">
               <LayoutGrid className="h-3 w-3 text-white" />
             </div>
             <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
@@ -355,7 +355,7 @@ export default function PipelineKanban() {
             {canAdd && activeTab === "kanban" && (
               <button
                 onClick={() => setAddOpen(true)}
-                className="bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-[7px] px-2.5 py-[5px] font-bold text-xs border-none cursor-pointer whitespace-nowrap"
+                className="bg-[#4969FF] hover:bg-[#3350E6] text-white rounded-[7px] px-2.5 py-[5px] font-bold text-xs border-none cursor-pointer whitespace-nowrap"
               >
                 + Novo
               </button>
@@ -581,7 +581,7 @@ export default function PipelineKanban() {
           <div className="flex items-center h-12 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
             {/* LEFT: Title */}
             <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-[7px] bg-[#4F46E5] flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center shrink-0">
                 <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
               </div>
               <span className="text-[15px] font-bold text-[#0a0a0a] dark:text-white tracking-tight whitespace-nowrap">
@@ -599,7 +599,7 @@ export default function PipelineKanban() {
                   <SelectTrigger
                     className={`h-[32px] text-[12px] max-w-[170px] min-w-[120px] shrink rounded-lg font-medium truncate ${
                       corretorFilter !== "all"
-                        ? "border-[#4F46E5] bg-[#4F46E5]/5 dark:bg-[#4F46E5]/10 text-[#4F46E5]"
+                        ? "border-[#4969FF] bg-[#4969FF]/5 dark:bg-[#4969FF]/10 text-[#4969FF]"
                         : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
                     }`}
                   >
@@ -620,7 +620,7 @@ export default function PipelineKanban() {
                   <SelectTrigger
                     className={`h-[32px] text-[12px] max-w-[190px] min-w-[130px] shrink rounded-lg font-medium truncate ${
                       campaignTagFilter !== "all"
-                        ? "border-[#4F46E5] bg-[#4F46E5]/5 dark:bg-[#4F46E5]/10 text-[#4F46E5]"
+                        ? "border-[#4969FF] bg-[#4969FF]/5 dark:bg-[#4969FF]/10 text-[#4969FF]"
                         : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
                     }`}
                   >
@@ -655,7 +655,7 @@ export default function PipelineKanban() {
                   placeholder="Buscar..."
                   value={filters.search}
                   onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                  className="w-full outline-none h-8 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-[#4F46E5] dark:focus:border-[#4F46E5]"
+                  className="w-full outline-none h-8 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-[#4969FF] dark:focus:border-[#4969FF]"
                 />
                 {filters.search && (
                   <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -669,7 +669,7 @@ export default function PipelineKanban() {
                 <button
                   onClick={() => setFocusModeOpen(true)}
                   className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3 rounded-lg font-semibold text-xs border-none cursor-pointer text-white"
-                  style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}
+                  style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}
                 >
                   <Zap size={13} strokeWidth={2} /> Modo Foco
                   {focusLeads.length > 0 && (
@@ -684,7 +684,7 @@ export default function PipelineKanban() {
               {canAdd && activeTab === "kanban" && (
                 <button
                   onClick={() => setAddOpen(true)}
-                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-lg font-semibold text-xs border-none cursor-pointer"
+                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3.5 bg-[#4969FF] hover:bg-[#3350E6] text-white rounded-lg font-semibold text-xs border-none cursor-pointer"
                 >
                   <Plus size={13} strokeWidth={2} /> Novo Lead
                 </button>
@@ -704,7 +704,7 @@ export default function PipelineKanban() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs border-none cursor-pointer ${
                   activeTab === tab.key
-                    ? "bg-[#4F46E5] text-white font-semibold"
+                    ? "bg-[#4969FF] text-white font-semibold"
                     : "bg-transparent text-[#71717a] dark:text-[#a1a1aa] font-medium"
                 }`}
               >
@@ -747,7 +747,7 @@ export default function PipelineKanban() {
                 onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
                 className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs font-medium border-none cursor-pointer ${
                   selectionMode
-                    ? "bg-[#4F46E5] text-white"
+                    ? "bg-[#4969FF] text-white"
                     : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
                 }`}
               >
@@ -761,12 +761,12 @@ export default function PipelineKanban() {
               <>
                 <div className="w-px h-4 bg-[#e8e8f0] dark:bg-white/[0.07] mx-1 shrink-0" />
                 <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b]">Fila CEO</span>
-                <span className="text-[11px] font-bold text-[#4F46E5]">{filaCeoCount}</span>
+                <span className="text-[11px] font-bold text-[#4969FF]">{filaCeoCount}</span>
                 <button
                   onClick={() => setFilaCeoFilter(f => !f)}
                   className={`shrink-0 flex items-center gap-1 transition-colors h-[22px] px-1.5 rounded-md text-[10px] font-bold cursor-pointer border ${
                     filaCeoFilter
-                      ? "bg-[#4F46E5]/10 text-[#4F46E5] border-[#4F46E5]"
+                      ? "bg-[#4969FF]/10 text-[#4969FF] border-[#4969FF]"
                       : "bg-transparent text-[#a1a1aa] dark:text-[#52525b] border-[#e8e8f0] dark:border-white/[0.07]"
                   }`}
                 >
@@ -774,7 +774,7 @@ export default function PipelineKanban() {
                 </button>
                 <button
                   onClick={() => setDispatchOpen(true)}
-                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-semibold border-none cursor-pointer"
+                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-[#4969FF] hover:bg-[#3350E6] text-white text-[11px] font-semibold border-none cursor-pointer"
                 >
                   <Rocket size={11} strokeWidth={1.5} /> Disparar
                 </button>

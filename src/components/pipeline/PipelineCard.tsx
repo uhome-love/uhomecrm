@@ -54,7 +54,7 @@ function cleanName(name: string) {
 function empColorHash(s: string): string {
   let hash = 0;
   for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
-  const colors = ["#2563EB", "#059669", "#D97706", "#DC2626", "#7C3AED", "#EA580C"];
+  const colors = ["#3350E6", "#059669", "#D97706", "#DC2626", "#7C3AED", "#EA580C"];
   return colors[Math.abs(hash) % colors.length];
 }
 
@@ -205,7 +205,7 @@ const PipelineCard = memo(function PipelineCard({
     const o = lead.origem?.toLowerCase() || "";
     if (o.includes("oferta")) return { label: "OA", bg: "hsl(var(--purple-50))", color: "hsl(var(--purple-500))" };
     if (o.includes("portal") || o.includes("zap") || o.includes("olx")) return { label: "PORTAL", bg: "hsl(var(--warning-50))", color: "hsl(var(--warning-600))" };
-    if (daysInStage === 0) return { label: "NOVO", bg: "hsl(var(--primary-50))", color: "#4F46E5" };
+    if (daysInStage === 0) return { label: "NOVO", bg: "hsl(var(--primary-50))", color: "#4969FF" };
     return null;
   }, [lead.origem, daysInStage]);
 
@@ -273,7 +273,7 @@ const PipelineCard = memo(function PipelineCard({
                 if (st === "contato_inicial") {
                   if (fs.impressao === "gostou") badges.push({ label: "👍", color: "#059669", bg: "rgba(5,150,105,0.12)" });
                   if (fs.impressao === "nao_gostou") badges.push({ label: "👎", color: "#DC2626", bg: "rgba(220,38,38,0.12)" });
-                  if (fs.intencao === "morar") badges.push({ label: "🏠", color: "#2563EB", bg: "rgba(37,99,235,0.12)" });
+                  if (fs.intencao === "morar") badges.push({ label: "🏠", color: "#3350E6", bg: "rgba(37,99,235,0.12)" });
                   if (fs.intencao === "investir") badges.push({ label: "💰", color: "#7C3AED", bg: "rgba(124,58,237,0.12)" });
                 }
                 if (st === "busca") {
@@ -285,7 +285,7 @@ const PipelineCard = memo(function PipelineCard({
                 }
                 if (st === "visita" && fs.status_visita) {
                   const map: Record<string, { label: string; color: string; bg: string }> = {
-                    marcada: { label: "📅 Marcada", color: "#2563EB", bg: "rgba(37,99,235,0.12)" },
+                    marcada: { label: "📅 Marcada", color: "#3350E6", bg: "rgba(37,99,235,0.12)" },
                     realizada: { label: "✅ Realizada", color: "#059669", bg: "rgba(5,150,105,0.12)" },
                     no_show: { label: "❌ No-show", color: "#DC2626", bg: "rgba(220,38,38,0.12)" },
                     reagendada: { label: "🔁 Reagendada", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
@@ -295,7 +295,7 @@ const PipelineCard = memo(function PipelineCard({
                 }
                 if (st === "pos_visita") {
                   if (fs.feedback_coletado === "sim") badges.push({ label: "💬", color: "#059669", bg: "rgba(5,150,105,0.12)" });
-                  if (fs.simulacao_enviada === "sim") badges.push({ label: "💰", color: "#2563EB", bg: "rgba(37,99,235,0.12)" });
+                  if (fs.simulacao_enviada === "sim") badges.push({ label: "💰", color: "#3350E6", bg: "rgba(37,99,235,0.12)" });
                   if (fs.objecoes_mapeadas === "sim") badges.push({ label: "🤔", color: "#D97706", bg: "rgba(217,119,6,0.12)" });
                   if (fs.interesse === "alto") badges.push({ label: "🔥", color: "#DC2626", bg: "rgba(220,38,38,0.12)" });
                   if (fs.interesse === "medio") badges.push({ label: "🟡", color: "#D97706", bg: "rgba(217,119,6,0.12)" });
@@ -334,7 +334,7 @@ const PipelineCard = memo(function PipelineCard({
                     fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em",
                     padding: "2px 6px", borderRadius: 4,
                     background: originTag.label === "NOVO" ? "hsl(var(--primary-50))" : originTag.bg,
-                    color: originTag.label === "NOVO" ? "#4F46E5" : originTag.color,
+                    color: originTag.label === "NOVO" ? "#4969FF" : originTag.color,
                   }}>
                     {originTag.label}
                   </span>
@@ -380,7 +380,7 @@ const PipelineCard = memo(function PipelineCard({
                 corretorNome[0]
               )}
             </div>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#4F46E5" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#4969FF" }}>
               {corretorNome.split(" ").slice(0, 2).join(" ")}
             </span>
           </div>
@@ -672,7 +672,7 @@ function NegocioCriadoSection({ lead, stages, onMoveLead }: {
                   cursor: regressing ? "wait" : "pointer",
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => { (e.target as HTMLElement).style.borderColor = "#4F46E5"; (e.target as HTMLElement).style.color = "#4F46E5"; }}
+                onMouseEnter={(e) => { (e.target as HTMLElement).style.borderColor = "#4969FF"; (e.target as HTMLElement).style.color = "#4969FF"; }}
                 onMouseLeave={(e) => { (e.target as HTMLElement).style.borderColor = "hsl(var(--border))"; (e.target as HTMLElement).style.color = "hsl(var(--pipeline-text-secondary))"; }}
               >
                 {s.nome}

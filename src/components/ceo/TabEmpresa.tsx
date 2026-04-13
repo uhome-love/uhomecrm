@@ -6,7 +6,7 @@ import { cn, formatBRLCompact } from "@/lib/utils";
 
 const GERENTES = [
   { user_id: "7882d73e-ff5c-4b23-9b08-2adeadcd1800", nome: "Gabrielle", cor: "#9333EA", equipe: "gabrielle" },
-  { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", nome: "Bruno Schuler", cor: "#2563EB", equipe: "bruno" },
+  { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", nome: "Bruno Schuler", cor: "#3350E6", equipe: "bruno" },
   { user_id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", nome: "Gabriel", cor: "#16A34A", equipe: "gabriel" },
 ];
 
@@ -199,7 +199,7 @@ export default function TabEmpresa() {
             className={cn(
               "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
               period === p.value
-                ? "bg-[#4F46E5] text-white shadow-sm"
+                ? "bg-[#4969FF] text-white shadow-sm"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
             )}
           >
@@ -281,7 +281,7 @@ export default function TabEmpresa() {
           <Card className="bg-card">
             <CardContent className="p-4 space-y-4">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Trophy size={14} className="text-[#4F46E5]" /> Comparativo entre equipes
+                <Trophy size={14} className="text-[#4969FF]" /> Comparativo entre equipes
               </h3>
               <ComparisonBars label="Visitas (marc+real)" teams={teamData} getValue={t => t.visitasMarcadas + t.visitasRealizadas} />
               <ComparisonBars label="VGV" teams={teamData} getValue={t => t.vgv} formatFn={formatBRLCompact} />
@@ -294,7 +294,7 @@ export default function TabEmpresa() {
             <Card className="bg-card overflow-hidden">
               <CardContent className="p-0">
                 <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-                  <Trophy size={14} className="text-[#4F46E5]" />
+                  <Trophy size={14} className="text-[#4969FF]" />
                   <h3 className="text-sm font-bold text-foreground">Top 10 corretores da empresa</h3>
                 </div>
                 <table className="w-full text-xs">
@@ -323,7 +323,7 @@ export default function TabEmpresa() {
                         <td className="px-2 py-2 text-center text-muted-foreground">{r.ligacoes}</td>
                         <td className="px-2 py-2 text-center text-muted-foreground">{r.vMarc}</td>
                         <td className="px-2 py-2 text-center text-muted-foreground">{r.vReal}</td>
-                        <td className="px-2 py-2 text-center font-bold text-[#4F46E5]">{r.pts}</td>
+                        <td className="px-2 py-2 text-center font-bold text-[#4969FF]">{r.pts}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -339,12 +339,12 @@ export default function TabEmpresa() {
 
 function KpiBox({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-3.5 border-l-[3px] border-l-[#4F46E5]">
+    <div className="bg-card border border-border rounded-xl p-3.5 border-l-[3px] border-l-[#4969FF]">
       <div className="flex items-center gap-1.5 mb-1">
-        <span className="text-[#4F46E5]">{icon}</span>
+        <span className="text-[#4969FF]">{icon}</span>
         <p className="text-[10px] font-medium text-muted-foreground truncate">{label}</p>
       </div>
-      <p className={cn("text-xl font-[800] leading-none", highlight ? "text-[#4F46E5]" : "text-foreground")}>{value}</p>
+      <p className={cn("text-xl font-[800] leading-none", highlight ? "text-[#4969FF]" : "text-foreground")}>{value}</p>
     </div>
   );
 }

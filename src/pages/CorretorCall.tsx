@@ -506,9 +506,9 @@ export default function CorretorCall() {
               </div>
               <div className="flex items-center gap-1.5">
                 <span style={{ fontSize: 12, color: "var(--arena-text-subtle)" }}>📅</span>
-                <span className="font-mono font-bold" style={{ fontSize: 14, color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
+                <span className="font-mono font-bold" style={{ fontSize: 14, color: "#4969FF" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
                 <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
-                  <div className="h-full rounded-full" style={{ width: `${visitPct}%`, background: "#3B82F6" }} />
+                  <div className="h-full rounded-full" style={{ width: `${visitPct}%`, background: "#4969FF" }} />
                 </div>
               </div>
               <motion.span

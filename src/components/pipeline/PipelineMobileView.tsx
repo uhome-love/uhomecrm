@@ -152,7 +152,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
                 display: "flex", alignItems: "center", gap: 4,
                 padding: "7px 10px",
                 whiteSpace: "nowrap",
-                borderBottom: isActive ? "2px solid #4F46E5" : "2px solid transparent",
+                borderBottom: isActive ? "2px solid #4969FF" : "2px solid transparent",
                 fontSize: 11, fontWeight: 600,
                 color: isActive ? "#0a0a0a" : "#71717a",
                 cursor: "pointer", flexShrink: 0,
@@ -160,7 +160,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
                 background: "transparent", border: "none",
                 borderBottomStyle: "solid",
                 borderBottomWidth: 2,
-                borderBottomColor: isActive ? "#4F46E5" : "transparent",
+                borderBottomColor: isActive ? "#4969FF" : "transparent",
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
             >
@@ -170,7 +170,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
                 fontSize: 10, fontWeight: 700,
                 padding: "1px 6px", borderRadius: 100,
                 background: isActive ? "rgba(79,70,229,0.1)" : "#f0f0f5",
-                color: isActive ? "#4F46E5" : "#71717a",
+                color: isActive ? "#4969FF" : "#71717a",
               }}>
                 {count}
               </span>

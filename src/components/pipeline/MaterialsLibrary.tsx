@@ -29,7 +29,7 @@ interface Template {
 }
 
 const TIPO_COLORS: Record<string, string> = {
-  contato_inicial: "#3B82F6",
+  contato_inicial: "#4969FF",
   follow_up_ligacao: "#F59E0B",
   follow_up_visita: "#22C55E",
   proposta: "#8B5CF6",
@@ -352,7 +352,7 @@ export default function MaterialsLibrary() {
                   </Button>
                   <Button
                     size="sm"
-                    className="gap-1.5 text-xs ml-auto bg-[#3b82f6] hover:bg-[#2563eb] text-white"
+                    className="gap-1.5 text-xs ml-auto bg-[#4969FF] hover:bg-[#2563eb] text-white"
                     onClick={() => { handleCopy(t.conteudo); setPreviewTemplate(null); }}
                   >
                     <ClipboardCopy className="h-3.5 w-3.5" /> 📋 Usar template

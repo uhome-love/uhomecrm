@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const TIPOS = [
-  { value: "feedback", label: "Feedback", color: "#3B82F6" },
+  { value: "feedback", label: "Feedback", color: "#4969FF" },
   { value: "pdi", label: "PDI", color: "#8B5CF6" },
   { value: "conflito", label: "Conflito", color: "#EF4444" },
   { value: "onboarding", label: "Onboarding", color: "#10B981" },

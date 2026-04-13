@@ -23,8 +23,8 @@ function matchesFilter(n: { tipo: string; categoria: string }, filter: string): 
 }
 
 const FILTER_TABS = [
-  { key: "todas", label: "Todas", activeColor: "#2563EB" },
-  { key: "roleta", label: "🎰 Roleta", activeColor: "#3B82F6" },
+  { key: "todas", label: "Todas", activeColor: "#3350E6" },
+  { key: "roleta", label: "🎰 Roleta", activeColor: "#4969FF" },
   { key: "pipeline", label: "📋 Pipeline", activeColor: "#8B5CF6" },
   { key: "visitas", label: "📅 Visitas", activeColor: "#059669" },
   { key: "performance", label: "🏆 Performance", activeColor: "#D97706" },

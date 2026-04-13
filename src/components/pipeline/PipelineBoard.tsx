@@ -72,7 +72,7 @@ function getAvgTimeLabel(leads: PipelineLead[]) {
 
 // Confetti for Visita Realizada
 function spawnConfetti() {
-  const colors = ["#F59E0B", "#10B981", "#3B82F6", "#FFFFFF"];
+  const colors = ["#F59E0B", "#10B981", "#4969FF", "#FFFFFF"];
   const container = document.createElement("div");
   container.style.cssText = "position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden";
   document.body.appendChild(container);
@@ -694,7 +694,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                 padding: "5px 10px", borderRadius: 7, fontSize: 11, fontWeight: 500,
                 whiteSpace: "nowrap",
                 background: isActive ? "hsl(var(--pipeline-tab-active-bg))" : "hsl(var(--pipeline-tab-bg))",
-                border: isActive ? "1px solid #4F46E5" : "1px solid hsl(var(--pipeline-column-border))",
+                border: isActive ? "1px solid #4969FF" : "1px solid hsl(var(--pipeline-column-border))",
                 color: isActive ? "hsl(var(--pipeline-text-primary))" : "hsl(var(--pipeline-text-secondary))",
                 cursor: "pointer",
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -702,7 +702,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
             >
               {emoji && <span style={{ fontSize: 12 }}>{emoji}</span>}
               <span>{stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}</span>
-              <span style={{ fontWeight: 700, color: "#4F46E5", marginLeft: 2 }}>
+              <span style={{ fontWeight: 700, color: "#4969FF", marginLeft: 2 }}>
                 {stageLeads.length}
               </span>
             </button>
@@ -792,13 +792,13 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   className="shrink-0"
                   style={{
                     background: "hsl(var(--pipeline-column-bg))",
-                    border: isDragOver ? "1px solid #4F46E5" : "1px solid hsl(var(--pipeline-column-border))",
+                    border: isDragOver ? "1px solid #4969FF" : "1px solid hsl(var(--pipeline-column-border))",
                     borderRadius: 10,
                     padding: "10px 12px",
                     boxShadow: isDragOver ? "0 4px 16px rgba(79,70,229,0.10)" : "0 1px 2px rgba(0,0,0,0.04)",
                     marginBottom: 8,
                     animation: isFlashing ? "columnFlash 0.6s ease-out" : undefined,
-                    ["--flash-color" as any]: "#4F46E5",
+                    ["--flash-color" as any]: "#4969FF",
                     transition: "all 0.2s ease",
                   }}
                 >
@@ -816,7 +816,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                       {stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
                     </span>
                     <span style={{
-                      fontSize: 13, fontWeight: 700, color: "#4F46E5",
+                      fontSize: 13, fontWeight: 700, color: "#4969FF",
                     }}>
                       {stageLeads.length}
                     </span>
@@ -833,14 +833,14 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     )}
                   </div>
 
-                  {/* Progress bar — unified #4F46E5 */}
+                  {/* Progress bar — unified #4969FF */}
                   <div style={{
                     height: 2, borderRadius: 100, background: "hsl(var(--pipeline-progress-track))",
                     marginBottom: 6, overflow: "hidden",
                   }}>
                     <div style={{
                       height: "100%", borderRadius: 100,
-                      background: "#4F46E5",
+                      background: "#4969FF",
                       width: `${progressPct}%`,
                       transition: "width 0.3s ease",
                     }} />
@@ -863,7 +863,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                         </span>
                       )}
                       {alerts.semCorretor > 0 && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "#4F46E5" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#4969FF" }}>
                           👤{alerts.semCorretor}
                         </span>
                       )}

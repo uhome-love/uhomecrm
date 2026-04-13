@@ -25,7 +25,7 @@ const HAIR_COLORS = [
 
 const EYE_COLORS = [
   { label: "Castanho", value: "brown", color: "#8B4513" },
-  { label: "Azul", value: "blue", color: "#3B82F6" },
+  { label: "Azul", value: "blue", color: "#4969FF" },
   { label: "Verde", value: "green", color: "#22C55E" },
   { label: "Preto", value: "dark brown", color: "#1a1a1a" },
 ];

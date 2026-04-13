@@ -239,7 +239,7 @@ export default function ImoveisPage() {
           {/* Row 1: Header + Search + Actions */}
           <div className="py-2.5 flex items-center gap-2.5">
             {/* Icon + Title */}
-            <div className="w-7 h-7 rounded-[7px] bg-[#4F46E5] flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center flex-shrink-0">
               <Building2 size={13} strokeWidth={1.5} className="text-white" />
             </div>
             <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#0a0a0a] dark:text-[#fafafa] hidden md:block">Imóveis</h1>
@@ -261,7 +261,7 @@ export default function ImoveisPage() {
                   onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  className="w-full pl-9 pr-8 h-[36px] text-[13px] bg-[#f7f7fb] dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[9px] focus:border-[#4F46E5] outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
+                  className="w-full pl-9 pr-8 h-[36px] text-[13px] bg-[#f7f7fb] dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[9px] focus:border-[#4969FF] outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
                 />
                 {search && (
                   <button onClick={() => { setSearch(""); setShowSuggestions(false); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] hover:text-[#0a0a0a]">
@@ -322,7 +322,7 @@ export default function ImoveisPage() {
                   value={aiQuery}
                   onChange={(e) => setAiQuery(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && aiQuery.trim().length >= 3) searchWithAI(aiQuery); }}
-                  className="w-full pl-9 pr-28 h-[36px] text-[13px] bg-[#f7f7fb] dark:bg-white/5 border border-[#6366f1]/30 rounded-[9px] focus:border-[#4F46E5] outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
+                  className="w-full pl-9 pr-28 h-[36px] text-[13px] bg-[#f7f7fb] dark:bg-white/5 border border-[#6366f1]/30 rounded-[9px] focus:border-[#4969FF] outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
                 />
                 <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {aiQuery && (
@@ -332,7 +332,7 @@ export default function ImoveisPage() {
                   )}
                   <button
                     onClick={() => searchWithAI(aiQuery)}
-                    className="h-[28px] px-3 rounded-[7px] text-[12px] font-semibold bg-[#4F46E5] hover:bg-[#4338CA] text-white flex items-center gap-1"
+                    className="h-[28px] px-3 rounded-[7px] text-[12px] font-semibold bg-[#4969FF] hover:bg-[#3350E6] text-white flex items-center gap-1"
                     disabled={aiLoading || aiQuery.trim().length < 3}
                   >
                     {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3" />}
@@ -348,8 +348,8 @@ export default function ImoveisPage() {
               className={cn(
                 "flex items-center gap-1.5 h-[36px] px-4 text-[12px] font-medium rounded-[9px] whitespace-nowrap transition-all border",
                 searchMode === "ai"
-                  ? "bg-[#4F46E5] text-white border-[#4F46E5]"
-                  : "border-[#4F46E5] text-[#4F46E5] hover:bg-[#4F46E5]/5"
+                  ? "bg-[#4969FF] text-white border-[#4969FF]"
+                  : "border-[#4969FF] text-[#4969FF] hover:bg-[#4969FF]/5"
               )}
             >
               <Sparkles size={12} strokeWidth={1.5} /> Busca IA
@@ -364,8 +364,8 @@ export default function ImoveisPage() {
                 className={cn(
                   "flex items-center gap-1.5 h-[36px] px-3 text-[12px] font-medium rounded-[9px] border transition-all",
                   showFavoritesOnly
-                    ? "bg-[#4F46E5] text-white border-[#4F46E5]"
-                    : "text-[#52525b] bg-[#f7f7fb] dark:bg-white/5 border-[#e8e8f0] dark:border-white/10 hover:border-[#4F46E5] hover:text-[#4F46E5]"
+                    ? "bg-[#4969FF] text-white border-[#4969FF]"
+                    : "text-[#52525b] bg-[#f7f7fb] dark:bg-white/5 border-[#e8e8f0] dark:border-white/10 hover:border-[#4969FF] hover:text-[#4969FF]"
                 )}
               >
                 <Heart className={cn("h-3.5 w-3.5", showFavoritesOnly && "fill-current")} />
@@ -377,8 +377,8 @@ export default function ImoveisPage() {
                 className={cn(
                   "flex items-center gap-1.5 h-[36px] px-3 text-[12px] font-medium rounded-[9px] border transition-all",
                   selectMode
-                    ? "bg-[#4F46E5] text-white border-[#4F46E5]"
-                    : "text-[#52525b] bg-[#f7f7fb] dark:bg-white/5 border-[#e8e8f0] dark:border-white/10 hover:border-[#4F46E5] hover:text-[#4F46E5]"
+                    ? "bg-[#4969FF] text-white border-[#4969FF]"
+                    : "text-[#52525b] bg-[#f7f7fb] dark:bg-white/5 border-[#e8e8f0] dark:border-white/10 hover:border-[#4969FF] hover:text-[#4969FF]"
                 )}
               >
                 <Share2 className="h-3.5 w-3.5" />

@@ -160,7 +160,7 @@ export default function HomiAssistant() {
                 className="font-black tracking-[0.05em]"
                 style={{
                   fontSize: 48,
-                  background: "linear-gradient(135deg, #2563EB, #3B82F6, #06B6D4)",
+                  background: "linear-gradient(135deg, #3350E6, #4969FF, #06B6D4)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                 }}

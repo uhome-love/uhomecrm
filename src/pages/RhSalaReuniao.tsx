@@ -145,7 +145,7 @@ export default function RhSalaReuniao() {
         subtitle="Reserva de espaços"
         icon={<Video size={18} strokeWidth={1.5} />}
         actions={
-          <Button onClick={openAdd} size="sm" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white gap-1">
+          <Button onClick={openAdd} size="sm" className="bg-[#4969FF] hover:bg-[#3350E6] text-white gap-1">
             <Plus size={14} /> Nova Reserva
           </Button>
         }

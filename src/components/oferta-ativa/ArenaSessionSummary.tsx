@@ -45,7 +45,7 @@ function useCountUp(target: number, duration: number, startDelay: number) {
 }
 
 function Confetti({ count }: { count: number }) {
-  const colors = ["#22C55E", "#3B82F6", "#F59E0B", "#FFFFFF", "#A78BFA", "#F97316"];
+  const colors = ["#22C55E", "#4969FF", "#F59E0B", "#FFFFFF", "#A78BFA", "#F97316"];
   return (
     <div className="fixed inset-0 pointer-events-none z-[101] overflow-hidden">
       {Array.from({ length: count }).map((_, i) => (
@@ -184,7 +184,7 @@ export default function ArenaSessionSummary({ data, onNewSession, onDashboard }:
               <h1
                 className="text-4xl sm:text-5xl font-black tracking-widest uppercase"
                 style={{
-                  background: "linear-gradient(90deg, #22C55E, #3B82F6)",
+                  background: "linear-gradient(90deg, #22C55E, #4969FF)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                 }}
@@ -227,7 +227,7 @@ export default function ArenaSessionSummary({ data, onNewSession, onDashboard }:
                 className="h-full rounded-full"
                 style={{
                   width: `${levelProgress}%`,
-                  background: "linear-gradient(90deg, #3B82F6, #60A5FA)",
+                  background: "linear-gradient(90deg, #4969FF, #60A5FA)",
                   animation: "xpFill 1.5s ease-out both, xpGlow 2s ease-in-out infinite",
                   animationDelay: "0s, 1.5s",
                 }}

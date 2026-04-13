@@ -261,7 +261,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
             <div className="flex items-center gap-1 pt-1 flex-wrap">
               <button
                 onClick={() => handleConcluir(tarefa)}
-                style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', background: '#4F46E5', color: '#fff', border: 'none', fontWeight: 600 }}
+                style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', background: '#4969FF', color: '#fff', border: 'none', fontWeight: 600 }}
               >
                 <CheckCircle2 className="h-3 w-3" /> Feito
               </button>

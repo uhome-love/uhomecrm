@@ -1166,7 +1166,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
     <div className="px-6 pb-8 space-y-3">
       {/* ── Botão Radar Fullscreen ── */}
       <Button
-        className="w-full gap-2 h-10 bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+        className="w-full gap-2 h-10 bg-[#4969FF] hover:bg-[#3350E6] text-white"
         onClick={() => setRadarOpen(true)}
       >
         <Maximize2 className="h-4 w-4" />

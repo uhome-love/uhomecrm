@@ -7,7 +7,7 @@ interface Props {
 
 const FLAG_CONFIGS: Record<string, Record<string, { label: string; color: string; bg: string }>> = {
   visita: {
-    marcada: { label: "📅 Marcada", color: "#2563EB", bg: "rgba(37,99,235,0.12)" },
+    marcada: { label: "📅 Marcada", color: "#3350E6", bg: "rgba(37,99,235,0.12)" },
     realizada: { label: "✅ Realizada", color: "#059669", bg: "rgba(5,150,105,0.12)" },
     no_show: { label: "❌ No-show", color: "#DC2626", bg: "rgba(220,38,38,0.12)" },
     reagendada: { label: "🔁 Reagendada", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
@@ -18,7 +18,7 @@ const FLAG_CONFIGS: Record<string, Record<string, { label: string; color: string
   contato_inicial: {
     gostou: { label: "👍 Gostou", color: "#059669", bg: "rgba(5,150,105,0.12)" },
     nao_gostou: { label: "👎 Não gostou", color: "#DC2626", bg: "rgba(220,38,38,0.12)" },
-    morar: { label: "🏠 Morar", color: "#2563EB", bg: "rgba(37,99,235,0.12)" },
+    morar: { label: "🏠 Morar", color: "#3350E6", bg: "rgba(37,99,235,0.12)" },
     investir: { label: "💰 Investir", color: "#7C3AED", bg: "rgba(124,58,237,0.12)" },
   },
   busca: {
@@ -30,7 +30,7 @@ const FLAG_CONFIGS: Record<string, Record<string, { label: string; color: string
   },
   pos_visita: {
     feedback_coletado: { label: "💬 Feedback", color: "#059669", bg: "rgba(5,150,105,0.12)" },
-    simulacao_enviada: { label: "💰 Simulação", color: "#2563EB", bg: "rgba(37,99,235,0.12)" },
+    simulacao_enviada: { label: "💰 Simulação", color: "#3350E6", bg: "rgba(37,99,235,0.12)" },
     objecoes_mapeadas: { label: "🤔 Objeções", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
     interesse_alto: { label: "🔥 Alto", color: "#DC2626", bg: "rgba(220,38,38,0.12)" },
     interesse_medio: { label: "🟡 Médio", color: "#D97706", bg: "rgba(217,119,6,0.12)" },

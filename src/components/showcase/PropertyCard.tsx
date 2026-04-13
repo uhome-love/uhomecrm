@@ -42,9 +42,9 @@ export default function PropertyCard({
       className="group bg-white rounded-3xl overflow-hidden flex flex-col"
       style={{
         boxShadow: isComparing
-          ? "0 0 0 3px #3b82f6, 0 8px 30px rgba(59,130,246,0.2)"
+          ? "0 0 0 3px #4969FF, 0 8px 30px rgba(59,130,246,0.2)"
           : "0 4px 24px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
-        border: isComparing ? "1px solid #3b82f6" : "1px solid rgba(226,232,240,0.8)",
+        border: isComparing ? "1px solid #4969FF" : "1px solid rgba(226,232,240,0.8)",
         transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
       onMouseEnter={e => {

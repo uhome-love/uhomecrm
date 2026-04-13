@@ -53,7 +53,7 @@ export default function CardActionBar({
         <div style={separatorStyle}>
           <button
             onClick={onCall}
-            style={{ ...btnBase, color: "#4F46E5" }}
+            style={{ ...btnBase, color: "#4969FF" }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--primary-50))"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >

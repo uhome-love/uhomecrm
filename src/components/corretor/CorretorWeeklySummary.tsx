@@ -209,7 +209,7 @@ export default function CorretorWeeklySummary() {
           className="rounded-2xl p-5"
           style={{
             background: "linear-gradient(135deg, #EFF6FF, #F0FDF4)",
-            borderLeft: "4px solid #3B82F6",
+            borderLeft: "4px solid #4969FF",
             borderRadius: 16,
           }}
         >
@@ -292,9 +292,9 @@ export default function CorretorWeeklySummary() {
                   dataKey="tentativas"
                   name="Tentativas"
                   fill="rgba(59,130,246,0.12)"
-                  stroke="#3B82F6"
+                  stroke="#4969FF"
                   strokeWidth={2}
-                  dot={{ r: 4, fill: "#3B82F6", stroke: "#fff", strokeWidth: 2 }}
+                  dot={{ r: 4, fill: "#4969FF", stroke: "#fff", strokeWidth: 2 }}
                 />
                 <Bar
                   dataKey="aproveitados"
@@ -364,7 +364,7 @@ export default function CorretorWeeklySummary() {
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="ligacoes" name="Ligações" fill="#06B6D4" radius={[2, 2, 0, 0]} stackId="a" />
                 <Bar dataKey="whatsapps" name="WhatsApps" fill="#22C55E" radius={[2, 2, 0, 0]} stackId="a" />
-                <Bar dataKey="emails" name="E-mails" fill="#3B82F6" radius={[4, 4, 0, 0]} stackId="a" />
+                <Bar dataKey="emails" name="E-mails" fill="#4969FF" radius={[4, 4, 0, 0]} stackId="a" />
               </BarChart>
             </ResponsiveContainer>
           </div>

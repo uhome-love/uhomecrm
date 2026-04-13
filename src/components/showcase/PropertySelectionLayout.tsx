@@ -93,7 +93,7 @@ export default function PropertySelectionLayout({ data }: Props) {
           backgroundSize: "40px 40px",
         }} />
         <div className="absolute top-0 right-0 w-[600px] h-[600px] opacity-20" style={{
-          background: "radial-gradient(circle, #3b82f6 0%, transparent 70%)",
+          background: "radial-gradient(circle, #4969FF 0%, transparent 70%)",
           filter: "blur(80px)",
         }} />
 
@@ -102,7 +102,7 @@ export default function PropertySelectionLayout({ data }: Props) {
             {/* UHome logo */}
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-xs"
-                style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}>
+                style={{ background: "linear-gradient(135deg, #4969FF, #6366f1)" }}>
                 U
               </div>
               <span className="text-white/30 text-xs font-semibold tracking-widest uppercase">UHome Sales</span>
@@ -138,7 +138,7 @@ export default function PropertySelectionLayout({ data }: Props) {
                   />
                 ) : (
                   <div className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg"
-                    style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)", border: "3px solid rgba(255,255,255,0.15)" }}>
+                    style={{ background: "linear-gradient(135deg, #4969FF, #6366f1)", border: "3px solid rgba(255,255,255,0.15)" }}>
                     {corretor.nome.charAt(0)}
                   </div>
                 )}
@@ -154,7 +154,7 @@ export default function PropertySelectionLayout({ data }: Props) {
 
             {/* Count badge */}
             <div className="flex items-center gap-3 mt-4">
-              <div className="h-px flex-1 max-w-[60px]" style={{ background: "linear-gradient(90deg, #3b82f6, transparent)" }} />
+              <div className="h-px flex-1 max-w-[60px]" style={{ background: "linear-gradient(90deg, #4969FF, transparent)" }} />
               <span className="text-blue-400/60 text-xs font-bold tracking-wider uppercase">
                 {imoveis.length} {imoveis.length === 1 ? "imóvel" : "imóveis"} selecionados
               </span>
@@ -226,7 +226,7 @@ export default function PropertySelectionLayout({ data }: Props) {
           <button
             onClick={() => { setShowCompare(true); trackEvent("compare_open", "all"); }}
             className="flex items-center gap-3 px-6 py-4 rounded-2xl text-white font-bold text-sm shadow-2xl transition-all hover:scale-105"
-            style={{ background: "linear-gradient(135deg, #1e3a5f, #3b82f6)", boxShadow: "0 15px 40px rgba(37,99,235,0.4)" }}
+            style={{ background: "linear-gradient(135deg, #1e3a5f, #4969FF)", boxShadow: "0 15px 40px rgba(37,99,235,0.4)" }}
           >
             <GitCompareArrows className="h-5 w-5" />
             Comparar {compareItems.length} imóveis
