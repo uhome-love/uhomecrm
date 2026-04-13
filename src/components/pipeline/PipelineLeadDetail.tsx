@@ -825,7 +825,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setInativarOpen(false)} disabled={inativando}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleInativar} disabled={inativando || !inativarMotivo || (inativarMotivo === "outro" && !inativarObs.trim())} className="gap-2">
+            <Button variant="destructive" onClick={handleInativar} disabled={inativando || !inativarMotivo || !tipoDescarte || (inativarMotivo === "outro" && !inativarObs.trim())} className="gap-2">
               {inativando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
               Confirmar
             </Button>
