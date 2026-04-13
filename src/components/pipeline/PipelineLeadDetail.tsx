@@ -807,7 +807,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">
-              Selecione o motivo para inativar <strong>{lead.nome}</strong>. O lead será movido para descarte.
+              Selecione o motivo e o tipo de inativação para <strong>{lead.nome}</strong>.
             </p>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Motivo *</Label>
@@ -828,18 +828,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               </div>
             )}
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Tipo de descarte *</Label>
+              <Label className="text-sm font-medium">O que fazer com o lead? *</Label>
               <Select value={tipoDescarte} onValueChange={setTipoDescarte}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="reengajavel">🔄 Temporário (pode reengajar)</SelectItem>
-                  <SelectItem value="definitivo">⛔ Definitivo (não contactar)</SelectItem>
+                  <SelectItem value="reengajavel">🔄 Descartar (nutrição/oferta ativa)</SelectItem>
+                  <SelectItem value="definitivo">⛔ Inativar definitivo (arquivar)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
                 {tipoDescarte === "definitivo" 
-                  ? "O lead não receberá mais nenhuma comunicação." 
-                  : "O lead poderá ser reengajado por nutrição automática."}
+                  ? "O lead será arquivado na etapa atual. Não receberá comunicação nem entrará em listas." 
+                  : "O lead será movido para Descarte e poderá ser reengajado por nutrição automática ou oferta ativa."}
               </p>
             </div>
           </div>
