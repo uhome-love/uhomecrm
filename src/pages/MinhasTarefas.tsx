@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
+import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
 import { lazy, Suspense } from "react";
 
 const CorretorScriptsView = lazy(() => import("@/components/scripts/CorretorScriptsView"));
