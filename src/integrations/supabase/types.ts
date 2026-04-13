@@ -5531,6 +5531,7 @@ export type Database = {
           email: string | null
           empreendimento: string | null
           escalation_level: number | null
+          flag_status: Json | null
           forma_pagamento: string | null
           formulario: string | null
           gerente_id: string | null
@@ -5607,6 +5608,7 @@ export type Database = {
           email?: string | null
           empreendimento?: string | null
           escalation_level?: number | null
+          flag_status?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
           gerente_id?: string | null
@@ -5683,6 +5685,7 @@ export type Database = {
           email?: string | null
           empreendimento?: string | null
           escalation_level?: number | null
+          flag_status?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
           gerente_id?: string | null
