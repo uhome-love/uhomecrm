@@ -51,6 +51,7 @@ export interface PipelineLead {
   negocio_id: string | null;
   ultima_acao_at?: string | null;
   tags?: string[] | null;
+  flag_status?: Record<string, string> | null;
   // Marketing attribution (loaded on demand)
   campanha?: string | null;
   campanha_id?: string | null;
@@ -134,7 +135,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     loadingLeadsRef.current = true;
     try {
 
-    const selectFields = "id, nome, telefone, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, origem_detalhe, observacoes, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma, imovel_codigo, imovel_url";
+    const selectFields = "id, nome, telefone, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, origem_detalhe, observacoes, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma, imovel_codigo, imovel_url, flag_status";
     const pageSize = 1000;
 
     let teamUserIds: string[] = [];
