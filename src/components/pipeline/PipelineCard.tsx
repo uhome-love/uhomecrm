@@ -314,16 +314,33 @@ const PipelineCard = memo(function PipelineCard({
                   </span>
                 ));
               }
-              // Fallback: show "Preencher" alert
-              return (
-                <span style={{
-                  fontSize: 10, fontWeight: 700,
-                  padding: "2px 6px", borderRadius: 4,
-                  background: "rgba(234,179,8,0.15)", color: "#A16207",
-                }}>
-                  ⚠️ Preencher
-                </span>
-              );
+              // Stages with flag controls
+              const FLAG_STAGES = ["sem_contato", "contato_inicial", "busca", "aquecimento", "visita", "pos_visita"];
+              if (st && FLAG_STAGES.includes(st)) {
+                return (
+                  <span style={{
+                    fontSize: 10, fontWeight: 700,
+                    padding: "2px 6px", borderRadius: 4,
+                    background: "rgba(234,179,8,0.15)", color: "#A16207",
+                  }}>
+                    ⚠️ Preencher
+                  </span>
+                );
+              }
+              // Fallback: show origin tag
+              if (originTag) {
+                return (
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em",
+                    padding: "2px 6px", borderRadius: 4,
+                    background: originTag.label === "NOVO" ? "hsl(var(--primary-50))" : originTag.bg,
+                    color: originTag.label === "NOVO" ? "#4F46E5" : originTag.color,
+                  }}>
+                    {originTag.label}
+                  </span>
+                );
+              }
+              return null;
             })()}
             {semContatoAlert && (
               <span style={{
