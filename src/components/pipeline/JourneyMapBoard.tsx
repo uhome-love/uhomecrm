@@ -78,6 +78,15 @@ const PHASE_THEMES: Record<string, PhaseTheme> = {
     glow: "0 0 20px rgba(16,185,129,0.15)",
     missionBadge: "🔑 CONFIRMAR",
   },
+  pos_visita: {
+    name: "Pós-Visita",
+    icon: "🎯",
+    color: "#6366F1",
+    headerBg: "rgba(67,56,202,0.4)",
+    headerBorder: "rgba(99,102,241,0.4)",
+    glow: "0 0 20px rgba(99,102,241,0.15)",
+    missionBadge: "🎯 CONVERTER",
+  },
   venda: {
     name: "Boss Final",
     icon: "👑",

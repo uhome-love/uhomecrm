@@ -391,7 +391,7 @@ export function useVisitas(filters?: {
           lead_id: data.pipeline_lead_id,
           modulo_origem: "pipeline",
           modulo_destino: "agenda",
-          fase_destino: "visita_marcada",
+          fase_destino: "visita",
           triggered_by: "agendar_visita",
           corretor_id: data.corretor_id,
           visita_id: data.id,
