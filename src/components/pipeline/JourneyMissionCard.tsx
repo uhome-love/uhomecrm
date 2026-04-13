@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { differenceInDays } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import LeadFlagBadges from "./LeadFlagBadges";
 
 interface PhaseTheme {
   name: string;
