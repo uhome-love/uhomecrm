@@ -174,13 +174,18 @@
     --stage-novo-lead: 217 91% 60%;
     --stage-sem-contato: 38 92% 50%;
     --stage-contato: 239 84% 67%;
-    --stage-qualificacao: 258 90% 66%;
-    --stage-possivel-visita: 330 81% 60%;
-    --stage-visita-marcada: 160 84% 39%;
-    --stage-visita-realizada: 189 94% 43%;
-    --stage-em-evolucao: 25 95% 53%;
+    --stage-busca: 258 90% 66%;
+    --stage-aquecimento: 25 95% 53%;
+    --stage-visita: 160 84% 39%;
+    --stage-pos-visita: 189 94% 43%;
     --stage-negocio-criado: 142 71% 45%;
     --stage-descarte: 220 9% 46%;
+    /* Legacy aliases */
+    --stage-qualificacao: var(--stage-busca);
+    --stage-possivel-visita: var(--stage-aquecimento);
+    --stage-visita-marcada: var(--stage-visita);
+    --stage-visita-realizada: var(--stage-visita);
+    --stage-em-evolucao: var(--stage-pos-visita);
 
     /* Pipeline Tokens */
     --pipeline-card-bg: 0 0% 100%;

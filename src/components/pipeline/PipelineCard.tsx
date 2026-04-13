@@ -144,8 +144,10 @@ const PipelineCard = memo(function PipelineCard({
 
   const daysBadge = useMemo(() => {
     const slaLimits: Record<string, number> = {
-      sem_contato: 1, contato_iniciado: 2, qualificacao: 7,
-      possivel_visita: 10, visita_marcada: 14, visita_realizada: 1, negociacao: 5,
+      sem_contato: 1, contato_iniciado: 2, contato_inicial: 2,
+      busca: 7, aquecimento: 14, visita: 7, pos_visita: 3,
+      negociacao: 5, qualificacao: 7, possivel_visita: 10,
+      visita_marcada: 14, visita_realizada: 1,
     };
     const limite = slaLimits[stage?.tipo || ""] || 7;
     if (daysInStage > limite) return { bg: "hsl(var(--danger-50))", color: "hsl(var(--danger-600))", border: "hsl(var(--danger-100))" };
@@ -169,7 +171,7 @@ const PipelineCard = memo(function PipelineCard({
     e.stopPropagation();
     if (!onMoveLead) return;
     const targetStage = stages.find(s => s.id === stageId);
-    if (targetStage?.nome.toLowerCase().includes("visita marcada")) {
+    if (targetStage?.nome.toLowerCase().includes("visita marcada") || (targetStage?.tipo === "visita")) {
       setScheduleOpen(true);
       return;
     }

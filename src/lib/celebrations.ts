@@ -154,26 +154,36 @@ export const PIPELINE_STAGE_EMOJIS: Record<string, string> = {
   "Novo Lead": "🆕",
   "Contato Iniciado": "📞",
   "Sem Contato": "📵",
-  "Qualificação": "🎯",
-  "Possível Visita": "🏠",
-  "Visita Marcada": "📅",
-  "Visita Realizada": "✅",
-  "Em Evolução": "🔄",
+  "Busca": "🔍",
+  "Aquecimento": "🔥",
+  "Visita": "🏠",
+  "Pós-Visita": "💰",
   "Descarte": "🗑️",
   "Negócio Criado": "🎯",
+  // Legacy
+  "Qualificação": "🔍",
+  "Possível Visita": "🔥",
+  "Visita Marcada": "📅",
+  "Visita Realizada": "✅",
+  "Em Evolução": "💰",
 };
 
 export const PIPELINE_STAGE_COLORS: Record<string, string> = {
   "Novo Lead": "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500",
   "Contato Iniciado": "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500",
   "Sem Contato": "bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500",
-  "Qualificação": "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500",
-  "Possível Visita": "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500",
-  "Visita Marcada": "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500",
-  "Visita Realizada": "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500",
-  "Em Evolução": "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500",
+  "Busca": "bg-violet-500/20 text-violet-600 dark:text-violet-400 border-violet-500",
+  "Aquecimento": "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500",
+  "Visita": "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500",
+  "Pós-Visita": "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500",
   "Descarte": "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500",
   "Negócio Criado": "bg-violet-500/20 text-violet-600 dark:text-violet-400 border-violet-500",
+  // Legacy
+  "Qualificação": "bg-violet-500/20 text-violet-600 dark:text-violet-400 border-violet-500",
+  "Possível Visita": "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500",
+  "Visita Marcada": "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500",
+  "Visita Realizada": "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500",
+  "Em Evolução": "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500",
 };
 
 // Background colors for pipeline kanban columns (light theme friendly)
@@ -181,13 +191,18 @@ export const PIPELINE_STAGE_BG: Record<string, { bg: string; border: string; hea
   "Novo Lead": { bg: "rgba(139,92,246,0.06)", border: "rgba(139,92,246,0.18)", headerBg: "rgba(139,92,246,0.10)" },
   "Sem Contato": { bg: "rgba(107,114,128,0.06)", border: "rgba(107,114,128,0.18)", headerBg: "rgba(107,114,128,0.10)" },
   "Contato Iniciado": { bg: "rgba(59,130,246,0.06)", border: "rgba(59,130,246,0.18)", headerBg: "rgba(59,130,246,0.10)" },
-  "Qualificação": { bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.18)", headerBg: "rgba(245,158,11,0.10)" },
-  "Possível Visita": { bg: "rgba(249,115,22,0.06)", border: "rgba(249,115,22,0.18)", headerBg: "rgba(249,115,22,0.10)" },
-  "Visita Marcada": { bg: "rgba(6,182,212,0.06)", border: "rgba(6,182,212,0.18)", headerBg: "rgba(6,182,212,0.10)" },
-  "Visita Realizada": { bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.18)", headerBg: "rgba(34,197,94,0.10)" },
-  "Em Evolução": { bg: "rgba(6,182,212,0.06)", border: "rgba(6,182,212,0.18)", headerBg: "rgba(6,182,212,0.10)" },
+  "Busca": { bg: "rgba(139,92,246,0.06)", border: "rgba(139,92,246,0.18)", headerBg: "rgba(139,92,246,0.10)" },
+  "Aquecimento": { bg: "rgba(249,115,22,0.06)", border: "rgba(249,115,22,0.18)", headerBg: "rgba(249,115,22,0.10)" },
+  "Visita": { bg: "rgba(16,185,129,0.06)", border: "rgba(16,185,129,0.18)", headerBg: "rgba(16,185,129,0.10)" },
+  "Pós-Visita": { bg: "rgba(6,182,212,0.06)", border: "rgba(6,182,212,0.18)", headerBg: "rgba(6,182,212,0.10)" },
   "Descarte": { bg: "rgba(239,68,68,0.06)", border: "rgba(239,68,68,0.18)", headerBg: "rgba(239,68,68,0.10)" },
   "Negócio Criado": { bg: "rgba(139,92,246,0.06)", border: "rgba(139,92,246,0.18)", headerBg: "rgba(139,92,246,0.10)" },
+  // Legacy
+  "Qualificação": { bg: "rgba(139,92,246,0.06)", border: "rgba(139,92,246,0.18)", headerBg: "rgba(139,92,246,0.10)" },
+  "Possível Visita": { bg: "rgba(249,115,22,0.06)", border: "rgba(249,115,22,0.18)", headerBg: "rgba(249,115,22,0.10)" },
+  "Visita Marcada": { bg: "rgba(16,185,129,0.06)", border: "rgba(16,185,129,0.18)", headerBg: "rgba(16,185,129,0.10)" },
+  "Visita Realizada": { bg: "rgba(16,185,129,0.06)", border: "rgba(16,185,129,0.18)", headerBg: "rgba(16,185,129,0.10)" },
+  "Em Evolução": { bg: "rgba(6,182,212,0.06)", border: "rgba(6,182,212,0.18)", headerBg: "rgba(6,182,212,0.10)" },
 };
 
 export const TEMPERATURA_EMOJIS: Record<string, string> = {

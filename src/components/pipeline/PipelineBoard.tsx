@@ -748,17 +748,23 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
             const avgTime = getAvgTimeLabel(stageLeads);
 
             // Theme colors per stage
+            const makeTheme = (v: string) => ({ emojiBg: `hsl(var(${v}) / 0.1)`, badgeBg: `hsl(var(${v}) / 0.1)`, badgeColor: `hsl(var(${v}))`, gradient: `linear-gradient(90deg, hsl(var(${v})), hsl(var(${v}) / 0.6))` });
             const STAGE_THEMES: Record<string, { emojiBg: string; badgeBg: string; badgeColor: string; gradient: string }> = {
-              "Novo Lead": { emojiBg: "hsl(var(--stage-novo-lead) / 0.1)", badgeBg: "hsl(var(--stage-novo-lead) / 0.1)", badgeColor: "hsl(var(--stage-novo-lead))", gradient: "linear-gradient(90deg, hsl(var(--stage-novo-lead)), hsl(var(--stage-novo-lead) / 0.6))" },
-              "Sem Contato": { emojiBg: "hsl(var(--stage-sem-contato) / 0.1)", badgeBg: "hsl(var(--stage-sem-contato) / 0.1)", badgeColor: "hsl(var(--stage-sem-contato))", gradient: "linear-gradient(90deg, hsl(var(--stage-sem-contato)), hsl(var(--stage-sem-contato) / 0.6))" },
-              "Contato Iniciado": { emojiBg: "hsl(var(--stage-contato) / 0.1)", badgeBg: "hsl(var(--stage-contato) / 0.1)", badgeColor: "hsl(var(--stage-contato))", gradient: "linear-gradient(90deg, hsl(var(--stage-contato)), hsl(var(--stage-contato) / 0.6))" },
-              "Qualificação": { emojiBg: "hsl(var(--stage-qualificacao) / 0.1)", badgeBg: "hsl(var(--stage-qualificacao) / 0.1)", badgeColor: "hsl(var(--stage-qualificacao))", gradient: "linear-gradient(90deg, hsl(var(--stage-qualificacao)), hsl(var(--stage-qualificacao) / 0.6))" },
-              "Possível Visita": { emojiBg: "hsl(var(--stage-possivel-visita) / 0.1)", badgeBg: "hsl(var(--stage-possivel-visita) / 0.1)", badgeColor: "hsl(var(--stage-possivel-visita))", gradient: "linear-gradient(90deg, hsl(var(--stage-possivel-visita)), hsl(var(--stage-possivel-visita) / 0.6))" },
-              "Visita Marcada": { emojiBg: "hsl(var(--stage-visita-marcada) / 0.1)", badgeBg: "hsl(var(--stage-visita-marcada) / 0.1)", badgeColor: "hsl(var(--stage-visita-marcada))", gradient: "linear-gradient(90deg, hsl(var(--stage-visita-marcada)), hsl(var(--stage-visita-marcada) / 0.6))" },
-              "Visita Realizada": { emojiBg: "hsl(var(--stage-visita-realizada) / 0.1)", badgeBg: "hsl(var(--stage-visita-realizada) / 0.1)", badgeColor: "hsl(var(--stage-visita-realizada))", gradient: "linear-gradient(90deg, hsl(var(--stage-visita-realizada)), hsl(var(--stage-visita-realizada) / 0.6))" },
-              "Em Evolução": { emojiBg: "hsl(var(--stage-em-evolucao) / 0.1)", badgeBg: "hsl(var(--stage-em-evolucao) / 0.1)", badgeColor: "hsl(var(--stage-em-evolucao))", gradient: "linear-gradient(90deg, hsl(var(--stage-em-evolucao)), hsl(var(--stage-em-evolucao) / 0.6))" },
-              "Descarte": { emojiBg: "hsl(var(--stage-descarte) / 0.1)", badgeBg: "hsl(var(--stage-descarte) / 0.1)", badgeColor: "hsl(var(--stage-descarte))", gradient: "linear-gradient(90deg, hsl(var(--stage-descarte)), hsl(var(--stage-descarte) / 0.6))" },
-              "Negócio Criado": { emojiBg: "hsl(var(--stage-negocio-criado) / 0.1)", badgeBg: "hsl(var(--stage-negocio-criado) / 0.1)", badgeColor: "hsl(var(--stage-negocio-criado))", gradient: "linear-gradient(90deg, hsl(var(--stage-negocio-criado)), hsl(var(--stage-negocio-criado) / 0.6))" },
+              "Novo Lead": makeTheme("--stage-novo-lead"),
+              "Sem Contato": makeTheme("--stage-sem-contato"),
+              "Contato Iniciado": makeTheme("--stage-contato"),
+              "Busca": makeTheme("--stage-busca"),
+              "Aquecimento": makeTheme("--stage-aquecimento"),
+              "Visita": makeTheme("--stage-visita"),
+              "Pós-Visita": makeTheme("--stage-pos-visita"),
+              "Descarte": makeTheme("--stage-descarte"),
+              "Negócio Criado": makeTheme("--stage-negocio-criado"),
+              // Legacy
+              "Qualificação": makeTheme("--stage-busca"),
+              "Possível Visita": makeTheme("--stage-aquecimento"),
+              "Visita Marcada": makeTheme("--stage-visita"),
+              "Visita Realizada": makeTheme("--stage-visita"),
+              "Em Evolução": makeTheme("--stage-pos-visita"),
             };
             const theme = STAGE_THEMES[stage.nome] || { emojiBg: "hsl(var(--muted))", badgeBg: "hsl(var(--muted))", badgeColor: "hsl(var(--pipeline-text-muted))", gradient: "linear-gradient(90deg, hsl(var(--pipeline-text-muted)), hsl(var(--pipeline-text-muted) / 0.6))" };
             const emoji = PIPELINE_STAGE_EMOJIS[stage.nome] || "📍";
