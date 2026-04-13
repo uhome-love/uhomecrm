@@ -159,7 +159,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
     setSalvando(true);
     try {
       await supabase.from("pipeline_atividades").insert({
-        lead_id: lead.id,
+        pipeline_lead_id: lead.id,
         tipo: "ligacao",
         titulo: resultado === "atendeu" ? "Liguei — atendeu" : "Liguei — não atendeu",
         descricao: observacao || null,
@@ -173,7 +173,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
       if (tarefaTipo && tarefaData) {
         const venceEm = new Date(`${tarefaData}T${tarefaHora}:00`);
         await supabase.from("pipeline_tarefas").insert({
-          lead_id: lead.id,
+          pipeline_lead_id: lead.id,
           tipo: tarefaTipo.toLowerCase(),
           titulo: `${tarefaTipo} — ${lead.nome}`,
           status: "pendente",
