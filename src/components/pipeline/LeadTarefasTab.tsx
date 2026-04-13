@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { PipelineTarefa } from "@/hooks/usePipelineLeadData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import TaskCompletionDialog from "./TaskCompletionDialog";
 
 const TIPO_BUTTONS = [
   { value: "ligar", label: "Ligar", emoji: "📞" },
