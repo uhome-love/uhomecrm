@@ -170,11 +170,12 @@ export default function WhatsAppInbox() {
 
   // Load follow-up and new leads
   const loadSuggestions = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id || !profileId) return;
 
     const { data: msgLeads } = await supabase
       .from("whatsapp_mensagens")
       .select("lead_id")
+      .eq("corretor_id", profileId)
       .not("lead_id", "is", null);
 
     const leadsWithMessages = new Set((msgLeads || []).map(m => m.lead_id).filter(Boolean));
@@ -223,7 +224,7 @@ export default function WhatsAppInbox() {
       }));
 
     setNewLeads(filteredNew);
-  }, [user?.id]);
+  }, [user?.id, profileId]);
 
   // Load thread for selected lead
   const loadThread = useCallback(async (leadId: string) => {
@@ -327,7 +328,7 @@ export default function WhatsAppInbox() {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (
-    <div className="h-[calc(100vh-56px)] flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden -m-4 sm:-m-6 lg:-m-8">
       {isMobile && mobileView === "thread" && (
         <div className="p-2 border-b border-border bg-card md:hidden">
           <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setMobileView("list")}>
