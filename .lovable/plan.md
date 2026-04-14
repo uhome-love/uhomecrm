@@ -1,100 +1,83 @@
 
 
-# Plano: Reformular ConversationList com 3 grupos
+# Plano: Barra de ações rápidas + Templates no ConversationThread
 
-## Visão geral
-
-Transformar a lista lateral de conversas em uma lista inteligente com 3 seções: conversas ativas (com SLA), follow-up sugerido e novos leads. A lógica de dados será movida para `WhatsAppInbox.tsx` (que já carrega conversas) e passada via props.
-
-## Arquivos alterados
+## Arquivo alterado
 
 | Arquivo | Alteração |
 |---|---|
-| `src/pages/WhatsAppInbox.tsx` | Adicionar queries para follow-up e novos leads; passar dados ao ConversationList |
-| `src/components/whatsapp/ConversationList.tsx` | Reformular UI com 3 grupos, tabs de filtro, SLA badges, cards de follow-up/novos |
+| `src/components/whatsapp/ConversationThread.tsx` | Adicionar barra de 5 ações, templates, dialogs, notas internas, renderização de notes na thread |
 
-**ConversationThread.tsx NÃO será alterado** conforme solicitado.
+Nenhum outro arquivo será alterado.
 
-## Dados e queries
+## Implementação
 
-### Grupo 1: Conversas ativas (já existe)
-- Dados atuais de `whatsapp_mensagens` agrupados por lead
-- **Novo**: adicionar campo `lastReceivedTs` (timestamp da última msg `received` sem resposta posterior) para calcular SLA
-- SLA: `> 2h` = badge amarelo, `> 24h` = badge vermelho
+### 1. Barra de ações (entre Copilot e Input)
 
-### Grupo 2: Follow-up sugerido (nova query em WhatsAppInbox)
-```sql
--- pipeline_leads do corretor, sem mensagens WhatsApp, 
--- updated_at > 3 dias, excluindo sem_contato/convertido/descarte
-SELECT id, nome, empreendimento, stage_id, updated_at
-FROM pipeline_leads
-WHERE corretor_id = {userId}  -- auth.uid (pipeline_leads usa auth.uid)
-  AND updated_at < now() - interval '3 days'
-  AND stage_id NOT IN (
-    '2fcba9be-...',  -- Sem Contato
-    'a8a1a867-...',  -- Convertido
-    '1dd66c25-...'   -- Descarte
-  )
-  AND id NOT IN (SELECT DISTINCT lead_id FROM whatsapp_mensagens WHERE lead_id IS NOT NULL)
-LIMIT 10
-```
+5 botões compactos com tooltip usando Lucide icons:
+- **FileText** Templates — Popover
+- **Calendar** Visita — Dialog
+- **CheckSquare** Tarefa — Popover
+- **ArrowRight** Etapa — Popover
+- **StickyNote** Nota — Toggle (altera modo do textarea)
 
-**Nota importante**: `pipeline_leads.corretor_id` usa `auth.uid()`, diferente de `whatsapp_mensagens` que usa `profiles.id`. As queries respeitarão isso.
+### 2. Templates (Popover)
 
-### Grupo 3: Novos leads (nova query em WhatsAppInbox)
-```sql
-SELECT id, nome, empreendimento, created_at
-FROM pipeline_leads
-WHERE corretor_id = {userId}
-  AND stage_id = '2fcba9be-...'  -- Sem Contato
-  AND id NOT IN (SELECT DISTINCT lead_id FROM whatsapp_mensagens WHERE lead_id IS NOT NULL)
-ORDER BY created_at DESC
-LIMIT 5
-```
+Templates hardcoded agrupados por etapa, filtrados por `leadInfo.stage_id`. Variáveis `{nome}`, `{empreendimento}`, `{data}` substituídas ao clicar. Preenche textarea e fecha popover.
 
-## Estrutura da UI (ConversationList)
+Mapeamento de stage_ids para grupos de templates será feito comparando `stage_id` com os estágios conhecidos (busca `pipeline_stages` no mount para montar mapa nome→id).
 
-### Header atualizado
-- Contadores: "3 ativas · 8 follow-up · 5 novos"
-- Tabs: Todas | Ativas | Follow-up | Novos (substituem os filtros atuais)
-- Campo de busca (filtra dentro de todos os grupos)
+### 3. Agendar Visita (Dialog)
 
-### Grupo 1 — Conversas ativas
-- Layout atual mantido (avatar, nome, última msg, tempo)
-- **Novo badge SLA**: dot amarelo (>2h) ou vermelho (>24h) ao lado do timestamp quando há msg recebida sem resposta
+Campos: data (min=hoje), hora (select 08:00-18:00 / 30min), local (pré-preenchido com empreendimento).
 
-### Grupo 2 — Follow-up sugerido
-- Separador: "Follow-up sugerido" com ícone
-- Card compacto: avatar, nome, empreendimento, "há X dias sem contato"
-- Botão inline "Iniciar conversa →" que chama `onSelect(lead.id)`
+Ao confirmar:
+- Insert em `visitas` (lead_id, corretor_id=profileId, data_visita, empreendimento, status='agendada')
+- Update `pipeline_leads.stage_id` para stage de Visita (busca `pipeline_stages WHERE nome ILIKE '%visita%'`)
+- Preenche textarea com template de confirmação
+- Toast de sucesso
 
-### Grupo 3 — Novos leads
-- Separador: "Novos leads" com ícone
-- Card compacto: avatar, nome, empreendimento, "chegou há X tempo"
-- Botão inline "Iniciar conversa →" que chama `onSelect(lead.id)`
+### 4. Criar Tarefa (Popover)
 
-### Nova conversa (popover)
-- Mantido como está no footer
+Input título + select prazo (Hoje 18h / Amanhã 10h / 3 dias / 1 semana). Insert em `pipeline_tarefas` com tipo 'follow_up', status 'pendente'. Toast de sucesso.
 
-## Props atualizadas
+### 5. Mover Etapa (Popover)
+
+Busca `pipeline_stages` (pipeline_tipo='leads', ativo=true) ORDER BY ordem. Lista como botões, etapa atual destacada. Ao clicar: update `pipeline_leads.stage_id`. Toast com nome da etapa.
+
+### 6. Nota Interna (Toggle)
+
+Estado `isNoteMode`. Quando ativo:
+- Textarea com fundo amarelo (`bg-amber-50 border-amber-300`)
+- Placeholder "Nota interna (não enviada ao lead)..."
+- Botão enviar com ícone Lock
+- Insert em `whatsapp_mensagens` com `direction: 'note'`
+- NÃO chama edge function `whatsapp-send`
+
+### 7. Renderização de notes na thread
+
+Mensagens com `direction === 'note'`:
+- Alinhadas à direita
+- Fundo `bg-amber-100 border-amber-300`
+- Label "Nota interna 🔒" acima do body
+- Mesmo formato de hora
+
+### Estado adicional necessário
 
 ```typescript
-interface ConversationListProps {
-  conversations: ConversationItem[];  // com lastReceivedTs adicionado
-  followUpLeads: FollowUpLead[];      // novo
-  newLeads: NewLead[];                // novo
-  selectedLeadId: string | null;
-  onSelect: (leadId: string) => void;
-  loading: boolean;
-  userId?: string | null;
-}
+const [isNoteMode, setIsNoteMode] = useState(false);
+const [stages, setStages] = useState<{id:string, nome:string}[]>([]);
+const textareaRef = useRef<HTMLTextAreaElement>(null);
 ```
 
-## SLA — cálculo no ConversationItem
+useEffect no mount para buscar `pipeline_stages` (necessário para Templates, Etapa e Visita).
 
-Adicionar campo `lastReceivedTs` ao `ConversationItem`. Em `WhatsAppInbox`, ao agrupar mensagens, verificar se a última msg `received` tem alguma msg `sent` posterior. Se não, guardar o timestamp da `received` como `lastReceivedTs`. A UI calcula a diferença em horas para exibir o badge.
+### Imports adicionais
 
-## Limitação conhecida
-
-O HOMI Copilot em threads vazias (primeira abordagem) requer mudança no `ConversationThread.tsx` que está fora do escopo. Ao clicar "Iniciar conversa", a thread abrirá vazia com o campo de texto focado, mas sem sugestão automática do HOMI. Isso pode ser implementado em uma próxima iteração.
+```typescript
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { FileText, Calendar, CheckSquare, ArrowRight, StickyNote, Lock } from "lucide-react";
+```
 
