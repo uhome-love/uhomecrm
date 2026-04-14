@@ -122,6 +122,7 @@ const CentralNutricao = lazyRetry(() => import("./pages/CentralNutricao"));
 const NutricaoPage = lazyRetry(() => import("./pages/NutricaoPage"));
 const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
+const WhatsAppInbox = lazyRetry(() => import("./pages/WhatsAppInbox"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
