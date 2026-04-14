@@ -185,3 +185,6 @@ verify_jwt = false
 
 [functions.reactivate-cold-leads]
 verify_jwt = false
+
+[functions.whatsapp-connect]
+verify_jwt = true
