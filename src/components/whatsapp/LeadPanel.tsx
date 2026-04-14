@@ -23,7 +23,7 @@ interface LeadInfo {
   lead_score?: number | null;
   valor_estimado?: number | null;
   bairro_regiao?: string | null;
-  orcamento?: number | null;
+  
 }
 
 interface Message {
@@ -171,7 +171,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
       const updateData: Record<string, any> = {};
       if (field === "stage_id") updateData.stage_id = editValue;
       else if (field === "empreendimento") updateData.empreendimento = editValue;
-      else if (field === "orcamento") updateData.orcamento = parseFloat(editValue) || 0;
+      else if (field === "orcamento") updateData.valor_estimado = parseFloat(editValue) || 0;
 
       await supabase.from("pipeline_leads").update(updateData).eq("id", localLead.id);
 
@@ -285,9 +285,9 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
           ) : (
             <div className="flex items-center gap-0.5">
               <span className="text-[11px] font-medium truncate max-w-[100px]">
-                {localLead.orcamento ? `R$ ${Number(localLead.orcamento).toLocaleString("pt-BR")}` : "—"}
+                {localLead.valor_estimado ? `R$ ${Number(localLead.valor_estimado).toLocaleString("pt-BR")}` : "—"}
               </span>
-              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => startEdit("orcamento", String(localLead.orcamento || ""))}>
+              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => startEdit("orcamento", String(localLead.valor_estimado || ""))}>
                 <Pencil size={9} />
               </Button>
             </div>

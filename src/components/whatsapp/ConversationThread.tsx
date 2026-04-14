@@ -228,6 +228,19 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           body: text.trim(),
           timestamp: new Date().toISOString(),
         });
+        // Log activity
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          await supabase.from("pipeline_atividades").insert({
+            pipeline_lead_id: leadId,
+            tipo: "mensagem",
+            titulo: `Mensagem WhatsApp enviada`,
+            data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+            prioridade: "media",
+            status: "concluida",
+            created_by: authUser.id,
+          });
+        }
       }
       setText("");
       if (isNoteMode) setIsNoteMode(false);
@@ -258,6 +271,19 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         empreendimento: visitLocal || leadInfo.empreendimento,
         status: "agendada",
       });
+      // Log activity
+      const { data: { user: visitUser } } = await supabase.auth.getUser();
+      if (visitUser) {
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: leadId,
+          tipo: "visita",
+          titulo: `Visita agendada para ${format(dt, "dd/MM 'às' HH:mm", { locale: ptBR })}`,
+          data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+          prioridade: "media",
+          status: "concluida",
+          created_by: visitUser.id,
+        });
+      }
       // Move to Visita stage
       const visitaStage = stages.find(s => s.nome.toLowerCase().includes("visita"));
       if (visitaStage) {
@@ -298,6 +324,19 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     if (!leadInfo) return;
     try {
       await supabase.from("pipeline_leads").update({ stage_id: stage.id }).eq("id", leadInfo.id);
+      // Log activity
+      const { data: { user: stageUser } } = await supabase.auth.getUser();
+      if (stageUser) {
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: leadInfo.id,
+          tipo: "etapa",
+          titulo: `Etapa alterada para ${stage.nome}`,
+          data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+          prioridade: "media",
+          status: "concluida",
+          created_by: stageUser.id,
+        });
+      }
       toast.success(`✅ Lead movido para ${stage.nome}`);
     } catch (err: any) {
       toast.error("Erro: " + (err.message || ""));
