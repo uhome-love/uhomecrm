@@ -14,7 +14,7 @@ import { useParceriasMap } from "@/hooks/useParcerias";
 
 const PipelineFlowDashboard = lazy(() => import("@/components/pipeline/PipelineFlowDashboard"));
 const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRadar"));
-const MelnickCampaignAnalytics = lazy(() => import("@/components/pipeline/MelnickCampaignAnalytics"));
+
 const PipelineManagerActions = lazy(() => import("@/components/pipeline/PipelineManagerActions"));
 const PipelineTeamVisitas = lazy(() => import("@/components/pipeline/PipelineTeamVisitas"));
 import { CheckSquare, Square, Send, X, Zap } from "lucide-react";
@@ -42,7 +42,7 @@ import { useFocusLeads } from "@/hooks/useFocusLeads";
 
 // Campaign tag definitions
 const CAMPAIGN_TAGS = [
-  { tag: "MELNICK_DAY", label: "🔥 Melnick Day", color: "orange" },
+  
   { tag: "OPEN_BOSQUE", label: "🌳 Open Bosque", color: "green" },
   { tag: "CASA_TUA", label: "🏠 Casa Tua", color: "blue" },
   { tag: "LAKE_EYRE", label: "💎 Lake Eyre", color: "purple" },
@@ -900,14 +900,6 @@ export default function PipelineKanban() {
         </div>
       )}
 
-      {/* Melnick Campaign Analytics */}
-      {campaignTagFilter === "MELNICK_DAY" && (
-        <div style={{ padding: "0 28px" }}>
-          <Suspense fallback={null}>
-            <MelnickCampaignAnalytics />
-          </Suspense>
-        </div>
-      )}
 
       {/* Content area */}
       {isMobile && activeTab === "kanban" ? (

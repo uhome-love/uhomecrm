@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Building2 } from "lucide-react";
 import type { ShowcaseData, ShowcaseImovel } from "@/components/showcase/types";
 import ProductPageLayout from "@/components/showcase/ProductPageLayout";
-import MelnickDayLayout from "@/components/showcase/MelnickDayLayout";
 import PropertySelectionLayout from "@/components/showcase/PropertySelectionLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -178,9 +177,6 @@ export default function VitrinePage() {
     if (!data) return null;
 
     switch (tipo) {
-      case "melnick_day":
-      case "mega_cyrela":
-        return <MelnickDayLayout data={data} />;
       case "product_page":
       case "anuncio":
         return <ProductPageLayout data={data} />;

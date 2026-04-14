@@ -94,13 +94,9 @@ const ImoveisPage = lazyRetry(() => import("./pages/ImoveisPage"));
 const VitrinePage = lazyRetry(() => import("./pages/VitrinePage"));
 const ImovelPage = lazyRetry(() => import("./pages/ImovelPage"));
 const PosVendas = lazyRetry(() => import("./pages/PosVendas"));
-const MelnickDay = lazyRetry(() => import("./pages/MelnickDay"));
-
 const OrygemCampanha = lazyRetry(() => import("./pages/OrygemCampanha"));
-const MegaCyrela = lazyRetry(() => import("./pages/MegaCyrela"));
 const VendasRealizadas = lazyRetry(() => import("./pages/VendasRealizadas"));
 const RelatorioSemanal = lazyRetry(() => import("./pages/RelatorioSemanal"));
-const AnunciosNoAr = lazyRetry(() => import("./pages/AnunciosNoAr"));
 const IntegracaoJetimob = lazyRetry(() => import("./pages/IntegracaoJetimob"));
 const CadastrosPage = lazyRetry(() => import("./pages/CadastrosPage"));
 const DiagnosticoSite = lazyRetry(() => import("./pages/DiagnosticoSite"));
@@ -114,9 +110,7 @@ const RhSalaReuniao = lazyRetry(() => import("./pages/RhSalaReuniao"));
 const RhEntrevistas = lazyRetry(() => import("./pages/RhEntrevistas"));
 const DevAIPage = lazyRetry(() => import("./pages/DevAIPage"));
 
-const MelnickDayLanding = lazyRetry(() => import("./pages/MelnickDayLanding"));
 const WhatsAppLanding = lazyRetry(() => import("./pages/WhatsAppLanding"));
-const CampaignAnalyticsPage = lazyRetry(() => import("./pages/CampaignAnalyticsPage"));
 const ImportBrevoContacts = lazyRetry(() => import("./pages/ImportBrevoContacts"));
 const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const WhatsAppCampaignDispatcher = lazyRetry(() => import("./pages/WhatsAppCampaignDispatcher"));
@@ -183,8 +177,6 @@ const App = () => (
             <Route path="/indica/:codigo" element={<Suspense fallback={<PageLoader />}><ReferralPage /></Suspense>} />
             <Route path="/vitrine/:id" element={<Suspense fallback={<PageLoader />}><VitrinePage /></Suspense>} />
             <Route path="/imovel/:codigo" element={<Suspense fallback={<PageLoader />}><ImovelPage /></Suspense>} />
-             <Route path="/melnickday" element={<Suspense fallback={<PageLoader />}><MelnickDayLanding /></Suspense>} />
-             <Route path="/md" element={<Suspense fallback={<PageLoader />}><MelnickDayLanding /></Suspense>} />
               <Route path="/wa" element={<Suspense fallback={<PageLoader />}><WhatsAppLanding /></Suspense>} />
               <Route path="/wa/*" element={<Suspense fallback={<PageLoader />}><WhatsAppLanding /></Suspense>} />
              <Route path="/import-brevo-contacts" element={<ProtectedPage roles={["admin"]}><ImportBrevoContacts /></ProtectedPage>} />
@@ -236,11 +228,7 @@ const App = () => (
             <Route path="/vendas-realizadas" element={<ProtectedPage><ErrorBoundary module="vendas-realizadas"><VendasRealizadas /></ErrorBoundary></ProtectedPage>} />
             <Route path="/pos-vendas" element={<ProtectedPage><ErrorBoundary module="pos-vendas"><PosVendas /></ErrorBoundary></ProtectedPage>} />
             <Route path="/imoveis" element={<ProtectedPage><ErrorBoundary module="imoveis"><ImoveisPage /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/melnick-day" element={<ProtectedPage><ErrorBoundary module="melnick-day"><MelnickDay /></ErrorBoundary></ProtectedPage>} />
-            
             <Route path="/orygem-60" element={<ProtectedPage><ErrorBoundary module="orygem-60"><OrygemCampanha /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/mega-cyrela" element={<ProtectedPage><ErrorBoundary module="mega-cyrela"><MegaCyrela /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/anuncios" element={<ProtectedPage><ErrorBoundary module="anuncios"><AnunciosNoAr /></ErrorBoundary></ProtectedPage>} />
 
             {/* Busca de Leads / Higienização — gestor + admin */}
             <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="busca-leads"><BuscaLeads /></ErrorBoundary></ProtectedPage>} />
@@ -258,7 +246,7 @@ const App = () => (
             <Route path="/integracao" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="integracao"><IntegracaoJetimob /></ErrorBoundary></ProtectedPage>} />
             <Route path="/dev-ai" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="dev-ai"><DevAIPage /></ErrorBoundary></ProtectedPage>} />
             <Route path="/admin/diagnostico-site" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="diagnostico-site"><DiagnosticoSite /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/campaign-analytics" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="campaign-analytics"><CampaignAnalyticsPage /></ErrorBoundary></ProtectedPage>} />
+            
             <Route path="/disparador-whatsapp" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="disparador-whatsapp"><WhatsAppCampaignDispatcher /></ErrorBoundary></ProtectedPage>} />
             <Route path="/email-marketing" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="email-marketing"><EmailMarketingPage /></ErrorBoundary></ProtectedPage>} />
             <Route path="/disparador-ligacoes-ia" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="disparador-ligacoes-ia"><DisparadorLigacoesIA /></ErrorBoundary></ProtectedPage>} />

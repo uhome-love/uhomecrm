@@ -23,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePendingLeadAlert } from "@/hooks/usePendingLeadAlert";
 import { useVendaRealtimeNotification } from "@/hooks/useVendaRealtimeNotification";
 import LeadAcceptanceDialog from "@/components/pipeline/LeadAcceptanceDialog";
-import MelnickMetaBanner from "@/components/MelnickMetaBanner";
+
 import NewLeadBanner from "@/components/notifications/NewLeadBanner";
 import PushPromptBanner from "@/components/notifications/PushPromptBanner";
 import GlobalSearch from "@/components/GlobalSearch";
