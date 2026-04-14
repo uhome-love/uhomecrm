@@ -19,6 +19,21 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    // Validate JWT properly
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const _sbAuth = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const _token = authHeader.replace("Bearer ", "");
+    const { data: _claims, error: _claimsErr } = await _sbAuth.auth.getClaims(_token);
+    if (_claimsErr || !_claims?.claims) {
+      return new Response(JSON.stringify({ error: "Não autenticado" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN");
     const PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");

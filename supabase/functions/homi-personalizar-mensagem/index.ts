@@ -10,7 +10,13 @@ import { jsonResponse, errorResponse } from "../_shared/cors.ts";
 
 Deno.serve(withCorsAndErrorHandling("homi-personalizar-mensagem", async (req) => {
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return errorResponse("Unauthorized", 401);
+  if (!authHeader?.startsWith("Bearer ")) return errorResponse("Unauthorized", 401);
+
+  // Validate JWT properly
+  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+  const _sbAuth = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
+  const { data: _claims, error: _claimsErr } = await _sbAuth.auth.getClaims(authHeader.replace("Bearer ", ""));
+  if (_claimsErr || !_claims?.claims) return errorResponse("Unauthorized", 401);
 
   const { template, lead, corretor_nome } = await req.json();
   if (!template || !lead) return errorResponse("Missing template or lead data", 400);

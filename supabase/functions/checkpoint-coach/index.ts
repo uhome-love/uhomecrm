@@ -8,6 +8,18 @@ import { withCorsAndErrorHandling, requireApiKey, callAI } from "../_shared/ai-h
 import { jsonResponse } from "../_shared/cors.ts";
 
 Deno.serve(withCorsAndErrorHandling("checkpoint-coach", async (req) => {
+  // ── Auth: validate JWT ──
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return jsonResponse({ error: "Unauthorized" }, 401);
+  }
+  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+  const _sbAuth = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
+  const { data: _claims, error: _claimsErr } = await _sbAuth.auth.getClaims(authHeader.replace("Bearer ", ""));
+  if (_claimsErr || !_claims?.claims) {
+    return jsonResponse({ error: "Unauthorized" }, 401);
+  }
+
   const { summary, mode } = await req.json();
 
   const systemPrompt = mode === "jetimob_analysis"

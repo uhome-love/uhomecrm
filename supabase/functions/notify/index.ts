@@ -136,6 +136,26 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // ── Auth: validate JWT ──
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const _supabaseAuth = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const _token = authHeader.replace("Bearer ", "");
+  const { data: _claims, error: _claimsErr } = await _supabaseAuth.auth.getClaims(_token);
+  if (_claimsErr || !_claims?.claims) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
   const L = {
     info: (msg: string, ctx?: Record<string, unknown>) => console.info(JSON.stringify({ fn: "notify", level: "info", msg, traceId, ctx, ts: new Date().toISOString() })),
