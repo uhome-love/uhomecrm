@@ -191,3 +191,6 @@ verify_jwt = false
 
 [functions.whatsapp-connect]
 verify_jwt = false
+
+[functions.homi-copilot]
+verify_jwt = false
