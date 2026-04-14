@@ -1,89 +1,137 @@
 
 
-# Plano de Limpeza — 3 Fases Seguras
+# Plano: Tabelas WhatsApp por Corretor
 
-## Escopo Total
+## Contexto
 
-**Deletar 3 páginas** + todos os componentes, banners, analytics, landing pages, edge functions e referências relacionadas a Melnick Day, Mega Cyrela e Anúncios no Ar.
+Já existem 4 tabelas `whatsapp_*` no schema (`whatsapp_ai_log`, `whatsapp_campaign_batches`, `whatsapp_campaign_sends`, `whatsapp_respostas`). As novas tabelas são **independentes** — nenhuma tabela existente será alterada.
 
----
+O projeto já possui as funções `has_role()` e `is_lead_in_my_team()` como SECURITY DEFINER, que serão reutilizadas nas policies.
 
-## FASE 1 — Anúncios no Ar (baixo risco)
+## Migration SQL proposta
 
-**Deletar:**
-- `src/pages/AnunciosNoAr.tsx`
+```sql
+-- 1. whatsapp_instancias
+CREATE TABLE public.whatsapp_instancias (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  corretor_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  instance_name text NOT NULL UNIQUE,
+  status text NOT NULL DEFAULT 'aguardando_qr',
+  phone_number text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 
-**Editar:**
-- `src/App.tsx`: remover import `AnunciosNoAr` + rota `/anuncios`
-- `src/components/AppSidebar.tsx`: remover 3 entradas "Anúncios no Ar" (linhas ~346, ~413, ~522)
-- `src/components/layout/Sidebar.tsx`: remover 3 entradas "Anúncios no ar" (linhas ~67, ~126, ~200)
+ALTER TABLE public.whatsapp_instancias ENABLE ROW LEVEL SECURITY;
 
-**Risco:** Zero — nenhum outro componente depende desta página.
+-- Corretor vê apenas sua instância
+CREATE POLICY "Corretor sees own instance"
+  ON public.whatsapp_instancias FOR SELECT TO authenticated
+  USING (corretor_id = (SELECT id FROM profiles WHERE user_id = auth.uid()));
 
----
+-- Gestor vê instâncias do time
+CREATE POLICY "Gestor sees team instances"
+  ON public.whatsapp_instancias FOR SELECT TO authenticated
+  USING (
+    has_role(auth.uid(), 'gestor')
+    AND EXISTS (
+      SELECT 1 FROM team_members
+      WHERE user_id = (SELECT user_id FROM profiles WHERE id = corretor_id)
+        AND gerente_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
+        AND status = 'ativo'
+    )
+  );
 
-## FASE 2 — Mega Cyrela (baixo risco)
+-- Admin vê tudo
+CREATE POLICY "Admin sees all instances"
+  ON public.whatsapp_instancias FOR SELECT TO authenticated
+  USING (has_role(auth.uid(), 'admin'));
 
-**Deletar:**
-- `src/pages/MegaCyrela.tsx`
+-- Corretor pode inserir/atualizar sua instância
+CREATE POLICY "Corretor manages own instance"
+  ON public.whatsapp_instancias FOR ALL TO authenticated
+  USING (corretor_id = (SELECT id FROM profiles WHERE user_id = auth.uid()))
+  WITH CHECK (corretor_id = (SELECT id FROM profiles WHERE user_id = auth.uid()));
 
-**Editar:**
-- `src/App.tsx`: remover import `MegaCyrela` + rota `/mega-cyrela`
-- `src/components/AppSidebar.tsx`: remover entradas Mega Cyrela no sidebar (expanded ~675-687, collapsed ~708-714)
+-- Admin gerencia todas
+CREATE POLICY "Admin manages all instances"
+  ON public.whatsapp_instancias FOR ALL TO authenticated
+  USING (has_role(auth.uid(), 'admin'))
+  WITH CHECK (has_role(auth.uid(), 'admin'));
 
-**Risco:** Zero — página isolada, sem dependências externas.
+-- Trigger auto-update updated_at
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON public.whatsapp_instancias
+  FOR EACH ROW EXECUTE FUNCTION public.moddatetime('updated_at');
 
----
 
-## FASE 3 — Melnick Day completo (risco moderado, mais arquivos)
+-- 2. whatsapp_mensagens
+CREATE TABLE public.whatsapp_mensagens (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lead_id uuid NOT NULL REFERENCES public.pipeline_leads(id) ON DELETE CASCADE,
+  corretor_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  instance_name text NOT NULL,
+  direction text NOT NULL CHECK (direction IN ('sent', 'received')),
+  body text NOT NULL DEFAULT '',
+  media_url text,
+  whatsapp_message_id text NOT NULL,
+  timestamp timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-### 3A — Páginas e componentes frontend
+ALTER TABLE public.whatsapp_mensagens ENABLE ROW LEVEL SECURITY;
 
-**Deletar arquivos:**
-- `src/pages/MelnickDay.tsx` (página principal /melnick-day)
-- `src/pages/MelnickDayLanding.tsx` (landing /melnickday e /md)
-- `src/pages/CampaignAnalyticsPage.tsx` (admin analytics)
-- `src/components/MelnickMetaBanner.tsx` (banner no AppLayout)
-- `src/components/pipeline/MelnickCampaignAnalytics.tsx` (widget no Pipeline)
-- `src/components/showcase/MelnickDayLayout.tsx` (layout vitrine)
-- `src/components/showcase/CampaignHeader.tsx` (header campanha — só usado por MelnickDayLayout)
+-- Corretor vê suas mensagens
+CREATE POLICY "Corretor sees own messages"
+  ON public.whatsapp_mensagens FOR SELECT TO authenticated
+  USING (corretor_id = (SELECT id FROM profiles WHERE user_id = auth.uid()));
 
-**Editar:**
-- `src/App.tsx`: remover imports + rotas `/melnick-day`, `/melnickday`, `/md`, `/campaign-analytics`
-- `src/components/AppSidebar.tsx`: remover entradas Melnick Day (expanded ~647-661, collapsed ~694-700)
-- `src/components/AppLayout.tsx`: remover import + uso de `MelnickMetaBanner`
-- `src/pages/PipelineKanban.tsx`: remover import + uso de `MelnickCampaignAnalytics`
-- `src/pages/VitrinePage.tsx`: remover import `MelnickDayLayout`, cases `melnick_day`/`mega_cyrela` passam a usar `PropertySelectionLayout` (fallback seguro — vitrines existentes não quebram)
-- `src/components/showcase/types.ts`: remover `"melnick_day"` do tipo `ShowcaseType`
+-- Gestor vê mensagens do time
+CREATE POLICY "Gestor sees team messages"
+  ON public.whatsapp_mensagens FOR SELECT TO authenticated
+  USING (
+    has_role(auth.uid(), 'gestor')
+    AND EXISTS (
+      SELECT 1 FROM team_members
+      WHERE user_id = (SELECT user_id FROM profiles WHERE id = corretor_id)
+        AND gerente_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
+        AND status = 'ativo'
+    )
+  );
 
-### 3B — Referências em componentes que NÃO são deletados
+-- Admin vê tudo
+CREATE POLICY "Admin sees all messages"
+  ON public.whatsapp_mensagens FOR SELECT TO authenticated
+  USING (has_role(auth.uid(), 'admin'));
 
-- `src/components/pipeline/PipelineCard.tsx`: remover entrada `MELNICK_DAY` do `NON_EMP_TAGS` (linhas ~457-459)
-- `src/components/pipeline/PipelineLeadDetail.tsx`: remover DropdownMenuItem "Marcar Melnick Day" (linhas ~451-462) e Badge condicional (linhas ~478-480)
-- `src/components/oferta-ativa/CustomListWizard.tsx`: remover opção `melnick_day` do array CAMPANHAS (linha ~76)
-- `src/pages/MinhasVitrines.tsx`: remover label condicional `melnick_day` (fallback para tipo genérico)
-- `src/pages/WhatsAppLanding.tsx`: trocar default `campanha` de `"melnick_day_2026"` para `"campanha_whatsapp"`
-- `src/pages/WhatsAppCampaignDispatcher.tsx`: remover entries `melnick_day_*` e `ofertas_meday` dos dicts de templates
+-- Inserção: corretor insere suas próprias ou sistema (admin)
+CREATE POLICY "Corretor inserts own messages"
+  ON public.whatsapp_mensagens FOR INSERT TO authenticated
+  WITH CHECK (corretor_id = (SELECT id FROM profiles WHERE user_id = auth.uid()));
 
-### 3C — Edge Functions
+CREATE POLICY "Admin inserts any message"
+  ON public.whatsapp_mensagens FOR INSERT TO authenticated
+  WITH CHECK (has_role(auth.uid(), 'admin'));
 
-**Deletar:**
-- `supabase/functions/campaign-sms-click/` (exclusivo da landing Melnick Day SMS)
-- `supabase/functions/campaign-activation/` (ativação de campanha Melnick Day)
+-- Índices de performance
+CREATE INDEX idx_whatsapp_mensagens_lead ON public.whatsapp_mensagens(lead_id);
+CREATE INDEX idx_whatsapp_mensagens_corretor ON public.whatsapp_mensagens(corretor_id);
+CREATE INDEX idx_whatsapp_mensagens_timestamp ON public.whatsapp_mensagens(timestamp DESC);
+CREATE INDEX idx_whatsapp_instancias_corretor ON public.whatsapp_instancias(corretor_id);
+```
 
-**Manter:**
-- `supabase/functions/receive-landing-lead/` — função genérica usada por TODAS as landing pages. As referências a `isMelnickDay` são inofensivas (nunca mais serão true), mas serão limpas por segurança.
+## Notas técnicas
 
----
+- **corretor_id → profiles.id** (não auth.users.id): Segue o padrão do schema existente. Nas policies, o mapeamento `profiles.user_id = auth.uid()` resolve a conversão.
+- **CHECK constraint em `direction`**: Imutável, seguro — são valores fixos, não temporais.
+- **moddatetime trigger**: Reutiliza a extensão já instalada no projeto para `updated_at` automático.
+- **Sem realtime habilitado**: Pode ser adicionado depois se necessário para chat ao vivo.
+- **Nenhuma tabela existente alterada.**
 
-## Resumo de Impacto
+## Resumo
 
-| Ação | Qtd |
-|------|-----|
-| Páginas deletadas | 5 (AnunciosNoAr, MegaCyrela, MelnickDay, MelnickDayLanding, CampaignAnalyticsPage) |
-| Componentes deletados | 4 (MelnickMetaBanner, MelnickCampaignAnalytics, MelnickDayLayout, CampaignHeader) |
-| Edge functions deletadas | 2 (campaign-sms-click, campaign-activation) |
-| Arquivos editados | ~13 |
-
-**Zero lógica de negócio core alterada.** Pipeline, vitrines e WhatsApp continuam funcionando normalmente.
+| Tabela | Colunas | Policies | Índices |
+|--------|---------|----------|---------|
+| whatsapp_instancias | 7 | 5 | 1 |
+| whatsapp_mensagens | 10 | 5 | 3 |
 
