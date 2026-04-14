@@ -126,7 +126,10 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
   const sorted = [...messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   const groups = groupByDate(sorted);
   const lastMsg = sorted.length > 0 ? sorted[sorted.length - 1] : null;
-  const showCopilot = lastMsg?.direction === "received";
+
+  // Show copilot if last message is received OR if any of the last 5 messages is received
+  const lastReceived = [...sorted].reverse().find(m => m.direction === "received");
+  const showCopilot = lastMsg?.direction === "received" || (sorted.length > 0 && sorted.slice(-5).some(m => m.direction === "received"));
 
   return (
     <div className="flex-1 flex flex-col h-full min-w-0">
@@ -148,10 +151,13 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           </div>
         </div>
         <div className="flex gap-1.5">
-          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => navigate(`/pipeline-leads?lead=${leadInfo.id}`)}>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => navigate(`/pipeline?lead=${leadInfo.id}`)}>
             <Eye size={12} /> Pipeline
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => toast.info("Funcionalidade em breve")}>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => {
+            navigate(`/pipeline?lead=${leadInfo.id}`);
+            toast.info("Abra o lead no pipeline para agendar visita");
+          }}>
             <CalendarPlus size={12} /> Visita
           </Button>
         </div>
@@ -194,11 +200,11 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       </div>
 
       {/* Copilot */}
-      {showCopilot && (
+      {showCopilot && lastReceived && (
         <HomiCopilotCard
           leadId={leadInfo.id}
           leadName={leadInfo.nome}
-          lastMessage={lastMsg?.body || ""}
+          lastMessage={lastReceived.body || ""}
           onUseSuggestion={(s) => setText(s)}
         />
       )}

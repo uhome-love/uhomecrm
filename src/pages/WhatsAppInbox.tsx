@@ -196,6 +196,7 @@ export default function WhatsAppInbox() {
             selectedLeadId={selectedLeadId}
             onSelect={handleSelect}
             loading={loadingConvs}
+            userId={user?.id || null}
           />
         </div>
 
