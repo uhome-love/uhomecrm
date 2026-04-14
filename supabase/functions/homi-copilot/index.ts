@@ -36,7 +36,7 @@ Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
       .limit(15),
     supabase
       .from("pipeline_leads")
-      .select("nome, empreendimento, orcamento, stage_id, pipeline_stages(nome)")
+      .select("nome, empreendimento, valor_estimado, stage_id, pipeline_stages(nome)")
       .eq("id", lead_id)
       .single(),
   ]);
