@@ -1,35 +1,79 @@
 
 
-# Plano: Layout full-height sem scroll (estilo WhatsApp Web)
+# Plano: Dialog "Iniciar conversa" com busca e filtro por etapa
 
-## Resumo
+## Arquivo alterado
 
-Ajustar classes Tailwind nos 4 componentes para que a página ocupe 100vh sem scroll externo, com scroll interno independente em cada coluna.
+| Arquivo | Alteração |
+|---|---|
+| `src/components/whatsapp/ConversationList.tsx` | Substituir Popover por Dialog com busca, chips de etapa e lista enriquecida |
 
-## Alterações por arquivo
+Nenhum outro arquivo será alterado.
 
-### 1. `WhatsAppInbox.tsx` (wrapper)
-- Linha 330: já tem `h-[calc(100vh-56px)] flex flex-col` — OK
-- Linha 339: `flex flex-1 overflow-hidden` — adicionar `min-h-0` (crítico para flex shrink com scroll interno)
+## Implementação
 
-### 2. `ConversationList.tsx`
-- Linha 145: wrapper já tem `flex flex-col h-full` — adicionar `overflow-hidden min-h-0`
-- Header (linhas 147+): adicionar `flex-shrink-0`
-- Lista interna de itens (o div que renderiza as conversas): adicionar `flex-1 overflow-y-auto min-h-0`
-- Footer/botão "Nova conversa": adicionar `flex-shrink-0`
+### 1. Substituir Popover por Dialog
 
-### 3. `ConversationThread.tsx`
-- Linha 328: wrapper já tem `flex-1 flex flex-col h-full` — adicionar `overflow-hidden min-h-0`
-- Header (linha 330): adicionar `flex-shrink-0`
-- Messages div (linha 354): já tem `flex-1 overflow-y-auto` — adicionar `min-h-0`
-- Copilot card (linha 405): envolver em div com `flex-shrink-0 max-h-[180px] overflow-y-auto`
-- Quick action bar (linha 416): adicionar `flex-shrink-0`
-- Input area: adicionar `flex-shrink-0`
+Remover `Popover/PopoverContent/PopoverTrigger`. Importar `Dialog, DialogContent, DialogHeader, DialogTitle` de `@/components/ui/dialog`. O botão "Nova conversa" abre o Dialog via `newConvOpen`.
 
-### 4. `LeadPanel.tsx`
-- Linha 210: wrapper já tem `overflow-y-auto flex flex-col` — adicionar `h-full min-h-0`
-- Linha 203 (empty state): adicionar `h-full min-h-0`
+### 2. Estado adicional
 
-## Nenhuma alteração de lógica
-Apenas classes CSS. Nenhuma query, edge function ou estado será modificado.
+```typescript
+const [stages, setStages] = useState<{ id: string; nome: string }[]>([]);
+const [selectedStageId, setSelectedStageId] = useState<string | null>(null); // null = "Todas"
+const [dialogLeads, setDialogLeads] = useState<any[]>([]);
+const [dialogLoading, setDialogLoading] = useState(false);
+```
+
+### 3. Carregar etapas ao abrir Dialog
+
+`useEffect` quando `newConvOpen === true`: buscar `pipeline_stages` ORDER BY `ordem ASC`. Guardar em `stages`. Executado uma vez (ou sempre que abre, sem cache complexo).
+
+### 4. Carregar leads ao abrir / mudar filtros
+
+`useEffect` com debounce (300ms) quando `newConvOpen`, `newConvSearch` ou `selectedStageId` mudam:
+
+```sql
+pipeline_leads
+  WHERE corretor_id = userId
+  AND (nome ILIKE '%busca%' se busca)
+  AND (stage_id = selectedStageId se filtro)
+  ORDER BY updated_at DESC
+  LIMIT 20
+```
+
+Ao abrir sem busca e sem filtro: retorna os 20 leads mais recentes.
+
+### 5. Layout do Dialog
+
+```
+DialogContent max-w-md
+├── DialogHeader: "Iniciar conversa"
+├── Input de busca (com ícone Search)
+├── Chips de etapa (flex wrap, gap-1.5)
+│   ├── [Todas] — ativo se selectedStageId === null
+│   └── [Stage.nome] × N — ativo se selectedStageId === stage.id
+│   Ativo: bg-[#4F46E5] text-white
+│   Inativo: bg-muted text-muted-foreground
+├── Lista (max-h-[50vh] overflow-y-auto)
+│   └── Cada item:
+│       ├── Avatar (iniciais + cor)
+│       ├── Nome + Empreendimento (muted)
+│       ├── Chip da etapa (pequeno, colorido)
+│       └── "há X tempo" (updated_at)
+│       onClick → onSelect(lead.id) + fecha dialog
+└── Empty/Loading states
+```
+
+### 6. Query inclui stage_id e stage nome
+
+```typescript
+.select("id, nome, empreendimento, updated_at, stage_id, pipeline_stages(nome)")
+```
+
+Isso permite exibir o chip da etapa em cada item sem query extra.
+
+### 7. Limpeza ao fechar
+
+Ao fechar dialog: resetar `newConvSearch`, `selectedStageId`, `dialogLeads`.
 
