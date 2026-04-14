@@ -94,6 +94,29 @@ Deno.serve(async (req) => {
           instance_name: instanceName,
           status: "aguardando_qr",
         });
+
+        // Configure webhook (non-blocking)
+        try {
+          const webhookRes = await fetch(`${EVOLUTION_URL}/webhook/set/${instanceName}`, {
+            method: "POST",
+            headers: evoHeaders,
+            body: JSON.stringify({
+              webhook: {
+                enabled: true,
+                url: `${supabaseUrl}/functions/v1/evolution-webhook`,
+                webhookByEvents: false,
+                byEvents: false,
+                base64: false,
+                events: ["MESSAGES_UPSERT"],
+              },
+            }),
+          });
+          if (!webhookRes.ok) {
+            console.error("Evolution webhook set error:", await webhookRes.text());
+          }
+        } catch (whErr) {
+          console.error("Evolution webhook set exception:", whErr);
+        }
       }
 
       return jsonResponse({
