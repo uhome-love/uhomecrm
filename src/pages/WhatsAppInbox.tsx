@@ -336,7 +336,7 @@ export default function WhatsAppInbox() {
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         <div className={`${isMobile ? (mobileView === "list" ? "flex" : "hidden") : "flex"}`}>
           <ConversationList
             conversations={conversations}

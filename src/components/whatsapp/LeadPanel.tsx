@@ -200,14 +200,14 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
 
   if (!localLead) {
     return (
-      <div className="w-[240px] border-l border-border bg-muted/30 flex items-center justify-center p-4">
+      <div className="w-[240px] border-l border-border bg-muted/30 flex items-center justify-center p-4 h-full min-h-0">
         <p className="text-xs text-muted-foreground text-center">Selecione uma conversa para ver os dados do lead</p>
       </div>
     );
   }
 
   return (
-    <div className="w-[240px] border-l border-border bg-muted/30 overflow-y-auto flex flex-col">
+    <div className="w-[240px] border-l border-border bg-muted/30 overflow-y-auto flex flex-col h-full min-h-0">
       {/* Header */}
       <div className="p-3 border-b border-border flex flex-col items-center gap-1.5">
         <Avatar className="h-12 w-12">
