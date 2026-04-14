@@ -36,7 +36,7 @@ Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
       .limit(15),
     supabase
       .from("pipeline_leads")
-      .select("nome, empreendimento, orcamento, stage_id, pipeline_stages(nome)")
+      .select("nome, empreendimento, valor_estimado, stage_id, pipeline_stages(nome)")
       .eq("id", lead_id)
       .single(),
   ]);
@@ -64,7 +64,7 @@ Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
   const nome = lead.nome || "Desconhecido";
   const etapa = (lead as any).pipeline_stages?.nome || "Não definida";
   const empreendimento = lead.empreendimento || "Não informado";
-  const orcamento = lead.orcamento || "Não informado";
+  const orcamento = lead.valor_estimado ? `R$ ${Number(lead.valor_estimado).toLocaleString("pt-BR")}` : "Não informado";
 
   const prompt = `Você é HOMI, assistente de vendas imobiliárias da Uhome Negócios Imobiliários em Porto Alegre, Brasil.
 
