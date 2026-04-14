@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutGrid, CheckCircle, FileText, Target, AlignLeft,
@@ -281,7 +281,32 @@ export default function Sidebar({
   const navigate  = useNavigate();
   const [campOpen, setCampOpen] = useState(false);
   const isDark    = theme === "dark";
-  const groups    = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
+  const [whatsappUnread, setWhatsappUnread] = useState(() => {
+    const v = localStorage.getItem("whatsapp_unread");
+    return v ? parseInt(v, 10) || 0 : 0;
+  });
+
+  // Listen for unread count changes
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === "whatsapp_unread") {
+        setWhatsappUnread(parseInt(e.newValue || "0", 10) || 0);
+      }
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  // Inject badge into WhatsApp Inbox nav items
+  const rawGroups = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
+  const groups = rawGroups.map(g => ({
+    ...g,
+    items: g.items.map(item =>
+      item.path === "/whatsapp" && whatsappUnread > 0
+        ? { ...item, badge: whatsappUnread }
+        : item
+    ),
+  }));
   const isActive  = (path: string) => location.pathname === path;
   const isMobile  = useIsMobile();
 
@@ -406,7 +431,9 @@ export default function Sidebar({
                     <span className="flex-1 truncate">{item.label}</span>
                     {item.badge !== undefined && (
                       <span className={cn("text-[10px] font-semibold rounded-full px-1.5 py-px",
-                        isDark ? "bg-white/10 text-[#71717a]" : "bg-[#f0f0f0] text-[#a1a1aa]")}>
+                        item.path === "/whatsapp"
+                          ? "bg-red-500 text-white"
+                          : isDark ? "bg-white/10 text-[#71717a]" : "bg-[#f0f0f0] text-[#a1a1aa]")}>
                         {item.badge}
                       </span>
                     )}
