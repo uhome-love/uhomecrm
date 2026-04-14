@@ -8458,6 +8458,112 @@ export type Database = {
           },
         ]
       }
+      whatsapp_instancias: {
+        Row: {
+          corretor_id: string
+          created_at: string
+          id: string
+          instance_name: string
+          phone_number: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string
+          id?: string
+          instance_name: string
+          phone_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string
+          id?: string
+          instance_name?: string
+          phone_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_instancias_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_instancias_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
+      whatsapp_mensagens: {
+        Row: {
+          body: string
+          corretor_id: string
+          created_at: string
+          direction: string
+          id: string
+          instance_name: string
+          lead_id: string
+          media_url: string | null
+          timestamp: string
+          whatsapp_message_id: string
+        }
+        Insert: {
+          body?: string
+          corretor_id: string
+          created_at?: string
+          direction: string
+          id?: string
+          instance_name: string
+          lead_id: string
+          media_url?: string | null
+          timestamp?: string
+          whatsapp_message_id: string
+        }
+        Update: {
+          body?: string
+          corretor_id?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          instance_name?: string
+          lead_id?: string
+          media_url?: string | null
+          timestamp?: string
+          whatsapp_message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_mensagens_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_mensagens_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "whatsapp_mensagens_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_respostas: {
         Row: {
           campanha: string | null
