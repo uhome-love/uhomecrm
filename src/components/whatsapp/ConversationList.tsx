@@ -2,11 +2,13 @@ import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Plus, MessageSquare, X, Loader2, Clock, UserPlus, RefreshCw, ArrowRight } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { Search, Plus, MessageSquare, Loader2, Clock, UserPlus, RefreshCw, ArrowRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export interface ConversationItem {
   leadId: string;
@@ -70,6 +72,15 @@ function SLABadge({ lastReceivedTs }: { lastReceivedTs: string | null }) {
 
 type Tab = "all" | "active" | "followup" | "new";
 
+interface DialogLead {
+  id: string;
+  nome: string;
+  empreendimento: string | null;
+  updated_at: string;
+  stage_id: string | null;
+  pipeline_stages: { nome: string } | null;
+}
+
 export default function ConversationList({
   conversations,
   followUpLeads,
@@ -83,28 +94,60 @@ export default function ConversationList({
   const [tab, setTab] = useState<Tab>("all");
   const [newConvOpen, setNewConvOpen] = useState(false);
   const [newConvSearch, setNewConvSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<{ id: string; nome: string; empreendimento: string | null }[]>([]);
-  const [searching, setSearching] = useState(false);
 
-  // Debounced search for new conversation
+  // Dialog state
+  const [stages, setStages] = useState<{ id: string; nome: string }[]>([]);
+  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
+  const [dialogLeads, setDialogLeads] = useState<DialogLead[]>([]);
+  const [dialogLoading, setDialogLoading] = useState(false);
+
+  const debouncedDialogSearch = useDebounce(newConvSearch, 300);
+
+  // Load stages when dialog opens
   useEffect(() => {
-    if (!newConvSearch.trim() || !userId) {
-      setSearchResults([]);
-      return;
+    if (!newConvOpen) return;
+    supabase
+      .from("pipeline_stages")
+      .select("id, nome")
+      .order("ordem", { ascending: true })
+      .then(({ data }) => {
+        if (data) setStages(data as { id: string; nome: string }[]);
+      });
+  }, [newConvOpen]);
+
+  // Load leads when dialog opens or filters change
+  useEffect(() => {
+    if (!newConvOpen || !userId) return;
+    setDialogLoading(true);
+
+    let query = supabase
+      .from("pipeline_leads")
+      .select("id, nome, empreendimento, updated_at, stage_id, pipeline_stages(nome)")
+      .eq("corretor_id", userId)
+      .order("updated_at", { ascending: false })
+      .limit(20);
+
+    if (debouncedDialogSearch.trim()) {
+      query = query.ilike("nome", `%${debouncedDialogSearch.trim()}%`);
     }
-    const timeout = setTimeout(async () => {
-      setSearching(true);
-      const { data } = await supabase
-        .from("pipeline_leads")
-        .select("id, nome, empreendimento")
-        .eq("corretor_id", userId)
-        .ilike("nome", `%${newConvSearch.trim()}%`)
-        .limit(10);
-      setSearchResults((data as any[]) || []);
-      setSearching(false);
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [newConvSearch, userId]);
+    if (selectedStageId) {
+      query = query.eq("stage_id", selectedStageId);
+    }
+
+    query.then(({ data }) => {
+      setDialogLeads((data as DialogLead[]) || []);
+      setDialogLoading(false);
+    });
+  }, [newConvOpen, userId, debouncedDialogSearch, selectedStageId]);
+
+  // Cleanup on close
+  useEffect(() => {
+    if (!newConvOpen) {
+      setNewConvSearch("");
+      setSelectedStageId(null);
+      setDialogLeads([]);
+    }
+  }, [newConvOpen]);
 
   const q = search.toLowerCase();
 
@@ -125,8 +168,6 @@ export default function ConversationList({
 
   const handleSelectNewConv = (leadId: string) => {
     setNewConvOpen(false);
-    setNewConvSearch("");
-    setSearchResults([]);
     onSelect(leadId);
   };
 
@@ -144,7 +185,7 @@ export default function ConversationList({
   return (
     <div className="w-[290px] border-r border-border flex flex-col bg-card h-full">
       {/* Header */}
-      <div className="p-3 border-b border-border space-y-2">
+      <div className="p-3 border-b border-border space-y-2 flex-shrink-0">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-sm flex items-center gap-1.5">
             <MessageSquare size={14} /> Conversas
@@ -180,7 +221,7 @@ export default function ConversationList({
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
@@ -325,65 +366,106 @@ export default function ConversationList({
       </div>
 
       {/* Footer — Nova Conversa */}
-      <div className="p-2 border-t border-border">
-        <Popover open={newConvOpen} onOpenChange={setNewConvOpen}>
-          <PopoverTrigger asChild>
-            <Button size="sm" variant="outline" className="w-full text-xs h-8">
-              <Plus size={12} /> Nova conversa
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-[270px] p-2">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold">Buscar lead</span>
-                <button onClick={() => setNewConvOpen(false)} className="text-muted-foreground hover:text-foreground">
-                  <X size={14} />
-                </button>
-              </div>
+      <div className="p-2 border-t border-border flex-shrink-0">
+        <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => setNewConvOpen(true)}>
+          <Plus size={12} /> Nova conversa
+        </Button>
+
+        <Dialog open={newConvOpen} onOpenChange={setNewConvOpen}>
+          <DialogContent className="max-w-md p-0 gap-0">
+            <DialogHeader className="p-4 pb-3 border-b border-border">
+              <DialogTitle className="text-sm">Iniciar conversa</DialogTitle>
+            </DialogHeader>
+
+            {/* Search */}
+            <div className="px-4 pt-3">
               <div className="relative">
                 <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
                 <Input
-                  placeholder="Digite o nome do lead..."
+                  placeholder="Buscar lead por nome..."
                   value={newConvSearch}
                   onChange={e => setNewConvSearch(e.target.value)}
                   className="h-8 pl-8 text-xs"
                   autoFocus
                 />
               </div>
-              <div className="max-h-[200px] overflow-y-auto">
-                {searching ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 size={14} className="animate-spin text-muted-foreground" />
-                  </div>
-                ) : searchResults.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground text-center py-3">
-                    {newConvSearch.trim() ? "Nenhum lead encontrado" : "Digite para buscar"}
+            </div>
+
+            {/* Stage chips */}
+            <div className="px-4 pt-2 pb-1 flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setSelectedStageId(null)}
+                className={`text-[10px] px-2.5 py-1 rounded-full font-medium transition-colors ${
+                  selectedStageId === null
+                    ? "bg-[#4F46E5] text-white"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                Todas
+              </button>
+              {stages.map(stage => (
+                <button
+                  key={stage.id}
+                  onClick={() => setSelectedStageId(stage.id === selectedStageId ? null : stage.id)}
+                  className={`text-[10px] px-2.5 py-1 rounded-full font-medium transition-colors ${
+                    selectedStageId === stage.id
+                      ? "bg-[#4F46E5] text-white"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {stage.nome}
+                </button>
+              ))}
+            </div>
+
+            {/* Lead list */}
+            <div className="max-h-[50vh] overflow-y-auto px-2 pb-2">
+              {dialogLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 size={16} className="animate-spin text-muted-foreground" />
+                </div>
+              ) : dialogLeads.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-xs text-muted-foreground">
+                    {debouncedDialogSearch.trim() || selectedStageId
+                      ? "Nenhum lead encontrado"
+                      : "Nenhum lead disponível"}
                   </p>
-                ) : (
-                  searchResults.map(lead => (
-                    <button
-                      key={lead.id}
-                      onClick={() => handleSelectNewConv(lead.id)}
-                      className="w-full text-left px-2 py-2 rounded hover:bg-muted/60 transition-colors flex items-center gap-2"
-                    >
-                      <Avatar className="h-7 w-7 shrink-0">
-                        <AvatarFallback className={`${getAvatarColor(lead.nome)} text-white text-[10px]`}>
-                          {getInitials(lead.nome)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <span className="text-xs font-medium block truncate">{lead.nome}</span>
-                        {lead.empreendimento && (
-                          <span className="text-[10px] text-muted-foreground block truncate">{lead.empreendimento}</span>
+                </div>
+              ) : (
+                dialogLeads.map(lead => (
+                  <button
+                    key={lead.id}
+                    onClick={() => handleSelectNewConv(lead.id)}
+                    className="w-full text-left px-2 py-2.5 rounded-md hover:bg-muted/60 transition-colors flex items-center gap-2.5"
+                  >
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className={`${getAvatarColor(lead.nome)} text-white text-[10px]`}>
+                        {getInitials(lead.nome)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium truncate">{lead.nome}</span>
+                        {lead.pipeline_stages?.nome && (
+                          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 shrink-0">
+                            {lead.pipeline_stages.nome}
+                          </Badge>
                         )}
                       </div>
-                    </button>
-                  ))
-                )}
-              </div>
+                      {lead.empreendimento && (
+                        <span className="text-[10px] text-muted-foreground block truncate">{lead.empreendimento}</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      há {formatDistanceToNow(new Date(lead.updated_at), { locale: ptBR, addSuffix: false })}
+                    </span>
+                  </button>
+                ))
+              )}
             </div>
-          </PopoverContent>
-        </Popover>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
