@@ -74,7 +74,6 @@ const ORDENS = [
 
 const CAMPANHAS = [
   { id: "follow_up", label: "📞 Follow-up" },
-  { id: "follow_up", label: "📞 Follow-up" },
   { id: "reengajamento", label: "🔄 Reengajamento de leads" },
   { id: "qualificacao", label: "🎯 Qualificação de leads" },
   { id: "pos_venda", label: "🤝 Pós-venda / Relacionamento" },
