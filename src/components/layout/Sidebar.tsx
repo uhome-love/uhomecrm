@@ -10,7 +10,7 @@ import {
   Trophy, GraduationCap, Lightbulb, Layers,
   Building2, Wallet, ListTodo, Database,
   BarChart2, GitBranch, Award, BellRing,
-  UserCheck, Clock, LineChart, PieChart, Link2,
+  UserCheck, Clock, LineChart, PieChart, Link2, Smartphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -104,6 +104,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Meus Links",         path: "/links-site",        icon: <Link2        size={15} strokeWidth={1.5} /> },
         { label: "Dev AI",             path: "/dev-ai",            icon: <Lightbulb    size={15} strokeWidth={1.5} /> },
         { label: "Base HOMI",          path: "/homi/base-conhecimento", icon: <BookOpen     size={15} strokeWidth={1.5} /> },
+        { label: "Meu WhatsApp",       path: "/configuracoes/whatsapp", icon: <Smartphone  size={15} strokeWidth={1.5} /> },
       ],
     },
   ],
@@ -197,6 +198,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "HOMI Assistente",    path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
         { label: "Meus Links",         path: "/links-site",        icon: <Link2        size={15} strokeWidth={1.5} /> },
         { label: "Minhas vitrines",    path: "/minhas-vitrines",   icon: <Building2    size={15} strokeWidth={1.5} /> },
+        { label: "Meu WhatsApp",       path: "/configuracoes/whatsapp", icon: <Smartphone  size={15} strokeWidth={1.5} /> },
       ],
     },
   ],
