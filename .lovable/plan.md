@@ -1,58 +1,67 @@
 
 
-# Plano: Edge Function `homi-copilot`
+# Plano: Integrar Edge Function `homi-copilot` no HomiCopilotCard
 
-## Observação importante
+## Visão geral
 
-Não existe `GEMINI_API_KEY` nos secrets do projeto. Porém o projeto já possui `LOVABLE_API_KEY` e o módulo `_shared/ai-helpers.ts` que acessa `google/gemini-2.5-flash` via Lovable AI Gateway. Vou usar essa infraestrutura existente em vez de chamada direta à API do Google — mesmo modelo Gemini, sem necessidade de nova secret.
+Substituir o card mockado por chamada real à edge function `homi-copilot`, com estados de loading, exibição estruturada da resposta da IA, e ações reais (criar tarefa, mover etapa).
 
-## Arquivo novo
+## Arquivo: `src/components/whatsapp/HomiCopilotCard.tsx`
 
-`supabase/functions/homi-copilot/index.ts`
+Reescrever completamente.
 
-### Fluxo
+### Props
 
-1. Validar JWT via `getClaims()` (verify_jwt = false no config, validação em código)
-2. Receber `{ lead_id, ultima_mensagem }` do body
-3. Query paralela:
-   - `whatsapp_mensagens` WHERE lead_id, ORDER BY timestamp DESC LIMIT 15
-   - `pipeline_leads` JOIN `pipeline_stages` para nome, etapa, empreendimento, orcamento
-4. Formatar histórico como `[HH:mm] Corretor/Lead: msg`
-5. Chamar `callAI()` de `_shared/ai-helpers.ts` com o prompt HOMI (model: `google/gemini-2.5-flash`)
-6. `JSON.parse` da resposta → retornar ao frontend
-
-### Prompt
-
-Exatamente o prompt fornecido no requisito, com campos interpolados (nome, etapa, empreendimento, orcamento, historico, ultima_mensagem).
-
-### Resposta
-
-```json
-{
-  "sugestao_resposta": "...",
-  "briefing": "...",
-  "tom_detectado": "interessado|hesitante|frio|pronto",
-  "sugestao_followup": "..." | null,
-  "sugestao_etapa": "..." | null
+```typescript
+interface HomiCopilotCardProps {
+  leadId: string;
+  leadName: string;
+  lastMessage: string;
+  onUseSuggestion: (text: string) => void;
 }
 ```
 
-## Config
+### Lógica
 
-Adicionar em `supabase/config.toml`:
-```toml
-[functions.homi-copilot]
-verify_jwt = false
+1. **useEffect** ao montar (ou quando `lastMessage` mudar): chamar `supabase.functions.invoke("homi-copilot", { body: { lead_id: leadId, ultima_mensagem: lastMessage } })`
+2. Estados: `loading`, `data` (resposta parsed), `error`, `visible`, `editedSuggestion` (textarea editável)
+
+### UI — Loading
+
+Card verde com spinner + "HOMI está analisando..."
+
+### UI — Com resposta
+
+- Header: "HOMI Copilot" + badge de tom (emoji + cor conforme tom_detectado)
+- Briefing em itálico cinza
+- Textarea editável pré-preenchida com `sugestao_resposta`
+- Botões:
+  - "✓ Usar" → `onUseSuggestion(editedSuggestion)`
+  - "Ignorar" → esconde card
+  - Se `sugestao_followup != null`: botão "+ {sugestao_followup}" → insert em `pipeline_tarefas` com `pipeline_lead_id`, `titulo`, `vence_em` (amanhã 10h BRT), `status: pendente`, `tipo: follow_up` → toast sucesso
+  - Se `sugestao_etapa != null`: botão "💡 Mover para {etapa}" → busca `pipeline_stages` WHERE `nome = sugestao_etapa`, update `pipeline_leads.stage_id` → toast sucesso
+
+## Arquivo: `src/components/whatsapp/ConversationThread.tsx`
+
+Alteração mínima: adicionar prop `leadId` ao `HomiCopilotCard` (linha 188-192).
+
+```tsx
+<HomiCopilotCard
+  leadId={leadInfo.id}    // ← adicionar
+  leadName={leadInfo.nome}
+  lastMessage={lastMsg?.body || ""}
+  onUseSuggestion={(s) => setText(s)}
+/>
 ```
 
 ## O que NÃO será alterado
 
-- Nenhuma edge function existente
-- Nenhuma tabela
-- `_shared/ai-helpers.ts` e `_shared/cors.ts` (apenas importados)
+- Edge functions existentes
+- Outros componentes
+- Tabelas
 
 | Arquivo | Ação |
 |---|---|
-| `supabase/functions/homi-copilot/index.ts` | Criar |
-| `supabase/config.toml` | Adicionar bloco |
+| `src/components/whatsapp/HomiCopilotCard.tsx` | Reescrever |
+| `src/components/whatsapp/ConversationThread.tsx` | Editar (1 linha: adicionar leadId prop) |
 
