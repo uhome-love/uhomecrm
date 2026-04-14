@@ -146,6 +146,8 @@ const MODULE_CONTEXTS: Record<string, string> = {
 - Sugerir ações práticas baseadas no contexto fornecido`,
 };
 
+const UHOME_IDENTITY = `Você é a UHOME IA CORE — o cérebro central do sistema UHOME Gestão e IA.`; // truncated for auth insertion
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
