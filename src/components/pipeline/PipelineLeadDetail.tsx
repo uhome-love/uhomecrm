@@ -46,6 +46,7 @@ import StageCoachBar from "./StageCoachBar";
 import LeadFlagControls from "./LeadFlagControls";
 import { CallFocusOverlay } from "./CallFocusOverlay";
 import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
+import LeadWhatsAppTab from "./LeadWhatsAppTab";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -591,6 +592,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <TabsTrigger value="homi" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
                 ⚡ HOMI
               </TabsTrigger>
+              <TabsTrigger value="whatsapp" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
+                💬 WhatsApp
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -739,6 +743,10 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   </button>
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="whatsapp" className="mt-0">
+              <LeadWhatsAppTab leadId={lead.id} telefone={lead.telefone} />
             </TabsContent>
           </ScrollArea>
         </Tabs>
