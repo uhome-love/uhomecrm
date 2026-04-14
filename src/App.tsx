@@ -71,6 +71,7 @@ const MarketplaceScripts = lazyRetry(() => import("./pages/MarketplaceScripts"))
 const CorretorCall = lazyRetry(() => import("./pages/CorretorCall"));
 const CorretorProgresso = lazyRetry(() => import("./pages/CorretorProgresso"));
 const AceiteLeads = lazyRetry(() => import("./pages/AceiteLeads"));
+const ConfiguracoesWhatsApp = lazyRetry(() => import("./pages/ConfiguracoesWhatsApp"));
 
 // Backoffice pages
 const BackofficeDashboard = lazyRetry(() => import("./pages/BackofficeDashboard"));
@@ -233,6 +234,7 @@ const App = () => (
             {/* Busca de Leads / Higienização — gestor + admin */}
             <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="busca-leads"><BuscaLeads /></ErrorBoundary></ProtectedPage>} />
             <Route path="/configuracoes" element={<ProtectedPage><ErrorBoundary module="configuracoes"><Configuracoes /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/configuracoes/whatsapp" element={<ProtectedPage roles={["corretor", "admin"]}><ErrorBoundary module="config-whatsapp"><ConfiguracoesWhatsApp /></ErrorBoundary></ProtectedPage>} />
             <Route path="/links-site" element={<ProtectedPage><ErrorBoundary module="links-site"><LinksSite /></ErrorBoundary></ProtectedPage>} />
             <Route path="/notificacoes" element={<ProtectedPage><ErrorBoundary module="notificacoes"><Notificacoes /></ErrorBoundary></ProtectedPage>} />
 
