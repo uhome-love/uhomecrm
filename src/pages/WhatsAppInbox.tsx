@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import ConversationList, { type ConversationItem, type FollowUpLead, type NewLead } from "@/components/whatsapp/ConversationList";
@@ -40,6 +40,7 @@ interface Message {
 export default function WhatsAppInbox() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [profileId, setProfileId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [followUpLeads, setFollowUpLeads] = useState<FollowUpLead[]>([]);
@@ -292,7 +293,13 @@ export default function WhatsAppInbox() {
         </div>
 
         {!isMobile && (
-          <LeadPanel lead={leadInfo} />
+          <LeadPanel
+            lead={leadInfo}
+            leadId={selectedLeadId}
+            profileId={profileId}
+            messages={messages}
+            onOpenFullModal={(id) => navigate(`/pipeline?lead=${id}`)}
+          />
         )}
       </div>
     </div>
