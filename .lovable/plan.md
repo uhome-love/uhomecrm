@@ -1,67 +1,89 @@
 
 
-# Reestruturação Completa UHomeSales — 10 Fases
+# Plano de Limpeza — 3 Fases Seguras
 
-Todas as verificações foram feitas. Imports, dependências e arquivos confirmados. Nenhum risco de build quebrado.
+## Escopo Total
 
----
-
-## FASE 1 — Deletar 6 páginas mortas
-Sem import ativo em nenhum outro arquivo:
-- `GestorDashboard.tsx`, `ImoveisPage.tsx` (antigo), `CorretorResumo.tsx`, `RankingComercial.tsx`, `MelnickMetas.tsx`, `TarefasPage.tsx`
-
-## FASE 2 — Renomear 4 páginas + atualizar App.tsx
-- `ImoveisPageNew.tsx` → `ImoveisPage.tsx`
-- `CampanhasVozPage.tsx` → `CampanhasVoz.tsx`
-- `CentralNutricaoPage.tsx` → `CentralNutricao.tsx`
-- `WhatsAppCampaignDispatcherPage.tsx` → `WhatsAppCampaignDispatcher.tsx`
-- Atualizar 4 `lazyRetry` imports no App.tsx
-
-## FASE 3 — Corrigir links mortos (5 arquivos)
-- `AppSidebar.tsx`: `/corretor/resumo` → `/corretor`, `/corretor/ranking-equipes` → `/ranking`
-- `QuickLinksGrid.tsx`: `/corretor/resumo` → `/corretor`
-- `DashboardRankingsPreview.tsx`: `/corretor/ranking-equipes` → `/ranking`
-- `NotificationList.tsx`: `/corretor/resumo` → `/corretor`
-- `App.tsx`: remover 2 redirects obsoletos (linhas 228-229)
-
-## FASE 4 — Deletar 4 wrappers Supabase
-Confirmado 0 imports: `supabase-auth-helpers.ts`, `supabase-client-wrapper.ts`, `supabase-typed.ts`, `supabase-types-helpers.ts`
-
-## FASE 5 — Deletar `services/imoveis.ts`
-Só importado por hooks que serão deletados na fase seguinte.
-
-## FASE 6 — Deletar 4 hooks + 1 store órfãos
-- `useImoveisQuery.ts`, `useImoveisSearch.ts`, `useImoveisFilters.ts`, `usePostgRESTFacets.ts`
-- `stores/searchStore.ts`
-
-## FASE 7 — Documentar hooks CEO
-Adicionar comentários de responsabilidade em `useCeoDashboard.ts` e `useCeoData.ts`.
-
-## FASE 8 — Ícones duplicados no Sidebar
-- `Placar do Dia`: Trophy → BarChart2
-- `Integração`: Zap → PlugZap
-- `Diagnóstico Site`: Zap → Activity
-- `Sala de Reunião`: CalendarDays → DoorOpen
-- Renomear "Tarefas & Marketing (Ana)" → "Operacional (Backoffice)"
-
-## FASE 9 — PageHeader em 5 páginas
-Adicionar `PageHeader` padronizado em: `Conquistas.tsx`, `CorretorProgresso.tsx`, `DisponibilidadePage.tsx`, `MarketingDashboard.tsx`, `NutricaoPage.tsx`
-
-## FASE 10 — Limpeza final App.tsx
-Remover 3 comentários mortos (linhas 39, 49, 53) e verificar imports residuais.
+**Deletar 3 páginas** + todos os componentes, banners, analytics, landing pages, edge functions e referências relacionadas a Melnick Day, Mega Cyrela e Anúncios no Ar.
 
 ---
 
-## Resumo
+## FASE 1 — Anúncios no Ar (baixo risco)
+
+**Deletar:**
+- `src/pages/AnunciosNoAr.tsx`
+
+**Editar:**
+- `src/App.tsx`: remover import `AnunciosNoAr` + rota `/anuncios`
+- `src/components/AppSidebar.tsx`: remover 3 entradas "Anúncios no Ar" (linhas ~346, ~413, ~522)
+- `src/components/layout/Sidebar.tsx`: remover 3 entradas "Anúncios no ar" (linhas ~67, ~126, ~200)
+
+**Risco:** Zero — nenhum outro componente depende desta página.
+
+---
+
+## FASE 2 — Mega Cyrela (baixo risco)
+
+**Deletar:**
+- `src/pages/MegaCyrela.tsx`
+
+**Editar:**
+- `src/App.tsx`: remover import `MegaCyrela` + rota `/mega-cyrela`
+- `src/components/AppSidebar.tsx`: remover entradas Mega Cyrela no sidebar (expanded ~675-687, collapsed ~708-714)
+
+**Risco:** Zero — página isolada, sem dependências externas.
+
+---
+
+## FASE 3 — Melnick Day completo (risco moderado, mais arquivos)
+
+### 3A — Páginas e componentes frontend
+
+**Deletar arquivos:**
+- `src/pages/MelnickDay.tsx` (página principal /melnick-day)
+- `src/pages/MelnickDayLanding.tsx` (landing /melnickday e /md)
+- `src/pages/CampaignAnalyticsPage.tsx` (admin analytics)
+- `src/components/MelnickMetaBanner.tsx` (banner no AppLayout)
+- `src/components/pipeline/MelnickCampaignAnalytics.tsx` (widget no Pipeline)
+- `src/components/showcase/MelnickDayLayout.tsx` (layout vitrine)
+- `src/components/showcase/CampaignHeader.tsx` (header campanha — só usado por MelnickDayLayout)
+
+**Editar:**
+- `src/App.tsx`: remover imports + rotas `/melnick-day`, `/melnickday`, `/md`, `/campaign-analytics`
+- `src/components/AppSidebar.tsx`: remover entradas Melnick Day (expanded ~647-661, collapsed ~694-700)
+- `src/components/AppLayout.tsx`: remover import + uso de `MelnickMetaBanner`
+- `src/pages/PipelineKanban.tsx`: remover import + uso de `MelnickCampaignAnalytics`
+- `src/pages/VitrinePage.tsx`: remover import `MelnickDayLayout`, cases `melnick_day`/`mega_cyrela` passam a usar `PropertySelectionLayout` (fallback seguro — vitrines existentes não quebram)
+- `src/components/showcase/types.ts`: remover `"melnick_day"` do tipo `ShowcaseType`
+
+### 3B — Referências em componentes que NÃO são deletados
+
+- `src/components/pipeline/PipelineCard.tsx`: remover entrada `MELNICK_DAY` do `NON_EMP_TAGS` (linhas ~457-459)
+- `src/components/pipeline/PipelineLeadDetail.tsx`: remover DropdownMenuItem "Marcar Melnick Day" (linhas ~451-462) e Badge condicional (linhas ~478-480)
+- `src/components/oferta-ativa/CustomListWizard.tsx`: remover opção `melnick_day` do array CAMPANHAS (linha ~76)
+- `src/pages/MinhasVitrines.tsx`: remover label condicional `melnick_day` (fallback para tipo genérico)
+- `src/pages/WhatsAppLanding.tsx`: trocar default `campanha` de `"melnick_day_2026"` para `"campanha_whatsapp"`
+- `src/pages/WhatsAppCampaignDispatcher.tsx`: remover entries `melnick_day_*` e `ofertas_meday` dos dicts de templates
+
+### 3C — Edge Functions
+
+**Deletar:**
+- `supabase/functions/campaign-sms-click/` (exclusivo da landing Melnick Day SMS)
+- `supabase/functions/campaign-activation/` (ativação de campanha Melnick Day)
+
+**Manter:**
+- `supabase/functions/receive-landing-lead/` — função genérica usada por TODAS as landing pages. As referências a `isMelnickDay` são inofensivas (nunca mais serão true), mas serão limpas por segurança.
+
+---
+
+## Resumo de Impacto
 
 | Ação | Qtd |
 |------|-----|
-| Páginas deletadas | 6 |
-| Páginas renomeadas | 4 |
-| Hooks/stores deletados | 5 |
-| Serviço deletado | 1 |
-| Wrappers deletados | 4 |
-| Arquivos editados | ~12 |
+| Páginas deletadas | 5 (AnunciosNoAr, MegaCyrela, MelnickDay, MelnickDayLanding, CampaignAnalyticsPage) |
+| Componentes deletados | 4 (MelnickMetaBanner, MelnickCampaignAnalytics, MelnickDayLayout, CampaignHeader) |
+| Edge functions deletadas | 2 (campaign-sms-click, campaign-activation) |
+| Arquivos editados | ~13 |
 
-**Zero lógica de negócio alterada.** Todas as dependências verificadas — chain limpa.
+**Zero lógica de negócio core alterada.** Pipeline, vitrines e WhatsApp continuam funcionando normalmente.
 
