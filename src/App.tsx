@@ -238,6 +238,7 @@ const App = () => (
             <Route path="/configuracoes/whatsapp" element={<ProtectedPage roles={["corretor", "admin"]}><ErrorBoundary module="config-whatsapp"><ConfiguracoesWhatsApp /></ErrorBoundary></ProtectedPage>} />
             <Route path="/links-site" element={<ProtectedPage><ErrorBoundary module="links-site"><LinksSite /></ErrorBoundary></ProtectedPage>} />
             <Route path="/notificacoes" element={<ProtectedPage><ErrorBoundary module="notificacoes"><Notificacoes /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/whatsapp" element={<ProtectedPage roles={["corretor", "admin"]}><ErrorBoundary module="whatsapp-inbox"><WhatsAppInbox /></ErrorBoundary></ProtectedPage>} />
 
 
             {/* CEO / Admin only */}

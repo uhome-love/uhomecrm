@@ -71,7 +71,7 @@ export default function WhatsAppInbox() {
       .select("id, nome, empreendimento")
       .in("id", leadIds);
 
-    const leadMap = new Map((leads || []).map(l => [l.id, l]));
+    const leadMap = new Map((leads || []).map(l => [l.id, l as { id: string; nome: string; empreendimento: string | null }]));
 
     const items: ConversationItem[] = [];
     for (const [leadId, info] of map.entries()) {
