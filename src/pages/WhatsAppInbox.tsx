@@ -2,11 +2,20 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import ConversationList, { type ConversationItem } from "@/components/whatsapp/ConversationList";
+import ConversationList, { type ConversationItem, type FollowUpLead, type NewLead } from "@/components/whatsapp/ConversationList";
 import ConversationThread from "@/components/whatsapp/ConversationThread";
 import LeadPanel from "@/components/whatsapp/LeadPanel";
-import { ArrowLeft, MessageSquare } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const EXCLUDED_STAGES = [
+  "2fcba9be-1188-4a54-9452-394beefdc330", // Sem Contato
+  "a8a1a867-5b0c-414e-9532-8873c4ca5a0f", // Negócio Criado
+  "1dd66c25-3848-4053-9f66-82e902989b4d", // Descarte
+  "2d7739eb-1787-4ad6-887a-7a4a32dcfc05", // Venda
+];
+
+const SEM_CONTATO_STAGE = "2fcba9be-1188-4a54-9452-394beefdc330";
 
 interface LeadInfo {
   id: string;
@@ -33,6 +42,8 @@ export default function WhatsAppInbox() {
   const { user } = useAuth();
   const [profileId, setProfileId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [followUpLeads, setFollowUpLeads] = useState<FollowUpLead[]>([]);
+  const [newLeads, setNewLeads] = useState<NewLead[]>([]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(searchParams.get("lead"));
   const [leadInfo, setLeadInfo] = useState<LeadInfo | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -52,7 +63,7 @@ export default function WhatsAppInbox() {
       });
   }, [user?.id]);
 
-  // Load conversations list
+  // Load conversations list + SLA
   const loadConversations = useCallback(async () => {
     if (!profileId) return;
 
@@ -95,6 +106,15 @@ export default function WhatsAppInbox() {
     for (const [leadId, info] of map.entries()) {
       const lead = leadMap.get(leadId);
       const lastMsg = info.msgs[0];
+
+      // SLA: find last received msg without a subsequent sent reply
+      // msgs are ordered DESC (newest first)
+      let lastReceivedTs: string | null = null;
+      const sorted = [...info.msgs]; // already DESC
+      if (sorted[0]?.direction === "received") {
+        lastReceivedTs = sorted[0].timestamp;
+      }
+
       items.push({
         leadId,
         leadName: lead?.nome || "Lead desconhecido",
@@ -102,7 +122,8 @@ export default function WhatsAppInbox() {
         lastMessage: lastMsg.body || "",
         lastTimestamp: lastMsg.timestamp,
         totalMessages: info.msgs.length,
-        unreadCount: 0, // placeholder
+        unreadCount: 0,
+        lastReceivedTs,
       });
     }
 
@@ -110,6 +131,66 @@ export default function WhatsAppInbox() {
     setConversations(items);
     setLoadingConvs(false);
   }, [profileId]);
+
+  // Load follow-up and new leads
+  const loadSuggestions = useCallback(async () => {
+    if (!user?.id) return;
+
+    // Get lead IDs that already have WhatsApp messages
+    const { data: msgLeads } = await supabase
+      .from("whatsapp_mensagens")
+      .select("lead_id")
+      .not("lead_id", "is", null);
+
+    const leadsWithMessages = new Set((msgLeads || []).map(m => m.lead_id).filter(Boolean));
+
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+    // Follow-up: leads without WhatsApp msgs, not in excluded stages, updated > 3 days ago
+    const { data: followUp } = await supabase
+      .from("pipeline_leads")
+      .select("id, nome, empreendimento, stage_id, updated_at")
+      .eq("corretor_id", user.id)
+      .not("stage_id", "in", `(${EXCLUDED_STAGES.join(",")})`)
+      .lt("updated_at", threeDaysAgo.toISOString())
+      .order("updated_at", { ascending: true })
+      .limit(20);
+
+    const filteredFollowUp = ((followUp || []) as any[])
+      .filter(l => !leadsWithMessages.has(l.id))
+      .slice(0, 10)
+      .map(l => ({
+        id: l.id,
+        nome: l.nome,
+        empreendimento: l.empreendimento,
+        stageName: null as string | null,
+        updatedAt: l.updated_at,
+      }));
+
+    setFollowUpLeads(filteredFollowUp);
+
+    // New leads: stage = Sem Contato, no WhatsApp msgs
+    const { data: newL } = await supabase
+      .from("pipeline_leads")
+      .select("id, nome, empreendimento, created_at")
+      .eq("corretor_id", user.id)
+      .eq("stage_id", SEM_CONTATO_STAGE)
+      .order("created_at", { ascending: false })
+      .limit(15);
+
+    const filteredNew = ((newL || []) as any[])
+      .filter(l => !leadsWithMessages.has(l.id))
+      .slice(0, 5)
+      .map(l => ({
+        id: l.id,
+        nome: l.nome,
+        empreendimento: l.empreendimento,
+        createdAt: l.created_at,
+      }));
+
+    setNewLeads(filteredNew);
+  }, [user?.id]);
 
   // Load thread for selected lead
   const loadThread = useCallback(async (leadId: string) => {
@@ -133,7 +214,8 @@ export default function WhatsAppInbox() {
 
   useEffect(() => {
     loadConversations();
-  }, [loadConversations]);
+    loadSuggestions();
+  }, [loadConversations, loadSuggestions]);
 
   useEffect(() => {
     if (selectedLeadId) {
@@ -151,7 +233,6 @@ export default function WhatsAppInbox() {
         { event: "INSERT", schema: "public", table: "whatsapp_mensagens" },
         (payload) => {
           const newMsg = payload.new as any;
-          // Update thread if viewing this lead
           if (newMsg.lead_id === selectedLeadId) {
             setMessages(prev => [...prev, {
               id: newMsg.id,
@@ -161,7 +242,6 @@ export default function WhatsAppInbox() {
               media_url: newMsg.media_url,
             }]);
           }
-          // Refresh conversation list
           loadConversations();
         }
       )
@@ -174,12 +254,10 @@ export default function WhatsAppInbox() {
     setSelectedLeadId(leadId);
   };
 
-  // Mobile: show list or thread
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (
     <div className="h-[calc(100vh-56px)] flex flex-col">
-      {/* Mobile back button */}
       {isMobile && mobileView === "thread" && (
         <div className="p-2 border-b border-border bg-card md:hidden">
           <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setMobileView("list")}>
@@ -189,10 +267,11 @@ export default function WhatsAppInbox() {
       )}
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Column 1 — List */}
         <div className={`${isMobile ? (mobileView === "list" ? "flex" : "hidden") : "flex"}`}>
           <ConversationList
             conversations={conversations}
+            followUpLeads={followUpLeads}
+            newLeads={newLeads}
             selectedLeadId={selectedLeadId}
             onSelect={handleSelect}
             loading={loadingConvs}
@@ -200,7 +279,6 @@ export default function WhatsAppInbox() {
           />
         </div>
 
-        {/* Column 2 — Thread */}
         <div className={`flex-1 flex ${isMobile ? (mobileView === "thread" ? "flex" : "hidden") : "flex"}`}>
           <ConversationThread
             leadId={selectedLeadId}
@@ -213,7 +291,6 @@ export default function WhatsAppInbox() {
           />
         </div>
 
-        {/* Column 3 — Lead Panel (hidden on mobile) */}
         {!isMobile && (
           <LeadPanel lead={leadInfo} />
         )}
