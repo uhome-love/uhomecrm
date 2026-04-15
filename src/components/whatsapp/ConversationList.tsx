@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, MessageSquare, Loader2, Clock, UserPlus, RefreshCw, ArrowRight } from "lucide-react";
+import { Search, Plus, MessageSquare, Loader2, Clock, UserPlus, RefreshCw, ArrowRight, X, FileSearch } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
