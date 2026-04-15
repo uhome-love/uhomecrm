@@ -59,6 +59,156 @@ function extractQuotedMessageId(message: any): string | null {
   return ctx?.stanzaId || null;
 }
 
+function getMimeType(message: any, mediaType: string | null): string {
+  const m = message;
+  if (m?.imageMessage?.mimetype) return m.imageMessage.mimetype;
+  if (m?.videoMessage?.mimetype) return m.videoMessage.mimetype;
+  if (m?.audioMessage?.mimetype) return m.audioMessage.mimetype;
+  if (m?.documentMessage?.mimetype) return m.documentMessage.mimetype;
+  if (m?.stickerMessage?.mimetype) return m.stickerMessage.mimetype;
+  
+  const defaults: Record<string, string> = {
+    image: "image/jpeg",
+    video: "video/mp4",
+    audio: "audio/ogg",
+    document: "application/octet-stream",
+    sticker: "image/webp",
+  };
+  return defaults[mediaType || ""] || "application/octet-stream";
+}
+
+function getExtFromMime(mime: string): string {
+  const map: Record<string, string> = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+    "video/mp4": ".mp4",
+    "video/3gpp": ".3gp",
+    "audio/ogg": ".ogg",
+    "audio/ogg; codecs=opus": ".ogg",
+    "audio/mpeg": ".mp3",
+    "audio/mp4": ".m4a",
+    "audio/aac": ".m4a",
+    "application/pdf": ".pdf",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+  };
+  return map[mime] || ".bin";
+}
+
+async function downloadAndStoreMedia(
+  supabase: any,
+  instanceName: string,
+  messageId: string,
+  base64Data: string | null,
+  mediaUrl: string | null,
+  mimeType: string,
+  mediaType: string
+): Promise<string | null> {
+  try {
+    let fileData: Uint8Array | null = null;
+
+    // 1. Try base64 from webhook payload first
+    if (base64Data) {
+      const raw = base64Data.includes(",") ? base64Data.split(",")[1] : base64Data;
+      const binaryStr = atob(raw);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      fileData = bytes;
+    }
+
+    // 2. If no base64, try downloading from Evolution API
+    if (!fileData && mediaUrl) {
+      const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
+      const evolutionKey = Deno.env.get("EVOLUTION_API_KEY");
+
+      if (evolutionUrl && evolutionKey) {
+        // Try Evolution API getBase64FromMediaMessage endpoint
+        try {
+          const apiUrl = `${evolutionUrl}/chat/getBase64FromMediaMessage/${instanceName}`;
+          const resp = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: evolutionKey,
+            },
+            body: JSON.stringify({
+              message: { key: { id: messageId } },
+              convertToMp4: mediaType === "audio" || mediaType === "video",
+            }),
+          });
+
+          if (resp.ok) {
+            const result = await resp.json();
+            const b64 = result?.base64;
+            if (b64) {
+              const raw = b64.includes(",") ? b64.split(",")[1] : b64;
+              const binaryStr = atob(raw);
+              const bytes = new Uint8Array(binaryStr.length);
+              for (let i = 0; i < binaryStr.length; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+              }
+              fileData = bytes;
+              // Update mimeType if returned
+              if (result?.mimetype) {
+                mimeType = result.mimetype;
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Evolution getBase64 failed:", e);
+        }
+      }
+
+      // 3. Direct download as fallback
+      if (!fileData) {
+        try {
+          const resp = await fetch(mediaUrl, { redirect: "follow" });
+          if (resp.ok) {
+            const ab = await resp.arrayBuffer();
+            fileData = new Uint8Array(ab);
+          }
+        } catch (e) {
+          console.error("Direct media download failed:", e);
+        }
+      }
+    }
+
+    if (!fileData || fileData.length === 0) {
+      console.error("No media data obtained");
+      return mediaUrl; // fallback to original URL
+    }
+
+    // Upload to Supabase Storage
+    const ext = getExtFromMime(mimeType);
+    const fileName = `${instanceName}/${Date.now()}_${messageId}${ext}`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from("whatsapp-media")
+      .upload(fileName, fileData, {
+        contentType: mimeType,
+        upsert: false,
+      });
+
+    if (uploadErr) {
+      console.error("Storage upload error:", uploadErr);
+      return mediaUrl; // fallback
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("whatsapp-media")
+      .getPublicUrl(fileName);
+
+    return publicUrlData?.publicUrl || mediaUrl;
+  } catch (err) {
+    console.error("downloadAndStoreMedia error:", err);
+    return mediaUrl;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -90,7 +240,6 @@ Deno.serve(async (req) => {
         const status = update?.status;
         if (!messageId || status === undefined) continue;
 
-        // Map numeric status to string
         let deliveryStatus = "sent";
         if (status === 2 || status === "DELIVERY_ACK" || status === "delivered") deliveryStatus = "delivered";
         if (status === 3 || status === "READ" || status === "read") deliveryStatus = "read";
@@ -160,11 +309,20 @@ Deno.serve(async (req) => {
       ? new Date(Number(data.messageTimestamp) * 1000).toISOString()
       : new Date().toISOString();
 
-    let storedMediaUrl = mediaUrl || null;
-
-    if (!storedMediaUrl && data.message?.base64) {
-      const mimeType = data.message?.mimetype || "application/octet-stream";
-      storedMediaUrl = `data:${mimeType};base64,${data.message.base64}`;
+    // Download and store media in Supabase Storage
+    let storedMediaUrl: string | null = null;
+    if (mediaType && (mediaUrl || data.message?.base64)) {
+      const mimeType = getMimeType(data.message, mediaType);
+      const messageId = data.key.id || crypto.randomUUID();
+      storedMediaUrl = await downloadAndStoreMedia(
+        supabase,
+        instanceName,
+        messageId,
+        data.message?.base64 || null,
+        mediaUrl,
+        mimeType,
+        mediaType
+      );
     }
 
     const insertData: Record<string, unknown> = {
