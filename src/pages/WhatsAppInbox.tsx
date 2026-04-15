@@ -11,7 +11,7 @@ import LeadPanel from "@/components/whatsapp/LeadPanel";
 import CorretorSelector, { type CorretorInfo, CORRETOR_UNSELECTED } from "@/components/whatsapp/CorretorSelector";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { usePipeline } from "@/hooks/usePipeline";
-import { ArrowLeft, MessageSquare } from "lucide-react";
+import { ArrowLeft, MessageSquare, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const EXCLUDED_STAGES = [
@@ -79,6 +79,7 @@ export default function WhatsAppInbox() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [mobileView, setMobileView] = useState<"list" | "thread">("list");
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
 
   // Team management state
   const [corretores, setCorretores] = useState<CorretorInfo[]>([]);
@@ -503,14 +504,25 @@ export default function WhatsAppInbox() {
         </div>
 
         {!isMobile && (
-          <LeadPanel
-            lead={leadInfo}
-            leadId={selectedLeadId}
-            profileId={profileId}
-            messages={messages}
-            onOpenFullModal={(id) => setModalLeadId(id)}
-            isReadOnly={isReadOnly}
-          />
+          <div className={`relative transition-all duration-200 ease-in-out ${panelCollapsed ? "w-0 overflow-hidden" : "w-[240px]"}`}>
+            {!panelCollapsed && (
+              <LeadPanel
+                lead={leadInfo}
+                leadId={selectedLeadId}
+                profileId={profileId}
+                messages={messages}
+                onOpenFullModal={(id) => setModalLeadId(id)}
+                isReadOnly={isReadOnly}
+              />
+            )}
+            <button
+              onClick={() => setPanelCollapsed(!panelCollapsed)}
+              className="absolute top-2 -left-7 z-10 h-6 w-6 rounded-md bg-muted border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+              title={panelCollapsed ? "Mostrar painel" : "Recolher painel"}
+            >
+              {panelCollapsed ? <PanelRightOpen size={14} /> : <PanelRightClose size={14} />}
+            </button>
+          </div>
         )}
       </div>
 
