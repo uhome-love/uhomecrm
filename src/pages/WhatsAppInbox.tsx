@@ -2,9 +2,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import ConversationList, { type ConversationItem, type FollowUpLead, type NewLead } from "@/components/whatsapp/ConversationList";
 import ConversationThread from "@/components/whatsapp/ConversationThread";
 import LeadPanel from "@/components/whatsapp/LeadPanel";
+import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
+import { usePipeline } from "@/hooks/usePipeline";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -61,6 +64,8 @@ export default function WhatsAppInbox() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const pipeline = usePipeline();
+  const [modalLeadId, setModalLeadId] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [followUpLeads, setFollowUpLeads] = useState<FollowUpLead[]>([]);
@@ -368,10 +373,29 @@ export default function WhatsAppInbox() {
             leadId={selectedLeadId}
             profileId={profileId}
             messages={messages}
-            onOpenFullModal={(id) => navigate(`/pipeline?lead=${id}`)}
+            onOpenFullModal={(id) => setModalLeadId(id)}
           />
         )}
       </div>
+
+      {/* Lead detail modal overlay */}
+      {modalLeadId && (() => {
+        const modalLead = pipeline.leads.find(l => l.id === modalLeadId);
+        if (!modalLead) return null;
+        return (
+          <PipelineLeadDetail
+            lead={modalLead}
+            stages={pipeline.stages}
+            segmentos={pipeline.segmentos}
+            corretorNomes={pipeline.corretorNomes}
+            open={true}
+            onOpenChange={(open) => { if (!open) setModalLeadId(null); }}
+            onUpdate={pipeline.updateLead}
+            onMove={pipeline.moveLead}
+            onDelete={pipeline.deleteLead}
+          />
+        );
+      })()}
     </div>
   );
 }
