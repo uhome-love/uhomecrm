@@ -98,7 +98,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   stageLeads, stage, stages, segmentos, corretorNomes, corretorAvatars, parcerias,
   selectionMode, selectedLeads, arrivedLeadId,
   onToggleSelect, onSelectLead, onMoveLead, onTransferred, stageIndexMap, handleDragStart,
-  tarefasMap,
+  tarefasMap, whatsappUnreadSet,
 }: {
   stageLeads: PipelineLead[];
   stage: PipelineStage;
@@ -117,6 +117,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   stageIndexMap: Map<string, number>;
   handleDragStart: (leadId: string) => void;
   tarefasMap: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
+  whatsappUnreadSet: Set<string>;
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -197,6 +198,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
                 onTransferred={onTransferred}
                 stageIndexMap={stageIndexMap}
                 proximaTarefa={tarefasMap[lead.id] || null}
+                hasUnreadWhatsApp={whatsappUnreadSet.has(lead.id)}
               />
             </PipelineCardHover>
           </div>
