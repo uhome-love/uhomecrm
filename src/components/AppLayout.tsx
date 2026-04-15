@@ -135,9 +135,8 @@ export default function AppLayout() {
     : user?.email?.slice(0, 2).toUpperCase() || "U";
 
   return (
-    <SidebarProvider defaultOpen={!isSession}>
+    <SidebarProvider defaultOpen>
       <HomiProvider>
-        <ArenaAutoCollapse isSession={isSession} />
         <div className="flex h-screen overflow-hidden w-full bg-[#f0f0f5] dark:bg-[#0e1525]">
           <Sidebar
               role={sidebarRole}
