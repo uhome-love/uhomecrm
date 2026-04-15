@@ -8508,11 +8508,14 @@ export type Database = {
           body: string
           corretor_id: string
           created_at: string
+          delivery_status: string | null
           direction: string
           id: string
           instance_name: string | null
           lead_id: string
+          media_type: string | null
           media_url: string | null
+          quoted_message_id: string | null
           timestamp: string
           whatsapp_message_id: string | null
         }
@@ -8520,11 +8523,14 @@ export type Database = {
           body?: string
           corretor_id: string
           created_at?: string
+          delivery_status?: string | null
           direction: string
           id?: string
           instance_name?: string | null
           lead_id: string
+          media_type?: string | null
           media_url?: string | null
+          quoted_message_id?: string | null
           timestamp?: string
           whatsapp_message_id?: string | null
         }
@@ -8532,11 +8538,14 @@ export type Database = {
           body?: string
           corretor_id?: string
           created_at?: string
+          delivery_status?: string | null
           direction?: string
           id?: string
           instance_name?: string | null
           lead_id?: string
+          media_type?: string | null
           media_url?: string | null
+          quoted_message_id?: string | null
           timestamp?: string
           whatsapp_message_id?: string | null
         }

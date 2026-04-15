@@ -318,7 +318,7 @@ export default function WhatsAppInbox() {
     const [msgRes, leadRes] = await Promise.all([
       supabase
         .from("whatsapp_mensagens")
-        .select("id, body, direction, timestamp, media_url")
+        .select("id, body, direction, timestamp, media_url, delivery_status, whatsapp_message_id, quoted_message_id, media_type")
         .eq("lead_id", leadId)
         .order("timestamp", { ascending: true })
         .limit(200),
