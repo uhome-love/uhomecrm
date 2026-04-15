@@ -148,6 +148,10 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
     const fullPath = location.pathname + location.search;
     const pathname = location.pathname;
+
+    // "/" only exists for redirect — never create a tab for it
+    if (pathname === "/" || pathname === "/index.html" || pathname === "/index") return;
+
     const resolved = resolveRoute(pathname);
 
     if (resolved) {
