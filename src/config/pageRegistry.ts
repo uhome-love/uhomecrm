@@ -100,6 +100,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "rh-conversas": lazyRetry(() => import("@/pages/RhConversas")),
   "rh-sala-reuniao": lazyRetry(() => import("@/pages/RhSalaReuniao")),
   "import-brevo": lazyRetry(() => import("@/pages/ImportBrevoContacts")),
+  "gestao-whatsapp": lazyRetry(() => import("@/pages/GestaoWhatsAppDashboard")),
 };
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
@@ -173,6 +174,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/rh/conversas":          { key: "rh-conversas",         label: "Conversas 1:1",       icon: "MessageSquare", roles: ["rh", "admin"] },
   "/rh/sala-reuniao":       { key: "rh-sala-reuniao",      label: "Sala de Reunião",     icon: "Video",         roles: ["rh", "admin"] },
   "/import-brevo-contacts": { key: "import-brevo",         label: "Import Brevo",        icon: "Database",      roles: ["admin"] },
+  "/gestor/whatsapp-dashboard": { key: "gestao-whatsapp", label: "Gestão WhatsApp",     icon: "BarChart2",     roles: ["gestor", "admin"] },
 };
 
 // ─── DYNAMIC ROUTES ──────────────────────────────────────────────────────────
