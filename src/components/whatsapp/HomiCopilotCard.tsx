@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, X, CalendarPlus, ArrowRight, Loader2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Sparkles, X, CalendarPlus, ArrowRight, Loader2, Thermometer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -17,8 +16,10 @@ interface HomiCopilotCardProps {
 
 interface CopilotData {
   sugestao_resposta: string;
+  opcoes_resposta?: string[];
   briefing: string;
   tom_detectado: "interessado" | "hesitante" | "frio" | "pronto" | "curioso" | "com_objecao";
+  temperatura_detectada?: "frio" | "morno" | "quente";
   momento_detectado?: "primeiro_contato" | "qualificacao" | "apresentacao" | "convite_visita" | "followup" | "objecao";
   proxima_acao?: string;
   sugestao_followup: string | null;
@@ -43,11 +44,20 @@ const MOMENTO_CONFIG: Record<string, { emoji: string; label: string }> = {
   objecao: { emoji: "⚠️", label: "Objeção detectada" },
 };
 
+const TEMP_CONFIG: Record<string, { emoji: string; label: string; className: string }> = {
+  frio: { emoji: "🔵", label: "Frio", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  morno: { emoji: "🟡", label: "Morno", className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  quente: { emoji: "🔴", label: "Quente", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+};
+
+const OPTION_LABELS = ["💬 Direta", "😊 Leve", "🤔 Curiosa"];
+
 export default function HomiCopilotCard({ leadId, leadName, lastMessage, onUseSuggestion, isReadOnly = false }: HomiCopilotCardProps) {
   const [visible, setVisible] = useState(true);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CopilotData | null>(null);
   const [editedSuggestion, setEditedSuggestion] = useState("");
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,6 +65,7 @@ export default function HomiCopilotCard({ leadId, leadName, lastMessage, onUseSu
     setLoading(true);
     setData(null);
     setVisible(true);
+    setSelectedOption(null);
 
     supabase.functions
       .invoke("homi-copilot", {
@@ -66,13 +77,20 @@ export default function HomiCopilotCard({ leadId, leadName, lastMessage, onUseSu
           setLoading(false);
           return;
         }
-        setData(res as CopilotData);
-        setEditedSuggestion((res as CopilotData).sugestao_resposta);
+        const d = res as CopilotData;
+        setData(d);
+        setEditedSuggestion(d.sugestao_resposta);
         setLoading(false);
       });
   }, [leadId, lastMessage]);
 
   if (!visible) return null;
+
+  const handleSelectOption = (idx: number) => {
+    if (!data?.opcoes_resposta?.[idx]) return;
+    setSelectedOption(idx);
+    setEditedSuggestion(data.opcoes_resposta[idx]);
+  };
 
   const handleFollowup = async () => {
     if (!data?.sugestao_followup) return;
@@ -127,6 +145,8 @@ export default function HomiCopilotCard({ leadId, leadName, lastMessage, onUseSu
 
   const tom = data ? TOM_CONFIG[data.tom_detectado] || TOM_CONFIG.hesitante : null;
   const momento = data?.momento_detectado ? MOMENTO_CONFIG[data.momento_detectado] || null : null;
+  const temp = data?.temperatura_detectada ? TEMP_CONFIG[data.temperatura_detectada] || null : null;
+  const hasOptions = data?.opcoes_resposta && data.opcoes_resposta.length >= 2;
 
   return (
     <Card className="border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-800 mx-4 mb-3">
@@ -140,6 +160,11 @@ export default function HomiCopilotCard({ leadId, leadName, lastMessage, onUseSu
             {momento && (
               <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">
                 {momento.emoji} {momento.label}
+              </span>
+            )}
+            {temp && (
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${temp.className}`}>
+                {temp.emoji} {temp.label}
               </span>
             )}
             {tom && data && (
@@ -167,6 +192,26 @@ export default function HomiCopilotCard({ leadId, leadName, lastMessage, onUseSu
                 <span className="text-accent-foreground font-medium">{data.proxima_acao}</span>
               </div>
             )}
+
+            {/* Option buttons */}
+            {hasOptions && (
+              <div className="flex gap-1.5">
+                {data.opcoes_resposta!.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSelectOption(idx)}
+                    className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${
+                      selectedOption === idx
+                        ? "border-green-500 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 font-semibold"
+                        : "border-border bg-background text-muted-foreground hover:border-green-300 hover:text-foreground"
+                    }`}
+                  >
+                    {OPTION_LABELS[idx] || `Opção ${idx + 1}`}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <Textarea
               value={editedSuggestion}
               onChange={(e) => setEditedSuggestion(e.target.value)}
