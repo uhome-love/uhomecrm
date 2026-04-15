@@ -576,7 +576,11 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
                         : "bg-card border border-border text-foreground rounded-bl-sm"
                     }`}
                   >
-                    {msg.body || (msg.media_url ? "📎 Mídia" : "...")}
+                    {msg.media_url ? (
+                      <MediaRenderer mediaUrl={msg.media_url} body={msg.body} direction={msg.direction} />
+                    ) : (
+                      msg.body || "..."
+                    )}
                     <span className={`block text-[9px] mt-0.5 ${
                       msg.direction === "sent" ? "text-primary-foreground/70" : "text-muted-foreground"
                     }`}>
@@ -809,6 +813,26 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
       {/* Input */}
       <div className="p-3 border-t border-border bg-card flex gap-2 flex-shrink-0">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
+          onChange={handleMediaSelect}
+        />
+        {/* Paperclip button */}
+        {!isReadOnly && !isNoteMode && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-10 w-10 shrink-0"
+            disabled={sendingMedia}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {sendingMedia ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
+          </Button>
+        )}
         <Textarea
           ref={textareaRef}
           value={text}
