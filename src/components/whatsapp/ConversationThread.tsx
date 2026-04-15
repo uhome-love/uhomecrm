@@ -238,12 +238,25 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
   // Scroll to bottom button
   const [showScrollDown, setShowScrollDown] = useState(false);
 
+  // Profile picture
+  const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
+
   useEffect(() => {
     setIsNoteMode(false);
     setReplyingTo(null);
     setSearchOpen(false);
     setSearchQuery("");
-  }, [leadId]);
+    setProfilePicUrl(null);
+
+    // Fetch WhatsApp profile picture
+    if (leadInfo?.telefone) {
+      supabase.functions.invoke("whatsapp-profile-picture", {
+        body: { telefone: leadInfo.telefone },
+      }).then(({ data }) => {
+        if (data?.picture_url) setProfilePicUrl(data.picture_url);
+      }).catch(() => {});
+    }
+  }, [leadId, leadInfo?.telefone]);
 
   const [stages, setStages] = useState<StageInfo[]>([]);
 
