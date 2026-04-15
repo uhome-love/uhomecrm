@@ -105,11 +105,20 @@ export default function ConversationList({
   loading,
   userId,
   corretorMap,
+  corretorIds,
 }: ConversationListProps) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<Tab>("all");
   const [newConvOpen, setNewConvOpen] = useState(false);
   const [newConvSearch, setNewConvSearch] = useState("");
+
+  // Message search state
+  const [msgSearchOpen, setMsgSearchOpen] = useState(false);
+  const [msgSearch, setMsgSearch] = useState("");
+  const [msgResults, setMsgResults] = useState<MessageSearchResult[]>([]);
+  const [msgSearchLoading, setMsgSearchLoading] = useState(false);
+
+  const debouncedMsgSearch = useDebounce(msgSearch, 400);
 
   // Dialog state
   const [stages, setStages] = useState<{ id: string; nome: string }[]>([]);
