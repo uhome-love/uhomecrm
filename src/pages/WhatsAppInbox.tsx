@@ -352,6 +352,18 @@ export default function WhatsAppInbox() {
     if (selectedLeadId) {
       loadThread(selectedLeadId);
       setMobileView("thread");
+
+      // Mark as read: zero the unreadCount for this lead
+      setConversations(prev => {
+        const updated = prev.map(c =>
+          c.leadId === selectedLeadId && c.unreadCount > 0
+            ? { ...c, unreadCount: 0 }
+            : c
+        );
+        const newTotal = updated.filter(c => c.unreadCount > 0).length;
+        updateUnreadStorage(newTotal);
+        return updated;
+      });
     }
   }, [selectedLeadId, loadThread]);
 
@@ -462,6 +474,7 @@ export default function WhatsAppInbox() {
             loading={loadingConvs}
             userId={user?.id || null}
             corretorMap={corretorMap}
+            corretorIds={getTargetProfileIds() || []}
           />
         </div>
 
