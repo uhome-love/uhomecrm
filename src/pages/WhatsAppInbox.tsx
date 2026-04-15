@@ -462,6 +462,7 @@ export default function WhatsAppInbox() {
                 corretores={corretores}
                 selectedCorretorId={selectedCorretorId}
                 onSelect={setSelectedCorretorId}
+                conversations={conversations}
               />
             </div>
           )}
