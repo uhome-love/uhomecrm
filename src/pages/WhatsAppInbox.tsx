@@ -8,10 +8,10 @@ import { useQuery } from "@tanstack/react-query";
 import ConversationList, { type ConversationItem, type FollowUpLead, type NewLead } from "@/components/whatsapp/ConversationList";
 import ConversationThread from "@/components/whatsapp/ConversationThread";
 import LeadPanel from "@/components/whatsapp/LeadPanel";
-import CorretorSelector, { type CorretorInfo } from "@/components/whatsapp/CorretorSelector";
+import CorretorSelector, { type CorretorInfo, CORRETOR_UNSELECTED } from "@/components/whatsapp/CorretorSelector";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { usePipeline } from "@/hooks/usePipeline";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const EXCLUDED_STAGES = [
@@ -82,7 +82,7 @@ export default function WhatsAppInbox() {
 
   // Team management state
   const [corretores, setCorretores] = useState<CorretorInfo[]>([]);
-  const [selectedCorretorId, setSelectedCorretorId] = useState<string | null>(null);
+  const [selectedCorretorId, setSelectedCorretorId] = useState<string | null>(isGestor || isAdmin ? CORRETOR_UNSELECTED : null);
   const isTeamView = isGestor || isAdmin;
 
   // Compute read-only: viewing another corretor's conversation
