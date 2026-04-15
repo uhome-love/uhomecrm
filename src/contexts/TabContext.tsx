@@ -44,7 +44,15 @@ function loadFromStorage(): { tabs: Tab[]; activeTabId: string } | null {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (Array.isArray(data.tabs) && typeof data.activeTabId === "string") return data;
+    if (Array.isArray(data.tabs) && typeof data.activeTabId === "string") {
+      // Remove ghost tabs from legacy "/" route
+      const cleaned = data.tabs.filter((t: any) => t.path !== "/" && t.path !== "/index.html" && t.path !== "/index");
+      const activeStillExists = cleaned.some((t: any) => t.id === data.activeTabId);
+      return {
+        tabs: cleaned,
+        activeTabId: activeStillExists ? data.activeTabId : (cleaned[0]?.id ?? ""),
+      };
+    }
   } catch {}
   return null;
 }
