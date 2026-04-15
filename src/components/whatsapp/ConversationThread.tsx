@@ -550,7 +550,13 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
           {/* Tarefa */}
           <Popover onOpenChange={(open) => {
-            if (open && leadInfo) setTaskTitle(`Follow-up com ${leadInfo.nome}`);
+            if (open && leadInfo) {
+              setTaskTitle(`Follow-up com ${leadInfo.nome}`);
+              setTaskType("follow_up");
+              setTaskDescription("");
+              setTaskPriority("media");
+              setTaskDeadline("amanha");
+            }
           }}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -562,27 +568,59 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
               </TooltipTrigger>
               <TooltipContent side="top"><p className="text-xs">Criar Tarefa</p></TooltipContent>
             </Tooltip>
-            <PopoverContent className="w-64 p-3" align="start">
+            <PopoverContent className="w-72 p-3" align="start">
               <p className="text-xs font-semibold mb-2">Nova tarefa</p>
+              <Select value={taskType} onValueChange={setTaskType}>
+                <SelectTrigger className="h-8 text-xs mb-2">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="follow_up">📞 Follow-up</SelectItem>
+                  <SelectItem value="ligacao">📱 Ligação</SelectItem>
+                  <SelectItem value="enviar_material">📄 Enviar material</SelectItem>
+                  <SelectItem value="reuniao">🤝 Reunião</SelectItem>
+                  <SelectItem value="visita">🏠 Visita</SelectItem>
+                  <SelectItem value="outro">📌 Outro</SelectItem>
+                </SelectContent>
+              </Select>
               <Input
                 value={taskTitle}
                 onChange={e => setTaskTitle(e.target.value)}
                 placeholder={`Follow-up com ${leadInfo.nome}`}
                 className="text-xs h-8 mb-2"
               />
-              <Select value={taskDeadline} onValueChange={setTaskDeadline}>
-                <SelectTrigger className="h-8 text-xs mb-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hoje">Hoje (18h)</SelectItem>
-                  <SelectItem value="amanha">Amanhã (10h)</SelectItem>
-                  <SelectItem value="3dias">Em 3 dias</SelectItem>
-                  <SelectItem value="1semana">Em 1 semana</SelectItem>
-                </SelectContent>
-              </Select>
+              <Textarea
+                value={taskDescription}
+                onChange={e => setTaskDescription(e.target.value)}
+                placeholder="Descrição (opcional)"
+                className="text-xs min-h-[40px] max-h-[60px] resize-none mb-2"
+              />
+              <div className="flex gap-2 mb-2">
+                <Select value={taskDeadline} onValueChange={setTaskDeadline}>
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hoje">Hoje (18h)</SelectItem>
+                    <SelectItem value="amanha">Amanhã (10h)</SelectItem>
+                    <SelectItem value="3dias">Em 3 dias</SelectItem>
+                    <SelectItem value="1semana">Em 1 semana</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={taskPriority} onValueChange={setTaskPriority}>
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baixa">🟢 Normal</SelectItem>
+                    <SelectItem value="media">🟡 Média</SelectItem>
+                    <SelectItem value="alta">🟠 Alta</SelectItem>
+                    <SelectItem value="urgente">🔴 Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button size="sm" className="w-full h-7 text-xs" onClick={handleCreateTask} disabled={!taskTitle.trim()}>
-                Criar
+                Criar tarefa
               </Button>
             </PopoverContent>
           </Popover>
