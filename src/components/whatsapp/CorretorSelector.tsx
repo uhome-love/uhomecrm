@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react";
-import { Eye, Check, ChevronsUpDown, Search, AlertCircle } from "lucide-react";
+import { Eye, Check, ChevronsUpDown, Search, AlertCircle, UserRoundSearch } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandItem, CommandEmpty, CommandGroup, CommandSeparator } from "@/components/ui/command";
 import { differenceInHours } from "date-fns";
 import type { ConversationItem } from "./ConversationList";
+
+export const CORRETOR_UNSELECTED = "__unselected__";
 
 export interface CorretorInfo {
   id: string;
@@ -14,6 +16,7 @@ export interface CorretorInfo {
 
 interface CorretorSelectorProps {
   corretores: CorretorInfo[];
+  /** null = "Todos", CORRETOR_UNSELECTED = nenhum selecionado, string = corretor específico */
   selectedCorretorId: string | null;
   onSelect: (corretorId: string | null) => void;
   conversations: ConversationItem[];
@@ -47,6 +50,8 @@ export default function CorretorSelector({
 }: CorretorSelectorProps) {
   const [open, setOpen] = useState(false);
 
+  const isUnselected = selectedCorretorId === CORRETOR_UNSELECTED;
+
   // Pre-compute per-corretor stats from conversations
   const corretorStats = useMemo(() => {
     const stats = new Map<string, { count: number; hasCriticalSLA: boolean }>();
@@ -79,9 +84,40 @@ export default function CorretorSelector({
     });
   }, [corretores, corretorStats]);
 
-  const selectedCorretor = corretores.find(c => c.id === selectedCorretorId);
-  const selectedLabel = selectedCorretor ? selectedCorretor.nome : "Todos os corretores";
+  const selectedCorretor = !isUnselected ? corretores.find(c => c.id === selectedCorretorId) : undefined;
   const totalConversas = conversations.length;
+
+  // Trigger label
+  let triggerContent: React.ReactNode;
+  if (isUnselected) {
+    triggerContent = (
+      <>
+        <UserRoundSearch size={14} className="text-muted-foreground shrink-0" />
+        <span className="truncate text-muted-foreground">— Selecione um corretor —</span>
+      </>
+    );
+  } else if (selectedCorretor) {
+    triggerContent = (
+      <>
+        <Avatar className="h-5 w-5 text-[9px]">
+          <AvatarFallback className={`${getAvatarColor(corretores.indexOf(selectedCorretor))} text-white text-[9px] font-bold`}>
+            {getInitials(selectedCorretor.nome)}
+          </AvatarFallback>
+        </Avatar>
+        <span className="truncate">{selectedCorretor.nome}</span>
+      </>
+    );
+  } else {
+    triggerContent = (
+      <>
+        <Search size={14} className="text-muted-foreground shrink-0" />
+        <span className="truncate text-muted-foreground">
+          Todos os corretores
+          <span className="ml-1 text-xs opacity-60">({totalConversas})</span>
+        </span>
+      </>
+    );
+  }
 
   if (corretores.length === 0) return null;
 
@@ -102,24 +138,7 @@ export default function CorretorSelector({
             aria-expanded={open}
           >
             <div className="flex items-center gap-2 min-w-0">
-              {selectedCorretor ? (
-                <>
-                  <Avatar className="h-5 w-5 text-[9px]">
-                    <AvatarFallback className={`${getAvatarColor(corretores.indexOf(selectedCorretor))} text-white text-[9px] font-bold`}>
-                      {getInitials(selectedCorretor.nome)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="truncate">{selectedCorretor.nome}</span>
-                </>
-              ) : (
-                <>
-                  <Search size={14} className="text-muted-foreground shrink-0" />
-                  <span className="truncate text-muted-foreground">
-                    Todos os corretores
-                    <span className="ml-1 text-xs opacity-60">({totalConversas})</span>
-                  </span>
-                </>
-              )}
+              {triggerContent}
             </div>
             <ChevronsUpDown size={14} className="text-muted-foreground shrink-0 ml-1" />
           </button>

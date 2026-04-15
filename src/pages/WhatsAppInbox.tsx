@@ -8,10 +8,10 @@ import { useQuery } from "@tanstack/react-query";
 import ConversationList, { type ConversationItem, type FollowUpLead, type NewLead } from "@/components/whatsapp/ConversationList";
 import ConversationThread from "@/components/whatsapp/ConversationThread";
 import LeadPanel from "@/components/whatsapp/LeadPanel";
-import CorretorSelector, { type CorretorInfo } from "@/components/whatsapp/CorretorSelector";
+import CorretorSelector, { type CorretorInfo, CORRETOR_UNSELECTED } from "@/components/whatsapp/CorretorSelector";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { usePipeline } from "@/hooks/usePipeline";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const EXCLUDED_STAGES = [
@@ -82,11 +82,11 @@ export default function WhatsAppInbox() {
 
   // Team management state
   const [corretores, setCorretores] = useState<CorretorInfo[]>([]);
-  const [selectedCorretorId, setSelectedCorretorId] = useState<string | null>(null);
+  const [selectedCorretorId, setSelectedCorretorId] = useState<string | null>(isGestor || isAdmin ? CORRETOR_UNSELECTED : null);
   const isTeamView = isGestor || isAdmin;
 
   // Compute read-only: viewing another corretor's conversation
-  const isReadOnly = isTeamView && selectedCorretorId !== null && selectedCorretorId !== profileId;
+  const isReadOnly = isTeamView && selectedCorretorId !== null && selectedCorretorId !== CORRETOR_UNSELECTED && selectedCorretorId !== profileId;
 
   // Build corretor map for "Todos" view
   const corretorMap = isTeamView && selectedCorretorId === null
@@ -172,6 +172,10 @@ export default function WhatsAppInbox() {
       // Corretor: own profile only
       return profileId ? [profileId] : null;
     }
+    if (selectedCorretorId === CORRETOR_UNSELECTED) {
+      // No corretor selected yet — don't load anything
+      return null;
+    }
     if (selectedCorretorId) {
       // Specific corretor selected
       return [selectedCorretorId];
@@ -185,7 +189,11 @@ export default function WhatsAppInbox() {
   // Load conversations list + SLA + unread
   const loadConversations = useCallback(async () => {
     const targetIds = getTargetProfileIds();
-    if (!targetIds) return;
+    if (!targetIds) {
+      setConversations([]);
+      setLoadingConvs(false);
+      return;
+    }
 
     let query = supabase
       .from("whatsapp_mensagens")
@@ -466,31 +474,52 @@ export default function WhatsAppInbox() {
               />
             </div>
           )}
-          <ConversationList
-            conversations={conversations}
-            followUpLeads={isReadOnly ? [] : followUpLeads}
-            newLeads={isReadOnly ? [] : newLeads}
-            selectedLeadId={selectedLeadId}
-            onSelect={handleSelect}
-            loading={loadingConvs}
-            userId={user?.id || null}
-            corretorMap={corretorMap}
-            corretorIds={getTargetProfileIds() || []}
-          />
+          {isTeamView && selectedCorretorId === CORRETOR_UNSELECTED ? (
+            <div className="w-[290px] flex-1 flex flex-col items-center justify-center px-6 text-center">
+              <MessageSquare size={40} className="text-muted-foreground/40 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">Selecione um corretor para visualizar as conversas</p>
+            </div>
+          ) : (
+            <ConversationList
+              conversations={conversations}
+              followUpLeads={isReadOnly ? [] : followUpLeads}
+              newLeads={isReadOnly ? [] : newLeads}
+              selectedLeadId={selectedLeadId}
+              onSelect={handleSelect}
+              loading={loadingConvs}
+              userId={user?.id || null}
+              corretorMap={corretorMap}
+              corretorIds={getTargetProfileIds() || []}
+            />
+          )}
         </div>
 
         <div className={`flex-1 flex ${isMobile ? (mobileView === "thread" ? "flex" : "hidden") : "flex"}`}>
-          <ConversationThread
-            leadId={selectedLeadId}
-            leadInfo={leadInfo ? { id: leadInfo.id, nome: leadInfo.nome, empreendimento: leadInfo.empreendimento, stage_id: leadInfo.stage_id, telefone: leadInfo.telefone } : null}
-            messages={messages}
-            onMessageSent={() => {
-              if (selectedLeadId) loadThread(selectedLeadId);
-              loadConversations();
-            }}
-            isReadOnly={isReadOnly}
-            readOnlyCorretorNome={selectedCorretorNome}
-          />
+          {isTeamView && selectedCorretorId === CORRETOR_UNSELECTED ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+              <MessageSquare size={48} className="text-muted-foreground/30 mb-4" />
+              <p className="text-sm font-semibold text-foreground mb-1">WhatsApp Inbox</p>
+              <p className="text-xs text-muted-foreground max-w-[260px]">Selecione um corretor no menu acima para visualizar e acompanhar as conversas da equipe</p>
+            </div>
+          ) : !selectedLeadId && isTeamView ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+              <MessageSquare size={48} className="text-muted-foreground/30 mb-4" />
+              <p className="text-sm font-semibold text-foreground mb-1">Selecione uma conversa</p>
+              <p className="text-xs text-muted-foreground max-w-[260px]">Escolha uma conversa na lista ao lado para visualizar as mensagens</p>
+            </div>
+          ) : (
+            <ConversationThread
+              leadId={selectedLeadId}
+              leadInfo={leadInfo ? { id: leadInfo.id, nome: leadInfo.nome, empreendimento: leadInfo.empreendimento, stage_id: leadInfo.stage_id, telefone: leadInfo.telefone } : null}
+              messages={messages}
+              onMessageSent={() => {
+                if (selectedLeadId) loadThread(selectedLeadId);
+                loadConversations();
+              }}
+              isReadOnly={isReadOnly}
+              readOnlyCorretorNome={selectedCorretorNome}
+            />
+          )}
         </div>
 
         {!isMobile && (
