@@ -37,6 +37,14 @@ export interface NewLead {
   createdAt: string;
 }
 
+interface MessageSearchResult {
+  leadId: string;
+  leadName: string;
+  empreendimento: string | null;
+  body: string;
+  timestamp: string;
+}
+
 interface ConversationListProps {
   conversations: ConversationItem[];
   followUpLeads: FollowUpLead[];
@@ -46,6 +54,7 @@ interface ConversationListProps {
   loading: boolean;
   userId?: string | null;
   corretorMap?: Map<string, string>;
+  corretorIds?: string[];
 }
 
 function getInitials(name: string) {
