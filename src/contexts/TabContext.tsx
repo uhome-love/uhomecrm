@@ -1,6 +1,7 @@
 import { createContext, useContext, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { resolveRoute, type ResolvedRoute } from "@/config/pageRegistry";
+import { useUserRole, type AppRole } from "@/hooks/useUserRole";
 
 const MAX_TABS = 8;
 const STORAGE_KEY = "uhome_tabs_v1";
