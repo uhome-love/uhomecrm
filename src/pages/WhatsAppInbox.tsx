@@ -333,7 +333,7 @@ export default function WhatsAppInbox() {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden -m-4 sm:-m-6 lg:-m-8">
+    <div className="h-full flex flex-col overflow-hidden">
       {isMobile && mobileView === "thread" && (
         <div className="p-2 border-b border-border bg-card md:hidden">
           <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setMobileView("list")}>
