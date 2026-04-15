@@ -28,6 +28,7 @@ import TabProducao from "@/components/gerente/TabProducao";
 import TabPipeline from "@/components/gerente/TabPipeline";
 import TabMetas from "@/components/gerente/TabMetas";
 import TeamReportExport from "@/components/gerente/TeamReportExport";
+import CorretoresBloqueadosPanel from "@/components/roleta/CorretoresBloqueadosPanel";
 
 // ── Animated counter ──
 function AnimatedNumber({ value, duration = 0.6 }: { value: number; duration?: number }) {
@@ -257,6 +258,9 @@ export default function GerenteDashboard() {
           </div>
         </div>
       )}
+
+      {/* ═══ CORRETORES BLOQUEADOS ═══ */}
+      <CorretoresBloqueadosPanel teamUserIds={teamUserIds} />
 
       {/* 5 KPI Cards — clickable */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
