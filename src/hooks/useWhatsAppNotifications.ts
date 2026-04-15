@@ -2,15 +2,17 @@ import { useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 
 /**
  * Global hook — shows a toast when a WhatsApp message is received
  * while the user is on any page EXCEPT /whatsapp (to avoid duplication).
- * Only fires when the tab is visible (browser notifications cover background tabs).
+ * Only fires for corretores. Gestores/admins do NOT receive individual message notifications.
  */
 export function useWhatsAppNotifications() {
   const { user } = useAuth();
+  const { isGestor, isAdmin } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
   const profileIdRef = useRef<string | null>(null);
@@ -31,7 +33,8 @@ export function useWhatsAppNotifications() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    // Gestores and admins don't get individual message toasts
+    if (!user?.id || isGestor || isAdmin) return;
 
     const channel = supabase
       .channel("global-whatsapp-toast")
@@ -79,5 +82,5 @@ export function useWhatsAppNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, navigate]);
+  }, [user?.id, isGestor, isAdmin, navigate]);
 }
