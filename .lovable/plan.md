@@ -1,68 +1,105 @@
 
 
-## Plano: Mídia no WhatsApp Inbox (Receber + Enviar)
+## Diagnóstico Completo + Plano de Correção — WhatsApp Inbox
 
-### Parte 1 — Exibir mídia recebida na thread
+---
 
-**Arquivo: `src/components/whatsapp/ConversationThread.tsx`**
+### TESTE 1 — ENVIO DE MENSAGEM ✅ Corrigido
 
-No render de cada mensagem (linha ~510), substituir `{msg.body || (msg.media_url ? "📎 Mídia" : "...")}` por um componente `MediaRenderer` que detecta o tipo pela URL/extensão:
+- **T1.1** profileId carrega com retry (3 tentativas) — OK
+- **T1.2** Campos `telefone` + `mensagem` batem com edge function — OK
+- **T1.3** instanceName: a `whatsapp-send` usa Meta API hardcoded, não busca instância Evolution — funciona para Meta, não para Evolution (limitação conhecida, não é bug)
+- **T1.4** Após envio: insert inclui `instance_name: "meta"` e `whatsapp_message_id` — OK. Textarea limpa, `onMessageSent()` chamado
+- **T1.5** Erros capturados com toast — OK
+- **DB**: `instance_name` e `whatsapp_message_id` agora são nullable — inserts não falham
 
-```
-- Imagem (.jpg, .png, .webp, .jpeg) → <img> com onClick para abrir Dialog de ampliação (lightbox)
-- Áudio (.ogg, .mp3, .m4a, .wav) → <audio controls> nativo
-- Vídeo (.mp4, .3gp) → <video controls> com max-width
-- Documento (.pdf, .doc, .xlsx) → Ícone 📄 + link download
-- Fallback → link genérico para download
-```
+### TESTE 2 — CRIAR TAREFA ✅ Corrigido
 
-Se `msg.body` também existir, exibir mídia + texto abaixo.
+- **T2.1** Insert usa `responsavel_id: profileId` e `vence_em: format(date, "yyyy-MM-dd")` — OK
+- **T2.2/T2.3** Central de Tarefas filtra por `responsavel_id` (team_members user_ids). O `responsavel_id` recebe `profileId` (profiles.id). Preciso verificar se Central espera profiles.id ou auth.uid...
+  - Verificação: `TabAgora.tsx` e `TabProducao.tsx` filtram por `.in("responsavel_id", teamUserIds)` onde `teamUserIds` = `user_id` de `team_members` = **auth.uid**
+  - **⚠️ PROBLEMA**: `responsavel_id` recebe `profileId` (profiles.id) mas Central filtra por `auth.uid`. Tarefa criada NÃO aparece na Central!
+- **T2.4** `created_by: profileId` — também pode estar errado se a tabela espera auth.uid
 
-Adicionar um `Dialog` (lightbox) para ampliar imagens ao clicar.
+### TESTE 3 — AGENDAR VISITA ❌ AINDA QUEBRADO
 
-### Parte 2 — Enviar mídia (botão 📎)
+- **T3.1** Insert corrigido adicionou `nome_cliente`, `gerente_id`, `created_by`, `pipeline_lead_id`, `data_visita` formatado, `status: "marcada"` — OK
+- **⚠️ CAMPO FALTANTE**: coluna `tipo` é NOT NULL sem default. Insert não passa `tipo`. Valores válidos: `'lead'` ou `'negocio'`. **Visita falha silenciosamente!**
+- **T3.3** `corretor_id` recebe `profileId` (profiles.id). A tabela `visitas.corretor_id` — precisa verificar o que Agenda espera. Geralmente é profiles.id (consistente com outras queries)
+- **T3.4** Lead é movido para etapa "Visita" — OK
 
-**Arquivo: `src/components/whatsapp/ConversationThread.tsx`**
+### TESTE 4 — NOTA INTERNA ✅ Corrigido
 
-Adicionar botão `Paperclip` (📎) ao lado do input de texto:
-- Abre `<input type="file">` oculto (accept: image/*, audio/*, video/*, .pdf, .doc, .xlsx)
-- Ao selecionar arquivo:
-  1. Converte para base64
-  2. Chama edge function `whatsapp-send-media`
+- **T4.1** CHECK constraint agora aceita `'note'` — confirmado via query
+- **T4.2** `instance_name` e `whatsapp_message_id` nullable — insert funciona
+- Nota aparece na thread (direction='note' com fundo amarelo) — OK
 
-**Nova Edge Function: `supabase/functions/whatsapp-send-media/index.ts`**
+### TESTE 5 — MOVER ETAPA ✅ Funcionando
 
-Recebe: `{ telefone, media_base64, media_type, filename, caption? }`
+- Update + atividade registrada — sem problemas
 
-Lógica:
-1. Auth via `getUser()`
-2. Buscar instância Evolution do corretor: query `whatsapp_instances` por profile_id
-3. Se tem instância Evolution ativa → POST `/message/sendMedia/{instanceName}` na Evolution API
-4. Se não tem instância → POST na Meta API (`/messages` com type image/document/audio/video)
-5. Retorna `{ success, message_id }`
+### TESTE 6 — HOMI COPILOT ⚠️ Sem logs recentes
 
-Após sucesso no frontend, inserir em `whatsapp_mensagens` com `media_url` preenchido (para Evolution, a URL vem do response; para Meta, gerar referência).
+- Sem chamadas nos logs. Prompt atualizado e deployado. Funcionamento pendente de teste real.
 
-**Deploy:** `whatsapp-send-media`
+### TESTE 7 — TEMPLATES ✅ Funcionando
 
-### Parte 3 — Componente auxiliar
+- Templates filtrados por `stage_id`, variáveis substituídas, textarea preenchido — OK
 
-Criar `src/components/whatsapp/MediaRenderer.tsx`:
-- Props: `{ mediaUrl: string; body?: string | null; direction: string }`
-- Detecta tipo por extensão ou MIME
-- Renderiza o elemento adequado
-- Imagens clicáveis abrem lightbox
+### TESTE 8 — REALTIME ✅ Funcionando
 
-### Resumo de arquivos
+- `whatsapp_mensagens` está na publicação `supabase_realtime` — confirmado via query
+- Canal inscrito em `postgres_changes` INSERT — OK
 
-| Arquivo | Ação |
-|---------|------|
-| `src/components/whatsapp/MediaRenderer.tsx` | **Criar** — render de mídia por tipo |
-| `src/components/whatsapp/ConversationThread.tsx` | **Editar** — usar MediaRenderer + botão 📎 + input file + handler de envio |
-| `supabase/functions/whatsapp-send-media/index.ts` | **Criar** — envio de mídia via Evolution ou Meta API |
+---
 
-### O que NÃO muda
-- Tabelas (media_url já existe em whatsapp_mensagens)
-- Webhook Evolution (já captura media_url)
-- Edge function whatsapp-send existente (texto continua igual)
+## Resumo
+
+| # | Funcionalidade | Status |
+|---|---------------|--------|
+| 1 | Envio de mensagem | ✅ OK |
+| 2 | Criar tarefa | ⚠️ `responsavel_id` usa profiles.id mas Central filtra por auth.uid |
+| 3 | Agendar visita | ❌ Falta `tipo: "lead"` (NOT NULL) |
+| 4 | Nota interna | ✅ OK |
+| 5 | Mover etapa | ✅ OK |
+| 6 | HOMI Copilot | ⚠️ Sem teste real |
+| 7 | Templates | ✅ OK |
+| 8 | Realtime | ✅ OK |
+| 9 | Filtro "Não lidas" | ⚠️ Não existe como tab/botão |
+
+---
+
+## Plano de Correção (3 itens)
+
+### Correção 1 — Visita: adicionar `tipo: "lead"` (CRÍTICO)
+
+**Arquivo:** `src/components/whatsapp/ConversationThread.tsx`
+
+Na função `handleScheduleVisit`, adicionar `tipo: "lead"` ao insert de `visitas`.
+
+### Correção 2 — Tarefa: `responsavel_id` deve usar auth.uid
+
+**Arquivo:** `src/components/whatsapp/ConversationThread.tsx`
+
+Na função `handleCreateTask`, alterar `responsavel_id` e `created_by` para usar `authUser.id` (auth.uid) em vez de `profileId`. Buscar auth user antes do insert (já é feito em handleSend/handleScheduleVisit).
+
+### Correção 3 — Filtro "Não lidas" na ConversationList
+
+**Arquivo:** `src/components/whatsapp/ConversationList.tsx`
+
+1. Adicionar tab `"unread"` ao array de tabs: `{ key: "unread", label: "Não lidas" }`
+2. No `filteredConversations` memo, quando `tab === "unread"`, filtrar `conversations.filter(c => c.unreadCount > 0)`
+3. No header, mostrar contagem de não lidas: `{conversations.filter(c => c.unreadCount > 0).length} não lidas`
+
+**Arquivo:** `src/pages/WhatsAppInbox.tsx`
+
+4. Melhorar cálculo de `unreadCount` no `loadConversations`:
+   - Para cada conversa, contar mensagens `received` consecutivas do topo (mais recentes) antes de encontrar uma `sent`
+   - Esse número = unreadCount real (não apenas 0 ou 1)
+
+5. No realtime (INSERT handler):
+   - Se `direction === "received"` e lead NÃO está selecionado: incrementar `unreadCount` da conversa
+   - Se lead ESTÁ selecionado: não incrementar
+
+Nenhuma alteração em Edge Functions ou tabelas.
 
