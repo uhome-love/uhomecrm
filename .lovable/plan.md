@@ -1,75 +1,78 @@
 
 
-## Plano: WhatsApp Send via Evolution API + HOMI Copilot com Conhecimento Completo do CRM
+## Plano: Corrigir Envio WhatsApp + Ajustes Menores
 
-### Problema 1 — Ebert não consegue enviar mensagem
+### Problema Principal — Envio silencioso
+`handleSend()` na linha 213 faz `if (!text.trim() || !leadInfo || !profileId) return;` — retorno silencioso. Se `profileId` não carregou (query do profiles falhou), o corretor clica enviar e nada acontece, sem nenhum feedback.
 
-**Causa raiz:** O `whatsapp-send` envia TODAS as mensagens pela Meta Business API (número da empresa). Mas o Ebert tem uma instância Evolution API pessoal (`uhome-b5c6344b`, status: `conectado`). As mensagens enviadas pela Meta saem de outro número — o lead não recebe no WhatsApp "normal" e o Inbox não registra corretamente.
+### Alterações
 
-**Solução:** O `whatsapp-send` precisa verificar se o corretor tem uma instância Evolution conectada. Se sim, enviar pela Evolution API (`POST /message/sendText/{instanceName}`). Se não, usar Meta API como fallback.
+**1. `src/components/whatsapp/ConversationThread.tsx`**
+- Substituir o `return` silencioso por toasts informativos:
+  - `!profileId` → toast.error("Perfil não carregado. Recarregue a página.")
+  - `!leadInfo` → toast.error("Dados do lead não disponíveis.")
+- Adicionar `console.log` no início do handleSend para debug
+- Adicionar retry na query de profileId (se falhar, tentar novamente)
+- Adicionar opção "Em 2 dias" no select de prazo da tarefa
+- Adicionar input `type="date"` para prazo personalizado na criação de tarefa
 
-### Problema 2 — HOMI Copilot com conhecimento superficial
+**2. `src/components/whatsapp/HomiCopilotCard.tsx`**
+- Sem alterações necessárias — o componente já recebe `lastReceivedOrSent?.body` e re-analisa quando muda
 
-**Causa raiz:** O prompt atual só tem: nome, etapa, empreendimento e budget. Não sabe nada sobre os empreendimentos reais, campos do lead, tarefas pendentes, visitas, histórico de atividades, ou o contexto operacional do CRM.
+**3. `supabase/functions/homi-copilot/index.ts`**
+- Sem alterações necessárias — já tem contexto completo do CRM
 
-**Solução:** Enriquecer a Edge Function `homi-copilot` com queries adicionais para montar um briefing completo.
+**4. `supabase/functions/whatsapp-send/index.ts`**
+- Sem alterações — conforme solicitado
 
----
+### Detalhes técnicos
 
-### Alterações técnicas
+Mudança no handleSend:
+```typescript
+const handleSend = async () => {
+  console.log("handleSend called", { text: text.trim(), leadInfo: !!leadInfo, profileId });
+  if (!text.trim()) return;
+  if (!profileId) {
+    toast.error("Perfil não carregado. Recarregue a página.");
+    return;
+  }
+  if (!leadInfo) {
+    toast.error("Dados do lead não disponíveis.");
+    return;
+  }
+  // ... rest
+};
+```
 
-**1. `supabase/functions/whatsapp-send/index.ts`** — Roteamento Evolution vs Meta
+Retry no carregamento do profileId:
+```typescript
+useEffect(() => {
+  const loadProfile = async (retries = 3) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data, error } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
+    if (data) {
+      setProfileId(data.id);
+    } else if (retries > 0) {
+      setTimeout(() => loadProfile(retries - 1), 1000);
+    } else {
+      console.error("Failed to load profileId", error);
+    }
+  };
+  loadProfile();
+}, []);
+```
 
-- Após autenticação, resolver `profile_id` do usuário autenticado
-- Consultar `whatsapp_instancias` para esse `corretor_id`
-- Se instância com `status = 'conectado'` existir:
-  - Enviar via Evolution API: `POST {EVOLUTION_API_URL}/message/sendText/{instance_name}`
-  - Headers: `{ apikey: EVOLUTION_API_KEY }`
-  - Body: `{ number: phone, text: mensagem }`
-- Se não tiver instância conectada → usar Meta API (comportamento atual)
-- Usar `SUPABASE_SERVICE_ROLE_KEY` para bypass RLS na query de instâncias
+Adição de "2 dias" e data personalizada no task deadline:
+```typescript
+<SelectItem value="2dias">Em 2 dias</SelectItem>
+// + input date quando selecionado "custom"
+<SelectItem value="custom">📅 Data específica</SelectItem>
+```
 
-**2. `supabase/functions/homi-copilot/index.ts`** — Conhecimento completo do CRM
-
-Adicionar queries paralelas para buscar:
-- **Lead completo:** todos os campos relevantes (origem, objetivo_cliente, bairro_regiao, forma_pagamento, imovel_troca, nivel_interesse, temperatura, tags, observacoes, campanha, primeiro_contato_em, dados_site)
-- **Etapas do pipeline:** todas as etapas ativas com nomes reais
-- **Tarefas pendentes:** últimas 5 tarefas do lead (titulo, tipo, status, vence_em)
-- **Visitas:** agendadas/realizadas (data, status, empreendimento)
-- **Atividades recentes:** últimas 5 atividades (tipo, titulo, data)
-
-Reescrever o prompt para incluir:
-- Perfil completo do lead com todos os dados disponíveis
-- Lista real das etapas do pipeline (Novo Lead → Sem Contato → Contato Iniciado → Busca → Aquecimento → Visita → Pós-Visita → Negócio Criado → Descarte)
-- Empreendimentos da empresa (Casa Tua, Open Bosque, Lake Eyre, Orygem, Las Casas, Casa Bastian, Alto Lindóia, Connect JW, Shift, High Garden Iguatemi, etc.)
-- Contexto operacional: tarefas pendentes, próxima ação agendada, visitas
-- Regras do CRM: quando mover etapa, quando criar tarefa, quando agendar visita
-- Informações sobre ações disponíveis no sistema (mover etapa, criar tarefa, agendar visita)
-
-**3. `src/components/whatsapp/ConversationThread.tsx`** — Guard anti-duplicação
-
-- Adicionar `sendingRef = useRef(false)` como lock imediato no `handleSend`
-- Previne race condition entre Enter + click simultâneo
-
-**4. `src/components/whatsapp/ConversationThread.tsx`** — Tarefa mais completa
-
-Expandir o popover de criação de tarefa:
-- Tipo: Follow-up, Ligação, Enviar material, Reunião, Outro
-- Descrição (textarea opcional)
-- Prioridade: Normal, Alta, Urgente
-- Data personalizada (date picker) além dos presets
-
-**5. `src/components/whatsapp/HomiCopilotCard.tsx`** — Contexto bidirecional
-
-- Manter HOMI visível mesmo após corretor enviar (não só quando última msg é `received`)
-- Passar `messages` array ao invés de apenas `lastMessage` string
-- Re-trigger análise quando corretor envia (com debounce)
-
-### Resultado esperado
-- Ebert e corretores com Evolution conectada enviam pelo número pessoal
-- Corretores sem instância continuam usando Meta API
-- HOMI conhece todo o CRM: empreendimentos, etapas, tarefas, visitas, perfil completo
-- HOMI sugere ações contextuais baseadas em dados reais
-- Criação de tarefa completa com tipo, descrição, prioridade e data custom
-- Sem duplicação de mensagens
+### Resultado
+- Corretor recebe feedback claro se envio falhar
+- ProfileId tem retry automático
+- Console.log para debug do fluxo
+- Tarefa com opção de 2 dias e data personalizada
 
