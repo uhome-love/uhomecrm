@@ -364,16 +364,22 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
   const handleCreateTask = async () => {
     if (!leadInfo || !profileId || !taskTitle.trim()) return;
     try {
-      await supabase.from("pipeline_tarefas").insert({
+      const deadlineDate = getDeadline(taskDeadline, taskCustomDate);
+      const { error: taskErr } = await supabase.from("pipeline_tarefas").insert({
         pipeline_lead_id: leadId,
         titulo: taskTitle.trim(),
         tipo: taskType,
         descricao: taskDescription.trim() || null,
         prioridade: taskPriority,
         status: "pendente",
-        vence_em: getDeadline(taskDeadline, taskCustomDate).toISOString(),
+        vence_em: format(deadlineDate, "yyyy-MM-dd"),
         created_by: profileId,
+        responsavel_id: profileId,
       });
+      if (taskErr) {
+        console.error("Task insert error:", taskErr);
+        throw new Error(taskErr.message || "Erro ao criar tarefa");
+      }
       toast.success("✅ Tarefa criada!");
       setTaskTitle("");
       setTaskDeadline("amanha");
