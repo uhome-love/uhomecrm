@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,28 +20,23 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    // Validate JWT properly
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-    const _sbAuth = createClient(
+
+    // Validate JWT
+    const sbAuth = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const _token = authHeader.replace("Bearer ", "");
-    const { data: _claims, error: _claimsErr } = await _sbAuth.auth.getClaims(_token);
-    if (_claimsErr || !_claims?.claims) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsErr } = await sbAuth.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Não autenticado" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN");
-    const PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
-
-    if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
-      throw new Error("WhatsApp credentials not configured");
-    }
+    const authUserId = claimsData.claims.sub as string;
 
     const { telefone, mensagem, nome, template } = await req.json();
 
@@ -54,6 +50,85 @@ serve(async (req) => {
     let cleanPhone = telefone.replace(/\D/g, "");
     if (cleanPhone.startsWith("0")) cleanPhone = cleanPhone.substring(1);
     if (!cleanPhone.startsWith("55")) cleanPhone = "55" + cleanPhone;
+
+    // --- Check if broker has a connected Evolution instance ---
+    const sbAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // Resolve profile_id from auth user
+    const { data: profile } = await sbAdmin
+      .from("profiles")
+      .select("id")
+      .eq("user_id", authUserId)
+      .single();
+
+    let evolutionInstance: { instance_name: string } | null = null;
+    if (profile) {
+      const { data: inst } = await sbAdmin
+        .from("whatsapp_instancias")
+        .select("instance_name")
+        .eq("corretor_id", profile.id)
+        .eq("status", "conectado")
+        .limit(1)
+        .maybeSingle();
+      evolutionInstance = inst;
+    }
+
+    // --- Route: Evolution API (text only, no templates) ---
+    if (evolutionInstance && mensagem && !template) {
+      const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
+      const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
+
+      if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
+        console.warn("Evolution API credentials missing, falling back to Meta");
+      } else {
+        console.log("Sending via Evolution API instance:", evolutionInstance.instance_name, "to:", cleanPhone);
+
+        const evoResponse = await fetch(
+          `${EVOLUTION_API_URL}/message/sendText/${evolutionInstance.instance_name}`,
+          {
+            method: "POST",
+            headers: {
+              apikey: EVOLUTION_API_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              number: cleanPhone,
+              text: mensagem,
+            }),
+          }
+        );
+
+        const evoResult = await evoResponse.json();
+
+        if (!evoResponse.ok) {
+          console.error("Evolution API error:", JSON.stringify(evoResult));
+          // Fall through to Meta API as fallback
+          console.log("Falling back to Meta API...");
+        } else {
+          console.log("Evolution API sent OK:", JSON.stringify(evoResult));
+          return new Response(
+            JSON.stringify({
+              success: true,
+              message_id: evoResult?.key?.id || evoResult?.messageId || null,
+              phone: cleanPhone,
+              via: "evolution",
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
+    // --- Fallback: Meta Business API ---
+    const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN");
+    const PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
+
+    if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
+      throw new Error("WhatsApp credentials not configured");
+    }
 
     let body;
 
@@ -104,7 +179,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Sending WhatsApp to:", cleanPhone, "body:", JSON.stringify(body));
+    console.log("Sending WhatsApp via Meta to:", cleanPhone, "body:", JSON.stringify(body));
 
     const waResponse = await fetch(
       `https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages`,
@@ -148,6 +223,7 @@ serve(async (req) => {
         success: true,
         message_id: waResult.messages?.[0]?.id,
         phone: cleanPhone,
+        via: "meta",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
