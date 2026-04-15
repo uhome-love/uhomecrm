@@ -99,6 +99,12 @@ export function TabProvider({ children }: { children: ReactNode }) {
     const resolved = resolveRoute(pathname);
     if (!resolved) return;
 
+    // Role gate: redirect unauthorized users to their home
+    if (!hasAccess(resolved)) {
+      if (!skipNav) navigateRef.current("/", { replace: true });
+      return;
+    }
+
     const currentTabs = tabsRef.current;
     const existingIdx = currentTabs.findIndex((t) => t.id === resolved.key);
 
