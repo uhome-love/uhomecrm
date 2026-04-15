@@ -477,8 +477,72 @@ export default function ConversationList({
               </>
             )}
 
+            {/* Message search results */}
+            {msgSearchOpen && debouncedMsgSearch.trim() && (
+              <>
+                <div className="px-3 pt-3 pb-1 flex items-center gap-1.5">
+                  <FileSearch size={12} className="text-primary" />
+                  <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+                    Resultados em mensagens ({msgSearchLoading ? "..." : msgResults.length})
+                  </span>
+                </div>
+                {msgSearchLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 size={16} className="animate-spin text-muted-foreground" />
+                  </div>
+                ) : msgResults.length === 0 ? (
+                  <div className="text-center py-4 px-3">
+                    <p className="text-[10px] text-muted-foreground">Nenhuma mensagem encontrada</p>
+                  </div>
+                ) : (
+                  msgResults.map((r, i) => {
+                    const term = debouncedMsgSearch.trim().toLowerCase();
+                    const bodyLower = r.body.toLowerCase();
+                    const idx = bodyLower.indexOf(term);
+                    const start = Math.max(0, idx - 20);
+                    const end = Math.min(r.body.length, idx + term.length + 40);
+                    const snippet = (start > 0 ? "..." : "") + r.body.slice(start, end) + (end < r.body.length ? "..." : "");
+
+                    return (
+                      <button
+                        key={`msg-${i}`}
+                        onClick={() => onSelect(r.leadId)}
+                        className={`w-full text-left px-3 py-2 border-l-2 transition-colors hover:bg-muted/50 ${
+                          selectedLeadId === r.leadId ? "border-l-primary bg-muted/60" : "border-l-transparent"
+                        }`}
+                      >
+                        <div className="flex gap-2.5">
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarFallback className={`${getAvatarColor(r.leadName)} text-white text-[10px]`}>
+                              {getInitials(r.leadName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-medium truncate">{r.leadName}</span>
+                              <span className="text-[10px] text-muted-foreground shrink-0 ml-1">
+                                {formatDistanceToNow(new Date(r.timestamp), { locale: ptBR, addSuffix: false })}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground truncate mt-0.5"
+                               dangerouslySetInnerHTML={{
+                                 __html: snippet.replace(
+                                   new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"),
+                                   '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>'
+                                 ),
+                               }}
+                            />
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </>
+            )}
+
             {/* Empty state */}
-            {filteredConversations.length === 0 && filteredFollowUp.length === 0 && filteredNew.length === 0 && (
+            {filteredConversations.length === 0 && filteredFollowUp.length === 0 && filteredNew.length === 0 && msgResults.length === 0 && (
               <div className="text-center py-12 px-4">
                 <MessageSquare size={24} className="mx-auto text-muted-foreground mb-2" />
                 <p className="text-xs text-muted-foreground">Nenhum resultado encontrado</p>
