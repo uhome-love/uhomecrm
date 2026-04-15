@@ -98,7 +98,9 @@ export function useOAListas() {
       return data as OALista[];
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 2, // 2 min cache for list metadata
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const createLista = useCallback(async (lista: Partial<OALista>) => {
