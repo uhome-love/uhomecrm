@@ -1,36 +1,95 @@
 
 
-# Correção: Aba "Dashboard" fantasma persistindo no sessionStorage
+# Gestão de Equipe no WhatsApp Inbox
 
-## Causa raiz
+## Resumo
 
-A entrada `"/"` foi removida do `ROUTE_TO_TAB` e o URL sync já ignora `"/"`, mas o **sessionStorage** (`uhome_tabs_v1`) ainda contém a aba antiga `{ id: "home", path: "/" }` de sessões anteriores. Ao restaurar do storage, essa aba fantasma reaparece.
+Adicionar seletor de corretor no WhatsApp Inbox para gestores e admins, permitindo visualizar e monitorar conversas da equipe em modo leitura.
 
-## Correção (1 arquivo)
+## Arquivos a criar/editar
 
-### `src/contexts/TabContext.tsx` — Sanitizar abas ao carregar do storage
+### 1. Criar `src/components/whatsapp/CorretorSelector.tsx` (novo)
 
-Na função `loadFromStorage()` (linha 42-50), filtrar abas com `path === "/"` antes de retornar:
+Componente com chips clicáveis: "Todos" + cada corretor da equipe. Mostra iniciais + primeiro nome. Chip ativo destacado em azul. Recebe `corretores`, `selectedCorretorId`, `onSelect`.
 
-```typescript
-function loadFromStorage(): { tabs: Tab[]; activeTabId: string } | null {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (Array.isArray(data.tabs) && typeof data.activeTabId === "string") {
-      // Remove ghost tabs from legacy "/" route
-      const cleaned = data.tabs.filter((t: any) => t.path !== "/" && t.path !== "/index.html" && t.path !== "/index");
-      const activeStillExists = cleaned.some((t: any) => t.id === data.activeTabId);
-      return { 
-        tabs: cleaned, 
-        activeTabId: activeStillExists ? data.activeTabId : (cleaned[0]?.id ?? "") 
-      };
-    }
-  } catch {}
-  return null;
-}
+### 2. Editar `src/pages/WhatsAppInbox.tsx`
+
+**Novos estados:**
+- `corretores: { id: string; nome: string; userId: string }[]`
+- `selectedCorretorId: string | null` (profiles.id do corretor filtrado)
+- `isReadOnly: boolean` (true quando vendo conversa de outro)
+
+**Lógica de carregamento dos corretores:**
+- Usar `useUserRole()` para detectar isGestor/isAdmin
+- Gestor: query `team_members` com `gerente_id = user.id` + join profiles
+- Admin: query todos os profiles com user_id em team_members ativos
+
+**Alterar `loadConversations`:**
+- Se `selectedCorretorId` definido: filtrar `corretor_id = selectedCorretorId`
+- Se null (Todos) e isGestor/isAdmin: filtrar `corretor_id IN (lista de profiles.id da equipe)`
+- Corretor: manter lógica atual (próprio profileId)
+
+**Alterar `loadSuggestions`:**
+- Esconder follow-up e new leads quando em modo leitura (não faz sentido sugerir para outro corretor)
+
+**Calcular `isReadOnly`:**
+- `selectedCorretorId !== null && selectedCorretorId !== profileId`
+
+**Renderização:**
+- Mostrar `CorretorSelector` acima da `ConversationList` quando isGestor ou isAdmin
+- Passar `isReadOnly` para `ConversationThread` e `LeadPanel`
+- Passar `corretorNome` do corretor selecionado para o banner
+
+### 3. Editar `src/components/whatsapp/ConversationList.tsx`
+
+**Nova prop opcional:** `corretorMap?: Map<string, string>` (profileId → nome)
+
+**Nova prop em ConversationItem:** `corretorId?: string`
+
+Quando `corretorMap` presente e item tem `corretorId`: mostrar chip pequeno com iniciais do corretor ao lado do nome do lead.
+
+### 4. Editar `src/components/whatsapp/ConversationThread.tsx`
+
+**Nova prop:** `isReadOnly?: boolean`, `readOnlyCorretorNome?: string`
+
+Quando `isReadOnly`:
+- Banner azul sutil no topo: "Modo leitura — conversa de {nome}"
+- `Textarea` disabled
+- Botão enviar disabled
+- Barra de ações rápidas (templates, agendamento) hidden
+- HOMI card visível mas sem botões de ação
+
+### 5. Editar `src/components/whatsapp/LeadPanel.tsx`
+
+**Nova prop:** `isReadOnly?: boolean`
+
+Quando `isReadOnly`: desabilitar edição inline (etapa, empreendimento, orçamento).
+
+### 6. Editar `src/components/whatsapp/HomiCopilotCard.tsx`
+
+**Nova prop:** `isReadOnly?: boolean`
+
+Quando `isReadOnly`: esconder botão "Usar sugestão", manter texto visível.
+
+## Queries de dados
+
+Para gestor:
+```sql
+SELECT tm.user_id, p.id as profile_id, p.nome
+FROM team_members tm
+JOIN profiles p ON p.user_id = tm.user_id
+WHERE tm.gerente_id = :authUserId AND tm.status = 'ativo'
+ORDER BY p.nome
 ```
 
-Isso garante que mesmo com dados antigos no sessionStorage, a aba `"/"` nunca será restaurada. Nenhuma outra aba é afetada.
+Para admin: mesma query sem filtro de gerente_id (todos os team_members ativos).
+
+A query de `whatsapp_mensagens` usa `corretor_id` que é `profiles.id`, então o filtro `.in("corretor_id", profileIds)` funciona diretamente.
+
+## Sem alterações em
+
+- Edge Functions
+- Tabelas do banco
+- Lógica do perfil corretor
+- RLS policies
 
