@@ -53,6 +53,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
         { label: "Relatório semanal",  path: "/relatorio-semanal", icon: <FileText     size={15} strokeWidth={1.5} /> },
         { label: "WhatsApp Inbox",     path: "/whatsapp",              icon: <MessageSquare size={15} strokeWidth={1.5} /> },
+        { label: "Gestão WhatsApp",    path: "/gestor/whatsapp-dashboard", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -118,6 +119,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Dashboard",          path: "/gerente/dashboard", icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
         { label: "Meu time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
+        { label: "Gestão WhatsApp",    path: "/gestor/whatsapp-dashboard", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
       ],
     },
     {
