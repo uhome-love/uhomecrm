@@ -81,7 +81,7 @@ function SLABadge({ lastReceivedTs }: { lastReceivedTs: string | null }) {
   );
 }
 
-type Tab = "all" | "active" | "followup" | "new";
+type Tab = "all" | "active" | "followup" | "new" | "unread";
 
 interface DialogLead {
   id: string;
@@ -234,9 +234,15 @@ export default function ConversationList({
   const q = search.toLowerCase();
 
   const filteredConversations = useMemo(() => {
-    if (!search) return conversations;
-    return conversations.filter(c => c.leadName.toLowerCase().includes(q));
-  }, [conversations, q, search]);
+    let list = conversations;
+    if (tab === "unread") {
+      list = list.filter(c => c.unreadCount > 0);
+    }
+    if (search) {
+      list = list.filter(c => c.leadName.toLowerCase().includes(q));
+    }
+    return list;
+  }, [conversations, q, search, tab]);
 
   const filteredFollowUp = useMemo(() => {
     if (!search) return followUpLeads;
@@ -253,12 +259,15 @@ export default function ConversationList({
     onSelect(leadId);
   };
 
-  const showActive = tab === "all" || tab === "active";
-  const showFollowUp = tab === "all" || tab === "followup";
-  const showNew = tab === "all" || tab === "new";
+  const showActive = tab === "all" || tab === "active" || tab === "unread";
+  const showFollowUp = (tab === "all" || tab === "followup") && tab !== "unread";
+  const showNew = (tab === "all" || tab === "new") && tab !== "unread";
+
+  const unreadCount = conversations.filter(c => c.unreadCount > 0).length;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "all", label: "Todas" },
+    { key: "unread", label: `Não lidas${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
     { key: "active", label: "Ativas" },
     { key: "followup", label: "Follow-up" },
     { key: "new", label: "Novos" },
@@ -273,7 +282,7 @@ export default function ConversationList({
             <MessageSquare size={14} /> Conversas
           </h2>
           <span className="text-[10px] text-muted-foreground">
-            {conversations.length} ativas · {followUpLeads.length} follow-up · {newLeads.length} novos
+            {conversations.length} ativas · {unreadCount > 0 ? `${unreadCount} não lidas · ` : ""}{newLeads.length} novos
           </span>
         </div>
         <div className="flex gap-1.5">

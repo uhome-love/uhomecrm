@@ -394,6 +394,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         data_visita: format(dt, "yyyy-MM-dd"),
         hora_visita: visitTime,
         empreendimento: visitLocal || leadInfo.empreendimento || "",
+        tipo: "lead",
         status: "marcada",
         origem: "pipeline",
       });
@@ -433,6 +434,8 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
   const handleCreateTask = async () => {
     if (!leadInfo || !profileId || !taskTitle.trim()) return;
     try {
+      const { data: { user: authTaskUser } } = await supabase.auth.getUser();
+      const taskUserId = authTaskUser?.id || profileId;
       const deadlineDate = getDeadline(taskDeadline, taskCustomDate);
       const { error: taskErr } = await supabase.from("pipeline_tarefas").insert({
         pipeline_lead_id: leadId,
@@ -442,8 +445,8 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         prioridade: taskPriority,
         status: "pendente",
         vence_em: format(deadlineDate, "yyyy-MM-dd"),
-        created_by: profileId,
-        responsavel_id: profileId,
+        created_by: taskUserId,
+        responsavel_id: taskUserId,
       });
       if (taskErr) {
         console.error("Task insert error:", taskErr);
