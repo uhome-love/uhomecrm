@@ -132,13 +132,15 @@ const TIME_SLOTS = generateTimeSlots();
 
 // --- Deadline helpers ---
 
-function getDeadline(key: string) {
+function getDeadline(key: string, customDate?: string) {
   const now = new Date();
   switch (key) {
     case "hoje": return setMinutes(setHours(now, 18), 0);
     case "amanha": return setMinutes(setHours(addDays(now, 1), 10), 0);
+    case "2dias": return setMinutes(setHours(addDays(now, 2), 10), 0);
     case "3dias": return addDays(now, 3);
     case "1semana": return addDays(now, 7);
+    case "custom": return customDate ? new Date(customDate + "T10:00:00") : addDays(now, 1);
     default: return addDays(now, 1);
   }
 }
@@ -169,19 +171,29 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
   const [taskType, setTaskType] = useState("follow_up");
   const [taskDescription, setTaskDescription] = useState("");
   const [taskPriority, setTaskPriority] = useState("media");
+  const [taskCustomDate, setTaskCustomDate] = useState("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
 
-  // Fetch profiles.id + stages once on mount
+  // Fetch profiles.id with retry + stages once on mount
   useEffect(() => {
-    (async () => {
+    const loadProfile = async (retries = 3) => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
-      if (data) setProfileId(data.id);
-    })();
+      if (!user) { console.warn("loadProfile: no auth user"); return; }
+      const { data, error } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
+      if (data) {
+        setProfileId(data.id);
+        console.log("profileId loaded:", data.id);
+      } else if (retries > 0) {
+        console.warn("profileId load failed, retrying...", error);
+        setTimeout(() => loadProfile(retries - 1), 1000);
+      } else {
+        console.error("Failed to load profileId after retries", error);
+      }
+    };
+    loadProfile();
     (async () => {
       const { data } = await supabase
         .from("pipeline_stages")
@@ -210,8 +222,17 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
   }, [visitOpen, leadInfo]);
 
   const handleSend = async () => {
-    if (!text.trim() || !leadInfo || !profileId) return;
-    if (sendingRef.current) return; // Prevent double-send
+    console.log("handleSend called", { text: text.trim().substring(0, 30), hasLeadInfo: !!leadInfo, profileId, isReadOnly });
+    if (!text.trim()) return;
+    if (!profileId) {
+      toast.error("Perfil não carregado. Recarregue a página.");
+      return;
+    }
+    if (!leadInfo) {
+      toast.error("Dados do lead não disponíveis.");
+      return;
+    }
+    if (sendingRef.current) return;
     sendingRef.current = true;
     setSending(true);
     try {
@@ -328,7 +349,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         descricao: taskDescription.trim() || null,
         prioridade: taskPriority,
         status: "pendente",
-        vence_em: getDeadline(taskDeadline).toISOString(),
+        vence_em: getDeadline(taskDeadline, taskCustomDate).toISOString(),
         created_by: profileId,
       });
       toast.success("✅ Tarefa criada!");
@@ -337,6 +358,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       setTaskType("follow_up");
       setTaskDescription("");
       setTaskPriority("media");
+      setTaskCustomDate("");
     } catch (err: any) {
       toast.error("Erro: " + (err.message || ""));
     }
@@ -556,6 +578,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
               setTaskDescription("");
               setTaskPriority("media");
               setTaskDeadline("amanha");
+              setTaskCustomDate("");
             }
           }}>
             <Tooltip>
@@ -603,8 +626,10 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
                   <SelectContent>
                     <SelectItem value="hoje">Hoje (18h)</SelectItem>
                     <SelectItem value="amanha">Amanhã (10h)</SelectItem>
+                    <SelectItem value="2dias">Em 2 dias</SelectItem>
                     <SelectItem value="3dias">Em 3 dias</SelectItem>
                     <SelectItem value="1semana">Em 1 semana</SelectItem>
+                    <SelectItem value="custom">📅 Data específica</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={taskPriority} onValueChange={setTaskPriority}>
@@ -619,7 +644,16 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
                   </SelectContent>
                 </Select>
               </div>
-              <Button size="sm" className="w-full h-7 text-xs" onClick={handleCreateTask} disabled={!taskTitle.trim()}>
+              {taskDeadline === "custom" && (
+                <Input
+                  type="date"
+                  value={taskCustomDate}
+                  onChange={e => setTaskCustomDate(e.target.value)}
+                  min={format(new Date(), "yyyy-MM-dd")}
+                  className="h-8 text-xs mb-2"
+                />
+              )}
+              <Button size="sm" className="w-full h-7 text-xs" onClick={handleCreateTask} disabled={!taskTitle.trim() || (taskDeadline === "custom" && !taskCustomDate)}>
                 Criar tarefa
               </Button>
             </PopoverContent>
