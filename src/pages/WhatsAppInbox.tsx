@@ -279,6 +279,37 @@ export default function WhatsAppInbox() {
     updateUnreadStorage(unreadTotal);
   }, [getTargetProfileIds]);
 
+  // Fetch profile pictures for visible conversations
+  useEffect(() => {
+    if (conversations.length === 0) return;
+    const toFetch = conversations.filter(c => c.telefone && !profilePicCache.has(c.leadId)).slice(0, 15);
+    if (toFetch.length === 0) return;
+
+    // Mark as loading to prevent refetch
+    setProfilePicCache(prev => {
+      const next = new Map(prev);
+      toFetch.forEach(c => next.set(c.leadId, null));
+      return next;
+    });
+
+    toFetch.forEach(async (conv) => {
+      try {
+        const { data } = await supabase.functions.invoke("whatsapp-profile-picture", {
+          body: { telefone: conv.telefone },
+        });
+        if (data?.picture_url) {
+          setProfilePicCache(prev => {
+            const next = new Map(prev);
+            next.set(conv.leadId, data.picture_url);
+            return next;
+          });
+        }
+      } catch {
+        // silently fail
+      }
+    });
+  }, [conversations]);
+
   // Load follow-up and new leads (only for own profile, not in team read-only)
   const loadSuggestions = useCallback(async () => {
     if (!user?.id || !profileId || isReadOnly) {
