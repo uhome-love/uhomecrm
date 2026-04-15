@@ -62,25 +62,7 @@ function useArenaMode() {
   return { isFullscreen, isSession };
 }
 
-/** Auto-collapse sidebar when arena session is active */
-function ArenaAutoCollapse({ isSession }: { isSession: boolean }) {
-  const { setOpen, open } = useSidebar();
-  const prevOpenRef = useRef<boolean | null>(null);
-
-  useEffect(() => {
-    if (isSession) {
-      // Store previous state and collapse
-      prevOpenRef.current = open;
-      setOpen(false);
-    } else if (prevOpenRef.current !== null) {
-      // Restore previous state
-      setOpen(prevOpenRef.current);
-      prevOpenRef.current = null;
-    }
-  }, [isSession]); // intentionally not including open/setOpen to avoid loops
-
-  return null;
-}
+/** Arena auto-collapse removed — sidebar stays open during arena sessions */
 
 type SidebarRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
 
