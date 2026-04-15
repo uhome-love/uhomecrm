@@ -238,14 +238,21 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     if (sendingRef.current && sending) return;
     sendingRef.current = true;
     setSending(true);
+
+    const msgBody = text.trim();
+    const wasNoteMode = isNoteMode;
+
+    // Optimistic: clear input immediately
+    setText("");
+    if (wasNoteMode) setIsNoteMode(false);
+
     try {
-      if (isNoteMode) {
-        // Internal note — do NOT call whatsapp-send
+      if (wasNoteMode) {
         const { error: noteErr } = await supabase.from("whatsapp_mensagens").insert({
           lead_id: leadId,
           corretor_id: profileId,
           direction: "note",
-          body: text.trim(),
+          body: msgBody,
           timestamp: new Date().toISOString(),
           instance_name: "internal",
           whatsapp_message_id: crypto.randomUUID(),
@@ -254,9 +261,11 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           console.error("Note insert error:", noteErr);
           throw new Error(noteErr.message || "Erro ao salvar nota");
         }
+        onMessageSent();
       } else {
+        // Fire edge function and don't block UI for DB inserts / activity log
         const { error, data: sendResult } = await supabase.functions.invoke("whatsapp-send", {
-          body: { telefone: leadInfo.telefone, mensagem: text.trim() },
+          body: { telefone: leadInfo.telefone, mensagem: msgBody },
         });
         if (error) {
           console.error("whatsapp-send invoke error:", error);
@@ -266,37 +275,41 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           console.error("whatsapp-send returned error:", sendResult.error);
           throw new Error(sendResult.error);
         }
-        const { error: msgErr } = await supabase.from("whatsapp_mensagens").insert({
+
+        // DB insert + activity log in parallel, non-blocking for UI
+        const messageId = sendResult?.message_id || crypto.randomUUID();
+        const dbPromise = supabase.from("whatsapp_mensagens").insert({
           lead_id: leadId,
           corretor_id: profileId,
           direction: "sent",
-          body: text.trim(),
+          body: msgBody,
           timestamp: new Date().toISOString(),
           instance_name: "meta",
-          whatsapp_message_id: sendResult?.message_id || crypto.randomUUID(),
+          whatsapp_message_id: messageId,
         });
-        if (msgErr) {
-          console.error("Message insert error:", msgErr);
-          // Message was sent via WhatsApp but DB insert failed - warn user
+
+        const activityPromise = supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+          if (authUser) {
+            return supabase.from("pipeline_atividades").insert({
+              pipeline_lead_id: leadId,
+              tipo: "mensagem",
+              titulo: `Mensagem WhatsApp enviada`,
+              data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+              prioridade: "media",
+              status: "concluida",
+              created_by: authUser.id,
+            });
+          }
+        });
+
+        // Run both in parallel
+        const [dbResult] = await Promise.all([dbPromise, activityPromise]);
+        if (dbResult.error) {
+          console.error("Message insert error:", dbResult.error);
           toast.warning("Mensagem enviada mas não salva localmente. Recarregue.");
         }
-        // Log activity
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          await supabase.from("pipeline_atividades").insert({
-            pipeline_lead_id: leadId,
-            tipo: "mensagem",
-            titulo: `Mensagem WhatsApp enviada`,
-            data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-            prioridade: "media",
-            status: "concluida",
-            created_by: authUser.id,
-          });
-        }
+        onMessageSent();
       }
-      setText("");
-      if (isNoteMode) setIsNoteMode(false);
-      onMessageSent();
     } catch (err: any) {
       console.error("handleSend error:", err);
       toast.error("Erro ao enviar: " + (err.message || "Tente novamente"));
