@@ -85,20 +85,45 @@ function groupByDate(messages: Message[]) {
   return groups;
 }
 
-// Format WhatsApp-style text: *bold*, _italic_, ~strikethrough~
+// URL regex for clickable links
+const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
+
+// Format WhatsApp-style text: *bold*, _italic_, ~strikethrough~, and clickable links
 function formatWhatsAppText(text: string): React.ReactNode {
-  const parts = text.split(/(\*[^*]+\*|_[^_]+_|~[^~]+~)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("*") && part.endsWith("*")) {
-      return <strong key={i}>{part.slice(1, -1)}</strong>;
+  // First split by URLs
+  const urlParts = text.split(URL_REGEX);
+  
+  return urlParts.map((segment, si) => {
+    // If this segment matches a URL, render as link
+    if (URL_REGEX.test(segment)) {
+      URL_REGEX.lastIndex = 0; // Reset regex state
+      return (
+        <a
+          key={`url-${si}`}
+          href={segment}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline break-all hover:opacity-80"
+        >
+          {segment.length > 60 ? segment.slice(0, 57) + "..." : segment}
+        </a>
+      );
     }
-    if (part.startsWith("_") && part.endsWith("_")) {
-      return <em key={i}>{part.slice(1, -1)}</em>;
-    }
-    if (part.startsWith("~") && part.endsWith("~")) {
-      return <del key={i}>{part.slice(1, -1)}</del>;
-    }
-    return part;
+    
+    // Apply WhatsApp formatting to non-URL segments
+    const parts = segment.split(/(\*[^*]+\*|_[^_]+_|~[^~]+~)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("*") && part.endsWith("*")) {
+        return <strong key={`${si}-${i}`}>{part.slice(1, -1)}</strong>;
+      }
+      if (part.startsWith("_") && part.endsWith("_")) {
+        return <em key={`${si}-${i}`}>{part.slice(1, -1)}</em>;
+      }
+      if (part.startsWith("~") && part.endsWith("~")) {
+        return <del key={`${si}-${i}`}>{part.slice(1, -1)}</del>;
+      }
+      return part;
+    });
   });
 }
 
