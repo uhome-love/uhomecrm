@@ -11,13 +11,14 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Send, Eye, CalendarPlus, MessageSquare,
-  FileText, Calendar, CheckSquare, ArrowRight, StickyNote, Lock,
+  FileText, Calendar, CheckSquare, ArrowRight, StickyNote, Lock, Paperclip, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, isToday, isYesterday, addDays, addHours, setHours, setMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import HomiCopilotCard from "./HomiCopilotCard";
+import MediaRenderer from "./MediaRenderer";
 
 interface Message {
   id: string;
@@ -175,6 +176,8 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sendingMedia, setSendingMedia] = useState(false);
   const navigate = useNavigate();
 
   // Fetch profiles.id with retry + stages once on mount
@@ -300,6 +303,72 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     } finally {
       setSending(false);
       sendingRef.current = false;
+    }
+  };
+
+  // --- Media send handler ---
+  const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !leadInfo || !profileId) return;
+    // Reset input so same file can be selected again
+    e.target.value = "";
+
+    if (file.size > 16 * 1024 * 1024) {
+      toast.error("Arquivo muito grande (máx 16MB)");
+      return;
+    }
+
+    setSendingMedia(true);
+    try {
+      // Convert to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(",")[1]); // strip data:...;base64,
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { error, data: sendResult } = await supabase.functions.invoke("whatsapp-send-media", {
+        body: {
+          telefone: leadInfo.telefone,
+          media_base64: base64,
+          media_type: file.type,
+          filename: file.name,
+          caption: text.trim() || undefined,
+        },
+      });
+
+      if (error) throw error;
+      if (sendResult?.error) throw new Error(sendResult.error);
+
+      // Insert in whatsapp_mensagens
+      const { error: msgErr } = await supabase.from("whatsapp_mensagens").insert({
+        lead_id: leadId,
+        corretor_id: profileId,
+        direction: "sent",
+        body: text.trim() || null,
+        media_url: sendResult?.media_url || null,
+        timestamp: new Date().toISOString(),
+        instance_name: "media",
+        whatsapp_message_id: sendResult?.message_id || crypto.randomUUID(),
+      });
+
+      if (msgErr) {
+        console.error("Media message insert error:", msgErr);
+        toast.warning("Mídia enviada mas não salva localmente.");
+      }
+
+      setText("");
+      toast.success("Mídia enviada!");
+      onMessageSent();
+    } catch (err: any) {
+      console.error("handleMediaSelect error:", err);
+      toast.error("Erro ao enviar mídia: " + (err.message || "Tente novamente"));
+    } finally {
+      setSendingMedia(false);
     }
   };
 
@@ -507,7 +576,11 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
                         : "bg-card border border-border text-foreground rounded-bl-sm"
                     }`}
                   >
-                    {msg.body || (msg.media_url ? "📎 Mídia" : "...")}
+                    {msg.media_url ? (
+                      <MediaRenderer mediaUrl={msg.media_url} body={msg.body} direction={msg.direction} />
+                    ) : (
+                      msg.body || "..."
+                    )}
                     <span className={`block text-[9px] mt-0.5 ${
                       msg.direction === "sent" ? "text-primary-foreground/70" : "text-muted-foreground"
                     }`}>
@@ -740,6 +813,26 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
       {/* Input */}
       <div className="p-3 border-t border-border bg-card flex gap-2 flex-shrink-0">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
+          onChange={handleMediaSelect}
+        />
+        {/* Paperclip button */}
+        {!isReadOnly && !isNoteMode && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-10 w-10 shrink-0"
+            disabled={sendingMedia}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {sendingMedia ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
+          </Button>
+        )}
         <Textarea
           ref={textareaRef}
           value={text}
