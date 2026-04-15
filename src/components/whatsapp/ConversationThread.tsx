@@ -668,12 +668,13 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
     try {
       const { data: { user: authVisitUser } } = await supabase.auth.getUser();
+      const authUid = authVisitUser?.id || profileId;
       const { error: visitErr } = await supabase.from("visitas").insert({
         pipeline_lead_id: leadId,
         nome_cliente: leadInfo.nome,
-        corretor_id: profileId,
-        gerente_id: authVisitUser?.id || profileId,
-        created_by: authVisitUser?.id || profileId,
+        corretor_id: authUid,
+        gerente_id: authUid,
+        created_by: authUid,
         data_visita: format(dt, "yyyy-MM-dd"),
         hora_visita: visitTime,
         empreendimento: visitLocal || leadInfo.empreendimento || "",
