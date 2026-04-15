@@ -372,6 +372,15 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
   return (
     <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden min-h-0">
+      {/* Read-only banner */}
+      {isReadOnly && readOnlyCorretorNome && (
+        <div className="px-4 py-1.5 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-200 dark:border-blue-800 flex items-center gap-1.5 flex-shrink-0">
+          <Eye size={12} className="text-blue-600 dark:text-blue-400" />
+          <span className="text-[11px] text-blue-700 dark:text-blue-300 font-medium">
+            Modo leitura — conversa de {readOnlyCorretorNome}
+          </span>
+        </div>
+      )}
       {/* Header */}
       <div className="px-4 py-2.5 border-b border-border flex items-center justify-between bg-card flex-shrink-0">
         <div className="flex items-center gap-2.5">
@@ -455,11 +464,13 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
             leadName={leadInfo.nome}
             lastMessage={lastReceived.body || ""}
             onUseSuggestion={(s) => setText(s)}
+            isReadOnly={isReadOnly}
           />
         </div>
       )}
 
-      {/* Quick Action Bar */}
+      {/* Quick Action Bar — hidden in read-only */}
+      {!isReadOnly && (
       <TooltipProvider delayDuration={300}>
         <div className="px-3 py-1.5 border-t border-border bg-muted/30 flex items-center gap-1 flex-shrink-0">
           {/* Templates */}
