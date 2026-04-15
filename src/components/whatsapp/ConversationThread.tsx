@@ -263,34 +263,55 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         }
         onMessageSent();
       } else {
-        // Fire edge function and don't block UI for DB inserts / activity log
-        const { error, data: sendResult } = await supabase.functions.invoke("whatsapp-send", {
-          body: { telefone: leadInfo.telefone, mensagem: msgBody },
-        });
-        if (error) {
-          console.error("whatsapp-send invoke error:", error);
-          throw error;
-        }
-        if (sendResult?.error) {
-          console.error("whatsapp-send returned error:", sendResult.error);
-          throw new Error(sendResult.error);
-        }
+        // Optimistic: insert in DB and refresh UI immediately, send in background
+        const optimisticId = crypto.randomUUID();
+        const now = new Date().toISOString();
 
-        // DB insert + activity log in parallel, non-blocking for UI
-        const messageId = sendResult?.message_id || crypto.randomUUID();
-        const dbPromise = supabase.from("whatsapp_mensagens").insert({
+        // Insert message in DB first (fast, local) so it shows instantly
+        const { error: dbErr } = await supabase.from("whatsapp_mensagens").insert({
           lead_id: leadId,
           corretor_id: profileId,
           direction: "sent",
           body: msgBody,
-          timestamp: new Date().toISOString(),
-          instance_name: sendResult?.instance_name || "evolution",
-          whatsapp_message_id: messageId,
+          timestamp: now,
+          instance_name: "evolution",
+          whatsapp_message_id: optimisticId,
         });
 
-        const activityPromise = supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+        if (dbErr) {
+          console.error("Message insert error:", dbErr);
+        }
+
+        // Refresh UI immediately — message appears right away
+        onMessageSent();
+
+        // Fire edge function in background (don't await)
+        supabase.functions.invoke("whatsapp-send", {
+          body: { telefone: leadInfo.telefone, mensagem: msgBody },
+        }).then(({ error, data: sendResult }) => {
+          if (error || sendResult?.error) {
+            console.error("whatsapp-send background error:", error || sendResult?.error);
+            toast.error("Mensagem não entregue ao WhatsApp. Tente novamente.");
+            return;
+          }
+          // Update the message with real Evolution message ID (fire-and-forget)
+          if (sendResult?.message_id && sendResult.message_id !== optimisticId) {
+            supabase.from("whatsapp_mensagens")
+              .update({
+                whatsapp_message_id: sendResult.message_id,
+                instance_name: sendResult?.instance_name || "evolution",
+              })
+              .eq("whatsapp_message_id", optimisticId)
+              .then(({ error: upErr }) => {
+                if (upErr) console.error("Message ID update error:", upErr);
+              });
+          }
+        });
+
+        // Activity log in background (fire-and-forget)
+        supabase.auth.getUser().then(({ data: { user: authUser } }) => {
           if (authUser) {
-            return supabase.from("pipeline_atividades").insert({
+            supabase.from("pipeline_atividades").insert({
               pipeline_lead_id: leadId,
               tipo: "mensagem",
               titulo: `Mensagem WhatsApp enviada`,
@@ -301,14 +322,6 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
             });
           }
         });
-
-        // Run both in parallel
-        const [dbResult] = await Promise.all([dbPromise, activityPromise]);
-        if (dbResult.error) {
-          console.error("Message insert error:", dbResult.error);
-          toast.warning("Mensagem enviada mas não salva localmente. Recarregue.");
-        }
-        onMessageSent();
       }
     } catch (err: any) {
       console.error("handleSend error:", err);
