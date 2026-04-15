@@ -19,16 +19,16 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    // Validate JWT properly
+    // Validate JWT using getUser (reliable across all supabase-js versions)
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
     const _sbAuth = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const _token = authHeader.replace("Bearer ", "");
-    const { data: _claims, error: _claimsErr } = await _sbAuth.auth.getClaims(_token);
-    if (_claimsErr || !_claims?.claims) {
+    const { data: { user: _authUser }, error: _userErr } = await _sbAuth.auth.getUser();
+    if (_userErr || !_authUser) {
+      console.error("Auth failed:", _userErr?.message || "no user");
       return new Response(JSON.stringify({ error: "Não autenticado" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

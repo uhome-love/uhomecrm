@@ -232,7 +232,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       toast.error("Dados do lead não disponíveis.");
       return;
     }
-    if (sendingRef.current) return;
+    if (sendingRef.current && sending) return;
     sendingRef.current = true;
     setSending(true);
     try {
