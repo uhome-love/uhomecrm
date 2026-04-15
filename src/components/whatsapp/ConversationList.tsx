@@ -360,6 +360,9 @@ export default function ConversationList({
                   >
                     <div className="flex gap-2.5">
                       <Avatar className="h-9 w-9 shrink-0">
+                        {profilePicCache?.get(conv.leadId) && (
+                          <AvatarImage src={profilePicCache.get(conv.leadId)!} alt={conv.leadName} />
+                        )}
                         <AvatarFallback className={`${getAvatarColor(conv.leadName)} text-white text-xs`}>
                           {getInitials(conv.leadName)}
                         </AvatarFallback>
