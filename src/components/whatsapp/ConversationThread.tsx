@@ -377,11 +377,9 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     );
   }
 
-  const sorted = [...messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  const groups = groupByDate(sorted);
-  const lastMsg = sorted.length > 0 ? sorted[sorted.length - 1] : null;
+  const lastReceivedOrSent = sorted.length > 0 ? sorted[sorted.length - 1] : null;
   const lastReceived = [...sorted].reverse().find(m => m.direction === "received");
-  const showCopilot = lastMsg?.direction === "received" || (sorted.length > 0 && sorted.slice(-5).some(m => m.direction === "received"));
+  const showCopilot = sorted.length > 0 && sorted.slice(-8).some(m => m.direction === "received");
 
   // Templates for current stage
   const currentStageTemplates = leadInfo.stage_id && STAGE_TEMPLATES[leadInfo.stage_id]
