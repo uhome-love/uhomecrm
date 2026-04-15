@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Send, Eye, CalendarPlus, MessageSquare,
   FileText, Calendar, CheckSquare, ArrowRight, StickyNote, Lock, Paperclip, Loader2, Smile,
+  Mic, Square, Search, X, Reply, ChevronDown, Check, CheckCheck,
 } from "lucide-react";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
@@ -28,6 +29,10 @@ interface Message {
   direction: string;
   timestamp: string;
   media_url?: string | null;
+  delivery_status?: string | null;
+  whatsapp_message_id?: string | null;
+  quoted_message_id?: string | null;
+  media_type?: string | null;
 }
 
 interface LeadInfo {
@@ -78,6 +83,23 @@ function groupByDate(messages: Message[]) {
     }
   }
   return groups;
+}
+
+// Format WhatsApp-style text: *bold*, _italic_, ~strikethrough~
+function formatWhatsAppText(text: string): React.ReactNode {
+  const parts = text.split(/(\*[^*]+\*|_[^_]+_|~[^~]+~)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return <strong key={i}>{part.slice(1, -1)}</strong>;
+    }
+    if (part.startsWith("_") && part.endsWith("_")) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith("~") && part.endsWith("~")) {
+      return <del key={i}>{part.slice(1, -1)}</del>;
+    }
+    return part;
+  });
 }
 
 // --- Templates ---
@@ -148,6 +170,20 @@ function getDeadline(key: string, customDate?: string) {
   }
 }
 
+// --- Delivery ticks component ---
+function DeliveryTicks({ status }: { status?: string | null }) {
+  if (!status || status === "sent") {
+    return <Check size={12} className="inline-block ml-1 text-primary-foreground/50" />;
+  }
+  if (status === "delivered") {
+    return <CheckCheck size={12} className="inline-block ml-1 text-primary-foreground/50" />;
+  }
+  if (status === "read") {
+    return <CheckCheck size={12} className="inline-block ml-1 text-blue-400" />;
+  }
+  return null;
+}
+
 // --- Component ---
 
 export default function ConversationThread({ leadId, leadInfo, messages, onMessageSent, isReadOnly = false, readOnlyCorretorNome }: ConversationThreadProps) {
@@ -157,10 +193,33 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
   const [isNoteMode, setIsNoteMode] = useState(false);
   const sendingRef = useRef(false);
 
-  // Reset note mode when switching leads
+  // Audio recording
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Search in conversation
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Reply/Quote
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+
+  // Drag & Drop
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Scroll to bottom button
+  const [showScrollDown, setShowScrollDown] = useState(false);
+
   useEffect(() => {
     setIsNoteMode(false);
+    setReplyingTo(null);
+    setSearchOpen(false);
+    setSearchQuery("");
   }, [leadId]);
+
   const [stages, setStages] = useState<StageInfo[]>([]);
 
   // Dialog/popover states
@@ -190,12 +249,8 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       const { data, error } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
       if (data) {
         setProfileId(data.id);
-        console.log("profileId loaded:", data.id);
       } else if (retries > 0) {
-        console.warn("profileId load failed, retrying...", error);
         setTimeout(() => loadProfile(retries - 1), 1000);
-      } else {
-        console.error("Failed to load profileId after retries", error);
       }
     };
     loadProfile();
@@ -217,6 +272,19 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     }
   }, [messages]);
 
+  // Scroll detection for "jump to bottom" button
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    setShowScrollDown(scrollHeight - scrollTop - clientHeight > 150);
+  }, []);
+
+  const scrollToBottom = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  };
+
   // Reset visit form when dialog opens
   useEffect(() => {
     if (visitOpen && leadInfo) {
@@ -226,8 +294,126 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     }
   }, [visitOpen, leadInfo]);
 
+  // --- Audio recording ---
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/ogg; codecs=opus")
+          ? "audio/ogg; codecs=opus"
+          : "audio/webm; codecs=opus",
+      });
+
+      audioChunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        if (blob.size > 0) {
+          await sendAudioBlob(blob, mediaRecorder.mimeType);
+        }
+      };
+
+      mediaRecorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Mic access denied:", err);
+      toast.error("Permissão de microfone negada");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.ondataavailable = null;
+      mediaRecorderRef.current.onstop = () => {
+        mediaRecorderRef.current?.stream?.getTracks().forEach(t => t.stop());
+      };
+      mediaRecorderRef.current.stop();
+    }
+    audioChunksRef.current = [];
+    setIsRecording(false);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+
+  const sendAudioBlob = async (blob: Blob, mimeType: string) => {
+    if (!leadInfo || !profileId) return;
+    setSendingMedia(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      const ext = mimeType.includes("ogg") ? "ogg" : "webm";
+
+      const { error, data: sendResult } = await supabase.functions.invoke("whatsapp-send-media", {
+        body: {
+          telefone: leadInfo.telefone,
+          media_base64: base64,
+          media_type: mimeType.includes("ogg") ? "audio/ogg" : "audio/webm",
+          filename: `audio.${ext}`,
+        },
+      });
+
+      if (error) throw error;
+      if (sendResult?.error) throw new Error(sendResult.error);
+
+      const mediaUrlToStore = sendResult?.media_url || `data:${mimeType};base64,${base64}`;
+
+      await supabase.from("whatsapp_mensagens").insert({
+        lead_id: leadId,
+        corretor_id: profileId,
+        direction: "sent",
+        body: "🎤 Áudio",
+        media_url: mediaUrlToStore,
+        media_type: "audio",
+        timestamp: new Date().toISOString(),
+        instance_name: sendResult?.instance_name || "evolution",
+        whatsapp_message_id: sendResult?.message_id || crypto.randomUUID(),
+        delivery_status: "sent",
+      });
+
+      onMessageSent();
+      toast.success("Áudio enviado!");
+    } catch (err: any) {
+      console.error("Audio send error:", err);
+      toast.error("Erro ao enviar áudio: " + (err.message || ""));
+    } finally {
+      setSendingMedia(false);
+    }
+  };
+
+  const formatRecordingTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  };
+
   const handleSend = async () => {
-    console.log("handleSend called", { text: text.trim().substring(0, 30), hasLeadInfo: !!leadInfo, profileId, isReadOnly });
     if (!text.trim()) return;
     if (!profileId) {
       toast.error("Perfil não carregado. Recarregue a página.");
@@ -243,10 +429,11 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
     const msgBody = text.trim();
     const wasNoteMode = isNoteMode;
+    const quotedMsg = replyingTo;
 
-    // Optimistic: clear input immediately
     setText("");
     if (wasNoteMode) setIsNoteMode(false);
+    setReplyingTo(null);
 
     try {
       if (wasNoteMode) {
@@ -259,18 +446,13 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           instance_name: "internal",
           whatsapp_message_id: crypto.randomUUID(),
         });
-        if (noteErr) {
-          console.error("Note insert error:", noteErr);
-          throw new Error(noteErr.message || "Erro ao salvar nota");
-        }
+        if (noteErr) throw new Error(noteErr.message || "Erro ao salvar nota");
         onMessageSent();
       } else {
-        // Optimistic: insert in DB and refresh UI immediately, send in background
         const optimisticId = crypto.randomUUID();
         const now = new Date().toISOString();
 
-        // Insert message in DB first (fast, local) so it shows instantly
-        const { error: dbErr } = await supabase.from("whatsapp_mensagens").insert({
+        const insertPayload: Record<string, unknown> = {
           lead_id: leadId,
           corretor_id: profileId,
           direction: "sent",
@@ -278,25 +460,33 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           timestamp: now,
           instance_name: "evolution",
           whatsapp_message_id: optimisticId,
-        });
+          delivery_status: "sent",
+        };
 
-        if (dbErr) {
-          console.error("Message insert error:", dbErr);
+        if (quotedMsg?.whatsapp_message_id) {
+          insertPayload.quoted_message_id = quotedMsg.whatsapp_message_id;
         }
 
-        // Refresh UI immediately — message appears right away
+        await supabase.from("whatsapp_mensagens").insert(insertPayload);
         onMessageSent();
 
-        // Fire edge function in background (don't await)
+        // Build Evolution send body with optional quote
+        const sendBody: Record<string, unknown> = {
+          telefone: leadInfo.telefone,
+          mensagem: msgBody,
+        };
+        if (quotedMsg?.whatsapp_message_id) {
+          sendBody.quoted_message_id = quotedMsg.whatsapp_message_id;
+        }
+
         supabase.functions.invoke("whatsapp-send", {
-          body: { telefone: leadInfo.telefone, mensagem: msgBody },
+          body: sendBody,
         }).then(({ error, data: sendResult }) => {
           if (error || sendResult?.error) {
             console.error("whatsapp-send background error:", error || sendResult?.error);
             toast.error("Mensagem não entregue ao WhatsApp. Tente novamente.");
             return;
           }
-          // Update the message with real Evolution message ID (fire-and-forget)
           if (sendResult?.message_id && sendResult.message_id !== optimisticId) {
             supabase.from("whatsapp_mensagens")
               .update({
@@ -310,7 +500,6 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           }
         });
 
-        // Activity log in background (fire-and-forget)
         supabase.auth.getUser().then(({ data: { user: authUser } }) => {
           if (authUser) {
             supabase.from("pipeline_atividades").insert({
@@ -338,7 +527,6 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
   const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !leadInfo || !profileId) return;
-    // Reset input so same file can be selected again
     e.target.value = "";
 
     if (file.size > 16 * 1024 * 1024) {
@@ -348,19 +536,15 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
     setSendingMedia(true);
     try {
-      // Convert to base64
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
           const result = reader.result as string;
-          resolve(result.split(",")[1]); // strip data:...;base64,
+          resolve(result.split(",")[1]);
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-
-      // Create a local object URL for immediate display
-      const localBlobUrl = URL.createObjectURL(file);
 
       const { error, data: sendResult } = await supabase.functions.invoke("whatsapp-send-media", {
         body: {
@@ -375,27 +559,26 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       if (error) throw error;
       if (sendResult?.error) throw new Error(sendResult.error);
 
-      // Use media_url from API, or construct a data URL as fallback for display
       const mediaUrlToStore = sendResult?.media_url || `data:${file.type};base64,${base64}`;
+      const mediaType = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : file.type.startsWith("audio/") ? "audio" : "document";
 
-      // Insert in whatsapp_mensagens
       const { error: msgErr } = await supabase.from("whatsapp_mensagens").insert({
         lead_id: leadId,
         corretor_id: profileId,
         direction: "sent",
         body: text.trim() || null,
         media_url: mediaUrlToStore,
+        media_type: mediaType,
         timestamp: new Date().toISOString(),
         instance_name: sendResult?.instance_name || "evolution",
         whatsapp_message_id: sendResult?.message_id || crypto.randomUUID(),
+        delivery_status: "sent",
       });
 
       if (msgErr) {
         console.error("Media message insert error:", msgErr);
-        toast.warning("Mídia enviada mas não salva localmente.");
       }
 
-      URL.revokeObjectURL(localBlobUrl);
       setText("");
       toast.success("Mídia enviada!");
       onMessageSent();
@@ -404,6 +587,33 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       toast.error("Erro ao enviar mídia: " + (err.message || "Tente novamente"));
     } finally {
       setSendingMedia(false);
+    }
+  };
+
+  // --- Drag & Drop ---
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0 && fileInputRef.current) {
+      const dt = new DataTransfer();
+      dt.items.add(files[0]);
+      fileInputRef.current.files = dt.files;
+      fileInputRef.current.dispatchEvent(new Event("change", { bubbles: true }));
     }
   };
 
@@ -433,11 +643,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         status: "marcada",
         origem: "pipeline",
       });
-      if (visitErr) {
-        console.error("Visit insert error:", visitErr);
-        throw new Error(visitErr.message || "Erro ao agendar visita");
-      }
-      // Log activity
+      if (visitErr) throw new Error(visitErr.message || "Erro ao agendar visita");
       if (authVisitUser) {
         await supabase.from("pipeline_atividades").insert({
           pipeline_lead_id: leadId,
@@ -449,7 +655,6 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           created_by: authVisitUser.id,
         });
       }
-      // Move to Visita stage
       const visitaStage = stages.find(s => s.nome.toLowerCase().includes("visita"));
       if (visitaStage) {
         await supabase.from("pipeline_leads").update({ stage_id: visitaStage.id }).eq("id", leadInfo.id);
@@ -483,10 +688,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         created_by: taskUserId,
         responsavel_id: taskUserId,
       });
-      if (taskErr) {
-        console.error("Task insert error:", taskErr);
-        throw new Error(taskErr.message || "Erro ao criar tarefa");
-      }
+      if (taskErr) throw new Error(taskErr.message || "Erro ao criar tarefa");
       toast.success("✅ Tarefa criada!");
       setTaskTitle("");
       setTaskDeadline("amanha");
@@ -503,7 +705,6 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     if (!leadInfo) return;
     try {
       await supabase.from("pipeline_leads").update({ stage_id: stage.id }).eq("id", leadInfo.id);
-      // Log activity
       const { data: { user: stageUser } } = await supabase.auth.getUser();
       if (stageUser) {
         await supabase.from("pipeline_atividades").insert({
@@ -522,6 +723,12 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     }
   };
 
+  // Find quoted message content by whatsapp_message_id
+  const getQuotedMessage = (quotedId: string | null | undefined): Message | undefined => {
+    if (!quotedId) return undefined;
+    return messages.find(m => m.whatsapp_message_id === quotedId);
+  };
+
   // Empty state
   if (!leadId || !leadInfo) {
     return (
@@ -535,20 +742,29 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
   }
 
   const sorted = [...messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  const groups = groupByDate(sorted);
+
+  // Search filter
+  const filteredSorted = searchQuery.trim()
+    ? sorted.filter(m => m.body?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : sorted;
+
+  const groups = groupByDate(filteredSorted);
   const lastReceivedOrSent = sorted.length > 0 ? sorted[sorted.length - 1] : null;
   const lastReceived = [...sorted].reverse().find(m => m.direction === "received");
   const showCopilot = sorted.length > 0 && sorted.slice(-8).some(m => m.direction === "received");
 
-  // Templates for current stage
   const currentStageTemplates = leadInfo.stage_id && STAGE_TEMPLATES[leadInfo.stage_id]
     ? STAGE_TEMPLATES[leadInfo.stage_id]
     : null;
-  // Also show "Sem Contato" as fallback
   const fallbackTemplates = STAGE_TEMPLATES["2fcba9be-1188-4a54-9452-394beefdc330"];
 
   return (
-    <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden min-h-0">
+    <div
+      className="flex-1 flex flex-col h-full min-w-0 overflow-hidden min-h-0"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Read-only banner */}
       {isReadOnly && readOnlyCorretorNome && (
         <div className="px-4 py-1.5 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-200 dark:border-blue-800 flex items-center gap-1.5 flex-shrink-0">
@@ -558,6 +774,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           </span>
         </div>
       )}
+
       {/* Header */}
       <div className="px-4 py-2.5 border-b border-border flex items-center justify-between bg-card flex-shrink-0">
         <div className="flex items-center gap-2.5">
@@ -576,14 +793,49 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           </div>
         </div>
         <div className="flex gap-1.5">
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSearchOpen(!searchOpen)}>
+            <Search size={12} />
+          </Button>
           <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => navigate(`/pipeline?lead=${leadInfo.id}`)}>
             <Eye size={12} /> Pipeline
           </Button>
         </div>
       </div>
 
+      {/* Search bar */}
+      {searchOpen && (
+        <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center gap-2 flex-shrink-0">
+          <Search size={14} className="text-muted-foreground shrink-0" />
+          <Input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Buscar na conversa..."
+            className="h-7 text-xs flex-1"
+            autoFocus
+          />
+          {searchQuery && (
+            <span className="text-[10px] text-muted-foreground shrink-0">
+              {filteredSorted.length} resultado{filteredSorted.length !== 1 ? "s" : ""}
+            </span>
+          )}
+          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => { setSearchOpen(false); setSearchQuery(""); }}>
+            <X size={12} />
+          </Button>
+        </div>
+      )}
+
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-primary/10 border-2 border-dashed border-primary rounded-lg flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <Paperclip size={32} className="mx-auto text-primary mb-2" />
+            <p className="text-sm font-medium text-primary">Solte o arquivo para enviar</p>
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-1 min-h-0">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-1 min-h-0 relative" onScroll={handleScroll}>
         {groups.map((group, gi) => (
           <div key={gi}>
             <div className="flex justify-center my-3">
@@ -592,6 +844,8 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
               </span>
             </div>
             {group.msgs.map(msg => {
+              const quotedMsg = getQuotedMessage(msg.quoted_message_id);
+
               if (msg.direction === "note") {
                 return (
                   <div key={msg.id} className="flex mb-1.5 justify-end">
@@ -605,25 +859,67 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
                   </div>
                 );
               }
+
               return (
-                <div key={msg.id} className={`flex mb-1.5 ${msg.direction === "sent" ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[75%] rounded-lg px-3 py-1.5 text-xs ${
-                      msg.direction === "sent"
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
-                        : "bg-card border border-border text-foreground rounded-bl-sm"
-                    }`}
-                  >
-                    {msg.media_url ? (
-                      <MediaRenderer mediaUrl={msg.media_url} body={msg.body} direction={msg.direction} />
-                    ) : (
-                      msg.body || "..."
+                <div
+                  key={msg.id}
+                  className={`flex mb-1.5 group ${msg.direction === "sent" ? "justify-end" : "justify-start"}`}
+                >
+                  <div className="flex items-start gap-1 max-w-[75%]">
+                    {/* Reply button (appears on hover) */}
+                    {msg.direction === "received" && !isReadOnly && (
+                      <button
+                        className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 p-0.5 rounded hover:bg-muted"
+                        onClick={() => { setReplyingTo(msg); textareaRef.current?.focus(); }}
+                        title="Responder"
+                      >
+                        <Reply size={12} className="text-muted-foreground" />
+                      </button>
                     )}
-                    <span className={`block text-[9px] mt-0.5 ${
-                      msg.direction === "sent" ? "text-primary-foreground/70" : "text-muted-foreground"
-                    }`}>
-                      {format(new Date(msg.timestamp), "HH:mm")}
-                    </span>
+
+                    <div
+                      className={`rounded-lg px-3 py-1.5 text-xs ${
+                        msg.direction === "sent"
+                          ? "bg-primary text-primary-foreground rounded-br-sm"
+                          : "bg-card border border-border text-foreground rounded-bl-sm"
+                      }`}
+                    >
+                      {/* Quoted message block */}
+                      {quotedMsg && (
+                        <div className={`mb-1 px-2 py-1 rounded border-l-2 ${
+                          msg.direction === "sent"
+                            ? "bg-primary-foreground/10 border-primary-foreground/40"
+                            : "bg-muted border-muted-foreground/40"
+                        }`}>
+                          <p className="text-[9px] truncate opacity-80">
+                            {quotedMsg.body?.slice(0, 60) || "📎 Mídia"}
+                          </p>
+                        </div>
+                      )}
+
+                      {msg.media_url ? (
+                        <MediaRenderer mediaUrl={msg.media_url} body={msg.body} direction={msg.direction} />
+                      ) : (
+                        <span>{msg.body ? formatWhatsAppText(msg.body) : "..."}</span>
+                      )}
+                      <span className={`block text-[9px] mt-0.5 ${
+                        msg.direction === "sent" ? "text-primary-foreground/70" : "text-muted-foreground"
+                      }`}>
+                        {format(new Date(msg.timestamp), "HH:mm")}
+                        {msg.direction === "sent" && <DeliveryTicks status={msg.delivery_status} />}
+                      </span>
+                    </div>
+
+                    {/* Reply button for sent messages */}
+                    {msg.direction === "sent" && !isReadOnly && (
+                      <button
+                        className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 p-0.5 rounded hover:bg-muted"
+                        onClick={() => { setReplyingTo(msg); textareaRef.current?.focus(); }}
+                        title="Responder"
+                      >
+                        <Reply size={12} className="text-muted-foreground" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -634,6 +930,16 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           <div className="flex items-center justify-center h-full">
             <p className="text-xs text-muted-foreground">Nenhuma mensagem ainda</p>
           </div>
+        )}
+
+        {/* Scroll to bottom button */}
+        {showScrollDown && (
+          <button
+            onClick={scrollToBottom}
+            className="sticky bottom-2 left-1/2 -translate-x-1/2 z-10 bg-card border border-border shadow-md rounded-full p-2 hover:bg-muted transition-colors"
+          >
+            <ChevronDown size={16} className="text-muted-foreground" />
+          </button>
         )}
       </div>
 
@@ -849,6 +1155,24 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       </TooltipProvider>
       )}
 
+      {/* Reply preview bar */}
+      {replyingTo && (
+        <div className="px-3 py-1.5 border-t border-border bg-muted/50 flex items-center gap-2 flex-shrink-0">
+          <Reply size={12} className="text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-medium text-primary">
+              {replyingTo.direction === "sent" ? "Você" : leadInfo.nome}
+            </p>
+            <p className="text-[10px] text-muted-foreground truncate">
+              {replyingTo.body?.slice(0, 60) || "📎 Mídia"}
+            </p>
+          </div>
+          <Button size="icon" variant="ghost" className="h-5 w-5 shrink-0" onClick={() => setReplyingTo(null)}>
+            <X size={10} />
+          </Button>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-3 border-t border-border bg-card flex gap-2 items-end flex-shrink-0">
         {/* Hidden file input */}
@@ -859,66 +1183,100 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
           onChange={handleMediaSelect}
         />
-        {/* Paperclip button */}
-        {!isReadOnly && !isNoteMode && (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-10 w-10 shrink-0"
-            disabled={sendingMedia}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {sendingMedia ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
-          </Button>
-        )}
-        {/* Emoji picker */}
-        {!isReadOnly && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-10 w-10 shrink-0">
-                <Smile size={16} />
+
+        {isRecording ? (
+          /* Recording UI */
+          <div className="flex-1 flex items-center gap-3">
+            <Button size="icon" variant="ghost" className="h-10 w-10 shrink-0 text-destructive" onClick={cancelRecording}>
+              <X size={16} />
+            </Button>
+            <div className="flex-1 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-xs font-medium text-destructive">{formatRecordingTime(recordingTime)}</span>
+              <span className="text-[10px] text-muted-foreground">Gravando...</span>
+            </div>
+            <Button size="icon" className="h-10 w-10 shrink-0 bg-primary" onClick={stopRecording}>
+              <Send size={16} />
+            </Button>
+          </div>
+        ) : (
+          /* Normal input */
+          <>
+            {/* Paperclip button */}
+            {!isReadOnly && !isNoteMode && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 shrink-0"
+                disabled={sendingMedia}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {sendingMedia ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
               </Button>
-            </PopoverTrigger>
-            <PopoverContent side="top" align="start" className="w-auto p-0 border-none shadow-xl">
-              <Picker
-                data={data}
-                onEmojiSelect={(emoji: any) => {
-                  setText(prev => prev + emoji.native);
-                  textareaRef.current?.focus();
-                }}
-                theme="light"
-                locale="pt"
-                previewPosition="none"
-                skinTonePosition="none"
-                maxFrequentRows={2}
-              />
-            </PopoverContent>
-          </Popover>
+            )}
+            {/* Emoji picker */}
+            {!isReadOnly && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-10 w-10 shrink-0">
+                    <Smile size={16} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-auto p-0 border-none shadow-xl">
+                  <Picker
+                    data={data}
+                    onEmojiSelect={(emoji: any) => {
+                      setText(prev => prev + emoji.native);
+                      textareaRef.current?.focus();
+                    }}
+                    theme="light"
+                    locale="pt"
+                    previewPosition="none"
+                    skinTonePosition="none"
+                    maxFrequentRows={2}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+            <Textarea
+              ref={textareaRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder={isReadOnly ? "Modo leitura — você não pode enviar mensagens" : (isNoteMode ? "Nota interna (não enviada ao lead)..." : "Digite sua mensagem...")}
+              className={`min-h-[40px] max-h-[100px] resize-none text-xs flex-1 ${
+                isNoteMode ? "bg-amber-50 border-amber-300 focus-visible:ring-amber-400" : ""
+              }`}
+              disabled={isReadOnly}
+              onKeyDown={e => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
+            {/* Mic button when text is empty, Send button when has text */}
+            {!isReadOnly && !text.trim() && !isNoteMode ? (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 shrink-0"
+                disabled={sendingMedia}
+                onClick={startRecording}
+              >
+                <Mic size={16} />
+              </Button>
+            ) : (
+              <Button
+                size="icon"
+                className={`h-10 w-10 shrink-0 ${isNoteMode ? "bg-amber-500 hover:bg-amber-600" : ""}`}
+                disabled={isReadOnly || !text.trim() || sending}
+                onClick={handleSend}
+              >
+                {isNoteMode ? <Lock size={16} /> : <Send size={16} />}
+              </Button>
+            )}
+          </>
         )}
-        <Textarea
-          ref={textareaRef}
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder={isReadOnly ? "Modo leitura — você não pode enviar mensagens" : (isNoteMode ? "Nota interna (não enviada ao lead)..." : "Digite sua mensagem...")}
-          className={`min-h-[40px] max-h-[100px] resize-none text-xs flex-1 ${
-            isNoteMode ? "bg-amber-50 border-amber-300 focus-visible:ring-amber-400" : ""
-          }`}
-          disabled={isReadOnly}
-          onKeyDown={e => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-        />
-        <Button
-          size="icon"
-          className={`h-10 w-10 shrink-0 ${isNoteMode ? "bg-amber-500 hover:bg-amber-600" : ""}`}
-          disabled={isReadOnly || !text.trim() || sending}
-          onClick={handleSend}
-        >
-          {isNoteMode ? <Lock size={16} /> : <Send size={16} />}
-        </Button>
       </div>
 
       {/* Visit Dialog */}

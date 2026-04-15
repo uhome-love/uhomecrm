@@ -28,7 +28,6 @@ function extractBody(message: any): string | null {
 }
 
 function extractMediaUrl(message: any): string | null {
-  // Evolution API v2 may include media URL in various message types
   if (message?.imageMessage?.url) return message.imageMessage.url;
   if (message?.imageMessage?.mediaUrl) return message.imageMessage.mediaUrl;
   if (message?.videoMessage?.url) return message.videoMessage.url;
@@ -50,6 +49,16 @@ function getMediaType(message: any): string | null {
   return null;
 }
 
+function extractQuotedMessageId(message: any): string | null {
+  const ctx =
+    message?.extendedTextMessage?.contextInfo ||
+    message?.imageMessage?.contextInfo ||
+    message?.videoMessage?.contextInfo ||
+    message?.audioMessage?.contextInfo ||
+    message?.documentMessage?.contextInfo;
+  return ctx?.stanzaId || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -64,44 +73,66 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json();
-
+    const event = payload.event;
     const instanceName = payload.instance;
     const data = payload.data;
-
-    if (!data?.key?.remoteJid || !instanceName) {
-      return new Response("ok", { status: 200, headers: corsHeaders });
-    }
-
-    const remoteJid = data.key.remoteJid as string;
-
-    // Filter: ignore groups and status broadcast
-    if (remoteJid.includes("@g.us") || remoteJid === "status@broadcast") {
-      return new Response("ok", { status: 200, headers: corsHeaders });
-    }
-
-    // Extract body and media
-    const body = extractBody(data.message);
-    const mediaUrl = extractMediaUrl(data.message);
-    const mediaType = getMediaType(data.message);
-
-    // Skip if no body AND no media (e.g. reactions, read receipts)
-    if (!body && !mediaUrl && !mediaType) {
-      return new Response("ok", { status: 200, headers: corsHeaders });
-    }
-
-    // For media without URL, create a placeholder body
-    const finalBody = body || (mediaType ? `📎 ${mediaType}` : null);
-
-    // Extract phone from remoteJid
-    const phoneRaw = remoteJid.replace("@s.whatsapp.net", "");
-    const variants = getSearchVariants(phoneRaw);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Search lead by last 8 digits
+    // Handle delivery status updates (MESSAGES_UPDATE)
+    if (event === "messages.update" || event === "MESSAGES_UPDATE") {
+      const updates = Array.isArray(data) ? data : [data];
+      for (const update of updates) {
+        const messageId = update?.key?.id || update?.keyId;
+        const status = update?.status;
+        if (!messageId || status === undefined) continue;
+
+        // Map numeric status to string
+        let deliveryStatus = "sent";
+        if (status === 2 || status === "DELIVERY_ACK" || status === "delivered") deliveryStatus = "delivered";
+        if (status === 3 || status === "READ" || status === "read") deliveryStatus = "read";
+        if (status === 4 || status === "PLAYED") deliveryStatus = "read";
+
+        await supabase
+          .from("whatsapp_mensagens")
+          .update({ delivery_status: deliveryStatus })
+          .eq("whatsapp_message_id", messageId);
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Standard message processing
+    if (!data?.key?.remoteJid || !instanceName) {
+      return new Response("ok", { status: 200, headers: corsHeaders });
+    }
+
+    const remoteJid = data.key.remoteJid as string;
+
+    if (remoteJid.includes("@g.us") || remoteJid === "status@broadcast") {
+      return new Response("ok", { status: 200, headers: corsHeaders });
+    }
+
+    const body = extractBody(data.message);
+    const mediaUrl = extractMediaUrl(data.message);
+    const mediaType = getMediaType(data.message);
+    const quotedMessageId = extractQuotedMessageId(data.message);
+
+    if (!body && !mediaUrl && !mediaType) {
+      return new Response("ok", { status: 200, headers: corsHeaders });
+    }
+
+    const finalBody = body || (mediaType ? `📎 ${mediaType}` : null);
+
+    const phoneRaw = remoteJid.replace("@s.whatsapp.net", "");
+    const variants = getSearchVariants(phoneRaw);
+
     const searchPattern = `%${variants[0]}%`;
     const { data: leads, error: leadErr } = await supabase
       .from("pipeline_leads")
@@ -115,7 +146,6 @@ Deno.serve(async (req) => {
 
     const leadId = leads[0].id;
 
-    // Get corretor_id from whatsapp_instancias
     const { data: instancia } = await supabase
       .from("whatsapp_instancias")
       .select("corretor_id")
@@ -124,24 +154,19 @@ Deno.serve(async (req) => {
 
     const corretorId = instancia?.corretor_id || null;
 
-    // Build direction
     const direction = data.key.fromMe ? "sent" : "received";
 
-    // Convert unix timestamp to ISO
     const timestamp = data.messageTimestamp
       ? new Date(Number(data.messageTimestamp) * 1000).toISOString()
       : new Date().toISOString();
 
-    // Try to get base64 media from Evolution if available
     let storedMediaUrl = mediaUrl || null;
 
-    // If Evolution sends media as base64 in the payload
     if (!storedMediaUrl && data.message?.base64) {
       const mimeType = data.message?.mimetype || "application/octet-stream";
       storedMediaUrl = `data:${mimeType};base64,${data.message.base64}`;
     }
 
-    // Insert message
     const insertData: Record<string, unknown> = {
       lead_id: leadId,
       corretor_id: corretorId,
@@ -150,10 +175,16 @@ Deno.serve(async (req) => {
       body: finalBody,
       whatsapp_message_id: data.key.id || null,
       timestamp,
+      delivery_status: direction === "sent" ? "sent" : null,
+      media_type: mediaType,
     };
 
     if (storedMediaUrl) {
       insertData.media_url = storedMediaUrl;
+    }
+
+    if (quotedMessageId) {
+      insertData.quoted_message_id = quotedMessageId;
     }
 
     const { error: insertErr } = await supabase
@@ -164,7 +195,6 @@ Deno.serve(async (req) => {
       console.error("Insert error:", insertErr);
     }
 
-    // Update lead updated_at
     await supabase
       .from("pipeline_leads")
       .update({ updated_at: new Date().toISOString() })
