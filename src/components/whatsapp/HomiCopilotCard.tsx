@@ -12,6 +12,7 @@ interface HomiCopilotCardProps {
   leadName: string;
   lastMessage: string;
   onUseSuggestion: (text: string) => void;
+  isReadOnly?: boolean;
 }
 
 interface CopilotData {
@@ -29,7 +30,7 @@ const TOM_CONFIG = {
   pronto: { emoji: "🔥", className: "text-orange-600" },
 };
 
-export default function HomiCopilotCard({ leadId, leadName, lastMessage, onUseSuggestion }: HomiCopilotCardProps) {
+export default function HomiCopilotCard({ leadId, leadName, lastMessage, onUseSuggestion, isReadOnly = false }: HomiCopilotCardProps) {
   const [visible, setVisible] = useState(true);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CopilotData | null>(null);
@@ -147,13 +148,22 @@ export default function HomiCopilotCard({ leadId, leadName, lastMessage, onUseSu
               className="min-h-[60px] max-h-[120px] text-xs resize-none bg-white dark:bg-background border-border"
             />
             <div className="flex gap-2 flex-wrap">
-              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => onUseSuggestion(editedSuggestion)}>
-                ✓ Usar
-              </Button>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setVisible(false)}>
-                Ignorar
-              </Button>
-              {data.sugestao_followup && (
+              {!isReadOnly && (
+                <>
+                  <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => onUseSuggestion(editedSuggestion)}>
+                    ✓ Usar
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setVisible(false)}>
+                    Ignorar
+                  </Button>
+                </>
+              )}
+              {isReadOnly && (
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setVisible(false)}>
+                  Fechar
+                </Button>
+              )}
+              {!isReadOnly && data.sugestao_followup && (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -165,7 +175,7 @@ export default function HomiCopilotCard({ leadId, leadName, lastMessage, onUseSu
                   {" "}+ {data.sugestao_followup}
                 </Button>
               )}
-              {data.sugestao_etapa && (
+              {!isReadOnly && data.sugestao_etapa && (
                 <Button
                   size="sm"
                   variant="ghost"

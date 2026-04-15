@@ -230,7 +230,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
         {/* Etapa */}
         <div className="flex items-center justify-between gap-1">
           <span className="text-[11px] text-muted-foreground shrink-0">Etapa</span>
-          {editingField === "stage_id" ? (
+          {editingField === "stage_id" && !isReadOnly ? (
             <div className="flex items-center gap-0.5 flex-1 min-w-0">
               <Select value={editValue} onValueChange={setEditValue}>
                 <SelectTrigger className="h-6 text-[11px] flex-1 min-w-0">
@@ -248,9 +248,11 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
           ) : (
             <div className="flex items-center gap-0.5">
               <span className="text-[11px] font-medium truncate max-w-[100px]">{currentStageName}</span>
-              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => startEdit("stage_id", localLead.stage_id || "")}>
-                <Pencil size={9} />
-              </Button>
+              {!isReadOnly && (
+                <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => startEdit("stage_id", localLead.stage_id || "")}>
+                  <Pencil size={9} />
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -258,7 +260,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
         {/* Empreendimento */}
         <div className="flex items-center justify-between gap-1">
           <span className="text-[11px] text-muted-foreground shrink-0">Empreend.</span>
-          {editingField === "empreendimento" ? (
+          {editingField === "empreendimento" && !isReadOnly ? (
             <div className="flex items-center gap-0.5 flex-1 min-w-0">
               <Input value={editValue} onChange={e => setEditValue(e.target.value)} className="h-6 text-[11px] flex-1 min-w-0" />
               <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => saveField("empreendimento")}><Check size={10} /></Button>
@@ -267,9 +269,11 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
           ) : (
             <div className="flex items-center gap-0.5">
               <span className="text-[11px] font-medium truncate max-w-[100px]">{localLead.empreendimento || "—"}</span>
-              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => startEdit("empreendimento", localLead.empreendimento || "")}>
-                <Pencil size={9} />
-              </Button>
+              {!isReadOnly && (
+                <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => startEdit("empreendimento", localLead.empreendimento || "")}>
+                  <Pencil size={9} />
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -277,7 +281,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
         {/* Orçamento */}
         <div className="flex items-center justify-between gap-1">
           <span className="text-[11px] text-muted-foreground shrink-0">Orçamento</span>
-          {editingField === "orcamento" ? (
+          {editingField === "orcamento" && !isReadOnly ? (
             <div className="flex items-center gap-0.5 flex-1 min-w-0">
               <Input type="number" value={editValue} onChange={e => setEditValue(e.target.value)} className="h-6 text-[11px] flex-1 min-w-0" />
               <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => saveField("orcamento")}><Check size={10} /></Button>
@@ -288,9 +292,11 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
               <span className="text-[11px] font-medium truncate max-w-[100px]">
                 {localLead.valor_estimado ? `R$ ${Number(localLead.valor_estimado).toLocaleString("pt-BR")}` : "—"}
               </span>
-              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => startEdit("orcamento", String(localLead.valor_estimado || ""))}>
-                <Pencil size={9} />
-              </Button>
+              {!isReadOnly && (
+                <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => startEdit("orcamento", String(localLead.valor_estimado || ""))}>
+                  <Pencil size={9} />
+                </Button>
+              )}
             </div>
           )}
         </div>
