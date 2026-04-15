@@ -72,6 +72,7 @@ export default function WhatsAppInbox() {
   const pipeline = usePipeline();
   const [modalLeadId, setModalLeadId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [profilePicCache, setProfilePicCache] = useState<Map<string, string | null>>(new Map());
   
   const [newLeads, setNewLeads] = useState<NewLead[]>([]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(searchParams.get("lead"));
