@@ -260,8 +260,8 @@ export default function ConversationList({
   };
 
   const showActive = tab === "all" || tab === "active" || tab === "unread";
-  const showFollowUp = (tab === "all" || tab === "followup") && tab !== "unread";
-  const showNew = (tab === "all" || tab === "new") && tab !== "unread";
+  const showFollowUp = tab === "all" || tab === "followup";
+  const showNew = tab === "all" || tab === "new";
 
   const unreadCount = conversations.filter(c => c.unreadCount > 0).length;
 
