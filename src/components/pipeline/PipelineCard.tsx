@@ -225,6 +225,7 @@ const PipelineCard = memo(function PipelineCard({
       onDragEnd={(e) => e.preventDefault()}
       onClick={handleCardClick}
       style={{
+        position: "relative",
         background: "hsl(var(--pipeline-card-bg))",
         border: "1px solid hsl(var(--pipeline-card-border))",
         borderRadius: 8,
