@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useTabNavigation } from "@/hooks/useTabNavigation";
 import {
   LayoutGrid, CheckCircle, FileText, Target, AlignLeft,
   CalendarDays, Home, Phone, Search, Megaphone,
@@ -277,7 +278,7 @@ export default function Sidebar({
   showCampaigns = true,
 }: SidebarProps) {
   const location  = useLocation();
-  const navigate  = useNavigate();
+  const { openTab } = useTabNavigation();
   const [campOpen, setCampOpen] = useState(false);
   const isDark    = theme === "dark";
   const [whatsappUnread, setWhatsappUnread] = useState(() => {
@@ -368,7 +369,7 @@ export default function Sidebar({
               {CAMPAIGNS.map(c => (
                 <button
                   key={c.path}
-                  onClick={() => { navigate(c.path); if (isMobile) setOpenMobile(false); }}
+                  onClick={() => { openTab(c.path); if (isMobile) setOpenMobile(false); }}
                   className={cn("w-full flex items-center gap-2.5 px-3 py-[7px] rounded-[8px] text-left transition-colors",
                     isDark ? "hover:bg-white/[0.05]" : "hover:bg-[#f5f5f7]")}
                 >
@@ -416,7 +417,7 @@ export default function Sidebar({
                 return (
                   <button
                     key={item.path}
-                    onClick={() => { navigate(item.path); if (isMobile) setOpenMobile(false); }}
+                    onClick={() => { openTab(item.path); if (isMobile) setOpenMobile(false); }}
                     className={cn(
                       "w-full flex items-center gap-[10px] px-2 py-[7px] rounded-[8px]",
                       "text-[13.5px] tracking-[-0.15px] transition-all text-left",
@@ -500,7 +501,7 @@ export default function Sidebar({
             return (
               <button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => openTab(item.path)}
                 title={item.label}
                 className={cn(
                   "mx-auto mb-0.5 w-[38px] h-[38px] flex items-center justify-center rounded-[8px] transition-all",

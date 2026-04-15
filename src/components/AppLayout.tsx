@@ -7,7 +7,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useTheme } from "@/hooks/useTheme";
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { User, Settings, LogOut, ChevronDown } from "lucide-react";
+import { User, Settings, LogOut, ChevronDown, Loader2 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,9 @@ import PushPromptBanner from "@/components/notifications/PushPromptBanner";
 import GlobalSearch from "@/components/GlobalSearch";
 import { Search } from "lucide-react";
 import { HomiProvider } from "@/contexts/HomiContext";
+import { useTabContext } from "@/contexts/TabContext";
+import { PAGE_COMPONENTS } from "@/config/pageRegistry";
+import TabBar from "@/components/layout/TabBar";
 const homiMascot = "/images/homi-mascot-official.png";
 
 const HomiPanel = lazy(() => import("@/components/homi/HomiPanel"));
@@ -80,7 +83,7 @@ function ArenaAutoCollapse({ isSession }: { isSession: boolean }) {
 
 type SidebarRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout() {
   const { user, signOut } = useAuth();
   const { isAdmin, isGestor, isBackoffice, isRh } = useUserRole();
   const { theme, toggle: onThemeToggle } = useTheme();
@@ -92,6 +95,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [cargoLabel, setCargoLabel] = useState("");
   const { pendingLead, showDialog, closeDialog, refresh: refreshPending } = usePendingLeadAlert();
   const { isFullscreen, isSession } = useArenaMode();
+  const { tabs, activeTabId } = useTabContext();
 
   // Derive role for the new Sidebar
   const sidebarRole: SidebarRole = isBackoffice
@@ -250,9 +254,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </header>
             <PushPromptBanner />
+            <TabBar />
             
-            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 min-w-0 bg-[#f0f0f5] dark:bg-[#0e1525]" style={{ minHeight: 0 }}>
-              {children}
+            <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative bg-[#f0f0f5] dark:bg-[#0e1525]">
+              {tabs.map(tab => {
+                const Comp = PAGE_COMPONENTS[tab.componentKey];
+                if (!Comp) return null;
+                const isActiveTab = tab.id === activeTabId;
+                return (
+                  <div
+                    key={tab.id}
+                    className={cn(
+                      "absolute inset-0 overflow-y-auto overflow-x-hidden",
+                      !tab.noPadding && "p-4 sm:p-6 lg:p-8"
+                    )}
+                    style={{ display: isActiveTab ? 'block' : 'none' }}
+                  >
+                    <ErrorBoundary module={tab.componentKey}>
+                      <Suspense fallback={<div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+                        <Comp />
+                      </Suspense>
+                    </ErrorBoundary>
+                  </div>
+                );
+              })}
             </main>
           </div>
         </div>
