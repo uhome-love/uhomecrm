@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useQuery } from "@tanstack/react-query";
-import ConversationList, { type ConversationItem, type FollowUpLead, type NewLead } from "@/components/whatsapp/ConversationList";
+import ConversationList, { type ConversationItem, type NewLead } from "@/components/whatsapp/ConversationList";
 import ConversationThread from "@/components/whatsapp/ConversationThread";
 import LeadPanel from "@/components/whatsapp/LeadPanel";
 import CorretorSelector, { type CorretorInfo, CORRETOR_UNSELECTED } from "@/components/whatsapp/CorretorSelector";
@@ -72,7 +72,7 @@ export default function WhatsAppInbox() {
   const pipeline = usePipeline();
   const [modalLeadId, setModalLeadId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
-  const [followUpLeads, setFollowUpLeads] = useState<FollowUpLead[]>([]);
+  
   const [newLeads, setNewLeads] = useState<NewLead[]>([]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(searchParams.get("lead"));
   const [leadInfo, setLeadInfo] = useState<LeadInfo | null>(null);
@@ -279,7 +279,6 @@ export default function WhatsAppInbox() {
   // Load follow-up and new leads (only for own profile, not in team read-only)
   const loadSuggestions = useCallback(async () => {
     if (!user?.id || !profileId || isReadOnly) {
-      setFollowUpLeads([]);
       setNewLeads([]);
       return;
     }
@@ -292,42 +291,17 @@ export default function WhatsAppInbox() {
 
     const leadsWithMessages = new Set((msgLeads || []).map(m => m.lead_id).filter(Boolean));
 
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
-    const { data: followUp } = await supabase
-      .from("pipeline_leads")
-      .select("id, nome, empreendimento, stage_id, updated_at")
-      .eq("corretor_id", user.id)
-      .not("stage_id", "in", `(${EXCLUDED_STAGES.join(",")})`)
-      .lt("updated_at", threeDaysAgo.toISOString())
-      .order("updated_at", { ascending: true })
-      .limit(20);
-
-    const filteredFollowUp = ((followUp || []) as any[])
-      .filter(l => !leadsWithMessages.has(l.id))
-      .slice(0, 10)
-      .map(l => ({
-        id: l.id,
-        nome: l.nome,
-        empreendimento: l.empreendimento,
-        stageName: null as string | null,
-        updatedAt: l.updated_at,
-      }));
-
-    setFollowUpLeads(filteredFollowUp);
-
     const { data: newL } = await supabase
       .from("pipeline_leads")
       .select("id, nome, empreendimento, created_at")
       .eq("corretor_id", user.id)
       .eq("stage_id", SEM_CONTATO_STAGE)
       .order("created_at", { ascending: false })
-      .limit(15);
+      .limit(30);
 
     const filteredNew = ((newL || []) as any[])
       .filter(l => !leadsWithMessages.has(l.id))
-      .slice(0, 5)
+      .slice(0, 15)
       .map(l => ({
         id: l.id,
         nome: l.nome,
@@ -489,7 +463,6 @@ export default function WhatsAppInbox() {
           ) : (
             <ConversationList
               conversations={conversations}
-              followUpLeads={isReadOnly ? [] : followUpLeads}
               newLeads={isReadOnly ? [] : newLeads}
               selectedLeadId={selectedLeadId}
               onSelect={handleSelect}
