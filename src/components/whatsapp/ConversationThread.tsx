@@ -333,8 +333,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         throw new Error(visitErr.message || "Erro ao agendar visita");
       }
       // Log activity
-      const { data: { user: visitUser } } = await supabase.auth.getUser();
-      if (visitUser) {
+      if (authVisitUser) {
         await supabase.from("pipeline_atividades").insert({
           pipeline_lead_id: leadId,
           tipo: "visita",
@@ -342,7 +341,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
           prioridade: "media",
           status: "concluida",
-          created_by: visitUser.id,
+          created_by: authVisitUser.id,
         });
       }
       // Move to Visita stage
