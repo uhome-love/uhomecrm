@@ -150,6 +150,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
   const [sending, setSending] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [isNoteMode, setIsNoteMode] = useState(false);
+  const sendingRef = useRef(false);
 
   // Reset note mode when switching leads
   useEffect(() => {
@@ -165,6 +166,9 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDeadline, setTaskDeadline] = useState("amanha");
+  const [taskType, setTaskType] = useState("follow_up");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskPriority, setTaskPriority] = useState("media");
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -207,6 +211,8 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
   const handleSend = async () => {
     if (!text.trim() || !leadInfo || !profileId) return;
+    if (sendingRef.current) return; // Prevent double-send
+    sendingRef.current = true;
     setSending(true);
     try {
       if (isNoteMode) {
@@ -219,10 +225,17 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           timestamp: new Date().toISOString(),
         });
       } else {
-        const { error } = await supabase.functions.invoke("whatsapp-send", {
+        const { error, data: sendResult } = await supabase.functions.invoke("whatsapp-send", {
           body: { telefone: leadInfo.telefone, mensagem: text.trim() },
         });
-        if (error) throw error;
+        if (error) {
+          console.error("whatsapp-send invoke error:", error);
+          throw error;
+        }
+        if (sendResult?.error) {
+          console.error("whatsapp-send returned error:", sendResult.error);
+          throw new Error(sendResult.error);
+        }
         await supabase.from("whatsapp_mensagens").insert({
           lead_id: leadId,
           corretor_id: profileId,
@@ -248,9 +261,11 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       if (isNoteMode) setIsNoteMode(false);
       onMessageSent();
     } catch (err: any) {
+      console.error("handleSend error:", err);
       toast.error("Erro ao enviar: " + (err.message || "Tente novamente"));
     } finally {
       setSending(false);
+      sendingRef.current = false;
     }
   };
 
@@ -309,7 +324,9 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       await supabase.from("pipeline_tarefas").insert({
         pipeline_lead_id: leadId,
         titulo: taskTitle.trim(),
-        tipo: "follow_up",
+        tipo: taskType,
+        descricao: taskDescription.trim() || null,
+        prioridade: taskPriority,
         status: "pendente",
         vence_em: getDeadline(taskDeadline).toISOString(),
         created_by: profileId,
@@ -317,6 +334,9 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       toast.success("✅ Tarefa criada!");
       setTaskTitle("");
       setTaskDeadline("amanha");
+      setTaskType("follow_up");
+      setTaskDescription("");
+      setTaskPriority("media");
     } catch (err: any) {
       toast.error("Erro: " + (err.message || ""));
     }
@@ -359,9 +379,9 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
   const sorted = [...messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   const groups = groupByDate(sorted);
-  const lastMsg = sorted.length > 0 ? sorted[sorted.length - 1] : null;
+  const lastReceivedOrSent = sorted.length > 0 ? sorted[sorted.length - 1] : null;
   const lastReceived = [...sorted].reverse().find(m => m.direction === "received");
-  const showCopilot = lastMsg?.direction === "received" || (sorted.length > 0 && sorted.slice(-5).some(m => m.direction === "received"));
+  const showCopilot = sorted.length > 0 && sorted.slice(-8).some(m => m.direction === "received");
 
   // Templates for current stage
   const currentStageTemplates = leadInfo.stage_id && STAGE_TEMPLATES[leadInfo.stage_id]
@@ -457,12 +477,12 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
       </div>
 
       {/* Copilot */}
-      {showCopilot && lastReceived && (
+      {showCopilot && (lastReceived || lastReceivedOrSent) && (
         <div className="flex-shrink-0 max-h-[180px] overflow-y-auto">
           <HomiCopilotCard
             leadId={leadInfo.id}
             leadName={leadInfo.nome}
-            lastMessage={lastReceived.body || ""}
+            lastMessage={(lastReceivedOrSent?.body) || ""}
             onUseSuggestion={(s) => setText(s)}
             isReadOnly={isReadOnly}
           />
@@ -530,7 +550,13 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
           {/* Tarefa */}
           <Popover onOpenChange={(open) => {
-            if (open && leadInfo) setTaskTitle(`Follow-up com ${leadInfo.nome}`);
+            if (open && leadInfo) {
+              setTaskTitle(`Follow-up com ${leadInfo.nome}`);
+              setTaskType("follow_up");
+              setTaskDescription("");
+              setTaskPriority("media");
+              setTaskDeadline("amanha");
+            }
           }}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -542,27 +568,59 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
               </TooltipTrigger>
               <TooltipContent side="top"><p className="text-xs">Criar Tarefa</p></TooltipContent>
             </Tooltip>
-            <PopoverContent className="w-64 p-3" align="start">
+            <PopoverContent className="w-72 p-3" align="start">
               <p className="text-xs font-semibold mb-2">Nova tarefa</p>
+              <Select value={taskType} onValueChange={setTaskType}>
+                <SelectTrigger className="h-8 text-xs mb-2">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="follow_up">📞 Follow-up</SelectItem>
+                  <SelectItem value="ligacao">📱 Ligação</SelectItem>
+                  <SelectItem value="enviar_material">📄 Enviar material</SelectItem>
+                  <SelectItem value="reuniao">🤝 Reunião</SelectItem>
+                  <SelectItem value="visita">🏠 Visita</SelectItem>
+                  <SelectItem value="outro">📌 Outro</SelectItem>
+                </SelectContent>
+              </Select>
               <Input
                 value={taskTitle}
                 onChange={e => setTaskTitle(e.target.value)}
                 placeholder={`Follow-up com ${leadInfo.nome}`}
                 className="text-xs h-8 mb-2"
               />
-              <Select value={taskDeadline} onValueChange={setTaskDeadline}>
-                <SelectTrigger className="h-8 text-xs mb-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hoje">Hoje (18h)</SelectItem>
-                  <SelectItem value="amanha">Amanhã (10h)</SelectItem>
-                  <SelectItem value="3dias">Em 3 dias</SelectItem>
-                  <SelectItem value="1semana">Em 1 semana</SelectItem>
-                </SelectContent>
-              </Select>
+              <Textarea
+                value={taskDescription}
+                onChange={e => setTaskDescription(e.target.value)}
+                placeholder="Descrição (opcional)"
+                className="text-xs min-h-[40px] max-h-[60px] resize-none mb-2"
+              />
+              <div className="flex gap-2 mb-2">
+                <Select value={taskDeadline} onValueChange={setTaskDeadline}>
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hoje">Hoje (18h)</SelectItem>
+                    <SelectItem value="amanha">Amanhã (10h)</SelectItem>
+                    <SelectItem value="3dias">Em 3 dias</SelectItem>
+                    <SelectItem value="1semana">Em 1 semana</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={taskPriority} onValueChange={setTaskPriority}>
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baixa">🟢 Normal</SelectItem>
+                    <SelectItem value="media">🟡 Média</SelectItem>
+                    <SelectItem value="alta">🟠 Alta</SelectItem>
+                    <SelectItem value="urgente">🔴 Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button size="sm" className="w-full h-7 text-xs" onClick={handleCreateTask} disabled={!taskTitle.trim()}>
-                Criar
+                Criar tarefa
               </Button>
             </PopoverContent>
           </Popover>
