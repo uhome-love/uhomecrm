@@ -276,15 +276,49 @@ export default function ConversationList({
             {conversations.length} ativas · {followUpLeads.length} follow-up · {newLeads.length} novos
           </span>
         </div>
-        <div className="relative">
-          <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar lead..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="h-8 pl-8 text-xs"
-          />
+        <div className="flex gap-1.5">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar lead..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="h-8 pl-8 text-xs"
+            />
+          </div>
+          <button
+            onClick={() => {
+              setMsgSearchOpen(!msgSearchOpen);
+              if (msgSearchOpen) { setMsgSearch(""); setMsgResults([]); }
+            }}
+            className={`h-8 w-8 rounded-md flex items-center justify-center transition-colors shrink-0 ${
+              msgSearchOpen ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+            title="Buscar em mensagens"
+          >
+            <FileSearch size={14} />
+          </button>
         </div>
+        {msgSearchOpen && (
+          <div className="relative">
+            <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar em mensagens..."
+              value={msgSearch}
+              onChange={e => setMsgSearch(e.target.value)}
+              className="h-8 pl-8 pr-7 text-xs"
+              autoFocus
+            />
+            {msgSearch && (
+              <button
+                onClick={() => { setMsgSearch(""); setMsgResults([]); }}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        )}
         <div className="flex gap-1">
           {tabs.map(t => (
             <button
