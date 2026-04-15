@@ -747,7 +747,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         {canScrollLeft && (
           <button
             onClick={() => scrollTo("left")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
+            className="absolute left-1 top-[120px] z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm sticky-arrow"
+            style={{ position: 'sticky', top: 120, float: 'left', marginLeft: 4 }}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -755,7 +756,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         {canScrollRight && (
           <button
             onClick={() => scrollTo("right")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
+            className="absolute right-1 top-[120px] z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
