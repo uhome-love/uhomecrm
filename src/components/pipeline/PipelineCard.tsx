@@ -79,11 +79,12 @@ interface PipelineCardProps {
   onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
   stageIndexMap?: Map<string, number>;
   proximaTarefa?: ProximaTarefa | null;
+  hasUnreadWhatsApp?: boolean;
 }
 
 const PipelineCard = memo(function PipelineCard({
   lead, stage, stages, segmentos, corretorNome, corretorAvatar, gerenteNome, parceiroNome,
-  onDragStart, onClick, onMoveLead, onTransferred, stageIndexMap, proximaTarefa,
+  onDragStart, onClick, onMoveLead, onTransferred, stageIndexMap, proximaTarefa, hasUnreadWhatsApp,
 }: PipelineCardProps) {
   const { user } = useAuth();
   const { isAdmin, isGestor } = useUserRole();
