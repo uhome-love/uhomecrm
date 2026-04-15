@@ -357,17 +357,23 @@ export function usePipeline(pipelineTipo: string = "leads") {
     };
   }, [userId]);
 
-  // Ao voltar para a aba, mantemos o estado atual e evitamos reload automático do board.
+  // Reload leads when tab becomes visible again (e.g. after accepting a lead on another page)
   useEffect(() => {
     if (!userId) return;
     const handleVisibility = () => {
-      if (document.visibilityState === "hidden") {
+      if (document.visibilityState === "visible") {
+        const elapsed = Date.now() - lastVisibleRef.current;
+        // Reload if away for more than 3 seconds
+        if (elapsed > 3000) {
+          loadLeads();
+        }
+      } else {
         lastVisibleRef.current = Date.now();
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [userId]);
+  }, [userId, loadLeads]);
 
   const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
     if (!user) return;
