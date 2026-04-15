@@ -88,6 +88,24 @@ export function TabProvider({ children }: { children: ReactNode }) {
     return resolved.roles.some((r) => rolesRef.current.includes(r as AppRole));
   }, []);
 
+  // Clean stored tabs that the user no longer has access to
+  useEffect(() => {
+    if (roleLoading || roles.length === 0) return;
+    const currentTabs = tabsRef.current;
+    const filtered = currentTabs.filter((tab) => {
+      const resolved = resolveRoute(tab.path.split("?")[0].split("#")[0]);
+      if (!resolved) return true; // keep unknown tabs
+      return hasAccess(resolved);
+    });
+    if (filtered.length !== currentTabs.length) {
+      setTabs(filtered);
+      if (!filtered.some((t) => t.id === activeRef.current) && filtered.length > 0) {
+        setActiveTabId(filtered[0].id);
+        navigateRef.current(filtered[0].path, { replace: true });
+      }
+    }
+  }, [roleLoading, roles, hasAccess]);
+
   // Persist on change
   useEffect(() => {
     saveToStorage(tabs, activeTabId);
