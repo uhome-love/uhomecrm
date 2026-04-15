@@ -172,6 +172,10 @@ export default function WhatsAppInbox() {
       // Corretor: own profile only
       return profileId ? [profileId] : null;
     }
+    if (selectedCorretorId === CORRETOR_UNSELECTED) {
+      // No corretor selected yet — don't load anything
+      return null;
+    }
     if (selectedCorretorId) {
       // Specific corretor selected
       return [selectedCorretorId];
