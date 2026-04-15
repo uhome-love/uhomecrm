@@ -315,13 +315,23 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     const dt = setMinutes(setHours(new Date(visitDate + "T00:00:00"), h), m);
 
     try {
-      await supabase.from("visitas").insert({
-        lead_id: leadId,
+      const { data: { user: authVisitUser } } = await supabase.auth.getUser();
+      const { error: visitErr } = await supabase.from("visitas").insert({
+        pipeline_lead_id: leadId,
+        nome_cliente: leadInfo.nome,
         corretor_id: profileId,
-        data_visita: dt.toISOString(),
-        empreendimento: visitLocal || leadInfo.empreendimento,
-        status: "agendada",
+        gerente_id: authVisitUser?.id || profileId,
+        created_by: authVisitUser?.id || profileId,
+        data_visita: format(dt, "yyyy-MM-dd"),
+        hora_visita: visitTime,
+        empreendimento: visitLocal || leadInfo.empreendimento || "",
+        status: "marcada",
+        origem: "pipeline",
       });
+      if (visitErr) {
+        console.error("Visit insert error:", visitErr);
+        throw new Error(visitErr.message || "Erro ao agendar visita");
+      }
       // Log activity
       const { data: { user: visitUser } } = await supabase.auth.getUser();
       if (visitUser) {
