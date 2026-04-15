@@ -7299,6 +7299,33 @@ export type Database = {
           },
         ]
       }
+      roleta_desbloqueios: {
+        Row: {
+          corretor_id: string
+          created_at: string
+          desbloqueado_por: string
+          id: string
+          mes: string
+          motivo: string | null
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string
+          desbloqueado_por: string
+          id?: string
+          mes: string
+          motivo?: string | null
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string
+          desbloqueado_por?: string
+          id?: string
+          mes?: string
+          motivo?: string | null
+        }
+        Relationships: []
+      }
       roleta_distribuicoes: {
         Row: {
           aceito_em: string | null
