@@ -148,7 +148,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/configuracoes/whatsapp":{ key: "config-whatsapp",      label: "Meu WhatsApp",        icon: "Smartphone",    roles: ["corretor", "admin"] },
   "/links-site":            { key: "links-site",           label: "Meus Links",          icon: "Link2" },
   "/notificacoes":          { key: "notificacoes",         label: "Notificações",        icon: "BellRing" },
-  "/whatsapp":              { key: "whatsapp",             label: "WhatsApp",            icon: "MessageSquare", roles: ["corretor", "admin"], noPadding: true },
+  "/whatsapp":              { key: "whatsapp",             label: "WhatsApp",            icon: "MessageSquare", roles: ["corretor", "gestor", "admin"], noPadding: true },
   "/marketing":             { key: "marketing",            label: "Marketing",           icon: "Zap",           roles: ["admin"] },
   "/auditoria":             { key: "auditoria",            label: "Auditoria",           icon: "ShieldCheck",   roles: ["admin"] },
   "/admin":                 { key: "admin",                label: "Admin",               icon: "Users",         roles: ["admin"] },
