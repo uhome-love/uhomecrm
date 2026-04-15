@@ -27,10 +27,18 @@ interface TabContextValue {
 
 const TabContext = createContext<TabContextValue | null>(null);
 
+const FALLBACK: TabContextValue = {
+  tabs: [],
+  activeTabId: "",
+  openTab: () => {},
+  closeTab: () => {},
+  activateTab: () => {},
+};
+
 export function useTabContext() {
   const ctx = useContext(TabContext);
-  if (!ctx) throw new Error("useTabContext must be inside TabProvider");
-  return ctx;
+  // Return safe fallback during HMR / recovery instead of crashing
+  return ctx ?? FALLBACK;
 }
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
