@@ -1,30 +1,75 @@
 
 
-## Plano: Remover badge e notificações WhatsApp para gestor/admin
+## Plano: WhatsApp Send via Evolution API + HOMI Copilot com Conhecimento Completo do CRM
 
-### Problema
-O CEO/gestor vê um badge laranja "⚠️ 2" no sidebar do WhatsApp Inbox que não é útil — não indica ação clara e confunde. Notificações de mensagem também não fazem sentido para esses perfis.
+### Problema 1 — Ebert não consegue enviar mensagem
 
-### Solução
-Remover completamente o badge e notificações WhatsApp para perfis gestor e admin. Apenas corretores terão badge e notificações.
+**Causa raiz:** O `whatsapp-send` envia TODAS as mensagens pela Meta Business API (número da empresa). Mas o Ebert tem uma instância Evolution API pessoal (`uhome-b5c6344b`, status: `conectado`). As mensagens enviadas pela Meta saem de outro número — o lead não recebe no WhatsApp "normal" e o Inbox não registra corretamente.
 
-### Alterações
+**Solução:** O `whatsapp-send` precisa verificar se o corretor tem uma instância Evolution conectada. Se sim, enviar pela Evolution API (`POST /message/sendText/{instanceName}`). Se não, usar Meta API como fallback.
 
-**1. `src/components/layout/Sidebar.tsx`**
-- Remover toda lógica de `whatsappSLA` (estado, listener, referências)
-- Badge WhatsApp só aparece para corretor (usando `whatsappUnread`)
-- Para admin/gestor: sem badge no item WhatsApp Inbox
+### Problema 2 — HOMI Copilot com conhecimento superficial
 
-**2. `src/hooks/useWhatsAppSLABadge.ts`**
-- Deletar o arquivo inteiro (não será mais usado)
+**Causa raiz:** O prompt atual só tem: nome, etapa, empreendimento e budget. Não sabe nada sobre os empreendimentos reais, campos do lead, tarefas pendentes, visitas, histórico de atividades, ou o contexto operacional do CRM.
 
-**3. `src/components/AppLayout.tsx`**
-- Remover import e chamada de `useWhatsAppSLABadge`
+**Solução:** Enriquecer a Edge Function `homi-copilot` com queries adicionais para montar um briefing completo.
 
-**4. `src/hooks/useWhatsAppNotifications.ts`**
-- Já foi corrigido anteriormente para retornar early para gestor/admin (manter como está)
+---
 
-### Resultado
-- CEO/gestor: nenhum badge, nenhuma notificação de mensagem no WhatsApp
-- Corretor: badge vermelho de mensagens não lidas (comportamento atual mantido)
+### Alterações técnicas
+
+**1. `supabase/functions/whatsapp-send/index.ts`** — Roteamento Evolution vs Meta
+
+- Após autenticação, resolver `profile_id` do usuário autenticado
+- Consultar `whatsapp_instancias` para esse `corretor_id`
+- Se instância com `status = 'conectado'` existir:
+  - Enviar via Evolution API: `POST {EVOLUTION_API_URL}/message/sendText/{instance_name}`
+  - Headers: `{ apikey: EVOLUTION_API_KEY }`
+  - Body: `{ number: phone, text: mensagem }`
+- Se não tiver instância conectada → usar Meta API (comportamento atual)
+- Usar `SUPABASE_SERVICE_ROLE_KEY` para bypass RLS na query de instâncias
+
+**2. `supabase/functions/homi-copilot/index.ts`** — Conhecimento completo do CRM
+
+Adicionar queries paralelas para buscar:
+- **Lead completo:** todos os campos relevantes (origem, objetivo_cliente, bairro_regiao, forma_pagamento, imovel_troca, nivel_interesse, temperatura, tags, observacoes, campanha, primeiro_contato_em, dados_site)
+- **Etapas do pipeline:** todas as etapas ativas com nomes reais
+- **Tarefas pendentes:** últimas 5 tarefas do lead (titulo, tipo, status, vence_em)
+- **Visitas:** agendadas/realizadas (data, status, empreendimento)
+- **Atividades recentes:** últimas 5 atividades (tipo, titulo, data)
+
+Reescrever o prompt para incluir:
+- Perfil completo do lead com todos os dados disponíveis
+- Lista real das etapas do pipeline (Novo Lead → Sem Contato → Contato Iniciado → Busca → Aquecimento → Visita → Pós-Visita → Negócio Criado → Descarte)
+- Empreendimentos da empresa (Casa Tua, Open Bosque, Lake Eyre, Orygem, Las Casas, Casa Bastian, Alto Lindóia, Connect JW, Shift, High Garden Iguatemi, etc.)
+- Contexto operacional: tarefas pendentes, próxima ação agendada, visitas
+- Regras do CRM: quando mover etapa, quando criar tarefa, quando agendar visita
+- Informações sobre ações disponíveis no sistema (mover etapa, criar tarefa, agendar visita)
+
+**3. `src/components/whatsapp/ConversationThread.tsx`** — Guard anti-duplicação
+
+- Adicionar `sendingRef = useRef(false)` como lock imediato no `handleSend`
+- Previne race condition entre Enter + click simultâneo
+
+**4. `src/components/whatsapp/ConversationThread.tsx`** — Tarefa mais completa
+
+Expandir o popover de criação de tarefa:
+- Tipo: Follow-up, Ligação, Enviar material, Reunião, Outro
+- Descrição (textarea opcional)
+- Prioridade: Normal, Alta, Urgente
+- Data personalizada (date picker) além dos presets
+
+**5. `src/components/whatsapp/HomiCopilotCard.tsx`** — Contexto bidirecional
+
+- Manter HOMI visível mesmo após corretor enviar (não só quando última msg é `received`)
+- Passar `messages` array ao invés de apenas `lastMessage` string
+- Re-trigger análise quando corretor envia (com debounce)
+
+### Resultado esperado
+- Ebert e corretores com Evolution conectada enviam pelo número pessoal
+- Corretores sem instância continuam usando Meta API
+- HOMI conhece todo o CRM: empreendimentos, etapas, tarefas, visitas, perfil completo
+- HOMI sugere ações contextuais baseadas em dados reais
+- Criação de tarefa completa com tipo, descrição, prioridade e data custom
+- Sem duplicação de mensagens
 
