@@ -90,6 +90,7 @@ export default function AppLayout() {
   const { theme, toggle: onThemeToggle } = useTheme();
   useVendaRealtimeNotification();
   useWhatsAppNotifications();
+  useWhatsAppSLABadge();
   const navigate = useNavigate();
   const [nome, setNome] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
