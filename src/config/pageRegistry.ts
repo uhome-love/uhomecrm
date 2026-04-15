@@ -104,7 +104,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
 export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
-  "/":                      { key: "home",                 label: "Dashboard",           icon: "LayoutGrid",    closable: false },
   "/corretor":              { key: "corretor",             label: "Minha Rotina",        icon: "LayoutGrid",    closable: false },
   "/ceo":                   { key: "ceo",                  label: "Dashboard CEO",       icon: "LayoutGrid",    closable: false, roles: ["admin"] },
   "/gerente/dashboard":     { key: "gerente-dashboard",    label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin"] },
