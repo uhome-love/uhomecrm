@@ -72,6 +72,7 @@ export default function WhatsAppInbox() {
   const pipeline = usePipeline();
   const [modalLeadId, setModalLeadId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [profilePicCache, setProfilePicCache] = useState<Map<string, string | null>>(new Map());
   
   const [newLeads, setNewLeads] = useState<NewLead[]>([]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(searchParams.get("lead"));
@@ -231,10 +232,10 @@ export default function WhatsAppInbox() {
     const leadIds = Array.from(map.keys());
     const { data: leads } = await supabase
       .from("pipeline_leads")
-      .select("id, nome, empreendimento")
+      .select("id, nome, empreendimento, telefone")
       .in("id", leadIds);
 
-    const typedLeads = (leads || []) as { id: string; nome: string; empreendimento: string | null }[];
+    const typedLeads = (leads || []) as { id: string; nome: string; empreendimento: string | null; telefone: string | null }[];
     const leadMap = new Map(typedLeads.map(l => [l.id, l]));
 
     const items: ConversationItem[] = [];
@@ -268,6 +269,7 @@ export default function WhatsAppInbox() {
         unreadCount: unread,
         lastReceivedTs,
         corretorId: info.corretorId || undefined,
+        telefone: lead?.telefone || undefined,
       });
     }
 
@@ -276,6 +278,37 @@ export default function WhatsAppInbox() {
     setLoadingConvs(false);
     updateUnreadStorage(unreadTotal);
   }, [getTargetProfileIds]);
+
+  // Fetch profile pictures for visible conversations
+  useEffect(() => {
+    if (conversations.length === 0) return;
+    const toFetch = conversations.filter(c => c.telefone && !profilePicCache.has(c.leadId)).slice(0, 15);
+    if (toFetch.length === 0) return;
+
+    // Mark as loading to prevent refetch
+    setProfilePicCache(prev => {
+      const next = new Map(prev);
+      toFetch.forEach(c => next.set(c.leadId, null));
+      return next;
+    });
+
+    toFetch.forEach(async (conv) => {
+      try {
+        const { data } = await supabase.functions.invoke("whatsapp-profile-picture", {
+          body: { telefone: conv.telefone },
+        });
+        if (data?.picture_url) {
+          setProfilePicCache(prev => {
+            const next = new Map(prev);
+            next.set(conv.leadId, data.picture_url);
+            return next;
+          });
+        }
+      } catch {
+        // silently fail
+      }
+    });
+  }, [conversations]);
 
   // Load follow-up and new leads (only for own profile, not in team read-only)
   const loadSuggestions = useCallback(async () => {
@@ -471,6 +504,7 @@ export default function WhatsAppInbox() {
               userId={user?.id || null}
               corretorMap={corretorMap}
               corretorIds={getTargetProfileIds() || []}
+              profilePicCache={profilePicCache}
             />
           )}
         </div>

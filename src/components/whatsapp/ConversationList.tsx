@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, MessageSquare, Loader2, UserPlus, ArrowRight, X, FileSearch } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,6 +20,7 @@ export interface ConversationItem {
   unreadCount: number;
   lastReceivedTs: string | null;
   corretorId?: string;
+  telefone?: string;
 }
 
 
@@ -47,6 +48,7 @@ interface ConversationListProps {
   userId?: string | null;
   corretorMap?: Map<string, string>;
   corretorIds?: string[];
+  profilePicCache?: Map<string, string | null>;
 }
 
 function getInitials(name: string) {
@@ -97,6 +99,7 @@ export default function ConversationList({
   userId,
   corretorMap,
   corretorIds,
+  profilePicCache,
 }: ConversationListProps) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<Tab>("all");
@@ -357,6 +360,9 @@ export default function ConversationList({
                   >
                     <div className="flex gap-2.5">
                       <Avatar className="h-9 w-9 shrink-0">
+                        {profilePicCache?.get(conv.leadId) && (
+                          <AvatarImage src={profilePicCache.get(conv.leadId)!} alt={conv.leadName} />
+                        )}
                         <AvatarFallback className={`${getAvatarColor(conv.leadName)} text-white text-xs`}>
                           {getInitials(conv.leadName)}
                         </AvatarFallback>
