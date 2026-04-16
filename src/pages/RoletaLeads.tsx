@@ -77,6 +77,7 @@ function CeoView() {
           { label: "Histórico", value: "roletagens" },
           { label: "Leads perdidos", value: "perdidos" },
           { label: "Entradas WhatsApp", value: "whatsapp" },
+          { label: "Bloqueados", value: "bloqueados" },
           { label: "Inteligência", value: "inteligencia" },
           { label: "Configurações", value: "config" },
         ]}

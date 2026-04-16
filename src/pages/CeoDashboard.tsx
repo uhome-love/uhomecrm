@@ -365,8 +365,6 @@ export default function CeoDashboard() {
 
         <TabsContent value="dashboard" className="space-y-5 mt-0">
 
-      {/* ═══ CORRETORES BLOQUEADOS ═══ */}
-      <CorretoresBloqueadosPanel />
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
       {localPendentes.length > 0 && (
