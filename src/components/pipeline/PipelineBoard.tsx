@@ -589,6 +589,20 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       return;
     }
 
+    // ─── Negócio Criado: gravar VGV + empreendimento ANTES de mover (auto-create usa esses campos) ───
+    if (extra.criarNegocio && lead) {
+      try {
+        const updates: Record<string, any> = {};
+        if (extra.vgv && Number(extra.vgv) > 0) updates.valor_estimado = Number(extra.vgv);
+        if (extra.empreendimento) updates.empreendimento = extra.empreendimento;
+        if (Object.keys(updates).length > 0) {
+          await supabase.from("pipeline_leads").update(updates as any).eq("id", lead.id);
+        }
+      } catch (err) {
+        console.error("[handleTransitionConfirm] Erro ao gravar dados de negócio:", err);
+      }
+    }
+
     // ─── Normal transition (non-descarte) ───
     completeTransition(result.leadId, result.targetStageId, result.observacao);
 

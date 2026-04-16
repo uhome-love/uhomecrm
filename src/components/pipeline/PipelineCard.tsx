@@ -167,9 +167,16 @@ const PipelineCard = memo(function PipelineCard({
     e.stopPropagation();
     if (!onMoveLead) return;
     const targetStage = stages.find(s => s.id === stageId);
-    if (targetStage?.nome.toLowerCase().includes("visita marcada") || (targetStage?.tipo === "visita")) {
-      setScheduleOpen(true);
-      return;
+    const isVisitaStage = targetStage?.tipo === "visita" || targetStage?.nome.toLowerCase().includes("visita marcada");
+    if (isVisitaStage) {
+      // Skip schedule dialog if visit is already scheduled (flag_status set by Agenda)
+      const flagStatus = (lead as any)?.flag_status as Record<string, any> | undefined;
+      const statusVisita = flagStatus?.status_visita;
+      const jaAgendada = statusVisita && ["marcada", "confirmada", "reagendada", "agendada"].includes(String(statusVisita));
+      if (!jaAgendada) {
+        setScheduleOpen(true);
+        return;
+      }
     }
     onMoveLead(lead.id, stageId);
     toast.success(`Lead movido para ${targetStage?.nome}`);

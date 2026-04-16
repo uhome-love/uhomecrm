@@ -548,6 +548,63 @@ function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
   );
 }
 
+// ─── Negócio Criado (convertido) ───
+function NegocioCriadoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
+  const [vgv, setVgv] = useState<string>(lead.valor_estimado ? String(lead.valor_estimado) : "");
+  const [empreendimento, setEmpreendimento] = useState(lead.empreendimento || "");
+  const [obs, setObs] = useState("");
+
+  const vgvNumber = Number(vgv.replace(/\./g, "").replace(",", ".")) || 0;
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="text-base flex items-center gap-2">🤝 Criar Negócio</DialogTitle>
+      </DialogHeader>
+      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-[10px] text-muted-foreground">Confirme os dados antes de criar o negócio. Esta ação é manual e não pode ser revertida automaticamente.</p>
+
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs">VGV estimado (R$) *</Label>
+          <Input
+            type="text"
+            inputMode="decimal"
+            value={vgv}
+            onChange={e => setVgv(e.target.value)}
+            placeholder="Ex: 850000"
+            className="h-8 text-xs"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Empreendimento</Label>
+          <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
+        </div>
+        <div>
+          <Label className="text-xs">Observação</Label>
+          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Detalhes do negócio (unidade, condições, etc.)" />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button
+          size="sm"
+          className="text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
+          disabled={vgvNumber <= 0}
+          onClick={() => onConfirm({
+            leadId: lead.id,
+            targetStageId,
+            observacao: `Negócio Criado | VGV: R$ ${vgvNumber.toLocaleString("pt-BR")} | Empreendimento: ${empreendimento || "—"}${obs ? ` | ${obs}` : ""}`,
+            extraData: { criarNegocio: true, vgv: vgvNumber, empreendimento, observacao: obs },
+          })}
+        >
+          🤝 Confirmar e criar negócio
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
 // ─── Main Component ───
 export default function PipelineStageTransitionPopup({ open, onOpenChange, lead, targetStage, onConfirm, onCancel }: Props) {
   const handleClose = (v: boolean) => {
@@ -556,27 +613,31 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
   };
 
   const stageName = targetStage.nome.toLowerCase();
+  const stageType = targetStage.tipo;
 
   const renderForm = () => {
-    if (stageName.includes("sem contato")) {
+    if (stageType === "sem_contato" || stageName.includes("sem contato")) {
       return <SemContatoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if (stageName.includes("contato inic") || stageName.includes("contato iniciado")) {
+    if (stageType === "contato_inicial" || stageName.includes("contato inic") || stageName.includes("contato iniciado")) {
       return <ContatoInicialForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if (stageName.includes("qualifica") || stageName.includes("busca")) {
+    if (stageType === "busca" || stageType === "qualificacao" || stageName.includes("qualifica") || stageName.includes("busca")) {
       return <QualificacaoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if ((stageName.includes("poss") && stageName.includes("visita")) || stageName.includes("aquecimento")) {
+    if (stageType === "aquecimento" || stageType === "possibilidade_visita" || (stageName.includes("poss") && stageName.includes("visita")) || stageName.includes("aquecimento")) {
       return <PossivelVisitaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if (stageName === "visita" || targetStage.tipo === "visita" || stageName.includes("visita marcada") || (stageName.includes("visita") && stageName.includes("marcad"))) {
+    if (stageType === "visita" || stageType === "visita_marcada" || stageName === "visita" || stageName.includes("visita marcada")) {
       return <VisitaMarcadaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if (stageName.includes("pós-visita") || targetStage.tipo === "pos_visita" || stageName.includes("visita realizada") || (stageName.includes("visita") && stageName.includes("realizad"))) {
+    if (stageType === "pos_visita" || stageType === "visita_realizada" || stageName.includes("pós-visita") || stageName.includes("visita realizada")) {
       return <VisitaRealizadaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if (stageName.includes("descarte") || targetStage.tipo === "descarte") {
+    if (stageType === "convertido" || stageName.includes("negócio criado") || stageName.includes("negocio criado")) {
+      return <NegocioCriadoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    }
+    if (stageType === "descarte" || stageName.includes("descarte")) {
       return <DescarteForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
     return null;
@@ -594,11 +655,14 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
 // Stages that need a transition popup
 export function needsTransitionPopup(stageName: string, stageType: string, lead?: PipelineLead): boolean {
   const name = stageName.toLowerCase();
-  if (name.includes("sem contato")) return true;
-  if (name.includes("contato inic") || name.includes("contato iniciado")) return true;
-  if (name.includes("qualifica") || name.includes("busca")) return true;
-  if ((name.includes("poss") && name.includes("visita")) || name.includes("aquecimento")) return true;
-  if (name === "visita" || stageType === "visita" || name.includes("visita marcada")) {
+
+  // Use stageType as primary source of truth
+  if (stageType === "sem_contato" || name.includes("sem contato")) return true;
+  if (stageType === "contato_inicial" || name.includes("contato inic") || name.includes("contato iniciado")) return true;
+  if (stageType === "busca" || stageType === "qualificacao" || name.includes("qualifica") || name.includes("busca")) return true;
+  if (stageType === "aquecimento" || stageType === "possibilidade_visita" || (name.includes("poss") && name.includes("visita")) || name.includes("aquecimento")) return true;
+
+  if (stageType === "visita" || name === "visita" || stageType === "visita_marcada" || name.includes("visita marcada")) {
     // Skip popup se o lead já tem visita marcada/agendada (flag definida pelo agendamento na Agenda)
     const flagStatus = (lead as any)?.flag_status as Record<string, any> | undefined;
     const statusVisita = flagStatus?.status_visita;
@@ -607,7 +671,9 @@ export function needsTransitionPopup(stageName: string, stageType: string, lead?
     }
     return true;
   }
-  if (name.includes("pós-visita") || stageType === "pos_visita" || name.includes("visita realizada")) return true;
-  if (name.includes("descarte") || stageType === "descarte") return true;
+
+  if (stageType === "pos_visita" || stageType === "visita_realizada" || name.includes("pós-visita") || name.includes("visita realizada")) return true;
+  if (stageType === "convertido" || name.includes("negócio criado") || name.includes("negocio criado")) return true;
+  if (stageType === "descarte" || name.includes("descarte")) return true;
   return false;
 }
