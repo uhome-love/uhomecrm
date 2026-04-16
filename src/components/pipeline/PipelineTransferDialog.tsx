@@ -61,9 +61,13 @@ export default function PipelineTransferDialog({ open, onOpenChange, leadId, lea
       // Find "Novo Lead" stage to reset
       const novoLeadStage = stages.find(s => s.tipo === "novo_lead");
 
-      // Update the lead
+      // Update the lead — repasse manual já dispensa fluxo de aceite
       const updates: Record<string, any> = {
         corretor_id: selectedCorretor,
+        aceite_status: "aceito",
+        aceito_em: new Date().toISOString(),
+        aceite_expira_em: null,
+        arquivado: false,
         updated_at: new Date().toISOString(),
       };
       if (novoLeadStage) {
