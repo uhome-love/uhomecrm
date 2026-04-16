@@ -74,7 +74,11 @@ export default function ReportCenter() {
         userRole={userRole}
       />
       <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
-        <ReportPlaceholder tabName={TAB_LABELS[activeTab] || activeTab} />
+        {activeTab === "vendas" ? (
+          <RelatorioVendas filters={filters} userRole={userRole} />
+        ) : (
+          <ReportPlaceholder tabName={TAB_LABELS[activeTab] || activeTab} />
+        )}
       </div>
     </div>
   );
