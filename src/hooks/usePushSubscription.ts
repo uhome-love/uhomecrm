@@ -209,6 +209,8 @@ export function usePushSubscription() {
 
   return {
     isSupported,
+    isCheckingSupport,
+    isIOSNotPWA,
     isSubscribed,
     isLoading,
     permission,
