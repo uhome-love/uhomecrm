@@ -592,13 +592,21 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
 }
 
 // Stages that need a transition popup
-export function needsTransitionPopup(stageName: string, stageType: string): boolean {
+export function needsTransitionPopup(stageName: string, stageType: string, lead?: PipelineLead): boolean {
   const name = stageName.toLowerCase();
   if (name.includes("sem contato")) return true;
   if (name.includes("contato inic") || name.includes("contato iniciado")) return true;
   if (name.includes("qualifica") || name.includes("busca")) return true;
   if ((name.includes("poss") && name.includes("visita")) || name.includes("aquecimento")) return true;
-  if (name === "visita" || stageType === "visita" || name.includes("visita marcada")) return true;
+  if (name === "visita" || stageType === "visita" || name.includes("visita marcada")) {
+    // Skip popup se o lead já tem visita marcada/agendada (flag definida pelo agendamento na Agenda)
+    const flagStatus = (lead as any)?.flag_status as Record<string, any> | undefined;
+    const statusVisita = flagStatus?.status_visita;
+    if (statusVisita && ["marcada", "confirmada", "reagendada", "agendada"].includes(String(statusVisita))) {
+      return false;
+    }
+    return true;
+  }
   if (name.includes("pós-visita") || stageType === "pos_visita" || name.includes("visita realizada")) return true;
   if (name.includes("descarte") || stageType === "descarte") return true;
   return false;
