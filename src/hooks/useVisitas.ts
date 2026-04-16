@@ -380,12 +380,61 @@ export function useVisitas(filters?: {
 
     if (data?.pipeline_lead_id) {
       try {
+        // Buscar lead atual + ordem do stage atual + stage Visita
+        const [{ data: leadAtual }, { data: visitaStage }] = await Promise.all([
+          supabase
+            .from("pipeline_leads")
+            .select("stage_id, flag_status, pipeline_stages!inner(ordem)")
+            .eq("id", data.pipeline_lead_id)
+            .maybeSingle(),
+          supabase
+            .from("pipeline_stages")
+            .select("id, ordem")
+            .eq("pipeline_tipo", "leads")
+            .eq("tipo", "visita")
+            .maybeSingle(),
+        ]);
+
+        const ordemAtual = (leadAtual as any)?.pipeline_stages?.ordem ?? 0;
+        const visitaStageId = visitaStage?.id || "a857139f-c419-4e37-ae17-5f5e70b21172";
+        const visitaOrdem = visitaStage?.ordem ?? 5;
+        const oldFlags = ((leadAtual as any)?.flag_status as Record<string, any>) || {};
+
+        const novasFlags = {
+          ...oldFlags,
+          status_visita: "marcada",
+          visita_id: data.id,
+          visita_data: data.data_visita,
+          visita_hora: data.hora_visita,
+        };
+
+        const moverEtapa = ordemAtual < visitaOrdem;
+
+        const updatePayload: Record<string, any> = {
+          modulo_atual: "agenda",
+          flag_status: novasFlags,
+        };
+        if (moverEtapa) {
+          updatePayload.stage_id = visitaStageId;
+        }
+
         await supabase
           .from("pipeline_leads")
-          .update({
-            modulo_atual: "agenda",
-          } as any)
+          .update(updatePayload as any)
           .eq("id", data.pipeline_lead_id);
+
+        if (moverEtapa) {
+          const dataFmt = new Date(`${data.data_visita}T${data.hora_visita || "12:00:00"}`).toLocaleString("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+            day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+          });
+          await supabase.from("pipeline_atividades").insert({
+            lead_id: data.pipeline_lead_id,
+            tipo: "mudanca_etapa",
+            descricao: `Visita agendada para ${dataFmt}`,
+            corretor_id: data.corretor_id,
+          } as any);
+        }
 
         await supabase.from("lead_progressao").insert({
           lead_id: data.pipeline_lead_id,
