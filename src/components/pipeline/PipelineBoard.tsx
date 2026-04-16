@@ -480,7 +480,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     if (!targetStage) return;
 
     // Check if this stage needs a transition popup
-    if (needsTransitionPopup(targetStage.nome, targetStage.tipo)) {
+    if (needsTransitionPopup(targetStage.nome, targetStage.tipo, lead)) {
       setTransitionPopup({ lead, targetStage });
       return;
     }
@@ -920,7 +920,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   onMoveLead={(leadId: string, stageId: string) => {
                     const lead = leads.find(l => l.id === leadId);
                     const targetStage = stages.find(s => s.id === stageId);
-                    if (lead && targetStage && needsTransitionPopup(targetStage.nome, targetStage.tipo)) {
+                    if (lead && targetStage && needsTransitionPopup(targetStage.nome, targetStage.tipo, lead)) {
                       setTransitionPopup({ lead, targetStage });
                       return;
                     }
