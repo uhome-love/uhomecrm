@@ -111,17 +111,27 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
 
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
     setLoading(true);
-    supabase
-      .from("pipeline_leads")
-      .select("id, nome, empreendimento, telefone, origem, aceite_status")
-      .is("corretor_id", null)
-      .in("aceite_status", ["pendente_distribuicao", "pendente"])
-      .order("created_at", { ascending: true })
-      .then(({ data }) => {
-        setLeads(data || []);
-        setLoading(false);
-      });
+    setLeads([]);
+    (async () => {
+      const { data, error, count } = await supabase
+        .from("pipeline_leads")
+        .select("id, nome, empreendimento, telefone, origem, aceite_status", { count: "exact" })
+        .is("corretor_id", null)
+        .eq("aceite_status", "pendente_distribuicao")
+        .order("created_at", { ascending: true })
+        .limit(2000);
+      if (cancelled) return;
+      if (error) {
+        console.error("[FilaCeoDispatchModal] fetch error:", error);
+        toast.error("Erro ao carregar fila CEO");
+      }
+      console.info(`[FilaCeoDispatchModal] Fila CEO: ${data?.length || 0} carregados (count=${count})`);
+      setLeads(data || []);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, [open]);
 
   const { preview, unidentifiedCount, identifiedLeadIds, allLeadIds } = useMemo(() => {
