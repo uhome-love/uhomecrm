@@ -96,6 +96,17 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     } finally { setSaving(false); }
   };
 
+  const handleSavePhone = async () => {
+    const trimmed = editPhone.trim();
+    if (trimmed === (lead.telefone || "")) { setEditingPhone(false); return; }
+    setSaving(true);
+    try {
+      await onUpdate(lead.id, { telefone: trimmed || null } as any);
+      toast.success("Telefone atualizado!");
+      setEditingPhone(false);
+    } finally { setSaving(false); }
+  };
+
   // Edit states
   const [editingCommercial, setEditingCommercial] = useState(false);
   const [commercialData, setCommercialData] = useState({
