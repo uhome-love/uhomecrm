@@ -223,11 +223,11 @@ export default function AppLayout() {
                     <p className="text-xs text-muted-foreground">{cargoLabel}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/configuracoes")} className="text-xs gap-2 cursor-pointer">
+                  <DropdownMenuItem onSelect={() => navigate("/configuracoes")} className="text-xs gap-2 cursor-pointer">
                     <Settings className="h-3.5 w-3.5" /> Configurações
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut} className="text-xs gap-2 text-destructive cursor-pointer">
+                  <DropdownMenuItem onSelect={signOut} className="text-xs gap-2 text-destructive cursor-pointer">
                     <LogOut className="h-3.5 w-3.5" /> Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
