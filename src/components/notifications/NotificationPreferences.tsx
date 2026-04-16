@@ -175,7 +175,7 @@ export default function NotificationPreferences() {
                   id="push"
                   checked={push}
                   onCheckedChange={handlePushToggle}
-                  disabled={!pushSupported || pushLoading || pushPermission === "denied"}
+                  disabled={pushChecking || (!pushSupported && !isIOSNotPWA) || pushLoading || pushPermission === "denied"}
                 />
               </div>
               {pushSubscribed && (
