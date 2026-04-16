@@ -4,6 +4,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import ReportTabs from "@/components/relatorios/ReportTabs";
 import ReportFilters from "@/components/relatorios/ReportFilters";
 import ReportPlaceholder from "@/components/relatorios/ReportPlaceholder";
+import RelatorioVendas from "@/components/relatorios/RelatorioVendas";
 
 const TAB_LABELS: Record<string, string> = {
   vendas: "Vendas",
@@ -73,7 +74,11 @@ export default function ReportCenter() {
         userRole={userRole}
       />
       <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
-        <ReportPlaceholder tabName={TAB_LABELS[activeTab] || activeTab} />
+        {activeTab === "vendas" ? (
+          <RelatorioVendas filters={filters} userRole={userRole} />
+        ) : (
+          <ReportPlaceholder tabName={TAB_LABELS[activeTab] || activeTab} />
+        )}
       </div>
     </div>
   );
