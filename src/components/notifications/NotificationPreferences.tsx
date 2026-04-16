@@ -30,6 +30,8 @@ export default function NotificationPreferences() {
   const { preferences, isLoading, updatePreferences } = useNotificationPreferences();
   const { 
     isSupported: pushSupported, 
+    isCheckingSupport: pushChecking,
+    isIOSNotPWA,
     isSubscribed: pushSubscribed, 
     isLoading: pushLoading, 
     permission: pushPermission,
@@ -148,9 +150,19 @@ export default function NotificationPreferences() {
                       Ativo
                     </span>
                   )}
-                  {!pushSupported && (
+                  {pushChecking && (
+                    <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+                      Verificando...
+                    </span>
+                  )}
+                  {!pushChecking && !pushSupported && !isIOSNotPWA && (
                     <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
                       Não suportado
+                    </span>
+                  )}
+                  {!pushChecking && isIOSNotPWA && (
+                    <span className="text-[10px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded-full">
+                      Instale o app
                     </span>
                   )}
                   {pushPermission === "denied" && (
@@ -163,7 +175,7 @@ export default function NotificationPreferences() {
                   id="push"
                   checked={push}
                   onCheckedChange={handlePushToggle}
-                  disabled={!pushSupported || pushLoading || pushPermission === "denied"}
+                  disabled={pushChecking || (!pushSupported && !isIOSNotPWA) || pushLoading || pushPermission === "denied"}
                 />
               </div>
               {pushSubscribed && (
@@ -182,7 +194,12 @@ export default function NotificationPreferences() {
                   Permissão bloqueada. Ative nas configurações do navegador (Configurações → Notificações).
                 </p>
               )}
-              {!pushSupported && (
+              {!pushChecking && !pushSupported && isIOSNotPWA && (
+                <p className="text-xs text-muted-foreground">
+                  📱 <strong>iOS:</strong> Abra no Safari → toque em <strong>Compartilhar</strong> (ícone ⬆️) → <strong>"Adicionar à Tela de Início"</strong>. Depois abra o app pela tela inicial e ative aqui.
+                </p>
+              )}
+              {!pushChecking && !pushSupported && !isIOSNotPWA && (
                 <p className="text-xs text-muted-foreground">
                   Instale o app (PWA) para receber push notifications no celular.
                 </p>

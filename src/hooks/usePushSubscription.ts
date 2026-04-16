@@ -47,18 +47,33 @@ export function usePushSubscription() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [vapidKey, setVapidKey] = useState<string | null>(cachedVapidKey);
+  const [vapidChecked, setVapidChecked] = useState(!!cachedVapidKey);
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "default"
   );
 
   const hasBrowserSupport = "serviceWorker" in navigator && "PushManager" in window;
+
+  // Detect iOS not in standalone (PWA) mode
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as any).standalone === true;
+  const isIOSNotPWA = isIOS && !isStandalone;
+
+  // Still loading support info if browser supports but vapid not yet checked
+  const isCheckingSupport = hasBrowserSupport && !vapidChecked;
   const isSupported = hasBrowserSupport && !!vapidKey;
 
   // Fetch VAPID key on mount
   useEffect(() => {
-    if (!hasBrowserSupport) return;
+    if (!hasBrowserSupport) {
+      setVapidChecked(true);
+      return;
+    }
     fetchVapidPublicKey().then((key) => {
       if (key) setVapidKey(key);
+      setVapidChecked(true);
     });
   }, [hasBrowserSupport]);
 
@@ -194,6 +209,8 @@ export function usePushSubscription() {
 
   return {
     isSupported,
+    isCheckingSupport,
+    isIOSNotPWA,
     isSubscribed,
     isLoading,
     permission,
