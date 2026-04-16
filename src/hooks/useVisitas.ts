@@ -429,10 +429,16 @@ export function useVisitas(filters?: {
             day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
           });
           await supabase.from("pipeline_atividades").insert({
-            lead_id: data.pipeline_lead_id,
+            pipeline_lead_id: data.pipeline_lead_id,
             tipo: "mudanca_etapa",
+            titulo: "Visita Agendada",
             descricao: `Visita agendada para ${dataFmt}`,
-            corretor_id: data.corretor_id,
+            status: "concluida",
+            responsavel_id: data.corretor_id,
+            created_by: user.id,
+            data: data.data_visita,
+            hora: data.hora_visita,
+            prioridade: "media",
           } as any);
         }
 
@@ -444,6 +450,7 @@ export function useVisitas(filters?: {
           triggered_by: "agendar_visita",
           corretor_id: data.corretor_id,
           visita_id: data.id,
+          auth_user_id: user.id,
         });
       } catch (err) {
         console.error("[createVisita] Erro ao atualizar progressão do lead", err);
