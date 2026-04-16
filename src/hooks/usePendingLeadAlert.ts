@@ -22,19 +22,22 @@ export function usePendingLeadAlert() {
 
   const checkPending = useCallback(async () => {
     if (!user) return;
-    // Add 60s buffer to account for browser clock drift
-    const bufferDate = new Date(Date.now() - 60_000).toISOString();
+    const nowIso = new Date().toISOString();
     const { data } = await supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead")
       .eq("corretor_id", user.id)
       .in("aceite_status", ["pendente", "aguardando_aceite"])
-      .gt("aceite_expira_em", bufferDate)
+      .or(`aceite_expira_em.is.null,aceite_expira_em.gt.${nowIso}`)
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
 
-    if (data) {
+    const isExpired = data?.aceite_expira_em
+      ? new Date(data.aceite_expira_em).getTime() <= Date.now()
+      : false;
+
+    if (data && !isExpired) {
       setPendingLead(data as PendingLead);
       setShowDialog(true);
     } else {
@@ -84,7 +87,10 @@ export function usePendingLeadAlert() {
   return {
     pendingLead,
     showDialog,
-    closeDialog: () => setShowDialog(false),
+    closeDialog: () => {
+      setPendingLead(null);
+      setShowDialog(false);
+    },
     refresh: checkPending,
   };
 }
