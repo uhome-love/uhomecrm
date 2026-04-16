@@ -16,8 +16,6 @@ export default function HomeDashboard() {
 
   useEffect(() => {
     if (roleLoading || !user) return;
-    const currentPath = window.location.pathname;
-    if (currentPath !== "/" && currentPath !== "/index.html" && currentPath !== "/index") return;
 
     if (isAdmin) {
       navigate("/ceo", { replace: true });
