@@ -27,7 +27,7 @@ import BulkEmpreendimentoAssign from "@/components/ceo/BulkEmpreendimentoAssign"
 import { formatBRLCompact } from "@/lib/utils";
 import { CeoDashboardSkeleton } from "@/components/ui/skeleton-dashboard";
 import KpiDetailDialog, { type KpiDetailType } from "@/components/ceo/KpiDetailDialog";
-import CorretoresBloqueadosPanel from "@/components/roleta/CorretoresBloqueadosPanel";
+
 
 const FRASES = [
   "Liderar é servir com propósito.",
@@ -365,8 +365,6 @@ export default function CeoDashboard() {
 
         <TabsContent value="dashboard" className="space-y-5 mt-0">
 
-      {/* ═══ CORRETORES BLOQUEADOS ═══ */}
-      <CorretoresBloqueadosPanel />
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
       {localPendentes.length > 0 && (
