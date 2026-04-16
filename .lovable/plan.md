@@ -1,43 +1,51 @@
 
 
-## Diagnóstico: Push Notifications Não Chegando
+## Plano: Central de Relatórios (`/central-relatorios`)
 
-### Causa Raiz Identificada
+A rota `/relatorios` já existe (Relatórios 1:1). A nova Central de Relatórios usará `/central-relatorios`.
 
-Os logs mostram que **TODAS as chamadas ao `send-push` estão retornando 401 (Unauthorized)**.
+### Arquivos a criar
 
-O problema: a função `send-push` valida o token via `auth.getClaims()`, mas as funções internas (`distribute-lead`, `lead-escalation`, etc.) chamam `send-push` usando o **service role key** como Bearer token. O service role key NÃO é um JWT de usuário — então `getClaims()` falha e retorna 401. Resultado: nenhuma push notification é enviada.
+**1. `src/pages/ReportCenter.tsx`**
+- Componente principal que monta layout: topbar com tabs + filtros + conteúdo
+- Redirect para `/pipeline-leads` se role === corretor (via `useUserRole`)
+- Filtros via `useSearchParams` (periodo, equipe, corretor, segmento)
+- Background `#f0f0f5`
 
-### Plano de Correção
+**2. `src/components/relatorios/ReportTabs.tsx`**
+- 11 tabs horizontais: Vendas, Leads, Negócios, Oferta Ativa, Conversão, Empreend., Origem, Interação, Visitas, Tarefas, ✦ Mega
+- Tab ativa: `color #4F46E5`, `border-bottom 2px solid #4F46E5`
+- Tab "✦ Mega": sempre `color #4F46E5`
+- Scroll horizontal no mobile
 
-**1. Corrigir autenticação do `send-push`** (arquivo principal)
+**3. `src/components/relatorios/ReportFilters.tsx`**
+- Chips de período: Hoje / Esta semana / Este mês / Personalizado (date range picker)
+- Active chip: `bg #EEF2FF`, `color #4F46E5`
+- Select Equipe: busca profiles com role=gestor (visível só para admin)
+- Select Corretor: filtrado pela equipe selecionada
+- Select Segmento: Todos / MCMV / Médio-Alto / Altíssimo / Investimento
+- Botão "Exportar PDF" (placeholder) + botão "🔗 Link" (copia URL)
+- Gestor: equipe fixada, só vê corretores da própria equipe
 
-Substituir a validação por `getClaims()` por uma lógica dupla:
-- Se o Bearer token for o **service role key** → aceitar (chamada server-to-server confiável)
-- Se for um JWT de usuário → validar via `auth.getUser()` normalmente
+**4. `src/components/relatorios/ReportPlaceholder.tsx`**
+- Renderiza "Relatório [nome] em construção" com ícone
 
-Isso é seguro porque o service role key é um segredo do servidor, nunca exposto ao cliente.
+### Arquivos a modificar
 
-**2. Verificar `vapid-public-key`** — garantir que está retornando a chave corretamente para o frontend se inscrever.
+**5. `src/config/pageRegistry.ts`**
+- Adicionar `"report-center"` em `PAGE_COMPONENTS` apontando para `@/pages/ReportCenter`
+- Adicionar `/central-relatorios` em `ROUTE_TO_TAB` com key `report-center`, roles `["gestor", "admin"]`
 
-**3. Após a correção** — fornecer o passo a passo de ativação de push para Android e iOS para enviar aos corretores.
+**6. `src/components/layout/Sidebar.tsx`**
+- Seção "Performance" do admin: adicionar `{ label: "Central de Relatórios", path: "/central-relatorios", icon: <BarChart2 size={15} strokeWidth={1.5} /> }`
+- Seção "Performance" do gestor: idem
 
-### Detalhes Técnicos
+### Controle de acesso
+- `ROUTE_TO_TAB` com `roles: ["gestor", "admin"]` bloqueia via tab system
+- Dentro do componente: se corretor, `Navigate` para `/pipeline-leads`
 
-```typescript
-// Nova lógica de auth no send-push/index.ts
-const token = authHeader.replace("Bearer ", "");
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-// Server-to-server calls use the service role key directly
-if (token === SERVICE_ROLE_KEY) {
-  // Trusted internal call — proceed
-} else {
-  // User JWT — validate normally
-  const { data: { user }, error } = await supabaseAuth.auth.getUser(token);
-  if (error || !user) return 401;
-}
-```
-
-Nenhuma tabela ou migração necessária. Apenas correção na Edge Function `send-push`.
+### Design
+- Topbar/filtros: fundo branco, `border-bottom: 0.5px solid #e5e7eb`
+- Fundo página: `#f0f0f5`
+- Nenhuma query Supabase nos relatórios ainda — apenas estrutura e placeholders
 
