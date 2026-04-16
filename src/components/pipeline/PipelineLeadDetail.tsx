@@ -25,7 +25,7 @@ import {
   Plus, CheckCircle2, AlertTriangle, ChevronRight,
   FileText, ChevronDown, ClipboardList,
   Flame, Snowflake, Sun, Zap, Brain, TrendingUp,
-  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search
+  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil
 } from "lucide-react";
 import PartnershipDialog from "./PartnershipDialog";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
@@ -82,6 +82,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [savingEmpreendimento, setSavingEmpreendimento] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [editName, setEditName] = useState(lead.nome);
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [editPhone, setEditPhone] = useState(lead.telefone || "");
 
   const handleSaveName = async () => {
     const trimmed = editName.trim();
@@ -91,6 +93,17 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       await onUpdate(lead.id, { nome: trimmed } as any);
       toast.success("Nome atualizado!");
       setEditingName(false);
+    } finally { setSaving(false); }
+  };
+
+  const handleSavePhone = async () => {
+    const trimmed = editPhone.trim();
+    if (trimmed === (lead.telefone || "")) { setEditingPhone(false); return; }
+    setSaving(true);
+    try {
+      await onUpdate(lead.id, { telefone: trimmed || null } as any);
+      toast.success("Telefone atualizado!");
+      setEditingPhone(false);
     } finally { setSaving(false); }
   };
 
@@ -335,11 +348,39 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
           {/* Row 2: Contact + Corretor + Origin — single line */}
           <div className="flex items-center gap-3 text-sm flex-wrap">
-            {lead.telefone && (
-              <a href={`tel:${lead.telefone}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
-                <Phone className="h-3.5 w-3.5" /> <span className="text-sm">{lead.telefone}</span>
-              </a>
-            )}
+            {editingPhone ? (
+              <div className="flex items-center gap-1">
+                <Input
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="h-7 w-40 text-sm"
+                  placeholder="(00) 00000-0000"
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSavePhone(); if (e.key === "Escape") { setEditingPhone(false); setEditPhone(lead.telefone || ""); } }}
+                />
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={handleSavePhone} disabled={saving}>
+                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setEditingPhone(false); setEditPhone(lead.telefone || ""); }}>
+                  Cancelar
+                </Button>
+              </div>
+            ) : lead.telefone ? (
+              <span className="flex items-center gap-1">
+                <a href={`tel:${lead.telefone}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                  <Phone className="h-3.5 w-3.5" /> <span className="text-sm">{lead.telefone}</span>
+                </a>
+                {isAdmin && (
+                  <button onClick={() => { setEditPhone(lead.telefone || ""); setEditingPhone(true); }} className="text-muted-foreground hover:text-foreground ml-0.5">
+                    <Pencil className="h-3 w-3" strokeWidth={1.5} />
+                  </button>
+                )}
+              </span>
+            ) : isAdmin ? (
+              <button onClick={() => { setEditPhone(""); setEditingPhone(true); }} className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs">
+                <Phone className="h-3.5 w-3.5" /> <span>Adicionar telefone</span>
+              </button>
+            ) : null}
             {lead.email && (
               <a href={`mailto:${lead.email}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1 truncate max-w-[180px]">
                 <Mail className="h-3.5 w-3.5" /> <span className="text-sm truncate">{lead.email}</span>
