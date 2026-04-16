@@ -145,6 +145,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── Block test leads (name/email containing "teste" or "test") ──
+    const emailLower = (email || "").toLowerCase();
+    const nameLower = (name || "").toLowerCase();
+    const isTestLead =
+      /\btest(e)?\d*\b/.test(nameLower) ||
+      /\btest(e)?\d*@/.test(emailLower) ||
+      emailLower === "t@t.com" ||
+      emailLower === "t2@t.com" ||
+      /^teste@teste\./.test(emailLower);
+    if (isTestLead) {
+      L.warn("Test lead blocked", { nome: name, email });
+      return new Response(
+        JSON.stringify({ ok: true, blocked: "test_lead", message: "Lead de teste ignorado" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ── Resolve empreendimento from codigo_anuncio ──
     let empreendimento: string | null = null;
     let segmentoId: string | null = null;
