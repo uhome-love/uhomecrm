@@ -115,7 +115,24 @@ export default function BuscaLeads() {
     if (!actionModal) return;
     const { acao, lead } = actionModal;
 
-    // Pipeline inclusion — handled separately
+    // ───── Repasse de lead já no pipeline ─────
+    if (acao === "repassar_pipeline") {
+      if (!selectedCorretor) {
+        toast.error("Selecione o corretor");
+        return;
+      }
+      setExecuting(true);
+      const ok = await repassarPipelineLead(lead.id, selectedCorretor, motivo);
+      setExecuting(false);
+      if (ok) {
+        setActionModal(null);
+        setSelectedLead(null);
+        handleSearch();
+      }
+      return;
+    }
+
+    // ───── Inclusão de lead OA no pipeline ─────
     if (acao === "incluir_pipeline") {
       if (!selectedCorretor) {
         toast.error("Selecione o corretor");
@@ -123,7 +140,6 @@ export default function BuscaLeads() {
       }
       setExecuting(true);
       try {
-        // Get first stage
         const { data: stages } = await supabase
           .from("pipeline_stages")
           .select("id")
@@ -196,6 +212,7 @@ export default function BuscaLeads() {
     desbloquear: "Desbloquear Lead",
     quebrar_reserva: "Quebrar Reserva",
     incluir_pipeline: "Incluir no Pipeline de Leads",
+    repassar_pipeline: "Repassar Lead do Pipeline",
   };
 
   return (
