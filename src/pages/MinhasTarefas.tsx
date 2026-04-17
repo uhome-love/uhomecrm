@@ -242,17 +242,23 @@ export default function MinhasTarefas() {
     setCompletingTarefa(tarefa);
   };
 
+  const [savingCompletion, setSavingCompletion] = useState(false);
+
   const handleCompletionConfirm = async (obs: string, novaTarefa?: { tipo: string; vence_em: string; hora_vencimento: string; obs: string }) => {
-    if (!completingTarefa || !user) return;
+    if (!completingTarefa || !user || savingCompletion) return;
     const id = completingTarefa.id;
     const leadId = completingTarefa.pipeline_lead_id;
+    setSavingCompletion(true);
 
-    if (categoria === "negocios") {
-      await supabase.from("negocios_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
-    } else {
-      await supabase.from("pipeline_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
-      await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any).eq("id", leadId);
-    }
+    try {
+      if (categoria === "negocios") {
+        const { error } = await supabase.from("negocios_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("pipeline_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
+        if (error) throw error;
+        await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any).eq("id", leadId);
+      }
 
     // Register observation in history
     if (obs.trim() && categoria === "leads") {
