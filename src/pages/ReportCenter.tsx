@@ -7,6 +7,8 @@ import ReportPlaceholder from "@/components/relatorios/ReportPlaceholder";
 import RelatorioVendas from "@/components/relatorios/RelatorioVendas";
 import RelatorioLeads from "@/components/relatorios/RelatorioLeads";
 import RelatorioConversao from "@/components/relatorios/RelatorioConversao";
+import RelatorioEmpreendimentos from "@/components/relatorios/RelatorioEmpreendimentos";
+import RelatorioOrigem from "@/components/relatorios/RelatorioOrigem";
 
 const TAB_LABELS: Record<string, string> = {
   vendas: "Vendas",
@@ -63,6 +65,10 @@ export default function ReportCenter() {
         return <RelatorioLeads filters={filters} userRole={userRole} />;
       case "conversao":
         return <RelatorioConversao filters={filters} userRole={userRole} />;
+      case "empreendimentos":
+        return <RelatorioEmpreendimentos filters={filters} userRole={userRole} />;
+      case "origem":
+        return <RelatorioOrigem filters={filters} userRole={userRole} />;
       default:
         return <ReportPlaceholder tabName={TAB_LABELS[activeTab] || activeTab} />;
     }
