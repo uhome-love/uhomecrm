@@ -14,6 +14,7 @@ import RelatorioInteracao from "@/components/relatorios/RelatorioInteracao";
 import RelatorioVisitas from "@/components/relatorios/RelatorioVisitas";
 import RelatorioTarefas from "@/components/relatorios/RelatorioTarefas";
 import RelatorioNegocios from "@/components/relatorios/RelatorioNegocios";
+import RelatorioOfertaAtiva from "@/components/relatorios/RelatorioOfertaAtiva";
 import MegaRelatorio from "@/components/relatorios/MegaRelatorio";
 
 const TAB_LABELS: Record<string, string> = {
@@ -197,6 +198,8 @@ export default function ReportCenter() {
         return <RelatorioTarefas filters={filters} userRole={userRole} />;
       case "negocios":
         return <RelatorioNegocios filters={filters} userRole={userRole} />;
+      case "oferta-ativa":
+        return <RelatorioOfertaAtiva filters={filters} userRole={userRole} />;
       case "mega":
         return <MegaRelatorio filters={filters} userRole={userRole} />;
       default:
