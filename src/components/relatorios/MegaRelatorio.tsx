@@ -9,6 +9,7 @@ import {
   Calendar,
   CheckSquare,
   Briefcase,
+  Phone,
   ChevronDown,
 } from "lucide-react";
 import RelatorioVendas from "./RelatorioVendas";
@@ -20,6 +21,7 @@ import RelatorioInteracao from "./RelatorioInteracao";
 import RelatorioVisitas from "./RelatorioVisitas";
 import RelatorioTarefas from "./RelatorioTarefas";
 import RelatorioNegocios from "./RelatorioNegocios";
+import RelatorioOfertaAtiva from "./RelatorioOfertaAtiva";
 
 interface Filters {
   periodo: string;
@@ -147,6 +149,11 @@ export default function MegaRelatorio({ filters, userRole }: MegaRelatorioProps)
       title: "Negócios",
       icon: <Briefcase size={16} strokeWidth={1.5} />,
       render: () => <RelatorioNegocios filters={filters} userRole={userRole} />,
+    },
+    {
+      title: "Oferta Ativa",
+      icon: <Phone size={16} strokeWidth={1.5} />,
+      render: () => <RelatorioOfertaAtiva filters={filters} userRole={userRole} />,
     },
   ];
 
