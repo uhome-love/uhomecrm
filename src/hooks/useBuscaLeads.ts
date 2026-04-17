@@ -17,6 +17,8 @@ export interface BuscaFilters {
   dataFim?: string;
 }
 
+export type BuscaSource = "oferta_ativa" | "pipeline";
+
 export interface BuscaLead {
   id: string;
   nome: string;
@@ -42,6 +44,12 @@ export interface BuscaLead {
   observacoes: string | null;
   // joined
   lista_nome?: string;
+  // origem da busca (qual tabela)
+  source: BuscaSource;
+  // pipeline-specific
+  stage_id?: string | null;
+  stage_nome?: string | null;
+  corretor_nome?: string | null;
 }
 
 export interface LeadTentativa {
@@ -67,57 +75,131 @@ export function useBuscaLeads() {
     if (!user) return;
     setIsSearching(true);
     try {
-      let query = supabase
+      // ───────────────────────────────────────────────
+      // 1) Busca em Oferta Ativa
+      // ───────────────────────────────────────────────
+      let oaQuery = supabase
         .from("oferta_ativa_leads")
         .select("*, oferta_ativa_listas!inner(nome)")
         .order("updated_at", { ascending: false })
         .limit(200);
 
-      // Phone search is the primary identifier
       if (filters.telefone) {
         const normalized = normalizeTelefone(filters.telefone);
         if (normalized.length >= 4) {
-          query = query.or(`telefone_normalizado.ilike.%${normalized}%,telefone.ilike.%${filters.telefone}%,telefone2.ilike.%${filters.telefone}%`);
+          oaQuery = oaQuery.or(`telefone_normalizado.ilike.%${normalized}%,telefone.ilike.%${filters.telefone}%,telefone2.ilike.%${filters.telefone}%`);
         }
       }
-
-      if (filters.nome) {
-        query = query.ilike("nome", `%${filters.nome}%`);
+      if (filters.nome) oaQuery = oaQuery.ilike("nome", `%${filters.nome}%`);
+      if (filters.email) oaQuery = oaQuery.ilike("email", `%${filters.email}%`);
+      if (filters.empreendimento) oaQuery = oaQuery.ilike("empreendimento", `%${filters.empreendimento}%`);
+      if (filters.origem) oaQuery = oaQuery.ilike("origem", `%${filters.origem}%`);
+      if (filters.status && filters.status !== "todos" && filters.status !== "pipeline") {
+        oaQuery = oaQuery.eq("status", filters.status);
       }
+      if (filters.dataInicio) oaQuery = oaQuery.gte("data_lead", filters.dataInicio);
+      if (filters.dataFim) oaQuery = oaQuery.lte("data_lead", filters.dataFim);
 
-      if (filters.email) {
-        query = query.ilike("email", `%${filters.email}%`);
+      // ───────────────────────────────────────────────
+      // 2) Busca em Pipeline de Leads
+      // ───────────────────────────────────────────────
+      let plQuery = supabase
+        .from("pipeline_leads")
+        .select("id, nome, telefone, email, empreendimento, origem, stage_id, corretor_id, created_at, updated_at, observacoes, arquivado")
+        .order("updated_at", { ascending: false })
+        .limit(200);
+
+      if (filters.telefone) {
+        const normalized = normalizeTelefone(filters.telefone);
+        if (normalized.length >= 4) {
+          plQuery = plQuery.or(`telefone.ilike.%${normalized}%,telefone.ilike.%${filters.telefone}%`);
+        }
       }
+      if (filters.nome) plQuery = plQuery.ilike("nome", `%${filters.nome}%`);
+      if (filters.email) plQuery = plQuery.ilike("email", `%${filters.email}%`);
+      if (filters.empreendimento) plQuery = plQuery.ilike("empreendimento", `%${filters.empreendimento}%`);
+      if (filters.origem) plQuery = plQuery.ilike("origem", `%${filters.origem}%`);
+      if (filters.dataInicio) plQuery = plQuery.gte("created_at", filters.dataInicio);
+      if (filters.dataFim) plQuery = plQuery.lte("created_at", filters.dataFim);
 
-      if (filters.empreendimento) {
-        query = query.ilike("empreendimento", `%${filters.empreendimento}%`);
-      }
+      // Skip OA if filtering only pipeline
+      const skipOA = filters.status === "pipeline";
+      const skipPL = filters.status && filters.status !== "todos" && filters.status !== "pipeline";
 
-      if (filters.origem) {
-        query = query.ilike("origem", `%${filters.origem}%`);
-      }
+      const [oaRes, plRes] = await Promise.all([
+        skipOA ? Promise.resolve({ data: [], error: null }) : oaQuery,
+        skipPL ? Promise.resolve({ data: [], error: null }) : plQuery,
+      ]);
 
-      if (filters.status && filters.status !== "todos") {
-        query = query.eq("status", filters.status);
-      }
+      if (oaRes.error) throw oaRes.error;
+      if (plRes.error) throw plRes.error;
 
-      if (filters.dataInicio) {
-        query = query.gte("data_lead", filters.dataInicio);
-      }
-      if (filters.dataFim) {
-        query = query.lte("data_lead", filters.dataFim);
-      }
+      const oaData = (oaRes.data || []) as any[];
+      const plData = (plRes.data || []) as any[];
 
-      const { data, error } = await query;
-      if (error) throw error;
+      // Resolve stages and corretores for pipeline rows
+      const stageIds = [...new Set(plData.map(p => p.stage_id).filter(Boolean))];
+      const corretorIds = [...new Set(plData.map(p => p.corretor_id).filter(Boolean))];
 
-      const mapped = (data || []).map((d: any) => ({
+      const [stagesRes, profilesRes] = await Promise.all([
+        stageIds.length
+          ? supabase.from("pipeline_stages").select("id, nome").in("id", stageIds)
+          : Promise.resolve({ data: [] as any[] }),
+        corretorIds.length
+          ? supabase.from("profiles").select("user_id, nome").in("user_id", corretorIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const stageMap: Record<string, string> = {};
+      (stagesRes.data || []).forEach((s: any) => { stageMap[s.id] = s.nome; });
+      const corretorMap: Record<string, string> = {};
+      (profilesRes.data || []).forEach((p: any) => { corretorMap[p.user_id] = p.nome; });
+
+      // Map OA results
+      const oaMapped: BuscaLead[] = oaData.map((d: any) => ({
         ...d,
         lista_nome: d.oferta_ativa_listas?.nome || "—",
+        source: "oferta_ativa" as BuscaSource,
       }));
 
-      setResults(mapped);
-      setTotalResults(mapped.length);
+      // Map Pipeline results
+      const plMapped: BuscaLead[] = plData.map((d: any) => ({
+        id: d.id,
+        nome: d.nome,
+        telefone: d.telefone,
+        telefone2: null,
+        email: d.email,
+        telefone_normalizado: null,
+        empreendimento: d.empreendimento,
+        campanha: null,
+        origem: d.origem,
+        data_lead: d.created_at,
+        status: d.arquivado ? "arquivado" : "no_pipeline",
+        motivo_descarte: null,
+        corretor_id: d.corretor_id,
+        lista_id: "",
+        em_atendimento_por: null,
+        em_atendimento_ate: null,
+        tentativas_count: 0,
+        ultima_tentativa: null,
+        cadastrado_jetimob: false,
+        created_at: d.created_at,
+        updated_at: d.updated_at,
+        observacoes: d.observacoes,
+        lista_nome: "Pipeline CRM",
+        source: "pipeline" as BuscaSource,
+        stage_id: d.stage_id,
+        stage_nome: d.stage_id ? stageMap[d.stage_id] || "—" : "—",
+        corretor_nome: d.corretor_id ? corretorMap[d.corretor_id] || "Sem corretor" : "Sem corretor",
+      }));
+
+      // Combine and sort by updated_at desc
+      const combined = [...oaMapped, ...plMapped].sort((a, b) =>
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+
+      setResults(combined);
+      setTotalResults(combined.length);
     } catch (err) {
       console.error("Busca error:", err);
       toast.error("Erro ao buscar leads");
@@ -134,7 +216,6 @@ export function useBuscaLeads() {
       .order("created_at", { ascending: false });
     if (error) { console.error(error); return []; }
 
-    // Fetch corretor names
     const corretorIds = [...new Set((data || []).map(t => t.corretor_id))];
     const { data: profiles } = await supabase
       .from("profiles")
@@ -177,7 +258,6 @@ export function useBuscaLeads() {
       return false;
     }
 
-    // Invalidate all OA queries
     queryClient.invalidateQueries({ queryKey: ["oa-fila"] });
     queryClient.invalidateQueries({ queryKey: ["oa-leads"] });
     queryClient.invalidateQueries({ queryKey: ["oa-stats"] });
@@ -196,6 +276,73 @@ export function useBuscaLeads() {
     return true;
   }, [user, queryClient]);
 
+  // Repassar lead já existente no pipeline para outro corretor
+  const repassarPipelineLead = useCallback(async (
+    leadId: string,
+    novoCorretorId: string,
+    motivo?: string
+  ): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const { data: stages } = await supabase
+        .from("pipeline_stages")
+        .select("id, tipo")
+        .eq("pipeline_tipo", "leads")
+        .eq("ativo", true)
+        .order("ordem", { ascending: true });
+
+      const novoLeadStage = stages?.find(s => s.tipo === "novo_lead");
+
+      const updates: Record<string, any> = {
+        corretor_id: novoCorretorId,
+        aceite_status: "aceito",
+        aceito_em: new Date().toISOString(),
+        aceite_expira_em: null,
+        arquivado: false,
+        updated_at: new Date().toISOString(),
+      };
+      if (novoLeadStage) {
+        updates.stage_id = novoLeadStage.id;
+        updates.stage_changed_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from("pipeline_leads")
+        .update(updates)
+        .eq("id", leadId);
+
+      if (error) {
+        console.error("Repasse error:", error);
+        toast.error("Erro ao repassar lead");
+        return false;
+      }
+
+      // Log no histórico e anotações
+      await Promise.all([
+        supabase.from("pipeline_historico").insert({
+          pipeline_lead_id: leadId,
+          stage_anterior_id: null,
+          stage_novo_id: novoLeadStage?.id || stages?.[0]?.id,
+          movido_por: user.id,
+          observacao: `Lead repassado via Busca${motivo ? ` — motivo: ${motivo}` : ""}`,
+        }),
+        supabase.from("pipeline_anotacoes").insert({
+          pipeline_lead_id: leadId,
+          conteudo: `🔄 Lead repassado via Busca${motivo ? ` — Motivo: ${motivo}` : ""}`,
+          autor_id: user.id,
+          autor_nome: "Sistema",
+        }),
+      ]);
+
+      toast.success("Lead repassado com sucesso");
+      return true;
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao repassar lead");
+      return false;
+    }
+  }, [user]);
+
   const fetchCorretores = useCallback(async () => {
     const { data } = await supabase
       .from("profiles")
@@ -211,6 +358,7 @@ export function useBuscaLeads() {
     buscar,
     fetchTentativas,
     executarAcao,
+    repassarPipelineLead,
     fetchCorretores,
   };
 }
