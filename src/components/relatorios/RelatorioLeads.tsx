@@ -150,18 +150,18 @@ export default function RelatorioLeads({ filters }: RelatorioLeadsProps) {
     let cancelled = false;
 
     async function fetchLeads(s: Date, e: Date): Promise<{ leads: LeadProcessado[]; tempoMedio: number | null }> {
-      let query = supabase
-        .from("pipeline_leads")
-        .select("id, nome, telefone, origem, stage_id, corretor_id, segmento_id, created_at, updated_at")
-        .gte("created_at", s.toISOString())
-        .lte("created_at", e.toISOString());
+      const rows = await fetchAllRows<LeadRow>((from, to) => {
+        let q = supabase
+          .from("pipeline_leads")
+          .select("id, nome, telefone, origem, stage_id, corretor_id, segmento_id, created_at, updated_at")
+          .gte("created_at", s.toISOString())
+          .lte("created_at", e.toISOString());
+        if (filters.corretor) q = q.eq("corretor_id", filters.corretor);
+        return q.range(from, to);
+      });
 
-      if (filters.corretor) query = query.eq("corretor_id", filters.corretor);
+      if (!rows.length) return { leads: [], tempoMedio: null };
 
-      const { data: rawLeads, error } = await query;
-      if (error || !rawLeads?.length) return { leads: [], tempoMedio: null };
-
-      const rows = rawLeads as LeadRow[];
       let filtered = rows;
 
       if (filters.equipe && !filters.corretor) {

@@ -172,21 +172,20 @@ export default function RelatorioVendas({ filters }: RelatorioVendasProps) {
       const sISO = s.toISOString().slice(0, 10);
       const eISO = e.toISOString().slice(0, 10);
 
-      let query = supabase
-        .from("negocios")
-        .select("id, empreendimento, fase, vgv_final, vgv_estimado, data_assinatura, corretor_id, pipeline_lead_id, created_at")
-        .in("fase", ["vendido", "assinado"])
-        .gte("data_assinatura", sISO)
-        .lte("data_assinatura", eISO);
+      const negocios = await fetchAllRows<NegocioRow>((from, to) => {
+        let q = supabase
+          .from("negocios")
+          .select("id, empreendimento, fase, vgv_final, vgv_estimado, data_assinatura, corretor_id, pipeline_lead_id, created_at")
+          .in("fase", ["vendido", "assinado"])
+          .gte("data_assinatura", sISO)
+          .lte("data_assinatura", eISO);
+        if (filters.corretor) q = q.eq("corretor_id", filters.corretor);
+        return q.range(from, to);
+      });
 
-      if (filters.corretor) {
-        query = query.eq("corretor_id", filters.corretor);
-      }
+      if (!negocios.length) return [];
 
-      const { data: negocios, error } = await query;
-      if (error || !negocios?.length) return [];
-
-      const rows = negocios as NegocioRow[];
+      const rows = negocios;
 
       // Filter by equipe if needed
       let filteredRows = rows;
