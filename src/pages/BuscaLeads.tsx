@@ -314,22 +314,37 @@ export default function BuscaLeads() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
+                    <TableHead className="text-xs">Origem</TableHead>
                     <TableHead className="text-xs">Nome</TableHead>
                     <TableHead className="text-xs">Telefone</TableHead>
                     <TableHead className="text-xs">Produto</TableHead>
-                    <TableHead className="text-xs">Status</TableHead>
-                    <TableHead className="text-xs">Lista</TableHead>
+                    <TableHead className="text-xs">Etapa / Status</TableHead>
+                    <TableHead className="text-xs">Corretor / Lista</TableHead>
                     <TableHead className="text-xs">Última interação</TableHead>
                     <TableHead className="text-xs text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {results.map((lead) => (
+                  {results.map((lead) => {
+                    const isPipeline = lead.source === "pipeline";
+                    return (
                     <TableRow
-                      key={lead.id}
+                      key={`${lead.source}-${lead.id}`}
                       className="cursor-pointer hover:bg-muted/20 transition-colors"
                       onClick={() => openDetail(lead)}
                     >
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] ${
+                            isPipeline
+                              ? "bg-indigo-500/15 text-indigo-400 border-indigo-500/30"
+                              : "bg-purple-500/15 text-purple-400 border-purple-500/30"
+                          }`}
+                        >
+                          {isPipeline ? "📋 Pipeline" : "📞 OA"}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="font-medium text-sm">
                         <div className="flex items-center gap-1.5">
                           {lead.nome}
@@ -343,37 +358,75 @@ export default function BuscaLeads() {
                       </TableCell>
                       <TableCell className="text-xs">{lead.empreendimento || "—"}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[lead.status] || ""}`}>
-                          {lead.status}
-                        </Badge>
+                        {isPipeline ? (
+                          <Badge variant="outline" className="text-[10px] bg-indigo-500/10 text-indigo-300 border-indigo-500/30">
+                            {lead.stage_nome || "—"}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[lead.status] || ""}`}>
+                            {lead.status}
+                          </Badge>
+                        )}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{lead.lista_nome}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {isPipeline ? (
+                          <span className={lead.corretor_nome === "Sem corretor" ? "text-orange-400" : ""}>
+                            {lead.corretor_nome}
+                          </span>
+                        ) : (
+                          lead.lista_nome
+                        )}
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {formatDate(lead.ultima_tentativa || lead.updated_at)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs text-green-400 hover:text-green-300 hover:bg-green-500/10"
-                            onClick={() => openAction("aproveitado", lead)}
-                            disabled={lead.status === "aproveitado"}
-                          >
-                            <CheckCircle2 className="h-3 w-3 mr-1" /> Aproveitar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                            onClick={() => openAction("descartado", lead)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          {isPipeline ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                                onClick={() => openAction("repassar_pipeline", lead)}
+                              >
+                                <ArrowRightLeft className="h-3 w-3 mr-1" /> Repassar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs"
+                                onClick={() => navigate(`/pipeline?lead=${lead.id}`)}
+                              >
+                                Abrir
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                                onClick={() => openAction("aproveitado", lead)}
+                                disabled={lead.status === "aproveitado"}
+                              >
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> Aproveitar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                onClick={() => openAction("descartado", lead)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  );
+                  })}
                 </TableBody>
               </Table>
             </div>
