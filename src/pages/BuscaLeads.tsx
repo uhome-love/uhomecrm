@@ -99,6 +99,10 @@ export default function BuscaLeads() {
 
   const openDetail = useCallback(async (lead: BuscaLead) => {
     setSelectedLead(lead);
+    if (lead.source === "pipeline") {
+      setTentativas([]);
+      return;
+    }
     setLoadingTentativas(true);
     const t = await fetchTentativas(lead.id);
     setTentativas(t);
