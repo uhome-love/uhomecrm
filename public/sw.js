@@ -1,18 +1,32 @@
-// Unified Service Worker — auto-invalidates on every deploy
-// No hardcoded cache version; clears ALL caches on activate
+// UhomeSales Service Worker — Resilient PWA
+// Strategy: Stale-While-Revalidate for app shell so the app ALWAYS opens,
+// even on flaky 4G or when launched from the home screen offline.
+
+const APP_SHELL_CACHE = "uhomesales-shell-v2";
+const IMAGE_CACHE = "uhomesales-images-v2";
 
 let _currentVersion = null;
 
-self.addEventListener("install", () => {
+self.addEventListener("install", (e) => {
+  // Pre-cache the app entry so PWA always opens
+  e.waitUntil(
+    caches.open(APP_SHELL_CACHE).then((cache) =>
+      cache.addAll(["/", "/index.html", "/manifest.json"]).catch(() => {})
+    )
+  );
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (e) => {
-  // Delete ALL caches to guarantee fresh content
+  // Remove old caches but KEEP the current shell cache (so PWA still opens offline)
   e.waitUntil(
-    caches.keys()
-      .then((names) => Promise.all(names.map((n) => caches.delete(n))))
-      .then(() => clients.claim())
+    caches.keys().then((names) =>
+      Promise.all(
+        names
+          .filter((n) => n !== APP_SHELL_CACHE && n !== IMAGE_CACHE)
+          .map((n) => caches.delete(n))
+      )
+    ).then(() => clients.claim())
   );
 });
 
@@ -25,22 +39,58 @@ self.addEventListener("fetch", (e) => {
 
   const dest = e.request.destination;
 
-  // Network-First for documents, scripts, styles — never serve stale app
-  if (dest === "document" || dest === "script" || dest === "style" || dest === "worker") {
+  // ── Documents (HTML / navigation): Network-First with cache fallback ──
+  // Critical: if offline or slow, serve cached shell so PWA always opens
+  if (dest === "document" || e.request.mode === "navigate") {
     e.respondWith(
-      fetch(e.request, { cache: "no-store" }).catch(() => caches.match(e.request))
+      fetch(e.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(APP_SHELL_CACHE).then((cache) => cache.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(async () => {
+          // Network failed → try cache, then fallback to root
+          const cached = await caches.match(e.request);
+          if (cached) return cached;
+          const root = await caches.match("/");
+          if (root) return root;
+          const indexHtml = await caches.match("/index.html");
+          if (indexHtml) return indexHtml;
+          return new Response("Sem conexão", { status: 503, statusText: "Offline" });
+        })
     );
     return;
   }
 
-  // Cache images as offline fallback only
+  // ── Scripts / Styles: Stale-While-Revalidate ──
+  // Serve from cache instantly (fast PWA boot), update in background
+  if (dest === "script" || dest === "style" || dest === "worker") {
+    e.respondWith(
+      caches.open(APP_SHELL_CACHE).then(async (cache) => {
+        const cached = await cache.match(e.request);
+        const networkPromise = fetch(e.request)
+          .then((response) => {
+            if (response.ok) cache.put(e.request, response.clone());
+            return response;
+          })
+          .catch(() => cached);
+        return cached || networkPromise;
+      })
+    );
+    return;
+  }
+
+  // ── Images: cache as offline fallback ──
   if (dest === "image" && url.origin === self.location.origin) {
     e.respondWith(
       fetch(e.request)
         .then((response) => {
           if (response.ok) {
             const clone = response.clone();
-            caches.open("uhomesales-images").then((cache) => cache.put(e.request, clone));
+            caches.open(IMAGE_CACHE).then((cache) => cache.put(e.request, clone));
           }
           return response;
         })
@@ -62,19 +112,17 @@ async function checkForUpdate() {
     }
     if (data.v !== _currentVersion) {
       _currentVersion = data.v;
-      // New deploy detected — clear caches and reload all clients
-      const names = await caches.keys();
-      await Promise.all(names.map((n) => caches.delete(n)));
+      // New deploy → clear shell cache so next nav fetches fresh
+      await caches.delete(APP_SHELL_CACHE);
       const allClients = await clients.matchAll({ type: "window" });
       allClients.forEach((client) => client.navigate(client.url));
     }
   } catch {
-    // ignore network errors
+    // Ignore — never break the app due to version check failure
   }
 }
 
-// Check for new version every 3 minutes
-setInterval(checkForUpdate, 3 * 60 * 1000);
+setInterval(checkForUpdate, 5 * 60 * 1000);
 
 // ── Push Notifications ──
 self.addEventListener("push", (e) => {
