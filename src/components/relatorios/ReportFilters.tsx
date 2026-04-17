@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,6 +30,7 @@ interface ReportFiltersProps {
   filters: Filters;
   onFiltersChange: (f: Filters) => void;
   userRole: "admin" | "gestor" | "corretor";
+  onExport?: () => void;
 }
 
 const chipBase: React.CSSProperties = {
@@ -59,8 +61,9 @@ const selectStyle: React.CSSProperties = {
   backgroundPosition: "right 8px center",
 };
 
-export default function ReportFilters({ filters, onFiltersChange, userRole }: ReportFiltersProps) {
+export default function ReportFilters({ filters, onFiltersChange, userRole, onExport }: ReportFiltersProps) {
   const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
 
   const set = (patch: Partial<Filters>) => onFiltersChange({ ...filters, ...patch });
 
@@ -135,7 +138,7 @@ export default function ReportFilters({ filters, onFiltersChange, userRole }: Re
 
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
         <button
-          onClick={() => console.log("export PDF — será implementado no Prompt 6")}
+          onClick={() => onExport?.()}
           style={{
             backgroundColor: "#4F46E5",
             color: "#fff",
@@ -155,11 +158,17 @@ export default function ReportFilters({ filters, onFiltersChange, userRole }: Re
         <button
           onClick={() => {
             navigator.clipboard.writeText(window.location.href);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
             toast({ title: "Link copiado!" });
           }}
-          style={chipBase}
+          style={{
+            ...chipBase,
+            border: copied ? "0.5px solid #C7D2FE" : "0.5px solid #d1d5db",
+            color: copied ? "#4F46E5" : "#6b7280",
+          }}
         >
-          🔗 Link
+          {copied ? "✓ Copiado!" : "🔗 Link"}
         </button>
       </div>
     </div>
