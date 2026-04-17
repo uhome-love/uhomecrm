@@ -1,49 +1,63 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp } from "lucide-react";
 import { ReportFilters } from "./reportUtils";
-
-// ── Types ──────────────────────────────────────────────────────────────────────
 
 interface RelatorioConversaoProps {
   filters: ReportFilters;
   userRole: "admin" | "gestor" | "corretor";
 }
 
-interface FunilItem {
-  etapa: string;
-  label: string;
+interface LeadRow {
+  id: string;
+  stage_id: string | null;
+  corretor_id: string | null;
+  segmento_id: string | null;
+  created_at: string;
+}
+
+interface NegocioRow {
+  id: string;
+  fase: string;
+  corretor_id: string | null;
+  created_at: string;
+  data_assinatura: string | null;
+}
+
+interface FunilEtapaLead {
+  nome: string;
   count: number;
   pct: number;
   tempoMedio: number;
-  color: string;
+  cor: string;
+  textoBranco: boolean;
 }
 
-// ── Constants ──────────────────────────────────────────────────────────────────
+interface FunilFaseNegocio {
+  fase: string;
+  label: string;
+  count: number;
+  pct: number;
+  cor: string;
+  textoBranco: boolean;
+}
 
 const ETAPAS_LEAD = [
-  "Novo Lead", "Sem Contato", "Contato Inicial", "Busca",
-  "Aquecimento", "Visita", "Pós-Visita", "Negócio Criado", "Descarte",
+  "Novo Lead",
+  "Sem Contato",
+  "Contato Iniciado",
+  "Busca",
+  "Aquecimento",
+  "Visita",
+  "Pós-Visita",
+  "Negócio Criado",
+  "Descarte",
 ];
 
-const ETAPAS_NEGOCIO = [
-  "novo negocio", "proposta", "em negociação",
-  "contrato gerado", "venda realizada", "caiu",
-];
-
-const LABEL_NEGOCIO: Record<string, string> = {
-  "novo negocio": "Novo Negócio",
-  "proposta": "Proposta",
-  "em negociação": "Em Negociação",
-  "contrato gerado": "Contrato Gerado",
-  "venda realizada": "Venda Realizada",
-  "caiu": "Caiu",
-};
-
-const CORES_LEAD: Record<string, string> = {
+const COR_ETAPA: Record<string, string> = {
   "Novo Lead": "#e0e7ff",
   "Sem Contato": "#c7d2fe",
-  "Contato Inicial": "#a5b4fc",
+  "Contato Iniciado": "#a5b4fc",
   "Busca": "#818cf8",
   "Aquecimento": "#6366f1",
   "Visita": "#4F46E5",
@@ -52,226 +66,158 @@ const CORES_LEAD: Record<string, string> = {
   "Descarte": "#fca5a5",
 };
 
-const CORES_NEGOCIO: Record<string, string> = {
-  "novo negocio": "#fef3c7",
-  "proposta": "#fde68a",
-  "em negociação": "#fbbf24",
-  "contrato gerado": "#f59e0b",
-  "venda realizada": "#10b981",
-  "caiu": "#fca5a5",
-};
+const ETAPAS_ESCURAS = new Set(["Aquecimento", "Visita", "Pós-Visita", "Negócio Criado"]);
 
-const DARK_TEXT_ETAPAS = new Set(["Aquecimento", "Visita", "Pós-Visita", "Negócio Criado", "Descarte"]);
-const DARK_TEXT_NEG = new Set(["em negociação", "contrato gerado", "venda realizada", "caiu"]);
+const ETAPAS_NEGOCIO: Array<{ fase: string; label: string; cor: string }> = [
+  { fase: "novo_negocio", label: "Novo Negócio", cor: "#fef3c7" },
+  { fase: "proposta", label: "Proposta", cor: "#fde68a" },
+  { fase: "negociacao", label: "Em Negociação", cor: "#fbbf24" },
+  { fase: "documentacao", label: "Documentação", cor: "#f59e0b" },
+  { fase: "vendido", label: "Venda Realizada", cor: "#10b981" },
+  { fase: "perdido", label: "Perdido", cor: "#fca5a5" },
+];
 
-// ── Main ───────────────────────────────────────────────────────────────────────
+const FASES_ESCURAS = new Set(["negociacao", "documentacao", "vendido"]);
 
 export default function RelatorioConversao({ filters }: RelatorioConversaoProps) {
   const [loading, setLoading] = useState(true);
-  const [funilLeads, setFunilLeads] = useState<FunilItem[]>([]);
-  const [funilNegocios, setFunilNegocios] = useState<FunilItem[]>([]);
-  const [totalLeads, setTotalLeads] = useState(0);
-  const [totalNegocios, setTotalNegocios] = useState(0);
+  const [leads, setLeads] = useState<LeadRow[]>([]);
+  const [stageNames, setStageNames] = useState<Map<string, string>>(new Map());
+  const [negocios, setNegocios] = useState<NegocioRow[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-
     async function load() {
       setLoading(true);
 
-      // ── Fetch leads ──
-      let leadQuery = supabase
-        .from("pipeline_leads")
-        .select("id, etapa, corretor_id, created_at");
-
-      if (filters.corretor) leadQuery = leadQuery.eq("corretor_id", filters.corretor);
-
-      const { data: leadRows } = await leadQuery;
-      let filteredLeads = leadRows || [];
-
-      // Equipe filter
-      if (filters.equipe && !filters.corretor) {
+      let corretorIds: string[] | null = null;
+      if (filters.corretor) {
+        corretorIds = [filters.corretor];
+      } else if (filters.equipe) {
         const { data: membros } = await supabase
-          .from("team_members")
-          .select("user_id")
-          .eq("gerente_id", filters.equipe);
+          .from("team_members").select("user_id").eq("gerente_id", filters.equipe);
         if (membros?.length) {
           const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id")
-            .in("user_id", membros.map((m) => m.user_id));
-          if (profiles?.length) {
-            const ids = new Set(profiles.map((p) => p.id));
-            filteredLeads = filteredLeads.filter((r) => r.corretor_id && ids.has(r.corretor_id));
-          } else {
-            filteredLeads = [];
+            .from("profiles").select("id").in("user_id", membros.map((m) => m.user_id));
+          corretorIds = (profiles || []).map((p) => p.id);
+          if (!corretorIds.length) {
+            if (!cancelled) { setLeads([]); setNegocios([]); setLoading(false); }
+            return;
           }
         } else {
-          filteredLeads = [];
+          if (!cancelled) { setLeads([]); setNegocios([]); setLoading(false); }
+          return;
         }
       }
 
-      // Segmento filter
-      if (filters.segmento && filteredLeads.length) {
-        const lids = filteredLeads.map((r) => r.id);
-        const { data: segLeads } = await supabase
-          .from("pipeline_leads")
-          .select("id, segmento_id")
-          .in("id", lids);
-        if (segLeads?.length) {
-          const segIds = [...new Set(segLeads.map((l) => l.segmento_id).filter(Boolean))] as string[];
-          if (segIds.length) {
-            const { data: segs } = await supabase
-              .from("roleta_segmentos")
-              .select("id, nome")
-              .in("id", segIds);
-            const segNameMap = new Map<string, string>((segs || []).map((s2) => [s2.id, s2.nome as string]));
-            const matchIds = new Set(
-              segLeads
-                .filter((l) => {
-                  const sid = l.segmento_id as string | null;
-                  if (!sid) return false;
-                  return (segNameMap.get(sid) || "").toLowerCase().includes(filters.segmento.toLowerCase());
-                })
-                .map((l) => l.id)
-            );
-            filteredLeads = filteredLeads.filter((r) => matchIds.has(r.id));
-          }
+      const { data: stages } = await supabase
+        .from("pipeline_stages").select("id, nome")
+        .eq("pipeline_tipo", "leads").eq("ativo", true);
+      const sMap = new Map<string, string>();
+      (stages || []).forEach((st) => sMap.set(st.id, st.nome as string));
+
+      let lq = supabase
+        .from("pipeline_leads")
+        .select("id, stage_id, corretor_id, segmento_id, created_at");
+      if (corretorIds) lq = lq.in("corretor_id", corretorIds);
+      const { data: rawLeads } = await lq;
+      let leadRows = (rawLeads || []) as LeadRow[];
+
+      if (filters.segmento && leadRows.length) {
+        const segIds = [...new Set(leadRows.map((r) => r.segmento_id).filter(Boolean))] as string[];
+        const segNameMap = new Map<string, string>();
+        if (segIds.length) {
+          const { data: segs } = await supabase.from("roleta_segmentos").select("id, nome").in("id", segIds);
+          (segs || []).forEach((sg) => segNameMap.set(sg.id, sg.nome as string));
         }
+        const q = filters.segmento.toLowerCase();
+        leadRows = leadRows.filter((r) => {
+          if (!r.segmento_id) return false;
+          const nm = segNameMap.get(r.segmento_id) || "";
+          return nm.toLowerCase().includes(q);
+        });
       }
 
-      // Build funil leads
-      const now = Date.now();
-      const leadCounts = new Map<string, number>();
-      const leadTempos = new Map<string, number[]>();
-      ETAPAS_LEAD.forEach((e) => { leadCounts.set(e, 0); leadTempos.set(e, []); });
-
-      filteredLeads.forEach((r) => {
-        const etapa = r.etapa || "Novo Lead";
-        if (leadCounts.has(etapa)) {
-          leadCounts.set(etapa, (leadCounts.get(etapa) || 0) + 1);
-          leadTempos.get(etapa)!.push(Math.floor((now - new Date(r.created_at).getTime()) / 86400000));
-        }
-      });
-
-      const tLeads = filteredLeads.length;
-      const maxLeadCount = Math.max(1, ...Array.from(leadCounts.values()));
-      const fLeads: FunilItem[] = ETAPAS_LEAD.map((etapa) => {
-        const count = leadCounts.get(etapa) || 0;
-        const tempos = leadTempos.get(etapa) || [];
-        const tempoMedio = tempos.length > 0 ? Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length) : 0;
-        return {
-          etapa,
-          label: etapa,
-          count,
-          pct: tLeads > 0 ? Math.round((count / tLeads) * 1000) / 10 : 0,
-          tempoMedio,
-          color: CORES_LEAD[etapa] || "#e5e7eb",
-        };
-      });
-
-      // ── Fetch negócios ──
-      let negQuery = supabase
+      let nq = supabase
         .from("negocios")
         .select("id, fase, corretor_id, created_at, data_assinatura");
-
-      if (filters.corretor) negQuery = negQuery.eq("corretor_id", filters.corretor);
-
-      const { data: negRows } = await negQuery;
-      let filteredNeg = negRows || [];
-
-      if (filters.equipe && !filters.corretor) {
-        const { data: membros } = await supabase
-          .from("team_members")
-          .select("user_id")
-          .eq("gerente_id", filters.equipe);
-        if (membros?.length) {
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id")
-            .in("user_id", membros.map((m) => m.user_id));
-          if (profiles?.length) {
-            const ids = new Set(profiles.map((p) => p.id));
-            filteredNeg = filteredNeg.filter((r) => r.corretor_id && ids.has(r.corretor_id));
-          } else {
-            filteredNeg = [];
-          }
-        } else {
-          filteredNeg = [];
-        }
-      }
-
-      const negCounts = new Map<string, number>();
-      const negTempos = new Map<string, number[]>();
-      ETAPAS_NEGOCIO.forEach((e) => { negCounts.set(e, 0); negTempos.set(e, []); });
-
-      filteredNeg.forEach((r) => {
-        const fase = r.fase || "novo negocio";
-        if (negCounts.has(fase)) {
-          negCounts.set(fase, (negCounts.get(fase) || 0) + 1);
-          negTempos.get(fase)!.push(Math.floor((now - new Date(r.created_at).getTime()) / 86400000));
-        }
-      });
-
-      const tNeg = filteredNeg.length;
-      const fNeg: FunilItem[] = ETAPAS_NEGOCIO.map((fase) => {
-        const count = negCounts.get(fase) || 0;
-        const tempos = negTempos.get(fase) || [];
-        const tempoMedio = tempos.length > 0 ? Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length) : 0;
-        return {
-          etapa: fase,
-          label: LABEL_NEGOCIO[fase] || fase,
-          count,
-          pct: tNeg > 0 ? Math.round((count / tNeg) * 1000) / 10 : 0,
-          tempoMedio,
-          color: CORES_NEGOCIO[fase] || "#e5e7eb",
-        };
-      });
+      if (corretorIds) nq = nq.in("corretor_id", corretorIds);
+      const { data: rawNeg } = await nq;
+      const negRows = (rawNeg || []) as NegocioRow[];
 
       if (!cancelled) {
-        setFunilLeads(fLeads);
-        setFunilNegocios(fNeg);
-        setTotalLeads(tLeads);
-        setTotalNegocios(tNeg);
+        setStageNames(sMap);
+        setLeads(leadRows);
+        setNegocios(negRows);
         setLoading(false);
       }
     }
-
     load();
     return () => { cancelled = true; };
   }, [filters.corretor, filters.equipe, filters.segmento]);
 
-  // ── KPIs ───────────────────────────────────────────────────────────────────
+  const funilLeads: FunilEtapaLead[] = useMemo(() => {
+    const total = leads.length;
+    const now = Date.now();
+    return ETAPAS_LEAD.map((etapa) => {
+      const inEtapa = leads.filter((l) => l.stage_id && stageNames.get(l.stage_id) === etapa);
+      const count = inEtapa.length;
+      const pct = total > 0 ? (count / total) * 100 : 0;
+      const tempoMedio = count > 0
+        ? inEtapa.reduce((a, l) => a + (now - new Date(l.created_at).getTime()) / 86400000, 0) / count
+        : 0;
+      return {
+        nome: etapa, count, pct, tempoMedio,
+        cor: COR_ETAPA[etapa],
+        textoBranco: ETAPAS_ESCURAS.has(etapa),
+      };
+    });
+  }, [leads, stageNames]);
 
-  const leadsVisitaPlus = funilLeads
-    .filter((f) => ["Visita", "Pós-Visita", "Negócio Criado"].includes(f.etapa))
-    .reduce((a, f) => a + f.count, 0);
-  const taxaLeadVisita = totalLeads > 0 ? Math.round((leadsVisitaPlus / totalLeads) * 1000) / 10 : 0;
+  const maxCountLead = useMemo(() => Math.max(1, ...funilLeads.map((e) => e.count)), [funilLeads]);
 
-  const negVendas = funilNegocios.find((f) => f.etapa === "venda realizada")?.count || 0;
-  const negNotNovo = funilNegocios.filter((f) => f.etapa !== "novo negocio").reduce((a, f) => a + f.count, 0);
-  const taxaNegVenda = negNotNovo > 0 ? Math.round((negVendas / negNotNovo) * 1000) / 10 : 0;
+  const funilNegocios: FunilFaseNegocio[] = useMemo(() => {
+    const total = negocios.length;
+    return ETAPAS_NEGOCIO.map((e) => {
+      const count = negocios.filter((n) => n.fase === e.fase).length;
+      const pct = total > 0 ? (count / total) * 100 : 0;
+      return {
+        fase: e.fase, label: e.label, count, pct, cor: e.cor,
+        textoBranco: FASES_ESCURAS.has(e.fase),
+      };
+    });
+  }, [negocios]);
 
-  const leadsNegCriado = funilLeads.find((f) => f.etapa === "Negócio Criado")?.count || 0;
-  const taxaGeralVenda = totalLeads > 0 ? Math.round((leadsNegCriado / totalLeads) * 1000) / 10 : 0;
+  const maxCountNeg = useMemo(() => Math.max(1, ...funilNegocios.map((e) => e.count)), [funilNegocios]);
 
-  // ── Gargalos ───────────────────────────────────────────────────────────────
+  const totalLeads = leads.length;
+  const visitaPlus = leads.filter((l) => {
+    const nm = l.stage_id ? stageNames.get(l.stage_id) : null;
+    return nm === "Visita" || nm === "Pós-Visita" || nm === "Negócio Criado";
+  }).length;
+  const negocioCriado = leads.filter((l) => l.stage_id && stageNames.get(l.stage_id) === "Negócio Criado").length;
+  const taxaLeadVisita = totalLeads > 0 ? (visitaPlus / totalLeads) * 100 : 0;
+  const taxaLeadVenda = totalLeads > 0 ? (negocioCriado / totalLeads) * 100 : 0;
 
-  const gargalos = [...funilLeads]
-    .filter((f) => f.etapa !== "Descarte")
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 3);
+  const negociosAtivos = negocios.filter((n) => n.fase !== "novo_negocio").length;
+  const vendaRealizada = negocios.filter((n) => n.fase === "vendido").length;
+  const taxaNegocioVenda = negociosAtivos > 0 ? (vendaRealizada / negociosAtivos) * 100 : 0;
 
-  // ── Loading ────────────────────────────────────────────────────────────────
+  const gargalos = useMemo(() => {
+    return [...funilLeads]
+      .filter((e) => e.nome !== "Descarte")
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+  }, [funilLeads]);
 
   if (loading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {[1, 2].map((i) => (
-          <div key={i} style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: 20, minHeight: 180 }}>
-            <div style={{ background: "#f3f4f6", borderRadius: 4, height: 14, width: "30%", marginBottom: 16 }} className="animate-pulse" />
-            {[1, 2, 3, 4, 5].map((j) => (
-              <div key={j} style={{ background: "#f3f4f6", borderRadius: 6, height: 32, width: `${90 - j * 10}%`, marginBottom: 8 }} className="animate-pulse" />
+          <div key={i} style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: 20 }}>
+            <div style={{ background: "#f3f4f6", borderRadius: 4, height: 14, width: 180, marginBottom: 16 }} className="animate-pulse" />
+            {[1, 2, 3, 4, 5, 6].map((j) => (
+              <div key={j} style={{ background: "#f3f4f6", borderRadius: 6, height: 28, marginBottom: 8, width: `${100 - j * 10}%` }} className="animate-pulse" />
             ))}
           </div>
         ))}
@@ -287,44 +233,47 @@ export default function RelatorioConversao({ filters }: RelatorioConversaoProps)
     );
   }
 
-  if (totalLeads === 0 && totalNegocios === 0) {
+  if (totalLeads === 0 && negocios.length === 0) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, gap: 8 }}>
+      <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: 60, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
         <TrendingUp size={40} strokeWidth={1} color="#C7D2FE" />
-        <span style={{ fontSize: 14, color: "#6b7280" }}>Nenhum dado disponível</span>
+        <div style={{ fontSize: 13, color: "#6b7280" }}>Nenhum dado disponível</div>
       </div>
     );
   }
 
-  const thStyle: React.CSSProperties = { fontSize: 11, color: "#9ca3af", fontWeight: 500, textAlign: "left", padding: "8px 16px", borderBottom: "0.5px solid #e5e7eb", background: "#fafafa" };
-  const tdStyle: React.CSSProperties = { fontSize: 13, padding: "10px 16px" };
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Funil de Leads */}
       <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: 20 }}>
-        <div style={{ fontSize: 14, fontWeight: 500, color: "#111827", marginBottom: 16 }}>Funil de Leads</div>
-        <FunnelChart items={funilLeads} darkTextSet={DARK_TEXT_ETAPAS} />
-      </div>
-
-      {/* Funil de Negócios */}
-      <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: 20 }}>
-        <div style={{ fontSize: 14, fontWeight: 500, color: "#111827", marginBottom: 16 }}>Funil de Negócios</div>
-        <FunnelChart items={funilNegocios} darkTextSet={DARK_TEXT_NEG} />
-      </div>
-
-      {/* KPI Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-        <KpiBox label="TAXA LEAD → VISITA" value={`${taxaLeadVisita}%`} />
-        <KpiBox label="TAXA NEGÓCIO → VENDA" value={`${taxaNegVenda}%`} />
-        <KpiBox label="TAXA GERAL LEAD → VENDA" value={`${taxaGeralVenda}%`} />
-      </div>
-
-      {/* Tabela de gargalos */}
-      <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", overflow: "hidden" }}>
-        <div style={{ padding: "12px 16px", borderBottom: "0.5px solid #e5e7eb" }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>Onde os leads acumulam</span>
+        <div style={{ fontSize: 14, fontWeight: 500, color: "#111827", marginBottom: 16 }}>
+          Funil de Leads ({totalLeads})
         </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {funilLeads.map((e) => (
+            <FunilBarLead key={e.nome} etapa={e} maxCount={maxCountLead} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: 20 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: "#111827", marginBottom: 16 }}>
+          Funil de Negócios ({negocios.length})
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {funilNegocios.map((e) => (
+            <FunilBarNeg key={e.fase} fase={e} maxCount={maxCountNeg} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <KpiCard label="TAXA LEAD → VISITA" value={`${taxaLeadVisita.toFixed(1).replace(".", ",")}%`} />
+        <KpiCard label="TAXA NEGÓCIO → VENDA" value={`${taxaNegocioVenda.toFixed(1).replace(".", ",")}%`} />
+        <KpiCard label="TAXA GERAL LEAD → VENDA" value={`${taxaLeadVenda.toFixed(1).replace(".", ",")}%`} />
+      </div>
+
+      <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: 20 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: "#111827", marginBottom: 16 }}>Onde os leads acumulam</div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -335,12 +284,15 @@ export default function RelatorioConversao({ filters }: RelatorioConversaoProps)
             </tr>
           </thead>
           <tbody>
-            {gargalos.map((g, i) => (
-              <tr key={g.etapa} style={{ borderBottom: i === gargalos.length - 1 ? "none" : "0.5px solid #f3f4f6" }}>
-                <td style={tdStyle}>{g.label}</td>
-                <td style={{ ...tdStyle, fontWeight: 500 }}>{g.count}</td>
-                <td style={tdStyle}>{g.pct}%</td>
-                <td style={{ ...tdStyle, color: "#6b7280" }}>{g.tempoMedio} dias</td>
+            {gargalos.map((g) => (
+              <tr key={g.nome} style={{ borderBottom: "0.5px solid #f3f4f6" }}>
+                <td style={tdStyle}>
+                  <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: g.cor, marginRight: 8 }} />
+                  {g.nome}
+                </td>
+                <td style={tdStyle}>{g.count}</td>
+                <td style={tdStyle}>{g.pct.toFixed(1).replace(".", ",")}%</td>
+                <td style={tdStyle}>{Math.round(g.tempoMedio)} dias</td>
               </tr>
             ))}
           </tbody>
@@ -350,64 +302,91 @@ export default function RelatorioConversao({ filters }: RelatorioConversaoProps)
   );
 }
 
-// ── Subcomponents ──────────────────────────────────────────────────────────────
+const thStyle: React.CSSProperties = { fontSize: 11, color: "#9ca3af", fontWeight: 500, padding: "8px 16px", borderBottom: "0.5px solid #e5e7eb", background: "#fafafa", textAlign: "left" };
+const tdStyle: React.CSSProperties = { fontSize: 13, color: "#374151", padding: "10px 16px" };
 
-function FunnelChart({ items, darkTextSet }: { items: FunilItem[]; darkTextSet: Set<string> }) {
-  const maxCount = Math.max(1, ...items.map((i) => i.count));
-
+function FunilBarLead({ etapa, maxCount }: { etapa: FunilEtapaLead; maxCount: number }) {
+  const widthPct = (etapa.count / maxCount) * 100;
+  const insideBar = etapa.pct >= 15;
+  const textColor = etapa.textoBranco ? "#fff" : "#4338ca";
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {items.map((item) => {
-        const widthPct = Math.max(4, (item.count / maxCount) * 100);
-        const isDark = darkTextSet.has(item.etapa);
-        const showInside = item.pct >= 15;
-
-        return (
-          <div key={item.etapa} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 110, fontSize: 12, color: "#6b7280", textAlign: "right", flexShrink: 0 }}>
-              {item.label}
-            </div>
-            <div style={{ flex: 1, position: "relative", height: 32 }}>
-              <div
-                style={{
-                  width: `${widthPct}%`,
-                  height: "100%",
-                  background: item.color,
-                  borderRadius: 6,
-                  display: "flex",
-                  alignItems: "center",
-                  paddingLeft: 8,
-                  paddingRight: 8,
-                  minWidth: 32,
-                  transition: "width 0.3s ease",
-                }}
-              >
-                {showInside && (
-                  <span style={{ fontSize: 12, fontWeight: 600, color: isDark ? "#fff" : "#4338ca" }}>
-                    {item.count}
-                  </span>
-                )}
-              </div>
-              {!showInside && (
-                <span style={{ position: "absolute", left: `calc(${widthPct}% + 6px)`, top: "50%", transform: "translateY(-50%)", fontSize: 12, fontWeight: 600, color: "#6b7280" }}>
-                  {item.count}
-                </span>
-              )}
-            </div>
-            <div style={{ width: 60, fontSize: 11, color: "#9ca3af", textAlign: "right", flexShrink: 0 }}>
-              {item.pct}%
-            </div>
-            <div style={{ width: 60, fontSize: 11, color: "#9ca3af", textAlign: "right", flexShrink: 0 }}>
-              {item.tempoMedio}d
-            </div>
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ width: 140, fontSize: 12, color: "#374151", textAlign: "right" }}>{etapa.nome}</div>
+      <div style={{ flex: 1, position: "relative", height: 28, background: "#f9fafb", borderRadius: 6, overflow: "hidden" }}>
+        <div
+          style={{
+            width: `${Math.max(widthPct, 0.5)}%`,
+            height: "100%",
+            background: etapa.cor,
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: insideBar ? "space-between" : "flex-start",
+            paddingLeft: insideBar ? 10 : 0,
+            paddingRight: insideBar ? 10 : 0,
+            transition: "width 0.3s",
+          }}
+        >
+          {insideBar && (
+            <>
+              <span style={{ fontSize: 11, fontWeight: 500, color: textColor }}>{etapa.count}</span>
+              <span style={{ fontSize: 11, color: textColor }}>{etapa.pct.toFixed(1).replace(".", ",")}%</span>
+            </>
+          )}
+        </div>
+        {!insideBar && (
+          <div style={{ position: "absolute", left: `calc(${Math.max(widthPct, 0.5)}% + 8px)`, top: "50%", transform: "translateY(-50%)", fontSize: 11, color: "#6b7280", whiteSpace: "nowrap" }}>
+            {etapa.count} · {etapa.pct.toFixed(1).replace(".", ",")}%
           </div>
-        );
-      })}
+        )}
+      </div>
+      <div style={{ width: 80, fontSize: 11, color: "#9ca3af", textAlign: "right" }}>
+        {etapa.count > 0 ? `${Math.round(etapa.tempoMedio)} dias` : "—"}
+      </div>
     </div>
   );
 }
 
-function KpiBox({ label, value }: { label: string; value: string }) {
+function FunilBarNeg({ fase, maxCount }: { fase: FunilFaseNegocio; maxCount: number }) {
+  const widthPct = (fase.count / maxCount) * 100;
+  const insideBar = fase.pct >= 15;
+  const textColor = fase.textoBranco ? "#fff" : "#92400e";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ width: 140, fontSize: 12, color: "#374151", textAlign: "right" }}>{fase.label}</div>
+      <div style={{ flex: 1, position: "relative", height: 28, background: "#f9fafb", borderRadius: 6, overflow: "hidden" }}>
+        <div
+          style={{
+            width: `${Math.max(widthPct, 0.5)}%`,
+            height: "100%",
+            background: fase.cor,
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: insideBar ? "space-between" : "flex-start",
+            paddingLeft: insideBar ? 10 : 0,
+            paddingRight: insideBar ? 10 : 0,
+          }}
+        >
+          {insideBar && (
+            <>
+              <span style={{ fontSize: 11, fontWeight: 500, color: textColor }}>{fase.count}</span>
+              <span style={{ fontSize: 11, color: textColor }}>{fase.pct.toFixed(1).replace(".", ",")}%</span>
+            </>
+          )}
+        </div>
+        {!insideBar && (
+          <div style={{ position: "absolute", left: `calc(${Math.max(widthPct, 0.5)}% + 8px)`, top: "50%", transform: "translateY(-50%)", fontSize: 11, color: "#6b7280", whiteSpace: "nowrap" }}>
+            {fase.count} · {fase.pct.toFixed(1).replace(".", ",")}%
+          </div>
+        )}
+      </div>
+      <div style={{ width: 80 }} />
+    </div>
+  );
+}
+
+function KpiCard({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: "14px 16px" }}>
       <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", color: "#9ca3af", marginBottom: 6 }}>{label}</div>

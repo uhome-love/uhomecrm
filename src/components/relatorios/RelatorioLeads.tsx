@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Search } from "lucide-react";
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { Users, ChevronUp, ChevronDown, Search } from "lucide-react";
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { ReportFilters, getDateRange, getPeriodoAnterior, fmtDate } from "./reportUtils";
-
-// ── Types ──────────────────────────────────────────────────────────────────────
 
 interface RelatorioLeadsProps {
   filters: ReportFilters;
@@ -16,8 +14,9 @@ interface LeadRow {
   nome: string | null;
   telefone: string | null;
   origem: string | null;
-  etapa: string | null;
+  stage_id: string | null;
   corretor_id: string | null;
+  segmento_id: string | null;
   created_at: string;
   updated_at: string | null;
 }
@@ -38,11 +37,10 @@ interface LeadProcessado {
 type SortCol = "nome" | "origem" | "etapa" | "corretor" | "equipe" | "diasNoFunil" | "ultimaAtividade";
 type SortDir = "asc" | "desc";
 
-// ── Badge ──────────────────────────────────────────────────────────────────────
-
 const ETAPA_BADGE: Record<string, { bg: string; color: string }> = {
   "Novo Lead": { bg: "#f3f4f6", color: "#6b7280" },
   "Sem Contato": { bg: "#f3f4f6", color: "#6b7280" },
+  "Contato Iniciado": { bg: "#EEF2FF", color: "#4F46E5" },
   "Contato Inicial": { bg: "#EEF2FF", color: "#4F46E5" },
   "Busca": { bg: "#EEF2FF", color: "#4F46E5" },
   "Aquecimento": { bg: "#fef3c7", color: "#92400e" },
@@ -52,7 +50,7 @@ const ETAPA_BADGE: Record<string, { bg: string; color: string }> = {
   "Descarte": { bg: "#fee2e2", color: "#991b1b" },
 };
 
-function Badge({ label }: { label: string }) {
+function EtapaBadge({ label }: { label: string }) {
   const s = ETAPA_BADGE[label] || { bg: "#f3f4f6", color: "#6b7280" };
   return (
     <span style={{ display: "inline-block", fontSize: 10, padding: "2px 8px", borderRadius: 10, background: s.bg, color: s.color, whiteSpace: "nowrap" }}>
@@ -61,17 +59,11 @@ function Badge({ label }: { label: string }) {
   );
 }
 
-// ── Chart helpers ──────────────────────────────────────────────────────────────
-
 function groupLeads(leads: LeadProcessado[], periodo: string, startDate: Date, endDate: Date) {
   const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000);
-
   if (periodo === "hoje") {
     const buckets = Array.from({ length: 24 }, (_, i) => ({ label: `${i}h`, count: 0 }));
-    leads.forEach((l) => {
-      const h = new Date(l.createdAt).getHours();
-      buckets[h].count += 1;
-    });
+    leads.forEach((l) => { const h = new Date(l.createdAt).getHours(); buckets[h].count += 1; });
     return buckets.filter((b) => b.count > 0);
   }
   if (periodo === "semana") {
@@ -94,7 +86,6 @@ function groupLeads(leads: LeadProcessado[], periodo: string, startDate: Date, e
     });
     return buckets.filter((b, i) => b.count > 0 || i < 4);
   }
-  // custom
   if (diffDays <= 14) {
     const map = new Map<string, number>();
     leads.forEach((l) => {
@@ -107,8 +98,8 @@ function groupLeads(leads: LeadProcessado[], periodo: string, startDate: Date, e
     const map = new Map<string, number>();
     leads.forEach((l) => {
       const dt = new Date(l.createdAt);
-      const ws = new Date(dt); ws.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
-      const key = fmtDate(ws.toISOString().slice(0, 10));
+      const weekStart = new Date(dt); weekStart.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
+      const key = fmtDate(weekStart.toISOString().slice(0, 10));
       map.set(key, (map.get(key) || 0) + 1);
     });
     return Array.from(map.entries()).map(([label, count]) => ({ label, count }));
@@ -123,26 +114,30 @@ function groupLeads(leads: LeadProcessado[], periodo: string, startDate: Date, e
   return Array.from(map.entries()).map(([label, count]) => ({ label, count }));
 }
 
+function chartTitle(periodo: string): string {
+  const map: Record<string, string> = { hoje: "hora", semana: "dia", mes: "semana" };
+  return `Leads recebidos por ${map[periodo] || "período"}`;
+}
+
 function ChartTooltipCustom({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: "#fff", border: "0.5px solid #e5e7eb", borderRadius: 8, padding: "6px 10px", fontSize: 12 }}>
       <div style={{ color: "#6b7280" }}>{label}</div>
-      <div style={{ fontWeight: 500, color: "#111827" }}>{payload[0].value} leads</div>
+      <div style={{ fontWeight: 500, color: "#111827" }}>{Math.round(payload[0].value)} leads</div>
     </div>
   );
 }
-
-// ── Main ───────────────────────────────────────────────────────────────────────
 
 export default function RelatorioLeads({ filters }: RelatorioLeadsProps) {
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<LeadProcessado[]>([]);
   const [leadsAnterior, setLeadsAnterior] = useState<LeadProcessado[]>([]);
-  const [tempoMedio1Contato, setTempoMedio1Contato] = useState<number | null>(null);
+  const [tempoMedio1, setTempoMedio1] = useState<number | null>(null);
+  const [tempoMedio1Ant, setTempoMedio1Ant] = useState<number | null>(null);
   const [search, setSearch] = useState("");
-  const [sortCol, setSortCol] = useState<SortCol>("nome");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [sortCol, setSortCol] = useState<SortCol>("diasNoFunil");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(0);
 
   const { startDate, endDate } = useMemo(() => getDateRange(filters), [filters]);
@@ -153,89 +148,60 @@ export default function RelatorioLeads({ filters }: RelatorioLeadsProps) {
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchLeads(s: Date, e: Date): Promise<LeadProcessado[]> {
+    async function fetchLeads(s: Date, e: Date): Promise<{ leads: LeadProcessado[]; tempoMedio: number | null }> {
       let query = supabase
         .from("pipeline_leads")
-        .select("id, nome, telefone, origem, etapa, corretor_id, created_at, updated_at")
+        .select("id, nome, telefone, origem, stage_id, corretor_id, segmento_id, created_at, updated_at")
         .gte("created_at", s.toISOString())
         .lte("created_at", e.toISOString());
 
-      if (filters.corretor) {
-        query = query.eq("corretor_id", filters.corretor);
-      }
+      if (filters.corretor) query = query.eq("corretor_id", filters.corretor);
 
-      const { data: rows, error } = await query;
-      if (error || !rows?.length) return [];
+      const { data: rawLeads, error } = await query;
+      if (error || !rawLeads?.length) return { leads: [], tempoMedio: null };
 
-      const leadRows = rows as LeadRow[];
+      const rows = rawLeads as LeadRow[];
+      let filtered = rows;
 
-      // Filter by equipe
-      let filteredRows = leadRows;
       if (filters.equipe && !filters.corretor) {
         const { data: membros } = await supabase
-          .from("team_members")
-          .select("user_id")
-          .eq("gerente_id", filters.equipe);
+          .from("team_members").select("user_id").eq("gerente_id", filters.equipe);
         if (membros?.length) {
           const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id")
-            .in("user_id", membros.map((m) => m.user_id));
-          if (profiles?.length) {
-            const ids = new Set(profiles.map((p) => p.id));
-            filteredRows = leadRows.filter((r) => r.corretor_id && ids.has(r.corretor_id));
-          } else {
-            filteredRows = [];
-          }
-        } else {
-          filteredRows = [];
-        }
+            .from("profiles").select("id").in("user_id", membros.map((m) => m.user_id));
+          const ids = new Set((profiles || []).map((p) => p.id));
+          filtered = rows.filter((r) => r.corretor_id && ids.has(r.corretor_id));
+        } else filtered = [];
       }
 
-      // Segmento filter
+      const segIdsAll = [...new Set(filtered.map((r) => r.segmento_id).filter(Boolean))] as string[];
+      const segNameMap = new Map<string, string>();
+      if (segIdsAll.length) {
+        const { data: segs } = await supabase.from("roleta_segmentos").select("id, nome").in("id", segIdsAll);
+        (segs || []).forEach((sg) => segNameMap.set(sg.id, sg.nome as string));
+      }
       if (filters.segmento) {
-        const leadIds = filteredRows.map((r) => r.id);
-        if (leadIds.length) {
-          const { data: segLeads } = await supabase
-            .from("pipeline_leads")
-            .select("id, segmento_id")
-            .in("id", leadIds);
-          if (segLeads?.length) {
-            const segIds = [...new Set(segLeads.map((l) => l.segmento_id).filter(Boolean))] as string[];
-            if (segIds.length) {
-              const { data: segs } = await supabase
-                .from("roleta_segmentos")
-                .select("id, nome")
-                .in("id", segIds);
-              const segNameMap = new Map<string, string>((segs || []).map((s2) => [s2.id, s2.nome as string]));
-              const matchIds = new Set(
-                segLeads
-                  .filter((l) => {
-                    const segId = l.segmento_id as string | null;
-                    if (!segId) return false;
-                    const name = segNameMap.get(segId) || "";
-                    return name.toLowerCase().includes(filters.segmento.toLowerCase());
-                  })
-                  .map((l) => l.id)
-              );
-              filteredRows = filteredRows.filter((r) => matchIds.has(r.id));
-            } else {
-              filteredRows = [];
-            }
-          }
-        }
+        filtered = filtered.filter((r) => {
+          if (!r.segmento_id) return false;
+          const seg = segNameMap.get(r.segmento_id) || "";
+          return seg.toLowerCase().includes(filters.segmento.toLowerCase());
+        });
       }
 
-      // Corretor names + equipe
-      const corretorIds = [...new Set(filteredRows.map((r) => r.corretor_id).filter(Boolean))] as string[];
+      if (!filtered.length) return { leads: [], tempoMedio: null };
+
+      const stageIds = [...new Set(filtered.map((r) => r.stage_id).filter(Boolean))] as string[];
+      const stageMap = new Map<string, string>();
+      if (stageIds.length) {
+        const { data: stages } = await supabase.from("pipeline_stages").select("id, nome").in("id", stageIds);
+        (stages || []).forEach((st) => stageMap.set(st.id, st.nome as string));
+      }
+
+      const corretorIds = [...new Set(filtered.map((r) => r.corretor_id).filter(Boolean))] as string[];
       const corretorNameMap = new Map<string, string>();
       const corretorUserMap = new Map<string, string>();
-
       if (corretorIds.length) {
-        const { data: profs } = await supabase
-          .from("profiles")
-          .select("id, nome, user_id")
-          .in("id", corretorIds);
+        const { data: profs } = await supabase.from("profiles").select("id, nome, user_id").in("id", corretorIds);
         (profs || []).forEach((p) => {
           corretorNameMap.set(p.id, p.nome || "—");
           if (p.user_id) corretorUserMap.set(p.id, p.user_id);
@@ -245,105 +211,88 @@ export default function RelatorioLeads({ filters }: RelatorioLeadsProps) {
       const userIds = [...corretorUserMap.values()];
       const equipeMap = new Map<string, string>();
       if (userIds.length) {
-        const { data: members } = await supabase
-          .from("team_members")
-          .select("user_id, gerente_id")
-          .in("user_id", userIds);
-        if (members?.length) {
-          const gerenteIds = [...new Set(members.map((m) => m.gerente_id).filter(Boolean))] as string[];
-          if (gerenteIds.length) {
-            const { data: gerentes } = await supabase
-              .from("profiles")
-              .select("id, nome, user_id")
-              .in("user_id", gerenteIds);
-            const gMap = new Map<string, string>((gerentes || []).map((g) => [g.user_id as string, g.nome || "—"]));
-            members.forEach((m) => {
-              equipeMap.set(m.user_id, gMap.get(m.gerente_id as string) || "—");
-            });
-          }
+        const { data: members } = await supabase.from("team_members").select("user_id, gerente_id").in("user_id", userIds);
+        const gerenteIds = [...new Set((members || []).map((m) => m.gerente_id).filter(Boolean))] as string[];
+        const gerenteNameMap = new Map<string, string>();
+        if (gerenteIds.length) {
+          const { data: gerentes } = await supabase.from("profiles").select("user_id, nome").in("user_id", gerenteIds);
+          (gerentes || []).forEach((g) => gerenteNameMap.set(g.user_id as string, g.nome || "—"));
         }
+        (members || []).forEach((m) => {
+          equipeMap.set(m.user_id, gerenteNameMap.get(m.gerente_id as string) || "—");
+        });
       }
 
-      // Última atividade
-      const leadIds = filteredRows.map((r) => r.id);
-      const ultimaAtividadeMap = new Map<string, string>();
+      const leadIds = filtered.map((r) => r.id);
+      const ultimaAtMap = new Map<string, string>();
       if (leadIds.length) {
-        const { data: atividades } = await supabase
+        const { data: ats } = await supabase
           .from("pipeline_atividades")
-          .select("lead_id, created_at")
-          .in("lead_id", leadIds)
+          .select("pipeline_lead_id, created_at")
+          .in("pipeline_lead_id", leadIds)
           .order("created_at", { ascending: false });
-        if (atividades?.length) {
-          atividades.forEach((a) => {
-            const lid = a.lead_id as string;
-            if (!ultimaAtividadeMap.has(lid)) {
-              ultimaAtividadeMap.set(lid, (a.created_at as string).slice(0, 10));
-            }
-          });
-        }
+        (ats || []).forEach((a) => {
+          const lid = a.pipeline_lead_id as string;
+          if (!ultimaAtMap.has(lid)) ultimaAtMap.set(lid, a.created_at as string);
+        });
       }
 
-      return filteredRows.map((r): LeadProcessado => {
+      let tempoMedio: number | null = null;
+      if (leadIds.length) {
+        const { data: contatos } = await supabase
+          .from("pipeline_atividades")
+          .select("pipeline_lead_id, created_at, tipo")
+          .in("pipeline_lead_id", leadIds)
+          .in("tipo", ["ligacao", "whatsapp"])
+          .order("created_at", { ascending: true });
+        const primeiroContato = new Map<string, string>();
+        (contatos || []).forEach((c) => {
+          const lid = c.pipeline_lead_id as string;
+          if (!primeiroContato.has(lid)) primeiroContato.set(lid, c.created_at as string);
+        });
+        const dias: number[] = [];
+        filtered.forEach((r) => {
+          const pc = primeiroContato.get(r.id);
+          if (pc) {
+            const d = (new Date(pc).getTime() - new Date(r.created_at).getTime()) / 86400000;
+            if (d >= 0) dias.push(d);
+          }
+        });
+        if (dias.length) tempoMedio = dias.reduce((a, b) => a + b, 0) / dias.length;
+      }
+
+      const now = Date.now();
+      const processed: LeadProcessado[] = filtered.map((r) => {
+        const ultima = ultimaAtMap.get(r.id);
         const userId = r.corretor_id ? corretorUserMap.get(r.corretor_id) : undefined;
         return {
           id: r.id,
           nome: r.nome || "—",
           telefone: r.telefone || "—",
           origem: r.origem || "—",
-          etapa: r.etapa || "—",
+          etapa: r.stage_id ? stageMap.get(r.stage_id) || "—" : "—",
           corretor: r.corretor_id ? corretorNameMap.get(r.corretor_id) || "—" : "—",
           equipe: userId ? equipeMap.get(userId) || "—" : "—",
-          diasNoFunil: Math.floor((Date.now() - new Date(r.created_at).getTime()) / 86400000),
-          ultimaAtividade: ultimaAtividadeMap.get(r.id) ? fmtDate(ultimaAtividadeMap.get(r.id)!) : "—",
+          diasNoFunil: Math.floor((now - new Date(r.created_at).getTime()) / 86400000),
+          ultimaAtividade: ultima ? fmtDate(ultima.slice(0, 10)) : "—",
           createdAt: r.created_at,
         };
       });
+
+      return { leads: processed, tempoMedio };
     }
 
     async function load() {
       setLoading(true);
-      const [current, anterior] = await Promise.all([
+      const [curr, ant] = await Promise.all([
         fetchLeads(startDate, endDate),
         fetchLeads(prev.startDate, prev.endDate),
       ]);
-
-      // Tempo médio 1º contato
-      if (current.length > 0) {
-        const leadIds = current.map((l) => l.id);
-        const { data: atividades } = await supabase
-          .from("pipeline_atividades")
-          .select("lead_id, created_at, tipo")
-          .in("lead_id", leadIds)
-          .in("tipo", ["ligacao", "whatsapp"])
-          .order("created_at", { ascending: true });
-
-        if (atividades?.length) {
-          const firstContact = new Map<string, string>();
-          atividades.forEach((a) => {
-            const lid = a.lead_id as string;
-            if (!firstContact.has(lid)) firstContact.set(lid, a.created_at as string);
-          });
-          let totalDias = 0;
-          let count = 0;
-          current.forEach((l) => {
-            const fc = firstContact.get(l.id);
-            if (fc) {
-              const dias = (new Date(fc).getTime() - new Date(l.createdAt).getTime()) / 86400000;
-              totalDias += dias;
-              count++;
-            }
-          });
-          if (!cancelled) setTempoMedio1Contato(count > 0 ? totalDias / count : null);
-        } else {
-          if (!cancelled) setTempoMedio1Contato(null);
-        }
-      } else {
-        if (!cancelled) setTempoMedio1Contato(null);
-      }
-
       if (!cancelled) {
-        setLeads(current);
-        setLeadsAnterior(anterior);
+        setLeads(curr.leads);
+        setLeadsAnterior(ant.leads);
+        setTempoMedio1(curr.tempoMedio);
+        setTempoMedio1Ant(ant.tempoMedio);
         setLoading(false);
       }
     }
@@ -352,13 +301,14 @@ export default function RelatorioLeads({ filters }: RelatorioLeadsProps) {
     return () => { cancelled = true; };
   }, [startDate, endDate, prev.startDate, prev.endDate, filters.corretor, filters.equipe, filters.segmento]);
 
-  // ── KPIs ───────────────────────────────────────────────────────────────────
-
-  const totalLeads = leads.length;
-  const totalLeadsAnt = leadsAnterior.length;
-  const leadsAtivos = leads.filter((l) => l.etapa !== "Negócio Criado" && l.etapa !== "Descarte").length;
-  const leadsSemContato = leads.filter((l) => l.etapa === "Novo Lead" || l.etapa === "Sem Contato").length;
-  const leadsSemContatoAnt = leadsAnterior.filter((l) => l.etapa === "Novo Lead" || l.etapa === "Sem Contato").length;
+  const total = leads.length;
+  const totalAnt = leadsAnterior.length;
+  const ETAPAS_INATIVAS = ["Negócio Criado", "Descarte"];
+  const ativos = leads.filter((l) => !ETAPAS_INATIVAS.includes(l.etapa)).length;
+  const ativosAnt = leadsAnterior.filter((l) => !ETAPAS_INATIVAS.includes(l.etapa)).length;
+  const ETAPAS_SEM_CONTATO = ["Novo Lead", "Sem Contato"];
+  const semContato = leads.filter((l) => ETAPAS_SEM_CONTATO.includes(l.etapa)).length;
+  const semContatoAnt = leadsAnterior.filter((l) => ETAPAS_SEM_CONTATO.includes(l.etapa)).length;
 
   function pctVar(curr: number, prev2: number): { label: string; positive: boolean } | null {
     if (prev2 === 0 && curr === 0) return null;
@@ -366,25 +316,22 @@ export default function RelatorioLeads({ filters }: RelatorioLeadsProps) {
     const pct = Math.round(((curr - prev2) / prev2) * 100);
     return { label: `${pct >= 0 ? "+" : ""}${pct}%`, positive: pct >= 0 };
   }
-
-  // ── Chart ──────────────────────────────────────────────────────────────────
+  function absVar(curr: number, prev2: number): { label: string; positive: boolean } | null {
+    const diff = curr - prev2;
+    if (diff === 0) return null;
+    return { label: `${diff > 0 ? "+" : ""}${diff}`, positive: diff <= 0 };
+  }
 
   const chartData = useMemo(() => groupLeads(leads, filters.periodo, startDate, endDate), [leads, filters.periodo, startDate, endDate]);
-  const chartTitleText = useMemo(() => {
-    const map: Record<string, string> = { hoje: "hora", semana: "dia", mes: "semana" };
-    return `Leads recebidos por ${map[filters.periodo] || "período"}`;
-  }, [filters.periodo]);
 
-  // ── Table ──────────────────────────────────────────────────────────────────
-
-  const filtered = useMemo(() => {
+  const filteredLeads = useMemo(() => {
     if (!search) return leads;
     const q = search.toLowerCase();
     return leads.filter((l) => l.nome.toLowerCase().includes(q) || l.telefone.toLowerCase().includes(q));
   }, [leads, search]);
 
   const sorted = useMemo(() => {
-    const arr = [...filtered];
+    const arr = [...filteredLeads];
     arr.sort((a, b) => {
       let va: string | number = a[sortCol];
       let vb: string | number = b[sortCol];
@@ -395,7 +342,7 @@ export default function RelatorioLeads({ filters }: RelatorioLeadsProps) {
       return 0;
     });
     return arr;
-  }, [filtered, sortCol, sortDir]);
+  }, [filteredLeads, sortCol, sortDir]);
 
   const pageSize = 20;
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
@@ -405,8 +352,6 @@ export default function RelatorioLeads({ filters }: RelatorioLeadsProps) {
     if (sortCol === col) setSortDir((d) => d === "asc" ? "desc" : "asc");
     else { setSortCol(col); setSortDir("asc"); }
   }
-
-  // ── Loading ────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -432,133 +377,132 @@ export default function RelatorioLeads({ filters }: RelatorioLeadsProps) {
     );
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  if (!leads.length) {
+    return (
+      <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: 60, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <Users size={40} strokeWidth={1} color="#C7D2FE" />
+        <div style={{ fontSize: 13, color: "#6b7280" }}>Nenhum lead no período selecionado</div>
+      </div>
+    );
+  }
 
-  const totalVar = pctVar(totalLeads, totalLeadsAnt);
-  const semContatoDiff = leadsSemContato - leadsSemContatoAnt;
+  const kpiTotalVar = pctVar(total, totalAnt);
+  const kpiAtivosVar = pctVar(ativos, ativosAnt);
+  const kpiSemContatoVar = absVar(semContato, semContatoAnt);
 
-  const kpis = [
-    { label: "TOTAL DE LEADS", value: String(totalLeads), variation: totalVar },
-    { label: "LEADS ATIVOS", value: String(leadsAtivos), subtitle: "Excl. negócio criado e descarte" },
-    { label: "LEADS SEM CONTATO", value: String(leadsSemContato), variation: semContatoDiff !== 0 ? { label: `${semContatoDiff > 0 ? "+" : ""}${semContatoDiff} vs anterior`, positive: semContatoDiff < 0 } : null },
-    { label: "TEMPO MÉDIO 1º CONTATO", value: tempoMedio1Contato != null ? `${tempoMedio1Contato.toFixed(1).replace(".", ",")} dias` : "—" },
-  ];
-
-  const thStyle: React.CSSProperties = { fontSize: 11, color: "#9ca3af", fontWeight: 500, textAlign: "left", padding: "8px 16px", borderBottom: "0.5px solid #e5e7eb", background: "#fafafa", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" };
-  const tdStyle: React.CSSProperties = { fontSize: 13, padding: "10px 16px" };
-
-  const cols: { key: SortCol; label: string }[] = [
-    { key: "nome", label: "Lead" },
-    { key: "origem", label: "Origem" },
-    { key: "etapa", label: "Etapa" },
-    { key: "corretor", label: "Corretor" },
-    { key: "equipe", label: "Equipe" },
-    { key: "diasNoFunil", label: "Dias no funil" },
-    { key: "ultimaAtividade", label: "Última atividade" },
-  ];
+  let tempoMedioVar: { label: string; positive: boolean } | null = null;
+  if (tempoMedio1 != null && tempoMedio1Ant != null && tempoMedio1Ant > 0) {
+    const pct = Math.round(((tempoMedio1 - tempoMedio1Ant) / tempoMedio1Ant) * 100);
+    if (pct !== 0) tempoMedioVar = { label: `${pct >= 0 ? "+" : ""}${pct}%`, positive: pct <= 0 };
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-        {kpis.map((k) => (
-          <div key={k.label} style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: "14px 16px" }}>
-            <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", color: "#9ca3af", marginBottom: 6 }}>{k.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 500, color: "#111827" }}>{k.value}</div>
-            {"variation" in k && k.variation && (
-              <div style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 3, fontSize: 11, color: k.variation.positive ? "#10b981" : "#ef4444" }}>
-                {k.variation.positive ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
-                {k.variation.label}
-              </div>
-            )}
-            {"subtitle" in k && k.subtitle && (
-              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 3 }}>{k.subtitle}</div>
-            )}
-          </div>
-        ))}
+        <KpiCard label="TOTAL DE LEADS" value={String(total)} variation={kpiTotalVar} />
+        <KpiCard label="LEADS ATIVOS" value={String(ativos)} subtitle="Excl. negócio criado e descarte" variation={kpiAtivosVar} />
+        <KpiCard label="LEADS SEM CONTATO" value={String(semContato)} variation={kpiSemContatoVar} />
+        <KpiCard
+          label="TEMPO MÉDIO 1º CONTATO"
+          value={tempoMedio1 != null ? `${tempoMedio1.toFixed(1).replace(".", ",")} dias` : "—"}
+          variation={tempoMedioVar}
+        />
       </div>
 
-      {/* Chart */}
-      {chartData.length > 0 && (
-        <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "#111827", marginBottom: 12 }}>{chartTitleText}</div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData} barCategoryGap="20%">
+      <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: 20 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: "#111827", marginBottom: 16 }}>{chartTitle(filters.periodo)}</div>
+        <div style={{ width: "100%", height: 240 }}>
+          <ResponsiveContainer>
+            <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-              <Tooltip content={<ChartTooltipCustom />} cursor={false} />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {chartData.map((_, i) => (
-                  <Cell key={i} fill="#6366f1" fillOpacity={0.85} />
-                ))}
-              </Bar>
+              <Tooltip cursor={{ fill: "#f3f4f6" }} content={<ChartTooltipCustom />} />
+              <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-      )}
+      </div>
 
-      {/* Table */}
-      <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", overflow: "hidden" }}>
+      <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "0.5px solid #e5e7eb" }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>Leads — detalhamento</span>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}>Leads ({filteredLeads.length})</div>
           <div style={{ position: "relative" }}>
-            <Search size={14} style={{ position: "absolute", left: 8, top: 7, color: "#9ca3af" }} />
+            <Search size={14} color="#9ca3af" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
             <input
               type="text"
-              placeholder="Buscar..."
+              placeholder="Buscar por nome ou telefone"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ fontSize: 12, padding: "5px 8px 5px 28px", border: "0.5px solid #e5e7eb", borderRadius: 8, outline: "none", width: 180 }}
+              style={{ paddingLeft: 30, paddingRight: 12, height: 32, fontSize: 12, border: "0.5px solid #e5e7eb", borderRadius: 6, width: 240, outline: "none", background: "#fff" }}
             />
           </div>
         </div>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <Th label="Lead" col="nome" sortCol={sortCol} sortDir={sortDir} onClick={toggleSort} />
+              <Th label="Origem" col="origem" sortCol={sortCol} sortDir={sortDir} onClick={toggleSort} />
+              <Th label="Etapa" col="etapa" sortCol={sortCol} sortDir={sortDir} onClick={toggleSort} />
+              <Th label="Corretor" col="corretor" sortCol={sortCol} sortDir={sortDir} onClick={toggleSort} />
+              <Th label="Equipe" col="equipe" sortCol={sortCol} sortDir={sortDir} onClick={toggleSort} />
+              <Th label="Dias no funil" col="diasNoFunil" sortCol={sortCol} sortDir={sortDir} onClick={toggleSort} />
+              <Th label="Última atividade" col="ultimaAtividade" sortCol={sortCol} sortDir={sortDir} onClick={toggleSort} />
+            </tr>
+          </thead>
+          <tbody>
+            {paged.map((l) => (
+              <tr key={l.id} style={{ borderBottom: "0.5px solid #f3f4f6" }} className="hover:bg-[#f9fafb]">
+                <td style={{ padding: "10px 16px", fontSize: 13 }}>
+                  <div style={{ fontWeight: 500, color: "#111827" }}>{l.nome}</div>
+                  <div style={{ fontSize: 11, color: "#9ca3af" }}>{l.telefone}</div>
+                </td>
+                <td style={{ padding: "10px 16px", fontSize: 13, color: "#374151" }}>{l.origem}</td>
+                <td style={{ padding: "10px 16px" }}><EtapaBadge label={l.etapa} /></td>
+                <td style={{ padding: "10px 16px", fontSize: 13, color: "#374151" }}>{l.corretor}</td>
+                <td style={{ padding: "10px 16px", fontSize: 13, color: "#374151" }}>{l.equipe}</td>
+                <td style={{ padding: "10px 16px", fontSize: 13, color: "#374151" }}>{l.diasNoFunil}</td>
+                <td style={{ padding: "10px 16px", fontSize: 13, color: "#374151" }}>{l.ultimaAtividade}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-        {sorted.length === 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200, gap: 8 }}>
-            <Users size={40} strokeWidth={1} color="#C7D2FE" />
-            <span style={{ fontSize: 14, color: "#6b7280" }}>Nenhum lead no período selecionado</span>
+        {totalPages > 1 && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderTop: "0.5px solid #e5e7eb" }}>
+            <div style={{ fontSize: 11, color: "#9ca3af" }}>Página {page + 1} de {totalPages}</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} style={{ padding: "4px 10px", fontSize: 12, border: "0.5px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: page === 0 ? "not-allowed" : "pointer", opacity: page === 0 ? 0.5 : 1 }}>Anterior</button>
+              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} style={{ padding: "4px 10px", fontSize: 12, border: "0.5px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: page >= totalPages - 1 ? "not-allowed" : "pointer", opacity: page >= totalPages - 1 ? 0.5 : 1 }}>Próxima</button>
+            </div>
           </div>
-        ) : (
-          <>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  {cols.map((c) => (
-                    <th key={c.key} style={thStyle} onClick={() => toggleSort(c.key)}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
-                        {c.label}
-                        {sortCol === c.key && (sortDir === "asc" ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {paged.map((l, i) => (
-                  <tr key={l.id} style={{ borderBottom: i === paged.length - 1 ? "none" : "0.5px solid #f3f4f6" }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#f9fafb"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}>
-                    <td style={tdStyle}>
-                      <div style={{ fontWeight: 500 }}>{l.nome}</div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>{l.telefone}</div>
-                    </td>
-                    <td style={tdStyle}>{l.origem}</td>
-                    <td style={tdStyle}><Badge label={l.etapa} /></td>
-                    <td style={tdStyle}>{l.corretor}</td>
-                    <td style={{ ...tdStyle, color: "#6b7280" }}>{l.equipe}</td>
-                    <td style={{ ...tdStyle, textAlign: "center" }}>{l.diasNoFunil}</td>
-                    <td style={{ ...tdStyle, color: "#6b7280" }}>{l.ultimaAtividade}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {totalPages > 1 && (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, padding: "10px 16px", borderTop: "0.5px solid #e5e7eb" }}>
-                <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} style={{ border: "0.5px solid #e5e7eb", borderRadius: 8, padding: "4px 12px", fontSize: 12, background: "#fff", cursor: page === 0 ? "default" : "pointer", opacity: page === 0 ? 0.4 : 1 }}>Anterior</button>
-                <span style={{ fontSize: 12, color: "#6b7280" }}>Página {page + 1} de {totalPages}</span>
-                <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} style={{ border: "0.5px solid #e5e7eb", borderRadius: 8, padding: "4px 12px", fontSize: 12, background: "#fff", cursor: page >= totalPages - 1 ? "default" : "pointer", opacity: page >= totalPages - 1 ? 0.4 : 1 }}>Próximo</button>
-              </div>
-            )}
-          </>
         )}
       </div>
     </div>
+  );
+}
+
+function KpiCard({ label, value, subtitle, variation }: { label: string; value: string; subtitle?: string; variation: { label: string; positive: boolean } | null }) {
+  return (
+    <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e5e7eb", padding: "14px 16px" }}>
+      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", color: "#9ca3af", marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 500, color: "#111827" }}>{value}</div>
+      {subtitle && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{subtitle}</div>}
+      {variation && (
+        <div style={{ fontSize: 11, color: variation.positive ? "#10b981" : "#ef4444", marginTop: 4 }}>
+          {variation.label} vs período anterior
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Th({ label, col, sortCol, sortDir, onClick }: { label: string; col: SortCol; sortCol: SortCol; sortDir: SortDir; onClick: (c: SortCol) => void }) {
+  const active = sortCol === col;
+  return (
+    <th onClick={() => onClick(col)} style={{ fontSize: 11, color: "#9ca3af", fontWeight: 500, padding: "8px 16px", borderBottom: "0.5px solid #e5e7eb", background: "#fafafa", textAlign: "left", cursor: "pointer", userSelect: "none" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        {label}
+        {active && (sortDir === "asc" ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+      </span>
+    </th>
   );
 }
