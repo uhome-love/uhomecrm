@@ -715,7 +715,17 @@ export default function AgendaVisitas() {
       )}
 
       {editingVisita && (
-        <VisitaForm open={!!editingVisita} onClose={() => setEditingVisita(null)} onSubmit={handleEditSubmit} initialData={editingVisita} mode="edit" />
+        <VisitaForm
+          open={!!editingVisita}
+          onClose={() => setEditingVisita(null)}
+          onSubmit={handleEditSubmit}
+          onDelete={async () => {
+            const ok = await deleteVisita(editingVisita.id);
+            if (ok !== false) setEditingVisita(null);
+          }}
+          initialData={editingVisita}
+          mode="edit"
+        />
       )}
 
       {resultadoVisita && (

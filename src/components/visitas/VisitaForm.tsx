@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CalendarPlus, Search, Handshake, Filter, X, Home, Building2 } from "lucide-react";
+import { Loader2, CalendarPlus, Search, Handshake, Filter, X, Home, Building2, Trash2 } from "lucide-react";
 import { type Visita } from "@/hooks/useVisitas";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,6 +48,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: Partial<Visita>) => Promise<any>;
+  onDelete?: () => Promise<void> | void;
   initialData?: Partial<Visita> & { pipeline_lead_id?: string };
   mode?: "create" | "edit";
 }
@@ -88,7 +89,7 @@ function getDefaultForm(initialData?: Props["initialData"]) {
   };
 }
 
-export default function VisitaForm({ open, onClose, onSubmit, initialData, mode = "create" }: Props) {
+export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialData, mode = "create" }: Props) {
   const { user } = useAuth();
   const { isGestor, isAdmin } = useUserRole();
   const isManager = isGestor || isAdmin;
@@ -770,6 +771,23 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === "create" ? "📅 Agendar Visita" : "💾 Salvar Alterações"}
           </Button>
+
+          {/* Delete (somente em edição) */}
+          {mode === "edit" && onDelete && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full gap-2 h-9 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+              disabled={submitting}
+              onClick={async () => {
+                if (!window.confirm("Tem certeza que deseja apagar esta visita? Esta ação não pode ser desfeita.")) return;
+                await onDelete();
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Apagar visita
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
