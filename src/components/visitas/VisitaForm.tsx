@@ -771,6 +771,23 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === "create" ? "📅 Agendar Visita" : "💾 Salvar Alterações"}
           </Button>
+
+          {/* Delete (somente em edição) */}
+          {mode === "edit" && onDelete && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full gap-2 h-9 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+              disabled={submitting}
+              onClick={async () => {
+                if (!window.confirm("Tem certeza que deseja apagar esta visita? Esta ação não pode ser desfeita.")) return;
+                await onDelete();
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Apagar visita
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
