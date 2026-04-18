@@ -82,10 +82,46 @@ export function usePushSubscription() {
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
-      const subscribed = !!subscription;
-      setIsSubscribed(subscribed);
-      return subscribed;
-    } catch {
+      if (!subscription) {
+        setIsSubscribed(false);
+        return false;
+      }
+
+      // Local subscription exists — verify it's also in the DB. If not, re-sync it.
+      const subJson = subscription.toJSON();
+      const endpoint = subJson.endpoint!;
+      const { data: existing } = await supabase
+        .from("push_subscriptions")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("endpoint", endpoint)
+        .maybeSingle();
+
+      if (!existing) {
+        console.warn("[push] Local subscription found but missing in DB — re-syncing");
+        const { error: upsertErr } = await supabase.from("push_subscriptions").upsert(
+          {
+            user_id: user.id,
+            endpoint,
+            p256dh: subJson.keys!.p256dh,
+            auth: subJson.keys!.auth,
+            user_agent: navigator.userAgent,
+            updated_at: new Date().toISOString(),
+          } as any,
+          { onConflict: "user_id,endpoint" }
+        );
+        if (upsertErr) {
+          console.error("[push] Re-sync failed:", upsertErr);
+          setIsSubscribed(false);
+          return false;
+        }
+        toast.success("Push notification re-sincronizado com o servidor 🔄");
+      }
+
+      setIsSubscribed(true);
+      return true;
+    } catch (err) {
+      console.error("[push] checkSubscription error:", err);
       return false;
     }
   }, [hasBrowserSupport, vapidKey, user]);
