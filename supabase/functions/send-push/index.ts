@@ -104,7 +104,18 @@ serve(async (req) => {
             endpoint: sub.endpoint,
             keys: { p256dh: sub.p256dh, auth: sub.auth },
           },
-          payload
+          payload,
+          {
+            // CRITICAL for MIUI/Xiaomi & Android background delivery:
+            // - urgency "high" tells FCM to wake the device immediately
+            // - TTL 24h ensures retry if device is offline
+            // - topic collapses duplicate notifications
+            TTL: 60 * 60 * 24,
+            urgency: "high",
+            headers: {
+              Urgency: "high",
+            },
+          }
         );
         sent++;
       } catch (err: any) {
