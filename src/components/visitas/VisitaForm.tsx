@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CalendarPlus, Search, Handshake, Filter, X, Home, Building2 } from "lucide-react";
+import { Loader2, CalendarPlus, Search, Handshake, Filter, X, Home, Building2, Trash2 } from "lucide-react";
 import { type Visita } from "@/hooks/useVisitas";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
