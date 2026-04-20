@@ -14,8 +14,8 @@
  */
 
 import { supabaseSite } from "@/lib/supabaseSite";
-import type { SiteImovel, MapPin, BairroCount, BuscaFilters } from "@/services/siteImoveis";
-import { siteImovelToMapPin } from "@/services/siteImoveis";
+import type { SiteImovel, MapPin, BairroCount, BuscaFilters } from "@/types/imoveis";
+import { siteImovelToMapPin } from "@/utils/imoveisFormat";
 
 /* ── Column select (keep lean for list queries) ── */
 const LIST_SELECT =
