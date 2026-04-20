@@ -10,10 +10,6 @@
  *   id, created_at, corretor_id, corretor_slug, lead_nome, lead_telefone,
  *   titulo, mensagem, imovel_codigos, visualizacoes,
  *   created_by, subtitulo, lead_id, cliques_whatsapp
- *
- * Campos opcionais como `tipo` e `dados_custom` NÃO existem como colunas
- * — callers que precisam preservar metadados podem serializar em `mensagem`
- * (ver OrygemCampanha.tsx).
  */
 
 import { useMutation } from "@tanstack/react-query";
@@ -31,10 +27,6 @@ export type CreateVitrineInput = {
   lead_nome?: string | null;
   lead_telefone?: string | null;
   corretor_slug?: string | null;
-  /** Aceito por compatibilidade — não é gravado (coluna não existe no site). */
-  tipo?: "property_selection" | "product_page";
-  /** Aceito por compatibilidade — não é gravado (coluna não existe no site). */
-  dados_custom?: any | null;
 };
 
 export type CreateVitrineResult = {
@@ -51,13 +43,6 @@ export function useCreateVitrine() {
         const err = new Error("Você precisa estar logado");
         toast.error(err.message);
         throw err;
-      }
-
-      // Avisa em dev se o caller passou campos que não existem no banco
-      if (import.meta.env.DEV && (input.tipo || input.dados_custom)) {
-        console.warn(
-          "[useCreateVitrine] campos `tipo` e/ou `dados_custom` não são gravados — colunas não existem no banco do site. Serialize-os em `mensagem` se precisar persistir.",
-        );
       }
 
       const payload = {
