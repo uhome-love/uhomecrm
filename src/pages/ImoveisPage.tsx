@@ -457,28 +457,14 @@ export default function ImoveisPage() {
   const previewGetPreco = useCallback((item: any) => formatPreco(item.preco), []);
 
   // ── Vitrine creation ──
-  const createVitrine = useCallback(async () => {
+  const { mutate: criarVitrine, isPending: vitrineCreating } = useCreateVitrine();
+  const createVitrine = useCallback(() => {
     if (!user) return;
-    setCreatingVitrine(true);
-    try {
-      const { data, error } = await supabase.from("vitrines").insert({
-        created_by: user.id,
-        titulo: "Seleção de Imóveis",
-        tipo: "property_selection",
-        imovel_ids: [...selectedIds] as any,
-        imovel_codigos: [...selectedIds],
-      }).select("id").single();
-      if (error) throw error;
-      const link = getVitrinePublicUrl(data.id);
-      setVitrineLink(link);
-      navigator.clipboard.writeText(link);
-      toast.success("Vitrine criada! Link copiado.");
-    } catch {
-      toast.error("Erro ao criar vitrine");
-    } finally {
-      setCreatingVitrine(false);
-    }
-  }, [user, selectedIds]);
+    criarVitrine(
+      { imovel_codigos: [...selectedIds], titulo: "Seleção de Imóveis" },
+      { onSuccess: ({ publicUrl }) => setVitrineLink(publicUrl) },
+    );
+  }, [user, selectedIds, criarVitrine]);
 
   // Reset page on filter change
   useEffect(() => {
