@@ -164,7 +164,7 @@ export default function ImoveisPage() {
   // Vitrine
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [creatingVitrine, setCreatingVitrine] = useState(false);
+  const [vitrineLink, setVitrineLink] = useState<string | null>(null); // controlled separately above
   const [vitrineLink, setVitrineLink] = useState<string | null>(null);
 
   // Bairro search
