@@ -1,51 +1,63 @@
 
 
-## Plan
+# Fase 1 — Execução: extração de tipos e helpers canônicos
 
-Implement Leads and Conversão report tabs by extracting shared utilities and wiring two new report components.
+Refactor 100% mecânico. Zero mudança de UI, lógica, query, rota ou copy.
 
-### Files to create
+## Arquivos novos
 
-**1. `src/components/relatorios/reportUtils.ts`** — already exists per current-code (matches spec). No change needed beyond verification.
+**`src/types/imoveis.ts`** — apenas tipos, copiados caractere por caractere de `siteImoveis.ts`:
+- `SiteImovel`, `MapPin`, `BuscaFilters`, `BairroCount`
 
-**2. `src/components/relatorios/RelatorioLeads.tsx`**
-- Fetch `pipeline_leads` filtered by date range + equipe/corretor/segmento
-- Resolve corretor/gestor names via `profiles`
-- Fetch first contact activity (`pipeline_atividades` tipo IN ligacao/whatsapp) per lead for "Tempo Médio 1º Contato" KPI
-- Fetch MAX(created_at) per lead for "Última atividade" column
-- 4 KPI cards (Total, Ativos, Sem Contato, Tempo Médio 1º Contato) with prev-period comparison
-- Recharts BarChart grouping leads by created_at date (#6366f1)
-- Sortable table with badges per etapa (color map per spec), search by nome/telefone, pagination 20/page
-- Loading shimmer + empty state (Users icon)
+**`src/utils/imoveisFormat.ts`** — helpers + constantes, copiados caractere por caractere:
+- Públicos: `formatPreco`, `formatPrecoCompact`, `fotoPrincipal`, `shareUrlUhome`, `gerarSlugUhome`, `siteImovelToMapPin`, `tituloLimpo`
+- Privados: `slugify`, `normalizeTipoSlug`, `capitalize`, `jitter`, `BAIRRO_CENTROIDS`
+- Constantes: `CIDADES_PERMITIDAS`, `PROPERTY_TYPES`
+- Importa tipos via `import type { SiteImovel, MapPin } from "@/types/imoveis"`
 
-**3. `src/components/relatorios/RelatorioConversao.tsx`**
-- Two independent funnels (no date filter, only equipe/corretor/segmento)
-- Funil de Leads: 9 etapas with count, %, tempo médio, color-coded bars sized relative to max
-- Funil de Negócios: 6 fases from `negocios.fase` with PT label mapping
-- 3 KPI cards (Lead→Visita, Negócio→Venda, Lead→Venda overall)
-- Bottlenecks table: top 3 etapas by count (excluding Descarte)
-- Loading skeletons + empty state (TrendingUp icon)
+## Imports atualizados (8 arquivos)
 
-### Files to modify
+| Arquivo | Linha | Novo import |
+|---|---|---|
+| `src/pages/ImoveisPage.tsx` | 35-37 | `type { SiteImovel, MapPin, BuscaFilters }` de `@/types/imoveis` + `{ siteImovelToMapPin, formatPreco, CIDADES_PERMITIDAS, PROPERTY_TYPES }` de `@/utils/imoveisFormat` |
+| `src/pages/ImovelPage.tsx` | 19 | `{ gerarSlugUhome }` de `@/utils/imoveisFormat` |
+| `src/services/siteImoveisRemote.ts` | 17-18 | `type { SiteImovel, MapPin, BairroCount, BuscaFilters }` de `@/types/imoveis` + `{ siteImovelToMapPin }` de `@/utils/imoveisFormat` |
+| `src/components/imoveis/SitePropertyCard.tsx` | 9 | `type { SiteImovel }` de `@/types/imoveis` + `{ fotoPrincipal, formatPreco, shareUrlUhome }` de `@/utils/imoveisFormat` |
+| `src/components/imoveis/SearchMapBox.tsx` | 11 | `type { MapPin }` de `@/types/imoveis` + `{ formatPrecoCompact, formatPreco }` de `@/utils/imoveisFormat` |
+| `src/components/imoveis/PropertyPreviewDrawer.tsx` | 29 | `{ gerarSlugUhome }` de `@/utils/imoveisFormat` |
+| `src/components/imoveis/SharePropertyButton.tsx` | 16 | `{ gerarSlugUhome }` de `@/utils/imoveisFormat` |
+| `src/components/pipeline/radar/RadarFullscreenModal.tsx` | 16 | `{ gerarSlugUhome }` de `@/utils/imoveisFormat` |
 
-**4. `src/components/relatorios/RelatorioVendas.tsx`** — replace local utility definitions with imports from `./reportUtils`. Need to view first to identify exact ranges.
+## `src/services/siteImoveis.ts` — vira shim + busca legada
 
-**5. `src/pages/ReportCenter.tsx`** — already wires `RelatorioLeads` and `RelatorioConversao` per current-code. No change needed.
+**Mantém intacto:** `fetchSiteImoveis`, `fetchMapPins`, `fetchBairros`, `fetchImovelBySlug`, e privados `applyPropertyFilters`, `fetchAllPropertyRows`, `mapDoc`, `extractCoordinates`, `toFiniteNumber`, constantes `PROPERTY_MAP_SELECT`, `PROPERTY_MAP_PAGE_SIZE`, `PROPERTY_MAP_MAX_ROWS`, e o import do supabase client.
 
-### Verification steps
+**Remove:** definições originais dos tipos, helpers públicos (`formatPreco`, `formatPrecoCompact`, `fotoPrincipal`, `shareUrlUhome`, `gerarSlugUhome`, `siteImovelToMapPin`, `tituloLimpo`), helpers privados (`slugify`, `normalizeTipoSlug`, `capitalize`, `jitter`, `BAIRRO_CENTROIDS`) e constantes públicas (`CIDADES_PERMITIDAS`, `PROPERTY_TYPES`).
 
-- View `RelatorioVendas.tsx` to confirm which local definitions exist and how segmento filter works (to mirror in RelatorioLeads)
-- Confirm `reportUtils.ts` matches spec exactly (it does per current-code)
-- Confirm `ReportCenter.tsx` wiring (already correct)
-- Inspect `pipeline_leads` and `negocios` schemas to validate column names (`etapa`, `fase`, `corretor_id`, `data_assinatura`)
-- Inspect `pipeline_atividades` for `tipo` and `lead_id` columns
-- Inspect `profiles` for `gestor_id` column
+**Adiciona no topo (após imports), como rede de segurança:**
+```ts
+export type { SiteImovel, MapPin, BuscaFilters, BairroCount } from "@/types/imoveis";
+export {
+  formatPreco, formatPrecoCompact, fotoPrincipal, shareUrlUhome,
+  gerarSlugUhome, siteImovelToMapPin, tituloLimpo,
+  CIDADES_PERMITIDAS, PROPERTY_TYPES,
+} from "@/utils/imoveisFormat";
+```
 
-### Constraints honored
+A própria função `fetchSiteImoveis` e companhia continuam usando os símbolos via os re-exports (sem refatorar nada interno).
 
-- No new dependencies (recharts + lucide-react already present)
-- No changes outside the 5 listed files
-- No `any` types
-- All numbers rounded before render
-- Reuse existing `@/integrations/supabase/client`
+## Verificação pós-execução (vou reportar)
+
+- (a) **TypeScript**: `tsc --noEmit` → zero erros
+- (b) **Grep `from.*@/services/siteImoveis`** em `src/` → lista os imports restantes; confirmação de que nenhum dos 8 consumidores aparece (apenas potenciais consumidores legítimos do bloco de busca, se houver)
+- (c) **Diff summary** por arquivo (linhas +/–)
+- (d) **Confirmação explícita** de que apenas 11 arquivos foram tocados:
+  1. `src/types/imoveis.ts` (criado)
+  2. `src/utils/imoveisFormat.ts` (criado)
+  3. `src/services/siteImoveis.ts` (modificado)
+  4-11. Os 8 consumidores
+
+## Guardrails reafirmados
+
+Nenhum hook, query Supabase, token de cor, classe Tailwind, JSX, store, rota, sidebar, label, texto visível ao usuário, ou função do bloco de busca legado será modificado. `siteImoveisRemote.ts` recebe **apenas** atualização de imports — lógica intocada.
 
