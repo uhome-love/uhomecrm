@@ -46,8 +46,9 @@ export function useCreateVitrine() {
       }
 
       // Resolve o profile do corretor no banco do SITE.
-      // No site, vitrines.corretor_id tem FK para profiles.id (do site),
-      // e profiles.uhomesales_id é a ponte com o auth.users.id do CRM.
+      // Semântica dos dois campos (intencionalmente diferentes):
+      //   - corretor_id  → FK para profiles.id NO SITE (identidade no domínio do site)
+      //   - created_by   → auth.users.id DO CRM (auditoria de origem; é o que MinhasVitrines filtra)
       const { data: siteProfile, error: profileErr } = await supabaseSite
         .from("profiles")
         .select("id, slug_ref")
@@ -61,8 +62,8 @@ export function useCreateVitrine() {
       }
 
       const payload = {
-        created_by: siteProfile.id,
-        corretor_id: siteProfile.id,
+        created_by: user.id,             // CRM auth id (auditoria + filtro do MinhasVitrines)
+        corretor_id: siteProfile.id,     // profiles.id do site (FK)
         imovel_codigos: input.imovel_codigos,
         titulo: input.titulo ?? "Seleção de imóveis",
         subtitulo: input.subtitulo ?? null,
