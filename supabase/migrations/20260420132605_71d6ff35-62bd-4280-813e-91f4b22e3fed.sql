@@ -1,0 +1,1 @@
+UPDATE public.pipeline_leads SET arquivado = false, updated_at = now() WHERE id = 'dc888fa2-f5d7-492a-977b-9f6e329cd457';
