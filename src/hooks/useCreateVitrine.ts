@@ -45,9 +45,24 @@ export function useCreateVitrine() {
         throw err;
       }
 
+      // Resolve o profile do corretor no banco do SITE.
+      // No site, vitrines.corretor_id tem FK para profiles.id (do site),
+      // e profiles.uhomesales_id é a ponte com o auth.users.id do CRM.
+      const { data: siteProfile, error: profileErr } = await supabaseSite
+        .from("profiles")
+        .select("id, slug_ref")
+        .eq("uhomesales_id", user.id)
+        .maybeSingle();
+
+      if (profileErr || !siteProfile?.id) {
+        console.error("[useCreateVitrine] profile lookup error:", profileErr, "user.id=", user.id);
+        toast.error("Seu perfil ainda não está sincronizado com o site. Avise o admin.");
+        throw new Error(profileErr?.message || "Profile do corretor não encontrado no site");
+      }
+
       const payload = {
-        created_by: user.id,
-        corretor_id: user.id,
+        created_by: siteProfile.id,
+        corretor_id: siteProfile.id,
         imovel_codigos: input.imovel_codigos,
         titulo: input.titulo ?? "Seleção de imóveis",
         subtitulo: input.subtitulo ?? null,
@@ -55,7 +70,7 @@ export function useCreateVitrine() {
         lead_id: input.lead_id ?? null,
         lead_nome: input.lead_nome ?? null,
         lead_telefone: input.lead_telefone ?? null,
-        corretor_slug: input.corretor_slug ?? null,
+        corretor_slug: input.corretor_slug ?? siteProfile.slug_ref ?? null,
       };
 
       const { data, error } = await supabaseSite
