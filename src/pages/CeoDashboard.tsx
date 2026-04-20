@@ -179,7 +179,32 @@ export default function CeoDashboard() {
       setLastDispatch({ at: logRes.data[0].created_at, count: d?.dispatched || 0 });
     }
   }, []);
-  useEffect(() => { loadFilaCeo(); }, [loadFilaCeo]);
+  useEffect(() => {
+    loadFilaCeo();
+
+    const handleFocus = () => loadFilaCeo();
+    window.addEventListener("focus", handleFocus);
+
+    const interval = window.setInterval(() => {
+      loadFilaCeo();
+    }, 15000);
+
+    const channel = supabase
+      .channel("ceo-fila-ceo-counter")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pipeline_leads" }, () => {
+        loadFilaCeo();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "audit_log" }, () => {
+        loadFilaCeo();
+      })
+      .subscribe();
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [loadFilaCeo]);
 
   // Roleta approval logic
   const [localPendentes, setLocalPendentes] = useState<any[]>([]);
