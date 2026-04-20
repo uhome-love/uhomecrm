@@ -1,63 +1,93 @@
 
 
-# Fase 1 — Execução: extração de tipos e helpers canônicos
+# Sync uhomesales_id no banco do site — Estratégia escolhida e plano
 
-Refactor 100% mecânico. Zero mudança de UI, lógica, query, rota ou copy.
+## TL;DR
 
-## Arquivos novos
+Match por email é **100% limpo**. Recomendação: **Estratégia B (sync em massa no banco do site)**. Single SQL, 34 UPDATEs, sem ambiguidade.
 
-**`src/types/imoveis.ts`** — apenas tipos, copiados caractere por caractere de `siteImoveis.ts`:
-- `SiteImovel`, `MapPin`, `BuscaFilters`, `BairroCount`
+## Resultado do dry-run
 
-**`src/utils/imoveisFormat.ts`** — helpers + constantes, copiados caractere por caractere:
-- Públicos: `formatPreco`, `formatPrecoCompact`, `fotoPrincipal`, `shareUrlUhome`, `gerarSlugUhome`, `siteImovelToMapPin`, `tituloLimpo`
-- Privados: `slugify`, `normalizeTipoSlug`, `capitalize`, `jitter`, `BAIRRO_CENTROIDS`
-- Constantes: `CIDADES_PERMITIDAS`, `PROPERTY_TYPES`
-- Importa tipos via `import type { SiteImovel, MapPin } from "@/types/imoveis"`
+| Categoria | Qtd | Detalhe |
+|-----------|-----|---------|
+| ✅ Já sincronizados | 0 | Nenhum profile aponta pro user_id atual do CRM |
+| 🔄 UPDATEs necessários | **34** | Todos os corretores reais — email bate, só atualizar `uhomesales_id` |
+| ➕ INSERTs necessários | 0 | Todo CRM user real já tem profile no site |
+| ⏭️ SKIPs (contas de teste) | 5 | naoexiste999, weakpw2, pentest-check, hot.testes01, teste@uhome.imb.br |
+| ⚠️ Órfãos no site sem CRM | 0 | Todo profile do site bate com algum CRM user |
+| ❓ Ambíguos (mesmo email duplicado) | 0 | 1:1 perfeito |
 
-## Imports atualizados (8 arquivos)
+**Conclusão**: cada um dos 34 corretores reais tem exatamente UM profile no site com email idêntico. Os `uhomesales_id` atuais são lixo de uma base antiga (provavelmente da renomeação uhomesales → uhomecrm). Basta sobrescrever.
 
-| Arquivo | Linha | Novo import |
-|---|---|---|
-| `src/pages/ImoveisPage.tsx` | 35-37 | `type { SiteImovel, MapPin, BuscaFilters }` de `@/types/imoveis` + `{ siteImovelToMapPin, formatPreco, CIDADES_PERMITIDAS, PROPERTY_TYPES }` de `@/utils/imoveisFormat` |
-| `src/pages/ImovelPage.tsx` | 19 | `{ gerarSlugUhome }` de `@/utils/imoveisFormat` |
-| `src/services/siteImoveisRemote.ts` | 17-18 | `type { SiteImovel, MapPin, BairroCount, BuscaFilters }` de `@/types/imoveis` + `{ siteImovelToMapPin }` de `@/utils/imoveisFormat` |
-| `src/components/imoveis/SitePropertyCard.tsx` | 9 | `type { SiteImovel }` de `@/types/imoveis` + `{ fotoPrincipal, formatPreco, shareUrlUhome }` de `@/utils/imoveisFormat` |
-| `src/components/imoveis/SearchMapBox.tsx` | 11 | `type { MapPin }` de `@/types/imoveis` + `{ formatPrecoCompact, formatPreco }` de `@/utils/imoveisFormat` |
-| `src/components/imoveis/PropertyPreviewDrawer.tsx` | 29 | `{ gerarSlugUhome }` de `@/utils/imoveisFormat` |
-| `src/components/imoveis/SharePropertyButton.tsx` | 16 | `{ gerarSlugUhome }` de `@/utils/imoveisFormat` |
-| `src/components/pipeline/radar/RadarFullscreenModal.tsx` | 16 | `{ gerarSlugUhome }` de `@/utils/imoveisFormat` |
+## Por que Estratégia B (sync no banco) e não A (match por email no hook)
 
-## `src/services/siteImoveis.ts` — vira shim + busca legada
+| Critério | A (match por email no hook) | B (sync em massa) |
+|----------|------------------------------|-------------------|
+| Latência criação vitrine | +1 query lookup por email a cada criação | Lookup direto por uhomesales_id, igual hoje |
+| Resiliência se admin trocar email | Precisa estar sincronizado em ambos | Idem (qualquer estratégia precisa) |
+| Complexidade no hook | Adiciona fallback `eq(email)` se `uhomesales_id` falhar | Zero mudança no hook |
+| Outros lugares que usam uhomesales_id | Continuariam quebrados | Conserta TUDO de uma vez |
+| Reversibilidade | Trivial | Backup antes do UPDATE resolve |
 
-**Mantém intacto:** `fetchSiteImoveis`, `fetchMapPins`, `fetchBairros`, `fetchImovelBySlug`, e privados `applyPropertyFilters`, `fetchAllPropertyRows`, `mapDoc`, `extractCoordinates`, `toFiniteNumber`, constantes `PROPERTY_MAP_SELECT`, `PROPERTY_MAP_PAGE_SIZE`, `PROPERTY_MAP_MAX_ROWS`, e o import do supabase client.
+A B conserta a raiz. A A só remendaria a vitrine — qualquer outra integração CRM↔site continuaria quebrada.
 
-**Remove:** definições originais dos tipos, helpers públicos (`formatPreco`, `formatPrecoCompact`, `fotoPrincipal`, `shareUrlUhome`, `gerarSlugUhome`, `siteImovelToMapPin`, `tituloLimpo`), helpers privados (`slugify`, `normalizeTipoSlug`, `capitalize`, `jitter`, `BAIRRO_CENTROIDS`) e constantes públicas (`CIDADES_PERMITIDAS`, `PROPERTY_TYPES`).
+## Schema confirmado de `profiles` no site
 
-**Adiciona no topo (após imports), como rede de segurança:**
-```ts
-export type { SiteImovel, MapPin, BuscaFilters, BairroCount } from "@/types/imoveis";
-export {
-  formatPreco, formatPrecoCompact, fotoPrincipal, shareUrlUhome,
-  gerarSlugUhome, siteImovelToMapPin, tituloLimpo,
-  CIDADES_PERMITIDAS, PROPERTY_TYPES,
-} from "@/utils/imoveisFormat";
+```
+id, email, nome, telefone, role, ativo, slug_ref, foto_url, avatar_url,
+creci, uhomesales_id, sincronizado_em, created_at
 ```
 
-A própria função `fetchSiteImoveis` e companhia continuam usando os símbolos via os re-exports (sem refatorar nada interno).
+Coluna canônica de ponte CRM↔site: `uhomesales_id` (não existe `auth_user_id`, `crm_id`, etc. — é mesmo essa).
 
-## Verificação pós-execução (vou reportar)
+## Plano de execução (próximo turno, em modo default)
 
-- (a) **TypeScript**: `tsc --noEmit` → zero erros
-- (b) **Grep `from.*@/services/siteImoveis`** em `src/` → lista os imports restantes; confirmação de que nenhum dos 8 consumidores aparece (apenas potenciais consumidores legítimos do bloco de busca, se houver)
-- (c) **Diff summary** por arquivo (linhas +/–)
-- (d) **Confirmação explícita** de que apenas 11 arquivos foram tocados:
-  1. `src/types/imoveis.ts` (criado)
-  2. `src/utils/imoveisFormat.ts` (criado)
-  3. `src/services/siteImoveis.ts` (modificado)
-  4-11. Os 8 consumidores
+### Passo 1 — Backup pré-sync
+Salvar snapshot atual em `/mnt/documents/site_profiles_backup_pre_sync.json` (todos os 36 profiles com uhomesales_id atual) — para rollback se necessário.
 
-## Guardrails reafirmados
+### Passo 2 — Aplicar 34 UPDATEs no banco do site
+Como o `psql` da sandbox aponta pro CRM, e migrations gerenciadas pelo Lovable também afetam o CRM, o UPDATE no site precisa ser feito via REST API com a anon key (se RLS permitir UPDATE) **ou** via SQL Editor manual no Supabase do site.
 
-Nenhum hook, query Supabase, token de cor, classe Tailwind, JSX, store, rota, sidebar, label, texto visível ao usuário, ou função do bloco de busca legado será modificado. `siteImoveisRemote.ts` recebe **apenas** atualização de imports — lógica intocada.
+Subplano:
+1. Tentar via REST PATCH `/rest/v1/profiles?id=eq.<site_profile_id>` com body `{"uhomesales_id":"<crm_user_id>"}` usando anon key.
+2. Se RLS bloquear (esperado, anon não deve ter UPDATE em profiles), gerar arquivo `/mnt/documents/sync_uhomesales_id.sql` com os 34 UPDATEs prontos e pedir pro usuário rodar no SQL Editor do projeto do site (huigglwvvzuwwyqvpmec). É 1 minuto de trabalho manual.
+
+Formato do SQL gerado:
+```sql
+-- Sync uhomesales_id: CRM (hunbxqzhvuemgntklyzb) → Site (huigglwvvzuwwyqvpmec)
+-- 34 corretores reais. Contas de teste (naoexiste999, weakpw2, pentest-check, 
+-- hot.testes01, teste@uhome.imb.br) intencionalmente fora.
+BEGIN;
+UPDATE profiles SET uhomesales_id = 'a5b6ca08-...', sincronizado_em = now()
+  WHERE id = '5b58f658-...' AND email = 'adri.uhome@gmail.com';
+-- ... (34 linhas, cada uma com WHERE email= como salvaguarda dupla)
+-- Verificação antes do COMMIT:
+SELECT email, uhomesales_id FROM profiles 
+  WHERE email IN (...) ORDER BY email;
+COMMIT;
+```
+
+Cada UPDATE filtra por `id = <site_profile_id> AND email = <email>` — duplo predicado garante zero risco de atualizar profile errado.
+
+### Passo 3 — Validação pós-sync
+Re-rodar o dry-run e confirmar que os 34 corretores aparecem como "Already OK" e nada mudou na contagem de órfãos/ambíguos.
+
+### Passo 4 — Teste end-to-end
+Criar uma vitrine real pelo `/imoveis` com qualquer corretor real. Hook deve achar o profile via `uhomesales_id`, INSERT deve passar, link público deve abrir. Se passou, fluxo está reparado pra todos.
+
+### Passo 5 — Memória
+Salvar `mem://integracoes/crm-site-profile-sync` documentando:
+- `profiles.uhomesales_id` no site = `auth.users.id` no CRM
+- Email é a chave secundária de match (caso uhomesales_id diverja no futuro)
+- Renomeação uhomesales → uhomecrm causou drift histórico, resolvido em 2026-04-20
+
+## Guardrails
+
+NÃO tocar:
+- Tabelas do CRM
+- `created_by` no insert da vitrine (continua sendo `user.id` do CRM, semântica de auditoria)
+- Qualquer hook além do `useCreateVitrine` (já está correto)
+- Profiles de teste (5 contas listadas como SKIP)
+
+Decisão necessária no próximo turno: aprovar geração do `.sql` para você rodar no SQL Editor do site, ou tentar primeiro via REST (se RLS permitir).
 
