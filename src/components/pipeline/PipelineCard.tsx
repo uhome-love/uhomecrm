@@ -188,18 +188,10 @@ const PipelineCard = memo(function PipelineCard({
     if (!motivo) return;
     const descarteStage = stages.find(s => s.tipo === "descarte");
     if (descarteStage) {
-      await supabase.from("pipeline_leads").update({ motivo_descarte: motivo }).eq("id", lead.id);
+      await supabase.from("pipeline_leads").update({ motivo_descarte: motivo, tipo_descarte: "reengajavel" } as any).eq("id", lead.id);
       onMoveLead(lead.id, descarteStage.id);
       toast.info("Lead movido para Descarte");
     }
-  };
-
-  const handleInactivate = async () => {
-    if (!user) return;
-    const confirma = confirm("Deseja inativar este lead? Ele será arquivado e não aparecerá mais no pipeline.");
-    if (!confirma) return;
-    await supabase.from("pipeline_leads").update({ arquivado: true } as any).eq("id", lead.id);
-    toast.info("Lead inativado com sucesso");
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -534,7 +526,7 @@ const PipelineCard = memo(function PipelineCard({
         onOpenTransfer={() => setTransferOpen(true)}
         onOpenPartner={() => setPartnerOpen(true)}
         onMarkLost={handleMarkLost}
-        onInactivate={handleInactivate}
+        onInactivate={onClick}
         onMoveStage={handleMoveStage}
       />
 

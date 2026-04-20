@@ -233,6 +233,12 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   const [isSweeping, setIsSweeping] = useState(false);
   const handleSweepDescartados = useCallback(async () => {
     if (isSweeping) return;
+
+    const confirmed = window.confirm(
+      "Confirmar limpeza dos descartados?\n\nIsso envia apenas os leads já na etapa Descarte para Oferta Ativa e os remove do pipeline visível."
+    );
+    if (!confirmed) return;
+
     setIsSweeping(true);
     try {
       const { data, error } = await supabase.functions.invoke("sweep-descartados");
@@ -497,94 +503,27 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     const isDescarte = targetStage?.tipo === "descarte";
 
     if (isDescarte && lead) {
-      // ─── Optimistic UI: move lead immediately in the UI ───
-      onMoveLead(lead.id, result.targetStageId, result.observacao);
-
-      // ─── Descarte: insert into "Leads Descartados" OA list and DELETE from pipeline ───
       try {
-        const empreendimento = extra.empreendimento || lead.empreendimento || "";
-        const mesesPt = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-        const now = new Date();
-        const LISTA_NOME = `Leads não aproveitados - ${mesesPt[now.getMonth()]} ${now.getFullYear()}`;
+        const motivoTexto = extra.motivo
+          ? `Descarte: ${String(extra.motivo).replace(/_/g, " ")}`
+          : (result.observacao || "Descarte");
 
-        // Find or create the central "Leads Descartados" list
-        let { data: lista } = await supabase
-          .from("oferta_ativa_listas")
-          .select("id, total_leads")
-          .eq("nome", LISTA_NOME)
-          .maybeSingle() as any;
+        await supabase
+          .from("pipeline_leads")
+          .update({
+            motivo_descarte: motivoTexto,
+            tipo_descarte: "reengajavel",
+            arquivado: false,
+          } as any)
+          .eq("id", lead.id);
 
-        if (!lista) {
-          const { data: userData } = await (supabase.auth as any).getUser();
-          const { data: newLista } = await supabase
-            .from("oferta_ativa_listas")
-            .insert({
-              nome: LISTA_NOME,
-              empreendimento: "Diversos",
-              campanha: "Descartados Pipeline",
-              origem: "sistema",
-              status: "ativa",
-              max_tentativas: 5,
-              cooldown_dias: 7,
-              total_leads: 0,
-              criado_por: userData?.user?.id || null,
-            } as any)
-            .select("id, total_leads")
-            .single();
-          lista = newLista;
-        }
-
-        if (lista) {
-          await supabase.from("oferta_ativa_leads").insert({
-            lista_id: lista.id,
-            nome: lead.nome,
-            telefone: lead.telefone || "",
-            email: lead.email || "",
-            empreendimento,
-            status: "na_fila",
-            observacoes: result.observacao || null,
-            motivo_descarte: extra.motivo ? extra.motivo.replace(/_/g, " ") : (result.observacao || "Descarte"),
-            corretor_id: lead.corretor_id || null,
-          } as any);
-
-          // Update total
-          await supabase
-            .from("oferta_ativa_listas")
-            .update({ total_leads: (lista.total_leads || 0) + 1 } as any)
-            .eq("id", lista.id);
-        }
-
-        // Save history record
-        const { data: userData } = await (supabase.auth as any).getUser();
-        await supabase.from("pipeline_historico").insert({
-          pipeline_lead_id: lead.id,
-          stage_anterior_id: lead.stage_id,
-          stage_novo_id: result.targetStageId,
-          movido_por: userData?.user?.id || null,
-          observacao: result.observacao || null,
-        });
-
-        // Register activity
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: lead.id,
-          tipo: "descarte",
-          titulo: `Lead descartado — enviado para Oferta Ativa`,
-          descricao: result.observacao || "Descarte sem observação",
-          status: "concluida",
-          created_by: userData?.user?.id || "00000000-0000-0000-0000-000000000000",
-        });
-
-        // DELETE lead from pipeline_leads (no longer keeps in descarte column)
-        // Archive lead from pipeline (set arquivado = true instead of deleting)
-        await supabase.from("pipeline_leads").update({ arquivado: true } as any).eq("id", lead.id);
-
-        toast.success("🗑️ Lead descartado e enviado para Oferta Ativa!");
+        completeTransition(result.leadId, result.targetStageId, result.observacao);
+        toast.success("Lead movido para Descarte (reengajável)");
       } catch (err) {
         console.error("Error in descarte flow:", err);
         toast.error("Erro no processo de descarte.");
       }
 
-      // Force reload to sync state
       window.dispatchEvent(new CustomEvent("pipeline-reload"));
       return;
     }

@@ -61,11 +61,12 @@ Deno.serve(async (req) => {
       lista = newLista;
     }
 
-    // 3. Fetch all leads in descarte stage
+    // 3. Fetch only reengajável leads already in Descarte stage
     const { data: leads, error: fetchErr } = await supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, telefone2, email, empreendimento, observacoes, corretor_id, motivo_descarte, campanha, telefone_normalizado")
       .eq("stage_id", descarteStage.id)
+      .eq("tipo_descarte", "reengajavel")
       .eq("arquivado", false);
 
     if (fetchErr) throw fetchErr;

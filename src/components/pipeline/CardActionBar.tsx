@@ -119,7 +119,7 @@ export default function CardActionBar({
                 <Trash2 className="h-3.5 w-3.5 mr-2" /> Descartar lead
               </DropdownMenuItem>
               <DropdownMenuItem className="text-amber-600" onClick={(e) => { e.stopPropagation(); onInactivate(); }}>
-                <UserX className="h-3.5 w-3.5 mr-2" /> Inativar lead
+                <UserX className="h-3.5 w-3.5 mr-2" /> Inativar com motivo
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
