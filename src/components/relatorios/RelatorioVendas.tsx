@@ -172,6 +172,15 @@ export default function RelatorioVendas({ filters }: RelatorioVendasProps) {
       const sISO = s.toISOString().slice(0, 10);
       const eISO = e.toISOString().slice(0, 10);
 
+      // Convert filters.corretor (auth_user_id) → profile_id for negocios
+      let corretorProfileId: string | null = null;
+      if (filters.corretor) {
+        const { data: prof } = await supabase
+          .from("profiles").select("id").eq("user_id", filters.corretor).maybeSingle();
+        if (!prof) return [];
+        corretorProfileId = prof.id;
+      }
+
       const negocios = await fetchAllRows<NegocioRow>((from, to) => {
         let q = supabase
           .from("negocios")
@@ -179,7 +188,7 @@ export default function RelatorioVendas({ filters }: RelatorioVendasProps) {
           .in("fase", ["vendido", "assinado"])
           .gte("data_assinatura", sISO)
           .lte("data_assinatura", eISO);
-        if (filters.corretor) q = q.eq("corretor_id", filters.corretor);
+        if (corretorProfileId) q = q.eq("corretor_id", corretorProfileId);
         return q.range(from, to);
       });
 

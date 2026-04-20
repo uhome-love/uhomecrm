@@ -74,13 +74,21 @@ export default function RelatorioNegocios({ filters }: Props) {
     let cancelled = false;
 
     async function fetchNegocios(s: Date, e: Date): Promise<NegocioRow[]> {
+      // Convert filters.corretor (auth_user_id) → profile_id
+      let corretorProfileId: string | null = null;
+      if (filters.corretor) {
+        const { data: prof } = await supabase
+          .from("profiles").select("id").eq("user_id", filters.corretor).maybeSingle();
+        if (!prof) return [];
+        corretorProfileId = prof.id;
+      }
       let rows = await fetchAllRows<NegocioRow>((from, to) => {
         let q = supabase
           .from("negocios")
           .select("id, empreendimento, fase, vgv_final, vgv_estimado, data_assinatura, corretor_id, pipeline_lead_id, nome_cliente, created_at, fase_changed_at")
           .gte("created_at", s.toISOString())
           .lte("created_at", e.toISOString());
-        if (filters.corretor) q = q.eq("corretor_id", filters.corretor);
+        if (corretorProfileId) q = q.eq("corretor_id", corretorProfileId);
         return q.range(from, to);
       });
 
