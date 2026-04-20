@@ -46,7 +46,7 @@ import {
 } from "@/stores/imoveisSearchStore";
 import { useAuth } from "@/hooks/useAuth";
 import { useAISearch } from "@/hooks/useAISearch";
-import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
+import { useCreateVitrine } from "@/hooks/useCreateVitrine";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
