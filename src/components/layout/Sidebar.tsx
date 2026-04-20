@@ -37,9 +37,7 @@ type UserRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
 
 // ─── CAMPAIGN CONFIG ─────────────────────────────────────────────────────────
 
-const CAMPAIGNS = [
-  { label: "Orygem 60 dias",   path: "/orygem-60",   color: "#10b981" },
-];
+const CAMPAIGNS: { label: string; path: string; color: string }[] = [];
 
 // ─── NAV CONFIG POR PERFIL ───────────────────────────────────────────────────
 
@@ -353,7 +351,7 @@ export default function Sidebar({
       <div className="px-5 pt-5 pb-4">
         <UhomeLogo size="md" showTagline />
       </div>
-      {showCampaigns && (
+      {showCampaigns && CAMPAIGNS.length > 0 && (
         <div className="px-3 mb-2">
           <button
             onClick={() => setCampOpen(v => !v)}
