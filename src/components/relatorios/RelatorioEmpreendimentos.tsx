@@ -67,13 +67,21 @@ export default function RelatorioEmpreendimentos({ filters }: Props) {
       const sISO = startDate.toISOString().slice(0, 10);
       const eISO = endDate.toISOString().slice(0, 10);
 
+      // Convert filters.corretor (auth_user_id) → profile_id
+      let corretorProfileId: string | null = null;
+      if (filters.corretor) {
+        const { data: prof } = await supabase
+          .from("profiles").select("id").eq("user_id", filters.corretor).maybeSingle();
+        if (!prof) { if (!cancelled) { setRows([]); setLoading(false); } return; }
+        corretorProfileId = prof.id;
+      }
       let negs = await fetchAllRows<NegocioRow>((from, to) => {
         let q = supabase
           .from("negocios")
           .select("id, empreendimento, fase, vgv_final, vgv_estimado, data_assinatura, corretor_id, pipeline_lead_id, created_at")
           .gte("created_at", startDate.toISOString())
           .lte("created_at", endDate.toISOString());
-        if (filters.corretor) q = q.eq("corretor_id", filters.corretor);
+        if (corretorProfileId) q = q.eq("corretor_id", corretorProfileId);
         return q.range(from, to);
       });
 
