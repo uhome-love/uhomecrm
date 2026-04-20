@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const PERIOD_CHIPS = [
   { key: "hoje", label: "Hoje" },
@@ -61,11 +62,79 @@ const selectStyle: React.CSSProperties = {
   backgroundPosition: "right 8px center",
 };
 
+interface EquipeOption { auth_user_id: string; nome: string }
+interface CorretorOption { auth_user_id: string; nome: string }
+
 export default function ReportFilters({ filters, onFiltersChange, userRole, onExport }: ReportFiltersProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [equipes, setEquipes] = useState<EquipeOption[]>([]);
+  const [corretores, setCorretores] = useState<CorretorOption[]>([]);
 
   const set = (patch: Partial<Filters>) => onFiltersChange({ ...filters, ...patch });
+
+  // Load equipes (gerentes) — admin only
+  useEffect(() => {
+    if (userRole !== "admin") return;
+    let cancelled = false;
+    (async () => {
+      const { data: members } = await supabase
+        .from("team_members")
+        .select("gerente_id")
+        .eq("status", "ativo")
+        .not("gerente_id", "is", null);
+      const gerenteIds = [...new Set((members || []).map((m) => m.gerente_id).filter(Boolean) as string[])];
+      if (gerenteIds.length === 0) { if (!cancelled) setEquipes([]); return; }
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, nome")
+        .in("user_id", gerenteIds);
+      const list = (profs || [])
+        .filter((p) => p.user_id)
+        .map((p) => ({ auth_user_id: p.user_id as string, nome: p.nome || "—" }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+      if (!cancelled) setEquipes(list);
+    })();
+    return () => { cancelled = true; };
+  }, [userRole]);
+
+  // Load corretores — filtered by equipe if selected
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let userIds: string[] | null = null;
+      if (filters.equipe) {
+        const { data: members } = await supabase
+          .from("team_members")
+          .select("user_id")
+          .eq("gerente_id", filters.equipe)
+          .eq("status", "ativo");
+        userIds = [...new Set((members || []).map((m) => m.user_id).filter(Boolean) as string[])];
+        if (userIds.length === 0) { if (!cancelled) setCorretores([]); return; }
+      } else if (userRole === "gestor") {
+        // Gestor sees only their team — resolved server-side via RLS in most queries; here we still try to scope
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: members } = await supabase
+            .from("team_members")
+            .select("user_id")
+            .eq("gerente_id", user.id)
+            .eq("status", "ativo");
+          userIds = [...new Set((members || []).map((m) => m.user_id).filter(Boolean) as string[])];
+          if (userIds.length === 0) { if (!cancelled) setCorretores([]); return; }
+        }
+      }
+      let q = supabase.from("profiles").select("user_id, nome").eq("cargo", "corretor");
+      if (userIds) q = q.in("user_id", userIds);
+      const { data: profs } = await q;
+      const list = (profs || [])
+        .filter((p) => p.user_id)
+        .map((p) => ({ auth_user_id: p.user_id as string, nome: p.nome || "—" }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+      if (!cancelled) setCorretores(list);
+    })();
+    return () => { cancelled = true; };
+  }, [filters.equipe, userRole]);
 
   return (
     <div
@@ -111,10 +180,13 @@ export default function ReportFilters({ filters, onFiltersChange, userRole, onEx
       {userRole === "admin" && (
         <select
           value={filters.equipe}
-          onChange={(e) => set({ equipe: e.target.value })}
+          onChange={(e) => set({ equipe: e.target.value, corretor: "" })}
           style={selectStyle}
         >
           <option value="">Todas as equipes</option>
+          {equipes.map((eq) => (
+            <option key={eq.auth_user_id} value={eq.auth_user_id}>{eq.nome}</option>
+          ))}
         </select>
       )}
 
@@ -124,6 +196,9 @@ export default function ReportFilters({ filters, onFiltersChange, userRole, onEx
         style={selectStyle}
       >
         <option value="">Todos os corretores</option>
+        {corretores.map((c) => (
+          <option key={c.auth_user_id} value={c.auth_user_id}>{c.nome}</option>
+        ))}
       </select>
 
       <select
