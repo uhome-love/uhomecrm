@@ -164,7 +164,6 @@ export default function ImoveisPage() {
   // Vitrine
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [vitrineLink, setVitrineLink] = useState<string | null>(null); // controlled separately above
   const [vitrineLink, setVitrineLink] = useState<string | null>(null);
 
   // Bairro search
@@ -457,7 +456,7 @@ export default function ImoveisPage() {
   const previewGetPreco = useCallback((item: any) => formatPreco(item.preco), []);
 
   // ── Vitrine creation ──
-  const { mutate: criarVitrine, isPending: vitrineCreating } = useCreateVitrine();
+  const { mutate: criarVitrine, isPending: creatingVitrine } = useCreateVitrine();
   const createVitrine = useCallback(() => {
     if (!user) return;
     criarVitrine(
