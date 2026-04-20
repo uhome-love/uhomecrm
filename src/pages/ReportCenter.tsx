@@ -68,7 +68,8 @@ export default function ReportCenter() {
 
     if (isMega) {
       document.dispatchEvent(new CustomEvent("mega-expand-all"));
-      await new Promise((r) => setTimeout(r, 300));
+      // give React time to mount all sections
+      await new Promise((r) => setTimeout(r, 600));
     }
 
     const element = document.getElementById(targetId);
@@ -76,6 +77,21 @@ export default function ReportCenter() {
       toast({ title: "Não foi possível capturar o relatório", variant: "destructive" });
       return;
     }
+
+    toast({ title: "Carregando dados do relatório..." });
+
+    // Wait until all skeleton loaders inside the report disappear (max 20s)
+    const waitStart = Date.now();
+    const MAX_WAIT = 20000;
+    // Always give at least one tick for components to start fetching
+    await new Promise((r) => setTimeout(r, 400));
+    while (Date.now() - waitStart < MAX_WAIT) {
+      const stillLoading = element.querySelector(".animate-pulse");
+      if (!stillLoading) break;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    // small settle delay so charts finish their entry animation
+    await new Promise((r) => setTimeout(r, 600));
 
     toast({ title: "Gerando PDF..." });
 
