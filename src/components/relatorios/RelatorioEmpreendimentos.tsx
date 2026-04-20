@@ -226,14 +226,14 @@ export default function RelatorioEmpreendimentos({ filters }: Props) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 60, gap: 12 }}>
         <Building2 size={40} strokeWidth={1} color="#C7D2FE" />
-        <div style={{ color: "#6b7280", fontSize: 14 }}>Nenhuma venda no período selecionado</div>
+        <div style={{ color: "#6b7280", fontSize: 14 }}>Nenhum negócio no período selecionado</div>
       </div>
     );
   }
 
   const kpis = [
     { label: "Empreendimentos ativos", value: String(empAtivos), sub: "" },
-    { label: "VGV total", value: fmtMoney(totalVgv), sub: `${totalVendas} vendas` },
+    { label: "VGV total", value: fmtMoney(totalVgv), sub: `${totalVendas} negócios` },
     { label: "Melhor empreendimento", value: melhor?.empreendimento || "—", sub: melhor ? fmtMoney(melhor.vgvTotal) : "" },
     { label: "Ticket médio geral", value: fmtMoney(ticketGeral), sub: "" },
   ];
@@ -272,7 +272,7 @@ export default function RelatorioEmpreendimentos({ filters }: Props) {
             <tr>
               {([
                 ["empreendimento", "Empreendimento"],
-                ["totalVendas", "Vendas"],
+                ["totalVendas", "Negócios"],
                 ["vgvTotal", "VGV total"],
                 ["ticketMedio", "Ticket médio"],
                 ["nLeads", "Leads"],
