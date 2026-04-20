@@ -6,7 +6,8 @@
 import React, { useState, useRef, useCallback } from "react";
 import { Heart, Share2, MessageCircle, Copy, Link2, ExternalLink, Building2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { type SiteImovel, fotoPrincipal, formatPreco, shareUrlUhome } from "@/services/siteImoveis";
+import type { SiteImovel } from "@/types/imoveis";
+import { fotoPrincipal, formatPreco, shareUrlUhome } from "@/utils/imoveisFormat";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

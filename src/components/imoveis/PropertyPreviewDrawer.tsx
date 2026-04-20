@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
-import { gerarSlugUhome } from "@/services/siteImoveis";
+import { gerarSlugUhome } from "@/utils/imoveisFormat";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {

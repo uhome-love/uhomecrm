@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Share2, Link2, MessageCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { gerarSlugUhome } from "@/services/siteImoveis";
+import { gerarSlugUhome } from "@/utils/imoveisFormat";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 
 interface SharePropertyButtonProps {

@@ -8,7 +8,8 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { type MapPin, formatPrecoCompact, formatPreco } from "@/services/siteImoveis";
+import type { MapPin } from "@/types/imoveis";
+import { formatPrecoCompact, formatPreco } from "@/utils/imoveisFormat";
 import { motion, AnimatePresence } from "framer-motion";
 import { Navigation, Search, Bed, Maximize, ToggleLeft, ToggleRight, PenTool, X, Check } from "lucide-react";
 import { toast } from "sonner";

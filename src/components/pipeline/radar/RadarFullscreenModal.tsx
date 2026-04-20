@@ -13,7 +13,7 @@ import {
 import { X, Search, Sparkles, Home, MapPin, DollarSign, Bed, Car, Ruler, Copy, ExternalLink, Check, MessageSquare, Save } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/utils";
-import { gerarSlugUhome } from "@/services/siteImoveis";
+import { gerarSlugUhome } from "@/utils/imoveisFormat";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface RadarProfileData {
