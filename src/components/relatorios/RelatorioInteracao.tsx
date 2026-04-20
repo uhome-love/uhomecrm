@@ -83,11 +83,7 @@ export default function RelatorioInteracao({ filters }: Props) {
           .select("user_id")
           .eq("gerente_id", filters.equipe);
         if (members?.length) {
-          const { data: profs } = await supabase
-            .from("profiles")
-            .select("id")
-            .in("user_id", members.map((m) => m.user_id));
-          const ids = new Set((profs || []).map((p) => p.id));
+          const ids = new Set(members.map((m) => m.user_id));
           rows = rows.filter((r) => r.responsavel_id && ids.has(r.responsavel_id));
         } else {
           rows = [];
@@ -106,8 +102,8 @@ export default function RelatorioInteracao({ filters }: Props) {
       const ids = [...new Set(cur.map((r) => r.responsavel_id).filter(Boolean))] as string[];
       const nameMap = new Map<string, string>();
       if (ids.length) {
-        const { data: profs } = await supabase.from("profiles").select("id, nome").in("id", ids);
-        (profs || []).forEach((p) => nameMap.set(p.id, p.nome || "—"));
+        const { data: profs } = await supabase.from("profiles").select("user_id, nome").in("user_id", ids);
+        (profs || []).forEach((p) => { if (p.user_id) nameMap.set(p.user_id, p.nome || "—"); });
       }
 
       if (!cancelled) {
