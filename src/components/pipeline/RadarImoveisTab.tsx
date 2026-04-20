@@ -389,6 +389,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   const { user } = useAuth();
   const slugRef = useBrokerSlug();
   const { search: typesenseSearch } = useTypesenseSearch();
+  const { mutateAsync: criarVitrineAsync } = useCreateVitrine();
   const [creatingVitrine, setCreatingVitrine] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
 

@@ -236,6 +236,8 @@ export default function OrygemCampanha() {
     }
   }, [showEnviar]);
 
+  const { mutateAsync: criarVitrineAsync } = useCreateVitrine();
+
   const handleCreateVitrine = useCallback(async () => {
     if (!user) { toast.error("Você precisa estar logado."); return; }
     setEnviarSaving(true);
@@ -259,27 +261,31 @@ export default function OrygemCampanha() {
         fotos: images,
       }];
 
-      const { data, error } = await supabase.from("vitrines").insert({
+      // Serializa metadados Orygem em `mensagem` (coluna `dados_custom`/`tipo` não existe no banco do site).
+      // Formato: <mensagem-do-corretor>\n\n__OPS__:<json>  — consumível pela landing Orygem.
+      const mensagemSerializada = [
+        enviarMensagem || "",
+        `__ORYGEM_META__:${JSON.stringify({ tipo: "product_page", dados_custom: dadosCustom })}`,
+      ].filter(Boolean).join("\n\n");
+
+      const { publicUrl: url } = await criarVitrineAsync({
         titulo: `Orygem Residence Club — Vitrine Exclusiva`,
-        created_by: user.id,
-        tipo: "product_page",
-        imovel_ids: [orygemOverride?.codigo || "ORYGEM"],
-        dados_custom: dadosCustom,
+        imovel_codigos: [orygemOverride?.codigo || "ORYGEM"],
         lead_nome: enviarLeadNome || null,
         lead_telefone: enviarLeadTel || null,
-        mensagem_corretor: enviarMensagem || null,
-      }).select("id").single();
+        mensagem: mensagemSerializada,
+      });
 
-      if (error) throw error;
-      const url = getVitrinePublicUrl(data.id);
       setEnviarVitrineUrl(url);
-      toast.success("Vitrine criada!");
     } catch (err: any) {
-      toast.error("Erro: " + (err.message || "Falha ao criar vitrine"));
+      // hook já mostra toast.error genérico; preserva fallback específico só se não-toastado
+      if (!err?.message?.includes("logado")) {
+        // toast já disparado pelo hook
+      }
     } finally {
       setEnviarSaving(false);
     }
-  }, [user, orygemOverride, enviarLeadNome, enviarLeadTel, enviarMensagem]);
+  }, [user, orygemOverride, enviarLeadNome, enviarLeadTel, enviarMensagem, criarVitrineAsync]);
 
   function enviarWhatsApp() {
     if (!enviarVitrineUrl) return;
