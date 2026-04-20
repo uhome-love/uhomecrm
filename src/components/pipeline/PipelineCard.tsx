@@ -188,7 +188,7 @@ const PipelineCard = memo(function PipelineCard({
     if (!motivo) return;
     const descarteStage = stages.find(s => s.tipo === "descarte");
     if (descarteStage) {
-      await supabase.from("pipeline_leads").update({ motivo_descarte: motivo }).eq("id", lead.id);
+      await supabase.from("pipeline_leads").update({ motivo_descarte: motivo, tipo_descarte: "reengajavel" } as any).eq("id", lead.id);
       onMoveLead(lead.id, descarteStage.id);
       toast.info("Lead movido para Descarte");
     }
