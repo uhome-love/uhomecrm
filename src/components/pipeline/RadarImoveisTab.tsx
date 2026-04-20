@@ -26,6 +26,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
+import { useCreateVitrine } from "@/hooks/useCreateVitrine";
 import { useTypesenseSearch } from "@/hooks/useTypesenseSearch";
 import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
 import { useLeadPropertySearch } from "@/hooks/useLeadPropertySearch";
@@ -388,6 +389,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   const { user } = useAuth();
   const slugRef = useBrokerSlug();
   const { search: typesenseSearch } = useTypesenseSearch();
+  const { mutateAsync: criarVitrineAsync } = useCreateVitrine();
   const [creatingVitrine, setCreatingVitrine] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
 
@@ -1121,30 +1123,18 @@ Responda SOMENTE com o JSON, sem markdown.`;
       const titulo = `Seleção para ${leadNome}`;
       const mensagem = `Olá ${leadNome}! Selecionei ${items.length} imóveis especialmente para você. Confira!`;
 
-      const { data: vitrine, error } = await supabase
-        .from("vitrines")
-        .insert({
-          titulo,
-          mensagem_corretor: mensagem,
-          imovel_ids: imovelCodigos,
-          lead_nome: leadNome,
-          lead_telefone: leadTelefone || null,
-          corretor_slug: slugRef || null,
-          created_by: user.id,
-          tipo: "property_selection",
-        })
-        .select("id")
-        .single();
-
-      if (error) throw error;
-
-      const vitrineUrl = getVitrinePublicUrl(vitrine.id);
+      const { id, publicUrl: vitrineUrl } = await criarVitrineAsync({
+        imovel_codigos: imovelCodigos,
+        titulo,
+        mensagem,
+        lead_id: leadId ?? null,
+        lead_nome: leadNome,
+        lead_telefone: leadTelefone || null,
+        corretor_slug: slugRef || null,
+      });
 
       // Mark items as sent
       handleMarkSent(items);
-
-      // Copy link + open WhatsApp
-      await navigator.clipboard.writeText(vitrineUrl);
 
       if (leadTelefone) {
         const phone = leadTelefone.replace(/\D/g, "");
@@ -1156,11 +1146,10 @@ Responda SOMENTE com o JSON, sem markdown.`;
       toast.success("Vitrine criada! Link copiado ✨", { description: vitrineUrl, duration: 6000 });
     } catch (err: any) {
       console.error("Erro ao criar vitrine:", err);
-      toast.error("Erro ao criar vitrine");
     } finally {
       setCreatingVitrine(false);
     }
-  }, [user?.id, selectedItems, results, leadNome, leadTelefone, slugRef, handleMarkSent]);
+  }, [user?.id, selectedItems, results, leadNome, leadTelefone, leadId, slugRef, handleMarkSent, criarVitrineAsync]);
 
   return (
     <div className="px-6 pb-8 space-y-3">
@@ -1225,24 +1214,17 @@ Responda SOMENTE com o JSON, sem markdown.`;
             const imovelCodigos = items.map(item => getPropertyCode(item));
             const titulo = `Seleção para ${leadNome}`;
             const mensagem = `Olá ${leadNome}! Selecionei ${items.length} imóveis especialmente para você. Confira!`;
-            const { data: vitrine, error } = await supabase
-              .from("vitrines")
-              .insert({
-                titulo,
-                mensagem_corretor: mensagem,
-                imovel_ids: imovelCodigos,
-                lead_nome: leadNome,
-                lead_telefone: leadTelefone || null,
-                corretor_slug: slugRef || null,
-                created_by: user.id,
-                tipo: "property_selection",
-              })
-              .select("id")
-              .single();
-            if (error) throw error;
-            const vitrineUrl = getVitrinePublicUrl(vitrine.id);
+            const { id: vitrineId, publicUrl: vitrineUrl } = await criarVitrineAsync({
+              imovel_codigos: imovelCodigos,
+              titulo,
+              mensagem,
+              lead_id: leadId ?? null,
+              lead_nome: leadNome,
+              lead_telefone: leadTelefone || null,
+              corretor_slug: slugRef || null,
+            });
 
-            // Fire-and-forget: mark sent & log activity
+            // Fire-and-forget: mark sent & log activity (CRM-side activity log)
             handleMarkSent(items);
             supabase.from("pipeline_atividades").insert({
               pipeline_lead_id: leadId,
@@ -1253,13 +1235,11 @@ Responda SOMENTE com o JSON, sem markdown.`;
             }).then(() => {}).catch(() => {});
 
             console.log("[RadarImoveisTab] vitrineUrl gerada:", vitrineUrl);
-            // Don't reset creatingVitrine until after returning the URL
             const urlToReturn = vitrineUrl;
             setCreatingVitrine(false);
             return urlToReturn;
           } catch (err: any) {
             console.error("Erro ao criar vitrine:", err);
-            toast.error("Erro ao criar vitrine");
             setCreatingVitrine(false);
             return undefined;
           }
