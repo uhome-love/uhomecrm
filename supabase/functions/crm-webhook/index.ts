@@ -3,6 +3,7 @@ import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared
 
 const VALID_TIPOS = ['lead', 'agendamento', 'captacao', 'whatsapp_click'] as const
 const NOVO_LEAD_STAGE_ID = 'd3843b2f-2fa1-4c31-9129-4eb0ed21f019'
+const PUBLIC_SITE_DOMAIN = 'https://uhome.com.br'
 
 /**
  * Extract property codigo from a slug like "apartamento-3-quartos-rio-branco-340340-UP"
@@ -16,6 +17,40 @@ function extractCodigoFromSlug(slug: string): string | null {
   const numericMatch = slug.match(/(\d{4,})$/)
   if (numericMatch) return numericMatch[1]
   return null
+}
+
+function buildCanonicalSiteUrl(path: string): string | null {
+  if (!path || !path.startsWith('/')) return null
+  return `${PUBLIC_SITE_DOMAIN}${path}`
+}
+
+function normalizeLegacySiteUrl(rawUrl: string | null): string | null {
+  if (!rawUrl) return null
+
+  try {
+    const parsed = new URL(rawUrl)
+    const isLegacySsrRender =
+      parsed.hostname.endsWith('.supabase.co') && parsed.pathname.endsWith('/functions/v1/ssr-render')
+
+    if (isLegacySsrRender) {
+      const path = parsed.searchParams.get('path')
+      const canonical = path ? buildCanonicalSiteUrl(path) : null
+      if (canonical) return canonical
+    }
+
+    if (parsed.hostname === 'uhome.com.br' || parsed.hostname === 'www.uhome.com.br') {
+      return rawUrl
+    }
+
+    if (parsed.pathname.startsWith('/imovel/') || parsed.pathname.startsWith('/c/') || parsed.pathname.startsWith('/vitrine/')) {
+      const canonical = buildCanonicalSiteUrl(parsed.pathname)
+      if (canonical) return canonical
+    }
+
+    return rawUrl
+  } catch {
+    return rawUrl
+  }
 }
 
 Deno.serve(async (req) => {
@@ -70,11 +105,11 @@ Deno.serve(async (req) => {
     const origemDetalheLabel = origemDetalheRaw ? (DETALHE_LABELS[origemDetalheRaw] || origemDetalheRaw) : null
     const imovelCodigo = record.imovel_codigo || null
     const imovelSlug = record.imovel_slug || null
-    const paginaUrl = record.pagina_url || record.origem_pagina || null
+    const paginaUrl = normalizeLegacySiteUrl(record.pagina_url || record.origem_pagina || null)
 
     // ── Resolve property data ──
     let imovelTitulo = record.imovel_titulo || record.imovel_interesse || null
-    let imovelUrl: string | null = record.imovel_url || null
+    let imovelUrl: string | null = normalizeLegacySiteUrl(record.imovel_url || null)
 
     // Try to resolve from slug (new site payload)
     if (imovelSlug && !imovelCodigo && !imovelUrl) {
@@ -131,7 +166,6 @@ Deno.serve(async (req) => {
       const tipoMatch = interestText.match(/^(apartamento|casa|cobertura|studio|loft|sala|terreno|loja|sobrado)/)
       const quartosMatch = interestText.match(/(\d+)\s*quarto/)
       if (tipoMatch) {
-        const queryFilters: Record<string, unknown> = {}
         const bairroNorm = (bairroInteresse as string).trim()
         
         const { data: candidates } = await supabase
