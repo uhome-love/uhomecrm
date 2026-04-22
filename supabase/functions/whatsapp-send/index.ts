@@ -160,6 +160,17 @@ serve(async (req) => {
       const evoResult = await evoResponse.json();
       console.log("Evolution sendText response:", JSON.stringify(evoResult));
 
+      // Detect "number does not exist on WhatsApp" (Evolution returns 400 with message array)
+      const msgArr = Array.isArray(evoResult?.response?.message) ? evoResult.response.message : null;
+      const notOnWhatsApp = msgArr?.some((m: any) => m?.exists === false);
+      if (notOnWhatsApp) {
+        return json({
+          error: `O número ${cleanPhone} não está cadastrado no WhatsApp. Verifique se o telefone do lead está correto.`,
+          invalid_phone: true,
+          phone: cleanPhone,
+        }, 422);
+      }
+
       if (!evoResponse.ok) {
         return json({
           error: "Erro Evolution API: " + (evoResult?.message || JSON.stringify(evoResult)),
