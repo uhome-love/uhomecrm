@@ -247,16 +247,16 @@ function buildPdnSummary(pdn: any[]): string {
   const total = pdn.length;
   const novo = pdn.filter(p => p.fase === "novo_negocio").length;
   const proposta = pdn.filter(p => p.fase === "proposta" || p.fase === "negociacao" || p.fase === "documentacao").length;
-  const assinado = pdn.filter(p => p.fase === "assinado").length;
+  const assinado = pdn.filter(p => p.fase === "vendido").length;
   const perdido = pdn.filter(p => p.status === "perdido").length;
 
-  const vgvAssinado = pdn.filter(p => p.fase === "assinado").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
-  const vgvProjetado = pdn.filter(p => ["proposta", "negociacao", "documentacao", "assinado"].includes(p.fase)).reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+  const vgvAssinado = pdn.filter(p => p.fase === "vendido").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+  const vgvProjetado = pdn.filter(p => ["proposta", "negociacao", "documentacao", "vendido"].includes(p.fase)).reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
   // Stale deals (no update in 5+ days)
   const now = Date.now();
   const stale = pdn.filter(p => {
-    if (["assinado"].includes(p.fase) || p.status === "perdido") return false;
+    if (p.fase === "vendido" || p.status === "perdido") return false;
     const lastUpdate = new Date(p.updated_at).getTime();
     return (now - lastUpdate) > 5 * 24 * 60 * 60 * 1000;
   });
