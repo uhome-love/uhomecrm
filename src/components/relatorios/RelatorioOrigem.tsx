@@ -122,7 +122,7 @@ export default function RelatorioOrigem({ filters }: Props) {
           .from("negocios")
           .select("id, fase, vgv_final, vgv_estimado, pipeline_lead_id")
           .in("pipeline_lead_id", leadIds)
-          .in("fase", ["vendido", "assinado"]);
+          .eq("fase", "vendido");
         negocios = (data || []) as NegocioRow[];
       }
 

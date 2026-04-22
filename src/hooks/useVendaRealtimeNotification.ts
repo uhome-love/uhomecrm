@@ -35,9 +35,8 @@ export function useVendaRealtimeNotification() {
           const newRow = payload.new as any;
           const oldRow = payload.old as any;
 
-          // Only trigger when fase changes TO assinado or vendido
-          const targetFases = ["assinado", "vendido"];
-          if (!targetFases.includes(newRow?.fase)) return;
+          // Only trigger when fase changes TO vendido
+          if (newRow?.fase !== "vendido") return;
           if (oldRow?.fase === newRow?.fase) return;
 
           // Prevent duplicate processing

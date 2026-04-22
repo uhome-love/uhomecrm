@@ -191,7 +191,7 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
       if (n.fase === "proposta" && n.fase_changed_at && n.fase_changed_at >= startTs && n.fase_changed_at <= endTs) {
         stats[uid].propostas++;
       }
-      if ((n.fase === "assinado" || n.fase === "vendido") && n.data_assinatura && n.data_assinatura >= start && n.data_assinatura <= end) {
+      if (n.fase === "vendido" && n.data_assinatura && n.data_assinatura >= start && n.data_assinatura <= end) {
         stats[uid].assinados++;
         stats[uid].vgv += getVgvByProfile(n, n.corretor_id);
         if (hasParceria(n)) stats[uid].has_parceria = true;
@@ -200,7 +200,7 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
 
     // Partner deals — negócios from outside the team where a team member is partner
     negociosParceiros.forEach(n => {
-      if ((n.fase === "assinado" || n.fase === "vendido") && n.data_assinatura && n.data_assinatura >= start && n.data_assinatura <= end) {
+      if (n.fase === "vendido" && n.data_assinatura && n.data_assinatura >= start && n.data_assinatura <= end) {
         const parc = parceriaByLead[n.lead_id];
         if (!parc) return;
         teamUserIds.forEach(uid => {
