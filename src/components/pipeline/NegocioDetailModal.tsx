@@ -570,8 +570,8 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
                 <CalendarDays className="h-3.5 w-3.5" /> 📅 Reunião
               </Button>
 
-              {/* Solicitar Pagadoria — only shows on "documentacao" phase */}
-              {(fullNeg.fase === "documentacao" || fullNeg.fase === "assinado") && (
+              {/* Solicitar Pagadoria — only shows on "documentacao" or "vendido" phase */}
+              {(fullNeg.fase === "documentacao" || fullNeg.fase === "vendido") && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -932,8 +932,8 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
           {/* ════════ FOOTER ════════ */}
           <div className="shrink-0 border-t border-border/50 px-6 py-3 flex items-center gap-2">
             {fullNeg.fase === "documentacao" && (
-              <Button className="gap-2 text-xs bg-green-600 hover:bg-green-700" onClick={() => { onMoveFase(negocio.id, "assinado"); onOpenChange(false); }}>
-                🏆 Marcar como ASSINADO
+              <Button className="gap-2 text-xs bg-green-600 hover:bg-green-700" onClick={() => { onMoveFase(negocio.id, "vendido"); onOpenChange(false); }}>
+                🏆 Marcar como VENDIDO
               </Button>
             )}
             {fullNeg.fase === "proposta" && (
@@ -946,7 +946,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
                 📄 → Contrato Gerado
               </Button>
             )}
-            {fullNeg.pipeline_lead_id && fullNeg.fase !== "assinado" && fullNeg.fase !== "distrato" && (
+            {fullNeg.pipeline_lead_id && fullNeg.fase !== "vendido" && fullNeg.fase !== "distrato" && (
               <Button variant="outline" className="gap-1 text-xs border-destructive/30 text-destructive" onClick={() => setRegressOpen(true)}>
                 🔄 Regredir para Pipeline
               </Button>
