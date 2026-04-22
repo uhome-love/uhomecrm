@@ -1,93 +1,61 @@
 
 
-# Sync uhomesales_id no banco do site — Estratégia escolhida e plano
+## Unificar etapas "Assinado" e "Vendido" no Pipeline de Negócios
 
-## TL;DR
+Hoje o pipeline de negócios tem duas etapas redundantes — **Assinado** e **Vendido** — que tratam exatamente do mesmo evento (negócio fechado). Isso gera duplicidade no código (`["assinado", "vendido"]` espalhado em 19+ arquivos), confusão visual (CEO/gerente veem "Vendido", corretor vê "Assinado") e a coluna "Vendido" fica oculta para corretores.
 
-Match por email é **100% limpo**. Recomendação: **Estratégia B (sync em massa no banco do site)**. Single SQL, 34 UPDATEs, sem ambiguidade.
+### Decisão de unificação
 
-## Resultado do dry-run
+Vamos manter **`vendido`** como a chave canônica única (já tem 40 registros no banco) e eliminar `assinado` por completo.
 
-| Categoria | Qtd | Detalhe |
-|-----------|-----|---------|
-| ✅ Já sincronizados | 0 | Nenhum profile aponta pro user_id atual do CRM |
-| 🔄 UPDATEs necessários | **34** | Todos os corretores reais — email bate, só atualizar `uhomesales_id` |
-| ➕ INSERTs necessários | 0 | Todo CRM user real já tem profile no site |
-| ⏭️ SKIPs (contas de teste) | 5 | naoexiste999, weakpw2, pentest-check, hot.testes01, teste@uhome.imb.br |
-| ⚠️ Órfãos no site sem CRM | 0 | Todo profile do site bate com algum CRM user |
-| ❓ Ambíguos (mesmo email duplicado) | 0 | 1:1 perfeito |
+| Item | Antes | Depois |
+|---|---|---|
+| Fases no pipeline | Assinado (todos) + Vendido (oculto p/ corretor) | **Vendido** — uma única coluna verde, visível para todos |
+| Registros `fase = 'assinado'` | 0 | — |
+| Registros `fase = 'vendido'` | 40 | 40 (preservados) |
+| Lógica `["assinado","vendido"]` | espalhada | apenas `'vendido'` |
 
-**Conclusão**: cada um dos 34 corretores reais tem exatamente UM profile no site com email idêntico. Os `uhomesales_id` atuais são lixo de uma base antiga (provavelmente da renomeação uhomesales → uhomecrm). Basta sobrescrever.
+### O que será feito
 
-## Por que Estratégia B (sync no banco) e não A (match por email no hook)
+**1. Banco de dados (migration)**
+- Migrar quaisquer `negocios.fase = 'assinado'` para `'vendido'` (segurança — hoje são 0, mas garantimos consistência futura).
+- Atualizar a view `v_kpi_negocios`: `conta_venda` passa a checar apenas `fase = 'vendido'`.
+- Remover a etapa órfã `Assinado` (`tipo = 'assinatura'`) da tabela `pipeline_stages` (legado não-utilizado pelo módulo de negócios).
 
-| Critério | A (match por email no hook) | B (sync em massa) |
-|----------|------------------------------|-------------------|
-| Latência criação vitrine | +1 query lookup por email a cada criação | Lookup direto por uhomesales_id, igual hoje |
-| Resiliência se admin trocar email | Precisa estar sincronizado em ambos | Idem (qualquer estratégia precisa) |
-| Complexidade no hook | Adiciona fallback `eq(email)` se `uhomesales_id` falhar | Zero mudança no hook |
-| Outros lugares que usam uhomesales_id | Continuariam quebrados | Conserta TUDO de uma vez |
-| Reversibilidade | Trivial | Backup antes do UPDATE resolve |
+**2. Código frontend**
+- `src/hooks/useNegocios.ts`: remover entrada `assinado` de `NEGOCIOS_FASES`. Remover `hidden: true` de `vendido` e renomear label para **"Vendido"** com cor verde única (#22C55E).
+- `src/pages/MeusNegocios.tsx`: remover a lógica condicional `((isAdmin || isGestor) && f.key === "vendido")` — a coluna passa a aparecer para todos automaticamente.
+- `src/components/negocios/NegocioCard.tsx`: mesma simplificação no dropdown "Mover para etapa".
+- `src/components/pipeline/NegocioDetailModal.tsx`: trocar `fase === "assinado"` → `fase === "vendido"` (botão Solicitar Pagadoria, botão Regredir).
+- `src/components/pipeline/FaseTransitionModal.tsx`: o caminho `targetFase === "assinado"` vira `"vendido"`.
+- `src/hooks/useNegocios.ts` (linha 223): o `if (novaFase === "assinado")` que seta `data_assinatura` passa a checar `"vendido"`.
 
-A B conserta a raiz. A A só remendaria a vitrine — qualquer outra integração CRM↔site continuaria quebrada.
+**3. Limpeza de duplicidade em consumidores**
+Substituir todas as ocorrências de `.in("fase", ["assinado","vendido"])` por `.eq("fase", "vendido")` nos seguintes arquivos:
+- `src/components/relatorios/RelatorioVendas.tsx`
+- `src/components/relatorios/RelatorioOrigem.tsx`
+- `src/components/relatorios/RelatorioConversao.tsx`
+- `src/components/gerente/TabProducao.tsx`
+- `src/pages/CheckpointGerente.tsx`
+- `src/hooks/useCeoDashboard.ts`
+- `src/hooks/useForecast.ts`
+- `src/hooks/useVendaRealtimeNotification.ts`
+- `src/hooks/useSmartAlerts.ts`
+- `src/components/ceo/SaudeOperacao.tsx`
+- `src/components/central/FunilContent.tsx`
+- `src/pages/VendasRealizadas.tsx` (badge fixo "Vendido")
+- `src/lib/metricDefinitions.ts`: `NEGOCIO_FASES_ASSINADO = ['vendido']`
+- `supabase/functions/homi-gerencial/index.ts`
 
-## Schema confirmado de `profiles` no site
+### Resultado para o usuário
 
-```
-id, email, nome, telefone, role, ativo, slug_ref, foto_url, avatar_url,
-creci, uhomesales_id, sincronizado_em, created_at
-```
+- **Corretor, Gerente e CEO** veem a mesma coluna **"Vendido"** (verde) no pipeline de negócios.
+- Quando um negócio é movido para Vendido, `data_assinatura` é setada automaticamente (mantém regra atual).
+- Relatórios de VGV Assinado, Vendas Realizadas e KPIs continuam funcionando — todos contam negócios com `fase = 'vendido'`.
+- Sem perda de histórico: 40 negócios atuais permanecem como Vendido.
 
-Coluna canônica de ponte CRM↔site: `uhomesales_id` (não existe `auth_user_id`, `crm_id`, etc. — é mesmo essa).
+### Riscos & mitigação
 
-## Plano de execução (próximo turno, em modo default)
-
-### Passo 1 — Backup pré-sync
-Salvar snapshot atual em `/mnt/documents/site_profiles_backup_pre_sync.json` (todos os 36 profiles com uhomesales_id atual) — para rollback se necessário.
-
-### Passo 2 — Aplicar 34 UPDATEs no banco do site
-Como o `psql` da sandbox aponta pro CRM, e migrations gerenciadas pelo Lovable também afetam o CRM, o UPDATE no site precisa ser feito via REST API com a anon key (se RLS permitir UPDATE) **ou** via SQL Editor manual no Supabase do site.
-
-Subplano:
-1. Tentar via REST PATCH `/rest/v1/profiles?id=eq.<site_profile_id>` com body `{"uhomesales_id":"<crm_user_id>"}` usando anon key.
-2. Se RLS bloquear (esperado, anon não deve ter UPDATE em profiles), gerar arquivo `/mnt/documents/sync_uhomesales_id.sql` com os 34 UPDATEs prontos e pedir pro usuário rodar no SQL Editor do projeto do site (huigglwvvzuwwyqvpmec). É 1 minuto de trabalho manual.
-
-Formato do SQL gerado:
-```sql
--- Sync uhomesales_id: CRM (hunbxqzhvuemgntklyzb) → Site (huigglwvvzuwwyqvpmec)
--- 34 corretores reais. Contas de teste (naoexiste999, weakpw2, pentest-check, 
--- hot.testes01, teste@uhome.imb.br) intencionalmente fora.
-BEGIN;
-UPDATE profiles SET uhomesales_id = 'a5b6ca08-...', sincronizado_em = now()
-  WHERE id = '5b58f658-...' AND email = 'adri.uhome@gmail.com';
--- ... (34 linhas, cada uma com WHERE email= como salvaguarda dupla)
--- Verificação antes do COMMIT:
-SELECT email, uhomesales_id FROM profiles 
-  WHERE email IN (...) ORDER BY email;
-COMMIT;
-```
-
-Cada UPDATE filtra por `id = <site_profile_id> AND email = <email>` — duplo predicado garante zero risco de atualizar profile errado.
-
-### Passo 3 — Validação pós-sync
-Re-rodar o dry-run e confirmar que os 34 corretores aparecem como "Already OK" e nada mudou na contagem de órfãos/ambíguos.
-
-### Passo 4 — Teste end-to-end
-Criar uma vitrine real pelo `/imoveis` com qualquer corretor real. Hook deve achar o profile via `uhomesales_id`, INSERT deve passar, link público deve abrir. Se passou, fluxo está reparado pra todos.
-
-### Passo 5 — Memória
-Salvar `mem://integracoes/crm-site-profile-sync` documentando:
-- `profiles.uhomesales_id` no site = `auth.users.id` no CRM
-- Email é a chave secundária de match (caso uhomesales_id diverja no futuro)
-- Renomeação uhomesales → uhomecrm causou drift histórico, resolvido em 2026-04-20
-
-## Guardrails
-
-NÃO tocar:
-- Tabelas do CRM
-- `created_by` no insert da vitrine (continua sendo `user.id` do CRM, semântica de auditoria)
-- Qualquer hook além do `useCreateVitrine` (já está correto)
-- Profiles de teste (5 contas listadas como SKIP)
-
-Decisão necessária no próximo turno: aprovar geração do `.sql` para você rodar no SQL Editor do site, ou tentar primeiro via REST (se RLS permitir).
+- **Memória "Business Deals rules" (`mem://features/negocios/gestao-e-fechamento-v3`)** menciona "fase Vendido visível para CEOs e Gerentes" — atualizaremos a memória para refletir que agora é visível para todos (incluindo corretores).
+- Edge Functions que filtram por `assinado` serão re-deployadas automaticamente.
 
