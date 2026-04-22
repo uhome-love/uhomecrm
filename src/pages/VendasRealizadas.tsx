@@ -119,7 +119,7 @@ export default function VendasRealizadas() {
 
       let query = supabase.from("negocios")
         .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id")
-        .in("fase", ["assinado", "vendido"])
+        .eq("fase", "vendido")
         .gte("data_assinatura", dateRange.start)
         .lte("data_assinatura", dateRange.end)
         .order("data_assinatura", { ascending: false });
@@ -131,7 +131,7 @@ export default function VendasRealizadas() {
         const { data: partnerDeals } = await supabase.from("v_kpi_negocios")
           .select("id")
           .eq("auth_user_id", user!.id)
-          .in("fase", ["assinado", "vendido"])
+          .eq("fase", "vendido")
           .gte("data_assinatura", dateRange.start)
           .lte("data_assinatura", dateRange.end)
           .eq("is_parceria", true);
@@ -140,7 +140,7 @@ export default function VendasRealizadas() {
           const { data: extraDeals } = await supabase.from("negocios")
             .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id")
             .in("id", partnerDealIds)
-            .in("fase", ["assinado", "vendido"]);
+            .eq("fase", "vendido");
           extraPartnerRows = (extraDeals || []) as VendaRow[];
         }
       } else if (isGestor && !isAdmin) {
@@ -158,7 +158,7 @@ export default function VendasRealizadas() {
         const { data: partnerDeals } = await supabase.from("v_kpi_negocios")
           .select("id")
           .in("auth_user_id", allTeamAuthIds)
-          .in("fase", ["assinado", "vendido"])
+          .eq("fase", "vendido")
           .gte("data_assinatura", dateRange.start)
           .lte("data_assinatura", dateRange.end)
           .eq("is_parceria", true);
@@ -173,7 +173,7 @@ export default function VendasRealizadas() {
           const { data: extraDeals } = await supabase.from("negocios")
             .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id")
             .in("id", partnerDealIds)
-            .in("fase", ["assinado", "vendido"]);
+            .eq("fase", "vendido");
           extraPartnerRows = (extraDeals || []) as VendaRow[];
         }
       }
@@ -232,7 +232,7 @@ export default function VendasRealizadas() {
           : { data: [] },
         // Annual VGV per corretor from v_kpi_negocios (split-aware)
         (profileIds.length > 0 || authIds.length > 0)
-          ? supabase.from("v_kpi_negocios").select("auth_user_id, vgv_efetivo").in("fase", ["assinado", "vendido"]).gte("data_assinatura", `${new Date().getFullYear()}-01-01`)
+          ? supabase.from("v_kpi_negocios").select("auth_user_id, vgv_efetivo").eq("fase", "vendido").gte("data_assinatura", `${new Date().getFullYear()}-01-01`)
           : { data: [] },
         // Map profile.id to auth user_id for commission lookup
         profileIds.length > 0
@@ -658,7 +658,7 @@ export default function VendasRealizadas() {
                             </td>
                             <td className="py-3 px-3 text-center">
                               <Badge className="text-[9px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20">
-                                ✅ {v.fase === "vendido" ? "Vendido" : "Assinado"}
+                                ✅ Vendido
                               </Badge>
                             </td>
                             <td className="py-3 px-3 text-right">

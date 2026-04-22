@@ -118,10 +118,10 @@ export function useForecast(): ForecastData {
 
       for (const p of gPdn) {
         const fase = p.fase || "";
-        if (fase === "proposta" || fase === "negociacao" || fase === "documentacao" || fase === "assinado") {
+        if (fase === "proposta" || fase === "negociacao" || fase === "documentacao" || fase === "vendido") {
           propostas_reais += 1;
         }
-        if (fase === "assinado") {
+        if (fase === "vendido") {
           vendas_reais += 1;
           vgv_real += Number(p.vgv_final ?? p.vgv_estimado ?? 0);
         }

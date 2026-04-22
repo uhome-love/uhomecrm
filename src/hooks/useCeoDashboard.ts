@@ -287,7 +287,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       for (const n of (negocios || [])) {
         const uid = n.auth_user_id;
         if (!uid) continue;
-        if (n.fase !== "assinado" && n.fase !== "vendido") continue;
+        if (n.fase !== "vendido") continue;
         corrMap.set(uid, (corrMap.get(uid) || 0) + (n.vgv_final || n.vgv_estimado || 0));
       }
       const corrIds = [...corrMap.keys()];
@@ -332,7 +332,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }] = await Promise.all([
         supabase.from("visitas").select("id, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
         supabase.from("visitas").select("id, status, corretor_id").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
-        supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).in("fase", ["assinado", "vendido"]).gte("data_assinatura", range.start).lte("data_assinatura", range.end),
+        supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).eq("fase", "vendido").gte("data_assinatura", range.start).lte("data_assinatura", range.end),
       ]);
 
       // Paginated tentativas

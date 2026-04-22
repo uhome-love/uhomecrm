@@ -56,7 +56,7 @@ export default function SaudeOperacao() {
       .from("negocios")
       .select("updated_at, fase")
       .eq("status", "ativo")
-      .neq("fase", "assinado")
+      .neq("fase", "vendido")
       .neq("fase", "distrato");
     const now = new Date();
     const parados = (negociosAtivos || []).filter(p => differenceInDays(now, new Date(p.updated_at)) > 10).length;

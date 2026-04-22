@@ -391,7 +391,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                   <ArrowRight className="h-3.5 w-3.5" /> Mover para etapa
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase && f.key !== "distrato" && (!("hidden" in f && f.hidden) || (showCorretor && f.key === "vendido"))).map(f => (
+                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase && f.key !== "distrato").map(f => (
                     <DropdownMenuItem key={f.key} onClick={() => onMoveFase(negocio.id, f.key)} className="gap-2 cursor-pointer text-xs">
                       <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: f.cor }} />
                       {f.icon} {f.label}
@@ -718,7 +718,7 @@ export default function MeusNegocios() {
   }, [filteredNegocios]);
 
   // Phases that require a transition popup
-  const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "assinado", "distrato"];
+  const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "vendido", "distrato"];
 
   const requestMoveFase = useCallback((negocioId: string, novaFase: string) => {
     const negocio = negocios.find(n => n.id === negocioId);
@@ -737,7 +737,7 @@ export default function MeusNegocios() {
 
     await moveFase(negocioId, novaFase, dataAssinatura);
 
-    if (novaFase === "assinado") {
+    if (novaFase === "vendido") {
       await onNegocioAssinado({
         negocioId,
         pipelineLeadId: negocio.pipeline_lead_id || negocio.lead_id || undefined,
@@ -754,13 +754,6 @@ export default function MeusNegocios() {
         vgv: negocio.vgv_final || negocio.vgv_estimado || 0,
         corretorNome: negocio.corretor_id ? corretorNomes[negocio.corretor_id] : undefined,
       });
-
-      // Move to hidden "vendido" fase after a short delay (with cleanup)
-      if (moveTimeoutRef.current) clearTimeout(moveTimeoutRef.current);
-      moveTimeoutRef.current = setTimeout(async () => {
-        await moveFase(negocioId, "vendido");
-        moveTimeoutRef.current = null;
-      }, 10000);
     }
   }, [negocios, moveFase, onNegocioAssinado, user, corretorNomes]);
 
@@ -1008,7 +1001,7 @@ export default function MeusNegocios() {
           className="flex gap-3 h-full overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-none pb-2 pr-4"
           style={{ scrollSnapType: "x proximity" }}
         >
-          {NEGOCIOS_FASES.filter(f => !("hidden" in f && f.hidden) || ((isAdmin || isGestor) && f.key === "vendido")).map((fase) => {
+          {NEGOCIOS_FASES.map((fase) => {
             const faseNegocios = negociosByFase.get(fase.key) || [];
             const isDragOver = dragOverFase === fase.key;
             const totalFaseVGV = faseNegocios.reduce((sum, n) => {
@@ -1050,7 +1043,7 @@ export default function MeusNegocios() {
                   <div
                     className="h-[2px] rounded-full"
                     style={{
-                      backgroundColor: fase.key === "assinado" || fase.key === "vendido" ? "#10b981" : "#4969FF",
+                      backgroundColor: fase.key === "vendido" ? "#10b981" : "#4969FF",
                       opacity: fase.key === "novo_negocio" ? 0.4 : fase.key === "proposta" ? 0.6 : fase.key === "negociacao" ? 0.8 : fase.key === "documentacao" ? 0.9 : 1,
                     }}
                   />

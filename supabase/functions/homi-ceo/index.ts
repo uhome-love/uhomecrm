@@ -343,10 +343,10 @@ function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members:
   const total = pdn.length;
   const novo = pdn.filter(p => p.fase === "novo_negocio").length;
   const proposta = pdn.filter(p => ["proposta", "negociacao", "documentacao"].includes(p.fase)).length;
-  const assinado = pdn.filter(p => p.fase === "assinado").length;
+  const assinado = pdn.filter(p => p.fase === "vendido").length;
   const perdido = pdn.filter(p => p.status === "perdido").length;
-  const vgvAssinado = pdn.filter(p => p.fase === "assinado").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
-  const vgvProjetado = pdn.filter(p => ["proposta", "negociacao", "documentacao", "assinado"].includes(p.fase)).reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+  const vgvAssinado = pdn.filter(p => p.fase === "vendido").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+  const vgvProjetado = pdn.filter(p => ["proposta", "negociacao", "documentacao", "vendido"].includes(p.fase)).reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
   let summary = `- Total negócios: ${total}
 - Novo: ${novo} | Proposta: ${proposta} | Assinado: ${assinado} | Perdido: ${perdido}
@@ -360,7 +360,7 @@ function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members:
     if (!gId) return;
     if (!byGerente[gId]) byGerente[gId] = { total: 0, assinado: 0, vgv: 0 };
     byGerente[gId].total++;
-    if (p.fase === "assinado") {
+    if (p.fase === "vendido") {
       byGerente[gId].assinado++;
       byGerente[gId].vgv += Number(p.vgv_final || p.vgv_estimado || 0);
     }
@@ -373,7 +373,7 @@ function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members:
   // Stale deals
   const now = Date.now();
   const stale = pdn.filter(p => {
-    if (p.fase === "assinado" || p.status === "perdido") return false;
+    if (p.fase === "vendido" || p.status === "perdido") return false;
     return (now - new Date(p.updated_at).getTime()) > 5 * 24 * 60 * 60 * 1000;
   });
   if (stale.length > 0) {

@@ -139,9 +139,9 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
           data_assinatura: contDataAssinatura,
         },
       });
-    } else if (targetFase === "assinado") {
+    } else if (targetFase === "vendido") {
       onConfirm({
-        fase: "assinado",
+        fase: "vendido",
         fields: { tipo_assinatura: assDigital, ato_pago: assAtoPago, observacoes: assObs, data_assinatura: assDataAssinatura },
       });
     } else if (targetFase === "distrato") {
@@ -244,7 +244,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
           </>
         );
 
-      case "assinado":
+      case "vendido":
         return (
           <>
             <DialogHeader>

@@ -37,8 +37,7 @@ export const NEGOCIOS_FASES = [
   { key: "proposta", label: "Proposta", cor: "#4969FF", icon: "" },
   { key: "negociacao", label: "Negociação", cor: "#F59E0B", icon: "" },
   { key: "documentacao", label: "Contrato Gerado", cor: "#8B5CF6", icon: "" },
-  { key: "assinado", label: "Assinado", cor: "#22C55E", icon: "" },
-  { key: "vendido", label: "Vendido", cor: "#16A34A", icon: "", hidden: true },
+  { key: "vendido", label: "Vendido", cor: "#22C55E", icon: "" },
   { key: "distrato", label: "Caiu", cor: "#EF4444", icon: "" },
 ] as const;
 
@@ -219,8 +218,8 @@ export function useNegocios() {
     ));
 
     const updatePayload: Record<string, any> = { fase: novaFase, updated_at: new Date().toISOString() };
-    // Always set data_assinatura when moving to assinado
-    if (novaFase === "assinado") {
+    // Always set data_assinatura when moving to vendido (negócio fechado)
+    if (novaFase === "vendido") {
       updatePayload.data_assinatura = dataAssinatura || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     }
 
