@@ -285,7 +285,7 @@ serve(async (req) => {
 
       // Fallback to catalog if direct API failed
       if (!imovel) {
-        const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY);
+        const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY, supabaseAdmin);
         imovel = catalogItems.find(item => isCodigoMatch(item, requestedCodigo)) || null;
       }
 
@@ -308,7 +308,7 @@ serve(async (req) => {
       if (!codigos.length) {
         return new Response(JSON.stringify({ error: "Lista de códigos é obrigatória" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      const foundMap = await findImoveisByCodigos(JETIMOB_API_KEY, codigos);
+      const foundMap = await findImoveisByCodigos(JETIMOB_API_KEY, codigos, supabaseAdmin);
       const imoveis: Record<string, any> = {};
       for (const c of codigos) {
         const matched = foundMap[c] || null;
@@ -353,7 +353,7 @@ serve(async (req) => {
       console.time("list_imoveis");
 
       // Always use catalog cache — this is the key optimization
-      const allItems = await fetchJetimobCatalog(JETIMOB_API_KEY);
+      const allItems = await fetchJetimobCatalog(JETIMOB_API_KEY, supabaseAdmin);
       
       // Ensure search index exists
       if (!searchIndex) buildSearchIndex(allItems);
@@ -466,7 +466,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ suggestions: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      await fetchJetimobCatalog(JETIMOB_API_KEY);
+      await fetchJetimobCatalog(JETIMOB_API_KEY, supabaseAdmin);
       if (!searchIndex) return new Response(JSON.stringify({ suggestions: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
       const bairros = new Set<string>();
