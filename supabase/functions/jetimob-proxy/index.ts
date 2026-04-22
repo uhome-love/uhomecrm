@@ -98,9 +98,10 @@ function resolveUhCode(codigo: string): string | null {
   return UH_CODE_MAP[codigo.toUpperCase().trim()] || null;
 }
 
-// ─── Catalog cache (15 min TTL for performance) ───
-let jetimobCatalogCache: { fetchedAt: number; items: any[] } | null = null;
-const JETIMOB_CATALOG_TTL_MS = 15 * 60 * 1000; // 15 minutes
+// ─── Catalog cache (1h TTL — alimentado preferencialmente pela tabela imoveis_catalog) ───
+let jetimobCatalogCache: { fetchedAt: number; items: any[]; source: "db" | "api" } | null = null;
+const JETIMOB_CATALOG_TTL_MS = 60 * 60 * 1000; // 1h
+const JETIMOB_CATALOG_TTL_API_FALLBACK_MS = 15 * 60 * 1000; // 15min se vier da API (fallback)
 
 // Pre-built search index for fast text search
 let searchIndex: { item: any; searchText: string; bairroNorm: string; tipoNorm: string; codigo: string }[] | null = null;
@@ -123,16 +124,39 @@ function buildSearchIndex(items: any[]) {
   });
 }
 
-async function fetchJetimobCatalog(apiKey: string): Promise<any[]> {
-  if (jetimobCatalogCache && Date.now() - jetimobCatalogCache.fetchedAt < JETIMOB_CATALOG_TTL_MS) {
-    return jetimobCatalogCache.items;
+async function fetchCatalogFromDb(supabaseAdmin: any): Promise<any[] | null> {
+  try {
+    // Paginar leitura (PostgREST limita 1000 por padrão)
+    const pageSize = 1000;
+    let from = 0;
+    let allRows: any[] = [];
+    while (true) {
+      const { data, error } = await supabaseAdmin
+        .from("imoveis_catalog")
+        .select("payload")
+        .range(from, from + pageSize - 1);
+      if (error) {
+        console.warn("[jetimob-proxy] DB catalog read failed:", error.message);
+        return null;
+      }
+      if (!data || data.length === 0) break;
+      allRows = allRows.concat(data);
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+    if (allRows.length === 0) return null;
+    return allRows.map((r: any) => r.payload);
+  } catch (e) {
+    console.warn("[jetimob-proxy] DB catalog exception:", e);
+    return null;
   }
+}
 
-  console.time("jetimob-catalog-fetch");
+async function fetchCatalogFromApi(apiKey: string): Promise<any[]> {
+  console.time("jetimob-catalog-fetch-api");
   const batchSize = 500;
-  const maxPages = 60; // up to 30k items
+  const maxPages = 60;
   let allItems: any[] = [];
-
   for (let page = 1; page <= maxPages; page++) {
     const url = `https://api.jetimob.com/webservice/${apiKey}/imoveis/todos?v=6&page=${page}&pageSize=${batchSize}`;
     const response = await fetch(url, { headers: { Accept: "application/json" } });
@@ -144,19 +168,43 @@ async function fetchJetimobCatalog(apiKey: string): Promise<any[]> {
     const rawTotal = raw?.total || raw?.totalResults || raw?.total_results || 0;
     if (items.length < batchSize || (rawTotal > 0 && allItems.length >= rawTotal)) break;
   }
-
-  jetimobCatalogCache = { fetchedAt: Date.now(), items: allItems };
-  buildSearchIndex(allItems);
-  console.timeEnd("jetimob-catalog-fetch");
-  console.log("Jetimob catalog cached:", allItems.length, "items");
+  console.timeEnd("jetimob-catalog-fetch-api");
   return allItems;
 }
 
-async function findImoveisByCodigos(apiKey: string, codigos: string[]): Promise<Record<string, any | null>> {
+async function fetchJetimobCatalog(apiKey: string, supabaseAdmin?: any): Promise<any[]> {
+  if (jetimobCatalogCache) {
+    const ttl = jetimobCatalogCache.source === "db" ? JETIMOB_CATALOG_TTL_MS : JETIMOB_CATALOG_TTL_API_FALLBACK_MS;
+    if (Date.now() - jetimobCatalogCache.fetchedAt < ttl) {
+      return jetimobCatalogCache.items;
+    }
+  }
+
+  // 1. Tenta tabela local (sync diário)
+  if (supabaseAdmin) {
+    const dbItems = await fetchCatalogFromDb(supabaseAdmin);
+    if (dbItems && dbItems.length > 0) {
+      jetimobCatalogCache = { fetchedAt: Date.now(), items: dbItems, source: "db" };
+      buildSearchIndex(dbItems);
+      console.log(`[jetimob-proxy] Catalog from DB: ${dbItems.length} items`);
+      return dbItems;
+    }
+  }
+
+  // 2. Fallback API direta (primeira execução ou tabela vazia)
+  console.warn("[jetimob-proxy] DB vazia — fallback para API Jetimob direta");
+  const apiItems = await fetchCatalogFromApi(apiKey);
+  jetimobCatalogCache = { fetchedAt: Date.now(), items: apiItems, source: "api" };
+  buildSearchIndex(apiItems);
+  console.log(`[jetimob-proxy] Catalog from API fallback: ${apiItems.length} items`);
+  return apiItems;
+}
+
+async function findImoveisByCodigos(apiKey: string, codigos: string[], supabaseAdmin?: any): Promise<Record<string, any | null>> {
   const wanted = codigos.map(c => String(c || "").trim()).filter(Boolean);
   const pending = new Set(wanted);
   const found = new Map<string, any>();
-  const catalogItems = await fetchJetimobCatalog(apiKey);
+  const catalogItems = await fetchJetimobCatalog(apiKey, supabaseAdmin);
 
   // Phase 1: UH-code mapping
   for (const codigo of Array.from(pending)) {
@@ -198,7 +246,9 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -235,7 +285,7 @@ serve(async (req) => {
 
       // Fallback to catalog if direct API failed
       if (!imovel) {
-        const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY);
+        const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY, supabaseAdmin);
         imovel = catalogItems.find(item => isCodigoMatch(item, requestedCodigo)) || null;
       }
 
@@ -258,7 +308,7 @@ serve(async (req) => {
       if (!codigos.length) {
         return new Response(JSON.stringify({ error: "Lista de códigos é obrigatória" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      const foundMap = await findImoveisByCodigos(JETIMOB_API_KEY, codigos);
+      const foundMap = await findImoveisByCodigos(JETIMOB_API_KEY, codigos, supabaseAdmin);
       const imoveis: Record<string, any> = {};
       for (const c of codigos) {
         const matched = foundMap[c] || null;
@@ -303,7 +353,7 @@ serve(async (req) => {
       console.time("list_imoveis");
 
       // Always use catalog cache — this is the key optimization
-      const allItems = await fetchJetimobCatalog(JETIMOB_API_KEY);
+      const allItems = await fetchJetimobCatalog(JETIMOB_API_KEY, supabaseAdmin);
       
       // Ensure search index exists
       if (!searchIndex) buildSearchIndex(allItems);
@@ -416,7 +466,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ suggestions: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      await fetchJetimobCatalog(JETIMOB_API_KEY);
+      await fetchJetimobCatalog(JETIMOB_API_KEY, supabaseAdmin);
       if (!searchIndex) return new Response(JSON.stringify({ suggestions: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
       const bairros = new Set<string>();

@@ -194,3 +194,6 @@ verify_jwt = false
 
 [functions.homi-copilot]
 verify_jwt = false
+
+[functions.jetimob-sync-catalog]
+verify_jwt = false

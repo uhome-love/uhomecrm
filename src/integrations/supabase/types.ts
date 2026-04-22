@@ -2646,6 +2646,105 @@ export type Database = {
           },
         ]
       }
+      imoveis_catalog: {
+        Row: {
+          area: number | null
+          bairro: string | null
+          codigo: string
+          contrato: string | null
+          created_at: string
+          dormitorios: number | null
+          empreendimento: string | null
+          fotos_full: Json | null
+          fotos_thumbs: Json | null
+          is_uhome: boolean | null
+          payload: Json
+          search_text: string | null
+          situacao: string | null
+          suites: number | null
+          synced_at: string
+          tipo: string | null
+          titulo: string | null
+          vagas: number | null
+          valor_locacao: number | null
+          valor_venda: number | null
+        }
+        Insert: {
+          area?: number | null
+          bairro?: string | null
+          codigo: string
+          contrato?: string | null
+          created_at?: string
+          dormitorios?: number | null
+          empreendimento?: string | null
+          fotos_full?: Json | null
+          fotos_thumbs?: Json | null
+          is_uhome?: boolean | null
+          payload: Json
+          search_text?: string | null
+          situacao?: string | null
+          suites?: number | null
+          synced_at?: string
+          tipo?: string | null
+          titulo?: string | null
+          vagas?: number | null
+          valor_locacao?: number | null
+          valor_venda?: number | null
+        }
+        Update: {
+          area?: number | null
+          bairro?: string | null
+          codigo?: string
+          contrato?: string | null
+          created_at?: string
+          dormitorios?: number | null
+          empreendimento?: string | null
+          fotos_full?: Json | null
+          fotos_thumbs?: Json | null
+          is_uhome?: boolean | null
+          payload?: Json
+          search_text?: string | null
+          situacao?: string | null
+          suites?: number | null
+          synced_at?: string
+          tipo?: string | null
+          titulo?: string | null
+          vagas?: number | null
+          valor_locacao?: number | null
+          valor_venda?: number | null
+        }
+        Relationships: []
+      }
+      imoveis_catalog_sync_status: {
+        Row: {
+          duracao_ms: number | null
+          id: number
+          ultimo_sync_concluido_em: string | null
+          ultimo_sync_erro: string | null
+          ultimo_sync_iniciado_em: string | null
+          ultimo_sync_status: string | null
+          ultimo_sync_total: number | null
+        }
+        Insert: {
+          duracao_ms?: number | null
+          id?: number
+          ultimo_sync_concluido_em?: string | null
+          ultimo_sync_erro?: string | null
+          ultimo_sync_iniciado_em?: string | null
+          ultimo_sync_status?: string | null
+          ultimo_sync_total?: number | null
+        }
+        Update: {
+          duracao_ms?: number | null
+          id?: number
+          ultimo_sync_concluido_em?: string | null
+          ultimo_sync_erro?: string | null
+          ultimo_sync_iniciado_em?: string | null
+          ultimo_sync_status?: string | null
+          ultimo_sync_total?: number | null
+        }
+        Relationships: []
+      }
       imoveis_interesse: {
         Row: {
           created_at: string | null
