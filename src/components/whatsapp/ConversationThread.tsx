@@ -520,9 +520,15 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         supabase.functions.invoke("whatsapp-send", {
           body: sendBody,
         }).then(({ error, data: sendResult }) => {
-          if (error || sendResult?.error) {
-            console.error("whatsapp-send background error:", error || sendResult?.error);
-            toast.error("Mensagem não entregue ao WhatsApp. Tente novamente.");
+          const errMsg = (sendResult as any)?.error || (error as any)?.message;
+          const invalidPhone = (sendResult as any)?.invalid_phone;
+          if (error || (sendResult as any)?.error) {
+            console.error("whatsapp-send background error:", error || (sendResult as any)?.error);
+            if (invalidPhone) {
+              toast.error(errMsg || "Número de telefone inválido. Verifique o cadastro do lead.", { duration: 6000 });
+            } else {
+              toast.error(errMsg || "Mensagem não entregue ao WhatsApp. Tente novamente.");
+            }
             return;
           }
           if (sendResult?.message_id && sendResult.message_id !== optimisticId) {
