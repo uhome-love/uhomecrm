@@ -200,11 +200,11 @@ async function fetchJetimobCatalog(apiKey: string, supabaseAdmin?: any): Promise
   return apiItems;
 }
 
-async function findImoveisByCodigos(apiKey: string, codigos: string[]): Promise<Record<string, any | null>> {
+async function findImoveisByCodigos(apiKey: string, codigos: string[], supabaseAdmin?: any): Promise<Record<string, any | null>> {
   const wanted = codigos.map(c => String(c || "").trim()).filter(Boolean);
   const pending = new Set(wanted);
   const found = new Map<string, any>();
-  const catalogItems = await fetchJetimobCatalog(apiKey);
+  const catalogItems = await fetchJetimobCatalog(apiKey, supabaseAdmin);
 
   // Phase 1: UH-code mapping
   for (const codigo of Array.from(pending)) {
@@ -246,7 +246,9 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
