@@ -47,10 +47,28 @@ serve(async (req) => {
       return json({ error: "mensagem ou template é obrigatório" }, 400);
     }
 
-    // Normalize phone
+    // Normalize phone (Brazilian format)
     let cleanPhone = telefone.replace(/\D/g, "");
     if (cleanPhone.startsWith("0")) cleanPhone = cleanPhone.substring(1);
     if (!cleanPhone.startsWith("55")) cleanPhone = "55" + cleanPhone;
+
+    // Validate length: BR mobile = 55 + 2 (DDD) + 9 digits = 13. Landline = 12.
+    if (cleanPhone.length < 12 || cleanPhone.length > 13) {
+      return json({
+        error: `Número de telefone inválido (${telefone}). Verifique o cadastro do lead — o número parece incompleto.`,
+        invalid_phone: true,
+      }, 400);
+    }
+
+    // Add missing 9th digit for mobile numbers (BR): 55 + DD + 8 digits → 55 + DD + 9 + 8 digits
+    if (cleanPhone.length === 12) {
+      const ddd = cleanPhone.substring(2, 4);
+      const rest = cleanPhone.substring(4);
+      // Mobile if first digit of "rest" is 6, 7, 8 or 9 → must add the leading 9
+      if (/^[6-9]/.test(rest)) {
+        cleanPhone = `55${ddd}9${rest}`;
+      }
+    }
 
     // Get profile id
     const { data: profile } = await sb
@@ -141,6 +159,17 @@ serve(async (req) => {
 
       const evoResult = await evoResponse.json();
       console.log("Evolution sendText response:", JSON.stringify(evoResult));
+
+      // Detect "number does not exist on WhatsApp" (Evolution returns 400 with message array)
+      const msgArr = Array.isArray(evoResult?.response?.message) ? evoResult.response.message : null;
+      const notOnWhatsApp = msgArr?.some((m: any) => m?.exists === false);
+      if (notOnWhatsApp) {
+        return json({
+          error: `O número ${cleanPhone} não está cadastrado no WhatsApp. Verifique se o telefone do lead está correto.`,
+          invalid_phone: true,
+          phone: cleanPhone,
+        }, 422);
+      }
 
       if (!evoResponse.ok) {
         return json({
