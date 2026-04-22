@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, formatBRL, formatBRLCompact } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
+import { resolveFormName } from "@/lib/metaFormIdMap";
 
 const formatCurrency = formatBRLCompact;
 const formatCurrencyFull = (v: number) => formatBRL(v);
@@ -357,7 +358,7 @@ export default function VendasRealizadas() {
       const plId = v.pipeline_lead_id;
       const info = plId ? origemMap[plId] : null;
       const origem = info?.origem || "Não identificado";
-      const detalhe = info?.origem_detalhe || null;
+      const detalhe = resolveFormName(info?.origem_detalhe);
       const vgv = v.vgv_final || v.vgv_estimado || 0;
       const corr = v.corretor_id ? profiles[v.corretor_id] : null;
 
