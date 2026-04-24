@@ -101,6 +101,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "import-brevo": lazyRetry(() => import("@/pages/ImportBrevoContacts")),
   "gestao-whatsapp": lazyRetry(() => import("@/pages/GestaoWhatsAppDashboard")),
   "report-center": lazyRetry(() => import("@/pages/ReportCenter")),
+  materiais: lazyRetry(() => import("@/pages/MateriaisPage")),
 };
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
@@ -176,6 +177,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/import-brevo-contacts": { key: "import-brevo",         label: "Import Brevo",        icon: "Database",      roles: ["admin"] },
   "/gestor/whatsapp-dashboard": { key: "gestao-whatsapp", label: "Gestão WhatsApp",     icon: "BarChart2",     roles: ["gestor", "admin"] },
   "/central-relatorios":        { key: "report-center",     label: "Central Relatórios",  icon: "BarChart2",     roles: ["gestor", "admin"] },
+  "/materiais":             { key: "materiais",            label: "Materiais",           icon: "FolderOpen" },
 };
 
 // ─── DYNAMIC ROUTES ──────────────────────────────────────────────────────────
