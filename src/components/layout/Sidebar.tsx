@@ -103,6 +103,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Ferramentas",
       items: [
         { label: "HOMI CEO",           path: "/homi-ceo",          icon: <Bot          size={15} strokeWidth={1.5} /> },
+        { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Meus Links",         path: "/links-site",        icon: <Link2        size={15} strokeWidth={1.5} /> },
         { label: "Dev AI",             path: "/dev-ai",            icon: <Lightbulb    size={15} strokeWidth={1.5} /> },
         { label: "Base HOMI",          path: "/homi/base-conhecimento", icon: <BookOpen     size={15} strokeWidth={1.5} /> },
@@ -151,6 +152,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Ferramentas",
       items: [
         { label: "HOMI Gerente",       path: "/homi-gerente",      icon: <Bot          size={15} strokeWidth={1.5} /> },
+        { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Meus Links",         path: "/links-site",        icon: <Link2        size={15} strokeWidth={1.5} /> },
         { label: "Templates",          path: "/templates-comunicacao", icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
@@ -200,6 +202,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Ferramentas",
       items: [
         { label: "HOMI Assistente",    path: "/homi",              icon: <Bot          size={15} strokeWidth={1.5} /> },
+        { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Meus Links",         path: "/links-site",        icon: <Link2        size={15} strokeWidth={1.5} /> },
         { label: "Minhas vitrines",    path: "/minhas-vitrines",   icon: <Building2    size={15} strokeWidth={1.5} /> },
         { label: "Meu WhatsApp",       path: "/configuracoes/whatsapp", icon: <Smartphone  size={15} strokeWidth={1.5} /> },
