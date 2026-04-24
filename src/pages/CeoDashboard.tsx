@@ -533,6 +533,14 @@ export default function CeoDashboard() {
                   {showAllCorretorLeads ? "Ver menos" : `Ver mais (${leadsPorCorretor.length})`}
                 </Button>
               )}
+              {leadsPorCorretor.length > 0 && (
+                <p className="mt-2 pt-2 border-t border-[#e8e8f0] dark:border-white/[0.07] text-[10px] text-[#a1a1aa] text-right">
+                  Soma: <span className="font-semibold text-foreground">{leadsPorCorretor.reduce((s, x) => s + x.count, 0)}</span>
+                  {leadsPorCorretor.reduce((s, x) => s + x.count, 0) !== totalLeadsPeriodo && (
+                    <> · Total marketing: <span className="font-semibold text-foreground">{totalLeadsPeriodo}</span></>
+                  )}
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
