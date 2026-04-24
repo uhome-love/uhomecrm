@@ -12,6 +12,8 @@ import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-quer
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths } from "date-fns";
 import { todayBRT, dateToBRT, formatBRLCompact, brtRangeToUTC } from "@/lib/utils";
 import { fetchKPIs as fetchOfficialKPIs } from "@/lib/metricsService";
+import { fetchAllRows } from "@/lib/paginatedFetch";
+import { isLeadDeMarketing, isOfertaAtiva, empreendimentoLabel, SEM_EMPREENDIMENTO_LABEL } from "@/lib/leadOrigemUtils";
 
 export type DashPeriod = "hoje" | "ontem" | "semana" | "mes" | "ultimos_30d" | "custom";
 
