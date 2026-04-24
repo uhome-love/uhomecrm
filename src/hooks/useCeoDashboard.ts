@@ -310,6 +310,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         leadsPorCorretor,
         totalMarketing,
         totalOfertaAtiva,
+        enviadosRoleta,
       };
     },
     enabled: !!user,
