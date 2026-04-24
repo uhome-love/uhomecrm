@@ -4129,6 +4129,89 @@ export type Database = {
           },
         ]
       }
+      materiais_empreendimentos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          empreendimento_ref: string | null
+          id: string
+          logo_url: string | null
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          empreendimento_ref?: string | null
+          id?: string
+          logo_url?: string | null
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          empreendimento_ref?: string | null
+          id?: string
+          logo_url?: string | null
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      materiais_links: {
+        Row: {
+          categoria: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          empreendimento_id: string
+          id: string
+          ordem: number
+          titulo: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          empreendimento_id: string
+          id?: string
+          ordem?: number
+          titulo: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          empreendimento_id?: string
+          id?: string
+          ordem?: number
+          titulo?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_links_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_empreendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       melnick_campaign_analytics: {
         Row: {
           campaign: string
