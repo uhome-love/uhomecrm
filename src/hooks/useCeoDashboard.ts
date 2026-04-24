@@ -262,8 +262,10 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
 
       // Leads por corretor (only marketing, not OA)
       const corrLeadMap = new Map<string, number>();
+      let enviadosRoleta = 0;
       for (const l of mktLeads) {
         if (l.corretor_id) {
+          enviadosRoleta++;
           corrLeadMap.set(l.corretor_id, (corrLeadMap.get(l.corretor_id) || 0) + 1);
         }
       }
