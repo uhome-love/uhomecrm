@@ -123,52 +123,73 @@ export default function MinhasTarefas() {
     queryFn: async () => {
       if (!user) return [];
 
-      // Query principal: tarefas onde o usuário é responsável ou criador.
-      // Cobre 99%+ dos casos sem precisar montar uma URL gigante com IN(...lead_ids).
-      const { data: directRows, error: directErr } = await supabase
-        .from("pipeline_tarefas")
-        .select("*")
-        .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
-        .order("vence_em", { ascending: true })
-        .order("hora_vencimento", { ascending: true })
-        .limit(2000);
+      const reportLoadError = (context: string, error: { message?: string }) => {
+        console.error(`[MinhasTarefas] ${context}:`, error);
+        toast.error(`Erro ao carregar tarefas: ${error.message || context}`);
+      };
+
+      const fetchOwnedLeadIds = async () => {
+        const PAGE_SIZE = 1000;
+        const leadIds: string[] = [];
+
+        for (let from = 0; ; from += PAGE_SIZE) {
+          const { data, error } = await supabase
+            .from("pipeline_leads")
+            .select("id")
+            .eq("corretor_id", user.id)
+            .range(from, from + PAGE_SIZE - 1);
+
+          if (error) {
+            reportLoadError("Erro ao buscar leads do corretor", error);
+            throw error;
+          }
+
+          const batch = ((data || []) as { id: string }[]).map((lead) => lead.id);
+          leadIds.push(...batch);
+
+          if (batch.length < PAGE_SIZE) break;
+        }
+
+        return leadIds;
+      };
+
+      const [{ data: directRows, error: directErr }, ownedLeadIds] = await Promise.all([
+        supabase
+          .from("pipeline_tarefas")
+          .select("*")
+          .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
+          .order("vence_em", { ascending: true })
+          .order("hora_vencimento", { ascending: true })
+          .limit(2000),
+        fetchOwnedLeadIds(),
+      ]);
 
       if (directErr) {
-        console.error("[MinhasTarefas] Erro ao buscar tarefas:", directErr);
-        toast.error("Erro ao carregar tarefas: " + directErr.message);
+        reportLoadError("Erro ao buscar tarefas diretas", directErr);
         throw directErr;
       }
 
       const rows = (directRows || []) as any[];
 
-      // Fallback: tarefas legadas (responsavel_id NULL) em leads do corretor.
-      // Buscamos os IDs dos leads dele e procuramos tarefas órfãs nesse conjunto.
-      try {
-        const { data: myLeads } = await supabase
-          .from("pipeline_leads")
-          .select("id")
-          .eq("corretor_id", user.id)
-          .limit(1000);
-        const myLeadIds = (myLeads || []).map((l: any) => l.id);
+      if (ownedLeadIds.length > 0) {
+        const CHUNK = 100;
 
-        if (myLeadIds.length > 0) {
-          // Quebrar em chunks para garantir que nenhuma URL passe de ~6KB
-          const CHUNK = 100;
-          const orphanRows: any[] = [];
-          for (let i = 0; i < myLeadIds.length; i += CHUNK) {
-            const slice = myLeadIds.slice(i, i + CHUNK);
-            const { data: chunk } = await supabase
-              .from("pipeline_tarefas")
-              .select("*")
-              .in("pipeline_lead_id", slice)
-              .is("responsavel_id", null)
-              .limit(500);
-            if (chunk && chunk.length > 0) orphanRows.push(...chunk);
+        for (let i = 0; i < ownedLeadIds.length; i += CHUNK) {
+          const slice = ownedLeadIds.slice(i, i + CHUNK);
+          const { data: ownedTaskRows, error: ownedTasksErr } = await supabase
+            .from("pipeline_tarefas")
+            .select("*")
+            .in("pipeline_lead_id", slice)
+            .order("vence_em", { ascending: true })
+            .order("hora_vencimento", { ascending: true });
+
+          if (ownedTasksErr) {
+            reportLoadError("Erro ao buscar tarefas dos leads do corretor", ownedTasksErr);
+            throw ownedTasksErr;
           }
-          if (orphanRows.length > 0) rows.push(...orphanRows);
+
+          if (ownedTaskRows?.length) rows.push(...ownedTaskRows);
         }
-      } catch (fallbackErr) {
-        console.warn("[MinhasTarefas] Fallback de tarefas órfãs falhou (não crítico):", fallbackErr);
       }
 
       // Deduplicar por id e enriquecer com dados do lead
@@ -191,6 +212,12 @@ export default function MinhasTarefas() {
           if (lead) { r.lead_nome = lead.nome; r.lead_telefone = lead.telefone; r.lead_empreendimento = lead.empreendimento; }
         });
       }
+      uniqueRows.sort((a, b) => {
+        const dueA = `${a.vence_em ?? "9999-12-31"}T${a.hora_vencimento ?? "23:59:59"}`;
+        const dueB = `${b.vence_em ?? "9999-12-31"}T${b.hora_vencimento ?? "23:59:59"}`;
+        return dueA.localeCompare(dueB) || b.created_at.localeCompare(a.created_at);
+      });
+
       return uniqueRows as TarefaComLead[];
     },
     enabled: !!user,
