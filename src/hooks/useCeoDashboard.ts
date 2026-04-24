@@ -12,6 +12,8 @@ import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-quer
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths } from "date-fns";
 import { todayBRT, dateToBRT, formatBRLCompact, brtRangeToUTC } from "@/lib/utils";
 import { fetchKPIs as fetchOfficialKPIs } from "@/lib/metricsService";
+import { fetchAllRows } from "@/lib/paginatedFetch";
+import { isLeadDeMarketing, isOfertaAtiva, empreendimentoLabel, SEM_EMPREENDIMENTO_LABEL } from "@/lib/leadOrigemUtils";
 
 export type DashPeriod = "hoje" | "ontem" | "semana" | "mes" | "ultimos_30d" | "custom";
 
@@ -170,12 +172,33 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   const { data: pipelineData } = useQuery({
     queryKey: ["ceo-pipeline", user?.id, rangeKey],
     queryFn: async () => {
-      const [{ data: stages }, { data: leads }] = await Promise.all([
-        supabase.from("pipeline_stages").select("id, nome, tipo, ordem").eq("ativo", true).eq("pipeline_tipo", "leads").order("ordem"),
-        supabase.from("pipeline_leads").select("id, stage_id, empreendimento, updated_at, created_at, origem, corretor_id")
-          .gte("created_at", brtRangeToUTC(range).startUtc)
-          .lt("created_at", brtRangeToUTC(range).endUtc)
-          .limit(2000),
+      const { startUtc, endUtc } = brtRangeToUTC(range);
+
+      // Fetch stages (small) + ALL leads in period (paginated, no 2000 cap)
+      const [{ data: stages }, leads] = await Promise.all([
+        supabase
+          .from("pipeline_stages")
+          .select("id, nome, tipo, ordem")
+          .eq("ativo", true)
+          .eq("pipeline_tipo", "leads")
+          .order("ordem"),
+        fetchAllRows<{
+          id: string;
+          stage_id: string | null;
+          empreendimento: string | null;
+          updated_at: string | null;
+          created_at: string;
+          origem: string | null;
+          corretor_id: string | null;
+        }>((from, to) =>
+          supabase
+            .from("pipeline_leads")
+            .select("id, stage_id, empreendimento, updated_at, created_at, origem, corretor_id")
+            .gte("created_at", startUtc)
+            .lt("created_at", endUtc)
+            .order("created_at", { ascending: true })
+            .range(from, to),
+        ),
       ]);
 
       const stageData = (stages || []).map(s => ({
@@ -183,12 +206,15 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         count: (leads || []).filter(l => l.stage_id === s.id).length,
       }));
 
+      // ── Single source of truth: marketing leads = NOT Oferta Ativa ──
+      const mktLeads = (leads || []).filter(l => isLeadDeMarketing(l.origem));
+      const totalMarketing = mktLeads.length;
+      const totalOfertaAtiva = (leads || []).filter(l => isOfertaAtiva(l.origem)).length;
+
       const empMap = new Map<string, { leads: number; avancou: number; parados: number }>();
       const now = new Date();
-      // Filter: only marketing leads (not Oferta Ativa) for empreendimento chart
-      const mktLeads = (leads || []).filter(l => !l.origem?.toLowerCase().includes("oferta ativa") && l.origem?.toLowerCase() !== "oferta_ativa");
       for (const l of mktLeads) {
-        const emp = l.empreendimento || "Sem empreendimento";
+        const emp = empreendimentoLabel(l.empreendimento);
         const curr = empMap.get(emp) || { leads: 0, avancou: 0, parados: 0 };
         curr.leads++;
         const stageOrdem = stageData.find(s => s.id === l.stage_id)?.ordem || 0;
@@ -224,21 +250,27 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
 
       const origMap = new Map<string, number>();
       for (const l of mktLeads) {
-        const orig = l.origem || "Desconhecido";
+        const orig = (l.origem || "").trim() || "Desconhecido";
         origMap.set(orig, (origMap.get(orig) || 0) + 1);
       }
       const origens = Array.from(origMap.entries()).map(([origem, count]) => ({ origem, count })).sort((a, b) => b.count - a.count);
-      const leadsPorEmpreendimento = Array.from(empMap.entries()).map(([emp, d]) => ({ emp, count: d.leads })).sort((a, b) => b.count - a.count).slice(0, 10);
+      // Include "Sem empreendimento" as its own bar (do not hide), trim to top 10
+      const leadsPorEmpreendimento = Array.from(empMap.entries())
+        .map(([emp, d]) => ({ emp, count: d.leads }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
 
       // Leads por corretor (only marketing, not OA)
       const corrLeadMap = new Map<string, number>();
-      const corrIdSet = new Set<string>();
+      let enviadosRoleta = 0;
       for (const l of mktLeads) {
         if (l.corretor_id) {
+          enviadosRoleta++;
           corrLeadMap.set(l.corretor_id, (corrLeadMap.get(l.corretor_id) || 0) + 1);
-          corrIdSet.add(l.corretor_id);
         }
       }
+      const semCorretor = mktLeads.filter(l => !l.corretor_id).length;
+
       // Fetch ALL corretores (team members) to show even those with 0 leads
       const { data: allMembers } = await supabase.from("team_members").select("user_id, nome");
       const memberList = (allMembers || []).filter((m: any) => m.user_id) as { user_id: string; nome: string }[];
@@ -249,8 +281,37 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           .map(([id, nome]) => ({ nome, count: corrLeadMap.get(id) || 0 }))
           .sort((a, b) => b.count - a.count);
       }
+      // Append "Sem corretor" bucket if any marketing lead lacks attribution
+      if (semCorretor > 0) {
+        leadsPorCorretor.push({ nome: "Sem corretor", count: semCorretor });
+        leadsPorCorretor.sort((a, b) => b.count - a.count);
+      }
 
-      return { pipelineStages: stageData, campanhas, alertas, origens, leadsPorEmpreendimento, leadsPorCorretor };
+      // Dev-only consistency check: chart sums must match KPI total
+      if (import.meta.env.DEV) {
+        const empSum = leadsPorEmpreendimento.reduce((s, x) => s + x.count, 0);
+        const corrSum = leadsPorCorretor.reduce((s, x) => s + x.count, 0);
+        if (empSum !== totalMarketing) {
+          // eslint-disable-next-line no-console
+          console.warn(`[CEO Dashboard] empreendimento sum (${empSum}) ≠ total marketing (${totalMarketing}) — top-10 truncation expected if >10 empreendimentos`);
+        }
+        if (corrSum !== totalMarketing) {
+          // eslint-disable-next-line no-console
+          console.warn(`[CEO Dashboard] corretor sum (${corrSum}) ≠ total marketing (${totalMarketing})`);
+        }
+      }
+
+      return {
+        pipelineStages: stageData,
+        campanhas,
+        alertas,
+        origens,
+        leadsPorEmpreendimento,
+        leadsPorCorretor,
+        totalMarketing,
+        totalOfertaAtiva,
+        enviadosRoleta,
+      };
     },
     enabled: !!user,
     staleTime: 60_000,
@@ -422,12 +483,11 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     queryFn: async () => {
       const { startUtc: startTs, endUtc: endTs } = brtRangeToUTC(range);
 
-      const [{ count: leadsCount }, { count: leadsOACount }, { count: visitasCriadasCount }, { count: novoInteresseCount }, { count: enviadosRoletaCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
-        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).not("origem", "ilike", "%oferta%ativa%"),
-        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).ilike("origem", "%oferta%ativa%"),
+      // NOTE: leads counts (marketing / OA / enviadosRoleta) come from pipelineData
+      // to guarantee identical classification with charts. Here we only fetch ancillary KPIs.
+      const [{ count: visitasCriadasCount }, { count: novoInteresseCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
         supabase.from("visitas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).neq("status", "cancelada"),
         supabase.from("campaign_clicks").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).eq("lead_action", "updated"),
-        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).not("corretor_id", "is", null).not("origem", "ilike", "%oferta%ativa%"),
         supabase.from("roleta_credenciamentos").select("corretor_id").eq("data", hoje).in("status", ["aprovado", "saiu"]),
         supabase.from("corretor_daily_goals").select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas").eq("data", hoje),
       ]);
@@ -436,11 +496,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       (roletaRows || []).forEach(r => { if (r.corretor_id) dispIds.add(r.corretor_id); });
 
       return {
-        totalLeadsPeriodo: leadsCount || 0,
-        leadsReaproveitadosOA: leadsOACount || 0,
         totalVisitasCriadas: visitasCriadasCount || 0,
         novoInteresse: novoInteresseCount || 0,
-        enviadosRoleta: enviadosRoletaCount || 0,
         presentesHoje: dispIds.size,
         metasDiaTotal: {
           ligacoes: (goals || []).reduce((a, g) => a + (g.meta_ligacoes || 0), 0),
@@ -477,11 +534,11 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     leadsPorEmpreendimento: pipelineData?.leadsPorEmpreendimento || [],
     leadsPorCorretor: pipelineData?.leadsPorCorretor || [],
     visitasPorEmp,
-    totalLeadsPeriodo: extraKpis?.totalLeadsPeriodo || 0,
-    leadsReaproveitadosOA: extraKpis?.leadsReaproveitadosOA || 0,
+    totalLeadsPeriodo: pipelineData?.totalMarketing || 0,
+    leadsReaproveitadosOA: pipelineData?.totalOfertaAtiva || 0,
     totalVisitasCriadas: extraKpis?.totalVisitasCriadas || 0,
     novoInteresse: extraKpis?.novoInteresse || 0,
-    enviadosRoleta: extraKpis?.enviadosRoleta || 0,
+    enviadosRoleta: pipelineData?.enviadosRoleta || 0,
     presentesHoje: extraKpis?.presentesHoje || 0,
     metasDiaTotal: extraKpis?.metasDiaTotal || { ligacoes: 0, aproveitados: 0, visitasMarcadas: 0 },
     reload: useCallback(() => {
