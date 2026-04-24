@@ -475,13 +475,21 @@ export default function CeoDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2.5">
-                {leadsPorEmpreendimento.filter(l => l.emp !== "Sem empreendimento").slice(0, 10).map((l, idx) => {
+                {leadsPorEmpreendimento.slice(0, 10).map((l, idx) => {
                   const max = Math.max(...leadsPorEmpreendimento.map(x => x.count), 1);
                   const color = FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
                   return <HBar key={l.emp} label={l.emp} value={l.count} max={max} color={color} />;
                 })}
                 {leadsPorEmpreendimento.length === 0 && <p className="text-xs text-[#a1a1aa] text-center py-4">Sem dados</p>}
               </div>
+              {leadsPorEmpreendimento.length > 0 && (
+                <p className="mt-3 pt-2 border-t border-[#e8e8f0] dark:border-white/[0.07] text-[10px] text-[#a1a1aa] text-right">
+                  Soma: <span className="font-semibold text-foreground">{leadsPorEmpreendimento.reduce((s, x) => s + x.count, 0)}</span>
+                  {leadsPorEmpreendimento.reduce((s, x) => s + x.count, 0) !== totalLeadsPeriodo && (
+                    <> · Total marketing: <span className="font-semibold text-foreground">{totalLeadsPeriodo}</span></>
+                  )}
+                </p>
+              )}
             </CardContent>
           </Card>
 
