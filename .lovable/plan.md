@@ -1,61 +1,84 @@
 
+## Bug: tarefas sumindo na Central de Tarefas
 
-## Unificar etapas "Assinado" e "Vendido" no Pipeline de Negócios
+### Causa raiz (confirmada no banco)
 
-Hoje o pipeline de negócios tem duas etapas redundantes — **Assinado** e **Vendido** — que tratam exatamente do mesmo evento (negócio fechado). Isso gera duplicidade no código (`["assinado", "vendido"]` espalhado em 19+ arquivos), confusão visual (CEO/gerente veem "Vendido", corretor vê "Assinado") e a coluna "Vendido" fica oculta para corretores.
+O `useQuery` em `src/pages/MinhasTarefas.tsx` (linhas 121-164) monta a URL assim:
 
-### Decisão de unificação
+```ts
+query.or(`pipeline_lead_id.in.(${myLeadIds.join(",")}),responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
+```
 
-Vamos manter **`vendido`** como a chave canônica única (já tem 40 registros no banco) e eliminar `assinado` por completo.
+Para corretores com muitos leads, a URL fica gigantesca:
 
-| Item | Antes | Depois |
-|---|---|---|
-| Fases no pipeline | Assinado (todos) + Vendido (oculto p/ corretor) | **Vendido** — uma única coluna verde, visível para todos |
-| Registros `fase = 'assinado'` | 0 | — |
-| Registros `fase = 'vendido'` | 40 | 40 (preservados) |
-| Lógica `["assinado","vendido"]` | espalhada | apenas `'vendido'` |
+| Corretor | Nº leads | Tamanho aprox. da URL `IN (...)` |
+|---|---:|---:|
+| **Jessica** | 342 | **~12.6 KB** |
+| **Ebert** | 314 | ~11.6 KB |
+| Thalia | 240 | ~8.9 KB |
+| Adri | 148 | ~5.5 KB |
 
-### O que será feito
+Acima de ~8 KB o gateway corta o request (HTTP 414 / "URI Too Long"). O `catch` na linha 146 retorna `[]` silenciosamente — daí o **"0 pendentes"** no print, mesmo a Jessica tendo **210 tarefas pendentes** no banco e o Ebert **144**.
 
-**1. Banco de dados (migration)**
-- Migrar quaisquer `negocios.fase = 'assinado'` para `'vendido'` (segurança — hoje são 0, mas garantimos consistência futura).
-- Atualizar a view `v_kpi_negocios`: `conta_venda` passa a checar apenas `fase = 'vendido'`.
-- Remover a etapa órfã `Assinado` (`tipo = 'assinatura'`) da tabela `pipeline_stages` (legado não-utilizado pelo módulo de negócios).
+A linha 235 (`activeTab === "concluidas" ? concluidas`) mostra ainda 20 itens porque `concluidas.slice(0, 20)` opera em cima do mesmo array vazio (no print devem ser tarefas de outro contexto antes do erro, ou cache). O importante é que **as pendentes não aparecem para corretores com volume real**.
 
-**2. Código frontend**
-- `src/hooks/useNegocios.ts`: remover entrada `assinado` de `NEGOCIOS_FASES`. Remover `hidden: true` de `vendido` e renomear label para **"Vendido"** com cor verde única (#22C55E).
-- `src/pages/MeusNegocios.tsx`: remover a lógica condicional `((isAdmin || isGestor) && f.key === "vendido")` — a coluna passa a aparecer para todos automaticamente.
-- `src/components/negocios/NegocioCard.tsx`: mesma simplificação no dropdown "Mover para etapa".
-- `src/components/pipeline/NegocioDetailModal.tsx`: trocar `fase === "assinado"` → `fase === "vendido"` (botão Solicitar Pagadoria, botão Regredir).
-- `src/components/pipeline/FaseTransitionModal.tsx`: o caminho `targetFase === "assinado"` vira `"vendido"`.
-- `src/hooks/useNegocios.ts` (linha 223): o `if (novaFase === "assinado")` que seta `data_assinatura` passa a checar `"vendido"`.
+### Verificação adicional
 
-**3. Limpeza de duplicidade em consumidores**
-Substituir todas as ocorrências de `.in("fase", ["assinado","vendido"])` por `.eq("fase", "vendido")` nos seguintes arquivos:
-- `src/components/relatorios/RelatorioVendas.tsx`
-- `src/components/relatorios/RelatorioOrigem.tsx`
-- `src/components/relatorios/RelatorioConversao.tsx`
-- `src/components/gerente/TabProducao.tsx`
-- `src/pages/CheckpointGerente.tsx`
-- `src/hooks/useCeoDashboard.ts`
-- `src/hooks/useForecast.ts`
-- `src/hooks/useVendaRealtimeNotification.ts`
-- `src/hooks/useSmartAlerts.ts`
-- `src/components/ceo/SaudeOperacao.tsx`
-- `src/components/central/FunilContent.tsx`
-- `src/pages/VendasRealizadas.tsx` (badge fixo "Vendido")
-- `src/lib/metricDefinitions.ts`: `NEGOCIO_FASES_ASSINADO = ['vendido']`
-- `supabase/functions/homi-gerencial/index.ts`
+- 209 de 210 tarefas pendentes da Jessica têm `responsavel_id = jessica.user_id`. Ou seja, **o filtro por `responsavel_id` sozinho já cobre 99,5% dos casos** sem precisar montar a lista de lead-ids.
+- A coluna `responsavel_id` já existe e é populada por todos os fluxos modernos de criação (Pipeline, HOMI, Roleta, scripts de IA).
+- 307 tarefas históricas têm `responsavel_id NULL` — mas são minoria absoluta e nenhuma é da Jessica/Ebert.
 
-### Resultado para o usuário
+### Plano de correção
 
-- **Corretor, Gerente e CEO** veem a mesma coluna **"Vendido"** (verde) no pipeline de negócios.
-- Quando um negócio é movido para Vendido, `data_assinatura` é setada automaticamente (mantém regra atual).
-- Relatórios de VGV Assinado, Vendas Realizadas e KPIs continuam funcionando — todos contam negócios com `fase = 'vendido'`.
-- Sem perda de histórico: 40 negócios atuais permanecem como Vendido.
+#### 1. Reescrever a query de "Tarefas de Leads" (`src/pages/MinhasTarefas.tsx` linhas 121-164)
 
-### Riscos & mitigação
+Trocar a estratégia de "buscar todas as IDs de leads e mandar via `IN`" por **uma query simples filtrando por `responsavel_id` ou `created_by`** — que é o que cobre 99% dos casos e nunca explode o tamanho da URL:
 
-- **Memória "Business Deals rules" (`mem://features/negocios/gestao-e-fechamento-v3`)** menciona "fase Vendido visível para CEOs e Gerentes" — atualizaremos a memória para refletir que agora é visível para todos (incluindo corretores).
-- Edge Functions que filtram por `assinado` serão re-deployadas automaticamente.
+```ts
+const { data, error } = await supabase
+  .from("pipeline_tarefas")
+  .select("*")
+  .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
+  .order("vence_em", { ascending: true })
+  .order("hora_vencimento", { ascending: true })
+  .limit(2000);
+```
 
+Isso elimina:
+- A primeira query "buscar todos os meus lead-ids".
+- A montagem da URL gigante.
+- O modo de falha silenciosa (a query passa a sempre funcionar).
+
+Para os ~71 leads históricos com `responsavel_id NULL`, criar um **fallback opcional**: uma segunda query buscando tarefas pendentes de leads onde `corretor_id = user.id AND responsavel_id IS NULL`, limitada a 200 — essa pode usar IN com segurança porque são poucas. Mesclar os dois resultados via `Map` por id (deduplicação).
+
+#### 2. Tornar o erro visível (não engolir mais)
+
+Trocar `if (error) return [];` por:
+
+```ts
+if (error) {
+  console.error("[MinhasTarefas] erro:", error);
+  toast.error("Erro ao carregar tarefas");
+  throw error; // deixa react-query mostrar o estado de erro
+}
+```
+
+Assim, se algo falhar no futuro, o problema fica óbvio em vez de mostrar lista vazia.
+
+#### 3. Migrar o widget da Home para a mesma estratégia (já está OK)
+
+`src/components/corretor/MinhaAgendaWidget.tsx` (linhas 62-93) **já usa apenas `responsavel_id/created_by`** — sem o problema. Apenas adicionar o mesmo `console.error` para consistência de diagnóstico.
+
+#### 4. Validação após o fix
+
+- Logar como Jessica (342 leads, 210 pendentes) e Ebert (314 leads, 144 pendentes): badge "Pendentes" deve refletir os números reais.
+- Conferir que as abas Hoje/Amanhã/Semana/Atrasadas filtram corretamente.
+- Garantir que tarefas atribuídas pelo admin (com `created_by = admin` mas `responsavel_id = corretor`) continuam aparecendo na visão do corretor.
+
+### O que NÃO muda
+- Aba "Tarefas de Negócios" (já usa `responsavel_id` puro, sem o problema).
+- Lógica de criar/editar/adiar/concluir tarefa.
+- RLS — continua valendo as policies atuais.
+
+### Risco residual
+Tarefas legadas com `responsavel_id NULL` (~71 no banco todo, principalmente leads inativos antigos) só apareceriam via fallback opcional. Como o usuário não relatou esse caso e o volume é desprezível, podemos validar se é necessário implementar o fallback ou se basta garantir que toda criação nova preencha `responsavel_id` (o que já acontece).
