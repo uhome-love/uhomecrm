@@ -1,84 +1,74 @@
+## Objetivo
 
-## Bug: tarefas sumindo na Central de Tarefas
+Gerar **3 PDFs separados** (um por equipe) com o relatório semanal completo das últimas 7 dias rolando (BRT). Entregar como `presentation-artifact` aqui no chat — você baixa e envia por WhatsApp. **Zero mudança no CRM**: nada de Edge Function, nada de botão, nada de rota nova.
 
-### Causa raiz (confirmada no banco)
+## Equipes confirmadas
 
-O `useQuery` em `src/pages/MinhasTarefas.tsx` (linhas 121-164) monta a URL assim:
+| Equipe | Gerente | Corretores ativos | Cor da faixa |
+|---|---|---|---|
+| Gabrielle | Gabrielle Rodrigues | 9 | Verde |
+| Bruno | Bruno Schuler | 11 | Azul |
+| Gabriel | Gabriel Vieira | 7 | Roxo |
 
-```ts
-query.or(`pipeline_lead_id.in.(${myLeadIds.join(",")}),responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
-```
+## Janela de análise
 
-Para corretores com muitos leads, a URL fica gigantesca:
+- **Atual**: `now() - interval '7 days'` até `now()` em BRT (America/Sao_Paulo)
+- **Comparativo**: 7 dias anteriores (D-14 a D-7) para setas ↑↓
 
-| Corretor | Nº leads | Tamanho aprox. da URL `IN (...)` |
-|---|---:|---:|
-| **Jessica** | 342 | **~12.6 KB** |
-| **Ebert** | 314 | ~11.6 KB |
-| Thalia | 240 | ~8.9 KB |
-| Adri | 148 | ~5.5 KB |
+## Mapeamentos validados (queries já testadas)
 
-Acima de ~8 KB o gateway corta o request (HTTP 414 / "URI Too Long"). O `catch` na linha 146 retorna `[]` silenciosamente — daí o **"0 pendentes"** no print, mesmo a Jessica tendo **210 tarefas pendentes** no banco e o Ebert **144**.
+| Tabela | Coluna do corretor | Tipo de ID |
+|---|---|---|
+| `pipeline_leads` | `corretor_id` | `auth.users.id` |
+| `visitas` | `corretor_id` | `auth.users.id` |
+| `negocios` | `auth_user_id` | `auth.users.id` ✅ (NÃO usar `corretor_id`, que é `profiles.id`) |
+| `pipeline_atividades` | `responsavel_id` | `auth.users.id` |
+| `pipeline_tarefas` | `responsavel_id` | `auth.users.id` |
+| `pipeline_parcerias` | `corretor_principal_id` / `corretor_parceiro_id` | `auth.users.id` |
 
-A linha 235 (`activeTab === "concluidas" ? concluidas`) mostra ainda 20 itens porque `concluidas.slice(0, 20)` opera em cima do mesmo array vazio (no print devem ser tarefas de outro contexto antes do erro, ou cache). O importante é que **as pendentes não aparecem para corretores com volume real**.
+Time membership via `team_members.gerente_id` + `status='ativo'`.
 
-### Verificação adicional
+Stages relevantes (pipeline_leads):
+- `Visita` `a857139f-c419-4e37-ae17-5f5e70b21172`
+- `Pós-Visita` `d932fb49-419c-4fda-bae1-9ef06ee2d033`
+- `Negócio Criado` `a8a1a867-5b0c-414e-9532-8873c4ca5a0f`
+- `Descarte` `1dd66c25-3848-4053-9f66-82e902989b4d`
+- `Sem Contato` `2fcba9be-1188-4a54-9452-394beefdc330`
 
-- 209 de 210 tarefas pendentes da Jessica têm `responsavel_id = jessica.user_id`. Ou seja, **o filtro por `responsavel_id` sozinho já cobre 99,5% dos casos** sem precisar montar a lista de lead-ids.
-- A coluna `responsavel_id` já existe e é populada por todos os fluxos modernos de criação (Pipeline, HOMI, Roleta, scripts de IA).
-- 307 tarefas históricas têm `responsavel_id NULL` — mas são minoria absoluta e nenhuma é da Jessica/Ebert.
+Stages negócios:
+- `Proposta` `de6cee2f-8dda-4e60-a4e2-6b7f21aeae96` (negocios.fase)
+- Assinado: usar `negocios.data_assinatura IS NOT NULL` ou `fase = 'Contrato Gerado'`
 
-### Plano de correção
+## Estrutura do PDF (por equipe — 8 seções)
 
-#### 1. Reescrever a query de "Tarefas de Leads" (`src/pages/MinhasTarefas.tsx` linhas 121-164)
+1. **Hero** colorido (verde/azul/roxo) com nome do time + 6 KPIs grandes + comparativo vs semana anterior (↑↓ %)
+2. **Origem dos leads** — tabela por `pipeline_leads.origem` (volume, % do total, viraram visita, conversão), top 3 destaques
+3. **Performance por corretor** — tabela completa com Leads recebidos / trabalhados / Visitas agendadas / realizadas / Conv lead→visita / Negócios proposta / Negócios assinados / VGV assinado, ordenada por VGV desc, com linhas TOTAL e MÉDIA
+4. **Gestão do pipeline por corretor** — mini-cards: leads parados >3 dias, leads em "Sem Contato" >24h, tarefas atrasadas, tempo médio 1º contato (h)
+5. **Funil da equipe** — Leads → Qualif → Visita Agendada → Visita Realizada → Proposta → Assinado, com % entre etapas e linha de referência das últimas 4 semanas
+6. **Destaques da semana** — 🏆 Visitas / 🎯 Gestão / 💰 Conversão (3 cards lado a lado)
+7. **Análise & Diagnóstico** — texto 300-400 palavras gerado por Lovable AI (`google/gemini-2.5-flash`)
+8. **Plano da próxima semana** — 5-7 ações concretas com responsável, mesma chamada IA
 
-Trocar a estratégia de "buscar todas as IDs de leads e mandar via `IN`" por **uma query simples filtrando por `responsavel_id` ou `created_by`** — que é o que cobre 99% dos casos e nunca explode o tamanho da URL:
+## Stack de execução (sandbox, não CRM)
 
-```ts
-const { data, error } = await supabase
-  .from("pipeline_tarefas")
-  .select("*")
-  .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
-  .order("vence_em", { ascending: true })
-  .order("hora_vencimento", { ascending: true })
-  .limit(2000);
-```
+- **Dados**: queries SQL via `supabase--read_query` (uma rodada de queries por equipe)
+- **IA seções 7-8**: script `lovable_ai.py` (skill já disponível, usa `LOVABLE_API_KEY` do sandbox, modelo `google/gemini-2.5-flash`)
+- **PDF**: Python + `reportlab` seguindo identidade Uhome (Montserrat, fundo `#F5F5F2`, faixa hero colorida por time, tabelas zebradas, cards com border-radius)
+- **QA obrigatório**: converter cada PDF para JPG via `pdftoppm` e inspecionar antes de entregar
+- **Saída**: `/mnt/documents/relatorio_semanal_equipe_{nome}.pdf`
 
-Isso elimina:
-- A primeira query "buscar todos os meus lead-ids".
-- A montagem da URL gigante.
-- O modo de falha silenciosa (a query passa a sempre funcionar).
+## Entregáveis
 
-Para os ~71 leads históricos com `responsavel_id NULL`, criar um **fallback opcional**: uma segunda query buscando tarefas pendentes de leads onde `corretor_id = user.id AND responsavel_id IS NULL`, limitada a 200 — essa pode usar IN com segurança porque são poucas. Mesclar os dois resultados via `Map` por id (deduplicação).
+3 arquivos como `<lov-artifact>` no chat:
+- `relatorio_semanal_equipe_gabrielle.pdf`
+- `relatorio_semanal_equipe_bruno.pdf`
+- `relatorio_semanal_equipe_gabriel.pdf`
 
-#### 2. Tornar o erro visível (não engolir mais)
+## Guardrails
 
-Trocar `if (error) return [];` por:
-
-```ts
-if (error) {
-  console.error("[MinhasTarefas] erro:", error);
-  toast.error("Erro ao carregar tarefas");
-  throw error; // deixa react-query mostrar o estado de erro
-}
-```
-
-Assim, se algo falhar no futuro, o problema fica óbvio em vez de mostrar lista vazia.
-
-#### 3. Migrar o widget da Home para a mesma estratégia (já está OK)
-
-`src/components/corretor/MinhaAgendaWidget.tsx` (linhas 62-93) **já usa apenas `responsavel_id/created_by`** — sem o problema. Apenas adicionar o mesmo `console.error` para consistência de diagnóstico.
-
-#### 4. Validação após o fix
-
-- Logar como Jessica (342 leads, 210 pendentes) e Ebert (314 leads, 144 pendentes): badge "Pendentes" deve refletir os números reais.
-- Conferir que as abas Hoje/Amanhã/Semana/Atrasadas filtram corretamente.
-- Garantir que tarefas atribuídas pelo admin (com `created_by = admin` mas `responsavel_id = corretor`) continuam aparecendo na visão do corretor.
-
-### O que NÃO muda
-- Aba "Tarefas de Negócios" (já usa `responsavel_id` puro, sem o problema).
-- Lógica de criar/editar/adiar/concluir tarefa.
-- RLS — continua valendo as policies atuais.
-
-### Risco residual
-Tarefas legadas com `responsavel_id NULL` (~71 no banco todo, principalmente leads inativos antigos) só apareceriam via fallback opcional. Como o usuário não relatou esse caso e o volume é desprezível, podemos validar se é necessário implementar o fallback ou se basta garantir que toda criação nova preencha `responsavel_id` (o que já acontece).
+- ❌ Nada de Edge Function nova
+- ❌ Nada de botão no `/gerente/dashboard`
+- ❌ Nada de migration / mudança em tabela
+- ❌ Nada de mudança em hook ou RPC existente
+- ✅ Apenas leitura SQL + scripts no sandbox + 3 PDFs no /mnt/documents
