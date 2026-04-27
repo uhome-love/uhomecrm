@@ -576,6 +576,15 @@ export default function BuscaLeads() {
               <div className="flex flex-wrap gap-2">
                 {selectedLead.source === "pipeline" ? (
                   <>
+                    {(selectedLead.arquivado || selectedLead.stage_tipo === "descarte") && selectedLead.corretor_id && (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                        onClick={() => { handleReativar(selectedLead); setSelectedLead(null); }}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reativar para {selectedLead.corretor_nome}
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       className="bg-[#4969FF] hover:bg-[#3350E6] text-white text-xs"
