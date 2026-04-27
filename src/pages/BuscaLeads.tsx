@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Search, Phone, User, Mail, Building2, Filter, X, CheckCircle2,
   Trash2, ArrowRightLeft, Lock, Unlock, ShieldAlert, Clock, History,
-  AlertTriangle, Loader2, UserPlus,
+  AlertTriangle, Loader2, UserPlus, RotateCcw,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
