@@ -58,7 +58,7 @@ export default function PipelineTeamVisitas() {
 
       const { data, error } = await supabase
         .from("visitas")
-        .select("id, corretor_id, nome_cliente, empreendimento, data_visita, hora_visita, status, corretor_nome")
+        .select("id, corretor_id, nome_cliente, empreendimento, data_visita, hora_visita, status")
         .in("corretor_id", teamUserIds)
         .gte("data_visita", dateFrom)
         .lte("data_visita", dateTo)
@@ -67,7 +67,25 @@ export default function PipelineTeamVisitas() {
         .order("hora_visita", { ascending: true });
 
       if (error) throw error;
-      return (data || []) as TeamVisita[];
+
+      // Resolve corretor names via profiles join (visitas table has no corretor_nome column)
+      const visitas = data || [];
+      const uniqueCorretorIds = [...new Set(visitas.map(v => v.corretor_id).filter(Boolean))] as string[];
+      const nameMap = new Map<string, string>();
+      if (uniqueCorretorIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", uniqueCorretorIds);
+        (profs || []).forEach(p => {
+          if (p.user_id) nameMap.set(p.user_id, p.nome || "");
+        });
+      }
+
+      return visitas.map(v => ({
+        ...v,
+        corretor_nome: nameMap.get(v.corretor_id) || "Corretor",
+      })) as TeamVisita[];
     },
     enabled: !!user,
     staleTime: 60000,
