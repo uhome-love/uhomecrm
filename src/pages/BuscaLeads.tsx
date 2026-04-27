@@ -115,6 +115,17 @@ export default function BuscaLeads() {
     setMotivo(acao === "aproveitado" ? "Retorno WhatsApp pós ligação" : "");
   };
 
+  const handleReativar = async (lead: BuscaLead) => {
+    if (!lead.corretor_id) {
+      toast.error("Lead não tem corretor — use Repassar para escolher um");
+      return;
+    }
+    const corretorNome = lead.corretor_nome || "o corretor atual";
+    if (!confirm(`Reativar "${lead.nome}" para ${corretorNome}?\n\nO lead voltará para "Novo Lead" e ficará visível no Pipeline dele.`)) return;
+    const ok = await repassarPipelineLead(lead.id, lead.corretor_id, "Reativado via Busca de Leads — devolvido ao mesmo corretor");
+    if (ok) handleSearch();
+  };
+
   const executeAction = async () => {
     if (!actionModal) return;
     const { acao, lead } = actionModal;
