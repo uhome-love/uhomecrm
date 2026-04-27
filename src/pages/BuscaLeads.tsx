@@ -374,9 +374,16 @@ export default function BuscaLeads() {
                       <TableCell className="text-xs">{lead.empreendimento || "—"}</TableCell>
                       <TableCell>
                         {isPipeline ? (
-                          <Badge variant="outline" className="text-[10px] bg-indigo-500/10 text-indigo-300 border-indigo-500/30">
-                            {lead.stage_nome || "—"}
-                          </Badge>
+                          <div className="flex flex-wrap items-center gap-1">
+                            <Badge variant="outline" className="text-[10px] bg-indigo-500/10 text-indigo-300 border-indigo-500/30">
+                              {lead.stage_nome || "—"}
+                            </Badge>
+                            {lead.arquivado && (
+                              <Badge variant="outline" className="text-[10px] bg-orange-500/10 text-orange-300 border-orange-500/30">
+                                arquivado
+                              </Badge>
+                            )}
+                          </div>
                         ) : (
                           <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[lead.status] || ""}`}>
                             {lead.status}
