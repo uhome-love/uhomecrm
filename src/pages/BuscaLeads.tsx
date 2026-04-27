@@ -399,6 +399,17 @@ export default function BuscaLeads() {
                         <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
                           {isPipeline ? (
                             <>
+                              {(lead.arquivado || lead.stage_tipo === "descarte") && lead.corretor_id && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                                  onClick={() => handleReativar(lead)}
+                                  title={`Reativar para ${lead.corretor_nome}`}
+                                >
+                                  <RotateCcw className="h-3 w-3 mr-1" /> Reativar
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
