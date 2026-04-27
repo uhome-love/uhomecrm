@@ -145,15 +145,15 @@ export function useBuscaLeads() {
 
       const [stagesRes, profilesRes] = await Promise.all([
         stageIds.length
-          ? supabase.from("pipeline_stages").select("id, nome").in("id", stageIds)
+          ? supabase.from("pipeline_stages").select("id, nome, tipo").in("id", stageIds)
           : Promise.resolve({ data: [] as any[] }),
         corretorIds.length
           ? supabase.from("profiles").select("user_id, nome").in("user_id", corretorIds)
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
-      const stageMap: Record<string, string> = {};
-      (stagesRes.data || []).forEach((s: any) => { stageMap[s.id] = s.nome; });
+      const stageMap: Record<string, { nome: string; tipo: string }> = {};
+      (stagesRes.data || []).forEach((s: any) => { stageMap[s.id] = { nome: s.nome, tipo: s.tipo }; });
       const corretorMap: Record<string, string> = {};
       (profilesRes.data || []).forEach((p: any) => { corretorMap[p.user_id] = p.nome; });
 
