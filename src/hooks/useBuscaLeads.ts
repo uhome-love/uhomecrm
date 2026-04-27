@@ -48,8 +48,10 @@ export interface BuscaLead {
   source: BuscaSource;
   // pipeline-specific
   stage_id?: string | null;
+  stage_tipo?: string | null;
   stage_nome?: string | null;
   corretor_nome?: string | null;
+  arquivado?: boolean;
 }
 
 export interface LeadTentativa {
