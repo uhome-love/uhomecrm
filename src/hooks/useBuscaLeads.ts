@@ -191,8 +191,10 @@ export function useBuscaLeads() {
         lista_nome: "Pipeline CRM",
         source: "pipeline" as BuscaSource,
         stage_id: d.stage_id,
-        stage_nome: d.stage_id ? stageMap[d.stage_id] || "—" : "—",
+        stage_nome: d.stage_id ? stageMap[d.stage_id]?.nome || "—" : "—",
+        stage_tipo: d.stage_id ? stageMap[d.stage_id]?.tipo || null : null,
         corretor_nome: d.corretor_id ? corretorMap[d.corretor_id] || "Sem corretor" : "Sem corretor",
+        arquivado: !!d.arquivado,
       }));
 
       // Combine and sort by updated_at desc
