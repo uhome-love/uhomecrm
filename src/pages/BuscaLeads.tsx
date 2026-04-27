@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Search, Phone, User, Mail, Building2, Filter, X, CheckCircle2,
   Trash2, ArrowRightLeft, Lock, Unlock, ShieldAlert, Clock, History,
-  AlertTriangle, Loader2, UserPlus,
+  AlertTriangle, Loader2, UserPlus, RotateCcw,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -113,6 +113,17 @@ export default function BuscaLeads() {
     setActionModal({ acao, lead });
     setSelectedCorretor("");
     setMotivo(acao === "aproveitado" ? "Retorno WhatsApp pós ligação" : "");
+  };
+
+  const handleReativar = async (lead: BuscaLead) => {
+    if (!lead.corretor_id) {
+      toast.error("Lead não tem corretor — use Repassar para escolher um");
+      return;
+    }
+    const corretorNome = lead.corretor_nome || "o corretor atual";
+    if (!confirm(`Reativar "${lead.nome}" para ${corretorNome}?\n\nO lead voltará para "Novo Lead" e ficará visível no Pipeline dele.`)) return;
+    const ok = await repassarPipelineLead(lead.id, lead.corretor_id, "Reativado via Busca de Leads — devolvido ao mesmo corretor");
+    if (ok) handleSearch();
   };
 
   const executeAction = async () => {
@@ -363,9 +374,16 @@ export default function BuscaLeads() {
                       <TableCell className="text-xs">{lead.empreendimento || "—"}</TableCell>
                       <TableCell>
                         {isPipeline ? (
-                          <Badge variant="outline" className="text-[10px] bg-indigo-500/10 text-indigo-300 border-indigo-500/30">
-                            {lead.stage_nome || "—"}
-                          </Badge>
+                          <div className="flex flex-wrap items-center gap-1">
+                            <Badge variant="outline" className="text-[10px] bg-indigo-500/10 text-indigo-300 border-indigo-500/30">
+                              {lead.stage_nome || "—"}
+                            </Badge>
+                            {lead.arquivado && (
+                              <Badge variant="outline" className="text-[10px] bg-orange-500/10 text-orange-300 border-orange-500/30">
+                                arquivado
+                              </Badge>
+                            )}
+                          </div>
                         ) : (
                           <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[lead.status] || ""}`}>
                             {lead.status}
@@ -388,6 +406,17 @@ export default function BuscaLeads() {
                         <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
                           {isPipeline ? (
                             <>
+                              {(lead.arquivado || lead.stage_tipo === "descarte") && lead.corretor_id && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                                  onClick={() => handleReativar(lead)}
+                                  title={`Reativar para ${lead.corretor_nome}`}
+                                >
+                                  <RotateCcw className="h-3 w-3 mr-1" /> Reativar
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -547,6 +576,15 @@ export default function BuscaLeads() {
               <div className="flex flex-wrap gap-2">
                 {selectedLead.source === "pipeline" ? (
                   <>
+                    {(selectedLead.arquivado || selectedLead.stage_tipo === "descarte") && selectedLead.corretor_id && (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                        onClick={() => { handleReativar(selectedLead); setSelectedLead(null); }}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reativar para {selectedLead.corretor_nome}
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       className="bg-[#4969FF] hover:bg-[#3350E6] text-white text-xs"
