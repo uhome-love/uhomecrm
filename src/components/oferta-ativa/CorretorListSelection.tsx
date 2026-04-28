@@ -810,6 +810,16 @@ export default function CorretorListSelection() {
           toast.success(`📋 ${result.count} leads carregados! Arena pronta.`);
         }}
       />
+
+      {/* Higienizar dialog (single product or global) */}
+      {higienizarTarget && (
+        <ListaHigienizarDialog
+          open={!!higienizarTarget}
+          onClose={() => setHigienizarTarget(null)}
+          lista={higienizarTarget.lista}
+          listaIdsAll={higienizarTarget.ids}
+        />
+      )}
     </div>
   );
 }
