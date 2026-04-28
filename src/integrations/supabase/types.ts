@@ -4785,8 +4785,10 @@ export type Database = {
           max_tentativas: number
           nome: string
           origem: string | null
+          segmento_id: string | null
           status: string
           total_leads: number
+          ultima_higienizacao_at: string | null
           updated_at: string
         }
         Insert: {
@@ -4799,8 +4801,10 @@ export type Database = {
           max_tentativas?: number
           nome: string
           origem?: string | null
+          segmento_id?: string | null
           status?: string
           total_leads?: number
+          ultima_higienizacao_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -4813,11 +4817,21 @@ export type Database = {
           max_tentativas?: number
           nome?: string
           origem?: string | null
+          segmento_id?: string | null
           status?: string
           total_leads?: number
+          ultima_higienizacao_at?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_listas_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "roleta_segmentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       oferta_ativa_templates: {
         Row: {
@@ -9633,6 +9647,7 @@ export type Database = {
         Returns: Json
       }
       marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
+      norm_empreendimento: { Args: { s: string }; Returns: string }
       normalize_telefone: { Args: { raw: string }; Returns: string }
       prune_old_notifications: {
         Args: { batch_size?: number }
