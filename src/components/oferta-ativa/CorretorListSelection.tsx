@@ -489,6 +489,26 @@ export default function CorretorListSelection() {
           </button>
         ))}
 
+        {/* Higienizar todas — global */}
+        {viewMode !== "personalizadas" && liberadas.length > 0 && (
+          <button
+            onClick={() => setHigienizarTarget({ lista: null, ids: liberadas.map(l => l.id) })}
+            title="Higienizar leads sem interesse / não atende em todas as listas liberadas"
+            className="ml-auto h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"
+            style={{
+              background: "rgba(16,185,129,0.12)",
+              color: "#34D399",
+              border: "1px solid rgba(16,185,129,0.35)",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(16,185,129,0.2)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(16,185,129,0.12)"; }}
+          >
+            <Brush className="h-3.5 w-3.5" />
+            Higienizar todas
+            <span className="text-[10px] opacity-70">({liberadas.length})</span>
+          </button>
+        )}
+
         {/* Search inline */}
         {viewMode !== "personalizadas" && liberadas.length > 3 && (
           <div className="relative flex-1 min-w-[180px]">
