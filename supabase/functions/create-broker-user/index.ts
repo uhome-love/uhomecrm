@@ -135,7 +135,24 @@ serve(async (req) => {
         .upsert({ user_id: newUser.user.id, role: assignedRole }, { onConflict: "user_id,role" });
 
       // Link to manager's team (only for corretores)
+      let teamLinkError: string | null = null;
       if (effectiveGerenteId && assignedRole === "corretor") {
+        // Resolve manager's first name to populate the legacy `equipe` column
+        // (used by the UI to group brokers by team — leaving it null shows "Não vinculado")
+        let equipeNome: string | null = null;
+        try {
+          const { data: gerenteProfile } = await supabase
+            .from("profiles")
+            .select("nome")
+            .eq("user_id", effectiveGerenteId)
+            .maybeSingle();
+          if (gerenteProfile?.nome) {
+            equipeNome = String(gerenteProfile.nome).trim().split(/\s+/)[0] || null;
+          }
+        } catch (e) {
+          console.error("Failed to resolve manager name for team link:", e);
+        }
+
         // Check if there's an existing team_member with same name to link
         const { data: existingMember } = await supabase
           .from("team_members")
@@ -146,25 +163,41 @@ serve(async (req) => {
           .maybeSingle();
 
         if (existingMember) {
-          await supabase
+          const { error: updateErr } = await supabase
             .from("team_members")
-            .update({ user_id: newUser.user.id, status: "ativo" })
+            .update({ user_id: newUser.user.id, status: "ativo", equipe: equipeNome })
             .eq("id", existingMember.id);
+          if (updateErr) {
+            console.error("Team member link (update) error:", updateErr);
+            teamLinkError = updateErr.message;
+          }
         } else {
           const { error: teamError } = await supabase
             .from("team_members")
-            .insert({ gerente_id: effectiveGerenteId, nome, status: "ativo", user_id: newUser.user.id });
+            .insert({
+              gerente_id: effectiveGerenteId,
+              nome,
+              status: "ativo",
+              user_id: newUser.user.id,
+              equipe: equipeNome,
+            });
           if (teamError) {
             console.error("Team member insert error:", teamError);
+            teamLinkError = teamError.message;
           }
         }
       }
 
       const roleLabel = assignedRole === "gestor" ? "Gerente" : assignedRole === "backoffice" ? "Backoffice" : assignedRole === "rh" ? "RH" : "Corretor";
-      return new Response(JSON.stringify({ 
-        success: true, 
+      const baseMessage = `${roleLabel} ${nome} criado com sucesso!`;
+      const message = teamLinkError
+        ? `${baseMessage} (Atenção: vínculo com sua equipe falhou — ${teamLinkError}. Vincule manualmente.)`
+        : baseMessage;
+      return new Response(JSON.stringify({
+        success: true,
         user_id: newUser.user.id,
-        message: `${roleLabel} ${nome} criado com sucesso!` 
+        team_link_error: teamLinkError,
+        message,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
