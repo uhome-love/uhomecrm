@@ -49,6 +49,7 @@ import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
 import LeadWhatsAppTab from "./LeadWhatsAppTab";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { differenceInDaysSafe, differenceInHoursSafe, formatDateSafe, formatDistanceToNowSafe, parseDateBRTSafe } from "@/lib/utils";
 import { getScoreTemperature } from "@/lib/scoreTemperatureLabels";
@@ -207,23 +208,63 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         : `Inativado: ${inativarMotivo}`;
 
       if (tipoDescarte === "definitivo") {
-        // Definitivo: archive lead in current stage, no moving to descarte
-        await onUpdate(lead.id, { motivo_descarte: motivoTexto, tipo_descarte: "definitivo", arquivado: true } as any);
+        // Definitivo: arquiva o lead (some da carteira). Update direto, sem depender de onUpdate.
+        const nowIso = new Date().toISOString();
+        const { error } = await supabase
+          .from("pipeline_leads")
+          .update({
+            motivo_descarte: motivoTexto,
+            tipo_descarte: "definitivo",
+            arquivado: true,
+            ultima_acao_at: nowIso,
+          })
+          .eq("id", lead.id);
+        if (error) throw error;
         toast.success("Lead inativado definitivamente (arquivado)");
       } else {
-        // Reengajável: move to descarte stage for nurturing
-        const descarteStage = stages.find(s => s.tipo === "descarte");
-        await onUpdate(lead.id, { motivo_descarte: motivoTexto, tipo_descarte: "reengajavel" } as any);
-        if (descarteStage) await onMove(lead.id, descarteStage.id, motivoTexto);
+        // Reengajável: move para etapa Descarte de forma ATÔMICA (um único UPDATE).
+        // Não depende de onMove/onUpdate em sequência — evita estados inconsistentes
+        // (lead com motivo gravado mas ainda na etapa antiga).
+        const descarteStage = stages.find(s => s.tipo === "descarte")
+          || stages.find(s => s.nome.toLowerCase().includes("descart"));
+        if (!descarteStage) {
+          toast.error("Etapa de Descarte não encontrada. Contate o suporte.");
+          return;
+        }
+        const nowIso = new Date().toISOString();
+        const { error } = await supabase
+          .from("pipeline_leads")
+          .update({
+            stage_id: descarteStage.id,
+            stage_changed_at: nowIso,
+            ultima_acao_at: nowIso,
+            motivo_descarte: motivoTexto,
+            tipo_descarte: "reengajavel",
+          })
+          .eq("id", lead.id);
+        if (error) throw error;
+
+        // Histórico (best-effort, não bloqueia)
+        try {
+          await supabase.from("pipeline_historico").insert({
+            pipeline_lead_id: lead.id,
+            stage_anterior_id: lead.stage_id,
+            stage_novo_id: descarteStage.id,
+            movido_por: user?.id ?? null,
+            observacao: motivoTexto,
+          } as any);
+        } catch {}
         toast.success("Lead movido para descarte (reengajável)");
       }
 
       setInativarOpen(false);
       onOpenChange(false);
+      // Refresh para o board recarregar e o card sumir/reposicionar
+      try { await onUpdate(lead.id, {} as any); } catch {}
     } catch (err: any) {
       toast.error("Erro ao inativar: " + (err.message || ""));
     } finally { setInativando(false); }
-  }, [inativarMotivo, inativarObs, tipoDescarte, stages, lead.id, onUpdate, onMove, onOpenChange]);
+  }, [inativarMotivo, inativarObs, tipoDescarte, stages, lead.id, lead.stage_id, onUpdate, onOpenChange, user?.id]);
 
   // Keyboard shortcuts
   useEffect(() => {
