@@ -468,8 +468,8 @@ export default function CorretorListSelection() {
       {/* View mode toggle + search */}
       <div className="flex items-center gap-2 flex-wrap">
         {([
-          { key: "campanhas" as ViewMode, icon: "📂", label: "Campanhas" },
-          { key: "listas" as ViewMode, icon: "📋", label: "Listas" },
+          { key: "produto" as ViewMode, icon: "🏢", label: "Por Produto" },
+          { key: "listas" as ViewMode, icon: "📋", label: "Listas brutas" },
           { key: "personalizadas" as ViewMode, icon: "✨", label: "Personalizadas" },
         ]).map(tab => (
           <button
