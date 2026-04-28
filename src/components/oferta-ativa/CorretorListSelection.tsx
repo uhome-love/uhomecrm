@@ -511,8 +511,8 @@ export default function CorretorListSelection() {
         )}
       </div>
 
-      {/* ── CAMPANHAS VIEW ── */}
-      {viewMode === "campanhas" && (
+      {/* ── POR PRODUTO VIEW (Segmento → Produto) ── */}
+      {viewMode === "produto" && (
         <>
           {liberadas.length === 0 ? (
             <div className="rounded-xl py-12 text-center" style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)" }}>
@@ -520,41 +520,118 @@ export default function CorretorListSelection() {
               <p className="font-medium" style={{ color: "var(--arena-text-muted)" }}>Nenhuma lista liberada</p>
               <p className="text-sm mt-1" style={{ color: "var(--arena-text-subtle)" }}>Aguarde o Admin liberar uma campanha para começar.</p>
             </div>
+          ) : Object.keys(segmentGroups).length === 0 && search ? (
+            <p className="text-sm text-center py-4" style={{ color: "var(--arena-text-subtle)" }}>Nenhum produto encontrado para "{search}"</p>
           ) : (
-            <div className="space-y-1.5">
-              {Object.entries(campaignGroups).map(([campanha, campanhaListas]) => (
-                <CampaignRow
-                  key={campanha}
-                  campanha={campanha}
-                  listas={campanhaListas}
-                  statsMap={statsMap}
-                  onStart={() => startCampaign(campanha, campanhaListas)}
-                />
-              ))}
+            <div className="space-y-3">
+              {Object.entries(segmentGroups)
+                .sort(([, a], [, b]) => getSegmentoVisual(a.nome).order - getSegmentoVisual(b.nome).order)
+                .map(([segId, seg]) => {
+                  const visual = getSegmentoVisual(seg.nome);
+                  const isCollapsed = collapsed.has(segId);
+                  const produtos = Object.entries(seg.produtos).sort(([, a], [, b]) => {
+                    const aN = a.listas.reduce((s, l) => s + (statsMap?.[l.id]?.naFila ?? 0), 0);
+                    const bN = b.listas.reduce((s, l) => s + (statsMap?.[l.id]?.naFila ?? 0), 0);
+                    return bN - aN;
+                  });
+                  const segNaFila = produtos.reduce((s, [, b]) => s + b.listas.reduce((ss, l) => ss + (statsMap?.[l.id]?.naFila ?? 0), 0), 0);
+                  return (
+                    <div key={segId} className="rounded-xl overflow-hidden" style={{ background: visual.bg, border: `1px solid ${visual.border}` }}>
+                      <button
+                        onClick={() => toggleCollapse(segId)}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-white/5 transition-colors"
+                      >
+                        <span className="text-base">{visual.icon}</span>
+                        <span className="text-sm font-bold uppercase tracking-wider" style={{ color: visual.color }}>{seg.nome}</span>
+                        <span className="text-[11px]" style={{ color: "var(--arena-text-subtle)" }}>
+                          · {produtos.length} produto{produtos.length > 1 ? "s" : ""} · {segNaFila} na fila
+                        </span>
+                        <span className="ml-auto" style={{ color: visual.color }}>
+                          {isCollapsed ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                        </span>
+                      </button>
+                      {!isCollapsed && (
+                        <div className="px-2 pb-2 space-y-1">
+                          {produtos.map(([produto, bucket]) => {
+                            const naFila = bucket.listas.reduce((s, l) => s + (statsMap?.[l.id]?.naFila ?? 0), 0);
+                            const aprov = bucket.listas.reduce((s, l) => s + (statsMap?.[l.id]?.aproveitados ?? 0), 0);
+                            const total = bucket.listas.reduce((s, l) => s + (statsMap?.[l.id]?.total ?? 0), 0);
+                            const pct = total > 0 ? Math.round(((total - naFila) / total) * 100) : 0;
+                            const aprovPct = total > 0 ? Math.round((aprov / total) * 100) : 0;
+                            const saude = aprovPct >= 30 ? { dot: "🟢", txt: "Saudável" } : aprovPct >= 10 ? { dot: "🟡", txt: "Mediana" } : { dot: "🔴", txt: "Fria" };
+                            const ultimaH = bucket.listas
+                              .map(l => l.ultima_higienizacao_at)
+                              .filter(Boolean)
+                              .sort()
+                              .pop();
+                            return (
+                              <div
+                                key={produto}
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg group transition-all"
+                                style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)" }}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm font-semibold truncate" style={{ color: "var(--arena-text)" }}>
+                                      {bucket.isDescartado && <span className="mr-1">🔄</span>}
+                                      {produto}
+                                    </p>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "var(--arena-subtle-bg)", color: "var(--arena-text-subtle)" }} title={`${aprovPct}% aproveitamento`}>
+                                      {saude.dot} {saude.txt}
+                                    </span>
+                                    {bucket.isDescartado && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(168,85,247,0.15)", color: "#A78BFA" }}>
+                                        Reengajamento
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] mt-0.5" style={{ color: "var(--arena-text-subtle)" }}>
+                                    {bucket.listas.length} lista{bucket.listas.length > 1 ? "s" : ""}
+                                    {ultimaH && ` · Higienizada ${formatDistanceToNow(new Date(ultimaH), { addSuffix: true, locale: ptBR })}`}
+                                  </p>
+                                </div>
 
-              {ungroupedListas.length > 0 && (
-                <>
-                  {Object.keys(campaignGroups).length > 0 && (
-                    <p className="text-[10px] font-semibold uppercase tracking-wider pt-2 pb-0.5 px-1" style={{ color: "var(--arena-text-subtle)" }}>Listas individuais</p>
-                  )}
-                  {ungroupedListas.map(lista => {
-                    const stats = statsMap?.[lista.id];
-                    return (
-                      <ListaRow
-                        key={lista.id}
-                        lista={lista}
-                        stats={stats}
-                        onClick={() => setSelectedLista(lista)}
-                      />
-                    );
-                  })}
-                </>
-              )}
+                                <div className="hidden sm:flex items-center gap-3 text-xs shrink-0">
+                                  <span style={{ color: "#60A5FA", fontWeight: 700 }}>{naFila}</span>
+                                  <span style={{ color: "var(--arena-text-subtle)" }}>fila</span>
+                                  <span style={{ color: "var(--arena-text-subtle)", opacity: 0.5 }}>·</span>
+                                  <span style={{ color: "#4ADE80", fontWeight: 700 }}>{aprov}</span>
+                                  <span style={{ color: "var(--arena-text-subtle)" }}>aprov</span>
+                                  <span style={{ color: "var(--arena-text-subtle)", opacity: 0.5 }}>·</span>
+                                  <span style={{ color: "var(--arena-text-muted)", fontWeight: 600 }}>{total}</span>
+                                </div>
 
-              {/* Empty search state */}
-              {Object.keys(campaignGroups).length === 0 && ungroupedListas.length === 0 && search && (
-                <p className="text-sm text-center py-4" style={{ color: "var(--arena-text-subtle)" }}>Nenhuma lista encontrada para "{search}"</p>
-              )}
+                                <div className="hidden md:block w-16 shrink-0">
+                                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
+                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${visual.color}, #22C55E)` }} />
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={() => setHigienizarTarget({ lista: { id: bucket.listas[0].id, nome: produto }, ids: bucket.listas.map(l => l.id) })}
+                                  title="Higienizar leads sem interesse / não atende"
+                                  className="h-8 w-8 rounded-lg flex items-center justify-center text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors shrink-0"
+                                >
+                                  <Brush className="h-3.5 w-3.5" />
+                                </button>
+
+                                <button
+                                  onClick={naFila > 0 ? () => startCampaign(produto, bucket.listas) : undefined}
+                                  disabled={naFila === 0}
+                                  className={`h-8 px-3 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all ${naFila > 0 ? "arena-btn-call" : "cursor-not-allowed"}`}
+                                  style={naFila === 0 ? { background: "var(--arena-subtle-bg)", color: "var(--arena-text-subtle)" } : {}}
+                                >
+                                  <Phone className="h-3.5 w-3.5" />
+                                  {naFila > 0 ? "Iniciar" : "Esgotada"}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           )}
         </>
