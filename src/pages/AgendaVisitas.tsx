@@ -709,6 +709,7 @@ export default function AgendaVisitas() {
               onEdit={handleEdit}
               onMarkRealizada={handleMarkRealizada}
               onMarkNoShow={handleMarkNoShow}
+              onReabrir={handleReabrir}
             />
           ))
         )}
