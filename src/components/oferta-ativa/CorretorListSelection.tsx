@@ -358,39 +358,51 @@ export default function CorretorListSelection() {
     return liberadas.filter(l => isExhausted(l.id)).length;
   }, [liberadas, statsMap, isExhausted]);
 
-  // Campaign groups (filtered, excluding exhausted campaigns)
-  const { campaignGroups, ungroupedListas, exhaustedCampaigns } = useMemo(() => {
+  // Group by segmento (using lista.segmento_id) → then by empreendimento (produto)
+  const segmentMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of segmentosAll) m.set(s.id, s.nome);
+    return m;
+  }, [segmentosAll]);
+
+  const segmentGroups = useMemo(() => {
     const matched = filterListas(liberadas);
-    const groups: Record<string, OALista[]> = {};
-    const ungrouped: OALista[] = [];
-    
+    // Top level: segmentoKey -> Map<produto, OALista[]>
+    type ProdutoBucket = { listas: OALista[]; isDescartado: boolean };
+    const groups: Record<string, { nome: string; produtos: Record<string, ProdutoBucket> }> = {};
+
     for (const l of matched) {
-      if (l.campanha) {
-        if (!groups[l.campanha]) groups[l.campanha] = [];
-        groups[l.campanha].push(l);
-      } else {
-        ungrouped.push(l);
+      const segId = l.segmento_id || "__sem_segmento__";
+      const segNome = l.segmento_id ? (segmentMap.get(l.segmento_id) || "Outros / Sem segmento") : "Outros / Sem segmento";
+      const produto = l.empreendimento || "Sem empreendimento";
+      const isDescartado =
+        (l.campanha || "").toLowerCase().includes("descart") ||
+        (l.nome || "").toLowerCase().includes("descart") ||
+        (l.nome || "").toLowerCase().includes("não aproveit") ||
+        (l.nome || "").toLowerCase().includes("nao aproveit");
+
+      if (!groups[segId]) groups[segId] = { nome: segNome, produtos: {} };
+      if (!groups[segId].produtos[produto]) groups[segId].produtos[produto] = { listas: [], isDescartado };
+      groups[segId].produtos[produto].listas.push(l);
+      if (isDescartado) groups[segId].produtos[produto].isDescartado = true;
+    }
+
+    // Filter exhausted produtos when toggle off
+    if (!showExhausted) {
+      for (const seg of Object.values(groups)) {
+        for (const [prod, bucket] of Object.entries(seg.produtos)) {
+          const naFila = bucket.listas.reduce((s, l) => s + (statsMap?.[l.id]?.naFila ?? 0), 0);
+          if (naFila === 0) delete seg.produtos[prod];
+        }
+      }
+      // Remove empty segments
+      for (const [k, seg] of Object.entries(groups)) {
+        if (Object.keys(seg.produtos).length === 0) delete groups[k];
       }
     }
 
-    // Separate exhausted campaigns
-    const active: Record<string, OALista[]> = {};
-    const exhausted: Record<string, OALista[]> = {};
-    for (const [camp, items] of Object.entries(groups)) {
-      const totalNaFila = items.reduce((s, l) => s + (statsMap?.[l.id]?.naFila ?? 0), 0);
-      if (totalNaFila === 0) {
-        exhausted[camp] = items;
-      } else {
-        active[camp] = items;
-      }
-    }
-
-    // Filter ungrouped
-    const activeUngrouped = showExhausted ? ungrouped : ungrouped.filter(l => !isExhausted(l.id));
-    const finalGroups = showExhausted ? { ...active, ...exhausted } : active;
-
-    return { campaignGroups: finalGroups, ungroupedListas: activeUngrouped, exhaustedCampaigns: exhausted };
-  }, [liberadas, filterListas, statsMap, showExhausted, isExhausted]);
+    return groups;
+  }, [liberadas, filterListas, statsMap, showExhausted, segmentMap]);
 
   // All listas flat (for "listas" view mode)
   const allListasFlat = useMemo(() => {
