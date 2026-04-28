@@ -19,6 +19,8 @@ export interface OALista {
   criado_por: string;
   created_at: string;
   updated_at: string;
+  segmento_id?: string | null;
+  ultima_higienizacao_at?: string | null;
 }
 
 export interface OALead {
