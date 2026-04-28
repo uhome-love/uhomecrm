@@ -150,6 +150,7 @@ function VisitaCompactCard({
   onEdit,
   onMarkRealizada,
   onMarkNoShow,
+  onReabrir,
 }: {
   visita: Visita;
   showCorretor: boolean;
@@ -157,6 +158,7 @@ function VisitaCompactCard({
   onEdit: (v: Visita) => void;
   onMarkRealizada: (v: Visita) => void;
   onMarkNoShow: (id: string) => void;
+  onReabrir: (id: string) => void;
 }) {
   const isDone = visita.status === "realizada" || visita.status === "cancelada" || visita.status === "no_show";
   return (
