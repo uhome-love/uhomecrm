@@ -282,19 +282,38 @@ function SavedListRow({ list, onStart, onDelete }: { list: CustomList; onStart: 
   );
 }
 
-type ViewMode = "campanhas" | "listas" | "personalizadas";
+type ViewMode = "produto" | "listas" | "personalizadas";
+
+const COLLAPSED_STORAGE_KEY = "oa-segmentos-colapsados";
 
 export default function CorretorListSelection() {
   const { listas, isLoading } = useOAListas();
+  const { data: segmentosAll = [] } = useRoletaSegmentos();
   const { user } = useAuth();
   const [selectedLista, setSelectedLista] = useState<OALista | null>(null);
   const [search, setSearch] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("campanhas");
+  const [viewMode, setViewMode] = useState<ViewMode>("produto");
   const [showExhausted, setShowExhausted] = useState(false);
+  const [higienizarTarget, setHigienizarTarget] = useState<{ lista: { id: string; nome: string } | null; ids?: string[] } | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(COLLAPSED_STORAGE_KEY);
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  });
   const { lists: savedLists, isLoading: savedLoading, markUsed, deleteList } = useCustomLists();
   const { setOpen, open } = useSidebar();
   const prevOpenRef = useRef(open);
+
+  const toggleCollapse = useCallback((segId: string) => {
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(segId)) next.delete(segId); else next.add(segId);
+      try { localStorage.setItem(COLLAPSED_STORAGE_KEY, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (selectedLista) {
