@@ -87,6 +87,8 @@ const App = () => (
               {/* Redirects */}
               <Route path="/fechamento-day" element={<Navigate to="/placar-do-dia" replace />} />
               <Route path="/gestao" element={<Navigate to="/gerente/dashboard" replace />} />
+              <Route path="/index" element={<Navigate to="/" replace />} />
+              <Route path="/index.html" element={<Navigate to="/" replace />} />
 
               {/* All authenticated routes — rendered via Chrome-style tab system */}
               <Route path="/*" element={
