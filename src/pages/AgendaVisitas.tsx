@@ -309,6 +309,7 @@ function DayGroup({
             onEdit={onEdit}
             onMarkRealizada={onMarkRealizada}
             onMarkNoShow={onMarkNoShow}
+            onReabrir={onReabrir}
           />
         ))}
       </div>
