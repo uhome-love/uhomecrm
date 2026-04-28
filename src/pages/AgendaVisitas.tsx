@@ -213,9 +213,9 @@ function VisitaCompactCard({
         {STATUS_LABELS[visita.status]}
       </span>
 
-      {/* Quick actions */}
-      {!isDone && (
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      {/* Quick actions — sempre disponíveis para permitir correção de status */}
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        {visita.status !== "realizada" && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkRealizada(visita); }}
             className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#10b981]/10 text-[#10b981] transition-colors"
@@ -223,6 +223,8 @@ function VisitaCompactCard({
           >
             <Check size={14} strokeWidth={2.5} />
           </button>
+        )}
+        {visita.status !== "no_show" && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkNoShow(visita.id); }}
             className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#ef4444]/10 text-[#ef4444] transition-colors"
@@ -230,8 +232,17 @@ function VisitaCompactCard({
           >
             <XCircle size={14} strokeWidth={2} />
           </button>
-        </div>
-      )}
+        )}
+        {isDone && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onReabrir(visita.id); }}
+            className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#4969FF]/10 text-[#4969FF] transition-colors"
+            title="Reabrir visita (voltar para Marcada)"
+          >
+            <RotateCcw size={13} strokeWidth={2.2} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
