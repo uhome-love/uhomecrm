@@ -5,7 +5,7 @@ import {
   addDays, isToday, isBefore,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User } from "lucide-react";
+import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User, RotateCcw } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
 import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
