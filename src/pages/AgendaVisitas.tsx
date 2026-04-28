@@ -460,6 +460,12 @@ export default function AgendaVisitas() {
     updateStatus(id, "no_show");
   }, [updateStatus]);
 
+  const handleReabrir = useCallback(async (id: string) => {
+    // Limpa resultado anterior e volta status para "marcada" para permitir reclassificação
+    await updateVisita(id, { resultado_visita: null } as any, true);
+    await updateStatus(id, "marcada");
+  }, [updateStatus, updateVisita]);
+
   const handleResultadoSubmit = useCallback(async (resultado: ResultadoVisita, observacoes?: string, feedback?: { objecao?: string; temperatura?: string; proxima_acao?: string }) => {
     if (!resultadoVisita) return;
     const updates: any = { resultado_visita: resultado };
