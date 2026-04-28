@@ -189,10 +189,15 @@ serve(async (req) => {
       }
 
       const roleLabel = assignedRole === "gestor" ? "Gerente" : assignedRole === "backoffice" ? "Backoffice" : assignedRole === "rh" ? "RH" : "Corretor";
-      return new Response(JSON.stringify({ 
-        success: true, 
+      const baseMessage = `${roleLabel} ${nome} criado com sucesso!`;
+      const message = teamLinkError
+        ? `${baseMessage} (Atenção: vínculo com sua equipe falhou — ${teamLinkError}. Vincule manualmente.)`
+        : baseMessage;
+      return new Response(JSON.stringify({
+        success: true,
         user_id: newUser.user.id,
-        message: `${roleLabel} ${nome} criado com sucesso!` 
+        team_link_error: teamLinkError,
+        message,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
