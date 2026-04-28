@@ -258,6 +258,7 @@ function DayGroup({
   onEdit,
   onMarkRealizada,
   onMarkNoShow,
+  onReabrir,
 }: {
   dateStr: string;
   visitas: Visita[];
@@ -266,6 +267,7 @@ function DayGroup({
   onEdit: (v: Visita) => void;
   onMarkRealizada: (v: Visita) => void;
   onMarkNoShow: (id: string) => void;
+  onReabrir: (id: string) => void;
 }) {
   const d = new Date(dateStr + "T12:00:00");
   const dayLabel = format(d, "EEEE", { locale: ptBR }).replace(/^\w/, c => c.toUpperCase());
