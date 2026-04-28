@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, Sparkle, ChevronUp, ChevronDown as ChevronDownIcon, Brush } from "lucide-react";
 import { useOAListas, type OALista } from "@/hooks/useOfertaAtiva";
+import { useRoletaSegmentos, getSegmentoVisual } from "@/hooks/useRoletaSegmentos";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Phone, ArrowLeft, Loader2, Users, Search, Zap, Sparkles, Trash2, ChevronDown, Eye, EyeOff } from "lucide-react";
@@ -8,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import DialingModeWithScript from "./DialingModeWithScript";
 import CustomListWizard from "./CustomListWizard";
+import ListaHigienizarDialog from "./ListaHigienizarDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
