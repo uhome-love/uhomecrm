@@ -170,8 +170,9 @@ export function usePipeline(pipelineTipo: string = "leads") {
         return;
       }
     } else {
-      const ownProfileIds = [...resolveProfileIds([userId]).then((mapping) => [...mapping.values()])];
-      ownScopeIds = [...new Set([userId, ...(await Promise.resolve(ownProfileIds))])];
+      const ownProfileMap = await resolveProfileIds([userId]);
+      const ownProfileIds = [...ownProfileMap.values()];
+      ownScopeIds = [...new Set([userId, ...ownProfileIds])];
     }
 
     // Load partnership lead IDs for corretores via canonical view
