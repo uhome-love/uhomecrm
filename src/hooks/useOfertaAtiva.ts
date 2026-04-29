@@ -347,23 +347,28 @@ export function useOACampaignQueue(listaIds: string[]) {
 }
 
 // Keep legacy useOAFila for backward compat (PerformanceLivePanel etc.)
-export function useOAFila(listaId: string) {
+export function useOAFila(listaId: string, sortMode: OASortMode = "recente") {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: fila = [], isLoading } = useQuery({
-    queryKey: ["oa-fila", listaId],
+    queryKey: ["oa-fila", listaId, sortMode],
     queryFn: async () => {
       await supabase.rpc("cleanup_expired_locks");
       const now = new Date().toISOString();
-      const { data, error } = await supabase
+      let query = supabase
         .from("oferta_ativa_leads")
         .select("*")
         .eq("lista_id", listaId)
         .in("status", ["na_fila", "em_cooldown"])
         .or(`proxima_tentativa_apos.is.null,proxima_tentativa_apos.lt.${now}`)
-        .order("tentativas_count", { ascending: true })
-        .limit(100);
+        .order("tentativas_count", { ascending: true });
+      if (sortMode === "recente") {
+        query = query.order("data_lead", { ascending: false, nullsFirst: false });
+      } else if (sortMode === "antigo") {
+        query = query.order("data_lead", { ascending: true, nullsFirst: false });
+      }
+      const { data, error } = await query.limit(100);
       if (error) throw error;
       return data as OALead[];
     },
