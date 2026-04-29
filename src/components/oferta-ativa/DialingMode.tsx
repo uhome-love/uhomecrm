@@ -155,9 +155,35 @@ export default function DialingMode({ lista, onBack }: Props) {
     );
   }
 
+  const isLeadNovo = (l: OALead | undefined) => {
+    if (!l?.data_lead) return false;
+    const d = new Date(l.data_lead);
+    return (Date.now() - d.getTime()) < 7 * 24 * 60 * 60 * 1000;
+  };
+  const novosNaSemana = fila.filter(isLeadNovo).length;
+
   return (
     <div className="space-y-4">
-      {/* Progress bar */}
+      {/* Sort + Progress */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground">Ordem:</span>
+          {(["recente","antigo","padrao"] as OASortMode[]).map((m) => (
+            <button
+              key={m}
+              onClick={() => setSortMode(m)}
+              className={`px-2.5 py-1 rounded-md font-medium transition-colors ${sortMode === m ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}
+            >
+              {m === "recente" ? "🔥 Mais recentes" : m === "antigo" ? "Mais antigos" : "Padrão"}
+            </button>
+          ))}
+        </div>
+        {novosNaSemana > 0 && (
+          <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+            ✨ {novosNaSemana} {novosNaSemana === 1 ? "novo" : "novos"} esta semana
+          </Badge>
+        )}
+      </div>
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Lead {currentIndex + 1} de {fila.length}</span>
         <span className="font-semibold text-primary">{lista.empreendimento}</span>
