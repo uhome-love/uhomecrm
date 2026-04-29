@@ -31,15 +31,22 @@ function ListaStats({ listaId }: { listaId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("oferta_ativa_leads")
-        .select("status")
+        .select("status, data_lead, created_at")
         .eq("lista_id", listaId);
-      if (error) return { na_fila: 0, aproveitado: 0, descartado: 0, total: 0 };
+      if (error) return { na_fila: 0, aproveitado: 0, descartado: 0, total: 0, novos: 0 };
       const leads = data || [];
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
       return {
         total: leads.length,
         na_fila: leads.filter(l => l.status === "na_fila").length,
         aproveitado: leads.filter(l => l.status === "aproveitado" || l.status === "concluido").length,
         descartado: leads.filter(l => l.status === "descartado").length,
+        novos: leads.filter(l => {
+          if (l.status !== "na_fila") return false;
+          const ref = l.data_lead || l.created_at;
+          if (!ref) return false;
+          return new Date(ref).getTime() >= sevenDaysAgo;
+        }).length,
       };
     },
     staleTime: 30000,
@@ -47,14 +54,20 @@ function ListaStats({ listaId }: { listaId: string }) {
 
   if (!data) return null;
   return (
-    <div className="flex gap-3 text-[11px]">
+    <div className="flex flex-wrap gap-2 text-[11px] items-center">
       <span>📋 {data.total} total</span>
       <span className="text-emerald-600">✅ {data.aproveitado} aprov.</span>
       <span>📞 {data.na_fila} na fila</span>
       <span className="text-muted-foreground">❌ {data.descartado} desc.</span>
+      {data.novos > 0 && (
+        <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/30">
+          🔥 +{data.novos} {data.novos === 1 ? "novo" : "novos"} esta semana
+        </span>
+      )}
     </div>
   );
 }
+
 
 function ListaCard({ lista, isAdmin, isSelected, onToggle, onUpdate, onDelete, onClean }: {
   lista: OALista;
