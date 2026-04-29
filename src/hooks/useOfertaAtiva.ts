@@ -138,18 +138,27 @@ export function useOAListas() {
   return { listas, isLoading, createLista, updateLista, deleteLista };
 }
 
+// ─── Sort modes para fila/lista ───
+export type OASortMode = "recente" | "antigo" | "padrao";
+
 // ─── Hook: Leads de uma lista ───
-export function useOALeads(listaId?: string) {
+export function useOALeads(listaId?: string, sortMode: OASortMode = "recente") {
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["oa-leads", listaId],
+    queryKey: ["oa-leads", listaId, sortMode],
     queryFn: async () => {
       let query = supabase
         .from("oferta_ativa_leads")
-        .select("id, lista_id, nome, telefone, telefone2, email, telefone_normalizado, empreendimento, campanha, origem, data_lead, observacoes, status, motivo_descarte, corretor_id, tentativas_count, ultima_tentativa, proxima_tentativa_apos, created_at, updated_at")
-        .order("created_at", { ascending: true })
-        .limit(200);
+        .select("id, lista_id, nome, telefone, telefone2, email, telefone_normalizado, empreendimento, campanha, origem, data_lead, observacoes, status, motivo_descarte, corretor_id, tentativas_count, ultima_tentativa, proxima_tentativa_apos, created_at, updated_at");
       if (listaId) query = query.eq("lista_id", listaId);
-      const { data, error } = await query;
+      // Ordenação: mais recente / mais antigo / padrão (created_at asc)
+      if (sortMode === "recente") {
+        query = query.order("data_lead", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+      } else if (sortMode === "antigo") {
+        query = query.order("data_lead", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true });
+      } else {
+        query = query.order("created_at", { ascending: true });
+      }
+      const { data, error } = await query.limit(200);
       if (error) throw error;
       return data as OALead[];
     },
