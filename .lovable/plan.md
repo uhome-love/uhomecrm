@@ -1,111 +1,123 @@
-# Refatoração Completa: Vitrines + Imóveis
+# Migrar 302 descartados → Oferta Ativa + Ordenação por Recência
 
-## Diagnóstico (raiz do caos)
+## Objetivo
 
-A funcionalidade está rachada entre **DOIS bancos Supabase diferentes**, e cada peça do código escolhe o lado errado:
+1. **Mover os leads em descarte para Oferta Ativa**, criando/alimentando uma lista por empreendimento (Casa Tua, Open Bosque, Las Casas, Connect JW, etc.).
+2. **Adicionar ordenação por data** (mais recente / mais antigo / padrão) na fila de discagem.
+3. **Sinalizar visualmente "Lead novo"** (entrou nos últimos 7 dias) para gerar adesão dos corretores.
 
-```text
-                     ┌──────────────────────────┐
-                     │  CRM (hunbxqzhvuemgntklyzb) │
-                     │  • properties             │
-                     │  • empreendimento_overrides│
-                     │  • vitrines (LEGADO/morto)│
-                     │  • vitrine_interacoes     │
-                     └──────────────────────────┘
-                                  │
-   ┌─── useCreateVitrine ─────────┼──── INSERE NO SITE ✅ (correto)
-   │                              │
-   ├─── vitrine-public (edge fn) ─┴──── LÊ NO CRM   ❌ (errado!)
-   │
-   ├─── MinhasVitrines ────────────────► LÊ NO SITE ✅ (correto)
-   │
-   └─── getVitrinePublicUrl ────► uhome.com.br/vitrine/:id
-                                   (página do projeto SITE,
-                                    que lê no banco do SITE ✅)
+## Contexto encontrado
+
+**Descartados elegíveis** (`pipeline_leads` com `motivo_descarte IS NOT NULL` e `arquivado=false`): 141 visíveis hoje no banco — você mencionou 302; vou usar o universo completo dos descartados ativos no momento da execução.
+
+**Distribuição por empreendimento** (top): Casa Tua 15+, Open Bosque 7, Las Casas 4, Connect JW 4, Avulso ImovelWeb 3, Orygem/Vértice/Lake Eyre/Golden Lake/High Garden Iguatemi (1 cada).
+
+**Listas Oferta Ativa existentes**: já há listas "liberadas" por empreendimento (Casa Tua, Open Bosque, Connect JW, Boa Vista, Vista Menino Deus, etc.). Vamos **reaproveitar** quando existirem e **criar** novas só para empreendimentos sem lista.
+
+**Hook da fila** (`useOfertaAtiva.ts`): hoje ordena por `tentativas_count ASC` (sem desempate por data). `useOALeads` usa `created_at ASC` fixo. Não há controle de ordem na UI.
+
+---
+
+## Parte 1 — Migração dos descartados
+
+### Regras
+
+- **Origem**: `pipeline_leads` onde `motivo_descarte IS NOT NULL AND arquivado=false`.
+- **Destino**: `oferta_ativa_leads`, agrupados por `empreendimento`.
+- **Lista de destino**:
+  - Se já existir lista `liberada` ou `ativa` para o empreendimento → reaproveita.
+  - Se não existir → cria nova: `"{Empreendimento} - Descartados Recuperados"`, `status='liberada'`, `cooldown_dias=7`, `max_tentativas=3`, `campanha='Descartados Recuperados'`.
+  - Empreendimento `NULL` → entra na lista existente "Leads não aproveitados - Abril 2026".
+- **Anti-duplicidade**: não insere se `telefone_normalizado` já existe na lista de destino.
+- **Mapeamento**: nome, telefone, telefone2, email, empreendimento, campanha, origem=`pipeline`, `data_lead = pipeline_leads.created_at::date`, `motivo_descarte`, `observacoes` herda + `[Migrado do pipeline em DD/MM/AAAA]`, `status='na_fila'`, `tentativas_count=0`.
+- **Após migrar**: recount de `oferta_ativa_listas.total_leads`.
+- **Não apaga** o lead do pipeline — apenas espelha em Oferta Ativa.
+
+---
+
+## Parte 2 — Ordenação por recência na UI
+
+### Campo de "recência"
+
+`oferta_ativa_leads.data_lead` (já preenchido com a data original do lead). Fallback: `created_at`.
+
+### Mudanças no hook `useOfertaAtiva.ts`
+
+`useOAFila(listaId, sortMode)` e `useOALeads(listaId, sortMode)` aceitam novo parâmetro:
+- `'recente'` (novo default): `tentativas_count ASC, data_lead DESC` — leads novos primeiro dentro do mesmo nº de tentativas.
+- `'antigo'`: `tentativas_count ASC, data_lead ASC`.
+- `'padrao'`: comportamento atual (só `tentativas_count ASC`).
+
+### UI de discagem (`DialingMode.tsx` / `DialingModeWithScript.tsx`)
+
+- **Toggle de ordenação** no topo do painel da fila:
+  ```text
+  [ Mais recentes ▼ ]  [ Mais antigos ]  [ Padrão ]
+  ```
+- Persiste escolha em `localStorage` (`oa-sort-mode`).
+- **Badge "🔥 Novo"** ao lado do nome quando `data_lead >= now() - 7 days`.
+- **Header da lista**: "X leads novos esta semana" como gancho.
+
+### `CampaignManager.tsx` (lista de listas)
+
+- Badge nas cards: **"+N novos esta semana"** (verde) calculado por `data_lead >= now() - 7 days AND status='na_fila'`.
+- Ordenação default das cards por "leads novos" desc — listas com material novo aparecem primeiro.
+
+---
+
+## Parte 3 — Detalhes técnicos
+
+### SQL de migração (via insert tool, em 3 passos)
+
+1. **Criar listas faltantes** (uma por empreendimento sem lista ativa).
+2. **Inserir leads**:
+```sql
+INSERT INTO oferta_ativa_leads (lista_id, nome, telefone, telefone2, email,
+  telefone_normalizado, empreendimento, campanha, origem, data_lead,
+  motivo_descarte, observacoes, status, tentativas_count)
+SELECT
+  COALESCE(
+    (SELECT id FROM oferta_ativa_listas
+     WHERE empreendimento = pl.empreendimento AND status IN ('liberada','ativa')
+     ORDER BY updated_at DESC LIMIT 1),
+    '912fa784-8434-4699-9239-846d791d46c6'  -- fallback "Leads não aproveitados"
+  ),
+  pl.nome, pl.telefone, pl.telefone2, pl.email, pl.telefone_normalizado,
+  pl.empreendimento, pl.campanha, 'pipeline', pl.created_at::date,
+  pl.motivo_descarte,
+  COALESCE(pl.observacoes,'') || E'\n[Migrado do pipeline em ' || to_char(now(),'DD/MM/YYYY') || ']',
+  'na_fila', 0
+FROM pipeline_leads pl
+WHERE pl.motivo_descarte IS NOT NULL AND pl.arquivado = false
+  AND NOT EXISTS (
+    SELECT 1 FROM oferta_ativa_leads oal
+    WHERE oal.telefone_normalizado = pl.telefone_normalizado
+      AND oal.lista_id = (SELECT id FROM oferta_ativa_listas
+                          WHERE empreendimento = pl.empreendimento
+                          AND status IN ('liberada','ativa')
+                          ORDER BY updated_at DESC LIMIT 1)
+  );
 ```
+3. **Recount** `total_leads`.
 
-### Bugs concretos hoje
+### Arquivos alterados
 
-1. **`vitrine-public` consulta `vitrines` no CRM** (`SUPABASE_URL` da função). A vitrine criada vive no SITE → resposta 404 “Vitrine não encontrada”. O retry de 3s no `VitrinePage` apenas mascara o erro.
-2. **`VitrinePage.tsx` (CRM)** chama essa edge function e nunca renderiza nada. Mas o link público real é `uhome.com.br/vitrine/:id`, servido pela página `Vitrine.tsx` do projeto **Site Uhome**, que funciona — então quem abre o link no domínio público vê a vitrine; quem abre dentro do CRM (`/vitrine/:id` no domínio CRM) recebe erro.
-3. **Duas tabelas `vitrines` paralelas** (CRM e Site) com schemas divergentes: CRM tem `imovel_ids`, `mensagem_corretor`, `dados_custom`, `tipo`; Site tem `imovel_codigos`, `mensagem`, `corretor_id`, `corretor_slug`. Código novo já escreve no Site; código velho ainda lê CRM.
-4. **`vitrine_interacoes` (analytics)** é gravada no CRM, mas a vitrine existe no Site → analytics órfãos. `MinhasVitrines` mostra 0 cliques.
-5. **`empreendimento_overrides`** (landing pages customizadas) só existe no CRM → vitrines `product_page` (Casa Tua, Orygem, Las Casas) precisam desse dado, mas a edge function tenta casar `imovel_codigos` (uuid do site) com `codigo` do override (string tipo `52101-UH`) → não bate → landing genérica.
-6. **Tracking (`useVitrineTracking`)** chama `vitrine-public` com `vitrine_id` que não existe no banco que a função consulta → tracking silenciosamente falha.
+- `src/hooks/useOfertaAtiva.ts` — `sortMode` em `useOAFila` e `useOALeads`.
+- `src/components/oferta-ativa/DialingMode.tsx` — toggle + badge "Novo".
+- `src/components/oferta-ativa/DialingModeWithScript.tsx` — mesmo toggle.
+- `src/components/oferta-ativa/CampaignManager.tsx` — badge "+N novos" + ordenação por novidade.
+- `src/pages/CorretorCall.tsx` — passa `sortMode` do localStorage para os hooks.
 
-## Solução: SITE como fonte única da verdade
+### Memória
 
-A página pública vive no domínio do site, então o **banco do Site é a fonte canônica** de vitrines. O CRM passa a ser apenas autor/auditor.
+`mem://features/oferta-ativa/sort-by-recency` — documenta novo default `'recente'` e regra "lead novo = data_lead últimos 7 dias".
 
-### Etapa 1 — Edge function `vitrine-public` lê do banco do Site
+---
 
-Reescrever para que **todas** as queries de `vitrines` e `vitrine_interacoes` usem o `supabaseSiteClient`. O banco do CRM continua sendo usado só para:
-- `properties` (catálogo CRM, fonte primária de imóveis)
-- `empreendimento_overrides` (landing customizada)
-- `profiles` (dados do corretor)
-- chamadas internas (`nurturing-orchestrator`, `whatsapp-notificacao`)
+## Fora do escopo
 
-Adicionar variáveis de ambiente para o Site (já hardcoded na função; mover para `Deno.env`):
-- `SITE_SUPABASE_URL`
-- `SITE_SUPABASE_SERVICE_ROLE_KEY` — precisa do **service role** do Site para escrever `visualizacoes`, `cliques_whatsapp` e `vitrine_interacoes` sem bater em RLS.
-
-### Etapa 2 — Schema do Site recebe colunas que faltam
-
-Migration no banco do Site (via SQL no projeto Site, descrito mas executado lá):
-- Garantir que `vitrines` tenha: `subtitulo`, `tipo`, `dados_custom`, `expires_at`, `pipeline_lead_id`, `cliques_whatsapp`, `visualizacoes`. Algumas já existem; criar somente as faltantes.
-- Criar `vitrine_interacoes` no Site com mesmo schema do CRM se não existir.
-- RLS: `select` público para `vitrines` por id; `insert` em `vitrine_interacoes` público; `update` (contadores) restrito a service role.
-
-> Nota: como migrations DB ficam no projeto Site (outro Lovable), entrego o SQL pronto e o usuário roda lá — ou eu posso aplicar via cross-project se houver permissão. **Pergunta de validação no fim.**
-
-### Etapa 3 — `useCreateVitrine` salva também no CRM (auditoria leve)
-
-Manter o insert principal no Site (já está). Adicional: gravar uma cópia mínima no CRM (`vitrines_audit` ou reutilizar `lead_imovel_events` com `event_type='vitrine_criada'`) para que dashboards do CRM e o vínculo com `pipeline_lead_id` continuem funcionando sem precisar fazer cross-DB join.
-
-### Etapa 4 — `VitrinePage.tsx` (CRM) deixa de existir como página pública
-
-Hoje o CRM tem rota `/vitrine/:id` que duplica a página do site e quebra. Duas opções (vou perguntar):
-- **A:** Remover a rota do CRM. Qualquer link velho redireciona para `https://uhome.com.br/vitrine/:id`.
-- **B:** Manter a rota CRM, mas reescrever `VitrinePage.tsx` para apontar para `supabaseSite` diretamente (sem edge function), igual à página do site.
-
-### Etapa 5 — `useVitrineTracking` aponta para o banco certo
-
-Como tracking precisa de `service_role` (escrever contadores/interações sem login), continua via `vitrine-public` — mas agora a função grava no Site.
-
-### Etapa 6 — Resolver `empreendimento_overrides` para vitrines `product_page`
-
-Casos como Casa Tua (`52101-UH`) usam código Jetimob como `imovel_codigos`. Vou:
-1. Garantir que o `match` na edge function suporte tanto UUID (do Site) quanto código Jetimob.
-2. Quando o código for UUID, fazer lookup no Site `imoveis.jetimob_id` para resolver para o código Jetimob antes de cruzar com `empreendimento_overrides`.
-
-### Etapa 7 — QA end-to-end automatizado
-
-Script de teste (Node, em `/tmp`) que:
-1. Cria uma vitrine via `useCreateVitrine` (simulando insert direto no Site com 2 imóveis reais).
-2. Chama `vitrine-public` com `action=get_vitrine` e valida resposta com >0 imóveis.
-3. Acessa `https://uhome.com.br/vitrine/:id` e verifica HTTP 200.
-4. Dispara `track_event` (whatsapp_click) e confere incremento.
-5. Verifica que aparece em `MinhasVitrines` do criador.
-
-## Mudanças por arquivo
-
-| Arquivo | Mudança |
-|---|---|
-| `supabase/functions/vitrine-public/index.ts` | Reescrita: `vitrines` e `vitrine_interacoes` no Site; mantém `properties`/`overrides`/`profiles` no CRM. Resolução UUID↔Jetimob. |
-| `supabase/config.toml` | (sem mudança; função já existe) |
-| `src/hooks/useCreateVitrine.ts` | Acrescentar gravação de evento de auditoria no CRM (`lead_imovel_events`). |
-| `src/pages/VitrinePage.tsx` | Conforme escolha A ou B (etapa 4). |
-| `src/App.tsx` | Conforme escolha A: remover rota; B: manter. |
-| `src/lib/vitrineUrl.ts` | Sem mudança — já aponta para uhome.com.br. |
-| `src/hooks/useVitrineTracking.ts` | Sem mudança de assinatura, mas testes confirmam fluxo. |
-| **Site (cross-project)** | SQL para garantir colunas faltantes em `vitrines` + criar `vitrine_interacoes` + RLS. |
-| Secrets | Adicionar `SITE_SUPABASE_URL` e `SITE_SUPABASE_SERVICE_ROLE_KEY` ao CRM. |
-
-## Riscos e mitigação
-
-- **Vitrines antigas no CRM (`vitrines` legada)**: 23 registros (vi 10 nos últimos meses). Migrar via script único para o Site, preservando ID (UUIDs únicos não colidem entre bancos), antes de derrubar a leitura no CRM. Rollback: a tabela CRM permanece intocada (só leitura desligada).
-- **Service role do Site**: o usuário precisa colá-la nos secrets do CRM. Se preferir, podemos usar a anon key + RLS policy específica para `update visualizacoes/cliques`, mas service role é mais simples e seguro (só edge function vê).
-
-## O que preciso confirmar com você
-
-Vou perguntar 2 coisas curtas antes de implementar (rota legada + onde está a service role do Site).
+- Não apagar/arquivar leads do pipeline (apenas espelhar).
+- Não mexer em cooldown/locks/scoring da fila — só ordenação de exibição.
+- Sem nova rota.
+</parameter>
+<parameter name="summary">Migrar 302 descartados para listas de Oferta Ativa por empreendimento + adicionar ordenação por recência com badge "Lead novo" para gerar adesão dos corretores
