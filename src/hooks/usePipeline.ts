@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { getManagedTeamProfileIds, resolveProfileIds } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 
@@ -139,6 +140,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
     const pageSize = 1000;
 
     let teamUserIds: string[] = [];
+    let teamScopeIds: string[] = [];
+    let ownScopeIds: string[] = [];
 
     // Role-based visibility
     if (isAdmin) {
@@ -159,10 +162,17 @@ export function usePipeline(pipelineTipo: string = "leads") {
         .map((m) => m.user_id)
         .filter(Boolean) as string[];
 
-      if (teamUserIds.length === 0) {
+      const teamProfileIds = await getManagedTeamProfileIds(userId);
+      teamScopeIds = [...new Set([...teamUserIds, ...teamProfileIds])];
+
+      if (teamScopeIds.length === 0) {
         setLeads([]);
         return;
       }
+    } else {
+      const ownProfileMap = await resolveProfileIds([userId]);
+      const ownProfileIds = [...ownProfileMap.values()];
+      ownScopeIds = [...new Set([userId, ...ownProfileIds])];
     }
 
     // Load partnership lead IDs for corretores via canonical view
@@ -188,10 +198,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
       if (isAdmin) {
         // CEO sees all leads - no filter
       } else if (isGestor) {
-        query = query.in("corretor_id", teamUserIds);
+        query = query.in("corretor_id", teamScopeIds);
       } else {
         // Corretores: own leads that are accepted, pendente, or aguardando_aceite (avoid invisible leads)
-        query = query.eq("corretor_id", userId).in("aceite_status", ["aceito", "pendente", "aguardando_aceite"]);
+        query = query.in("corretor_id", ownScopeIds).in("aceite_status", ["aceito", "pendente", "aguardando_aceite"]);
       }
 
       const { data, error } = await query;
@@ -231,27 +241,38 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     // Load corretor + gerente names (skip for corretores — they only see their own leads)
     if ((isGestor || isAdmin) && allRows.length > 0) {
-      const allUserIds = [...new Set([
+      const allBrokerIds = [...new Set([
         ...leadsData.map(l => l.corretor_id).filter(Boolean),
         ...leadsData.map(l => l.gerente_id).filter(Boolean),
       ])] as string[];
-      if (allUserIds.length > 0) {
-        const { data: members } = await supabase
+      if (allBrokerIds.length > 0) {
+        const [{ data: members }, { data: profilesByUserId }, { data: profilesByProfileId }] = await Promise.all([
+          supabase
           .from("team_members")
           .select("user_id, nome")
-          .in("user_id", allUserIds);
-        const { data: profiles } = await supabase
+          .in("user_id", allBrokerIds),
+          supabase
           .from("profiles")
           .select("user_id, nome, avatar_url, avatar_gamificado_url")
-          .in("user_id", allUserIds);
+          .in("user_id", allBrokerIds),
+          supabase
+          .from("profiles")
+          .select("id, user_id, nome, avatar_url, avatar_gamificado_url")
+          .in("id", allBrokerIds),
+        ]);
         const map: Record<string, string> = {};
         const avatarMap: Record<string, string> = {};
         members?.forEach(m => { if (m.user_id) map[m.user_id] = m.nome; });
-        profiles?.forEach(p => {
+        [...(profilesByUserId || []), ...(profilesByProfileId || [])].forEach((p: any) => {
           if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome;
+          if (p.id && !map[p.id]) map[p.id] = p.nome;
           if (p.user_id) {
             const url = (p as any).avatar_gamificado_url || p.avatar_url;
             if (url) avatarMap[p.user_id] = url;
+          }
+          if (p.id) {
+            const url = (p as any).avatar_gamificado_url || p.avatar_url;
+            if (url) avatarMap[p.id] = url;
           }
         });
         setCorretorNomes(map);

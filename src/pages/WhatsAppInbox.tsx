@@ -328,7 +328,7 @@ export default function WhatsAppInbox() {
     const { data: newL } = await supabase
       .from("pipeline_leads")
       .select("id, nome, empreendimento, created_at")
-      .eq("corretor_id", user.id)
+      .in("corretor_id", [user.id, profileId].filter(Boolean) as string[])
       .eq("stage_id", SEM_CONTATO_STAGE)
       .order("created_at", { ascending: false })
       .limit(30);
