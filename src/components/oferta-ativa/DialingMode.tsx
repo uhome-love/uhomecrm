@@ -17,7 +17,9 @@ interface Props {
 
 export default function DialingMode({ lista, onBack }: Props) {
   const { user } = useAuth();
-  const { fila, isLoading, refetch } = useOAFila(lista.id);
+  const [sortMode, setSortMode] = useState<OASortMode>(() => (localStorage.getItem("oa-sort-mode") as OASortMode) || "recente");
+  useEffect(() => { localStorage.setItem("oa-sort-mode", sortMode); }, [sortMode]);
+  const { fila, isLoading, refetch } = useOAFila(lista.id, sortMode);
   const { registrar } = useOARegistrarTentativa();
   const { templates } = useOATemplates(lista.empreendimento);
   const [currentIndex, setCurrentIndex] = useState(0);
