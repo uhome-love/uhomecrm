@@ -197,8 +197,11 @@ export default function DialingMode({ lista, onBack }: Props) {
         <CardContent className="p-5 space-y-4">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2 flex-wrap">
                 <User className="h-5 w-5 text-primary" /> {lead.nome}
+                {isLeadNovo(lead) && (
+                  <Badge className="bg-emerald-500 hover:bg-emerald-500 text-white text-[10px] px-1.5 py-0 h-5">🔥 NOVO</Badge>
+                )}
               </h2>
               <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                 <Building2 className="h-3.5 w-3.5" /> {lead.empreendimento}
