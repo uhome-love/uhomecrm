@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow, isBefore, startOfDay, endOfWeek, addDays, addHours } from "date-fns";
 import { dateToBRT, parseDateBRT } from "@/lib/utils";
@@ -85,6 +86,7 @@ function openWhatsApp(phone: string) {
 
 export default function MinhasTarefas() {
   const { user } = useAuth();
+  const { profileId } = useAuthUser();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [categoria, setCategoria] = useState<"leads" | "negocios">("leads");
@@ -129,6 +131,8 @@ export default function MinhasTarefas() {
       };
 
       const fetchOwnedLeadIds = async () => {
+        const corretorIds = [user.id, profileId].filter(Boolean) as string[];
+        if (corretorIds.length === 0) return [];
         const PAGE_SIZE = 1000;
         const leadIds: string[] = [];
 
@@ -136,7 +140,7 @@ export default function MinhasTarefas() {
           const { data, error } = await supabase
             .from("pipeline_leads")
             .select("id")
-            .eq("corretor_id", user.id)
+            .in("corretor_id", corretorIds)
             .range(from, from + PAGE_SIZE - 1);
 
           if (error) {
@@ -258,8 +262,10 @@ export default function MinhasTarefas() {
     queryKey: ["lead-search-tarefas", leadSearch],
     queryFn: async () => {
       if (!user || leadSearch.length < 2) return [];
+      const corretorIds = [user.id, profileId].filter(Boolean) as string[];
+      if (corretorIds.length === 0) return [];
       const { data } = await supabase.from("pipeline_leads").select("id, nome, telefone, empreendimento")
-        .eq("corretor_id", user.id).ilike("nome", `%${leadSearch}%`).limit(10);
+        .in("corretor_id", corretorIds).ilike("nome", `%${leadSearch}%`).limit(10);
       return data || [];
     },
     enabled: !!user && leadSearch.length >= 2,
