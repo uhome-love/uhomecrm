@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -290,6 +291,7 @@ function LeadPopupCard({ lead, onResult, total, current }: { lead: PendingLead; 
 
 export default function AceiteLeads() {
   const { user } = useAuth();
+  const { profileId } = useAuthUser();
   const [leads, setLeads] = useState<PendingLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -297,12 +299,19 @@ export default function AceiteLeads() {
   const fetchPending = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    const corretorIds = [user.id, profileId].filter(Boolean) as string[];
+    if (corretorIds.length === 0) {
+      setLeads([]);
+      setCurrentIndex(0);
+      setLoading(false);
+      return;
+    }
     // Add 60s buffer to account for browser clock drift
     const now = new Date(Date.now() - 60_000).toISOString();
     const { data } = await supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead, campanha")
-      .eq("corretor_id", user.id)
+      .in("corretor_id", corretorIds)
       .in("aceite_status", ["pendente", "aguardando_aceite"])
       .or(`aceite_expira_em.is.null,aceite_expira_em.gt.${now}`)
       .order("distribuido_em", { ascending: true, nullsFirst: false });
@@ -310,7 +319,7 @@ export default function AceiteLeads() {
     setLeads(newLeads);
     setCurrentIndex(0);
     setLoading(false);
-  }, [user]);
+  }, [profileId, user]);
 
   useEffect(() => { fetchPending(); }, [fetchPending]);
 
@@ -328,7 +337,7 @@ export default function AceiteLeads() {
         // Only refetch if the change is relevant to this user
         const newRow = payload.new as any;
         const oldRow = payload.old as any;
-        if (newRow?.corretor_id === user.id || oldRow?.corretor_id === user.id) {
+        if ([user.id, profileId].filter(Boolean).includes(newRow?.corretor_id) || [user.id, profileId].filter(Boolean).includes(oldRow?.corretor_id)) {
           if (debounceTimer) clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => fetchPending(), 800);
         }
@@ -338,7 +347,7 @@ export default function AceiteLeads() {
       if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [user, fetchPending]);
+  }, [user, profileId, fetchPending]);
 
   // Auto-refresh when tab becomes visible
   useEffect(() => {
