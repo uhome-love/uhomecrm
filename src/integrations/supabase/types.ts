@@ -2904,6 +2904,66 @@ export type Database = {
         }
         Relationships: []
       }
+      jetimob_corretores: {
+        Row: {
+          avatar_url: string | null
+          cargo: string | null
+          cidade: string | null
+          created_at: string
+          creci: string | null
+          email: string | null
+          equipe: string | null
+          estado: string | null
+          id_jetimob: number
+          mostrar_site: boolean | null
+          nome: string
+          payload: Json | null
+          synced_at: string
+          telefone: string | null
+          telefone2: string | null
+          updated_at: string
+          whatsapp: boolean | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          cargo?: string | null
+          cidade?: string | null
+          created_at?: string
+          creci?: string | null
+          email?: string | null
+          equipe?: string | null
+          estado?: string | null
+          id_jetimob: number
+          mostrar_site?: boolean | null
+          nome: string
+          payload?: Json | null
+          synced_at?: string
+          telefone?: string | null
+          telefone2?: string | null
+          updated_at?: string
+          whatsapp?: boolean | null
+        }
+        Update: {
+          avatar_url?: string | null
+          cargo?: string | null
+          cidade?: string | null
+          created_at?: string
+          creci?: string | null
+          email?: string | null
+          equipe?: string | null
+          estado?: string | null
+          id_jetimob?: number
+          mostrar_site?: boolean | null
+          nome?: string
+          payload?: Json | null
+          synced_at?: string
+          telefone?: string | null
+          telefone2?: string | null
+          updated_at?: string
+          whatsapp?: boolean | null
+        }
+        Relationships: []
+      }
       jetimob_processed: {
         Row: {
           created_at: string
