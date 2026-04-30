@@ -591,6 +591,9 @@ export default function PropertyPreviewDrawer({
               <p className="text-sm text-foreground/70 leading-relaxed">{descricao}</p>
             </div>
           )}
+
+          {/* ── Ficha técnica do corretor (dados internos Jetimob) ── */}
+          <BrokerTechnicalSheet imovel={fullImovel} loading={origemLoading} />
         </div>
       </div>
 
