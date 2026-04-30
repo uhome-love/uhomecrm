@@ -276,7 +276,12 @@ serve(async (req) => {
         const response = await fetch(directUrl, { headers: { Accept: "application/json" } });
         if (response.ok) {
           const raw = await response.json();
-          const items = Array.isArray(raw?.data) ? raw.data : raw?.imovel ? [raw.imovel] : raw?.codigo ? [raw] : [];
+          // Jetimob retorna `data` como objeto único (quando busca por código) OU array
+          let items: any[] = [];
+          if (Array.isArray(raw?.data)) items = raw.data;
+          else if (raw?.data && typeof raw.data === "object" && raw.data.codigo) items = [raw.data];
+          else if (raw?.imovel) items = [raw.imovel];
+          else if (raw?.codigo) items = [raw];
           imovel = items.find((item: any) => isCodigoMatch(item, requestedCodigo)) || items[0] || null;
         }
       } catch (e) {
