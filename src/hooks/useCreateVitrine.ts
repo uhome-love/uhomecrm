@@ -1,22 +1,18 @@
 /**
- * useCreateVitrine — hook único para criar vitrines.
+ * useCreateVitrine — cria vitrines via edge function `vitrine-bridge`.
  *
- * Centraliza a criação no Supabase do SITE (supabaseSite), garantindo
- * que o registro vive no mesmo banco que o link público (uhome.com.br/vitrine/:id)
- * consulta. Antes desta refatoração, vitrines eram criadas no banco do CRM
- * e o link nunca encontrava o registro — bug arquitetural central.
- *
- * Schema real da tabela vitrines no site (14 colunas):
- *   id, created_at, corretor_id, corretor_slug, lead_nome, lead_telefone,
- *   titulo, mensagem, imovel_codigos, visualizacoes,
- *   created_by, subtitulo, lead_id, cliques_whatsapp
+ * Por que mudou:
+ *   Antes inseríamos direto na tabela do site usando a anon key.
+ *   Quando o profile não estava sincronizado, gravávamos com FKs NULL e a vitrine
+ *   ficava "órfã" (não aparecia em Minhas Vitrines, sem corretor na página pública).
+ *   Agora a edge function valida tudo server-side com service role e retorna erro
+ *   claro quando o profile não existe.
  */
 
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { supabaseSite } from "@/lib/supabaseSite";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 
 export type CreateVitrineInput = {
   imovel_codigos: string[];
@@ -26,12 +22,15 @@ export type CreateVitrineInput = {
   lead_id?: string | null;
   lead_nome?: string | null;
   lead_telefone?: string | null;
-  corretor_slug?: string | null;
+  pipeline_lead_id?: string | null;
+  tipo?: string;
 };
 
 export type CreateVitrineResult = {
   id: string;
   publicUrl: string;
+  imoveisCount: number;
+  missingCodes: string[];
 };
 
 export function useCreateVitrine() {
@@ -44,59 +43,40 @@ export function useCreateVitrine() {
         toast.error(err.message);
         throw err;
       }
-
-      // Resolve o profile do corretor no banco do SITE.
-      // Semântica dos dois campos (intencionalmente diferentes):
-      //   - corretor_id  → FK para profiles.id NO SITE (identidade no domínio do site)
-      //   - created_by   → auth.users.id DO CRM (auditoria de origem; é o que MinhasVitrines filtra)
-      const { data: siteProfile, error: profileErr } = await supabaseSite
-        .from("profiles")
-        .select("id, slug_ref")
-        .eq("uhomesales_id", user.id)
-        .maybeSingle();
-
-      if (profileErr || !siteProfile?.id) {
-        console.error("[useCreateVitrine] profile lookup error:", profileErr, "user.id=", user.id);
-        toast.error("Seu perfil ainda não está sincronizado com o site. Avise o admin.");
-        throw new Error(profileErr?.message || "Profile do corretor não encontrado no site");
+      if (!input.imovel_codigos?.length) {
+        const err = new Error("Selecione pelo menos um imóvel");
+        toast.error(err.message);
+        throw err;
       }
 
-      const payload = {
-        created_by: user.id,             // CRM auth id (auditoria + filtro do MinhasVitrines)
-        corretor_id: siteProfile.id,     // profiles.id do site (FK)
-        imovel_codigos: input.imovel_codigos,
-        titulo: input.titulo ?? "Seleção de imóveis",
-        subtitulo: input.subtitulo ?? null,
-        mensagem: input.mensagem ?? null,
-        lead_id: input.lead_id ?? null,
-        lead_nome: input.lead_nome ?? null,
-        lead_telefone: input.lead_telefone ?? null,
-        corretor_slug: input.corretor_slug ?? siteProfile.slug_ref ?? null,
+      const { data, error } = await supabase.functions.invoke("vitrine-bridge", {
+        body: { action: "create_vitrine", payload: input },
+      });
+
+      if (error || !data?.ok) {
+        const msg = data?.error || error?.message || "Falha ao criar vitrine";
+        console.error("[useCreateVitrine] bridge error:", { data, error });
+        toast.error(msg);
+        throw new Error(msg);
+      }
+
+      const publicUrl: string = data.public_url;
+      const missingCodes: string[] = data.missing_codes ?? [];
+
+      try { await navigator.clipboard.writeText(publicUrl); } catch { /* clipboard pode falhar */ }
+
+      if (missingCodes.length) {
+        toast.warning(`Vitrine criada, mas ${missingCodes.length} imóvel(is) não foram encontrados.`);
+      } else {
+        toast.success("Vitrine criada! Link copiado.");
+      }
+
+      return {
+        id: data.id,
+        publicUrl,
+        imoveisCount: data.imoveis_count ?? 0,
+        missingCodes,
       };
-
-      const { data, error } = await supabaseSite
-        .from("vitrines")
-        .insert(payload)
-        .select("id")
-        .single();
-
-      if (error || !data?.id) {
-        console.error("[useCreateVitrine] insert error:", error);
-        toast.error("Erro ao criar vitrine");
-        throw new Error(error?.message || "Falha ao criar vitrine");
-      }
-
-      const publicUrl = getVitrinePublicUrl(data.id);
-
-      try {
-        await navigator.clipboard.writeText(publicUrl);
-      } catch {
-        // clipboard pode falhar (permissão/contexto inseguro) — não bloqueia
-      }
-
-      toast.success("Vitrine criada! Link copiado.");
-
-      return { id: data.id, publicUrl };
     },
   });
 }

@@ -118,8 +118,10 @@ export default function VitrinePage() {
     const fetchVitrine = async () => {
       console.log("[Vitrine] iniciando fetch", { vitrineId: id, attempt: retryCountRef.current });
       try {
-        const { data: result, error: fnError } = await supabase.functions.invoke("vitrine-public", {
-          body: { action: "get_vitrine", vitrine_id: id },
+        // Fonte única: vitrine-bridge (CRM) → service role no banco do site,
+        // com fallback de snapshot para vitrines criadas após a refatoração.
+        const { data: result, error: fnError } = await supabase.functions.invoke("vitrine-bridge", {
+          body: { action: "get_vitrine", payload: { id } },
         });
 
         if (!active) return;

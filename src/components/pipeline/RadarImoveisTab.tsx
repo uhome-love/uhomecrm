@@ -1130,7 +1130,6 @@ Responda SOMENTE com o JSON, sem markdown.`;
         lead_id: leadId ?? null,
         lead_nome: leadNome,
         lead_telefone: leadTelefone || null,
-        corretor_slug: slugRef || null,
       });
 
       // Mark items as sent
@@ -1221,7 +1220,6 @@ Responda SOMENTE com o JSON, sem markdown.`;
               lead_id: leadId ?? null,
               lead_nome: leadNome,
               lead_telefone: leadTelefone || null,
-              corretor_slug: slugRef || null,
             });
 
             // Fire-and-forget: mark sent & log activity (CRM-side activity log)

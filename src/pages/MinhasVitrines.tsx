@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { supabaseSite } from "@/lib/supabaseSite";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,16 +19,18 @@ export default function MinhasVitrines() {
     queryKey: ["minhas-vitrines", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabaseSite
-        .from("vitrines")
-        .select("id, titulo, subtitulo, visualizacoes, cliques_whatsapp, created_at, imovel_codigos, lead_nome")
-        .eq("created_by", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      return (data || []).map((v: any) => ({
+      // Vitrines vivem no banco do site; lemos via edge function `vitrine-bridge`
+      // que valida o JWT do CRM e filtra por created_by = user.id usando service role.
+      const { data, error } = await supabase.functions.invoke("vitrine-bridge", {
+        body: { action: "list_vitrines", payload: { limit: 50 } },
+      });
+      if (error || !data?.ok) {
+        console.error("[MinhasVitrines] bridge error:", { error, data });
+        return [];
+      }
+      return (data.vitrines ?? []).map((v: any) => ({
         ...v,
-        // compat: o restante da página espera estes campos
-        tipo: "property_selection" as const,
+        tipo: v.tipo ?? "property_selection",
         imovel_ids: v.imovel_codigos ?? [],
       }));
     },
