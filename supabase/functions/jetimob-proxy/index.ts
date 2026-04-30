@@ -301,6 +301,39 @@ serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════
+    // GET PROPRIETARIO (gestor/admin only — sensitive PII)
+    // ═══════════════════════════════════════════
+    if (action === "get_proprietario") {
+      const idProprietario = String(body?.id_proprietario || "").trim();
+      if (!idProprietario) {
+        return new Response(JSON.stringify({ error: "id_proprietario é obrigatório" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      // Role check: only gestor/admin can see owner PII
+      const { data: roles } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const allowed = (roles || []).some((r: any) => r.role === "gestor" || r.role === "admin");
+      if (!allowed) {
+        return new Response(JSON.stringify({ error: "Acesso restrito a gestores" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const url = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/proprietarios/${encodeURIComponent(idProprietario)}?v=6`;
+      try {
+        const response = await fetch(url, { headers: { Accept: "application/json" } });
+        if (!response.ok) {
+          const text = await response.text();
+          return new Response(JSON.stringify({ error: `Jetimob ${response.status}`, details: text.slice(0, 200) }), { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const raw = await response.json();
+        const proprietario = raw?.data || raw?.proprietario || raw;
+        return new Response(JSON.stringify({ proprietario }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Erro desconhecido";
+        return new Response(JSON.stringify({ error: message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ═══════════════════════════════════════════
     // GET MULTIPLE IMOVEIS BY CODIGOS
     // ═══════════════════════════════════════════
     if (action === "get_imoveis_by_codigos") {
