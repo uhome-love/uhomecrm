@@ -230,27 +230,28 @@ Deno.serve(async (req) => {
         imoveis = await buildImoveisSnapshot(codigosArr);
       }
 
+      const vv = v as Record<string, any>;
       let corretor: Record<string, unknown> | null = null;
-      if (v.created_by) {
+      if (vv.created_by) {
         const { data: prof } = await site
           .from("profiles")
           .select("nome, telefone, avatar_url")
-          .eq("uhomesales_id", v.created_by)
+          .eq("uhomesales_id", vv.created_by)
           .maybeSingle();
         if (prof) corretor = prof;
       }
 
       return jsonResponse({
         vitrine: {
-          id: v.id,
-          titulo: v.titulo,
-          subtitulo: v.subtitulo,
-          mensagem: v.mensagem ?? v.mensagem_corretor,
-          created_at: v.created_at,
-          tipo: v.tipo,
-          lead_nome: v.lead_nome,
-          visualizacoes: v.visualizacoes,
-          cliques_whatsapp: v.cliques_whatsapp,
+          id: vv.id,
+          titulo: vv.titulo,
+          subtitulo: vv.subtitulo,
+          mensagem: vv.mensagem ?? vv.mensagem_corretor,
+          created_at: vv.created_at,
+          tipo: vv.tipo,
+          lead_nome: vv.lead_nome,
+          visualizacoes: vv.visualizacoes,
+          cliques_whatsapp: vv.cliques_whatsapp,
         },
         corretor,
         imoveis,
