@@ -39,6 +39,32 @@ export default function BrokerTechnicalSheet({ imovel, loading }: Props) {
   const [corretorResp, setCorretorResp] = useState<any>(null);
   const [corretorChecked, setCorretorChecked] = useState(false);
 
+  const idCorretorJet = imovel?.id_corretor != null ? Number(imovel.id_corretor) : null;
+
+  useEffect(() => {
+    if (!open || !idCorretorJet || corretorChecked) return;
+    if (corretorCache.has(idCorretorJet)) {
+      setCorretorResp(corretorCache.get(idCorretorJet));
+      setCorretorChecked(true);
+      return;
+    }
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+          body: { action: "get_corretor_local", id_corretor: idCorretorJet },
+        });
+        if (error) throw error;
+        const c = data?.corretor || null;
+        corretorCache.set(idCorretorJet, c);
+        setCorretorResp(c);
+      } catch (_e) {
+        setCorretorResp(null);
+      } finally {
+        setCorretorChecked(true);
+      }
+    })();
+  }, [open, idCorretorJet, corretorChecked]);
+
   if (!imovel && !loading) return null;
 
   const fetchProprietario = async (id: string) => {
