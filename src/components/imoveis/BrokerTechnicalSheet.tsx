@@ -7,7 +7,7 @@
  * Dados de contato do proprietário são puxados sob demanda via jetimob-proxy.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Lock, ChevronDown, ChevronUp, Loader2, User, Phone, Mail,
   FileText, Building, Calendar, MapPin, Star, AlertCircle,
+  UserCircle2, Briefcase, MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ interface Props {
 }
 
 const ownerCache = new Map<string, any>();
+const corretorCache = new Map<number, any>();
 
 export default function BrokerTechnicalSheet({ imovel, loading }: Props) {
   const { isGestor } = useUserRole();
@@ -34,6 +36,8 @@ export default function BrokerTechnicalSheet({ imovel, loading }: Props) {
   const [ownerData, setOwnerData] = useState<Record<string, any>>({});
   const [ownerLoading, setOwnerLoading] = useState<Record<string, boolean>>({});
   const [ownerError, setOwnerError] = useState<Record<string, string>>({});
+  const [corretorResp, setCorretorResp] = useState<any>(null);
+  const [corretorChecked, setCorretorChecked] = useState(false);
 
   if (!imovel && !loading) return null;
 
