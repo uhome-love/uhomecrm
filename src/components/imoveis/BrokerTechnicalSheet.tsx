@@ -7,7 +7,7 @@
  * Dados de contato do proprietário são puxados sob demanda via jetimob-proxy.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Lock, ChevronDown, ChevronUp, Loader2, User, Phone, Mail,
   FileText, Building, Calendar, MapPin, Star, AlertCircle,
+  UserCircle2, Briefcase, MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ interface Props {
 }
 
 const ownerCache = new Map<string, any>();
+const corretorCache = new Map<number, any>();
 
 export default function BrokerTechnicalSheet({ imovel, loading }: Props) {
   const { isGestor } = useUserRole();
@@ -34,6 +36,34 @@ export default function BrokerTechnicalSheet({ imovel, loading }: Props) {
   const [ownerData, setOwnerData] = useState<Record<string, any>>({});
   const [ownerLoading, setOwnerLoading] = useState<Record<string, boolean>>({});
   const [ownerError, setOwnerError] = useState<Record<string, string>>({});
+  const [corretorResp, setCorretorResp] = useState<any>(null);
+  const [corretorChecked, setCorretorChecked] = useState(false);
+
+  const idCorretorJet = imovel?.id_corretor != null ? Number(imovel.id_corretor) : null;
+
+  useEffect(() => {
+    if (!open || !idCorretorJet || corretorChecked) return;
+    if (corretorCache.has(idCorretorJet)) {
+      setCorretorResp(corretorCache.get(idCorretorJet));
+      setCorretorChecked(true);
+      return;
+    }
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+          body: { action: "get_corretor_local", id_corretor: idCorretorJet },
+        });
+        if (error) throw error;
+        const c = data?.corretor || null;
+        corretorCache.set(idCorretorJet, c);
+        setCorretorResp(c);
+      } catch (_e) {
+        setCorretorResp(null);
+      } finally {
+        setCorretorChecked(true);
+      }
+    })();
+  }, [open, idCorretorJet, corretorChecked]);
 
   if (!imovel && !loading) return null;
 
@@ -161,9 +191,106 @@ export default function BrokerTechnicalSheet({ imovel, loading }: Props) {
                 <Row label="Status Jetimob" value={status} />
                 {exclusividade && <Row label="Exclusividade" value={<Badge className="bg-emerald-600 text-white">EXCLUSIVO</Badge>} />}
                 {idImovel && <Row label="ID Jetimob" value={<code className="text-[11px]">{idImovel}</code>} />}
-                {idCorretor && <Row label="ID Corretor responsável" value={<code className="text-[11px]">{idCorretor}</code>} />}
                 {destaque && <Row label="Destaque" value={<Badge variant="secondary">Sim</Badge>} />}
               </Section>
+
+              {/* Corretor responsável */}
+              {idCorretorJet && (
+                <Section title="Corretor responsável" icon={UserCircle2}>
+                  {!corretorChecked && (
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-1">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Buscando responsável...
+                    </div>
+                  )}
+                  {corretorChecked && corretorResp && (
+                    <div className="flex items-start gap-3 py-1">
+                      {corretorResp.avatar_url ? (
+                        <img
+                          src={corretorResp.avatar_url}
+                          alt={corretorResp.nome}
+                          className="h-12 w-12 rounded-full object-cover border border-border/50 shrink-0"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <UserCircle2 className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <p className="text-sm font-bold text-foreground">{corretorResp.nome}</p>
+                        {corretorResp.cargo && (
+                          <p className="text-[11px] text-muted-foreground">{corretorResp.cargo}</p>
+                        )}
+                        {corretorResp.equipe && (
+                          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <Briefcase className="h-3 w-3" /> {corretorResp.equipe}
+                          </p>
+                        )}
+                        {corretorResp.creci && (
+                          <p className="text-[10px] text-muted-foreground">CRECI: {corretorResp.creci}</p>
+                        )}
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                          {corretorResp.telefone && (
+                            <a
+                              href={corretorResp.whatsapp ? `https://wa.me/${corretorResp.telefone.replace(/\D/g, "")}` : `tel:${corretorResp.telefone}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                            >
+                              {corretorResp.whatsapp ? <MessageCircle className="h-3 w-3" /> : <Phone className="h-3 w-3" />}
+                              {corretorResp.telefone}
+                            </a>
+                          )}
+                          {corretorResp.email && (
+                            <a
+                              href={`mailto:${corretorResp.email}`}
+                              className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                            >
+                              <Mail className="h-3 w-3" /> {corretorResp.email}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {corretorChecked && !corretorResp && (
+                    <div className="space-y-1 py-1">
+                      <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                        Imóvel parceiro — fora da Uhome
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Corretor não cadastrado na Uhome. Origem: <Badge variant="outline" className="text-[10px] ml-1">{origem}</Badge>
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        ID Jetimob do corretor parceiro: <code>{idCorretorJet}</code>
+                      </p>
+                    </div>
+                  )}
+                </Section>
+              )}
+
+              {/* Imobiliária responsável */}
+              <Section title="Imobiliária responsável" icon={Building}>
+                {corretorChecked && corretorResp ? (
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-indigo-600 text-white">UHOME</Badge>
+                    <span className="text-xs text-foreground">Imóvel próprio</span>
+                  </div>
+                ) : corretorChecked && !corretorResp ? (
+                  <div className="space-y-1">
+                    <Row label="Tipo" value={<Badge variant="outline" className="bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 font-bold">PARCEIRO</Badge>} />
+                    <Row label="Rede" value={<Badge variant="outline">{origem}</Badge>} />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Imóvel sindicalizado pela rede {origem}. Para contato com a imobiliária responsável, consulte o gestor.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Identificando...
+                  </div>
+                )}
+              </Section>
+
 
               {/* Endereço completo */}
               {(enderecoCompleto || referencia || zona) && (
