@@ -25,6 +25,7 @@ import {
   MessageCircle, ExternalLink,
 } from "lucide-react";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
+import BrokerTechnicalSheet from "@/components/imoveis/BrokerTechnicalSheet";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 import { gerarSlugUhome } from "@/utils/imoveisFormat";
 import { toast } from "sonner";
@@ -37,7 +38,7 @@ import {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const responsavelCache = new Map<string, { origem: any | null }>();
+const responsavelCache = new Map<string, { origem: any | null; full: any | null }>();
 
 interface PropertyPreviewDrawerProps {
   item: any | null;
@@ -65,6 +66,7 @@ export default function PropertyPreviewDrawer({
 }: PropertyPreviewDrawerProps) {
   const [imageIdx, setImageIdx] = useState(0);
   const [origem, setOrigem] = useState<any>(null);
+  const [fullImovel, setFullImovel] = useState<any>(null);
   const [origemLoading, setOrigemLoading] = useState(false);
   const [origemFetched, setOrigemFetched] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -85,10 +87,13 @@ export default function PropertyPreviewDrawer({
   useEffect(() => {
     setImageIdx(0);
     setOrigem(null);
+    setFullImovel(null);
     setOrigemFetched(false);
     setLightboxOpen(false);
     if (item?.codigo && responsavelCache.has(item.codigo)) {
-      setOrigem(responsavelCache.get(item.codigo)!.origem);
+      const cached = responsavelCache.get(item.codigo)!;
+      setOrigem(cached.origem);
+      setFullImovel(cached.full);
       setOrigemFetched(true);
     }
   }, [item?.codigo]);
@@ -97,7 +102,9 @@ export default function PropertyPreviewDrawer({
     if (!open || !item?.codigo || origemFetched) return;
     const codigo = item.codigo;
     if (responsavelCache.has(codigo)) {
-      setOrigem(responsavelCache.get(codigo)!.origem);
+      const cached = responsavelCache.get(codigo)!;
+      setOrigem(cached.origem);
+      setFullImovel(cached.full);
       setOrigemFetched(true);
       return;
     }
@@ -106,8 +113,9 @@ export default function PropertyPreviewDrawer({
       .then(({ data }) => {
         const imovel = data?.imovel ?? data?.data?.imovel ?? null;
         const result = imovel ? extractOrigemExterna(imovel) : null;
-        responsavelCache.set(codigo, { origem: result });
+        responsavelCache.set(codigo, { origem: result, full: imovel });
         setOrigem(result);
+        setFullImovel(imovel);
       })
       .catch(() => {})
       .finally(() => { setOrigemLoading(false); setOrigemFetched(true); });
