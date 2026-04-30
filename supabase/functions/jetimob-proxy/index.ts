@@ -334,6 +334,28 @@ serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════
+    // GET CORRETOR (cache local — todos os corretores autenticados)
+    // Resolve id_corretor (ID Jetimob) → nome, telefone, email, equipe, foto
+    // ═══════════════════════════════════════════
+    if (action === "get_corretor_local") {
+      const idCorretor = body?.id_corretor;
+      if (idCorretor == null) {
+        return new Response(JSON.stringify({ error: "id_corretor é obrigatório" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data, error } = await supabaseAdmin
+        .from("jetimob_corretores")
+        .select("id_jetimob, nome, email, telefone, telefone2, whatsapp, cargo, creci, equipe, cidade, estado, avatar_url")
+        .eq("id_jetimob", Number(idCorretor))
+        .maybeSingle();
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify({ corretor: data, found: !!data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ═══════════════════════════════════════════
     // GET MULTIPLE IMOVEIS BY CODIGOS
     // ═══════════════════════════════════════════
     if (action === "get_imoveis_by_codigos") {
