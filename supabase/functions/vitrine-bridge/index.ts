@@ -322,9 +322,10 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) {
-        console.error("[vitrine-bridge] insert failed:", error);
-        return jsonResponse({ error: error.message }, 500);
+        console.error("[vitrine-bridge] insert failed:", JSON.stringify(error), { insertRowKeys: Object.keys(insertRow) });
+        return jsonResponse({ error: error.message, details: error.details, hint: error.hint, code: error.code }, 500);
       }
+      console.log("[vitrine-bridge] vitrine created", { id: data.id });
 
       return jsonResponse({
         ok: true,
