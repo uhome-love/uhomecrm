@@ -199,17 +199,35 @@ Deno.serve(async (req) => {
     if (action === "get_vitrine") {
       const id = payload.id as string;
       if (!id) return errorResponse("id required", 400);
-      const { data: v } = await site
+      // Select tolerante: imoveis_resolvidos só existe após a migration no site.
+      // Tentamos primeiro com snapshot; se falhar (coluna inexistente), refazemos sem.
+      let v: Record<string, unknown> | null = null;
+      const withSnapshot = await site
         .from("vitrines")
         .select("id, titulo, subtitulo, mensagem, mensagem_corretor, created_at, tipo, imovel_codigos, imoveis_resolvidos, created_by, lead_nome, visualizacoes, cliques_whatsapp")
         .eq("id", id)
         .maybeSingle();
+
+      if (withSnapshot.error) {
+        const fallback = await site
+          .from("vitrines")
+          .select("id, titulo, subtitulo, mensagem, mensagem_corretor, created_at, tipo, imovel_codigos, created_by, lead_nome, visualizacoes, cliques_whatsapp")
+          .eq("id", id)
+          .maybeSingle();
+        v = fallback.data;
+      } else {
+        v = withSnapshot.data;
+      }
+
       if (!v) return errorResponse("Vitrine não encontrada", 404);
 
       // Prefer snapshot; fallback to live build for legacy rows.
-      let imoveis = Array.isArray(v.imoveis_resolvidos) ? v.imoveis_resolvidos : [];
-      if (!imoveis.length && Array.isArray(v.imovel_codigos) && v.imovel_codigos.length) {
-        imoveis = await buildImoveisSnapshot(v.imovel_codigos);
+      let imoveis = Array.isArray((v as { imoveis_resolvidos?: unknown }).imoveis_resolvidos)
+        ? ((v as { imoveis_resolvidos: unknown[] }).imoveis_resolvidos as Record<string, unknown>[])
+        : [];
+      const codigosArr = (v as { imovel_codigos?: string[] }).imovel_codigos;
+      if (!imoveis.length && Array.isArray(codigosArr) && codigosArr.length) {
+        imoveis = await buildImoveisSnapshot(codigosArr);
       }
 
       let corretor: Record<string, unknown> | null = null;
