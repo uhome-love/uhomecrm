@@ -265,10 +265,19 @@ Deno.serve(async (req) => {
     const userId = auth.userId;
 
     if (action === "create_vitrine") {
+      console.log("[vitrine-bridge] create_vitrine start", { userId, payloadKeys: Object.keys(payload) });
       const codigos = Array.isArray(payload.imovel_codigos) ? (payload.imovel_codigos as string[]) : [];
       if (!codigos.length) return errorResponse("imovel_codigos required", 400);
 
-      const { profile, matchedBy } = await resolveSiteProfile(site, userId);
+      let profile, matchedBy;
+      try {
+        const r = await resolveSiteProfile(site, userId);
+        profile = r.profile; matchedBy = r.matchedBy;
+      } catch (e) {
+        console.error("[vitrine-bridge] resolveSiteProfile failed:", e);
+        return jsonResponse({ error: `Erro ao resolver profile: ${e instanceof Error ? e.message : String(e)}` }, 500);
+      }
+      console.log("[vitrine-bridge] profile resolved", { matchedBy, hasProfile: !!profile });
       if (!profile) {
         return jsonResponse(
           {
@@ -279,8 +288,15 @@ Deno.serve(async (req) => {
         );
       }
 
-      const snapshot = await buildImoveisSnapshot(codigos);
+      let snapshot: Array<Record<string, unknown>> = [];
+      try {
+        snapshot = await buildImoveisSnapshot(codigos);
+      } catch (e) {
+        console.error("[vitrine-bridge] buildImoveisSnapshot failed:", e);
+        return jsonResponse({ error: `Erro ao montar snapshot: ${e instanceof Error ? e.message : String(e)}` }, 500);
+      }
       const missing = codigos.filter((c) => !snapshot.find((s) => s.codigo === c));
+      console.log("[vitrine-bridge] snapshot built", { codigos: codigos.length, snapshot: snapshot.length, missing: missing.length });
 
       const insertRow = {
         created_by: userId,             // CRM auth.users.id (filtro de "Minhas Vitrines")
