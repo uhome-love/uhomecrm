@@ -351,7 +351,7 @@ Deno.serve(async (req) => {
 
     return errorResponse(`Unknown action: ${action}`, 400);
   } catch (e) {
-    console.error("[vitrine-bridge] unexpected error:", e);
-    return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    console.error("[vitrine-bridge] unexpected error:", e, e instanceof Error ? e.stack : "");
+    return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error", stack: e instanceof Error ? e.stack : undefined }, 500);
   }
 });
