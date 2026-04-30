@@ -208,6 +208,7 @@ Deno.serve(async (req) => {
         .eq("id", id)
         .maybeSingle();
 
+      console.log("[vitrine-bridge] get_vitrine", { id, withSnapshotError: withSnapshot.error?.message, hasData: !!withSnapshot.data, siteUrl: SITE_URL });
       if (withSnapshot.error) {
         const fallback = await site
           .from("vitrines")
