@@ -530,10 +530,10 @@ export default function PropertyPreviewDrawer({
             <Button variant="outline" size="sm" onClick={copyData} className="h-10 gap-2 rounded-lg text-xs font-semibold">
               <Copy className="h-4 w-4" /> Copiar dados
             </Button>
-            {selectMode && (
+            {selectMode && item?.id && (
               <Button
                 variant={isSelected ? "default" : "outline"} size="sm"
-                onClick={() => onToggleSelect(imovelId)}
+                onClick={() => onToggleSelect(item.id)}
                 className="h-10 gap-2 rounded-lg text-xs font-semibold col-span-2"
               >
                 <Share2 className="h-4 w-4" /> {isSelected ? "Na vitrine ✓" : "Adicionar à Vitrine"}
