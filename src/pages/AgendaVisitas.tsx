@@ -638,12 +638,18 @@ export default function AgendaVisitas() {
       </div>
 
       {/* Active filter badge */}
-      {(kpiFilter || searchTerm) && (
-        <div className="flex items-center gap-2">
+      {(kpiFilter || searchTerm || equipeFilter) && (
+        <div className="flex items-center gap-2 flex-wrap">
           {kpiFilter && (
             <span className="text-[11px] bg-[#4969FF]/10 text-[#4969FF] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
               Filtro: {kpiFilter === "marcadas" ? "Marcadas" : kpiFilter === "realizadas" ? "Realizadas" : "No-show"}
               <button onClick={() => setKpiFilter(null)} className="hover:text-[#3350E6]"><X size={10} /></button>
+            </span>
+          )}
+          {equipeFilter && (
+            <span className="text-[11px] bg-[#4969FF]/10 text-[#4969FF] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              Equipe: {equipeFilter}
+              <button onClick={() => setEquipeFilter(null)} className="hover:text-[#3350E6]"><X size={10} /></button>
             </span>
           )}
           {searchTerm && (
@@ -653,7 +659,7 @@ export default function AgendaVisitas() {
             </span>
           )}
           <button
-            onClick={() => { setKpiFilter(null); setSearchTerm(""); }}
+            onClick={() => { setKpiFilter(null); setSearchTerm(""); setEquipeFilter(null); }}
             className="text-[11px] text-[#ef4444] hover:underline"
           >
             Limpar tudo
