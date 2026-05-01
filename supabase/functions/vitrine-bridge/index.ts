@@ -23,12 +23,28 @@ import { requireAuth } from "../_shared/auth.ts";
 const SITE_URL = Deno.env.get("UHOMESITE_URL");
 const SITE_SERVICE_KEY = Deno.env.get("UHOMESITE_SERVICE_KEY");
 const PUBLIC_DOMAIN = "https://uhome.com.br";
+const FALLBACK_SITE_SUPABASE_URL = "https://huigglwvvzuwwyqvpmec.supabase.co";
+
+function resolveSiteBackendUrl() {
+  const raw = (SITE_URL || "").trim();
+  if (!raw) return FALLBACK_SITE_SUPABASE_URL;
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.hostname.endsWith(".supabase.co")) return raw;
+    console.warn("[vitrine-bridge] UHOMESITE_URL points to public domain, using backend fallback", { host: parsed.hostname });
+    return FALLBACK_SITE_SUPABASE_URL;
+  } catch {
+    console.warn("[vitrine-bridge] UHOMESITE_URL invalid, using backend fallback");
+    return FALLBACK_SITE_SUPABASE_URL;
+  }
+}
 
 function siteClient() {
-  if (!SITE_URL || !SITE_SERVICE_KEY) {
+  if (!SITE_SERVICE_KEY) {
     throw new Error("UHOMESITE_URL/UHOMESITE_SERVICE_KEY not configured");
   }
-  return createClient(SITE_URL, SITE_SERVICE_KEY, {
+  return createClient(resolveSiteBackendUrl(), SITE_SERVICE_KEY, {
     auth: { persistSession: false },
   });
 }
@@ -53,6 +69,10 @@ async function resolveSiteProfile(site: ReturnType<typeof siteClient>, crmUserId
     .eq("uhomesales_id", crmUserId)
     .maybeSingle();
 
+  if (byId.error) {
+    throw new Error(`Falha ao consultar profile por uhomesales_id: ${byId.error.message}`);
+  }
+
   if (byId.data) return { profile: byId.data, matchedBy: "uhomesales_id" as const };
 
   // Fallback: lookup CRM auth user email and match by email on site profiles
@@ -66,6 +86,10 @@ async function resolveSiteProfile(site: ReturnType<typeof siteClient>, crmUserId
     .select("id, slug_ref, nome, telefone, avatar_url")
     .eq("email", email)
     .maybeSingle();
+
+  if (byEmail.error) {
+    throw new Error(`Falha ao consultar profile por email: ${byEmail.error.message}`);
+  }
 
   if (byEmail.data) {
     // Best-effort backfill of uhomesales_id so future calls hit the fast path
@@ -208,7 +232,7 @@ Deno.serve(async (req) => {
         .eq("id", id)
         .maybeSingle();
 
-      console.log("[vitrine-bridge] get_vitrine", { id, withSnapshotError: withSnapshot.error?.message, hasData: !!withSnapshot.data, siteUrl: SITE_URL });
+      console.log("[vitrine-bridge] get_vitrine", { id, withSnapshotError: withSnapshot.error?.message, hasData: !!withSnapshot.data, siteUrl: resolveSiteBackendUrl() });
       if (withSnapshot.error) {
         const fallback = await site
           .from("vitrines")
