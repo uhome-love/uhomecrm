@@ -456,14 +456,28 @@ export default function ImoveisPage() {
   const previewGetPreco = useCallback((item: any) => formatPreco(item.preco), []);
 
   // ── Vitrine creation ──
+  // selectedIds armazena `item.id` (UUID do imóvel no banco do site).
+  // A bridge espera `codigo` (jetimob_id), então mapeamos antes de invocar.
   const { mutate: criarVitrine, isPending: creatingVitrine } = useCreateVitrine();
   const createVitrine = useCallback(() => {
     if (!user) return;
+    const idToCodigo = new Map<string, string>();
+    for (const it of imoveis) {
+      const codigo = (it.codigo || "").toString().trim();
+      if (codigo && it.id) idToCodigo.set(it.id, codigo);
+    }
+    const codigos = Array.from(selectedIds)
+      .map((id) => idToCodigo.get(id))
+      .filter((c): c is string => Boolean(c));
+    if (codigos.length === 0) {
+      toast.error("Não foi possível identificar os códigos dos imóveis selecionados.");
+      return;
+    }
     criarVitrine(
-      { imovel_codigos: [...selectedIds], titulo: "Seleção de Imóveis" },
+      { imovel_codigos: codigos, titulo: "Seleção de Imóveis" },
       { onSuccess: ({ publicUrl }) => setVitrineLink(publicUrl) },
     );
-  }, [user, selectedIds, criarVitrine]);
+  }, [user, selectedIds, imoveis, criarVitrine]);
 
   // Reset page on filter change
   useEffect(() => {
