@@ -188,10 +188,20 @@ async function buildImoveisSnapshot(codigos: string[], fallbackItems: Record<str
 
   // 1) properties (CRM)
   const crm = crmClient();
-  const { data: crmProps } = await crm
-    .from("properties")
-    .select("codigo, jetimob_id, titulo, bairro, cidade, dormitorios, suites, vagas, banheiros, area_privativa, area_total, valor_venda, fotos, fotos_full, empreendimento, latitude, longitude")
-    .eq("ativo", true);
+  const [byCodigo, byJetimob] = await Promise.all([
+    crm
+      .from("properties")
+      .select("codigo, jetimob_id, titulo, bairro, cidade, dormitorios, suites, vagas, banheiros, area_privativa, area_total, valor_venda, fotos, fotos_full, empreendimento, latitude, longitude")
+      .in("codigo", codigos)
+      .eq("ativo", true),
+    crm
+      .from("properties")
+      .select("codigo, jetimob_id, titulo, bairro, cidade, dormitorios, suites, vagas, banheiros, area_privativa, area_total, valor_venda, fotos, fotos_full, empreendimento, latitude, longitude")
+      .in("jetimob_id", codigos)
+      .eq("ativo", true),
+  ]);
+
+  const crmProps = [...(byCodigo.data ?? []), ...(byJetimob.data ?? [])];
 
   const found = new Set<string>();
   for (const p of crmProps ?? []) {
@@ -383,6 +393,7 @@ Deno.serve(async (req) => {
     if (action === "create_vitrine") {
       console.log("[vitrine-bridge] create_vitrine start", { userId, payloadKeys: Object.keys(payload) });
       const rawCodigos = Array.isArray(payload.imovel_codigos) ? (payload.imovel_codigos as string[]) : [];
+      const fallbackItems = Array.isArray(payload.imoveis_snapshot) ? (payload.imoveis_snapshot as Record<string, unknown>[]) : [];
       if (!rawCodigos.length) return errorResponse("imovel_codigos required", 400);
 
       // Normalize: trim, dedupe, and translate any UUID-shaped IDs (legacy UI bug)
@@ -417,7 +428,7 @@ Deno.serve(async (req) => {
 
       let snapshot: Array<Record<string, unknown>> = [];
       try {
-        snapshot = await buildImoveisSnapshot(codigos);
+        snapshot = await buildImoveisSnapshot(codigos, fallbackItems);
       } catch (e) {
         console.error("[vitrine-bridge] buildImoveisSnapshot failed:", e);
         return jsonResponse({ error: `Erro ao montar snapshot: ${e instanceof Error ? e.message : String(e)}` }, 500);
