@@ -355,8 +355,9 @@ export default function AgendaVisitas() {
     if (period !== "semana") params.set("period", period);
     if (searchTerm) params.set("q", searchTerm);
     if (kpiFilter) params.set("status", kpiFilter);
+    if (equipeFilter) params.set("equipe", equipeFilter);
     setSearchParams(params, { replace: true });
-  }, [period, searchTerm, kpiFilter, setSearchParams]);
+  }, [period, searchTerm, kpiFilter, equipeFilter, setSearchParams]);
 
   // Scroll to day
   useEffect(() => {
