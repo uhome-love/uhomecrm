@@ -7,7 +7,7 @@
  * Dados de contato do proprietário são puxados sob demanda via jetimob-proxy.
  */
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
