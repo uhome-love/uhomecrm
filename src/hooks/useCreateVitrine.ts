@@ -16,6 +16,26 @@ import { useAuth } from "@/hooks/useAuth";
 
 export type CreateVitrineInput = {
   imovel_codigos: string[];
+  imoveis_snapshot?: Array<{
+    codigo: string;
+    slug?: string | null;
+    titulo?: string | null;
+    bairro?: string | null;
+    cidade?: string | null;
+    quartos?: number | null;
+    suites?: number | null;
+    vagas?: number | null;
+    banheiros?: number | null;
+    area?: number | null;
+    area_total?: number | null;
+    preco?: number | null;
+    valor?: number | null;
+    empreendimento?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    fotos?: string[];
+    foto_principal?: string | null;
+  }>;
   titulo?: string;
   subtitulo?: string | null;
   mensagem?: string | null;

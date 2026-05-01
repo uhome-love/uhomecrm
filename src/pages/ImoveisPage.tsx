@@ -461,20 +461,38 @@ export default function ImoveisPage() {
   const { mutate: criarVitrine, isPending: creatingVitrine } = useCreateVitrine();
   const createVitrine = useCallback(() => {
     if (!user) return;
-    const idToCodigo = new Map<string, string>();
-    for (const it of imoveis) {
-      const codigo = (it.codigo || "").toString().trim();
-      if (codigo && it.id) idToCodigo.set(it.id, codigo);
-    }
-    const codigos = Array.from(selectedIds)
-      .map((id) => idToCodigo.get(id))
+    const selectedItems = imoveis.filter((it) => selectedIds.has(it.id));
+    const codigos = selectedItems
+      .map((it) => String(it.codigo || "").trim())
       .filter((c): c is string => Boolean(c));
     if (codigos.length === 0) {
       toast.error("Não foi possível identificar os códigos dos imóveis selecionados.");
       return;
     }
+
+    const imoveisSnapshot = selectedItems
+      .map((it) => ({
+        codigo: String(it.codigo || "").trim(),
+        slug: it.slug || null,
+        titulo: it.titulo || null,
+        bairro: it.bairro || null,
+        cidade: it.cidade || null,
+        quartos: it.quartos ?? null,
+        suites: it.suites ?? null,
+        vagas: it.vagas ?? null,
+        banheiros: it.banheiros ?? null,
+        area_total: it.area_total ?? null,
+        preco: it.preco ?? null,
+        empreendimento: it.empreendimento ?? it.condominio_nome ?? null,
+        latitude: it.latitude ?? null,
+        longitude: it.longitude ?? null,
+        fotos: (it.fotos_full?.length ? it.fotos_full : it.fotos).slice(0, 10),
+        foto_principal: it.foto_principal ?? null,
+      }))
+      .filter((it) => Boolean(it.codigo));
+
     criarVitrine(
-      { imovel_codigos: codigos, titulo: "Seleção de Imóveis" },
+      { imovel_codigos: codigos, imoveis_snapshot: imoveisSnapshot, titulo: "Seleção de Imóveis" },
       { onSuccess: ({ publicUrl }) => setVitrineLink(publicUrl) },
     );
   }, [user, selectedIds, imoveis, criarVitrine]);
