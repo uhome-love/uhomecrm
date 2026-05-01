@@ -104,6 +104,43 @@ async function resolveSiteProfile(site: ReturnType<typeof siteClient>, crmUserId
 }
 
 /**
+ * Resolve UUID-shaped identifiers to actual property `codigo` (jetimob_id).
+ * Some legacy payloads from the UI may send site `imoveis.id` UUIDs instead of codes.
+ * We accept them and translate transparently.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function normalizeIncomingCodigos(rawCodigos: string[]): Promise<{ codigos: string[]; resolved: Record<string, string> }> {
+  const cleaned = Array.from(new Set(
+    (rawCodigos ?? []).map((c) => String(c ?? "").trim()).filter(Boolean),
+  ));
+  const uuidLike = cleaned.filter((c) => UUID_RE.test(c));
+  const resolved: Record<string, string> = {};
+
+  if (uuidLike.length) {
+    try {
+      const site = siteClient();
+      const { data, error } = await site
+        .from("imoveis")
+        .select("id, jetimob_id")
+        .in("id", uuidLike);
+      if (error) {
+        console.warn("[vitrine-bridge] uuid resolution failed:", error.message);
+      } else if (Array.isArray(data)) {
+        for (const row of data as Array<{ id: string; jetimob_id: string | null }>) {
+          if (row.jetimob_id) resolved[row.id] = String(row.jetimob_id);
+        }
+      }
+    } catch (e) {
+      console.warn("[vitrine-bridge] uuid resolution exception:", e);
+    }
+  }
+
+  const codigos = Array.from(new Set(cleaned.map((c) => resolved[c] ?? c)));
+  return { codigos, resolved };
+}
+
+/**
  * Build the snapshot of imoveis (resolvidos no momento da criação).
  * Garante que a vitrine renderiza mesmo se o imóvel sair do catálogo depois.
  */
