@@ -100,7 +100,11 @@ export default function PropertyPreviewDrawer({
 
   useEffect(() => {
     if (!open || !item?.codigo || origemFetched) return;
-    const codigo = item.codigo;
+    const codigo = String(item.codigo).trim();
+    if (!codigo) {
+      setOrigemFetched(true);
+      return;
+    }
     if (responsavelCache.has(codigo)) {
       const cached = responsavelCache.get(codigo)!;
       setOrigem(cached.origem);
@@ -109,16 +113,29 @@ export default function PropertyPreviewDrawer({
       return;
     }
     setOrigemLoading(true);
+    // Hard timeout safety: never let the spinner spin forever even if the proxy stalls.
+    const timeoutId = setTimeout(() => {
+      setOrigemLoading(false);
+      setOrigemFetched(true);
+    }, 15000);
     supabase.functions.invoke("jetimob-proxy", { body: { action: "get_imovel", codigo } })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.warn("[PropertyPreviewDrawer] jetimob-proxy error:", error);
+          return;
+        }
         const imovel = data?.imovel ?? data?.data?.imovel ?? null;
         const result = imovel ? extractOrigemExterna(imovel) : null;
         responsavelCache.set(codigo, { origem: result, full: imovel });
         setOrigem(result);
         setFullImovel(imovel);
       })
-      .catch(() => {})
-      .finally(() => { setOrigemLoading(false); setOrigemFetched(true); });
+      .catch((e) => { console.warn("[PropertyPreviewDrawer] jetimob-proxy failed:", e); })
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setOrigemLoading(false);
+        setOrigemFetched(true);
+      });
   }, [open, item?.codigo, origemFetched]);
 
   // ── Keyboard: property nav (suppressed when lightbox is open) ──
@@ -530,10 +547,10 @@ export default function PropertyPreviewDrawer({
             <Button variant="outline" size="sm" onClick={copyData} className="h-10 gap-2 rounded-lg text-xs font-semibold">
               <Copy className="h-4 w-4" /> Copiar dados
             </Button>
-            {selectMode && (
+            {selectMode && item?.id && (
               <Button
                 variant={isSelected ? "default" : "outline"} size="sm"
-                onClick={() => onToggleSelect(imovelId)}
+                onClick={() => onToggleSelect(item.id)}
                 className="h-10 gap-2 rounded-lg text-xs font-semibold col-span-2"
               >
                 <Share2 className="h-4 w-4" /> {isSelected ? "Na vitrine ✓" : "Adicionar à Vitrine"}

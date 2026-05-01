@@ -43,14 +43,21 @@ export function useCreateVitrine() {
         toast.error(err.message);
         throw err;
       }
-      if (!input.imovel_codigos?.length) {
+
+      // Normalize: trim, dedupe, drop empties.
+      const codigos = Array.from(
+        new Set((input.imovel_codigos ?? []).map((c) => String(c ?? "").trim()).filter(Boolean)),
+      );
+      if (!codigos.length) {
         const err = new Error("Selecione pelo menos um imóvel");
         toast.error(err.message);
         throw err;
       }
 
+      console.log("[useCreateVitrine] enviando", { count: codigos.length, codigos });
+
       const { data, error } = await supabase.functions.invoke("vitrine-bridge", {
-        body: { action: "create_vitrine", payload: input },
+        body: { action: "create_vitrine", payload: { ...input, imovel_codigos: codigos } },
       });
 
       if (error || !data?.ok) {
@@ -62,11 +69,14 @@ export function useCreateVitrine() {
 
       const publicUrl: string = data.public_url;
       const missingCodes: string[] = data.missing_codes ?? [];
+      const imoveisCount: number = data.imoveis_count ?? 0;
 
       try { await navigator.clipboard.writeText(publicUrl); } catch { /* clipboard pode falhar */ }
 
-      if (missingCodes.length) {
-        toast.warning(`Vitrine criada, mas ${missingCodes.length} imóvel(is) não foram encontrados.`);
+      if (imoveisCount === 0) {
+        toast.error("Vitrine criada, mas nenhum imóvel foi reconhecido. Verifique a seleção.");
+      } else if (missingCodes.length) {
+        toast.warning(`Vitrine criada com ${imoveisCount} imóve${imoveisCount === 1 ? "l" : "is"}. ${missingCodes.length} não foi(ram) encontrado(s).`);
       } else {
         toast.success("Vitrine criada! Link copiado.");
       }
@@ -74,7 +84,7 @@ export function useCreateVitrine() {
       return {
         id: data.id,
         publicUrl,
-        imoveisCount: data.imoveis_count ?? 0,
+        imoveisCount,
         missingCodes,
       };
     },

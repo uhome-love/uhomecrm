@@ -7,11 +7,29 @@ import ProductPageLayout from "@/components/showcase/ProductPageLayout";
 import PropertySelectionLayout from "@/components/showcase/PropertySelectionLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-function sanitizeImovel(item: any): ShowcaseImovel | null {
+// Deterministic numeric ID from `codigo` so favorites/compare/keys/analytics
+// have a stable, unique identifier even when the snapshot doesn't carry an `id`.
+function hashCodigoToId(codigo: string): number {
+  let h = 5381;
+  for (let i = 0; i < codigo.length; i++) {
+    h = ((h << 5) + h) + codigo.charCodeAt(i);
+    h = h & 0x7fffffff;
+  }
+  return h || 1;
+}
+
+function sanitizeImovel(item: any, idx: number): ShowcaseImovel | null {
   if (!item || typeof item !== "object") return null;
+  const codigo = typeof item.codigo === "string" ? item.codigo : (item.codigo != null ? String(item.codigo) : undefined);
+  const rawId = Number(item.id);
+  const safeId = Number.isFinite(rawId) && rawId > 0
+    ? rawId
+    : codigo
+      ? hashCodigoToId(codigo)
+      : idx + 1;
   return {
-    id: Number(item.id) || 0,
-    codigo: typeof item.codigo === "string" ? item.codigo : undefined,
+    id: safeId,
+    codigo,
     titulo: item.titulo || "Imóvel",
     endereco: item.endereco ?? null,
     bairro: item.bairro ?? null,
@@ -42,7 +60,7 @@ function sanitizeShowcaseData(raw: any): ShowcaseData | null {
   if (!raw?.vitrine?.id) return null;
 
   const imoveis = Array.isArray(raw.imoveis)
-    ? raw.imoveis.map(sanitizeImovel).filter(Boolean) as ShowcaseImovel[]
+    ? raw.imoveis.map((it: any, idx: number) => sanitizeImovel(it, idx)).filter(Boolean) as ShowcaseImovel[]
     : [];
 
   return {

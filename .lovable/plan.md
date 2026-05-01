@@ -1,130 +1,121 @@
+Objetivo: estabilizar a página /imoveis de ponta a ponta e fechar o fluxo completo de vitrine até funcionar de forma confiável no preview.
 
-# Refundação da Vitrine — CRM ↔ Site
+Diagnóstico confirmado
+- O erro principal da vitrine hoje está no frontend: a seleção da página está salvando `item.id` (UUID da linha no banco do site) em vez de `item.codigo` (código do imóvel que a bridge espera).
+- A prova está no request real capturado: `create_vitrine` recebeu 3 UUIDs e retornou `missing_codes` para os 3 itens, embora a vitrine tenha sido criada.
+- Há inconsistência interna no mesmo fluxo:
+  - card da listagem seleciona por `item.id`
+  - drawer seleciona por `codigo`
+  - barra da vitrine assume que tudo está no mesmo conjunto
+- Existe também um bug paralelo no preview:
+  - warning de React sobre `ref` em `PhotoLightbox`, vindo do `PropertyPreviewDrawer`
+- E existe um bug estrutural no consumo da vitrine pública:
+  - o snapshot salvo pela bridge não garante um identificador estável por imóvel
+  - `VitrinePage` converte `item.id` para número e cai em `0` quando o snapshot só tem `codigo`
+  - isso tende a quebrar keys, favoritos, comparação e analytics da vitrine pública mesmo depois que a criação voltar a funcionar
 
-## Diagnóstico (o que está quebrado hoje)
+Plano de correção
 
-Auditei os dois projetos (CRM `uhomesales` e `Site Uhome`) e o banco do site. Achados confirmados:
+1. Unificar os identificadores da página Imóveis
+- Trocar a seleção da vitrine para usar sempre `codigo` como chave de negócio.
+- Ajustar:
+  - `ImoveisPage.tsx`
+  - `SitePropertyCard.tsx`
+  - `PropertyPreviewDrawer.tsx`
+- Resultado esperado:
+  - selecionar pelo card e pelo drawer afeta o mesmo item
+  - contador de selecionados fica consistente
+  - `Gerar Vitrine` envia códigos válidos, não UUIDs
 
-1. **Vitrines órfãs no banco do site.** Todas as vitrines recentes (30/03) têm `corretor_id = NULL` E `created_by = NULL`. Consequência:
-   - "Minhas Vitrines" no CRM filtra por `created_by = user.id` → **lista vazia para todos**.
-   - A página `/vitrine/:id` no site não consegue resolver o corretor (nome/telefone/avatar) → bloco "Falar com consultor" some.
+2. Blindar o hook de criação da vitrine
+- Fortalecer `useCreateVitrine.ts` para validar e normalizar os códigos antes do invoke.
+- Remover duplicados e bloquear payloads inválidos cedo, com erro claro em tela.
+- Se necessário, registrar no console exatamente quais identificadores estão sendo enviados para facilitar futuros diagnósticos.
 
-2. **Três caminhos diferentes para criar vitrine** (causa raiz dos NULLs):
-   - `useCreateVitrine` (CRM) → `supabaseSite.from("vitrines").insert(...)` direto, com anon key. Depende de RLS permissiva e do `profiles.uhomesales_id` resolver.
-   - `crm-bridge` edge function (Site) → service role, ignora RLS, mas só é chamada em fluxos antigos.
-   - `vitrine-public` edge function (Site) → também faz inserts em alguns paths.
-   Quando o profile do corretor não está sincronizado com `uhomesales_id`, o caminho 1 grava NULL silenciosamente em vez de falhar.
+3. Tornar a edge function resiliente a payload legado
+- Ajustar `supabase/functions/vitrine-bridge/index.ts` para não depender cegamente do frontend.
+- Adicionar normalização server-side dos identificadores recebidos, tentando resolver entradas inválidas antes de montar o snapshot.
+- Melhorar logs e mensagens de erro para diferenciar:
+  - código inexistente
+  - identificador inválido
+  - falha de snapshot
+  - falha de profile/site
+- Assim, mesmo se algum ponto da UI voltar a mandar IDs errados, a bridge não quebra silenciosamente.
 
-3. **Duas leituras diferentes da mesma vitrine pública**:
-   - `Site/Vitrine.tsx` faz query direta na tabela `vitrines` + tabela `imoveis` (somente status `disponivel`).
-   - `CRM/VitrinePage.tsx` chama edge function `vitrine-public` (que tem fallback rico: properties → site imoveis → Jetimob API).
-   - Resultado: o link público no domínio `uhome.com.br/vitrine/:id` mostra menos imóveis do que a versão admin no CRM.
+4. Corrigir o preview do imóvel e a ficha técnica
+- Revisar `PropertyPreviewDrawer.tsx` e `BrokerTechnicalSheet.tsx` para garantir que a busca de responsável/origem use o identificador correto e trate ausência de código sem spinner infinito.
+- Melhorar estados de loading/erro:
+  - carregando
+  - não encontrado
+  - indisponível para imóveis sem vínculo Jetimob
+- Manter a ficha técnica funcional sem travar o drawer.
 
-4. **Busca de imóveis na página `/imoveis` do CRM lê do site** (`siteImoveisRemote`), mas a vitrine pública lê da tabela `properties` do CRM como primária. Códigos selecionados no CRM podem não existir em `properties` (foram vistos via `imoveis` do site) e caem no Jetimob (lento, com timeout 8s) ou somem.
+5. Corrigir o warning do `PhotoLightbox`
+- Refatorar `src/components/imoveis/PhotoLightbox.tsx` para suportar `ref` corretamente com `forwardRef` ou remover o caminho que faz o Radix/React tentar anexar ref num function component puro.
+- Objetivo: eliminar o warning do console e evitar comportamento estranho no drawer.
 
-5. **Schema divergente**: `vitrines.imovel_codigos` (array de jetimob_id) vs `vitrine.imovel_ids` (esperado em alguns mapeamentos), causando bugs do tipo "vitrine vazia".
+6. Corrigir o modelo da vitrine pública para IDs estáveis
+- Ajustar `VitrinePage.tsx` e os tipos de showcase para não depender de `Number(item.id) || 0`.
+- Passar a preservar um identificador estável por imóvel, priorizando algo como:
+  - `codigo`
+  - `id` existente
+  - fallback determinístico
+- Atualizar os componentes públicos que usam `item.id`:
+  - `PropertySelectionLayout.tsx`
+  - `PropertyCard.tsx`
+  - `SafePropertyCard.tsx`
+  - `PropertyDetailModal.tsx`
+  - `CompareModal.tsx`
+  - `ShowcaseMap.tsx`
+  - analytics relacionados
+- Resultado esperado:
+  - sem keys duplicadas
+  - favoritos/comparação funcionam
+  - tracking não colapsa tudo no imóvel `0`
 
-6. **Sem validação de criação**: o frontend faz `insert` e segue, sem checar se o registro voltou com FKs válidas.
+7. Revisar o fluxo completo da página Imóveis
+- Fazer uma passada de estabilidade nos pontos mais sensíveis da tela:
+  - abertura do drawer
+  - loading do mapa
+  - seleção para vitrine
+  - geração de link
+  - copy/WhatsApp
+  - consistência entre desktop e mobile bar
+- Corrigir qualquer regressão evidente encontrada durante o teste real do fluxo.
 
----
+Validação que vou executar depois da aprovação
+- Desktop:
+  1. abrir /imoveis
+  2. abrir preview de imóvel
+  3. confirmar que “Responsável / Origem” e ficha técnica carregam
+  4. selecionar imóveis tanto pelo card quanto pelo drawer
+  5. gerar vitrine
+  6. confirmar que a resposta não volta com `missing_codes` para imóveis válidos
+  7. abrir o link público da vitrine
+  8. confirmar que os imóveis renderizam corretamente e com identificadores distintos
+  9. validar copiar link, compartilhar no WhatsApp e listagem em “Minhas Vitrines”
+- Mobile:
+  1. conferir barra inferior
+  2. gerar vitrine com seleção ativa
+  3. validar que o comportamento é equivalente ao desktop
 
-## Solução: Contrato único, criação via edge function, leitura única
+Detalhes técnicos
+- Arquivos principais envolvidos:
+  - `src/pages/ImoveisPage.tsx`
+  - `src/components/imoveis/SitePropertyCard.tsx`
+  - `src/components/imoveis/PropertyPreviewDrawer.tsx`
+  - `src/components/imoveis/BrokerTechnicalSheet.tsx`
+  - `src/components/imoveis/PhotoLightbox.tsx`
+  - `src/hooks/useCreateVitrine.ts`
+  - `src/pages/VitrinePage.tsx`
+  - `src/components/showcase/*`
+  - `supabase/functions/vitrine-bridge/index.ts`
+- Não pretendo mexer no client gerado de backend.
+- Vou preservar a arquitetura atual, corrigindo o contrato entre UI, bridge e página pública em vez de reescrever tudo.
 
-### Princípio
-Toda criação e leitura de vitrine passa por **uma única edge function** no projeto do site. CRM nunca mais escreve direto na tabela `vitrines` via anon key.
-
-```text
-┌──────────────────┐                                ┌────────────────────┐
-│   CRM /imoveis   │  POST  vitrine-bridge          │  Site Supabase     │
-│  (selecionar     │ ─────────────────────────────► │  (service role)    │
-│   imóveis)       │   action: "create_vitrine"     │                    │
-│                  │   header: x-crm-token          │  - valida corretor │
-│                  │ ◄───────────────────────────── │  - resolve profile │
-│                  │   { id, public_url }            │  - insere c/ FKs   │
-└──────────────────┘                                │  - retorna URL     │
-                                                    └────────────────────┘
-                                                              ▲
-                                                              │ GET
-┌──────────────────┐                                          │
-│  Site público    │  GET  vitrine-public/:id  ───────────────┘
-│  /vitrine/:id    │  (ÚNICA fonte, com fallback             
-│                  │   properties → site imoveis → cache)    
-└──────────────────┘                                         
-```
-
-### Etapas
-
-**1. Banco de dados (site `huigglwvvzuwwyqvpmec`)** — migração:
-- `ALTER TABLE vitrines`: `created_by` e `corretor_id` viram `NOT NULL` (para registros novos), com trigger `BEFORE INSERT` que **rejeita** insert sem ambos.
-- Backfill das vitrines órfãs: tentar resolver `created_by` via `corretor_slug` ou marcar `tipo='orfa'` para auditoria.
-- Adicionar `imoveis_resolvidos jsonb` (cache snapshot dos imóveis no momento da criação — fotos, preço, título), garantindo que a vitrine **nunca quebra** se o imóvel sair do ar depois.
-- RLS: remover policies permissivas de INSERT anon. Apenas service role insere.
-- Index em `(created_by, created_at desc)` para "Minhas Vitrines".
-
-**2. Edge function `vitrine-bridge` (Site)** — endpoint único de criação:
-- Recebe `x-crm-token` (já existe `CRM_BRIDGE_TOKEN`).
-- Body: `{ crm_user_id, crm_user_email, imovel_codigos, titulo, lead_id?, lead_nome?, ... }`.
-- Lookup `profiles` por `uhomesales_id = crm_user_id`. Se não achar, fallback por `email`. Se ainda não achar, **erro 422** com mensagem clara.
-- Pré-busca os imóveis (`properties` CRM → `imoveis` site → Jetimob), monta `imoveis_resolvidos` snapshot, insere vitrine com todos os FKs preenchidos.
-- Retorna `{ id, public_url, imoveis_count, missing_codes: [] }`.
-
-**3. Edge function `vitrine-public` (Site)** — leitura única e robusta:
-- Mantém a lógica atual de fallback (properties → site imoveis → Jetimob).
-- **Adiciona** prioridade: se `imoveis_resolvidos` (snapshot) tem dados, usa ele primeiro. Garante que a vitrine sempre renderiza, mesmo se imóvel sair do catálogo.
-- Resolve `corretor` por `created_by` (que agora nunca é NULL).
-
-**4. CRM** — refatoração:
-- `src/hooks/useCreateVitrine.ts`: substituir insert direto por chamada `supabase.functions.invoke('vitrine-bridge', { body: { action: 'create_vitrine', ... } })` via uma edge function de proxy no CRM (`call-vitrine-bridge`) que injeta o `CRM_BRIDGE_TOKEN`.
-- `src/pages/MinhasVitrines.tsx`: também via bridge `list_vitrines` (já existe), em vez de query direta — autenticação por token, mais resiliente.
-- `src/pages/VitrinePage.tsx` (a versão admin): chamar `vitrine-public` em vez de query direta. Elimina divergência.
-- `src/pages/ImoveisPage.tsx`: ao selecionar imóveis para vitrine, **valida** que cada `codigo` existe em `properties` ou `imoveis` (uma checagem leve antes do submit) e mostra avisos.
-
-**5. Site** — refatoração:
-- `src/pages/Vitrine.tsx`: substituir as 2 queries diretas por uma única chamada `vitrine-public`. Elimina o filtro `status = 'disponivel'` que esconde imóveis, usando o snapshot.
-
-**6. Backfill imediato** das 302 vitrines órfãs (script SQL único): tentar resolver `created_by` via `corretor_slug` ou registrar como inválida. As que não resolverem ganham `tipo = 'legacy_orphan'` e somem do filtro de "Minhas Vitrines".
-
-**7. Observabilidade**:
-- Edge function loga: criação OK, criação falha por profile não encontrado, render com snapshot vs catálogo ao vivo.
-- Painel `/diagnostico-site` (já existe) ganha card "Saúde da Vitrine": % criadas com FKs OK nos últimos 7 dias, % renders via snapshot, vitrines órfãs.
-
----
-
-## Resultado esperado
-
-- **Criação atômica**: ou cria com tudo certo (corretor, imóveis snapshot) ou retorna erro claro. Nunca mais NULL silencioso.
-- **Leitura única**: CRM e site renderizam idêntico, via mesma edge function.
-- **Resiliência**: vitrine criada em março continua renderizando em dezembro mesmo se o imóvel saiu do Jetimob (snapshot).
-- **"Minhas Vitrines" funciona** para todos os corretores a partir da próxima criação.
-- **Busca em /imoveis** alimenta a vitrine sem inconsistência (mesma fonte, validação prévia).
-
----
-
-## O que vou alterar (arquivos)
-
-**Site Uhome:**
-- `supabase/migrations/<timestamp>_vitrines_hardening.sql` — schema, trigger, backfill, RLS
-- `supabase/functions/vitrine-bridge/index.ts` — novo (criação única)
-- `supabase/functions/vitrine-public/index.ts` — adicionar uso de snapshot
-- `src/pages/Vitrine.tsx` — usar `vitrine-public` em vez de query direta
-
-**CRM (este projeto):**
-- `supabase/functions/call-vitrine-bridge/index.ts` — novo proxy que injeta o token
-- `src/hooks/useCreateVitrine.ts` — chamar via bridge
-- `src/pages/MinhasVitrines.tsx` — chamar via bridge
-- `src/pages/VitrinePage.tsx` — chamar `vitrine-public`
-- `src/pages/ImoveisPage.tsx` — validação prévia de códigos selecionados
-- `src/pages/DiagnosticoSite.tsx` — card "Saúde da Vitrine"
-
----
-
-## Sequência de execução (após aprovação)
-
-1. Migração no banco do site (schema + backfill).
-2. Deploy `vitrine-bridge` e atualizar `vitrine-public` no site.
-3. Deploy `call-vitrine-bridge` no CRM.
-4. Refatorar hooks/pages do CRM.
-5. Refatorar `Site/Vitrine.tsx`.
-6. Validar criando 1 vitrine de ponta a ponta e abrindo no domínio público.
-
-**Ponto de atenção**: a migração no banco do site exige acesso ao projeto Site Uhome — o usuário precisará aprovar lá também (a migração SQL deste projeto não atinge o banco do site).
+Resultado esperado final
+- Seleção da vitrine funciona de forma consistente.
+- A bridge recebe códigos corretos e gera vitrines com imóveis reais.
+- A página pública da vitrine renderiza os imóveis corretamente.
+- Preview/ficha técnica/origem deixam de travar.
+- O fluxo inteiro da página Imóveis fica testado e validado no preview.
