@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,10 @@ interface PhotoLightboxProps {
   onClose: () => void;
 }
 
-function PhotoLightboxInner({ images, initialIndex, open, onClose }: PhotoLightboxProps) {
+const PhotoLightboxInner = forwardRef<HTMLDivElement, PhotoLightboxProps>(function PhotoLightboxInner(
+  { images, initialIndex, open, onClose },
+  _ref,
+) {
   const [current, setCurrent] = useState(initialIndex);
   const [isTransitioning, setIsTransitioning] = useState(false);
   useEffect(() => { setCurrent(initialIndex); }, [initialIndex]);
