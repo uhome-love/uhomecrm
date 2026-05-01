@@ -327,8 +327,19 @@ Deno.serve(async (req) => {
 
     if (action === "create_vitrine") {
       console.log("[vitrine-bridge] create_vitrine start", { userId, payloadKeys: Object.keys(payload) });
-      const codigos = Array.isArray(payload.imovel_codigos) ? (payload.imovel_codigos as string[]) : [];
-      if (!codigos.length) return errorResponse("imovel_codigos required", 400);
+      const rawCodigos = Array.isArray(payload.imovel_codigos) ? (payload.imovel_codigos as string[]) : [];
+      if (!rawCodigos.length) return errorResponse("imovel_codigos required", 400);
+
+      // Normalize: trim, dedupe, and translate any UUID-shaped IDs (legacy UI bug)
+      // back to the actual property `codigo` (jetimob_id).
+      const { codigos, resolved } = await normalizeIncomingCodigos(rawCodigos);
+      const resolvedCount = Object.keys(resolved).length;
+      if (resolvedCount > 0) {
+        console.log("[vitrine-bridge] normalized UUID inputs", { resolvedCount });
+      }
+      if (!codigos.length) {
+        return jsonResponse({ error: "Nenhum código válido informado.", received: rawCodigos.length }, 400);
+      }
 
       let profile, matchedBy;
       try {
