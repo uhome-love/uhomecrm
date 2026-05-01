@@ -513,12 +513,52 @@ function Section({ title, icon: Icon, children }: { title: string; icon: any; ch
   );
 }
 
-function Row({ label, value }: { label: string; value: any }) {
+/**
+ * Renderiza valores heterogêneos do Jetimob com segurança.
+ * Aceita string, number, boolean, React element, objeto ou array
+ * e nunca quebra a árvore React (causa do crash anterior com `tipologia`
+ * vindo como `{ id_tipologia, sigla_tipologia, nome_tipologia }`).
+ */
+function renderSafeValue(value: any): React.ReactNode {
   if (value == null || value === "") return null;
+  if (typeof value === "string" || typeof value === "number") return value;
+  if (typeof value === "boolean") return value ? "Sim" : "Não";
+  // React element
+  if (React.isValidElement(value)) return value;
+  if (Array.isArray(value)) {
+    const parts = value.map((v) => {
+      if (v == null) return null;
+      if (typeof v === "string" || typeof v === "number") return String(v);
+      if (typeof v === "object") {
+        return v.nome_tipologia || v.nome || v.descricao || v.label || v.sigla || v.sigla_tipologia || null;
+      }
+      return null;
+    }).filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : null;
+  }
+  if (typeof value === "object") {
+    return (
+      value.nome_tipologia ||
+      value.nome ||
+      value.descricao ||
+      value.label ||
+      value.titulo ||
+      value.sigla ||
+      value.sigla_tipologia ||
+      null
+    );
+  }
+  return null;
+}
+
+function Row({ label, value }: { label: string; value: any }) {
+  const safe = renderSafeValue(value);
+  if (safe == null || safe === "") return null;
+  const isStringLike = typeof safe === "string" || typeof safe === "number";
   return (
     <div className="flex items-start justify-between gap-3 text-xs">
       <span className="text-muted-foreground shrink-0">{label}:</span>
-      <span className={cn("font-medium text-foreground text-right", typeof value === "string" && "break-words")}>{value}</span>
+      <span className={cn("font-medium text-foreground text-right", isStringLike && "break-words")}>{safe}</span>
     </div>
   );
 }
