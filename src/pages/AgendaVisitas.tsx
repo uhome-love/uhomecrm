@@ -5,7 +5,7 @@ import {
   addDays, isToday, isBefore,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User, RotateCcw } from "lucide-react";
+import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User, RotateCcw, ChevronDown } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
 import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
@@ -328,6 +328,7 @@ export default function AgendaVisitas() {
   const [showOnlyMine, setShowOnlyMine] = useState(!isAdmin && !isGestor);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [kpiFilter, setKpiFilter] = useState<string | null>(searchParams.get("status") || null);
+  const [equipeFilter, setEquipeFilter] = useState<string | null>(searchParams.get("equipe") || null);
   const [scrollToDay, setScrollToDay] = useState<string | null>(null);
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -354,8 +355,9 @@ export default function AgendaVisitas() {
     if (period !== "semana") params.set("period", period);
     if (searchTerm) params.set("q", searchTerm);
     if (kpiFilter) params.set("status", kpiFilter);
+    if (equipeFilter) params.set("equipe", equipeFilter);
     setSearchParams(params, { replace: true });
-  }, [period, searchTerm, kpiFilter, setSearchParams]);
+  }, [period, searchTerm, kpiFilter, equipeFilter, setSearchParams]);
 
   // Scroll to day
   useEffect(() => {
@@ -388,6 +390,9 @@ export default function AgendaVisitas() {
         list = list.filter(v => v.status === "no_show");
       }
     }
+    if (equipeFilter) {
+      list = list.filter(v => (v.equipe || "Sem equipe") === equipeFilter);
+    }
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       list = list.filter(v =>
@@ -402,7 +407,16 @@ export default function AgendaVisitas() {
       return (a.hora_visita || "99:99").localeCompare(b.hora_visita || "99:99");
     });
     return list;
-  }, [visitas, kpiFilter, searchTerm]);
+  }, [visitas, kpiFilter, equipeFilter, searchTerm]);
+
+  // Equipes disponíveis (derivadas das visitas carregadas, sem filtro de equipe)
+  const equipesDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    for (const v of visitas) {
+      set.add(v.equipe || "Sem equipe");
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [visitas]);
 
   // Group by day
   const dayGroups = useMemo(() => {
@@ -553,6 +567,30 @@ export default function AgendaVisitas() {
           </div>
         )}
 
+        {/* Filtro de Equipe (CEO/Admin/Gestor) */}
+        {(isAdmin || isGestor) && !showOnlyMine && equipesDisponiveis.length > 1 && (
+          <div className="relative">
+            <select
+              value={equipeFilter || ""}
+              onChange={(e) => setEquipeFilter(e.target.value || null)}
+              className={cn(
+                "appearance-none text-[11px] font-medium h-[28px] pl-7 pr-7 rounded-[8px] border outline-none cursor-pointer transition-all",
+                equipeFilter
+                  ? "bg-[#4969FF]/10 border-[#4969FF]/30 text-[#4969FF]"
+                  : "bg-white dark:bg-white/5 border-[#e8e8f0] dark:border-white/10 text-[#71717a] hover:text-[#0a0a0a] dark:hover:text-white"
+              )}
+              title="Filtrar por equipe"
+            >
+              <option value="">Todas as equipes</option>
+              {equipesDisponiveis.map((eq) => (
+                <option key={eq} value={eq}>{eq}</option>
+              ))}
+            </select>
+            <Users size={11} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
+            <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
+          </div>
+        )}
+
         {/* Cobrar (discrete) */}
         {isAdmin && pendingVisitas.length > 0 && (
           <button
@@ -600,12 +638,18 @@ export default function AgendaVisitas() {
       </div>
 
       {/* Active filter badge */}
-      {(kpiFilter || searchTerm) && (
-        <div className="flex items-center gap-2">
+      {(kpiFilter || searchTerm || equipeFilter) && (
+        <div className="flex items-center gap-2 flex-wrap">
           {kpiFilter && (
             <span className="text-[11px] bg-[#4969FF]/10 text-[#4969FF] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
               Filtro: {kpiFilter === "marcadas" ? "Marcadas" : kpiFilter === "realizadas" ? "Realizadas" : "No-show"}
               <button onClick={() => setKpiFilter(null)} className="hover:text-[#3350E6]"><X size={10} /></button>
+            </span>
+          )}
+          {equipeFilter && (
+            <span className="text-[11px] bg-[#4969FF]/10 text-[#4969FF] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              Equipe: {equipeFilter}
+              <button onClick={() => setEquipeFilter(null)} className="hover:text-[#3350E6]"><X size={10} /></button>
             </span>
           )}
           {searchTerm && (
@@ -615,7 +659,7 @@ export default function AgendaVisitas() {
             </span>
           )}
           <button
-            onClick={() => { setKpiFilter(null); setSearchTerm(""); }}
+            onClick={() => { setKpiFilter(null); setSearchTerm(""); setEquipeFilter(null); }}
             className="text-[11px] text-[#ef4444] hover:underline"
           >
             Limpar tudo
