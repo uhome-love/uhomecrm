@@ -86,6 +86,20 @@ function normalizeImages(imovel: any, _logCodigo?: string): { thumbs: string[]; 
   return { thumbs, full };
 }
 
+async function fetchJsonWithTimeout(url: string, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort("timeout"), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 // ─── UH-code mapping ───
 const UH_CODE_MAP: Record<string, string> = {
   "4688-UH": "Casa Bastian", "97325-UH": "Shift", "91245-UH": "Melnick Day - Alto Padrão",
@@ -273,7 +287,7 @@ serve(async (req) => {
       let imovel: any = null;
       const directUrl = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/codigo/${encodeURIComponent(requestedCodigo)}?v=6`;
       try {
-        const response = await fetch(directUrl, { headers: { Accept: "application/json" } });
+        const response = await fetchJsonWithTimeout(directUrl, 12000);
         if (response.ok) {
           const raw = await response.json();
           // Jetimob retorna `data` como objeto único (quando busca por código) OU array
@@ -285,13 +299,42 @@ serve(async (req) => {
           imovel = items.find((item: any) => isCodigoMatch(item, requestedCodigo)) || items[0] || null;
         }
       } catch (e) {
-        console.warn("Direct API fetch failed, falling back to catalog:", e);
+        console.warn("Direct API fetch failed:", e);
       }
 
-      // Fallback to catalog if direct API failed
+      // Fallback to local catalog only — never call the full Jetimob catalog here,
+      // otherwise a single drawer open can spend 150s crawling the entire API.
       if (!imovel) {
-        const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY, supabaseAdmin);
-        imovel = catalogItems.find(item => isCodigoMatch(item, requestedCodigo)) || null;
+        const requestedNorm = normalizeCodigoValue(requestedCodigo);
+        const requestedNum = extractCodigoNumber(requestedCodigo);
+        let query = supabaseAdmin
+          .from("imoveis_catalog")
+          .select("payload")
+          .eq("codigo", requestedCodigo)
+          .limit(1);
+
+        let { data: catalogRows } = await query;
+
+        if ((!catalogRows || catalogRows.length === 0) && requestedNorm) {
+          const { data: fuzzyRows } = await supabaseAdmin
+            .from("imoveis_catalog")
+            .select("payload")
+            .ilike("search_text", `%${requestedNorm.toLowerCase()}%`)
+            .limit(20);
+          catalogRows = fuzzyRows;
+        }
+
+        if ((!catalogRows || catalogRows.length === 0) && requestedNum) {
+          const { data: numericRows } = await supabaseAdmin
+            .from("imoveis_catalog")
+            .select("payload")
+            .ilike("search_text", `%${requestedNum}%`)
+            .limit(20);
+          catalogRows = numericRows;
+        }
+
+        const catalogItems = (catalogRows || []).map((row: any) => row.payload).filter(Boolean);
+        imovel = catalogItems.find((item: any) => isCodigoMatch(item, requestedCodigo)) || catalogItems[0] || null;
       }
 
       if (imovel) {
