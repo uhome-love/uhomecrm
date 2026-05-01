@@ -390,6 +390,9 @@ export default function AgendaVisitas() {
         list = list.filter(v => v.status === "no_show");
       }
     }
+    if (equipeFilter) {
+      list = list.filter(v => (v.equipe || "Sem equipe") === equipeFilter);
+    }
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       list = list.filter(v =>
@@ -404,7 +407,16 @@ export default function AgendaVisitas() {
       return (a.hora_visita || "99:99").localeCompare(b.hora_visita || "99:99");
     });
     return list;
-  }, [visitas, kpiFilter, searchTerm]);
+  }, [visitas, kpiFilter, equipeFilter, searchTerm]);
+
+  // Equipes disponíveis (derivadas das visitas carregadas, sem filtro de equipe)
+  const equipesDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    for (const v of visitas) {
+      set.add(v.equipe || "Sem equipe");
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [visitas]);
 
   // Group by day
   const dayGroups = useMemo(() => {
