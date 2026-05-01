@@ -69,6 +69,10 @@ async function resolveSiteProfile(site: ReturnType<typeof siteClient>, crmUserId
     .eq("uhomesales_id", crmUserId)
     .maybeSingle();
 
+  if (byId.error) {
+    throw new Error(`Falha ao consultar profile por uhomesales_id: ${byId.error.message}`);
+  }
+
   if (byId.data) return { profile: byId.data, matchedBy: "uhomesales_id" as const };
 
   // Fallback: lookup CRM auth user email and match by email on site profiles
@@ -82,6 +86,10 @@ async function resolveSiteProfile(site: ReturnType<typeof siteClient>, crmUserId
     .select("id, slug_ref, nome, telefone, avatar_url")
     .eq("email", email)
     .maybeSingle();
+
+  if (byEmail.error) {
+    throw new Error(`Falha ao consultar profile por email: ${byEmail.error.message}`);
+  }
 
   if (byEmail.data) {
     // Best-effort backfill of uhomesales_id so future calls hit the fast path
