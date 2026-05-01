@@ -328,6 +328,7 @@ export default function AgendaVisitas() {
   const [showOnlyMine, setShowOnlyMine] = useState(!isAdmin && !isGestor);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [kpiFilter, setKpiFilter] = useState<string | null>(searchParams.get("status") || null);
+  const [equipeFilter, setEquipeFilter] = useState<string | null>(searchParams.get("equipe") || null);
   const [scrollToDay, setScrollToDay] = useState<string | null>(null);
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
