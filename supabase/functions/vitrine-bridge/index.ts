@@ -140,11 +140,49 @@ async function normalizeIncomingCodigos(rawCodigos: string[]): Promise<{ codigos
   return { codigos, resolved };
 }
 
+function normalizeSnapshotItem(item: Record<string, unknown>) {
+  const codigo = String(item.codigo ?? "").trim();
+  if (!codigo) return null;
+
+  const fotosRaw = Array.isArray(item.fotos) ? item.fotos : [];
+  const fotos = fotosRaw
+    .map((foto) => {
+      if (typeof foto === "string") return foto;
+      if (foto && typeof foto === "object" && "url" in foto) return String((foto as { url?: string }).url ?? "");
+      return "";
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+
+  if (!fotos.length && typeof item.foto_principal === "string" && item.foto_principal.trim()) {
+    fotos.push(item.foto_principal.trim());
+  }
+
+  return {
+    codigo,
+    slug: typeof item.slug === "string" ? item.slug : undefined,
+    titulo: typeof item.titulo === "string" && item.titulo.trim() ? item.titulo : `Imóvel ${codigo}`,
+    bairro: typeof item.bairro === "string" ? item.bairro : undefined,
+    cidade: typeof item.cidade === "string" ? item.cidade : undefined,
+    quartos: typeof item.quartos === "number" ? item.quartos : null,
+    suites: typeof item.suites === "number" ? item.suites : null,
+    vagas: typeof item.vagas === "number" ? item.vagas : null,
+    banheiros: typeof item.banheiros === "number" ? item.banheiros : null,
+    area: typeof item.area === "number" ? item.area : (typeof item.area_total === "number" ? item.area_total : null),
+    valor: typeof item.valor === "number" ? item.valor : (typeof item.preco === "number" ? item.preco : null),
+    empreendimento: typeof item.empreendimento === "string" ? item.empreendimento : null,
+    lat: typeof item.lat === "number" ? item.lat : (typeof item.latitude === "number" ? item.latitude : null),
+    lng: typeof item.lng === "number" ? item.lng : (typeof item.longitude === "number" ? item.longitude : null),
+    fotos,
+    _src: "client_snapshot",
+  };
+}
+
 /**
  * Build the snapshot of imoveis (resolvidos no momento da criação).
  * Garante que a vitrine renderiza mesmo se o imóvel sair do catálogo depois.
  */
-async function buildImoveisSnapshot(codigos: string[]) {
+async function buildImoveisSnapshot(codigos: string[], fallbackItems: Record<string, unknown>[] = []) {
   const result: Array<Record<string, unknown>> = [];
   if (!codigos.length) return result;
 
@@ -152,16 +190,17 @@ async function buildImoveisSnapshot(codigos: string[]) {
   const crm = crmClient();
   const { data: crmProps } = await crm
     .from("properties")
-    .select("codigo, titulo, bairro, cidade, dormitorios, suites, vagas, banheiros, area_privativa, area_total, valor_venda, fotos, fotos_full, empreendimento, latitude, longitude")
-    .in("codigo", codigos)
+    .select("codigo, jetimob_id, titulo, bairro, cidade, dormitorios, suites, vagas, banheiros, area_privativa, area_total, valor_venda, fotos, fotos_full, empreendimento, latitude, longitude")
     .eq("ativo", true);
 
   const found = new Set<string>();
   for (const p of crmProps ?? []) {
-    found.add(p.codigo);
+    const codigo = [p.codigo, p.jetimob_id].map((value) => String(value ?? "").trim()).find((value) => value && codigos.includes(value));
+    if (!codigo) continue;
+    found.add(codigo);
     const fotos = (p.fotos_full?.length ? p.fotos_full : p.fotos) ?? [];
     result.push({
-      codigo: p.codigo,
+      codigo,
       titulo: p.titulo,
       bairro: p.bairro,
       cidade: p.cidade,
@@ -218,6 +257,22 @@ async function buildImoveisSnapshot(codigos: string[]) {
       }
     } catch (e) {
       console.error("[vitrine-bridge] site imoveis fallback failed:", e);
+    }
+  }
+
+  if (fallbackItems.length) {
+    const fallbackMap = new Map<string, Record<string, unknown>>();
+    for (const raw of fallbackItems) {
+      const normalized = normalizeSnapshotItem(raw);
+      if (normalized) fallbackMap.set(normalized.codigo, normalized);
+    }
+
+    for (const codigo of codigos) {
+      if (found.has(codigo)) continue;
+      const fallback = fallbackMap.get(codigo);
+      if (!fallback) continue;
+      found.add(codigo);
+      result.push(fallback);
     }
   }
 
