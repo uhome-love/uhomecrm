@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
 import BrokerTechnicalSheet from "@/components/imoveis/BrokerTechnicalSheet";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 import { gerarSlugUhome } from "@/utils/imoveisFormat";
 import { toast } from "sonner";
@@ -610,7 +611,16 @@ export default function PropertyPreviewDrawer({
           )}
 
           {/* ── Ficha técnica do corretor (dados internos Jetimob) ── */}
-          <BrokerTechnicalSheet imovel={fullImovel} loading={origemLoading} />
+          <ErrorBoundary
+            module="imoveis-ficha-tecnica"
+            fallback={
+              <div className="rounded-xl border border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/10 p-3 text-[11px] text-muted-foreground">
+                Não foi possível carregar a ficha técnica deste imóvel. Os demais dados continuam disponíveis acima.
+              </div>
+            }
+          >
+            <BrokerTechnicalSheet imovel={fullImovel} loading={origemLoading} />
+          </ErrorBoundary>
         </div>
       </div>
 
