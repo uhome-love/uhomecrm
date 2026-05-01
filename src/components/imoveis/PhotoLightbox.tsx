@@ -150,7 +150,7 @@ const PhotoLightboxInner = forwardRef<HTMLDivElement, PhotoLightboxProps>(functi
     </div>,
     document.body
   );
-}
+});
 
 const PhotoLightbox = React.memo(PhotoLightboxInner);
 export default PhotoLightbox;
