@@ -23,12 +23,28 @@ import { requireAuth } from "../_shared/auth.ts";
 const SITE_URL = Deno.env.get("UHOMESITE_URL");
 const SITE_SERVICE_KEY = Deno.env.get("UHOMESITE_SERVICE_KEY");
 const PUBLIC_DOMAIN = "https://uhome.com.br";
+const FALLBACK_SITE_SUPABASE_URL = "https://huigglwvvzuwwyqvpmec.supabase.co";
+
+function resolveSiteBackendUrl() {
+  const raw = (SITE_URL || "").trim();
+  if (!raw) return FALLBACK_SITE_SUPABASE_URL;
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.hostname.endsWith(".supabase.co")) return raw;
+    console.warn("[vitrine-bridge] UHOMESITE_URL points to public domain, using backend fallback", { host: parsed.hostname });
+    return FALLBACK_SITE_SUPABASE_URL;
+  } catch {
+    console.warn("[vitrine-bridge] UHOMESITE_URL invalid, using backend fallback");
+    return FALLBACK_SITE_SUPABASE_URL;
+  }
+}
 
 function siteClient() {
-  if (!SITE_URL || !SITE_SERVICE_KEY) {
+  if (!SITE_SERVICE_KEY) {
     throw new Error("UHOMESITE_URL/UHOMESITE_SERVICE_KEY not configured");
   }
-  return createClient(SITE_URL, SITE_SERVICE_KEY, {
+  return createClient(resolveSiteBackendUrl(), SITE_SERVICE_KEY, {
     auth: { persistSession: false },
   });
 }
@@ -208,7 +224,7 @@ Deno.serve(async (req) => {
         .eq("id", id)
         .maybeSingle();
 
-      console.log("[vitrine-bridge] get_vitrine", { id, withSnapshotError: withSnapshot.error?.message, hasData: !!withSnapshot.data, siteUrl: SITE_URL });
+      console.log("[vitrine-bridge] get_vitrine", { id, withSnapshotError: withSnapshot.error?.message, hasData: !!withSnapshot.data, siteUrl: resolveSiteBackendUrl() });
       if (withSnapshot.error) {
         const fallback = await site
           .from("vitrines")
