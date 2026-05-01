@@ -60,7 +60,7 @@ function sanitizeShowcaseData(raw: any): ShowcaseData | null {
   if (!raw?.vitrine?.id) return null;
 
   const imoveis = Array.isArray(raw.imoveis)
-    ? raw.imoveis.map(sanitizeImovel).filter(Boolean) as ShowcaseImovel[]
+    ? raw.imoveis.map((it: any, idx: number) => sanitizeImovel(it, idx)).filter(Boolean) as ShowcaseImovel[]
     : [];
 
   return {
