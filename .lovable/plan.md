@@ -1,198 +1,106 @@
-Objetivo
-Estabilizar a página /imoveis inteira, corrigindo o crash atual do drawer, revisando mapa/busca/vitrine/dados internos, e depois validar o fluxo completo no preview até a tela ficar confiável para uso do corretor.
+## Objetivo
 
-Diagnóstico confirmado
-1. Bug crítico atual
-- Ao abrir o preview de um imóvel, a página quebra no drawer.
-- Erro real confirmado no preview/console:
-  "Objects are not valid as a React child (found: object with keys {id_tipologia, sigla_tipologia, nome_tipologia})"
-- Origem identificada: `BrokerTechnicalSheet.tsx` renderiza `tipologia` diretamente em `<Row value={tipologia} />`, mas em alguns imóveis `tipologia` vem como objeto, não como string.
+Refatorar completamente a página `/ranking` (`src/pages/RankingEquipe.tsx`), removendo as 5 abas atuais e substituindo por **4 novos rankings** com filtros unificados (equipe, corretor, período: dia/semana/mês/personalizado).
 
-2. Performance da página
-- A página está funcional, mas lenta para primeira pintura.
-- Métricas capturadas no preview:
-  - FCP ~9.3s
-  - DOMContentLoaded ~9.2s
-  - Full load ~9.3s
-- Gargalos mais evidentes:
-  - `mapbox-gl.js` ~534KB e ~2.6s de carregamento
-  - muitas requests paralelas de perfil/slug/estado do usuário
-  - mapa e listagem carregam juntos no primeiro render
-- CPU profile não mostrou um loop pesado isolado no app; o peso parece ser mais de carregamento inicial + Mapbox + múltiplas queries concorrentes.
+## Estrutura nova da página
 
-3. Mapa / busca por mapa
-- O mapa carrega e os controles aparecem.
-- "Desenhar área" abre corretamente e mostra feedback visual.
-- "Buscar ao mover" liga corretamente no UI.
-- Ainda falta validação funcional completa de:
-  - arrastar mapa e confirmar refresh por bounds
-  - clicar em cluster/pin e abrir preview corretamente
-  - comportamento do botão "Buscar nessa região" após movimento
-- A automação conseguiu confirmar presença dos controles, mas o crash do drawer interrompe a validação fim a fim.
+```text
+┌─ PageHeader: "Rankings" + tabs período (Dia | Semana | Mês | Personalizado)
+├─ Linha de filtros: [Equipe ▾] [Navegação semana/mês ◀ ▶] [DateRangePicker se custom]
+├─ Tabs rankings: [Presenças & Leads] [Pipeline Leads] [Visitas] [Pipeline Negócios]
+└─ Conteúdo do ranking ativo (tabela com todos corretores + medalhas top 3)
+```
 
-4. Vitrine
-- O envio de códigos da vitrine já foi corrigido antes e os logs mostram os códigos certos sendo enviados.
-- A bridge foi validada e já consegue criar vitrine com imóveis resolvidos quando recebe snapshot/códigos corretos.
-- Ainda falta retestar o fluxo completo pela UI após corrigir o drawer, para garantir:
-  - seleção no card
-  - seleção no drawer
-  - geração de link
-  - abertura do link público
-  - listagem em “Minhas Vitrines” sem regressão
+Visual: cards com `bg-card`, bordas `border-border`, medalhas 🥇🥈🥉 nos top 3, linhas com avatar + nome + métricas + score destacado em accent indigo. Responsivo, mesma estética do `CeoRankings.tsx` / `RankingGestaoLeads.tsx` (já consistente com o tema do CRM).
 
-5. Dados internos / corretor / imobiliária responsável
-- A seção existe e a modelagem está boa, mas hoje não é robusta o suficiente para payloads heterogêneos do Jetimob.
-- Risco já confirmado: campos estruturados podem vir como objeto e derrubar a renderização.
-- Isso provavelmente pode afetar não só `tipologia`, mas também outros campos semelhantes em payloads diferentes.
+## Os 4 rankings
 
-Plano de correção
-1. Blindar `BrokerTechnicalSheet` contra payloads heterogêneos
-- Normalizar `tipologia` antes de renderizar.
-- Aplicar o mesmo tratamento para qualquer campo que possa vir como:
-  - string
-  - número
-  - boolean
-  - objeto com `nome`, `descricao`, `sigla`, etc.
-  - array de objetos
-- Criar helpers locais de exibição segura, por exemplo:
-  - `safeText(value)`
-  - `safeBadgeText(value)`
-  - `safeListLabel(value)`
-- Garantir que nenhum `<Row>` receba objeto cru.
+### 1. Ranking Presenças & Leads
+**Fonte:** `roleta_credenciamentos` (status='aprovado') + `pipeline_leads` (created_at).
 
-2. Tornar o drawer resiliente
-- Manter o drawer aberto mesmo se algum bloco interno falhar.
-- Isolar melhor a ficha técnica para que erro em um campo não derrube toda a página.
-- Ajustar estados de loading/erro em:
-  - responsável/origem
-  - corretor responsável
-  - imobiliária responsável
-  - proprietário
-- Resultado esperado: ausência de campo nunca quebra UI; no máximo mostra “indisponível”.
+Colunas por corretor:
+- Presenças roleta diurna (janela = `manha` ou `tarde` ou `dia_todo`, dia útil)
+- Presenças roleta noturna (janela = `noturna`)
+- Presenças roleta domingo (data = domingo)
+- Leads recebidos no período (count `pipeline_leads` onde `corretor_id` = user no período)
 
-3. Revisar mapa e busca por bounds de ponta a ponta
-- Validar e corrigir o contrato entre:
-  - `SearchMapBox`
-  - `ImoveisPage`
-  - `fetchMapPinsRemote`
-  - `fetchSiteImoveisRemote`
-- Testar e ajustar:
-  - clique em cluster
-  - clique em pin
-  - preview aberto pelo mapa
-  - arrastar mapa + “Buscar nessa região”
-  - “Buscar ao mover”
-  - desenho de área e limpeza do desenho
-- Verificar se o fallback de pins por bairro não gera inconsistência com a lista.
+**Score:** quem tem mais **presenças totais** combinadas com leads recebidos. Fórmula:
+`score = (presenças_diurna + presenças_noturna*1.2 + presenças_domingo*1.5) * 10 + leads_recebidos`
+Ordenação por score desc.
 
-4. Reduzir latência percebida da página
-- Priorizar o conteúdo útil antes do mapa pesado.
-- Possíveis ajustes a implementar:
-  - lazy load do mapa/Mapbox após primeiro paint
-  - adiar montagem do mapa até a área estar visível
-  - reduzir consultas duplicadas de `slug_ref` e dados auxiliares por card/drawer
-  - revisar se hooks como `useBrokerSlug` estão disparando fetchs repetidos em massa
-- Objetivo: melhorar velocidade percebida sem reescrever a página.
+### 2. Ranking Pipeline de Leads
+**Fonte:** `pipeline_leads` + `pipeline_stages`.
 
-5. Revalidar vitrine pela UI
-- Após estabilizar drawer e mapa, retestar o fluxo completo:
-  - entrar em modo vitrine
-  - selecionar imóveis na grade
-  - gerar vitrine
-  - copiar link
-  - abrir link público
-  - checar se snapshot renderiza todos os imóveis
-- Se necessário, ajustar mensagens de sucesso/erro para deixar claro quando a criação foi parcial.
+Colunas por corretor:
+- Leads ativos (não arquivados, não em stage descarte/inativo)
+- Leads por etapa (Novo / Contato / Qualificado / Visita Marcada — chips compactos)
+- Média de leads desatualizados no mês (sem `ultima_acao_at` em ≥48h, calculado como média de snapshots diários ou contagem atual no período)
+- Descartes (count com motivo_descarte preenchido no período)
+- Aproveitamento entrada→negócio (%): `count(negocios criados a partir de pipeline_leads do corretor) / count(leads recebidos)`
 
-6. Conferir dados que o corretor precisa enxergar
-- Garantir no drawer:
-  - origem do imóvel
-  - status Jetimob
-  - corretor responsável
-  - classificação “próprio/parceiro”
-  - imobiliária responsável
-  - observações internas
-  - proprietário apenas para perfil autorizado
-- Revisar formatação para não exibir JSON cru ao usuário.
+**Score:** premia quem converte e mantém o CRM atualizado:
+`score = (aproveitamento% * 5) + (leads_ativos * 2) - (desatualizados_média * 3) - (descartes * 1)`
+Ordena desc.
 
-Validação final que vou executar após aprovação
-1. Desktop
-- abrir /imoveis
-- medir carregamento percebido
-- abrir drawer sem crash
-- expandir ficha técnica
-- validar responsável/origem/corretor/imobiliária
-- clicar em pin do mapa
-- mover mapa e buscar por região
-- desenhar área e buscar
-- gerar vitrine e abrir link público
+### 3. Ranking Visitas
+**Fonte:** `visitas` no período (filtra por `data_visita`).
 
-2. Mobile
-- abrir /imoveis em viewport móvel
-- validar mapa/lista/barra inferior
-- abrir drawer
-- testar seleção e vitrine
-- confirmar que dados internos continuam acessíveis sem quebrar layout
+Colunas por corretor:
+- Visitas criadas (count total)
+- Visitas realizadas (status='realizada')
+- No-show (status='no_show')
 
-Sugestões de funcionalidades novas
-1. Painel de confiabilidade do imóvel
-- selo visual no card/drawer mostrando qualidade do cadastro:
-  - fotos ok
-  - coordenadas ok
-  - corretor ok
-  - origem ok
-  - dados internos completos
-- ajuda o corretor a priorizar imóveis mais vendáveis.
+**Score:** `criadas * 1 + realizadas * 2`. Ordena desc.
 
-2. Modo “mapa inteligente para corretor”
-- destacar no mapa imóveis:
-  - próprios Uhome
-  - parceiros
-  - anúncio novo
-  - com melhor comissão/peso comercial
-- isso transforma o mapa em ferramenta comercial, não só busca.
+### 4. Ranking Pipeline de Negócios
+**Fonte:** `negocios` no período (`created_at` para criados; `data_assinatura` para assinados; `fase`/`status` para caídos).
 
-3. Vitrine com contexto comercial rápido
-- ao selecionar imóvel para vitrine, mostrar mini-resumo:
-  - faixa de preço
-  - tipo de imóvel
-  - bairros cobertos
-  - quantos são próprios vs parceiros
-- melhora muito o controle antes de gerar o link.
+Colunas por corretor:
+- Negócios criados (count)
+- Negócios caídos (renomear "distratos" → **"Negócios caídos"**: `status = 'distrato'` ou fase equivalente)
+- Negócios assinados (`fase = 'vendido'` e `data_assinatura` no período)
+- VGV total assinado (sum `vgv_final` dos assinados)
 
-4. Insights do imóvel no drawer
-- bloco curto tipo “oportunidade comercial” com sinais como:
-  - recém-publicado
-  - sem corretor local
-  - parceiro
-  - faixa de preço atrativa
-  - bairro com alta oferta
-- útil para priorização pelo corretor.
+**Score / ordenação:** por **VGV assinado** desc.
 
-5. Camada de mapa por estratégia
-- filtros rápidos no mapa:
-  - só próprios
-  - só parceiros
-  - só novos
-  - só com tour/vídeo
-  - só com financiamento
-- isso tende a aumentar a usabilidade mais do que adicionar mais filtros no topo.
+## Filtros
 
-Detalhes técnicos
-- Arquivos mais prováveis da correção:
-  - `src/components/imoveis/BrokerTechnicalSheet.tsx`
-  - `src/components/imoveis/PropertyPreviewDrawer.tsx`
-  - `src/components/imoveis/SearchMapBox.tsx`
-  - `src/pages/ImoveisPage.tsx`
-  - `src/hooks/useBrokerSlug.ts`
-  - `src/services/siteImoveisRemote.ts`
-  - `src/utils/imoveisFormat.ts`
-- Não há necessidade inicial de migration de banco.
-- A prioridade imediata é corrigir o crash do drawer, depois fechar a auditoria funcional completa do mapa e da vitrine.
+Componente reutilizado/estilo do `ReportFilters.tsx`:
+- Período: chips Dia / Semana / Mês / Personalizado (já existe na página atual)
+- Equipe (gerente): dropdown carregado de `team_members` (admin vê todas; gestor vê só a sua, fixa)
+- Corretor opcional: dropdown filtrado pela equipe escolhida (destaca a linha)
+- Navegação ◀ ▶ semana/mês mantida
 
-Resultado esperado final
-- A página /imoveis deixa de quebrar ao abrir preview.
-- O corretor consegue ver dados internos com segurança.
-- O mapa fica confiável para busca por região.
-- A vitrine funciona de ponta a ponta pela UI.
-- A página fica perceptivelmente mais rápida e estável.
+Filtros aplicados a TODAS as 4 abas via contexto local (hook `useRankingFilters`).
+
+## Arquivos
+
+**Refatorar:**
+- `src/pages/RankingEquipe.tsx` — reescrever do zero, mantendo somente PageHeader e estrutura de período.
+
+**Criar:**
+- `src/hooks/useRankingsData.ts` — hook único com 4 funções/queries que recebem `{ dateRange, equipeId, corretorId }` e retornam dados agregados por corretor. Usa Supabase + agregação client-side. Resolve nomes via `profiles`.
+- `src/components/ranking/v2/RankingPresencasLeads.tsx`
+- `src/components/ranking/v2/RankingPipelineLeads.tsx`
+- `src/components/ranking/v2/RankingVisitas.tsx`
+- `src/components/ranking/v2/RankingNegocios.tsx`
+- `src/components/ranking/v2/RankingTable.tsx` — tabela genérica com colunas configuráveis, medalhas top 3, linha "você" destacada, loading/empty states.
+- `src/components/ranking/v2/RankingFilters.tsx` — barra de filtros (equipe + corretor) acima das tabs.
+
+**Remover (não mais usados pela página):**
+- Imports de `RankingOfertaAtivaTab`, `RankingVGVTab`, `RankingGestaoLeadsTab`, `RankingGeralTab`, `RankingEficienciaTab`, `RankingExplanation`, `RankingStreaksBadges` da página `RankingEquipe.tsx`. Os arquivos componentes ficam no repo (podem ser usados em outros lugares — a verificar antes de deletar; se não usados, deleto).
+
+## Detalhes técnicos
+
+- **Timezone BRT** ao construir intervalos (regra do projeto). Reaproveitar lógica de `dateRange` já existente.
+- **Queries**: paralelizar via `Promise.all`. Limitar a corretores com `cargo='corretor'` em `profiles` (e filtrar por `team_members` quando equipe selecionada).
+- **Equipe do gestor**: usar `useUserRole` — se `gestor`, força equipeId = user.id e oculta dropdown.
+- **Performance**: cada aba só dispara sua query quando ativa (lazy). Cache em memória por chave de filtros.
+- **Estilo**: classes do design system (`bg-card`, `text-foreground`, `border-border`, accents `text-primary`); medalhas e barras de progresso para a coluna principal de cada ranking.
+
+## Validação
+
+- Admin vê todos os corretores em todas as abas.
+- Gestor vê apenas seu time.
+- Corretor vê o ranking completo da própria equipe, com sua linha destacada.
+- Trocar período recalcula tudo; navegar ◀ ▶ semana/mês funciona.
