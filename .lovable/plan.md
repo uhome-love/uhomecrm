@@ -1,106 +1,96 @@
 ## Objetivo
 
-Refatorar completamente a página `/ranking` (`src/pages/RankingEquipe.tsx`), removendo as 5 abas atuais e substituindo por **4 novos rankings** com filtros unificados (equipe, corretor, período: dia/semana/mês/personalizado).
+Unificar as 3 páginas redundantes em **uma única Central de Relatórios** (`/central-relatorios`), mantendo todas as funcionalidades: dashboard executivo (semanal/mensal), relatórios temáticos por tab e relatórios 1:1 por corretor (com IA). CEO vê tudo da empresa; Gerente vê tudo da própria equipe; Corretor mantém acesso ao próprio "Relatório Semanal" via tab restrita.
 
-## Estrutura nova da página
+## Estado atual (3 páginas)
+
+| Rota | Página | Função |
+|---|---|---|
+| `/central-relatorios` | `ReportCenter.tsx` | Tabs temáticas (Vendas, Leads, Visitas, Negócios, OA, Conversão, Empreendimentos, Origem, Interação, Tarefas, Mega) com filtros + export PDF |
+| `/relatorio-semanal` | `RelatorioSemanal.tsx` | Dashboard executivo: 10 KPIs, comparativos, gráficos, drilldown por corretor/equipe |
+| `/relatorios` | `RelatorioCorretor.tsx` | Relatórios 1:1 com IA por corretor — geração manual + auto, histórico salvo |
+
+## Estrutura nova (uma página)
+
+`/central-relatorios` vira a **Central** com 3 grupos de tabs no topo:
 
 ```text
-┌─ PageHeader: "Rankings" + tabs período (Dia | Semana | Mês | Personalizado)
-├─ Linha de filtros: [Equipe ▾] [Navegação semana/mês ◀ ▶] [DateRangePicker se custom]
-├─ Tabs rankings: [Presenças & Leads] [Pipeline Leads] [Visitas] [Pipeline Negócios]
-└─ Conteúdo do ranking ativo (tabela com todos corretores + medalhas top 3)
+┌─────────────────────────────────────────────────────────────────┐
+│ Central de Relatórios                          [Exportar PDF ▾] │
+│                                                                  │
+│  ┌─ Visão ─────────────────┐ ┌─ Área ──────┐                    │
+│  │ Executivo  Temáticos  1:1│ │ Empresa │ Equipe │ Eu           │
+│  └─────────────────────────┘ └─────────────┘                    │
+│                                                                  │
+│  [Filtros: Período · Equipe · Corretor · Segmento]              │
+│                                                                  │
+│  Conteúdo da visão ativa                                         │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-Visual: cards com `bg-card`, bordas `border-border`, medalhas 🥇🥈🥉 nos top 3, linhas com avatar + nome + métricas + score destacado em accent indigo. Responsivo, mesma estética do `CeoRankings.tsx` / `RankingGestaoLeads.tsx` (já consistente com o tema do CRM).
+### Visão "Executivo"
+Conteúdo de `RelatorioSemanal` (KPIs, gráficos, drilldown). Default para todos.
 
-## Os 4 rankings
+### Visão "Temáticos"
+Sub-tabs atuais do `ReportCenter`: Vendas / Leads / Negócios / Oferta Ativa / Conversão / Empreendimentos / Origem / Interação / Visitas / Tarefas / ✦ Mega.
 
-### 1. Ranking Presenças & Leads
-**Fonte:** `roleta_credenciamentos` (status='aprovado') + `pipeline_leads` (created_at).
+### Visão "1:1 Corretor"
+Conteúdo de `RelatorioCorretor` (geração manual + auto + histórico, com IA).
 
-Colunas por corretor:
-- Presenças roleta diurna (janela = `manha` ou `tarde` ou `dia_todo`, dia útil)
-- Presenças roleta noturna (janela = `noturna`)
-- Presenças roleta domingo (data = domingo)
-- Leads recebidos no período (count `pipeline_leads` onde `corretor_id` = user no período)
+### Filtro "Área" (escopo)
+- **Empresa** (admin/CEO): todos os corretores e equipes
+- **Equipe** (gestor padrão; admin pode escolher uma equipe): apenas a equipe selecionada
+- **Eu** (corretor): apenas próprios dados (visível só na visão Executivo, único acesso para corretor)
 
-**Score:** quem tem mais **presenças totais** combinadas com leads recebidos. Fórmula:
-`score = (presenças_diurna + presenças_noturna*1.2 + presenças_domingo*1.5) * 10 + leads_recebidos`
-Ordenação por score desc.
-
-### 2. Ranking Pipeline de Leads
-**Fonte:** `pipeline_leads` + `pipeline_stages`.
-
-Colunas por corretor:
-- Leads ativos (não arquivados, não em stage descarte/inativo)
-- Leads por etapa (Novo / Contato / Qualificado / Visita Marcada — chips compactos)
-- Média de leads desatualizados no mês (sem `ultima_acao_at` em ≥48h, calculado como média de snapshots diários ou contagem atual no período)
-- Descartes (count com motivo_descarte preenchido no período)
-- Aproveitamento entrada→negócio (%): `count(negocios criados a partir de pipeline_leads do corretor) / count(leads recebidos)`
-
-**Score:** premia quem converte e mantém o CRM atualizado:
-`score = (aproveitamento% * 5) + (leads_ativos * 2) - (desatualizados_média * 3) - (descartes * 1)`
-Ordena desc.
-
-### 3. Ranking Visitas
-**Fonte:** `visitas` no período (filtra por `data_visita`).
-
-Colunas por corretor:
-- Visitas criadas (count total)
-- Visitas realizadas (status='realizada')
-- No-show (status='no_show')
-
-**Score:** `criadas * 1 + realizadas * 2`. Ordena desc.
-
-### 4. Ranking Pipeline de Negócios
-**Fonte:** `negocios` no período (`created_at` para criados; `data_assinatura` para assinados; `fase`/`status` para caídos).
-
-Colunas por corretor:
-- Negócios criados (count)
-- Negócios caídos (renomear "distratos" → **"Negócios caídos"**: `status = 'distrato'` ou fase equivalente)
-- Negócios assinados (`fase = 'vendido'` e `data_assinatura` no período)
-- VGV total assinado (sum `vgv_final` dos assinados)
-
-**Score / ordenação:** por **VGV assinado** desc.
-
-## Filtros
-
-Componente reutilizado/estilo do `ReportFilters.tsx`:
-- Período: chips Dia / Semana / Mês / Personalizado (já existe na página atual)
-- Equipe (gerente): dropdown carregado de `team_members` (admin vê todas; gestor vê só a sua, fixa)
-- Corretor opcional: dropdown filtrado pela equipe escolhida (destaca a linha)
-- Navegação ◀ ▶ semana/mês mantida
-
-Filtros aplicados a TODAS as 4 abas via contexto local (hook `useRankingFilters`).
+Permissões:
+- Admin/CEO: tudo, default Empresa.
+- Gestor: tudo, default Equipe (sua), pode trocar entre equipes que gerencia (na prática só a dele).
+- Corretor: somente Visão "Executivo" + Área "Eu" (preserva o atual `/relatorio-semanal` do corretor). Outras visões ficam ocultas.
 
 ## Arquivos
 
 **Refatorar:**
-- `src/pages/RankingEquipe.tsx` — reescrever do zero, mantendo somente PageHeader e estrutura de período.
+- `src/pages/ReportCenter.tsx` — reescrever para hospedar as 3 visões com seletor de visão e área. Reaproveita componentes existentes em `src/components/relatorios/*` e `src/components/relatorio/*`.
 
-**Criar:**
-- `src/hooks/useRankingsData.ts` — hook único com 4 funções/queries que recebem `{ dateRange, equipeId, corretorId }` e retornam dados agregados por corretor. Usa Supabase + agregação client-side. Resolve nomes via `profiles`.
-- `src/components/ranking/v2/RankingPresencasLeads.tsx`
-- `src/components/ranking/v2/RankingPipelineLeads.tsx`
-- `src/components/ranking/v2/RankingVisitas.tsx`
-- `src/components/ranking/v2/RankingNegocios.tsx`
-- `src/components/ranking/v2/RankingTable.tsx` — tabela genérica com colunas configuráveis, medalhas top 3, linha "você" destacada, loading/empty states.
-- `src/components/ranking/v2/RankingFilters.tsx` — barra de filtros (equipe + corretor) acima das tabs.
+**Mover lógica para componentes (sem perder código):**
+- Criar `src/components/relatorios/ExecutivoView.tsx` — extrai o corpo de `RelatorioSemanal.tsx` (KPIs, gráficos, drilldown) recebendo `{ scope: 'empresa' | 'equipe' | 'eu', equipeId?, corretorId?, period }` em vez de gerenciar URL.
+- Criar `src/components/relatorios/UmAUmView.tsx` — extrai o corpo de `RelatorioCorretor.tsx` (geração 1:1 manual + auto + histórico) recebendo escopo de equipe.
+- Criar `src/components/relatorios/TematicosView.tsx` — encapsula o switch de tabs temáticas atual (Vendas, Leads, etc.).
 
-**Remover (não mais usados pela página):**
-- Imports de `RankingOfertaAtivaTab`, `RankingVGVTab`, `RankingGestaoLeadsTab`, `RankingGeralTab`, `RankingEficienciaTab`, `RankingExplanation`, `RankingStreaksBadges` da página `RankingEquipe.tsx`. Os arquivos componentes ficam no repo (podem ser usados em outros lugares — a verificar antes de deletar; se não usados, deleto).
+**Manter compatibilidade de rotas (redirects):**
+- `/relatorio-semanal` → `/central-relatorios?visao=executivo`
+- `/relatorios` → `/central-relatorios?visao=1a1`
+- Implementado via componente `<Navigate replace>` registrado no `pageRegistry.ts` ou rota dedicada em `App.tsx`. (Conforme regra do projeto: redirect-first para legacy paths.)
+
+**Sidebar (`src/components/layout/Sidebar.tsx`):**
+- Remover entradas duplicadas: "Relatório semanal" (linha 52), "Relatórios 1:1" (linhas 81 e 148).
+- Manter somente **"Central Relatórios"** apontando para `/central-relatorios` (uma para cada role).
+- Para corretor: substituir "Relatório semanal" por "Meu relatório" → `/central-relatorios?visao=executivo&area=eu`.
+
+**Page Registry (`src/config/pageRegistry.ts`):**
+- Remover `relatorios` e `relatorio-semanal` das definições de rota; deixar apenas `report-center` em `/central-relatorios`.
+- Adicionar `roles: ["admin","gestor","corretor"]` para permitir corretor (acesso restrito por área dentro da página).
+- Adicionar redirect entries para os paths antigos.
+
+**Atualizar referências externas:**
+- `src/pages/CeoDashboard.tsx:891` — trocar `navigate("/relatorio-semanal")` por `navigate("/central-relatorios?visao=executivo")`.
+
+**Deletar arquivos antigos** (somente após confirmar zero referências):
+- `src/pages/RelatorioSemanal.tsx`
+- `src/pages/RelatorioCorretor.tsx`
 
 ## Detalhes técnicos
 
-- **Timezone BRT** ao construir intervalos (regra do projeto). Reaproveitar lógica de `dateRange` já existente.
-- **Queries**: paralelizar via `Promise.all`. Limitar a corretores com `cargo='corretor'` em `profiles` (e filtrar por `team_members` quando equipe selecionada).
-- **Equipe do gestor**: usar `useUserRole` — se `gestor`, força equipeId = user.id e oculta dropdown.
-- **Performance**: cada aba só dispara sua query quando ativa (lazy). Cache em memória por chave de filtros.
-- **Estilo**: classes do design system (`bg-card`, `text-foreground`, `border-border`, accents `text-primary`); medalhas e barras de progresso para a coluna principal de cada ranking.
+- Estado da Central via `useSearchParams`: `?visao=executivo|tematicos|1a1&area=empresa|equipe|eu&tab=...&periodo=...&de=...&ate=...&equipe=...&corretor=...&segmento=...`. Permite link compartilhável.
+- Os componentes `RelatorioSemanal` e `RelatorioCorretor` hoje gerenciam seu próprio estado de período/escopo internamente — ao extrair em `ExecutivoView` e `UmAUmView`, expor props para receber filtros do pai e fazer fallback para os internos quando ausentes (não quebrar lógica existente).
+- Export PDF (lógica já existente no `ReportCenter`) generaliza-se: cada view expõe um id raiz (`#exec-content`, `#tematicos-content`, `#um-a-um-content`) e o handler decide qual capturar conforme a visão ativa.
+- BRT timezone preservado (regra do projeto), cálculos vindos de `useRelatorioExecutivo` continuam idênticos.
+- Não tocar nas Edge Functions de geração de relatórios IA.
 
 ## Validação
 
-- Admin vê todos os corretores em todas as abas.
-- Gestor vê apenas seu time.
-- Corretor vê o ranking completo da própria equipe, com sua linha destacada.
-- Trocar período recalcula tudo; navegar ◀ ▶ semana/mês funciona.
+- CEO entra em `/central-relatorios` → vê Executivo da Empresa por padrão; consegue alternar para Temáticos e 1:1.
+- Gerente vê tudo, mas sempre escopado à própria equipe.
+- Corretor entra → só vê visão Executivo · Eu; outras tabs ocultas.
+- URLs antigas `/relatorio-semanal` e `/relatorios` redirecionam preservando intenção.
+- Botão Exportar PDF funciona em todas as 3 visões.

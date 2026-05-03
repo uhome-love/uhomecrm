@@ -89,6 +89,8 @@ const App = () => (
               <Route path="/gestao" element={<Navigate to="/gerente/dashboard" replace />} />
               <Route path="/index" element={<Navigate to="/" replace />} />
               <Route path="/index.html" element={<Navigate to="/" replace />} />
+              <Route path="/relatorio-semanal" element={<Navigate to="/central-relatorios?visao=executivo" replace />} />
+              <Route path="/relatorios" element={<Navigate to="/central-relatorios?visao=um-a-um" replace />} />
 
               {/* All authenticated routes — rendered via Chrome-style tab system */}
               <Route path="/*" element={

@@ -49,7 +49,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Principal",
       items: [
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Relatório semanal",  path: "/relatorio-semanal", icon: <FileText     size={15} strokeWidth={1.5} /> },
+        { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2     size={15} strokeWidth={1.5} /> },
         { label: "WhatsApp Inbox",     path: "/whatsapp",              icon: <MessageSquare size={15} strokeWidth={1.5} /> },
         { label: "Gestão WhatsApp",    path: "/gestor/whatsapp-dashboard", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
       ],
@@ -78,7 +78,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Rankings",           path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
         { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
-        { label: "Relatórios 1:1",     path: "/relatorios",        icon: <FileText     size={15} strokeWidth={1.5} /> },
         { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Star         size={15} strokeWidth={1.5} /> },
       ],
     },
@@ -145,7 +144,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Rankings",           path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
         { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
-        { label: "Relatórios 1:1",     path: "/relatorios",        icon: <FileText     size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -194,6 +192,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Progresso",          path: "/progresso",         icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Rankings",           path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
+        { label: "Meu relatório",      path: "/central-relatorios", icon: <BarChart2    size={15} strokeWidth={1.5} /> },
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
         { label: "Scripts",            path: "/scripts",           icon: <Lightbulb    size={15} strokeWidth={1.5} /> },
       ],

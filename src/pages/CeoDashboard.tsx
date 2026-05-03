@@ -888,7 +888,7 @@ export default function CeoDashboard() {
                   <span>VGV em risco (parados &gt;15d): {formatBRLCompact(vgvEmRisco)}</span>
                 </div>
               )}
-              <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20 mt-2" onClick={() => navigate("/relatorio-semanal")}>
+              <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20 mt-2" onClick={() => navigate("/central-relatorios?visao=executivo")}>
                 Ver Relatório Geral
               </Button>
             </CardContent>
