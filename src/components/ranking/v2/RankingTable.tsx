@@ -23,7 +23,7 @@ interface Props<T extends { user_id: string; nome: string; gerente_nome?: string
 const medals = ["🥇", "🥈", "🥉"];
 
 export default function RankingTable<T extends { user_id: string; nome: string; gerente_nome?: string | null }>({
-  rows, loading, columns, scoreLabel, scoreRender, highlightUserId, emptyText = "Sem dados no período",
+  rows, loading, columns, primaryLabel, primaryRender, highlightUserId, emptyText = "Sem dados no período", caption,
 }: Props<T>) {
   if (loading) {
     return <div className="p-12 text-center text-muted-foreground text-sm">Carregando ranking...</div>;
