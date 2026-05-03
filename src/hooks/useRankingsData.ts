@@ -31,7 +31,7 @@ async function fetchCorretores(filters: RankingFilters): Promise<CorretorBase[]>
     .from("profiles")
     .select("user_id, nome")
     .in("user_id", [...userIds, ...gerenteIds]);
-  const nameMap = new Map((profs || []).map(p => [p.user_id, p.nome || "—"]));
+  const nameMap = new Map<string, string>((profs || []).map(p => [p.user_id as string, (p.nome as string) || "—"]));
   return userIds.map(uid => {
     const link = (tm || []).find(t => t.user_id === uid);
     return {
@@ -39,7 +39,7 @@ async function fetchCorretores(filters: RankingFilters): Promise<CorretorBase[]>
       nome: nameMap.get(uid) || "—",
       gerente_id: link?.gerente_id || null,
       gerente_nome: link?.gerente_id ? (nameMap.get(link.gerente_id) || null) : null,
-    };
+    } as CorretorBase;
   });
 }
 
