@@ -37,6 +37,7 @@ interface Props {
 
 interface NegocioExtended extends Negocio {
   unidade?: string | null;
+  data_assinatura?: string | null;
   imovel_interesse?: string | null;
   proposta_imovel?: string | null;
   proposta_valor?: number | null;
