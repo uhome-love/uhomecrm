@@ -99,7 +99,7 @@ export default function RankingTable<T extends { user_id: string; nome: string; 
                   ))}
                   <td className="px-3 py-2.5 text-right">
                     <span className="inline-flex items-center justify-center min-w-[60px] px-2.5 py-1 rounded-md bg-primary/10 text-primary font-display font-bold text-sm">
-                      {scoreRender(row)}
+                      {primaryRender(row)}
                     </span>
                   </td>
                 </motion.tr>
