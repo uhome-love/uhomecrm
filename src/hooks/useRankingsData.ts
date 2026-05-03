@@ -15,12 +15,11 @@ export interface CorretorBase {
   gerente_nome?: string | null;
 }
 
-// ------- Helpers -------
+// ------- Helpers (BRT timezone) -------
 function toIsoStart(d?: string) { return d ? `${d}T00:00:00-03:00` : undefined; }
 function toIsoEnd(d?: string) { return d ? `${d}T23:59:59-03:00` : undefined; }
 
 async function fetchCorretores(filters: RankingFilters): Promise<CorretorBase[]> {
-  // Determine eligible user_ids via team_members (active). If equipe selected, filter by gerente.
   let q = supabase.from("team_members").select("user_id, gerente_id").eq("status", "ativo");
   if (filters.equipeId) q = q.eq("gerente_id", filters.equipeId);
   const { data: tm } = await q;
@@ -48,8 +47,8 @@ export interface PresencasLeadsRow extends CorretorBase {
   presencas_diurna: number;
   presencas_noturna: number;
   presencas_domingo: number;
+  presencas_total: number;
   leads_recebidos: number;
-  score: number;
 }
 
 async function fetchPresencasLeads(filters: RankingFilters, corretores: CorretorBase[]): Promise<PresencasLeadsRow[]> {
@@ -58,20 +57,20 @@ async function fetchPresencasLeads(filters: RankingFilters, corretores: Corretor
   const start = filters.start;
   const end = filters.end;
 
-  const credsQ = supabase
+  let credsQ = supabase
     .from("roleta_credenciamentos")
     .select("auth_user_id, data, janela, status")
     .eq("status", "aprovado")
     .in("auth_user_id", ids);
-  if (start) credsQ.gte("data", start);
-  if (end) credsQ.lte("data", end);
+  if (start) credsQ = credsQ.gte("data", start);
+  if (end) credsQ = credsQ.lte("data", end);
 
-  const leadsQ = supabase
+  let leadsQ = supabase
     .from("pipeline_leads")
     .select("corretor_id, created_at")
     .in("corretor_id", ids);
-  if (start) leadsQ.gte("created_at", toIsoStart(start)!);
-  if (end) leadsQ.lte("created_at", toIsoEnd(end)!);
+  if (start) leadsQ = leadsQ.gte("created_at", toIsoStart(start)!);
+  if (end) leadsQ = leadsQ.lte("created_at", toIsoEnd(end)!);
 
   const [credsRes, leadsRes] = await Promise.all([credsQ, leadsQ]);
   const creds = credsRes.data || [];
@@ -81,17 +80,25 @@ async function fetchPresencasLeads(filters: RankingFilters, corretores: Corretor
     const myCreds = creds.filter(x => x.auth_user_id === c.user_id);
     let diurna = 0, noturna = 0, domingo = 0;
     myCreds.forEach(cr => {
-      const d = new Date(cr.data + "T12:00:00-03:00");
+      // BRT date
+      const d = new Date((cr.data as string) + "T12:00:00-03:00");
       const isSunday = d.getDay() === 0;
       if (isSunday) domingo++;
       else if (cr.janela === "noturna") noturna++;
-      else diurna++;
+      else diurna++; // manha, tarde, dia_todo
     });
     const leadsCount = leads.filter(l => l.corretor_id === c.user_id).length;
-    const score = Math.round((diurna + noturna * 1.2 + domingo * 1.5) * 10 + leadsCount);
-    return { ...c, presencas_diurna: diurna, presencas_noturna: noturna, presencas_domingo: domingo, leads_recebidos: leadsCount, score };
+    return {
+      ...c,
+      presencas_diurna: diurna,
+      presencas_noturna: noturna,
+      presencas_domingo: domingo,
+      presencas_total: diurna + noturna + domingo,
+      leads_recebidos: leadsCount,
+    };
   });
-  return rows.sort((a, b) => b.score - a.score);
+  // Order: leads DESC, total presenças DESC
+  return rows.sort((a, b) => b.leads_recebidos - a.leads_recebidos || b.presencas_total - a.presencas_total);
 }
 
 // ====== 2. Pipeline de Leads ======
@@ -102,43 +109,25 @@ export interface PipelineLeadsRow extends CorretorBase {
   qualificado: number;
   visita_marcada: number;
   desatualizados: number;
-  descartes: number;
-  recebidos: number;
-  negocios_criados: number;
-  aproveitamento: number; // %
-  score: number;
 }
 
-const STAGE_NOVO = ["d3843b2f-2fa1-4c31-9129-4eb0ed21f019"]; // Novo Lead
-const STAGE_CONTATO = ["8e2a3285-70f9-438d-be2d-13b0bf4610c4"]; // Contato Iniciado
-const STAGE_QUALIF = ["1ea43190-44c8-43ec-91b4-409b055b0e58"]; // Qualificação
-const STAGE_VISITA_MARCADA = ["c9fcf0ad-dcab-4575-b91f-3f76610e4d44"]; // Visita Marcada
-const STAGE_DESCARTE = ["1dd66c25-3848-4053-9f66-82e902989b4d"]; // Descarte
+const STAGE_NOVO = ["d3843b2f-2fa1-4c31-9129-4eb0ed21f019"];
+const STAGE_CONTATO = ["8e2a3285-70f9-438d-be2d-13b0bf4610c4"];
+const STAGE_QUALIF = ["1ea43190-44c8-43ec-91b4-409b055b0e58"];
+const STAGE_VISITA_MARCADA = ["c9fcf0ad-dcab-4575-b91f-3f76610e4d44"];
+const STAGE_DESCARTE = ["1dd66c25-3848-4053-9f66-82e902989b4d"];
 
-async function fetchPipelineLeads(filters: RankingFilters, corretores: CorretorBase[]): Promise<PipelineLeadsRow[]> {
+async function fetchPipelineLeads(_filters: RankingFilters, corretores: CorretorBase[]): Promise<PipelineLeadsRow[]> {
   const ids = corretores.map(c => c.user_id);
   if (ids.length === 0) return [];
-  const start = filters.start;
-  const end = filters.end;
 
-  // Active leads (current snapshot, not archived, not in descarte)
-  const activeQ = supabase
+  // Snapshot atual (não filtra por período — pipeline é estado corrente)
+  const { data } = await supabase
     .from("pipeline_leads")
-    .select("corretor_id, stage_id, ultima_acao_at, motivo_descarte, created_at, negocio_id")
+    .select("corretor_id, stage_id, ultima_acao_at")
     .in("corretor_id", ids)
     .eq("arquivado", false);
-
-  // Received in period
-  const receivedQ = supabase
-    .from("pipeline_leads")
-    .select("corretor_id, motivo_descarte, negocio_id, updated_at")
-    .in("corretor_id", ids);
-  if (start) receivedQ.gte("created_at", toIsoStart(start)!);
-  if (end) receivedQ.lte("created_at", toIsoEnd(end)!);
-
-  const [activeRes, recRes] = await Promise.all([activeQ, receivedQ]);
-  const active = activeRes.data || [];
-  const received = recRes.data || [];
+  const active = data || [];
 
   const now = Date.now();
   const STALE_MS = 48 * 60 * 60 * 1000;
@@ -154,45 +143,41 @@ async function fetchPipelineLeads(filters: RankingFilters, corretores: CorretorB
       const t = l.ultima_acao_at ? new Date(l.ultima_acao_at).getTime() : 0;
       return now - t > STALE_MS;
     }).length;
-    const myReceived = received.filter(l => l.corretor_id === c.user_id);
-    const recebidos = myReceived.length;
-    const descartes = myReceived.filter(l => !!l.motivo_descarte).length;
-    const negocios_criados = myReceived.filter(l => !!l.negocio_id).length;
-    const aproveitamento = recebidos > 0 ? Math.round((negocios_criados / recebidos) * 1000) / 10 : 0;
-    const score = Math.round(aproveitamento * 5 + ativos * 2 - desatualizados * 3 - descartes * 1);
-    return { ...c, ativos, novo, contato, qualificado, visita_marcada, desatualizados, descartes, recebidos, negocios_criados, aproveitamento, score };
+    return { ...c, ativos, novo, contato, qualificado, visita_marcada, desatualizados };
   });
-  return rows.sort((a, b) => b.score - a.score);
+  // Order: ativos DESC, desatualizados ASC (menos = melhor)
+  return rows.sort((a, b) => b.ativos - a.ativos || a.desatualizados - b.desatualizados);
 }
 
 // ====== 3. Visitas ======
 export interface VisitasRow extends CorretorBase {
   criadas: number;
   realizadas: number;
+  marcadas: number;
   no_show: number;
-  score: number;
 }
 
 async function fetchVisitas(filters: RankingFilters, corretores: CorretorBase[]): Promise<VisitasRow[]> {
   const ids = corretores.map(c => c.user_id);
   if (ids.length === 0) return [];
-  const q = supabase
+  let q = supabase
     .from("visitas")
     .select("corretor_id, status, data_visita")
     .in("corretor_id", ids);
-  if (filters.start) q.gte("data_visita", filters.start);
-  if (filters.end) q.lte("data_visita", filters.end);
+  if (filters.start) q = q.gte("data_visita", filters.start);
+  if (filters.end) q = q.lte("data_visita", filters.end);
   const { data } = await q;
   const list = data || [];
   const rows: VisitasRow[] = corretores.map(c => {
     const mine = list.filter(v => v.corretor_id === c.user_id);
     const criadas = mine.length;
     const realizadas = mine.filter(v => v.status === "realizada").length;
+    const marcadas = mine.filter(v => v.status === "marcada" || v.status === "reagendada").length;
     const no_show = mine.filter(v => v.status === "no_show").length;
-    const score = criadas * 1 + realizadas * 2;
-    return { ...c, criadas, realizadas, no_show, score };
+    return { ...c, criadas, realizadas, marcadas, no_show };
   });
-  return rows.sort((a, b) => b.score - a.score);
+  // Order: realizadas DESC, criadas DESC
+  return rows.sort((a, b) => b.realizadas - a.realizadas || b.criadas - a.criadas);
 }
 
 // ====== 4. Negócios ======
@@ -209,31 +194,31 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
   const start = filters.start;
   const end = filters.end;
 
-  // Created in period
-  const createdQ = supabase
+  // Criados no período (created_at)
+  let createdQ = supabase
     .from("negocios")
     .select("corretor_id, created_at")
     .in("corretor_id", ids);
-  if (start) createdQ.gte("created_at", toIsoStart(start)!);
-  if (end) createdQ.lte("created_at", toIsoEnd(end)!);
+  if (start) createdQ = createdQ.gte("created_at", toIsoStart(start)!);
+  if (end) createdQ = createdQ.lte("created_at", toIsoEnd(end)!);
 
-  // Distratos in period (use updated_at as proxy)
-  const distratoQ = supabase
+  // Caídos (distrato) no período — usa fase_changed_at
+  let distratoQ = supabase
     .from("negocios")
-    .select("corretor_id, updated_at, fase")
+    .select("corretor_id, fase_changed_at, fase")
     .in("corretor_id", ids)
     .eq("fase", "distrato");
-  if (start) distratoQ.gte("updated_at", toIsoStart(start)!);
-  if (end) distratoQ.lte("updated_at", toIsoEnd(end)!);
+  if (start) distratoQ = distratoQ.gte("fase_changed_at", toIsoStart(start)!);
+  if (end) distratoQ = distratoQ.lte("fase_changed_at", toIsoEnd(end)!);
 
-  // Signed: data_assinatura in period
-  const signedQ = supabase
+  // Assinados (vendido) — usa data_assinatura (canônico)
+  let signedQ = supabase
     .from("negocios")
     .select("corretor_id, vgv_final, data_assinatura, fase")
     .in("corretor_id", ids)
     .eq("fase", "vendido");
-  if (start) signedQ.gte("data_assinatura", start);
-  if (end) signedQ.lte("data_assinatura", end);
+  if (start) signedQ = signedQ.gte("data_assinatura", start);
+  if (end) signedQ = signedQ.lte("data_assinatura", end);
 
   const [cR, dR, sR] = await Promise.all([createdQ, distratoQ, signedQ]);
   const created = cR.data || [];
@@ -248,7 +233,8 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
     const vgv_assinado = mySigned.reduce((s, n) => s + Number(n.vgv_final || 0), 0);
     return { ...c, criados, caidos, assinados, vgv_assinado };
   });
-  return rows.sort((a, b) => b.vgv_assinado - a.vgv_assinado);
+  // Order: VGV DESC, assinados DESC
+  return rows.sort((a, b) => b.vgv_assinado - a.vgv_assinado || b.assinados - a.assinados);
 }
 
 // ====== Public hook ======

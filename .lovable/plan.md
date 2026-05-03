@@ -1,96 +1,59 @@
-## Objetivo
+## Contexto
 
-Unificar as 3 páginas redundantes em **uma única Central de Relatórios** (`/central-relatorios`), mantendo todas as funcionalidades: dashboard executivo (semanal/mensal), relatórios temáticos por tab e relatórios 1:1 por corretor (com IA). CEO vê tudo da empresa; Gerente vê tudo da própria equipe; Corretor mantém acesso ao próprio "Relatório Semanal" via tab restrita.
+A página `/ranking` (`RankingEquipe.tsx`) está usando lógica de **score ponderado** para ordenar os 4 rankings, o que distorce a leitura. Além disso, há **inconsistências de fonte de dados** que precisam ser corrigidas para refletir os números reais do CRM.
 
-## Estado atual (3 páginas)
+Validei contra o banco (Abril/2026): 1740 leads, 277 visitas (142 realizadas), 11 vendas, 52 distratos. Os queries do hook `useRankingsData.ts` batem em estrutura, mas precisam de ajustes pontuais.
 
-| Rota | Página | Função |
-|---|---|---|
-| `/central-relatorios` | `ReportCenter.tsx` | Tabs temáticas (Vendas, Leads, Visitas, Negócios, OA, Conversão, Empreendimentos, Origem, Interação, Tarefas, Mega) com filtros + export PDF |
-| `/relatorio-semanal` | `RelatorioSemanal.tsx` | Dashboard executivo: 10 KPIs, comparativos, gráficos, drilldown por corretor/equipe |
-| `/relatorios` | `RelatorioCorretor.tsx` | Relatórios 1:1 com IA por corretor — geração manual + auto, histórico salvo |
+## O que mudar
 
-## Estrutura nova (uma página)
+### 1. Remover sistema de score — ordenar por métrica principal
 
-`/central-relatorios` vira a **Central** com 3 grupos de tabs no topo:
+Cada ranking passa a ser ordenado por **uma única métrica clara**, sem soma/pontuação:
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│ Central de Relatórios                          [Exportar PDF ▾] │
-│                                                                  │
-│  ┌─ Visão ─────────────────┐ ┌─ Área ──────┐                    │
-│  │ Executivo  Temáticos  1:1│ │ Empresa │ Equipe │ Eu           │
-│  └─────────────────────────┘ └─────────────┘                    │
-│                                                                  │
-│  [Filtros: Período · Equipe · Corretor · Segmento]              │
-│                                                                  │
-│  Conteúdo da visão ativa                                         │
-└─────────────────────────────────────────────────────────────────┘
-```
+| Ranking | Critério de ordenação |
+|---|---|
+| **Presenças & Leads** | `leads_recebidos` DESC (tiebreak: total de presenças DESC) |
+| **Pipeline de Leads** | `ativos` DESC (tiebreak: `desatualizados` ASC) |
+| **Visitas** | `realizadas` DESC (tiebreak: `criadas` DESC) |
+| **Negócios** | `vgv_assinado` DESC (tiebreak: `assinados` DESC) |
 
-### Visão "Executivo"
-Conteúdo de `RelatorioSemanal` (KPIs, gráficos, drilldown). Default para todos.
+A coluna "Score" da tabela vira a **métrica principal destacada** (ex.: "Leads", "Ativos", "Realizadas", "VGV Assinado").
 
-### Visão "Temáticos"
-Sub-tabs atuais do `ReportCenter`: Vendas / Leads / Negócios / Oferta Ativa / Conversão / Empreendimentos / Origem / Interação / Visitas / Tarefas / ✦ Mega.
+### 2. Correções de fonte/período
 
-### Visão "1:1 Corretor"
-Conteúdo de `RelatorioCorretor` (geração manual + auto + histórico, com IA).
+- **Negócios — distratos**: trocar filtro de `updated_at` por **`fase_changed_at`** (timestamp real da mudança para distrato). Hoje qualquer edição posterior do registro empurra o distrato para o mês errado.
+- **Negócios — vendas**: já usa `data_assinatura` + `fase='vendido'` ✅ (memória canônica respeitada).
+- **Visitas — criadas**: usar `data_visita` no período (já está; é a data canônica). "Realizadas" = `status='realizada'` no mesmo recorte.
+- **Visitas — status**: incluir contador de `marcada` (agendadas pendentes) além de `realizada` e `no_show`.
+- **Presenças**: lógica de janela (`manha`/`tarde`/`noturna`/`dia_todo`) e domingo (via `getDay`) está correta — manter, mas exibir total de presenças explícito.
+- **Pipeline de Leads**: stale `> 48h` em BRT (já correto). Remover do cálculo a métrica `aproveitamento` derivada (não mais usada como score).
+- **Filtro de período**: confirmar que datas timestamptz usam `T00:00:00-03:00`/`T23:59:59-03:00` (já implementado) e datas puras (`data`, `data_visita`, `data_assinatura`) usam string `YYYY-MM-DD` direto (já implementado).
+- **Filtro de equipe**: validar que admin pode ver "Todas" e gestor é forçado a sua própria equipe (já implementado, manter).
 
-### Filtro "Área" (escopo)
-- **Empresa** (admin/CEO): todos os corretores e equipes
-- **Equipe** (gestor padrão; admin pode escolher uma equipe): apenas a equipe selecionada
-- **Eu** (corretor): apenas próprios dados (visível só na visão Executivo, único acesso para corretor)
+### 3. Ajustes visuais
 
-Permissões:
-- Admin/CEO: tudo, default Empresa.
-- Gestor: tudo, default Equipe (sua), pode trocar entre equipes que gerencia (na prática só a dele).
-- Corretor: somente Visão "Executivo" + Área "Eu" (preserva o atual `/relatorio-semanal` do corretor). Outras visões ficam ocultas.
+- Tabela: coluna final passa a se chamar conforme a métrica principal (não mais "Score").
+- Medalhas 🥇🥈🥉 mantidas no top 3.
+- Header de cada ranking ganha uma legenda curta explicando o critério de ordenação ("Ordenado por leads recebidos no período").
+- Manter tabs, filtros de período (Hoje/Semana/Mês/Personalizado) e navegação ‹ ›.
 
-## Arquivos
+## Arquivos afetados
 
-**Refatorar:**
-- `src/pages/ReportCenter.tsx` — reescrever para hospedar as 3 visões com seletor de visão e área. Reaproveita componentes existentes em `src/components/relatorios/*` e `src/components/relatorio/*`.
+- `src/hooks/useRankingsData.ts` — remover campo `score`, ajustar ordenação, corrigir filtro de distrato (`fase_changed_at`).
+- `src/components/ranking/v2/RankingTable.tsx` — renomear prop `scoreLabel` → `primaryLabel`, ajustar visual da coluna destaque.
+- `src/components/ranking/v2/RankingPresencasLeads.tsx` — destaque = leads, adicionar coluna "Total presenças".
+- `src/components/ranking/v2/RankingPipelineLeads.tsx` — destaque = ativos; manter colunas por etapa e desatualizados.
+- `src/components/ranking/v2/RankingVisitas.tsx` — destaque = realizadas; mostrar criadas/realizadas/no_show.
+- `src/components/ranking/v2/RankingNegocios.tsx` — destaque = VGV assinado formatado em R$.
+- `src/pages/RankingEquipe.tsx` — sem mudanças estruturais (apenas se precisar ajustar legenda).
 
-**Mover lógica para componentes (sem perder código):**
-- Criar `src/components/relatorios/ExecutivoView.tsx` — extrai o corpo de `RelatorioSemanal.tsx` (KPIs, gráficos, drilldown) recebendo `{ scope: 'empresa' | 'equipe' | 'eu', equipeId?, corretorId?, period }` em vez de gerenciar URL.
-- Criar `src/components/relatorios/UmAUmView.tsx` — extrai o corpo de `RelatorioCorretor.tsx` (geração 1:1 manual + auto + histórico) recebendo escopo de equipe.
-- Criar `src/components/relatorios/TematicosView.tsx` — encapsula o switch de tabs temáticas atual (Vendas, Leads, etc.).
+## Validação após implementação
 
-**Manter compatibilidade de rotas (redirects):**
-- `/relatorio-semanal` → `/central-relatorios?visao=executivo`
-- `/relatorios` → `/central-relatorios?visao=1a1`
-- Implementado via componente `<Navigate replace>` registrado no `pageRegistry.ts` ou rota dedicada em `App.tsx`. (Conforme regra do projeto: redirect-first para legacy paths.)
-
-**Sidebar (`src/components/layout/Sidebar.tsx`):**
-- Remover entradas duplicadas: "Relatório semanal" (linha 52), "Relatórios 1:1" (linhas 81 e 148).
-- Manter somente **"Central Relatórios"** apontando para `/central-relatorios` (uma para cada role).
-- Para corretor: substituir "Relatório semanal" por "Meu relatório" → `/central-relatorios?visao=executivo&area=eu`.
-
-**Page Registry (`src/config/pageRegistry.ts`):**
-- Remover `relatorios` e `relatorio-semanal` das definições de rota; deixar apenas `report-center` em `/central-relatorios`.
-- Adicionar `roles: ["admin","gestor","corretor"]` para permitir corretor (acesso restrito por área dentro da página).
-- Adicionar redirect entries para os paths antigos.
-
-**Atualizar referências externas:**
-- `src/pages/CeoDashboard.tsx:891` — trocar `navigate("/relatorio-semanal")` por `navigate("/central-relatorios?visao=executivo")`.
-
-**Deletar arquivos antigos** (somente após confirmar zero referências):
-- `src/pages/RelatorioSemanal.tsx`
-- `src/pages/RelatorioCorretor.tsx`
-
-## Detalhes técnicos
-
-- Estado da Central via `useSearchParams`: `?visao=executivo|tematicos|1a1&area=empresa|equipe|eu&tab=...&periodo=...&de=...&ate=...&equipe=...&corretor=...&segmento=...`. Permite link compartilhável.
-- Os componentes `RelatorioSemanal` e `RelatorioCorretor` hoje gerenciam seu próprio estado de período/escopo internamente — ao extrair em `ExecutivoView` e `UmAUmView`, expor props para receber filtros do pai e fazer fallback para os internos quando ausentes (não quebrar lógica existente).
-- Export PDF (lógica já existente no `ReportCenter`) generaliza-se: cada view expõe um id raiz (`#exec-content`, `#tematicos-content`, `#um-a-um-content`) e o handler decide qual capturar conforme a visão ativa.
-- BRT timezone preservado (regra do projeto), cálculos vindos de `useRelatorioExecutivo` continuam idênticos.
-- Não tocar nas Edge Functions de geração de relatórios IA.
-
-## Validação
-
-- CEO entra em `/central-relatorios` → vê Executivo da Empresa por padrão; consegue alternar para Temáticos e 1:1.
-- Gerente vê tudo, mas sempre escopado à própria equipe.
-- Corretor entra → só vê visão Executivo · Eu; outras tabs ocultas.
-- URLs antigas `/relatorio-semanal` e `/relatorios` redirecionam preservando intenção.
-- Botão Exportar PDF funciona em todas as 3 visões.
+1. Filtro **Mês = Abril/2026** deve mostrar números coerentes com:
+   - Total leads recebidos somando ≈ 1740
+   - Total visitas criadas ≈ 277, realizadas ≈ 142
+   - Total VGV assinado de 11 negócios em Abril
+   - Total distratos em Abril ≈ 52
+2. Trocar para **Hoje** e **Semana atual** — confirmar que recorte muda.
+3. Filtro de **Equipe** (admin) deve filtrar apenas corretores ligados ao gerente em `team_members`.
+4. Top 3 do ranking de Negócios deve listar quem mais assinou VGV em Abril.
