@@ -169,6 +169,10 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
   const [imovelVgv, setImovelVgv] = useState("");
   const [imovelObs, setImovelObs] = useState("");
 
+  // Data de assinatura (editável quando vendido)
+  const [dataAssinaturaEdit, setDataAssinaturaEdit] = useState("");
+  const [savingDataAss, setSavingDataAss] = useState(false);
+
   // Pagadoria
   const [pagadoriaOpen, setPagadoriaOpen] = useState(false);
   const [pagadoriaStatus, setPagadoriaStatus] = useState<string | null>(null);
