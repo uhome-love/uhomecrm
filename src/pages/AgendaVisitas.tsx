@@ -411,11 +411,14 @@ export default function AgendaVisitas() {
 
   // Equipes disponíveis (derivadas das visitas carregadas, sem filtro de equipe)
   const equipesDisponiveis = useMemo(() => {
-    const set = new Set<string>();
+    const counts = new Map<string, number>();
     for (const v of visitas) {
-      set.add(v.equipe || "Sem equipe");
+      const key = v.equipe || "Sem equipe";
+      counts.set(key, (counts.get(key) || 0) + 1);
     }
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return Array.from(counts.entries())
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   }, [visitas]);
 
   // Group by day
