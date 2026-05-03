@@ -496,6 +496,24 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
     } finally { setSaving(false); }
   };
 
+  const handleSaveDataAssinatura = async () => {
+    if (!dataAssinaturaEdit) { toast.error("Selecione uma data"); return; }
+    setSavingDataAss(true);
+    try {
+      const { error } = await supabase
+        .from("negocios")
+        .update({ data_assinatura: dataAssinaturaEdit, updated_at: new Date().toISOString() } as any)
+        .eq("id", negocio.id);
+      if (error) throw error;
+      setFullNeg(prev => ({ ...prev, data_assinatura: dataAssinaturaEdit } as NegocioExtended));
+      toast.success("📅 Data de assinatura atualizada!");
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + (err.message || ""));
+    } finally {
+      setSavingDataAss(false);
+    }
+  };
+
   const set = (field: string, value: any) => setFullNeg(prev => ({ ...prev, [field]: value }));
 
   const whatsappUrl = fullNeg.telefone ? `https://wa.me/${fullNeg.telefone.replace(/\D/g, "")}` : null;
