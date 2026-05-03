@@ -586,7 +586,7 @@ export default function AgendaVisitas() {
             >
               <option value="">Todas as equipes</option>
               {equipesDisponiveis.map((eq) => (
-                <option key={eq} value={eq}>{eq}</option>
+                <option key={eq.nome} value={eq.nome}>{eq.nome} ({eq.total})</option>
               ))}
             </select>
             <Users size={11} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
