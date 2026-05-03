@@ -573,7 +573,33 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
               )}
             </div>
 
-            {/* Row 3: Action buttons (like PipelineLeadDetail) */}
+            {/* Data de Assinatura — editável quando vendido */}
+            {fullNeg.fase === "vendido" && (
+              <div className="flex items-center gap-2 flex-wrap bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
+                <CalendarDays className="h-4 w-4 text-emerald-600 shrink-0" />
+                <Label className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 shrink-0">Data da Venda:</Label>
+                <Input
+                  type="date"
+                  value={dataAssinaturaEdit}
+                  onChange={e => setDataAssinaturaEdit(e.target.value)}
+                  className="h-8 text-xs w-auto max-w-[160px]"
+                />
+                <Button
+                  size="sm"
+                  className="h-8 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
+                  onClick={handleSaveDataAssinatura}
+                  disabled={savingDataAss || dataAssinaturaEdit === (fullNeg.data_assinatura || "")}
+                >
+                  {savingDataAss ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                  Salvar
+                </Button>
+                {fullNeg.data_assinatura && (
+                  <span className="text-[10px] text-muted-foreground ml-1">
+                    Atual: {format(new Date(fullNeg.data_assinatura + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-2 flex-wrap">
               {fullNeg.telefone && (
                 <a href={`tel:${fullNeg.telefone}`}>
