@@ -21,7 +21,7 @@ type TabKey = "presencas" | "pipeline" | "visitas" | "negocios";
 
 export default function RankingEquipe() {
   const { user } = useAuthUser();
-  const { role } = useUserRole();
+  const { isAdmin, isGestor } = useUserRole();
   const [period, setPeriod] = useState<Period>("mes");
   const [activeTab, setActiveTab] = useState<TabKey>("presencas");
   const [offset, setOffset] = useState(0);
@@ -29,10 +29,10 @@ export default function RankingEquipe() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [equipeId, setEquipeId] = useState<string | undefined>();
 
-  // Gestor: força equipe = self
+  // Gestor (não admin): força equipe = self
   useEffect(() => {
-    if (role === "gestor" && user?.id) setEquipeId(user.id);
-  }, [role, user?.id]);
+    if (isGestor && !isAdmin && user?.id) setEquipeId(user.id);
+  }, [isGestor, isAdmin, user?.id]);
 
   const now = new Date();
 
