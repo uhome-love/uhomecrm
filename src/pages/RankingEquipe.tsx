@@ -161,7 +161,7 @@ export default function RankingEquipe() {
         <RankingFilters
           equipeId={equipeId}
           onEquipeChange={setEquipeId}
-          showEquipe={role === "admin"}
+          showEquipe={isAdmin}
         />
       </div>
 
