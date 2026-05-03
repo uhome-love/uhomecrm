@@ -13,10 +13,11 @@ interface Props<T extends { user_id: string; nome: string; gerente_nome?: string
   rows: T[];
   loading: boolean;
   columns: Column<T>[];
-  scoreLabel: string;
-  scoreRender: (row: T) => React.ReactNode;
+  primaryLabel: string;
+  primaryRender: (row: T) => React.ReactNode;
   highlightUserId?: string;
   emptyText?: string;
+  caption?: string;
 }
 
 const medals = ["🥇", "🥈", "🥉"];
