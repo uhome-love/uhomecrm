@@ -39,6 +39,11 @@ export default function RankingTable<T extends { user_id: string; nome: string; 
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+      {caption && (
+        <div className="px-4 py-2 text-[11px] text-muted-foreground bg-muted/20 border-b border-border">
+          {caption}
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 border-b border-border">
@@ -55,7 +60,7 @@ export default function RankingTable<T extends { user_id: string; nome: string; 
                 </th>
               ))}
               <th className="text-right font-display text-xs font-semibold text-primary px-3 py-2.5 whitespace-nowrap">
-                {scoreLabel}
+                {primaryLabel}
               </th>
             </tr>
           </thead>
