@@ -122,25 +122,45 @@ async function fetchPresencasLeads(filters: RankingFilters, corretores: Corretor
 
 // ====== 2. Pipeline de Leads ======
 export interface PipelineLeadsRow extends CorretorBase {
-  ativos: number;
-  novo: number;
-  contato: number;
-  qualificado: number;
-  visita_marcada: number;
-  desatualizados: number;
+  ativos: number;             // snapshot atual: leads não arquivados, fora de Descarte
+  recebidos_periodo: number;  // leads recebidos no período (data_lead)
+  virou_visita: number;       // dos recebidos, quantos chegaram em visita+ (Visita Marcada em diante)
+  virou_negocio: number;      // dos recebidos, quantos chegaram em Negócio Criado em diante
+  conversao_pct: number;      // virou_visita / recebidos_periodo * 100
+  sla_atrasado: number;       // leads ativos sem ação há >48h
 }
 
-const STAGE_NOVO = ["d3843b2f-2fa1-4c31-9129-4eb0ed21f019"];
-const STAGE_CONTATO = ["8e2a3285-70f9-438d-be2d-13b0bf4610c4"];
-const STAGE_QUALIF = ["1ea43190-44c8-43ec-91b4-409b055b0e58"];
-const STAGE_VISITA_MARCADA = ["c9fcf0ad-dcab-4575-b91f-3f76610e4d44"];
+// Stage UUIDs (referência: pipeline_stages do banco)
 const STAGE_DESCARTE = ["1dd66c25-3848-4053-9f66-82e902989b4d"];
 
-async function fetchPipelineLeads(_filters: RankingFilters, corretores: CorretorBase[]): Promise<PipelineLeadsRow[]> {
+// Visita+ : Visita Marcada, Visita, Visita Realizada, Pós-Visita, Proposta,
+// Negócio Criado, Negociação, Venda, Contrato Gerado
+const STAGES_VISITA_OU_ALEM = [
+  "c9fcf0ad-dcab-4575-b91f-3f76610e4d44", // Visita Marcada
+  "a857139f-c419-4e37-ae17-5f5e70b21172", // Visita
+  "5ad4f4aa-b66f-4dc2-ac90-97c55e846a14", // Visita Realizada
+  "d932fb49-419c-4fda-bae1-9ef06ee2d033", // Pós-Visita
+  "de6cee2f-8dda-4e60-a4e2-6b7f21aeae96", // Proposta
+  "a8a1a867-5b0c-414e-9532-8873c4ca5a0f", // Negócio Criado
+  "213e9ca3-0cb3-4893-979d-25f7e2e9cfa1", // Negociação
+  "2d7739eb-1787-4ad6-887a-7a4a32dcfc05", // Venda
+  "8c1eed68-4526-479f-9bb4-b8e70bee1416", // Contrato Gerado
+];
+
+// Negócio+ : Proposta em diante (lead "real" de negócio)
+const STAGES_NEGOCIO_OU_ALEM = [
+  "de6cee2f-8dda-4e60-a4e2-6b7f21aeae96", // Proposta
+  "a8a1a867-5b0c-414e-9532-8873c4ca5a0f", // Negócio Criado
+  "213e9ca3-0cb3-4893-979d-25f7e2e9cfa1", // Negociação
+  "2d7739eb-1787-4ad6-887a-7a4a32dcfc05", // Venda
+  "8c1eed68-4526-479f-9bb4-b8e70bee1416", // Contrato Gerado
+];
+
+async function fetchPipelineLeads(filters: RankingFilters, corretores: CorretorBase[]): Promise<PipelineLeadsRow[]> {
   const ids = corretores.map(c => c.user_id);
   if (ids.length === 0) return [];
 
-  // Snapshot atual (não filtra por período — pipeline é estado corrente)
+  // 1) Snapshot atual (ativos + SLA)
   const active = await fetchAllPaged<{ corretor_id: string; stage_id: string; ultima_acao_at: string | null }>(() =>
     supabase
       .from("pipeline_leads")
@@ -149,24 +169,44 @@ async function fetchPipelineLeads(_filters: RankingFilters, corretores: Corretor
       .eq("arquivado", false)
   );
 
+  // 2) Período: leads recebidos no intervalo selecionado (conversão real)
+  const periodLeads = await fetchAllPaged<{ corretor_id: string; stage_id: string }>(() => {
+    let q = supabase
+      .from("pipeline_leads")
+      .select("corretor_id, stage_id, data_lead")
+      .in("corretor_id", ids);
+    if (filters.start) q = q.gte("data_lead", filters.start);
+    if (filters.end) q = q.lte("data_lead", filters.end);
+    return q;
+  });
+
   const now = Date.now();
   const STALE_MS = 48 * 60 * 60 * 1000;
 
   const rows: PipelineLeadsRow[] = corretores.map(c => {
-    const mine = active.filter(l => l.corretor_id === c.user_id && !STAGE_DESCARTE.includes(l.stage_id));
-    const ativos = mine.length;
-    const novo = mine.filter(l => STAGE_NOVO.includes(l.stage_id)).length;
-    const contato = mine.filter(l => STAGE_CONTATO.includes(l.stage_id)).length;
-    const qualificado = mine.filter(l => STAGE_QUALIF.includes(l.stage_id)).length;
-    const visita_marcada = mine.filter(l => STAGE_VISITA_MARCADA.includes(l.stage_id)).length;
-    const desatualizados = mine.filter(l => {
+    const mineActive = active.filter(l => l.corretor_id === c.user_id && !STAGE_DESCARTE.includes(l.stage_id));
+    const ativos = mineActive.length;
+    const sla_atrasado = mineActive.filter(l => {
       const t = l.ultima_acao_at ? new Date(l.ultima_acao_at).getTime() : 0;
       return now - t > STALE_MS;
     }).length;
-    return { ...c, ativos, novo, contato, qualificado, visita_marcada, desatualizados };
+
+    const minePeriod = periodLeads.filter(l => l.corretor_id === c.user_id);
+    const recebidos_periodo = minePeriod.length;
+    const virou_visita = minePeriod.filter(l => STAGES_VISITA_OU_ALEM.includes(l.stage_id)).length;
+    const virou_negocio = minePeriod.filter(l => STAGES_NEGOCIO_OU_ALEM.includes(l.stage_id)).length;
+    const conversao_pct = recebidos_periodo > 0 ? (virou_visita / recebidos_periodo) * 100 : 0;
+
+    return { ...c, ativos, recebidos_periodo, virou_visita, virou_negocio, conversao_pct, sla_atrasado };
   });
-  // Order: ativos DESC, desatualizados ASC (menos = melhor)
-  return rows.sort((a, b) => b.ativos - a.ativos || a.desatualizados - b.desatualizados);
+
+  // Order: conversão DESC → virou_negocio DESC → virou_visita DESC → sla_atrasado ASC
+  return rows.sort((a, b) =>
+    b.conversao_pct - a.conversao_pct ||
+    b.virou_negocio - a.virou_negocio ||
+    b.virou_visita - a.virou_visita ||
+    a.sla_atrasado - b.sla_atrasado
+  );
 }
 
 // ====== 3. Visitas ======
