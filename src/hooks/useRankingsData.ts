@@ -217,7 +217,7 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
   // Assinados (vendido) — usa data_assinatura (canônico)
   let signedQ = supabase
     .from("negocios")
-    .select("auth_user_id, vgv_final, data_assinatura, fase")
+    .select("auth_user_id, vgv_final, vgv_estimado, data_assinatura, fase")
     .in("auth_user_id", ids)
     .eq("fase", "vendido");
   if (start) signedQ = signedQ.gte("data_assinatura", start);
