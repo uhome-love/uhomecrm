@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Star, ChevronLeft, ChevronRight, CalendarDays, Users, ClipboardList, Eye, Briefcase } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight, CalendarDays, Users, ClipboardList, Eye, Briefcase, Download } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { format, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, addMonths, isSameWeek, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -15,6 +16,8 @@ import RankingPresencasLeads from "@/components/ranking/v2/RankingPresencasLeads
 import RankingPipelineLeads from "@/components/ranking/v2/RankingPipelineLeads";
 import RankingVisitas from "@/components/ranking/v2/RankingVisitas";
 import RankingNegocios from "@/components/ranking/v2/RankingNegocios";
+import { exportRankingsPdf } from "@/lib/exportRankingsPdf";
+import { supabase } from "@/integrations/supabase/client";
 
 type Period = "hoje" | "semana" | "mes" | "personalizado";
 type TabKey = "presencas" | "pipeline" | "visitas" | "negocios";
@@ -98,6 +101,62 @@ export default function RankingEquipe() {
     { key: "negocios" as const, label: "Pipeline de Negócios", icon: Briefcase, color: "bg-emerald-600" },
   ];
 
+  const [exporting, setExporting] = useState(false);
+  const fmtBRL = (n: number) =>
+    n >= 1_000_000 ? `R$ ${(n / 1_000_000).toFixed(2)}M`
+    : n >= 1_000 ? `R$ ${(n / 1_000).toFixed(0)}k`
+    : `R$ ${n.toFixed(0)}`;
+
+  const handleExportPdf = async () => {
+    try {
+      setExporting(true);
+      const { fetchAllRankings } = await import("@/hooks/useRankingsData");
+      const all = await fetchAllRankings(filters);
+      let equipeLabel: string | undefined;
+      if (equipeId) {
+        const { data } = await supabase.from("profiles").select("nome").eq("user_id", equipeId).maybeSingle();
+        equipeLabel = data?.nome ? `Equipe: ${data.nome}` : undefined;
+      } else if (isAdmin) {
+        equipeLabel = "Todas as equipes";
+      }
+      exportRankingsPdf({
+        fileName: `rankings-uhome-${dateRange.start || "tudo"}-${dateRange.end || ""}.pdf`,
+        periodLabel,
+        equipeLabel,
+        rankings: [
+          {
+            title: "1. Presenças & Leads (ordenado por leads recebidos)",
+            caption: "Diurna = manhã/tarde/dia_todo · Noturna · Domingo",
+            headers: ["Corretor", "Diurna", "Noturna", "Domingo", "Σ Presenças", "Leads recebidos"],
+            rows: all.presencas.map(r => [r.nome, r.presencas_diurna, r.presencas_noturna, r.presencas_domingo, r.presencas_total, r.leads_recebidos]),
+          },
+          {
+            title: "2. Pipeline de Leads (snapshot atual, ordenado por ativos)",
+            caption: "Desatualizados = sem ação há mais de 48h",
+            headers: ["Corretor", "Novo", "Contato", "Qualif.", "Visita marc.", "Desatualizados", "Ativos"],
+            rows: all.pipeline.map(r => [r.nome, r.novo, r.contato, r.qualificado, r.visita_marcada, r.desatualizados, r.ativos]),
+          },
+          {
+            title: "3. Visitas (ordenado por realizadas)",
+            headers: ["Corretor", "Criadas", "Marcadas", "No-show", "Realizadas"],
+            rows: all.visitas.map(r => [r.nome, r.criadas, r.marcadas, r.no_show, r.realizadas]),
+          },
+          {
+            title: "4. Pipeline de Negócios (ordenado por VGV assinado)",
+            caption: "VGV usa vgv_final, com fallback para vgv_estimado",
+            headers: ["Corretor", "Criados", "Caídos", "Assinados", "VGV Assinado"],
+            rows: all.negocios.map(r => [r.nome, r.criados, r.caidos, r.assinados, fmtBRL(r.vgv_assinado)]),
+          },
+        ],
+      });
+      toast.success("PDF gerado com sucesso");
+    } catch (e: any) {
+      toast.error("Falha ao exportar PDF: " + (e?.message || "erro desconhecido"));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="bg-background dark:bg-[#0e1525] p-6 max-w-6xl mx-auto space-y-4 -m-6 min-h-full">
       <PageHeader
@@ -158,11 +217,23 @@ export default function RankingEquipe() {
           )}
         </div>
 
-        <RankingFilters
-          equipeId={equipeId}
-          onEquipeChange={setEquipeId}
-          showEquipe={isAdmin}
-        />
+        <div className="flex items-center gap-2 flex-wrap">
+          <RankingFilters
+            equipeId={equipeId}
+            onEquipeChange={setEquipeId}
+            showEquipe={isAdmin}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2 text-xs h-8"
+            onClick={handleExportPdf}
+            disabled={exporting}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {exporting ? "Gerando..." : "Baixar PDF"}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
