@@ -13,7 +13,8 @@ export function useRoletaSegmentos() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("roleta_segmentos")
-        .select("id, nome")
+        .select("id, nome, ativo")
+        .eq("ativo", true)
         .order("nome");
       if (error) throw error;
       return (data || []) as RoletaSegmento[];
