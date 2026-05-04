@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Star, ChevronLeft, ChevronRight, CalendarDays, Users, ClipboardList, Eye, Briefcase } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight, CalendarDays, Users, ClipboardList, Eye, Briefcase, Download } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { format, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, addMonths, isSameWeek, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -15,6 +16,8 @@ import RankingPresencasLeads from "@/components/ranking/v2/RankingPresencasLeads
 import RankingPipelineLeads from "@/components/ranking/v2/RankingPipelineLeads";
 import RankingVisitas from "@/components/ranking/v2/RankingVisitas";
 import RankingNegocios from "@/components/ranking/v2/RankingNegocios";
+import { exportRankingsPdf } from "@/lib/exportRankingsPdf";
+import { supabase } from "@/integrations/supabase/client";
 
 type Period = "hoje" | "semana" | "mes" | "personalizado";
 type TabKey = "presencas" | "pipeline" | "visitas" | "negocios";
