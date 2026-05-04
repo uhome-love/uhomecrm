@@ -11,8 +11,8 @@ export default function RankingVisitas({ filters, currentUserId }: { filters: Ra
 
   const columns: Column<VisitasRow>[] = [
     { key: "criadas", label: "Criadas", align: "center", render: r => <span className="font-mono">{r.criadas}</span>, sortValue: r => r.criadas, hint: "Total de visitas no período" },
+    { key: "realizadas", label: "Realizadas", align: "center", render: r => <span className="font-mono font-semibold">{r.realizadas}</span>, sortValue: r => r.realizadas },
     { key: "no_show", label: "No-show", align: "center", render: r => <span className={`font-mono ${r.no_show > 0 ? "text-red-500" : ""}`}>{r.no_show}</span>, sortValue: r => r.no_show },
-    { key: "conversao", label: "Conversão", align: "center", render: r => <span className="font-mono">{conv(r).toFixed(1)}%</span>, sortValue: r => conv(r), hint: "Realizadas / (Realizadas + No-show)" },
   ];
 
   return (
@@ -20,10 +20,10 @@ export default function RankingVisitas({ filters, currentUserId }: { filters: Ra
       rows={data}
       loading={loading}
       columns={columns}
-      caption="Ordenado por visitas realizadas · clique nas colunas para reordenar"
-      primaryLabel="Realizadas"
-      primaryRender={r => `${r.realizadas}`}
-      primarySortValue={r => r.realizadas}
+      caption="Ordenado por conversão · clique nas colunas para reordenar"
+      primaryLabel="Conversão"
+      primaryRender={r => `${conv(r).toFixed(1)}%`}
+      primarySortValue={r => conv(r)}
       highlightUserId={currentUserId}
     />
   );
