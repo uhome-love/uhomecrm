@@ -73,24 +73,27 @@ async function fetchPresencasLeads(filters: RankingFilters, corretores: Corretor
   const start = filters.start;
   const end = filters.end;
 
-  let credsQ = supabase
-    .from("roleta_credenciamentos")
-    .select("auth_user_id, data, janela, status")
-    .eq("status", "aprovado")
-    .in("auth_user_id", ids);
-  if (start) credsQ = credsQ.gte("data", start);
-  if (end) credsQ = credsQ.lte("data", end);
-
-  let leadsQ = supabase
-    .from("pipeline_leads")
-    .select("corretor_id, created_at")
-    .in("corretor_id", ids);
-  if (start) leadsQ = leadsQ.gte("created_at", toIsoStart(start)!);
-  if (end) leadsQ = leadsQ.lte("created_at", toIsoEnd(end)!);
-
-  const [credsRes, leadsRes] = await Promise.all([credsQ, leadsQ]);
-  const creds = credsRes.data || [];
-  const leads = leadsRes.data || [];
+  const [creds, leads] = await Promise.all([
+    fetchAllPaged<{ auth_user_id: string; data: string; janela: string }>(() => {
+      let q = supabase
+        .from("roleta_credenciamentos")
+        .select("auth_user_id, data, janela, status")
+        .eq("status", "aprovado")
+        .in("auth_user_id", ids);
+      if (start) q = q.gte("data", start);
+      if (end) q = q.lte("data", end);
+      return q;
+    }),
+    fetchAllPaged<{ corretor_id: string; created_at: string }>(() => {
+      let q = supabase
+        .from("pipeline_leads")
+        .select("corretor_id, created_at")
+        .in("corretor_id", ids);
+      if (start) q = q.gte("created_at", toIsoStart(start)!);
+      if (end) q = q.lte("created_at", toIsoEnd(end)!);
+      return q;
+    }),
+  ]);
 
   const rows: PresencasLeadsRow[] = corretores.map(c => {
     const myCreds = creds.filter(x => x.auth_user_id === c.user_id);
