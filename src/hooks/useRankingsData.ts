@@ -141,12 +141,13 @@ async function fetchPipelineLeads(_filters: RankingFilters, corretores: Corretor
   if (ids.length === 0) return [];
 
   // Snapshot atual (não filtra por período — pipeline é estado corrente)
-  const { data } = await supabase
-    .from("pipeline_leads")
-    .select("corretor_id, stage_id, ultima_acao_at")
-    .in("corretor_id", ids)
-    .eq("arquivado", false);
-  const active = data || [];
+  const active = await fetchAllPaged<{ corretor_id: string; stage_id: string; ultima_acao_at: string | null }>(() =>
+    supabase
+      .from("pipeline_leads")
+      .select("corretor_id, stage_id, ultima_acao_at")
+      .in("corretor_id", ids)
+      .eq("arquivado", false)
+  );
 
   const now = Date.now();
   const STALE_MS = 48 * 60 * 60 * 1000;
