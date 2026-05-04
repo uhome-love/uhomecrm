@@ -194,19 +194,22 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
   const start = filters.start;
   const end = filters.end;
 
+  // IMPORTANTE: negocios.corretor_id referencia profiles.id (não auth.users.id).
+  // A coluna canônica para vincular ao usuário é negocios.auth_user_id.
+
   // Criados no período (created_at)
   let createdQ = supabase
     .from("negocios")
-    .select("corretor_id, created_at")
-    .in("corretor_id", ids);
+    .select("auth_user_id, created_at")
+    .in("auth_user_id", ids);
   if (start) createdQ = createdQ.gte("created_at", toIsoStart(start)!);
   if (end) createdQ = createdQ.lte("created_at", toIsoEnd(end)!);
 
   // Caídos (distrato) no período — usa fase_changed_at
   let distratoQ = supabase
     .from("negocios")
-    .select("corretor_id, fase_changed_at, fase")
-    .in("corretor_id", ids)
+    .select("auth_user_id, fase_changed_at, fase")
+    .in("auth_user_id", ids)
     .eq("fase", "distrato");
   if (start) distratoQ = distratoQ.gte("fase_changed_at", toIsoStart(start)!);
   if (end) distratoQ = distratoQ.lte("fase_changed_at", toIsoEnd(end)!);
@@ -214,8 +217,8 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
   // Assinados (vendido) — usa data_assinatura (canônico)
   let signedQ = supabase
     .from("negocios")
-    .select("corretor_id, vgv_final, data_assinatura, fase")
-    .in("corretor_id", ids)
+    .select("auth_user_id, vgv_final, data_assinatura, fase")
+    .in("auth_user_id", ids)
     .eq("fase", "vendido");
   if (start) signedQ = signedQ.gte("data_assinatura", start);
   if (end) signedQ = signedQ.lte("data_assinatura", end);
@@ -226,9 +229,9 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
   const signed = sR.data || [];
 
   const rows: NegociosRow[] = corretores.map(c => {
-    const criados = created.filter(n => n.corretor_id === c.user_id).length;
-    const caidos = distrato.filter(n => n.corretor_id === c.user_id).length;
-    const mySigned = signed.filter(n => n.corretor_id === c.user_id);
+    const criados = created.filter(n => n.auth_user_id === c.user_id).length;
+    const caidos = distrato.filter(n => n.auth_user_id === c.user_id).length;
+    const mySigned = signed.filter(n => n.auth_user_id === c.user_id);
     const assinados = mySigned.length;
     const vgv_assinado = mySigned.reduce((s, n) => s + Number(n.vgv_final || 0), 0);
     return { ...c, criados, caidos, assinados, vgv_assinado };
