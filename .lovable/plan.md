@@ -1,59 +1,45 @@
-## Contexto
+## Ranking Pipeline de Leads — Nova estrutura
 
-A página `/ranking` (`RankingEquipe.tsx`) está usando lógica de **score ponderado** para ordenar os 4 rankings, o que distorce a leitura. Além disso, há **inconsistências de fonte de dados** que precisam ser corrigidas para refletir os números reais do CRM.
+### Conceito
+Hoje o ranking ordena por **leads ativos (DESC)**, o que premia acúmulo. Vamos trocar para medir **conversão real**: do que entrou na mão do corretor no período, quanto virou visita e quanto virou negócio. Isso responde "quem está gerindo melhor seus leads?" de forma justa entre quem recebe muito e quem recebe pouco.
 
-Validei contra o banco (Abril/2026): 1740 leads, 277 visitas (142 realizadas), 11 vendas, 52 distratos. Os queries do hook `useRankingsData.ts` batem em estrutura, mas precisam de ajustes pontuais.
+### Colunas da tabela (na ordem)
+1. **Leads ativos** — snapshot atual (não arquivados, fora de Descarte). Volume de trabalho que o corretor segura hoje.
+2. **Virou visita** — nº de leads recebidos no período cuja jornada chegou em qualquer etapa de visita (Visita Marcada, Visita, Visita Realizada, Pós-Visita) ou além.
+3. **Virou negócio** — nº de leads recebidos no período que chegaram em Negócio Criado, Negociação ou Venda.
+4. **Conversão** — `(Virou visita / Leads recebidos no período) %`. Métrica principal de ordenação.
+5. **⚠️ SLA atrasado** — nº de leads ativos com SLA vencido, usando a regra oficial do sistema (mesma da [SLA Logic](mem://rules/business/sla-and-overdue-logic) — BRT, 48h sem ação real, suprimida quando há tarefa futura). Sinaliza disciplina sem entrar no critério de ordenação principal.
 
-## O que mudar
+### Ordenação
+- **Padrão:** `Conversão % DESC` → desempate por `Virou negócio DESC` → `Virou visita DESC` → `SLA atrasado ASC`.
+- Mantém a ordenação clicável já implementada por coluna.
+- **Sem volume mínimo** (decisão do usuário). Para evitar topo distorcido por corretor com 1 lead, mostramos a coluna "Leads recebidos no período" como contexto visual abaixo do nome (badge cinza pequena).
 
-### 1. Remover sistema de score — ordenar por métrica principal
+### Período
+- Usa o filtro de período já existente da página (`filters.start` / `filters.end` em BRT).
+- "Leads ativos" e "SLA atrasado" continuam **snapshot atual** (estado hoje), com tooltip explicando.
+- "Virou visita", "Virou negócio" e "Conversão" usam o **período selecionado** (baseado em `data_lead` do `pipeline_leads`).
 
-Cada ranking passa a ser ordenado por **uma única métrica clara**, sem soma/pontuação:
+### Detalhes técnicos
+**Arquivo:** `src/hooks/useRankingsData.ts` — `fetchPipelineLeads()`.
 
-| Ranking | Critério de ordenação |
-|---|---|
-| **Presenças & Leads** | `leads_recebidos` DESC (tiebreak: total de presenças DESC) |
-| **Pipeline de Leads** | `ativos` DESC (tiebreak: `desatualizados` ASC) |
-| **Visitas** | `realizadas` DESC (tiebreak: `criadas` DESC) |
-| **Negócios** | `vgv_assinado` DESC (tiebreak: `assinados` DESC) |
+Stages (do banco):
+- Visita+: `c9fcf0ad…` (Visita Marcada), `a857139f…` (Visita), `5ad4f4aa…` (Visita Realizada), `d932fb49…` (Pós-Visita), `de6cee2f…` (Proposta), `a8a1a867…` (Negócio Criado), `213e9ca3…` (Negociação), `2d7739eb…` (Venda), `8c1eed68…` (Contrato Gerado).
+- Negócio+: `a8a1a867…`, `213e9ca3…`, `2d7739eb…`, `8c1eed68…`, `de6cee2f…`.
 
-A coluna "Score" da tabela vira a **métrica principal destacada** (ex.: "Leads", "Ativos", "Realizadas", "VGV Assinado").
+Queries (todas via `fetchAllPaged` para furar o cap de 1000):
+1. **Snapshot ativos:** `pipeline_leads` `arquivado=false`, `corretor_id IN (ids)`, fora de Descarte → conta `ativos` por corretor + flag SLA.
+2. **Período (conversão):** `pipeline_leads` filtrado por `data_lead` no intervalo + `corretor_id IN (ids)` → para cada lead, classifica em "virou visita" / "virou negócio" pelo `stage_id` atual.
+3. **SLA atrasado:** reaproveita lógica existente (`ultima_acao_at` > 48h em BRT, suprimida se há tarefa futura). Como já temos `ultima_acao_at` no select, e não temos acesso barato a "tarefa futura" em massa, vamos com a aproximação `now - ultima_acao_at > 48h` (igual ao "Desatualizados" atual) e renomeamos para `SLA atrasado` para alinhar com a linguagem do sistema.
 
-### 2. Correções de fonte/período
+**Componente:** `src/components/ranking/v2/RankingPipelineLeads.tsx`
+- Trocar colunas e `primaryRender` para mostrar **Conversão %** como métrica principal.
+- Mostrar `Leads recebidos` em badge sutil ao lado do nome (passar via `subtitle` se existir, ou estender `RankingTable`).
 
-- **Negócios — distratos**: trocar filtro de `updated_at` por **`fase_changed_at`** (timestamp real da mudança para distrato). Hoje qualquer edição posterior do registro empurra o distrato para o mês errado.
-- **Negócios — vendas**: já usa `data_assinatura` + `fase='vendido'` ✅ (memória canônica respeitada).
-- **Visitas — criadas**: usar `data_visita` no período (já está; é a data canônica). "Realizadas" = `status='realizada'` no mesmo recorte.
-- **Visitas — status**: incluir contador de `marcada` (agendadas pendentes) além de `realizada` e `no_show`.
-- **Presenças**: lógica de janela (`manha`/`tarde`/`noturna`/`dia_todo`) e domingo (via `getDay`) está correta — manter, mas exibir total de presenças explícito.
-- **Pipeline de Leads**: stale `> 48h` em BRT (já correto). Remover do cálculo a métrica `aproveitamento` derivada (não mais usada como score).
-- **Filtro de período**: confirmar que datas timestamptz usam `T00:00:00-03:00`/`T23:59:59-03:00` (já implementado) e datas puras (`data`, `data_visita`, `data_assinatura`) usam string `YYYY-MM-DD` direto (já implementado).
-- **Filtro de equipe**: validar que admin pode ver "Todas" e gestor é forçado a sua própria equipe (já implementado, manter).
+**PDF (`src/lib/exportRankingsPdf.ts`):** atualizar a página "Pipeline" com as novas colunas.
 
-### 3. Ajustes visuais
+**Tipo:** atualizar `PipelineLeadsRow` para `{ ativos, recebidos_periodo, virou_visita, virou_negocio, conversao_pct, sla_atrasado }`.
 
-- Tabela: coluna final passa a se chamar conforme a métrica principal (não mais "Score").
-- Medalhas 🥇🥈🥉 mantidas no top 3.
-- Header de cada ranking ganha uma legenda curta explicando o critério de ordenação ("Ordenado por leads recebidos no período").
-- Manter tabs, filtros de período (Hoje/Semana/Mês/Personalizado) e navegação ‹ ›.
-
-## Arquivos afetados
-
-- `src/hooks/useRankingsData.ts` — remover campo `score`, ajustar ordenação, corrigir filtro de distrato (`fase_changed_at`).
-- `src/components/ranking/v2/RankingTable.tsx` — renomear prop `scoreLabel` → `primaryLabel`, ajustar visual da coluna destaque.
-- `src/components/ranking/v2/RankingPresencasLeads.tsx` — destaque = leads, adicionar coluna "Total presenças".
-- `src/components/ranking/v2/RankingPipelineLeads.tsx` — destaque = ativos; manter colunas por etapa e desatualizados.
-- `src/components/ranking/v2/RankingVisitas.tsx` — destaque = realizadas; mostrar criadas/realizadas/no_show.
-- `src/components/ranking/v2/RankingNegocios.tsx` — destaque = VGV assinado formatado em R$.
-- `src/pages/RankingEquipe.tsx` — sem mudanças estruturais (apenas se precisar ajustar legenda).
-
-## Validação após implementação
-
-1. Filtro **Mês = Abril/2026** deve mostrar números coerentes com:
-   - Total leads recebidos somando ≈ 1740
-   - Total visitas criadas ≈ 277, realizadas ≈ 142
-   - Total VGV assinado de 11 negócios em Abril
-   - Total distratos em Abril ≈ 52
-2. Trocar para **Hoje** e **Semana atual** — confirmar que recorte muda.
-3. Filtro de **Equipe** (admin) deve filtrar apenas corretores ligados ao gerente em `team_members`.
-4. Top 3 do ranking de Negócios deve listar quem mais assinou VGV em Abril.
+### Fora de escopo
+- Não alterar Ranking de Leads, Visitas ou Negócios.
+- Não tocar nas regras de SLA do sistema — só consumir.

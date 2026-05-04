@@ -131,10 +131,10 @@ export default function RankingEquipe() {
             rows: all.presencas.map(r => [r.nome, r.presencas_diurna, r.presencas_noturna, r.presencas_domingo, r.presencas_total, r.leads_recebidos]),
           },
           {
-            title: "2. Pipeline de Leads (snapshot atual, ordenado por ativos)",
-            caption: "Desatualizados = sem ação há mais de 48h",
-            headers: ["Corretor", "Novo", "Contato", "Qualif.", "Visita marc.", "Desatualizados", "Ativos"],
-            rows: all.pipeline.map(r => [r.nome, r.novo, r.contato, r.qualificado, r.visita_marcada, r.desatualizados, r.ativos]),
+            title: "2. Pipeline de Leads (ordenado por conversão real no período)",
+            caption: "Conversão = Virou visita / Recebidos no período · SLA atrasado = sem ação há +48h",
+            headers: ["Corretor", "Ativos", "Recebidos", "Virou visita", "Virou negócio", "SLA atrasado", "Conversão"],
+            rows: all.pipeline.map(r => [r.nome, r.ativos, r.recebidos_periodo, r.virou_visita, r.virou_negocio, r.sla_atrasado, `${r.conversao_pct.toFixed(1)}%`]),
           },
           {
             title: "3. Visitas (ordenado por realizadas)",
