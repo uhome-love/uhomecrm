@@ -270,6 +270,17 @@ export function useRankingData<T>(type: RankingType, filters: RankingFilters) {
   return { data, loading };
 }
 
+export async function fetchAllRankings(filters: RankingFilters) {
+  const corretores = await fetchCorretores(filters);
+  const [presencas, pipeline, visitas, negocios] = await Promise.all([
+    fetchPresencasLeads(filters, corretores),
+    fetchPipelineLeads(filters, corretores),
+    fetchVisitas(filters, corretores),
+    fetchNegocios(filters, corretores),
+  ]);
+  return { presencas, pipeline, visitas, negocios };
+}
+
 export async function fetchEquipes(): Promise<{ user_id: string; nome: string }[]> {
   const { data: members } = await supabase
     .from("team_members")
