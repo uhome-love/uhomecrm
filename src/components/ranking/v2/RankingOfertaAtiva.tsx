@@ -42,9 +42,9 @@ export default function RankingOfertaAtiva({ filters, currentUserId }: { filters
       rows={data}
       loading={loading}
       columns={columns}
-      caption="Score = média entre volume de tentativas e taxa de conversão (normalizados 0-100)"
-      primaryLabel="Score"
-      primaryRender={r => r.score.toFixed(1)}
+      caption="Ordenado por tentativas → aproveitados. Score = média normalizada (0-100) entre tentativas e aproveitados."
+      primaryLabel="Tentativas"
+      primaryRender={r => r.tentativas}
       primarySortValue={r => r.score}
       highlightUserId={currentUserId}
     />
