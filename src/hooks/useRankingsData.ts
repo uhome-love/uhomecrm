@@ -271,23 +271,77 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
       if (end) q = q.lte("fase_changed_at", toIsoEnd(end)!);
       return q;
     }),
-    fetchAllPaged<{ auth_user_id: string; vgv_final: number | null; vgv_estimado: number | null; data_assinatura: string }>(() => {
-      let q = supabase.from("negocios").select("auth_user_id, vgv_final, vgv_estimado, data_assinatura, fase").in("auth_user_id", ids).eq("fase", "vendido");
+    fetchAllPaged<{ auth_user_id: string; pipeline_lead_id: string | null; vgv_final: number | null; vgv_estimado: number | null; data_assinatura: string }>(() => {
+      // Buscamos TODOS os assinados do período (sem .in user) — necessário para que parceiros recebam crédito
+      // mesmo quando o `auth_user_id` do negócio aponta para o outro corretor.
+      let q = supabase.from("negocios").select("auth_user_id, pipeline_lead_id, vgv_final, vgv_estimado, data_assinatura, fase").eq("fase", "vendido");
       if (start) q = q.gte("data_assinatura", start);
       if (end) q = q.lte("data_assinatura", end);
       return q;
     }),
   ]);
 
+  // Buscar parcerias ativas para os negócios assinados, com auth_user_id de cada lado
+  const signedLeadIds = [...new Set(signed.map(s => s.pipeline_lead_id).filter(Boolean))] as string[];
+  type Parc = {
+    pipeline_lead_id: string;
+    principal_uid: string | null;
+    parceiro_uid: string | null;
+    div_principal: number;
+    div_parceiro: number;
+  };
+  const parcByLead = new Map<string, Parc>();
+  if (signedLeadIds.length) {
+    const { data: parcs } = await supabase
+      .from("pipeline_parcerias")
+      .select("pipeline_lead_id, corretor_principal_id, corretor_parceiro_id, divisao_principal, divisao_parceiro")
+      .in("pipeline_lead_id", signedLeadIds)
+      .eq("status", "ativa");
+    const profIds = [...new Set((parcs || []).flatMap(p => [p.corretor_principal_id, p.corretor_parceiro_id]).filter(Boolean))] as string[];
+    const profToUid = new Map<string, string>();
+    if (profIds.length) {
+      const { data: profs } = await supabase.from("profiles").select("id, user_id").in("id", profIds);
+      (profs || []).forEach(p => { if (p.user_id) profToUid.set(p.id, p.user_id); });
+    }
+    (parcs || []).forEach(p => {
+      if (!p.pipeline_lead_id) return;
+      parcByLead.set(p.pipeline_lead_id, {
+        pipeline_lead_id: p.pipeline_lead_id,
+        principal_uid: p.corretor_principal_id ? (profToUid.get(p.corretor_principal_id) ?? null) : null,
+        parceiro_uid: p.corretor_parceiro_id ? (profToUid.get(p.corretor_parceiro_id) ?? null) : null,
+        div_principal: Number(p.divisao_principal ?? 50),
+        div_parceiro: Number(p.divisao_parceiro ?? 50),
+      });
+    });
+  }
+
+  // Acumular VGV por usuário com divisão de parceria
+  const vgvByUser = new Map<string, number>();
+  const assinadosByUser = new Map<string, number>();
+  signed.forEach((n: any) => {
+    const valor = Number(n.vgv_final ?? n.vgv_estimado ?? 0);
+    const parc = n.pipeline_lead_id ? parcByLead.get(n.pipeline_lead_id) : undefined;
+    if (parc && parc.principal_uid && parc.parceiro_uid) {
+      const vp = (valor * parc.div_principal) / 100;
+      const vs = (valor * parc.div_parceiro) / 100;
+      vgvByUser.set(parc.principal_uid, (vgvByUser.get(parc.principal_uid) || 0) + vp);
+      vgvByUser.set(parc.parceiro_uid, (vgvByUser.get(parc.parceiro_uid) || 0) + vs);
+      // conta assinado para ambos
+      assinadosByUser.set(parc.principal_uid, (assinadosByUser.get(parc.principal_uid) || 0) + 1);
+      assinadosByUser.set(parc.parceiro_uid, (assinadosByUser.get(parc.parceiro_uid) || 0) + 1);
+    } else if (n.auth_user_id) {
+      vgvByUser.set(n.auth_user_id, (vgvByUser.get(n.auth_user_id) || 0) + valor);
+      assinadosByUser.set(n.auth_user_id, (assinadosByUser.get(n.auth_user_id) || 0) + 1);
+    }
+  });
+
   const rows: NegociosRow[] = corretores.map(c => {
     const criados = created.filter(n => n.auth_user_id === c.user_id).length;
     const caidos = distrato.filter(n => n.auth_user_id === c.user_id).length;
-    const mySigned = signed.filter(n => n.auth_user_id === c.user_id);
-    const assinados = mySigned.length;
-    const vgv_assinado = mySigned.reduce((s, n: any) => s + Number(n.vgv_final ?? n.vgv_estimado ?? 0), 0);
+    const assinados = assinadosByUser.get(c.user_id) || 0;
+    const vgv_assinado = vgvByUser.get(c.user_id) || 0;
     return { ...c, criados, caidos, assinados, vgv_assinado };
   });
-  // Order: VGV DESC, assinados DESC
   return rows.sort((a, b) => b.vgv_assinado - a.vgv_assinado || b.assinados - a.assinados);
 }
 
