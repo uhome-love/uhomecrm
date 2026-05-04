@@ -19,6 +19,22 @@ export interface CorretorBase {
 function toIsoStart(d?: string) { return d ? `${d}T00:00:00-03:00` : undefined; }
 function toIsoEnd(d?: string) { return d ? `${d}T23:59:59-03:00` : undefined; }
 
+/** Pagina automaticamente para evitar o limite default de 1000 do PostgREST. */
+async function fetchAllPaged<T = any>(buildQuery: () => any, pageSize = 1000): Promise<T[]> {
+  const out: T[] = [];
+  let from = 0;
+  // Hard cap defensivo (50k linhas)
+  for (let i = 0; i < 50; i++) {
+    const { data, error } = await buildQuery().range(from, from + pageSize - 1);
+    if (error) throw error;
+    const chunk = (data || []) as T[];
+    out.push(...chunk);
+    if (chunk.length < pageSize) break;
+    from += pageSize;
+  }
+  return out;
+}
+
 async function fetchCorretores(filters: RankingFilters): Promise<CorretorBase[]> {
   let q = supabase.from("team_members").select("user_id, gerente_id").eq("status", "ativo");
   if (filters.equipeId) q = q.eq("gerente_id", filters.equipeId);
@@ -57,24 +73,27 @@ async function fetchPresencasLeads(filters: RankingFilters, corretores: Corretor
   const start = filters.start;
   const end = filters.end;
 
-  let credsQ = supabase
-    .from("roleta_credenciamentos")
-    .select("auth_user_id, data, janela, status")
-    .eq("status", "aprovado")
-    .in("auth_user_id", ids);
-  if (start) credsQ = credsQ.gte("data", start);
-  if (end) credsQ = credsQ.lte("data", end);
-
-  let leadsQ = supabase
-    .from("pipeline_leads")
-    .select("corretor_id, created_at")
-    .in("corretor_id", ids);
-  if (start) leadsQ = leadsQ.gte("created_at", toIsoStart(start)!);
-  if (end) leadsQ = leadsQ.lte("created_at", toIsoEnd(end)!);
-
-  const [credsRes, leadsRes] = await Promise.all([credsQ, leadsQ]);
-  const creds = credsRes.data || [];
-  const leads = leadsRes.data || [];
+  const [creds, leads] = await Promise.all([
+    fetchAllPaged<{ auth_user_id: string; data: string; janela: string }>(() => {
+      let q = supabase
+        .from("roleta_credenciamentos")
+        .select("auth_user_id, data, janela, status")
+        .eq("status", "aprovado")
+        .in("auth_user_id", ids);
+      if (start) q = q.gte("data", start);
+      if (end) q = q.lte("data", end);
+      return q;
+    }),
+    fetchAllPaged<{ corretor_id: string; created_at: string }>(() => {
+      let q = supabase
+        .from("pipeline_leads")
+        .select("corretor_id, created_at")
+        .in("corretor_id", ids);
+      if (start) q = q.gte("created_at", toIsoStart(start)!);
+      if (end) q = q.lte("created_at", toIsoEnd(end)!);
+      return q;
+    }),
+  ]);
 
   const rows: PresencasLeadsRow[] = corretores.map(c => {
     const myCreds = creds.filter(x => x.auth_user_id === c.user_id);
@@ -122,12 +141,13 @@ async function fetchPipelineLeads(_filters: RankingFilters, corretores: Corretor
   if (ids.length === 0) return [];
 
   // Snapshot atual (não filtra por período — pipeline é estado corrente)
-  const { data } = await supabase
-    .from("pipeline_leads")
-    .select("corretor_id, stage_id, ultima_acao_at")
-    .in("corretor_id", ids)
-    .eq("arquivado", false);
-  const active = data || [];
+  const active = await fetchAllPaged<{ corretor_id: string; stage_id: string; ultima_acao_at: string | null }>(() =>
+    supabase
+      .from("pipeline_leads")
+      .select("corretor_id, stage_id, ultima_acao_at")
+      .in("corretor_id", ids)
+      .eq("arquivado", false)
+  );
 
   const now = Date.now();
   const STALE_MS = 48 * 60 * 60 * 1000;
@@ -160,14 +180,15 @@ export interface VisitasRow extends CorretorBase {
 async function fetchVisitas(filters: RankingFilters, corretores: CorretorBase[]): Promise<VisitasRow[]> {
   const ids = corretores.map(c => c.user_id);
   if (ids.length === 0) return [];
-  let q = supabase
-    .from("visitas")
-    .select("corretor_id, status, data_visita")
-    .in("corretor_id", ids);
-  if (filters.start) q = q.gte("data_visita", filters.start);
-  if (filters.end) q = q.lte("data_visita", filters.end);
-  const { data } = await q;
-  const list = data || [];
+  const list = await fetchAllPaged<{ corretor_id: string; status: string; data_visita: string }>(() => {
+    let q = supabase
+      .from("visitas")
+      .select("corretor_id, status, data_visita")
+      .in("corretor_id", ids);
+    if (filters.start) q = q.gte("data_visita", filters.start);
+    if (filters.end) q = q.lte("data_visita", filters.end);
+    return q;
+  });
   const rows: VisitasRow[] = corretores.map(c => {
     const mine = list.filter(v => v.corretor_id === c.user_id);
     const criadas = mine.length;
@@ -197,36 +218,26 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
   // IMPORTANTE: negocios.corretor_id referencia profiles.id (não auth.users.id).
   // A coluna canônica para vincular ao usuário é negocios.auth_user_id.
 
-  // Criados no período (created_at)
-  let createdQ = supabase
-    .from("negocios")
-    .select("auth_user_id, created_at")
-    .in("auth_user_id", ids);
-  if (start) createdQ = createdQ.gte("created_at", toIsoStart(start)!);
-  if (end) createdQ = createdQ.lte("created_at", toIsoEnd(end)!);
-
-  // Caídos (distrato) no período — usa fase_changed_at
-  let distratoQ = supabase
-    .from("negocios")
-    .select("auth_user_id, fase_changed_at, fase")
-    .in("auth_user_id", ids)
-    .eq("fase", "distrato");
-  if (start) distratoQ = distratoQ.gte("fase_changed_at", toIsoStart(start)!);
-  if (end) distratoQ = distratoQ.lte("fase_changed_at", toIsoEnd(end)!);
-
-  // Assinados (vendido) — usa data_assinatura (canônico)
-  let signedQ = supabase
-    .from("negocios")
-    .select("auth_user_id, vgv_final, vgv_estimado, data_assinatura, fase")
-    .in("auth_user_id", ids)
-    .eq("fase", "vendido");
-  if (start) signedQ = signedQ.gte("data_assinatura", start);
-  if (end) signedQ = signedQ.lte("data_assinatura", end);
-
-  const [cR, dR, sR] = await Promise.all([createdQ, distratoQ, signedQ]);
-  const created = cR.data || [];
-  const distrato = dR.data || [];
-  const signed = sR.data || [];
+  const [created, distrato, signed] = await Promise.all([
+    fetchAllPaged<{ auth_user_id: string; created_at: string }>(() => {
+      let q = supabase.from("negocios").select("auth_user_id, created_at").in("auth_user_id", ids);
+      if (start) q = q.gte("created_at", toIsoStart(start)!);
+      if (end) q = q.lte("created_at", toIsoEnd(end)!);
+      return q;
+    }),
+    fetchAllPaged<{ auth_user_id: string; fase_changed_at: string }>(() => {
+      let q = supabase.from("negocios").select("auth_user_id, fase_changed_at, fase").in("auth_user_id", ids).eq("fase", "distrato");
+      if (start) q = q.gte("fase_changed_at", toIsoStart(start)!);
+      if (end) q = q.lte("fase_changed_at", toIsoEnd(end)!);
+      return q;
+    }),
+    fetchAllPaged<{ auth_user_id: string; vgv_final: number | null; vgv_estimado: number | null; data_assinatura: string }>(() => {
+      let q = supabase.from("negocios").select("auth_user_id, vgv_final, vgv_estimado, data_assinatura, fase").in("auth_user_id", ids).eq("fase", "vendido");
+      if (start) q = q.gte("data_assinatura", start);
+      if (end) q = q.lte("data_assinatura", end);
+      return q;
+    }),
+  ]);
 
   const rows: NegociosRow[] = corretores.map(c => {
     const criados = created.filter(n => n.auth_user_id === c.user_id).length;
