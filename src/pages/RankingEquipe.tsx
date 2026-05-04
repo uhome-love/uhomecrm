@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Star, ChevronLeft, ChevronRight, CalendarDays, Users, ClipboardList, Eye, Briefcase, Download } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight, CalendarDays, Users, ClipboardList, Eye, Briefcase, Download, PhoneCall } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,12 @@ import RankingPresencasLeads from "@/components/ranking/v2/RankingPresencasLeads
 import RankingPipelineLeads from "@/components/ranking/v2/RankingPipelineLeads";
 import RankingVisitas from "@/components/ranking/v2/RankingVisitas";
 import RankingNegocios from "@/components/ranking/v2/RankingNegocios";
+import RankingOfertaAtiva from "@/components/ranking/v2/RankingOfertaAtiva";
 import { exportRankingsPdf } from "@/lib/exportRankingsPdf";
 import { supabase } from "@/integrations/supabase/client";
 
 type Period = "hoje" | "semana" | "mes" | "personalizado";
-type TabKey = "presencas" | "pipeline" | "visitas" | "negocios";
+type TabKey = "presencas" | "pipeline" | "visitas" | "negocios" | "oferta_ativa";
 
 export default function RankingEquipe() {
   const { user } = useAuthUser();
@@ -99,6 +100,7 @@ export default function RankingEquipe() {
     { key: "pipeline" as const, label: "Pipeline de Leads", icon: ClipboardList, color: "bg-purple-600" },
     { key: "visitas" as const, label: "Visitas", icon: Eye, color: "bg-amber-600" },
     { key: "negocios" as const, label: "Pipeline de Negócios", icon: Briefcase, color: "bg-emerald-600" },
+    { key: "oferta_ativa" as const, label: "Oferta Ativa", icon: PhoneCall, color: "bg-rose-600" },
   ];
 
   const [exporting, setExporting] = useState(false);
@@ -146,6 +148,12 @@ export default function RankingEquipe() {
             caption: "VGV usa vgv_final, com fallback para vgv_estimado",
             headers: ["Corretor", "Criados", "Caídos", "Assinados", "VGV Assinado"],
             rows: all.negocios.map(r => [r.nome, r.criados, r.caidos, r.assinados, fmtBRL(r.vgv_assinado)]),
+          },
+          {
+            title: "5. Oferta Ativa (ordenado por score = média entre volume e conversão)",
+            caption: "Score normaliza tentativas e conversão (0-100) e tira a média",
+            headers: ["Corretor", "Tentativas", "Aproveitados", "Conversão", "Score"],
+            rows: all.oferta_ativa.map(r => [r.nome, r.tentativas, r.aproveitados, `${r.conversao_pct.toFixed(1)}%`, r.score.toFixed(1)]),
           },
         ],
       });
@@ -266,6 +274,7 @@ export default function RankingEquipe() {
         {activeTab === "pipeline" && <RankingPipelineLeads filters={filters} currentUserId={user?.id} />}
         {activeTab === "visitas" && <RankingVisitas filters={filters} currentUserId={user?.id} />}
         {activeTab === "negocios" && <RankingNegocios filters={filters} currentUserId={user?.id} />}
+        {activeTab === "oferta_ativa" && <RankingOfertaAtiva filters={filters} currentUserId={user?.id} />}
       </motion.div>
     </div>
   );
