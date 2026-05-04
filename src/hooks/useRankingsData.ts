@@ -321,20 +321,22 @@ async function fetchOfertaAtiva(filters: RankingFilters, corretores: CorretorBas
     return { ...c, tentativas: total, aproveitados, conversao_pct };
   });
 
-  // Normaliza: dividir cada métrica pelo max do grupo (escala 0-100)
+  // Score = média normalizada (0-100) entre VOLUME de tentativas e VOLUME de aproveitados.
+  // Conversão fica como informativo, mas não entra no ranking — assim quem ligou pouco
+  // não fica em cima de quem trabalhou de verdade.
   const maxTent = Math.max(1, ...base.map(b => b.tentativas));
-  const maxConv = Math.max(1, ...base.map(b => b.conversao_pct));
+  const maxAprov = Math.max(1, ...base.map(b => b.aproveitados));
   const rows: OfertaAtivaRow[] = base.map(b => {
     const tentNorm = (b.tentativas / maxTent) * 100;
-    const convNorm = (b.conversao_pct / maxConv) * 100;
-    const score = (tentNorm + convNorm) / 2;
+    const aprovNorm = (b.aproveitados / maxAprov) * 100;
+    const score = (tentNorm + aprovNorm) / 2;
     return { ...b, score };
   });
 
   return rows.sort((a, b) =>
-    b.score - a.score ||
+    b.tentativas - a.tentativas ||
     b.aproveitados - a.aproveitados ||
-    b.tentativas - a.tentativas
+    b.conversao_pct - a.conversao_pct
   );
 }
 
