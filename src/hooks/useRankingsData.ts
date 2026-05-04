@@ -180,14 +180,15 @@ export interface VisitasRow extends CorretorBase {
 async function fetchVisitas(filters: RankingFilters, corretores: CorretorBase[]): Promise<VisitasRow[]> {
   const ids = corretores.map(c => c.user_id);
   if (ids.length === 0) return [];
-  let q = supabase
-    .from("visitas")
-    .select("corretor_id, status, data_visita")
-    .in("corretor_id", ids);
-  if (filters.start) q = q.gte("data_visita", filters.start);
-  if (filters.end) q = q.lte("data_visita", filters.end);
-  const { data } = await q;
-  const list = data || [];
+  const list = await fetchAllPaged<{ corretor_id: string; status: string; data_visita: string }>(() => {
+    let q = supabase
+      .from("visitas")
+      .select("corretor_id, status, data_visita")
+      .in("corretor_id", ids);
+    if (filters.start) q = q.gte("data_visita", filters.start);
+    if (filters.end) q = q.lte("data_visita", filters.end);
+    return q;
+  });
   const rows: VisitasRow[] = corretores.map(c => {
     const mine = list.filter(v => v.corretor_id === c.user_id);
     const criadas = mine.length;
