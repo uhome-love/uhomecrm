@@ -140,8 +140,8 @@ export default function RankingEquipe() {
           },
           {
             title: "3. Visitas (ordenado por realizadas)",
-            headers: ["Corretor", "Criadas", "Marcadas", "No-show", "Realizadas"],
-            rows: all.visitas.map(r => [r.nome, r.criadas, r.marcadas, r.no_show, r.realizadas]),
+            headers: ["Corretor", "Criadas", "No-show", "Realizadas"],
+            rows: all.visitas.map(r => [r.nome, r.criadas, r.no_show, r.realizadas]),
           },
           {
             title: "4. Pipeline de Negócios (ordenado por VGV assinado)",
