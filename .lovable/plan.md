@@ -1,45 +1,69 @@
-## Ranking Pipeline de Leads — Nova estrutura
+# Reestruturação dos Segmentos da Roleta
 
-### Conceito
-Hoje o ranking ordena por **leads ativos (DESC)**, o que premia acúmulo. Vamos trocar para medir **conversão real**: do que entrou na mão do corretor no período, quanto virou visita e quanto virou negócio. Isso responde "quem está gerindo melhor seus leads?" de forma justa entre quem recebe muito e quem recebe pouco.
+## Objetivo
 
-### Colunas da tabela (na ordem)
-1. **Leads ativos** — snapshot atual (não arquivados, fora de Descarte). Volume de trabalho que o corretor segura hoje.
-2. **Virou visita** — nº de leads recebidos no período cuja jornada chegou em qualquer etapa de visita (Visita Marcada, Visita, Visita Realizada, Pós-Visita) ou além.
-3. **Virou negócio** — nº de leads recebidos no período que chegaram em Negócio Criado, Negociação ou Venda.
-4. **Conversão** — `(Virou visita / Leads recebidos no período) %`. Métrica principal de ordenação.
-5. **⚠️ SLA atrasado** — nº de leads ativos com SLA vencido, usando a regra oficial do sistema (mesma da [SLA Logic](mem://rules/business/sla-and-overdue-logic) — BRT, 48h sem ação real, suprimida quando há tarefa futura). Sinaliza disciplina sem entrar no critério de ordenação principal.
+Consolidar os 4 segmentos atuais em uma nova nomenclatura (S1–S4 + Geral), reorganizar empreendimentos, tratar leads "avulsos" (ImovelWeb / Site) por origem, e dar ao CEO uma tela onde ele consiga fazer essas mudanças sozinho daqui para frente.
 
-### Ordenação
-- **Padrão:** `Conversão % DESC` → desempate por `Virou negócio DESC` → `Virou visita DESC` → `SLA atrasado ASC`.
-- Mantém a ordenação clicável já implementada por coluna.
-- **Sem volume mínimo** (decisão do usuário). Para evitar topo distorcido por corretor com 1 lead, mostramos a coluna "Leads recebidos no período" como contexto visual abaixo do nome (badge cinza pequena).
+## Nova estrutura
 
-### Período
-- Usa o filtro de período já existente da página (`filters.start` / `filters.end` em BRT).
-- "Leads ativos" e "SLA atrasado" continuam **snapshot atual** (estado hoje), com tooltip explicando.
-- "Virou visita", "Virou negócio" e "Conversão" usam o **período selecionado** (baseado em `data_lead` do `pipeline_leads`).
+| Segmento | Empreendimentos |
+|---|---|
+| **S1 — MCMV / Médio Padrão** | Open Bosque, Isla, Las Casas, Orygem, Alto Lindóia, *(Melnick Day, Me Day, Melnick Day Médio Padrão — manter aqui, ajustável na UI)* |
+| **S2 — Alto Padrão** | Lake Eyre, Boa Vista Country Club, Seen Menino Deus, Seen Três Figueiras, Melnick Day Alto Padrão, High Garden Iguatemi |
+| **S3 — Avulso** | *(sem empreendimentos — entra por origem do lead: `imovelweb` e `site_uhome`)* |
+| **S4 — Investimento** | Casa Bastian, Shift, Connect JW, Skyline Menino Deus, Alfa, Go Carlos Gomes, Melnick Day Compactos |
+| **Geral** | Casa Tua *(flag `ignorar_segmento=true` — recebido por todos)* |
 
-### Detalhes técnicos
-**Arquivo:** `src/hooks/useRankingsData.ts` — `fetchPipelineLeads()`.
+## Mudanças no banco (migração SQL)
 
-Stages (do banco):
-- Visita+: `c9fcf0ad…` (Visita Marcada), `a857139f…` (Visita), `5ad4f4aa…` (Visita Realizada), `d932fb49…` (Pós-Visita), `de6cee2f…` (Proposta), `a8a1a867…` (Negócio Criado), `213e9ca3…` (Negociação), `2d7739eb…` (Venda), `8c1eed68…` (Contrato Gerado).
-- Negócio+: `a8a1a867…`, `213e9ca3…`, `2d7739eb…`, `8c1eed68…`, `de6cee2f…`.
+1. **`roleta_segmentos`**
+   - Renomear `MCMV / Até 500k` → `S1 - MCMV / Médio Padrão`
+   - Renomear `Altíssimo Padrão` → `S2 - Alto Padrão`
+   - Renomear `Investimento` → `S4 - Investimento`
+   - Inserir `S3 - Avulso`
+   - Mover todas as campanhas de `Médio-Alto Padrão` para S1; depois `ativo=false` no segmento Médio-Alto (mantém histórico).
 
-Queries (todas via `fetchAllPaged` para furar o cap de 1000):
-1. **Snapshot ativos:** `pipeline_leads` `arquivado=false`, `corretor_id IN (ids)`, fora de Descarte → conta `ativos` por corretor + flag SLA.
-2. **Período (conversão):** `pipeline_leads` filtrado por `data_lead` no intervalo + `corretor_id IN (ids)` → para cada lead, classifica em "virou visita" / "virou negócio" pelo `stage_id` atual.
-3. **SLA atrasado:** reaproveita lógica existente (`ultima_acao_at` > 48h em BRT, suprimida se há tarefa futura). Como já temos `ultima_acao_at` no select, e não temos acesso barato a "tarefa futura" em massa, vamos com a aproximação `now - ultima_acao_at > 48h` (igual ao "Desatualizados" atual) e renomeamos para `SLA atrasado` para alinhar com a linguagem do sistema.
+2. **`roleta_campanhas`** — UPDATE em massa para reposicionar cada empreendimento conforme a tabela acima. `Casa Tua` permanece com `ignorar_segmento=true`.
 
-**Componente:** `src/components/ranking/v2/RankingPipelineLeads.tsx`
-- Trocar colunas e `primaryRender` para mostrar **Conversão %** como métrica principal.
-- Mostrar `Leads recebidos` em badge sutil ao lado do nome (passar via `subtitle` se existir, ou estender `RankingTable`).
+3. **`roleta_credenciamentos`** (migração automática conforme escolhido):
+   - Quem está em `MCMV` ou `Médio-Alto` → vira S1
+   - Quem está em `Altíssimo` → vira S2
+   - Quem está em `Investimento` → vira S4
+   - Se após o remap `segmento_1_id == segmento_2_id`, zera o `segmento_2_id`.
 
-**PDF (`src/lib/exportRankingsPdf.ts`):** atualizar a página "Pipeline" com as novas colunas.
+## Mudanças no código
 
-**Tipo:** atualizar `PipelineLeadsRow` para `{ ativos, recebidos_periodo, virou_visita, virou_negocio, conversao_pct, sla_atrasado }`.
+1. **`supabase/functions/distribute-lead/index.ts`**
+   - Adicionar resolução de segmento por **origem** (fallback): se o lead não casa com nenhuma `roleta_campanhas` por empreendimento E `origem ∈ {imovelweb, site_uhome}`, usa S3 - Avulso.
+   - Mantém a regra atual: campanha vence; depois origem; depois fila CEO.
 
-### Fora de escopo
-- Não alterar Ranking de Leads, Visitas ou Negócios.
-- Não tocar nas regras de SLA do sistema — só consumir.
+2. **`receive-imovelweb-lead` e `receive-landing-lead` (site)**
+   - Garantir que a `origem` gravada no `pipeline_leads` está nos valores esperados (`imovelweb`, `site_uhome`) para o matching acima.
+
+3. **UI de credenciamento (`RoletagensTab` / tela de credenciar)**
+   - Os 5 segmentos (S1, S2, S3, S4, Geral) ficam visíveis e selecionáveis pelo corretor.
+   - Mantém o limite de **2 segmentos** por turno (já existe `segmento_1_id` / `segmento_2_id`); adicionar validação client-side com mensagem clara: *"Selecione no máximo 2 segmentos"*.
+   - Geral (Casa Tua) NÃO conta como segmento — todos recebem por padrão.
+
+4. **Tela de auto-gestão (CEO/Admin) — `RoletaConfigTab` + `RoletaCampanhasPanel`**
+   - Adicionar capacidade de **criar / renomear / ativar-desativar segmentos** direto na UI (hoje só é possível mexer em campanhas).
+   - Manter drag/select para mover empreendimento entre segmentos (já existe).
+   - Toggle "Geral (todos recebem)" por empreendimento (já existe via `ignorar_segmento`).
+   - Resultado: o CEO consegue fazer rearranjos futuros sem pedir alteração no chat.
+
+## Arquivos afetados
+
+- `supabase/functions/distribute-lead/index.ts` — fallback por origem para S3
+- `src/components/roleta/RoletaConfigTab.tsx` — CRUD de segmentos
+- `src/components/settings/RoletaCampanhasPanel.tsx` — refletir 5 segmentos (incl. S3)
+- `src/components/roleta/RoletagensTab.tsx` — limite de 2 + S3 selecionável
+- `src/hooks/useRoletaSegmentos.ts` — visual (ícone/cor) para S3 e atualizar mapas para os novos nomes
+- Migração SQL via tool de migração (schema rename) + tool de insert (UPDATE de dados)
+
+## Pontos de atenção
+
+- Memória `[Roleta Segment Source of Truth]` continua válida: segmento sempre resolvido via `roleta_campanhas`/origem, nunca via `pipeline_leads.segmento_id`.
+- Após a migração, atualizar memória `[Roleta Segments]` com a nova nomenclatura S1–S4.
+- Leads históricos em `pipeline_leads.segmento_id` permanecem com o UUID antigo (que continua válido, só foi renomeado) — sem necessidade de backfill.
+
+Posso aplicar?
