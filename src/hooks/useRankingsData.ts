@@ -233,7 +233,7 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
     const caidos = distrato.filter(n => n.auth_user_id === c.user_id).length;
     const mySigned = signed.filter(n => n.auth_user_id === c.user_id);
     const assinados = mySigned.length;
-    const vgv_assinado = mySigned.reduce((s, n) => s + Number(n.vgv_final || 0), 0);
+    const vgv_assinado = mySigned.reduce((s, n: any) => s + Number(n.vgv_final ?? n.vgv_estimado ?? 0), 0);
     return { ...c, criados, caidos, assinados, vgv_assinado };
   });
   // Order: VGV DESC, assinados DESC
