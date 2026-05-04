@@ -12,9 +12,9 @@ export default function RankingNegocios({ filters, currentUserId }: { filters: R
   const { data, loading } = useRankingData<NegociosRow>("negocios", filters);
 
   const columns: Column<NegociosRow>[] = [
-    { key: "criados", label: "Criados", align: "center", render: r => <span className="font-mono">{r.criados}</span>, hint: "Negócios criados no período (created_at)" },
-    { key: "caidos", label: "Caídos", align: "center", render: r => <span className={`font-mono ${r.caidos > 0 ? "text-red-500" : ""}`}>{r.caidos}</span>, hint: "Distratos (mudança para fase 'distrato' no período)" },
-    { key: "assinados", label: "Assinados", align: "center", render: r => <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{r.assinados}</span>, hint: "Vendas com data de assinatura no período" },
+    { key: "criados", label: "Criados", align: "center", render: r => <span className="font-mono">{r.criados}</span>, sortValue: r => r.criados, hint: "Negócios criados no período (created_at)" },
+    { key: "caidos", label: "Caídos", align: "center", render: r => <span className={`font-mono ${r.caidos > 0 ? "text-red-500" : ""}`}>{r.caidos}</span>, sortValue: r => r.caidos, hint: "Distratos (mudança para fase 'distrato' no período)" },
+    { key: "assinados", label: "Assinados", align: "center", render: r => <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{r.assinados}</span>, sortValue: r => r.assinados, hint: "Vendas com data de assinatura no período" },
   ];
 
   return (
@@ -22,9 +22,10 @@ export default function RankingNegocios({ filters, currentUserId }: { filters: R
       rows={data}
       loading={loading}
       columns={columns}
-      caption="Ordenado por VGV de vendas assinadas no período (desempate: nº de assinaturas)"
+      caption="Ordenado por VGV de vendas assinadas · clique nas colunas para reordenar"
       primaryLabel="VGV Assinado"
       primaryRender={r => fmtBRL(r.vgv_assinado)}
+      primarySortValue={r => r.vgv_assinado}
       highlightUserId={currentUserId}
     />
   );
