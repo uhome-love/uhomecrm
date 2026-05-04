@@ -173,10 +173,10 @@ async function fetchPipelineLeads(filters: RankingFilters, corretores: CorretorB
   const periodLeads = await fetchAllPaged<{ corretor_id: string; stage_id: string }>(() => {
     let q = supabase
       .from("pipeline_leads")
-      .select("corretor_id, stage_id, data_lead")
+      .select("corretor_id, stage_id, created_at")
       .in("corretor_id", ids);
-    if (filters.start) q = q.gte("data_lead", filters.start);
-    if (filters.end) q = q.lte("data_lead", filters.end);
+    if (filters.start) q = q.gte("created_at", toIsoStart(filters.start)!);
+    if (filters.end) q = q.lte("created_at", toIsoEnd(filters.end)!);
     return q;
   });
 
