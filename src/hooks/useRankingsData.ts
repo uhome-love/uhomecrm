@@ -19,6 +19,22 @@ export interface CorretorBase {
 function toIsoStart(d?: string) { return d ? `${d}T00:00:00-03:00` : undefined; }
 function toIsoEnd(d?: string) { return d ? `${d}T23:59:59-03:00` : undefined; }
 
+/** Pagina automaticamente para evitar o limite default de 1000 do PostgREST. */
+async function fetchAllPaged<T = any>(buildQuery: () => any, pageSize = 1000): Promise<T[]> {
+  const out: T[] = [];
+  let from = 0;
+  // Hard cap defensivo (50k linhas)
+  for (let i = 0; i < 50; i++) {
+    const { data, error } = await buildQuery().range(from, from + pageSize - 1);
+    if (error) throw error;
+    const chunk = (data || []) as T[];
+    out.push(...chunk);
+    if (chunk.length < pageSize) break;
+    from += pageSize;
+  }
+  return out;
+}
+
 async function fetchCorretores(filters: RankingFilters): Promise<CorretorBase[]> {
   let q = supabase.from("team_members").select("user_id, gerente_id").eq("status", "ativo");
   if (filters.equipeId) q = q.eq("gerente_id", filters.equipeId);
