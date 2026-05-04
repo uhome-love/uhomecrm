@@ -30,10 +30,18 @@ async function loadMontserrat(): Promise<{ regular: string; bold: string } | nul
     try {
       const fetchAsBase64 = async (url: string) => {
         const res = await fetch(url);
-        if (!res.ok) throw new Error(`fetch ${url}`);
+        if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`);
         const buf = await res.arrayBuffer();
-        let binary = "";
         const bytes = new Uint8Array(buf);
+        // Valida assinatura TTF (0x00010000) ou OTF (OTTO)
+        const isTTF =
+          bytes[0] === 0x00 && bytes[1] === 0x01 && bytes[2] === 0x00 && bytes[3] === 0x00;
+        const isOTF =
+          bytes[0] === 0x4f && bytes[1] === 0x54 && bytes[2] === 0x54 && bytes[3] === 0x4f;
+        if (!isTTF && !isOTF) {
+          throw new Error(`Arquivo de fonte inválido em ${url} (assinatura não é TTF/OTF)`);
+        }
+        let binary = "";
         const chunk = 0x8000;
         for (let i = 0; i < bytes.length; i += chunk) {
           binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
