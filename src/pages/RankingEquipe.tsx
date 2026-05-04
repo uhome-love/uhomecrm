@@ -140,8 +140,12 @@ export default function RankingEquipe() {
           },
           {
             title: "3. Visitas (ordenado por realizadas)",
-            headers: ["Corretor", "Criadas", "No-show", "Realizadas"],
-            rows: all.visitas.map(r => [r.nome, r.criadas, r.no_show, r.realizadas]),
+            headers: ["Corretor", "Criadas", "No-show", "Realizadas", "Conversão"],
+            rows: all.visitas.map(r => {
+              const denom = r.realizadas + r.no_show;
+              const conv = denom > 0 ? ((r.realizadas / denom) * 100).toFixed(1) + "%" : "—";
+              return [r.nome, r.criadas, r.no_show, r.realizadas, conv];
+            }),
           },
           {
             title: "4. Pipeline de Negócios (ordenado por VGV assinado)",
