@@ -217,11 +217,23 @@ export default function RankingEquipe() {
           )}
         </div>
 
-        <RankingFilters
-          equipeId={equipeId}
-          onEquipeChange={setEquipeId}
-          showEquipe={isAdmin}
-        />
+        <div className="flex items-center gap-2 flex-wrap">
+          <RankingFilters
+            equipeId={equipeId}
+            onEquipeChange={setEquipeId}
+            showEquipe={isAdmin}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2 text-xs h-8"
+            onClick={handleExportPdf}
+            disabled={exporting}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {exporting ? "Gerando..." : "Baixar PDF"}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
