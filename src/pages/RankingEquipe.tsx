@@ -121,7 +121,7 @@ export default function RankingEquipe() {
       } else if (isAdmin) {
         equipeLabel = "Todas as equipes";
       }
-      exportRankingsPdf({
+      await exportRankingsPdf({
         fileName: `rankings-uhome-${dateRange.start || "tudo"}-${dateRange.end || ""}.pdf`,
         periodLabel,
         equipeLabel,
