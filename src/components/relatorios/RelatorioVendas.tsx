@@ -43,7 +43,7 @@ type SortDir = "asc" | "desc";
 
 function faseToStatus(fase: string): string {
   if (fase === "vendido") return "Confirmada";
-  if (fase === "distrato") return "Distrato";
+  if (fase === "distrato") return "Caiu";
   return fase;
 }
 
@@ -59,7 +59,7 @@ const SEG_BADGE: Record<string, { bg: string; color: string }> = {
 const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
   Confirmada: { bg: "#d1fae5", color: "#065f46" },
   Pendente: { bg: "#fef3c7", color: "#92400e" },
-  Distrato: { bg: "#fee2e2", color: "#991b1b" },
+  Caiu: { bg: "#fee2e2", color: "#991b1b" },
 };
 
 function Badge({ label, map }: { label: string; map: Record<string, { bg: string; color: string }> }) {

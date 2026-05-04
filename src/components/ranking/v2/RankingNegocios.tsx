@@ -13,7 +13,7 @@ export default function RankingNegocios({ filters, currentUserId }: { filters: R
 
   const columns: Column<NegociosRow>[] = [
     { key: "criados", label: "Criados", align: "center", render: r => <span className="font-mono">{r.criados}</span>, sortValue: r => r.criados, hint: "Negócios criados no período (created_at)" },
-    { key: "caidos", label: "Caídos", align: "center", render: r => <span className={`font-mono ${r.caidos > 0 ? "text-red-500" : ""}`}>{r.caidos}</span>, sortValue: r => r.caidos, hint: "Distratos (mudança para fase 'distrato' no período)" },
+    { key: "caidos", label: "Caídos", align: "center", render: r => <span className={`font-mono ${r.caidos > 0 ? "text-red-500" : ""}`}>{r.caidos}</span>, sortValue: r => r.caidos, hint: "Negócios que caíram no período" },
     { key: "assinados", label: "Assinados", align: "center", render: r => <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{r.assinados}</span>, sortValue: r => r.assinados, hint: "Vendas com data de assinatura no período" },
   ];
 
