@@ -291,8 +291,55 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
   return rows.sort((a, b) => b.vgv_assinado - a.vgv_assinado || b.assinados - a.assinados);
 }
 
+// ====== 5. Oferta Ativa ======
+export interface OfertaAtivaRow extends CorretorBase {
+  tentativas: number;
+  aproveitados: number;
+  conversao_pct: number;
+  score: number; // média normalizada (0-100) entre tentativas e conversão
+}
+
+async function fetchOfertaAtiva(filters: RankingFilters, corretores: CorretorBase[]): Promise<OfertaAtivaRow[]> {
+  const ids = corretores.map(c => c.user_id);
+  if (ids.length === 0) return [];
+
+  const tentativas = await fetchAllPaged<{ corretor_id: string; resultado: string }>(() => {
+    let q = supabase
+      .from("oferta_ativa_tentativas")
+      .select("corretor_id, resultado, created_at")
+      .in("corretor_id", ids);
+    if (filters.start) q = q.gte("created_at", toIsoStart(filters.start)!);
+    if (filters.end) q = q.lte("created_at", toIsoEnd(filters.end)!);
+    return q;
+  });
+
+  const base = corretores.map(c => {
+    const mine = tentativas.filter(t => t.corretor_id === c.user_id);
+    const total = mine.length;
+    const aproveitados = mine.filter(t => t.resultado === "com_interesse").length;
+    const conversao_pct = total > 0 ? (aproveitados / total) * 100 : 0;
+    return { ...c, tentativas: total, aproveitados, conversao_pct };
+  });
+
+  // Normaliza: dividir cada métrica pelo max do grupo (escala 0-100)
+  const maxTent = Math.max(1, ...base.map(b => b.tentativas));
+  const maxConv = Math.max(1, ...base.map(b => b.conversao_pct));
+  const rows: OfertaAtivaRow[] = base.map(b => {
+    const tentNorm = (b.tentativas / maxTent) * 100;
+    const convNorm = (b.conversao_pct / maxConv) * 100;
+    const score = (tentNorm + convNorm) / 2;
+    return { ...b, score };
+  });
+
+  return rows.sort((a, b) =>
+    b.score - a.score ||
+    b.aproveitados - a.aproveitados ||
+    b.tentativas - a.tentativas
+  );
+}
+
 // ====== Public hook ======
-export type RankingType = "presencas" | "pipeline" | "visitas" | "negocios";
+export type RankingType = "presencas" | "pipeline" | "visitas" | "negocios" | "oferta_ativa";
 
 export function useRankingData<T>(type: RankingType, filters: RankingFilters) {
   const [data, setData] = useState<T[]>([]);
@@ -309,6 +356,7 @@ export function useRankingData<T>(type: RankingType, filters: RankingFilters) {
       else if (type === "pipeline") result = await fetchPipelineLeads(filters, corretores);
       else if (type === "visitas") result = await fetchVisitas(filters, corretores);
       else if (type === "negocios") result = await fetchNegocios(filters, corretores);
+      else if (type === "oferta_ativa") result = await fetchOfertaAtiva(filters, corretores);
       if (!cancelled) {
         setData(result as T[]);
         setLoading(false);
@@ -323,13 +371,14 @@ export function useRankingData<T>(type: RankingType, filters: RankingFilters) {
 
 export async function fetchAllRankings(filters: RankingFilters) {
   const corretores = await fetchCorretores(filters);
-  const [presencas, pipeline, visitas, negocios] = await Promise.all([
+  const [presencas, pipeline, visitas, negocios, oferta_ativa] = await Promise.all([
     fetchPresencasLeads(filters, corretores),
     fetchPipelineLeads(filters, corretores),
     fetchVisitas(filters, corretores),
     fetchNegocios(filters, corretores),
+    fetchOfertaAtiva(filters, corretores),
   ]);
-  return { presencas, pipeline, visitas, negocios };
+  return { presencas, pipeline, visitas, negocios, oferta_ativa };
 }
 
 export async function fetchEquipes(): Promise<{ user_id: string; nome: string }[]> {
