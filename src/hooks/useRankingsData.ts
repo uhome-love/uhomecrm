@@ -297,18 +297,13 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
       .select("pipeline_lead_id, corretor_principal_id, corretor_parceiro_id, divisao_principal, divisao_parceiro")
       .in("pipeline_lead_id", signedLeadIds)
       .eq("status", "ativa");
-    const profIds = [...new Set((parcs || []).flatMap(p => [p.corretor_principal_id, p.corretor_parceiro_id]).filter(Boolean))] as string[];
-    const profToUid = new Map<string, string>();
-    if (profIds.length) {
-      const { data: profs } = await supabase.from("profiles").select("id, user_id").in("id", profIds);
-      (profs || []).forEach(p => { if (p.user_id) profToUid.set(p.id, p.user_id); });
-    }
+    // pipeline_parcerias.corretor_principal_id / corretor_parceiro_id são auth.users.id
     (parcs || []).forEach(p => {
       if (!p.pipeline_lead_id) return;
       parcByLead.set(p.pipeline_lead_id, {
         pipeline_lead_id: p.pipeline_lead_id,
-        principal_uid: p.corretor_principal_id ? (profToUid.get(p.corretor_principal_id) ?? null) : null,
-        parceiro_uid: p.corretor_parceiro_id ? (profToUid.get(p.corretor_parceiro_id) ?? null) : null,
+        principal_uid: p.corretor_principal_id ?? null,
+        parceiro_uid: p.corretor_parceiro_id ?? null,
         div_principal: Number(p.divisao_principal ?? 50),
         div_parceiro: Number(p.divisao_parceiro ?? 50),
       });
