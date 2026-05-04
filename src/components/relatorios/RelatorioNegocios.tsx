@@ -45,7 +45,7 @@ const FASES: Array<{ fase: string; label: string; color: string; bg: string }> =
   { fase: "documentacao", label: "Documentação", color: "#5b21b6", bg: "#ede9fe" },
   { fase: "vendido", label: "Vendido", color: "#065f46", bg: "#d1fae5" },
   { fase: "perdido", label: "Perdido", color: "#991b1b", bg: "#fee2e2" },
-  { fase: "distrato", label: "Distrato", color: "#6b7280", bg: "#f3f4f6" },
+  { fase: "distrato", label: "Caiu", color: "#6b7280", bg: "#f3f4f6" },
 ];
 
 const FASE_MAP = new Map(FASES.map((f) => [f.fase, f]));
