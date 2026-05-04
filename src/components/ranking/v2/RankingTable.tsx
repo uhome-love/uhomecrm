@@ -13,16 +13,17 @@ interface Props<T extends { user_id: string; nome: string; gerente_nome?: string
   rows: T[];
   loading: boolean;
   columns: Column<T>[];
-  scoreLabel: string;
-  scoreRender: (row: T) => React.ReactNode;
+  primaryLabel: string;
+  primaryRender: (row: T) => React.ReactNode;
   highlightUserId?: string;
   emptyText?: string;
+  caption?: string;
 }
 
 const medals = ["🥇", "🥈", "🥉"];
 
 export default function RankingTable<T extends { user_id: string; nome: string; gerente_nome?: string | null }>({
-  rows, loading, columns, scoreLabel, scoreRender, highlightUserId, emptyText = "Sem dados no período",
+  rows, loading, columns, primaryLabel, primaryRender, highlightUserId, emptyText = "Sem dados no período", caption,
 }: Props<T>) {
   if (loading) {
     return <div className="p-12 text-center text-muted-foreground text-sm">Carregando ranking...</div>;
@@ -38,6 +39,11 @@ export default function RankingTable<T extends { user_id: string; nome: string; 
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+      {caption && (
+        <div className="px-4 py-2 text-[11px] text-muted-foreground bg-muted/20 border-b border-border">
+          {caption}
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 border-b border-border">
@@ -54,7 +60,7 @@ export default function RankingTable<T extends { user_id: string; nome: string; 
                 </th>
               ))}
               <th className="text-right font-display text-xs font-semibold text-primary px-3 py-2.5 whitespace-nowrap">
-                {scoreLabel}
+                {primaryLabel}
               </th>
             </tr>
           </thead>
@@ -93,7 +99,7 @@ export default function RankingTable<T extends { user_id: string; nome: string; 
                   ))}
                   <td className="px-3 py-2.5 text-right">
                     <span className="inline-flex items-center justify-center min-w-[60px] px-2.5 py-1 rounded-md bg-primary/10 text-primary font-display font-bold text-sm">
-                      {scoreRender(row)}
+                      {primaryRender(row)}
                     </span>
                   </td>
                 </motion.tr>

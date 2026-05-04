@@ -5,10 +5,10 @@ export default function RankingPresencasLeads({ filters, currentUserId }: { filt
   const { data, loading } = useRankingData<PresencasLeadsRow>("presencas", filters);
 
   const columns: Column<PresencasLeadsRow>[] = [
-    { key: "diurna", label: "☀️ Diurna", align: "center", render: r => <span className="font-mono">{r.presencas_diurna}</span>, hint: "Presenças aprovadas em janelas manhã/tarde" },
+    { key: "diurna", label: "☀️ Diurna", align: "center", render: r => <span className="font-mono">{r.presencas_diurna}</span>, hint: "Manhã / Tarde / Dia todo" },
     { key: "noturna", label: "🌙 Noturna", align: "center", render: r => <span className="font-mono">{r.presencas_noturna}</span> },
     { key: "domingo", label: "🗓 Domingo", align: "center", render: r => <span className="font-mono">{r.presencas_domingo}</span> },
-    { key: "leads", label: "Leads recebidos", align: "right", render: r => <span className="font-mono font-semibold">{r.leads_recebidos}</span> },
+    { key: "total_pres", label: "Σ Presenças", align: "center", render: r => <span className="font-mono font-semibold">{r.presencas_total}</span> },
   ];
 
   return (
@@ -16,8 +16,9 @@ export default function RankingPresencasLeads({ filters, currentUserId }: { filt
       rows={data}
       loading={loading}
       columns={columns}
-      scoreLabel="Score"
-      scoreRender={r => `${r.score}`}
+      caption="Ordenado por leads recebidos no período (desempate: total de presenças)"
+      primaryLabel="Leads recebidos"
+      primaryRender={r => `${r.leads_recebidos}`}
       highlightUserId={currentUserId}
     />
   );

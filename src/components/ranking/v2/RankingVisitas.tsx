@@ -5,11 +5,9 @@ export default function RankingVisitas({ filters, currentUserId }: { filters: Ra
   const { data, loading } = useRankingData<VisitasRow>("visitas", filters);
 
   const columns: Column<VisitasRow>[] = [
-    { key: "criadas", label: "Criadas", align: "center", render: r => <span className="font-mono">{r.criadas}</span> },
-    { key: "real", label: "Realizadas", align: "center", render: r => <span className="font-mono font-semibold text-success">{r.realizadas}</span> },
-    { key: "ns", label: "No-show", align: "center", render: r => (
-      <span className={`font-mono ${r.no_show > 0 ? "text-destructive/70" : "text-muted-foreground"}`}>{r.no_show}</span>
-    )},
+    { key: "criadas", label: "Criadas", align: "center", render: r => <span className="font-mono">{r.criadas}</span>, hint: "Total de visitas no período" },
+    { key: "marcadas", label: "Marcadas", align: "center", render: r => <span className="font-mono">{r.marcadas}</span> },
+    { key: "no_show", label: "No-show", align: "center", render: r => <span className={`font-mono ${r.no_show > 0 ? "text-red-500" : ""}`}>{r.no_show}</span> },
   ];
 
   return (
@@ -17,8 +15,9 @@ export default function RankingVisitas({ filters, currentUserId }: { filters: Ra
       rows={data}
       loading={loading}
       columns={columns}
-      scoreLabel="Pontos"
-      scoreRender={r => `${r.score}`}
+      caption="Ordenado por visitas realizadas no período (desempate: visitas criadas)"
+      primaryLabel="Realizadas"
+      primaryRender={r => `${r.realizadas}`}
       highlightUserId={currentUserId}
     />
   );
