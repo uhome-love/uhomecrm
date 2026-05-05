@@ -114,7 +114,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
           .eq("ativo", true),
         supabase
           .from("roleta_campanhas")
-          .select("empreendimento, segmento_id, ativo, roleta_segmentos!inner(id, nome, ativo)")
+          .select("empreendimento, segmento_id, ativo, ignorar_segmento, roleta_segmentos(id, nome, ativo)")
           .eq("ativo", true),
       ]);
       if (cancelled) return;
@@ -134,19 +134,20 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
       const camps: CampanhaMap[] = ((campRes.data || []) as any[])
         .map((c) => ({
           empreendimento: String(c.empreendimento || "").trim(),
-          segmento_id: c.segmento_id as string,
+          segmento_id: c.segmento_id as string | null,
           segmento_nome: String(c.roleta_segmentos?.nome || "").trim(),
           segmento_ativo: !!c.roleta_segmentos?.ativo,
+          ignorar_segmento: !!c.ignorar_segmento,
         }))
-        // Apenas campanhas com segmento ativo no banco — nunca fallback hardcoded
+        // Aceita: (a) campanhas com segmento ativo válido OU (b) campanhas marcadas como "ignorar_segmento" (Geral/todos)
         .filter((c) =>
           c.empreendimento &&
-          c.segmento_nome &&
-          c.segmento_ativo &&
-          activeSegIds.has(c.segmento_id) &&
-          activeSegNames.has(c.segmento_nome)
+          (
+            c.ignorar_segmento ||
+            (c.segmento_nome && c.segmento_ativo && c.segmento_id && activeSegIds.has(c.segmento_id) && activeSegNames.has(c.segmento_nome))
+          )
         )
-        .map(({ empreendimento, segmento_nome }) => ({ empreendimento, segmento_nome }));
+        .map(({ empreendimento, segmento_nome, ignorar_segmento }) => ({ empreendimento, segmento_nome, ignorar_segmento }));
 
       if (camps.length === 0) {
         toast.error("Nenhuma campanha ativa vinculada a segmentos S1–S4. Configure em Configurações → Campanhas da Roleta.");
