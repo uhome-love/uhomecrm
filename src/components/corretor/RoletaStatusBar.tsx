@@ -117,6 +117,12 @@ function getJanelasConfig(): JanelaConfig[] {
 
 // NOTE: JANELAS_CONFIG is now computed inside the component to handle day changes
 
+function formatHora(h: number): string {
+  const hh = Math.floor(h);
+  const mm = Math.round((h - hh) * 60);
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
 function getHoraDecimal() {
   const now = new Date();
   const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
