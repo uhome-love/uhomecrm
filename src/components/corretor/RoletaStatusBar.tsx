@@ -229,7 +229,13 @@ export default function RoletaStatusBar() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [credenciamentosPorJanela, setCredenciamentosPorJanela] = useState<Record<string, string>>({});
 
-  const nightReqs = useNightRequirements(user?.id, profileId);
+  const nightReqs = useNightRequirements(user?.id, profileId, credModalOpen ? Date.now() : 0);
+
+  // Re-fetch requirements every time the credenciamento modal opens
+  useEffect(() => {
+    if (credModalOpen) nightReqs.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [credModalOpen]);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
