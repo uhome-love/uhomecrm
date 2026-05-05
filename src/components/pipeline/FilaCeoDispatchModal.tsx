@@ -11,16 +11,21 @@ import { getBrtDateInfo } from "@/hooks/useRoleta";
 interface CampanhaMap {
   empreendimento: string;
   segmento_nome: string;
+  ignorar_segmento: boolean;
 }
+
+const SEG_GERAL = "Geral (todos)";
 
 function resolveSegmentoNome(emp: string | null, campanhas: CampanhaMap[]): string | null {
   if (!emp) return null;
   const lower = emp.toLowerCase().trim();
   if (!lower) return null;
 
+  const matchToName = (c: CampanhaMap) => (c.ignorar_segmento ? SEG_GERAL : c.segmento_nome);
+
   // Exact
   const exact = campanhas.find((c) => c.empreendimento.toLowerCase().trim() === lower);
-  if (exact) return exact.segmento_nome;
+  if (exact) return matchToName(exact);
 
   // Substring (longest first)
   const sorted = [...campanhas].sort(
@@ -29,7 +34,7 @@ function resolveSegmentoNome(emp: string | null, campanhas: CampanhaMap[]): stri
   for (const c of sorted) {
     const k = c.empreendimento.toLowerCase().trim();
     if (!k) continue;
-    if (lower.includes(k) || k.includes(lower)) return c.segmento_nome;
+    if (lower.includes(k) || k.includes(lower)) return matchToName(c);
   }
   return null;
 }
