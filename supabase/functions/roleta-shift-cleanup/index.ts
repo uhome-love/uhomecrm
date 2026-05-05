@@ -25,11 +25,11 @@ Deno.serve(async (req) => {
 
   // Determine which janela just ended
   let closedJanela: string | null = null;
-  // Cron runs at: 12:00 BRT (close manha), 18:30 BRT (close tarde), 23:30 BRT (close noturna)
+  // Cron runs at: 12:00 BRT (close manha), 18:00 BRT (close tarde), 23:30 BRT (close noturna)
   // We give a 5-min window tolerance
   if (brtTime >= 1155 && brtTime <= 1210) {
     closedJanela = "manha";
-  } else if (brtTime >= 1825 && brtTime <= 1840) {
+  } else if (brtTime >= 1755 && brtTime <= 1810) {
     closedJanela = "tarde";
   } else if (brtTime >= 2325 && brtTime <= 2340) {
     closedJanela = "noturna";
