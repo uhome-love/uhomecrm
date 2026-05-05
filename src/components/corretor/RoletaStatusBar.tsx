@@ -535,8 +535,8 @@ export default function RoletaStatusBar() {
                                 : jStatus === "encerrado"
                                   ? "Encerrado"
                                   : jStatus === "futuro"
-                                    ? `Abre às ${j.credAberto.inicio === 7.5 ? "07:30" : j.credAberto.inicio === 12 ? "12:00" : j.credAberto.inicio === 18.5 ? "18:30" : j.credAberto.inicio + "h"}`
-                                    : `Aberto até ${j.credAberto.fim === 13.5 ? "13:30" : j.credAberto.fim === 9.5 ? "09:30" : j.credAberto.fim === 20.5 ? "20:30" : j.credAberto.fim + "h"}`
+                                    ? `Abre às ${formatHora(j.credAberto.inicio)}`
+                                    : `Aberto até ${formatHora(j.credAberto.fim)}`
                             }
                           </p>
                         </div>
