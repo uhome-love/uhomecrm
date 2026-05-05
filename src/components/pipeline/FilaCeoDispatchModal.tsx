@@ -134,7 +134,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
 
     for (const lead of leads) {
       all.push(lead.id);
-      const segNome = resolveSegmentoNome(lead.empreendimento);
+      const segNome = resolveSegmentoNome(lead.empreendimento, campanhas);
       if (segNome) {
         identified.push(lead.id);
         if (!groups[segNome]) {
