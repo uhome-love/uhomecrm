@@ -156,16 +156,16 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
       identifiedLeadIds: identified,
       allLeadIds: all,
     };
-  }, [leads]);
+  }, [leads, campanhas]);
 
   const isOfertaAtiva = selectedDestino === "oferta_ativa";
   const leadsToDispatch = includeUnidentified ? allLeadIds : identifiedLeadIds;
 
   const SEGMENTO_COLORS: Record<string, string> = {
-    "MCMV / Até 500k": "bg-primary/10 text-primary border-primary/30",
-    "Médio-Alto Padrão": "bg-accent text-accent-foreground border-border",
-    "Altíssimo Padrão": "bg-secondary text-secondary-foreground border-border",
-    Investimento: "bg-muted text-foreground border-border",
+    "S1 - MCMV / Médio Padrão": "bg-blue-500/10 text-blue-700 border-blue-500/30 dark:text-blue-300",
+    "S2 - Alto Padrão": "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300",
+    "S3 - Avulso": "bg-pink-500/10 text-pink-700 border-pink-500/30 dark:text-pink-300",
+    "S4 - Investimento": "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300",
   };
 
   const handleDispatch = async () => {
