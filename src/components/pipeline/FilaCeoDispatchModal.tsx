@@ -178,9 +178,12 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
     const identified: string[] = [];
     const all: string[] = [];
 
+    // S3 - Avulso é segmento por origem (sem empreendimento próprio na roleta_campanhas)
+    const hasAvulso = true;
+
     for (const lead of leads) {
       all.push(lead.id);
-      const segNome = resolveSegmentoNome(lead.empreendimento, campanhas);
+      const segNome = resolveSegmentoNome(lead.empreendimento, lead.origem, campanhas, hasAvulso);
       if (segNome) {
         identified.push(lead.id);
         if (!groups[segNome]) {
