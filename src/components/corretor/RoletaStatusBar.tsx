@@ -142,18 +142,27 @@ interface NightRequirements {
   loading: boolean;
 }
 
-function useNightRequirements(userId: string | undefined, profileId: string | null): NightRequirements {
+function useNightRequirements(
+  userId: string | undefined,
+  profileId: string | null,
+  refreshKey: number = 0,
+): NightRequirements & { refresh: () => void } {
   const [state, setState] = useState<NightRequirements>({ visitaMarcada: false, visitaRealizada: false, sistemaAtualizado: true, loading: true });
+  const [internalKey, setInternalKey] = useState(0);
+
+  const refresh = useCallback(() => setInternalKey(k => k + 1), []);
 
   useEffect(() => {
     if (!userId) { setState(s => ({ ...s, loading: false })); return; }
+    let cancelled = false;
 
     const check = async () => {
+      setState(s => ({ ...s, loading: true }));
       const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
       // visitas.corretor_id stores MIXED ids: auth user_id (when broker creates)
       // or profile_id (when manager creates). We must check BOTH.
-      // Also check visits scheduled for today OR future dates (not just today).
+      // Visit counts as valid if scheduled for today or any future date.
       const idsToCheck = [userId, profileId].filter(Boolean) as string[];
 
       const marcadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
@@ -166,21 +175,42 @@ function useNightRequirements(userId: string | undefined, profileId: string | nu
         .eq("status", "realizada")
         .gte("data_visita", hoje);
 
-      // pipeline_leads.corretor_id stores auth user.id
-      const paradosRes = await (supabase.from("pipeline_leads").select("id", { count: "exact", head: true })
-        .eq("corretor_id", userId) as any).neq("pipeline_fase", "Descarte").gt("dias_parado", 1);
+      // "Sistema atualizado": leads do corretor sem tarefa pendente futura.
+      // Usa a função canônica via RPC para evitar referenciar colunas inexistentes.
+      let sistemaAtualizado = true;
+      try {
+        const { data: eleg } = await supabase.rpc("get_elegibilidade_roleta", { p_corretor_id: userId });
+        if (eleg && typeof (eleg as any).leads_desatualizados === "number") {
+          const limite = (eleg as any).limite_bloqueio ?? 10;
+          sistemaAtualizado = (eleg as any).leads_desatualizados <= limite;
+        }
+      } catch (e) {
+        console.warn("[NightRequirements] Falha ao checar elegibilidade:", e);
+      }
 
+      if (cancelled) return;
       setState({
         visitaMarcada: (marcadasRes.count || 0) > 0,
         visitaRealizada: (realizadasRes.count || 0) > 0,
-        sistemaAtualizado: (paradosRes.count || 0) === 0,
+        sistemaAtualizado,
         loading: false,
       });
     };
     check();
-  }, [userId, profileId]);
+    return () => { cancelled = true; };
+  }, [userId, profileId, refreshKey, internalKey]);
 
-  return state;
+  // Realtime: refresh when broker's visits change
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`night-reqs-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "visitas", filter: `corretor_id=eq.${userId}` }, () => refresh())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, refresh]);
+
+  return { ...state, refresh };
 }
 
 export default function RoletaStatusBar() {
