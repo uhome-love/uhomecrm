@@ -18,12 +18,13 @@ const FONTES = [
   { id: "perdidos", label: "Perdidos", sub: "Reengajar", icon: HeartCrack, color: "text-red-400" },
 ] as const;
 
-const ETAPAS_LEADS = [
-  "Novo Lead", "Sem Contato", "Contato Iniciado", "Qualificação",
-  "Possível Visita", "Visita Marcada", "Visita Realizada"
+// Fallback estático (caso fetch falhe). As listas reais são carregadas dinamicamente do banco.
+const ETAPAS_LEADS_FALLBACK = [
+  "Novo Lead", "Sem Contato", "Contato Iniciado", "Busca",
+  "Aquecimento", "Visita", "Pós-Visita"
 ];
 
-const ETAPAS_PDN = ["Negociação", "Proposta", "Assinatura"];
+const ETAPAS_PDN_FALLBACK = ["Contrato Gerado", "Proposta", "Caiu"];
 
 const TEMPERATURAS = [
   { id: "quente", label: "🔥 Quente" },
