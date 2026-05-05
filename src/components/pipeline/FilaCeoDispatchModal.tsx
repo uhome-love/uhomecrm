@@ -179,10 +179,20 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
       }
     }
 
+    // Ordenação canônica: extrai número do prefixo "Sn -" e ordena.
+    // Sem prefixo válido vai para o fim. Empate desempata por nome.
+    const segOrder = (nome: string): number => {
+      const m = /^s\s*(\d+)/i.exec(nome.trim());
+      return m ? parseInt(m[1], 10) : 999;
+    };
+
     return {
-      preview: Object.values(groups).sort((a, b) =>
-        a.segmento_nome.localeCompare(b.segmento_nome, "pt-BR", { numeric: true })
-      ),
+      preview: Object.values(groups).sort((a, b) => {
+        const oa = segOrder(a.segmento_nome);
+        const ob = segOrder(b.segmento_nome);
+        if (oa !== ob) return oa - ob;
+        return a.segmento_nome.localeCompare(b.segmento_nome, "pt-BR");
+      }),
       unidentifiedCount: unidentified,
       identifiedLeadIds: identified,
       allLeadIds: all,
