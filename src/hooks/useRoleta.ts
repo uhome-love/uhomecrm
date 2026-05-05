@@ -85,7 +85,7 @@ export function getCurrentWindowInfo(): {
   const { brt: brtNow, isSunday, isHoliday } = getBrtDateInfo();
   const mins = getMinutesFromMidnight(brtNow.getHours(), brtNow.getMinutes());
 
-  const isSaturday = brtNow.getDay() === 6;
+  // Sábado segue o mesmo horário de seg-sex (regra unificada)
 
   // Janelas de distribuição:
   // Domingo e feriado: dia todo
