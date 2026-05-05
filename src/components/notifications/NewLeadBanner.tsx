@@ -85,7 +85,7 @@ export default function NewLeadBanner() {
       }, (payload) => {
         const newRow = payload.new as any;
         // Only show banner for leads pending acceptance
-        if (!["pendente", "aguardando_aceite"].includes(newRow?.aceite_status)) return;
+        if (!["pendente", "aguardando_aceite", "pendente_aceite"].includes(newRow?.aceite_status)) return;
         if (dismissedRef.current.has(newRow.id)) return;
 
          const lead: BannerLead = {
@@ -131,7 +131,7 @@ export default function NewLeadBanner() {
             index={idx}
             onDismiss={() => dismissBanner(lead.id)}
             onNavigate={() => {
-              navigate("/aceite");
+              navigate(`/aceite?lead=${lead.id}`);
               dismissBanner(lead.id);
             }}
           />
