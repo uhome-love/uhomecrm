@@ -8,51 +8,29 @@ import { Loader2, Rocket, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
 
-const EMPREENDIMENTO_SEGMENTO: Record<string, string> = {
-  "open bosque": "MCMV / Até 500k",
-  "alto lindóia": "MCMV / Até 500k",
-  "alto lindoia": "MCMV / Até 500k",
-  "melnick day": "MCMV / Até 500k",
-  "las casas": "Médio-Alto Padrão",
-  "orygem": "Médio-Alto Padrão",
-  "me day": "Médio-Alto Padrão",
-  "melnick day médio padrão": "Médio-Alto Padrão",
-  "melnick day medio padrao": "Médio-Alto Padrão",
-  "melnick day - médio padrão": "Médio-Alto Padrão",
-  "terrace": "Médio-Alto Padrão",
-  "duetto - morana": "Médio-Alto Padrão",
-  "lake eyre": "Altíssimo Padrão",
-  "seen": "Altíssimo Padrão",
-  "seen menino deus": "Altíssimo Padrão",
-  "seen três figueiras": "Altíssimo Padrão",
-  "seen tres figueiras": "Altíssimo Padrão",
-  "boa vista country club": "Altíssimo Padrão",
-  "boa vista": "Altíssimo Padrão",
-  "high garden iguatemi": "Altíssimo Padrão",
-  "high garden": "Altíssimo Padrão",
-  "melnick day alto padrão": "Altíssimo Padrão",
-  "melnick day - alto padrão": "Altíssimo Padrão",
-  "melnick day alto padrao": "Altíssimo Padrão",
-  "alfa": "Investimento",
-  "shift": "Investimento",
-  "shift - vanguard": "Investimento",
-  "casa bastian": "Investimento",
-  "connect jw": "Investimento",
-  "go carlos gomes": "Investimento",
-  "melnick day compactos": "Investimento",
-  "melnick day - compactos": "Investimento",
-};
+interface CampanhaMap {
+  empreendimento: string;
+  segmento_nome: string;
+}
 
-function resolveSegmentoNome(emp: string | null): string | null {
+function resolveSegmentoNome(emp: string | null, campanhas: CampanhaMap[]): string | null {
   if (!emp) return null;
   const lower = emp.toLowerCase().trim();
-  if (EMPREENDIMENTO_SEGMENTO[lower]) return EMPREENDIMENTO_SEGMENTO[lower];
+  if (!lower) return null;
 
-  const sortedKeys = Object.keys(EMPREENDIMENTO_SEGMENTO).sort((a, b) => b.length - a.length);
-  for (const key of sortedKeys) {
-    if (lower.includes(key) || key.includes(lower)) return EMPREENDIMENTO_SEGMENTO[key];
+  // Exact
+  const exact = campanhas.find((c) => c.empreendimento.toLowerCase().trim() === lower);
+  if (exact) return exact.segmento_nome;
+
+  // Substring (longest first)
+  const sorted = [...campanhas].sort(
+    (a, b) => b.empreendimento.length - a.empreendimento.length
+  );
+  for (const c of sorted) {
+    const k = c.empreendimento.toLowerCase().trim();
+    if (!k) continue;
+    if (lower.includes(k) || k.includes(lower)) return c.segmento_nome;
   }
-
   return null;
 }
 
@@ -100,6 +78,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
   const [loading, setLoading] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
+  const [campanhas, setCampanhas] = useState<CampanhaMap[]>([]);
   const { isSunday, isHoliday } = getBrtDateInfo();
   const isAllDayRoleta = isSunday || isHoliday;
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
@@ -115,20 +94,33 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
     setLoading(true);
     setLeads([]);
     (async () => {
-      const { data, error, count } = await supabase
-        .from("pipeline_leads")
-        .select("id, nome, empreendimento, telefone, origem, aceite_status", { count: "exact" })
-        .is("corretor_id", null)
-        .eq("aceite_status", "pendente_distribuicao")
-        .order("created_at", { ascending: true })
-        .limit(2000);
+      const [leadsRes, campRes] = await Promise.all([
+        supabase
+          .from("pipeline_leads")
+          .select("id, nome, empreendimento, telefone, origem, aceite_status", { count: "exact" })
+          .is("corretor_id", null)
+          .eq("aceite_status", "pendente_distribuicao")
+          .order("created_at", { ascending: true })
+          .limit(2000),
+        supabase
+          .from("roleta_campanhas")
+          .select("empreendimento, segmento_id, ativo, roleta_segmentos!inner(nome)")
+          .eq("ativo", true),
+      ]);
       if (cancelled) return;
-      if (error) {
-        console.error("[FilaCeoDispatchModal] fetch error:", error);
+      if (leadsRes.error) {
+        console.error("[FilaCeoDispatchModal] fetch error:", leadsRes.error);
         toast.error("Erro ao carregar fila CEO");
       }
-      console.info(`[FilaCeoDispatchModal] Fila CEO: ${data?.length || 0} carregados (count=${count})`);
-      setLeads(data || []);
+      const camps: CampanhaMap[] = ((campRes.data || []) as any[])
+        .map((c) => ({
+          empreendimento: c.empreendimento || "",
+          segmento_nome: c.roleta_segmentos?.nome || "",
+        }))
+        .filter((c) => c.empreendimento && c.segmento_nome);
+      setCampanhas(camps);
+      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsRes.data?.length || 0} carregados (count=${leadsRes.count}); ${camps.length} campanhas`);
+      setLeads(leadsRes.data || []);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -142,7 +134,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
 
     for (const lead of leads) {
       all.push(lead.id);
-      const segNome = resolveSegmentoNome(lead.empreendimento);
+      const segNome = resolveSegmentoNome(lead.empreendimento, campanhas);
       if (segNome) {
         identified.push(lead.id);
         if (!groups[segNome]) {
@@ -164,16 +156,16 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
       identifiedLeadIds: identified,
       allLeadIds: all,
     };
-  }, [leads]);
+  }, [leads, campanhas]);
 
   const isOfertaAtiva = selectedDestino === "oferta_ativa";
   const leadsToDispatch = includeUnidentified ? allLeadIds : identifiedLeadIds;
 
   const SEGMENTO_COLORS: Record<string, string> = {
-    "MCMV / Até 500k": "bg-primary/10 text-primary border-primary/30",
-    "Médio-Alto Padrão": "bg-accent text-accent-foreground border-border",
-    "Altíssimo Padrão": "bg-secondary text-secondary-foreground border-border",
-    Investimento: "bg-muted text-foreground border-border",
+    "S1 - MCMV / Médio Padrão": "bg-blue-500/10 text-blue-700 border-blue-500/30 dark:text-blue-300",
+    "S2 - Alto Padrão": "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300",
+    "S3 - Avulso": "bg-pink-500/10 text-pink-700 border-pink-500/30 dark:text-pink-300",
+    "S4 - Investimento": "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300",
   };
 
   const handleDispatch = async () => {
