@@ -180,7 +180,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
     }
 
     return {
-      preview: Object.values(groups),
+      preview: Object.values(groups).sort((a, b) =>
+        a.segmento_nome.localeCompare(b.segmento_nome, "pt-BR", { numeric: true })
+      ),
       unidentifiedCount: unidentified,
       identifiedLeadIds: identified,
       allLeadIds: all,
