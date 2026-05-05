@@ -212,7 +212,14 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
     let active = true;
 
     const syncPendingAcceptance = async () => {
+      const userIds = [user?.id, profileId].filter(Boolean) as string[];
+
       if (acceptanceLeadIds.length === 0) {
+        if (active) setPendingLeadIds(new Set());
+        return;
+      }
+
+      if (userIds.length === 0) {
         if (active) setPendingLeadIds(new Set());
         return;
       }
@@ -221,7 +228,7 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
         .from("pipeline_leads")
         .select("id")
         .in("id", acceptanceLeadIds)
-        .in("corretor_id", [user?.id, profileId].filter(Boolean) as string[])
+        .in("corretor_id", userIds)
         .in("aceite_status", ["pendente", "aguardando_aceite", "pendente_aceite"]);
 
       if (!active) return;
