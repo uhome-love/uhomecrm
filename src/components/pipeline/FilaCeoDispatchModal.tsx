@@ -15,26 +15,37 @@ interface CampanhaMap {
 }
 
 const SEG_GERAL = "Geral (todos)";
+const SEG_AVULSO = "S3 - Avulso";
 
-function resolveSegmentoNome(emp: string | null, campanhas: CampanhaMap[]): string | null {
-  if (!emp) return null;
-  const lower = emp.toLowerCase().trim();
-  if (!lower) return null;
-
+function resolveSegmentoNome(
+  emp: string | null,
+  origem: string | null,
+  campanhas: CampanhaMap[],
+  hasAvulsoSegmento: boolean
+): string | null {
   const matchToName = (c: CampanhaMap) => (c.ignorar_segmento ? SEG_GERAL : c.segmento_nome);
+  const lower = (emp || "").toLowerCase().trim();
 
-  // Exact
-  const exact = campanhas.find((c) => c.empreendimento.toLowerCase().trim() === lower);
-  if (exact) return matchToName(exact);
+  if (lower) {
+    // Exact
+    const exact = campanhas.find((c) => c.empreendimento.toLowerCase().trim() === lower);
+    if (exact) return matchToName(exact);
 
-  // Substring (longest first)
-  const sorted = [...campanhas].sort(
-    (a, b) => b.empreendimento.length - a.empreendimento.length
-  );
-  for (const c of sorted) {
-    const k = c.empreendimento.toLowerCase().trim();
-    if (!k) continue;
-    if (lower.includes(k) || k.includes(lower)) return matchToName(c);
+    // Substring (longest first)
+    const sorted = [...campanhas].sort(
+      (a, b) => b.empreendimento.length - a.empreendimento.length
+    );
+    for (const c of sorted) {
+      const k = c.empreendimento.toLowerCase().trim();
+      if (!k) continue;
+      if (lower.includes(k) || k.includes(lower)) return matchToName(c);
+    }
+  }
+
+  // Fallback por origem: ImovelWeb e Site → S3 - Avulso
+  const orig = (origem || "").toLowerCase().trim();
+  if (hasAvulsoSegmento && (orig === "imovelweb" || orig === "site_uhome" || orig === "site")) {
+    return SEG_AVULSO;
   }
   return null;
 }
