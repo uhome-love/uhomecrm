@@ -78,17 +78,22 @@ function getNotificationRoute(n: Notification): string | null {
   const d = n.dados || {};
   const tipo = n.tipo;
   const categoria = n.categoria;
+  const leadId = d.pipeline_lead_id || d.lead_id;
+  const isLeadAcceptanceNotification = ["lead", "leads", "lead_roleta", "lead_urgente", "lead_ultimo_alerta"].includes(tipo)
+    || ["lead_novo", "lead_atribuido"].includes(categoria);
+
+  if (isLeadAcceptanceNotification && leadId) {
+    return `/aceite?lead=${leadId}`;
+  }
 
   // Radar de Intenção → deep-link to lead profile
   if (tipo === "radar_intencao" || categoria === "radar") {
-    const leadId = d.pipeline_lead_id || d.lead_id;
     if (leadId) return `/pipeline-leads?lead=${leadId}`;
     return "/pipeline-leads";
   }
 
   // Lead notifications → pipeline with lead context
   if (["leads", "lead", "lead_roleta", "lead_urgente", "lead_ultimo_alerta", "lead_sem_contato", "lead_parado", "lead_alto_valor", "alertas"].includes(tipo)) {
-    const leadId = d.pipeline_lead_id || d.lead_id;
     if (leadId) return `/pipeline-leads?lead=${leadId}`;
     if (tipo === "alertas" && !["lead_parado", "lead_sem_contato", "lead_sem_atendimento"].includes(categoria || "")) {
       // Non-lead alert types fall through to other routing
@@ -100,7 +105,6 @@ function getNotificationRoute(n: Notification): string | null {
 
   // Lead categories
   if (["lead_novo", "lead_aceito", "lead_retorno", "lead_atribuido"].includes(categoria)) {
-    const leadId = d.pipeline_lead_id || d.lead_id;
     if (leadId) return `/pipeline-leads?lead=${leadId}`;
     return "/pipeline-leads";
   }
