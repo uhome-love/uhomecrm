@@ -91,15 +91,15 @@ export function getCurrentWindowInfo(): {
   // Domingo e feriado: dia todo
   // Seg-Sáb: manhã, tarde e noturna
 
-  const t0730 = parseTime("07:30");
-  const t0930_cred = isSaturday ? parseTime("10:30") : parseTime("09:30");
+  const t0700 = parseTime("07:00");
+  const t0930_cred = parseTime("09:30");
   const t1200 = parseTime("12:00");
   const t1330 = parseTime("13:30");
-  const t1830 = parseTime("18:30");
+  const t1800 = parseTime("18:00");
   const t2000 = parseTime("20:00");
   const t2330 = parseTime("23:30");
 
-  const credManhaFimLabel = isSaturday ? "10:30" : "09:30";
+  const credManhaFimLabel = "09:30";
 
   let janela: JanelaId;
   let descricao: string;
@@ -129,11 +129,11 @@ export function getCurrentWindowInfo(): {
       descricao = `${isHoliday ? "Feriado" : "Domingo"} · Roleta encerrada`;
       nextTransitionMins = 24 * 60;
     }
-  } else if (mins < t0730) {
+  } else if (mins < t0700) {
     janela = "madrugada";
     emoji = "🌅";
-    descricao = "Acumulando leads · Credenciamento manhã abre às 07:30";
-    nextTransitionMins = t0730;
+    descricao = "Acumulando leads · Credenciamento manhã abre às 07:00";
+    nextTransitionMins = t0700;
   } else if (mins < t0930_cred) {
     janela = "manha";
     emoji = "☀️";
@@ -153,11 +153,11 @@ export function getCurrentWindowInfo(): {
     credenciamentoAberto = true;
     credenciamentoJanela = "tarde";
     nextTransitionMins = t1330;
-  } else if (mins < t1830) {
+  } else if (mins < t1800) {
     janela = "tarde";
     emoji = "🌞";
     descricao = "Roleta da tarde ativa";
-    nextTransitionMins = t1830;
+    nextTransitionMins = t1800;
   } else if (mins < t2000) {
     janela = "noturna";
     emoji = "🌙";
