@@ -18,12 +18,13 @@ const FONTES = [
   { id: "perdidos", label: "Perdidos", sub: "Reengajar", icon: HeartCrack, color: "text-red-400" },
 ] as const;
 
-const ETAPAS_LEADS = [
-  "Novo Lead", "Sem Contato", "Contato Iniciado", "Qualificação",
-  "Possível Visita", "Visita Marcada", "Visita Realizada"
+// Fallback estático (caso fetch falhe). As listas reais são carregadas dinamicamente do banco.
+const ETAPAS_LEADS_FALLBACK = [
+  "Novo Lead", "Sem Contato", "Contato Iniciado", "Busca",
+  "Aquecimento", "Visita", "Pós-Visita"
 ];
 
-const ETAPAS_PDN = ["Negociação", "Proposta", "Assinatura"];
+const ETAPAS_PDN_FALLBACK = ["Contrato Gerado", "Proposta", "Caiu"];
 
 const TEMPERATURAS = [
   { id: "quente", label: "🔥 Quente" },
@@ -118,6 +119,28 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
   const [creating, setCreating] = useState(false);
   const [empSearch, setEmpSearch] = useState("");
   const [empExpanded, setEmpExpanded] = useState(false);
+
+  // Load pipeline stages dinamicamente do banco (sempre sincronizado)
+  const { data: stagesData } = useQuery({
+    queryKey: ["custom-list-pipeline-stages"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pipeline_stages")
+        .select("nome, pipeline_tipo, ordem, ativo")
+        .order("ordem", { ascending: true });
+      return data || [];
+    },
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const ETAPAS_LEADS = (stagesData?.filter(s => s.pipeline_tipo === "leads" && s.ativo !== false).map(s => s.nome) || []).length
+    ? stagesData!.filter(s => s.pipeline_tipo === "leads" && s.ativo !== false).map(s => s.nome)
+    : ETAPAS_LEADS_FALLBACK;
+
+  const ETAPAS_PDN = (stagesData?.filter(s => s.pipeline_tipo === "negocios" && s.ativo !== false).map(s => s.nome) || []).length
+    ? stagesData!.filter(s => s.pipeline_tipo === "negocios" && s.ativo !== false).map(s => s.nome)
+    : ETAPAS_PDN_FALLBACK;
 
   // Load empreendimentos from corretor's leads
   const { data: empreendimentos = [] } = useQuery({
