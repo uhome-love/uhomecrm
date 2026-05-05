@@ -120,6 +120,28 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
   const [empSearch, setEmpSearch] = useState("");
   const [empExpanded, setEmpExpanded] = useState(false);
 
+  // Load pipeline stages dinamicamente do banco (sempre sincronizado)
+  const { data: stagesData } = useQuery({
+    queryKey: ["custom-list-pipeline-stages"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pipeline_stages")
+        .select("nome, pipeline_tipo, ordem, ativo")
+        .order("ordem", { ascending: true });
+      return data || [];
+    },
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const ETAPAS_LEADS = (stagesData?.filter(s => s.pipeline_tipo === "leads" && s.ativo !== false).map(s => s.nome) || []).length
+    ? stagesData!.filter(s => s.pipeline_tipo === "leads" && s.ativo !== false).map(s => s.nome)
+    : ETAPAS_LEADS_FALLBACK;
+
+  const ETAPAS_PDN = (stagesData?.filter(s => s.pipeline_tipo === "negocios" && s.ativo !== false).map(s => s.nome) || []).length
+    ? stagesData!.filter(s => s.pipeline_tipo === "negocios" && s.ativo !== false).map(s => s.nome)
+    : ETAPAS_PDN_FALLBACK;
+
   // Load empreendimentos from corretor's leads
   const { data: empreendimentos = [] } = useQuery({
     queryKey: ["custom-list-empreendimentos", user?.id],
