@@ -179,6 +179,37 @@ async function distributeViaRPC(
     return result || { success: false, reason: "unknown" };
   }
 
+  const normalizedCorretorId = result.corretor_id || null;
+  const normalizedProfileId = result.profile_id || null;
+
+  if (normalizedCorretorId) {
+    const { error: normalizeLeadError } = await supabase
+      .from("pipeline_leads")
+      .update({
+        corretor_id: normalizedCorretorId,
+        aceite_status: "aguardando_aceite",
+        distribuido_em: new Date().toISOString(),
+      })
+      .eq("id", leadId)
+      .in("aceite_status", ["pendente", "aguardando_aceite", "pendente_aceite"]);
+
+    if (normalizeLeadError) {
+      L.error("Failed to normalize distributed lead", { leadId, normalizedCorretorId }, normalizeLeadError);
+    }
+  }
+
+  if (normalizedProfileId) {
+    const { error: normalizeDistributionError } = await supabase
+      .from("roleta_distribuicoes")
+      .update({ corretor_id: normalizedProfileId })
+      .eq("lead_id", leadId)
+      .eq("status", "aguardando");
+
+    if (normalizeDistributionError) {
+      L.error("Failed to normalize roleta distribution", { leadId, normalizedProfileId }, normalizeDistributionError);
+    }
+  }
+
   const lead = {
     id: leadId,
     nome: result.lead_nome,
@@ -189,7 +220,7 @@ async function distributeViaRPC(
 
   // Notification insert
   supabase.from("notifications").insert({
-    user_id: result.corretor_id,
+    user_id: normalizedCorretorId,
     tipo: "lead",
     categoria: "lead_novo",
     titulo: `🚨 Novo Lead! ${lead.nome || ""}`.trim(),
@@ -202,13 +233,13 @@ async function distributeViaRPC(
   sendWhatsApp(supabase, supabaseUrl, serviceKey, result.corretor_id, lead).catch(e =>
     console.warn("WhatsApp notify error:", e)
   );
-  sendPush(supabaseUrl, serviceKey, result.corretor_id, lead).catch(e =>
+  sendPush(supabaseUrl, serviceKey, normalizedCorretorId, lead).catch(e =>
     console.warn("Push notify error:", e)
   );
 
   L.info("Lead distributed", {
     leadId,
-    corretorId: result.corretor_id,
+    corretorId: normalizedCorretorId,
     segmento: result.segmento_id,
     janela: result.janela,
   });
