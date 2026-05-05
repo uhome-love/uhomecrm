@@ -94,20 +94,33 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
     setLoading(true);
     setLeads([]);
     (async () => {
-      const { data, error, count } = await supabase
-        .from("pipeline_leads")
-        .select("id, nome, empreendimento, telefone, origem, aceite_status", { count: "exact" })
-        .is("corretor_id", null)
-        .eq("aceite_status", "pendente_distribuicao")
-        .order("created_at", { ascending: true })
-        .limit(2000);
+      const [leadsRes, campRes] = await Promise.all([
+        supabase
+          .from("pipeline_leads")
+          .select("id, nome, empreendimento, telefone, origem, aceite_status", { count: "exact" })
+          .is("corretor_id", null)
+          .eq("aceite_status", "pendente_distribuicao")
+          .order("created_at", { ascending: true })
+          .limit(2000),
+        supabase
+          .from("roleta_campanhas")
+          .select("empreendimento, segmento_id, ativo, roleta_segmentos!inner(nome)")
+          .eq("ativo", true),
+      ]);
       if (cancelled) return;
-      if (error) {
-        console.error("[FilaCeoDispatchModal] fetch error:", error);
+      if (leadsRes.error) {
+        console.error("[FilaCeoDispatchModal] fetch error:", leadsRes.error);
         toast.error("Erro ao carregar fila CEO");
       }
-      console.info(`[FilaCeoDispatchModal] Fila CEO: ${data?.length || 0} carregados (count=${count})`);
-      setLeads(data || []);
+      const camps: CampanhaMap[] = ((campRes.data || []) as any[])
+        .map((c) => ({
+          empreendimento: c.empreendimento || "",
+          segmento_nome: c.roleta_segmentos?.nome || "",
+        }))
+        .filter((c) => c.empreendimento && c.segmento_nome);
+      setCampanhas(camps);
+      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsRes.data?.length || 0} carregados (count=${leadsRes.count}); ${camps.length} campanhas`);
+      setLeads(leadsRes.data || []);
       setLoading(false);
     })();
     return () => { cancelled = true; };
