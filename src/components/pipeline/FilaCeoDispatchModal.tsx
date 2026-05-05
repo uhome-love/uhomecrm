@@ -93,8 +93,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
     let cancelled = false;
     setLoading(true);
     setLeads([]);
+    setCampanhas([]);
     (async () => {
-      const [leadsRes, campRes] = await Promise.all([
+      const [leadsRes, segRes, campRes] = await Promise.all([
         supabase
           .from("pipeline_leads")
           .select("id, nome, empreendimento, telefone, origem, aceite_status", { count: "exact" })
@@ -103,23 +104,51 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
           .order("created_at", { ascending: true })
           .limit(2000),
         supabase
+          .from("roleta_segmentos")
+          .select("id, nome, ativo")
+          .eq("ativo", true),
+        supabase
           .from("roleta_campanhas")
-          .select("empreendimento, segmento_id, ativo, roleta_segmentos!inner(nome)")
+          .select("empreendimento, segmento_id, ativo, roleta_segmentos!inner(id, nome, ativo)")
           .eq("ativo", true),
       ]);
       if (cancelled) return;
+
       if (leadsRes.error) {
-        console.error("[FilaCeoDispatchModal] fetch error:", leadsRes.error);
+        console.error("[FilaCeoDispatchModal] leads fetch error:", leadsRes.error);
         toast.error("Erro ao carregar fila CEO");
       }
+      if (segRes.error || campRes.error) {
+        console.error("[FilaCeoDispatchModal] segmentos/campanhas fetch error:", segRes.error || campRes.error);
+        toast.error("Erro ao carregar segmentos do banco");
+      }
+
+      const activeSegIds = new Set(((segRes.data || []) as any[]).map((s) => s.id));
+      const activeSegNames = new Set(((segRes.data || []) as any[]).map((s) => String(s.nome).trim()));
+
       const camps: CampanhaMap[] = ((campRes.data || []) as any[])
         .map((c) => ({
-          empreendimento: c.empreendimento || "",
-          segmento_nome: c.roleta_segmentos?.nome || "",
+          empreendimento: String(c.empreendimento || "").trim(),
+          segmento_id: c.segmento_id as string,
+          segmento_nome: String(c.roleta_segmentos?.nome || "").trim(),
+          segmento_ativo: !!c.roleta_segmentos?.ativo,
         }))
-        .filter((c) => c.empreendimento && c.segmento_nome);
+        // Apenas campanhas com segmento ativo no banco — nunca fallback hardcoded
+        .filter((c) =>
+          c.empreendimento &&
+          c.segmento_nome &&
+          c.segmento_ativo &&
+          activeSegIds.has(c.segmento_id) &&
+          activeSegNames.has(c.segmento_nome)
+        )
+        .map(({ empreendimento, segmento_nome }) => ({ empreendimento, segmento_nome }));
+
+      if (camps.length === 0) {
+        toast.error("Nenhuma campanha ativa vinculada a segmentos S1–S4. Configure em Configurações → Campanhas da Roleta.");
+      }
+
       setCampanhas(camps);
-      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsRes.data?.length || 0} carregados (count=${leadsRes.count}); ${camps.length} campanhas`);
+      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsRes.data?.length || 0} leads; ${camps.length} campanhas válidas (S1–S4 do banco)`);
       setLeads(leadsRes.data || []);
       setLoading(false);
     })();
