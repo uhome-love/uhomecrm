@@ -109,13 +109,19 @@ function getJanelasConfig(): JanelaConfig[] {
   }
   
   return [
-    { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 7.5, fim: saturdayMorning ? 10.5 : 12 }, recebimento: saturdayMorning ? "7h30 — 10h30" : "7h30 — 12h", temRequisitos: false },
-    { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 18 }, recebimento: "13h30 — 18h", temRequisitos: false },
-    { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18, fim: 22 }, recebimento: "18h — 23h30", temRequisitos: true },
+    { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 7, fim: 9.5 }, recebimento: "7h — 12h", temRequisitos: false },
+    { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 13.5 }, recebimento: "12h — 18h", temRequisitos: false },
+    { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18, fim: 23.5 }, recebimento: "18h — 23h30", temRequisitos: true },
   ];
 }
 
 // NOTE: JANELAS_CONFIG is now computed inside the component to handle day changes
+
+function formatHora(h: number): string {
+  const hh = Math.floor(h);
+  const mm = Math.round((h - hh) * 60);
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
 
 function getHoraDecimal() {
   const now = new Date();
@@ -535,8 +541,8 @@ export default function RoletaStatusBar() {
                                 : jStatus === "encerrado"
                                   ? "Encerrado"
                                   : jStatus === "futuro"
-                                    ? `Abre às ${j.credAberto.inicio === 7.5 ? "07:30" : j.credAberto.inicio === 12 ? "12:00" : j.credAberto.inicio === 18.5 ? "18:30" : j.credAberto.inicio + "h"}`
-                                    : `Aberto até ${j.credAberto.fim === 13.5 ? "13:30" : j.credAberto.fim === 9.5 ? "09:30" : j.credAberto.fim === 20.5 ? "20:30" : j.credAberto.fim + "h"}`
+                                    ? `Abre às ${formatHora(j.credAberto.inicio)}`
+                                    : `Aberto até ${formatHora(j.credAberto.fim)}`
                             }
                           </p>
                         </div>
