@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 interface PendingLead {
   id: string;
@@ -17,17 +18,20 @@ interface PendingLead {
 
 export function usePendingLeadAlert() {
   const { user } = useAuth();
+  const { profileId } = useAuthUser();
   const [pendingLead, setPendingLead] = useState<PendingLead | null>(null);
   const [showDialog, setShowDialog] = useState(false);
 
   const checkPending = useCallback(async () => {
     if (!user) return;
+    const corretorIds = [user.id, profileId].filter(Boolean) as string[];
+    if (corretorIds.length === 0) return;
     const nowIso = new Date().toISOString();
     const { data } = await supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead")
-      .eq("corretor_id", user.id)
-      .in("aceite_status", ["pendente", "aguardando_aceite"])
+      .in("corretor_id", corretorIds)
+      .in("aceite_status", ["pendente", "aguardando_aceite", "pendente_aceite"])
       .or(`aceite_expira_em.is.null,aceite_expira_em.gt.${nowIso}`)
       .order("created_at", { ascending: true })
       .limit(1)
@@ -44,7 +48,7 @@ export function usePendingLeadAlert() {
       setPendingLead(null);
       setShowDialog(false);
     }
-  }, [user]);
+  }, [profileId, user]);
 
   // Initial check
   useEffect(() => {
