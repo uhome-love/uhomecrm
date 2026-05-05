@@ -8,51 +8,29 @@ import { Loader2, Rocket, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
 
-const EMPREENDIMENTO_SEGMENTO: Record<string, string> = {
-  "open bosque": "MCMV / Até 500k",
-  "alto lindóia": "MCMV / Até 500k",
-  "alto lindoia": "MCMV / Até 500k",
-  "melnick day": "MCMV / Até 500k",
-  "las casas": "Médio-Alto Padrão",
-  "orygem": "Médio-Alto Padrão",
-  "me day": "Médio-Alto Padrão",
-  "melnick day médio padrão": "Médio-Alto Padrão",
-  "melnick day medio padrao": "Médio-Alto Padrão",
-  "melnick day - médio padrão": "Médio-Alto Padrão",
-  "terrace": "Médio-Alto Padrão",
-  "duetto - morana": "Médio-Alto Padrão",
-  "lake eyre": "Altíssimo Padrão",
-  "seen": "Altíssimo Padrão",
-  "seen menino deus": "Altíssimo Padrão",
-  "seen três figueiras": "Altíssimo Padrão",
-  "seen tres figueiras": "Altíssimo Padrão",
-  "boa vista country club": "Altíssimo Padrão",
-  "boa vista": "Altíssimo Padrão",
-  "high garden iguatemi": "Altíssimo Padrão",
-  "high garden": "Altíssimo Padrão",
-  "melnick day alto padrão": "Altíssimo Padrão",
-  "melnick day - alto padrão": "Altíssimo Padrão",
-  "melnick day alto padrao": "Altíssimo Padrão",
-  "alfa": "Investimento",
-  "shift": "Investimento",
-  "shift - vanguard": "Investimento",
-  "casa bastian": "Investimento",
-  "connect jw": "Investimento",
-  "go carlos gomes": "Investimento",
-  "melnick day compactos": "Investimento",
-  "melnick day - compactos": "Investimento",
-};
+interface CampanhaMap {
+  empreendimento: string;
+  segmento_nome: string;
+}
 
-function resolveSegmentoNome(emp: string | null): string | null {
+function resolveSegmentoNome(emp: string | null, campanhas: CampanhaMap[]): string | null {
   if (!emp) return null;
   const lower = emp.toLowerCase().trim();
-  if (EMPREENDIMENTO_SEGMENTO[lower]) return EMPREENDIMENTO_SEGMENTO[lower];
+  if (!lower) return null;
 
-  const sortedKeys = Object.keys(EMPREENDIMENTO_SEGMENTO).sort((a, b) => b.length - a.length);
-  for (const key of sortedKeys) {
-    if (lower.includes(key) || key.includes(lower)) return EMPREENDIMENTO_SEGMENTO[key];
+  // Exact
+  const exact = campanhas.find((c) => c.empreendimento.toLowerCase().trim() === lower);
+  if (exact) return exact.segmento_nome;
+
+  // Substring (longest first)
+  const sorted = [...campanhas].sort(
+    (a, b) => b.empreendimento.length - a.empreendimento.length
+  );
+  for (const c of sorted) {
+    const k = c.empreendimento.toLowerCase().trim();
+    if (!k) continue;
+    if (lower.includes(k) || k.includes(lower)) return c.segmento_nome;
   }
-
   return null;
 }
 
