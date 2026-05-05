@@ -109,9 +109,9 @@ function getJanelasConfig(): JanelaConfig[] {
   }
   
   return [
-    { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 7.5, fim: saturdayMorning ? 10.5 : 12 }, recebimento: saturdayMorning ? "7h30 — 10h30" : "7h30 — 12h", temRequisitos: false },
-    { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 18 }, recebimento: "13h30 — 18h", temRequisitos: false },
-    { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18, fim: 22 }, recebimento: "18h — 23h30", temRequisitos: true },
+    { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 7, fim: 9.5 }, recebimento: "7h — 12h", temRequisitos: false },
+    { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 13.5 }, recebimento: "12h — 18h", temRequisitos: false },
+    { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18, fim: 23.5 }, recebimento: "18h — 23h30", temRequisitos: true },
   ];
 }
 
