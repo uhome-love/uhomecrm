@@ -185,9 +185,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
       }
     }
 
-    // Ordenação canônica: extrai número do prefixo "Sn -" e ordena.
-    // Sem prefixo válido vai para o fim. Empate desempata por nome.
+    // Ordenação canônica: "Geral" primeiro, depois S1, S2, S3, S4.
     const segOrder = (nome: string): number => {
+      if (nome === SEG_GERAL) return 0;
       const m = /^s\s*(\d+)/i.exec(nome.trim());
       return m ? parseInt(m[1], 10) : 999;
     };
@@ -209,6 +209,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
   const leadsToDispatch = includeUnidentified ? allLeadIds : identifiedLeadIds;
 
   const SEGMENTO_COLORS: Record<string, string> = {
+    [SEG_GERAL]: "bg-indigo-500/10 text-indigo-700 border-indigo-500/30 dark:text-indigo-300",
     "S1 - MCMV / Médio Padrão": "bg-blue-500/10 text-blue-700 border-blue-500/30 dark:text-blue-300",
     "S2 - Alto Padrão": "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300",
     "S3 - Avulso": "bg-pink-500/10 text-pink-700 border-pink-500/30 dark:text-pink-300",
