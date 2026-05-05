@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Check, X, Clock, AlertTriangle, Building2, User, Inbox, ChevronLeft, ChevronRight, Zap, History, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -305,6 +305,7 @@ function LeadPopupCard({ lead, onResult, total, current }: { lead: PendingLead; 
 export default function AceiteLeads() {
   const { user } = useAuth();
   const { profileId } = useAuthUser();
+  const [searchParams] = useSearchParams();
   const [leads, setLeads] = useState<PendingLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -313,6 +314,7 @@ export default function AceiteLeads() {
     if (!user) return;
     setLoading(true);
     const corretorIds = [user.id, profileId].filter(Boolean) as string[];
+    const selectedLeadId = searchParams.get("lead");
     if (corretorIds.length === 0) {
       setLeads([]);
       setCurrentIndex(0);
@@ -325,14 +327,19 @@ export default function AceiteLeads() {
       .from("pipeline_leads")
       .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead, campanha")
       .in("corretor_id", corretorIds)
-      .in("aceite_status", ["pendente", "aguardando_aceite"])
+      .in("aceite_status", ["pendente", "aguardando_aceite", "pendente_aceite"])
       .or(`aceite_expira_em.is.null,aceite_expira_em.gt.${now}`)
       .order("distribuido_em", { ascending: true, nullsFirst: false });
     const newLeads = (data as PendingLead[]) || [];
     setLeads(newLeads);
-    setCurrentIndex(0);
+    if (selectedLeadId) {
+      const selectedIndex = newLeads.findIndex((lead) => lead.id === selectedLeadId);
+      setCurrentIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    } else {
+      setCurrentIndex(0);
+    }
     setLoading(false);
-  }, [profileId, user]);
+  }, [profileId, searchParams, user]);
 
   useEffect(() => { fetchPending(); }, [fetchPending]);
 
