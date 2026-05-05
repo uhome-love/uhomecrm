@@ -1,9 +1,13 @@
+import { useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Bell, X, Check, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import type { Notification } from "@/hooks/useNotifications";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 const TIPO_LABELS: Record<string, string> = {
   leads: "Leads",
@@ -186,10 +190,70 @@ function getContextDetails(n: Notification): { leadName?: string; detail?: strin
 
 export default function NotificationList({ notifications, onMarkAsRead, onDelete, compact }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { profileId } = useAuthUser();
+  const [pendingLeadIds, setPendingLeadIds] = useState<Set<string>>(new Set());
+
+  const acceptanceLeadIds = useMemo(() => {
+    return Array.from(new Set(
+      notifications
+        .filter((n) => {
+          const tipo = n.tipo;
+          const categoria = n.categoria;
+          return ["lead", "leads", "lead_roleta", "lead_urgente", "lead_ultimo_alerta"].includes(tipo)
+            || ["lead_novo", "lead_atribuido", "novo_lead"].includes(categoria);
+        })
+        .map((n) => String(n.dados?.pipeline_lead_id || n.dados?.lead_id || "").trim())
+        .filter(Boolean)
+    ));
+  }, [notifications]);
+
+  useEffect(() => {
+    let active = true;
+
+    const syncPendingAcceptance = async () => {
+      const userIds = [user?.id, profileId].filter(Boolean) as string[];
+
+      if (acceptanceLeadIds.length === 0) {
+        if (active) setPendingLeadIds(new Set());
+        return;
+      }
+
+      if (userIds.length === 0) {
+        if (active) setPendingLeadIds(new Set());
+        return;
+      }
+
+      const { data } = await supabase
+        .from("pipeline_leads")
+        .select("id")
+        .in("id", acceptanceLeadIds)
+        .in("corretor_id", userIds)
+        .in("aceite_status", ["pendente", "aguardando_aceite", "pendente_aceite"]);
+
+      if (!active) return;
+      setPendingLeadIds(new Set((data || []).map((item) => item.id)));
+    };
+
+    syncPendingAcceptance();
+    return () => {
+      active = false;
+    };
+  }, [acceptanceLeadIds, profileId, user?.id]);
 
   const handleClick = (n: Notification) => {
     if (!n.lida) onMarkAsRead(n.id);
-    const route = getNotificationRoute(n);
+    const leadId = String(n.dados?.pipeline_lead_id || n.dados?.lead_id || "").trim();
+    const tipo = n.tipo;
+    const categoria = n.categoria;
+    const isAcceptanceNotification = (["lead", "leads", "lead_roleta", "lead_urgente", "lead_ultimo_alerta"].includes(tipo)
+      || ["lead_novo", "lead_atribuido", "novo_lead"].includes(categoria))
+      && !!leadId;
+
+    const route = isAcceptanceNotification
+      ? (pendingLeadIds.has(leadId) ? `/aceite?lead=${leadId}` : `/pipeline-leads?lead=${leadId}`)
+      : getNotificationRoute(n);
+
     if (route) navigate(route);
   };
 

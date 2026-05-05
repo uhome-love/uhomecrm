@@ -354,7 +354,7 @@ async function sendPush(supabaseUrl: string, serviceKey: string, authUserId: str
         user_id: authUserId,
         title: "🚨 Novo Lead!",
         body: `${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}. Aceite em 10 min!`,
-        url: "/aceite-leads",
+        url: "/aceite",
         data: { tag: `lead_novo_${lead.id}` },
       }),
     });

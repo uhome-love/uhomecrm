@@ -53,19 +53,7 @@ export default function NewLeadBanner() {
     const timer = timersRef.current.get(leadId);
     if (timer) { clearTimeout(timer); timersRef.current.delete(leadId); }
     setBanners(prev => prev.filter(b => b.id !== leadId));
-
-    // Mark as visualizado in notifications
-    if (user) {
-      await supabase.from("notifications").insert({
-        user_id: user.id,
-        titulo: "Novo Lead Recebido",
-        mensagem: `Lead atribuído via roleta`,
-        tipo: "lead_atribuido",
-        categoria: "leads",
-        dados: { pipeline_lead_id: leadId },
-      }).then(() => {});
-    }
-  }, [user]);
+  }, []);
 
   const scheduleAutoClose = useCallback((leadId: string) => {
     const timer = setTimeout(() => dismissBanner(leadId), AUTO_CLOSE_MS);
