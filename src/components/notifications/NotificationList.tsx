@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import type { Notification } from "@/hooks/useNotifications";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 const TIPO_LABELS: Record<string, string> = {
   leads: "Leads",
@@ -188,6 +190,8 @@ function getContextDetails(n: Notification): { leadName?: string; detail?: strin
 
 export default function NotificationList({ notifications, onMarkAsRead, onDelete, compact }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { profileId } = useAuthUser();
   const [pendingLeadIds, setPendingLeadIds] = useState<Set<string>>(new Set());
 
   const acceptanceLeadIds = useMemo(() => {
@@ -217,6 +221,7 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
         .from("pipeline_leads")
         .select("id")
         .in("id", acceptanceLeadIds)
+        .in("corretor_id", [user?.id, profileId].filter(Boolean) as string[])
         .in("aceite_status", ["pendente", "aguardando_aceite", "pendente_aceite"]);
 
       if (!active) return;
@@ -227,7 +232,7 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
     return () => {
       active = false;
     };
-  }, [acceptanceLeadIds]);
+  }, [acceptanceLeadIds, profileId, user?.id]);
 
   const handleClick = (n: Notification) => {
     if (!n.lida) onMarkAsRead(n.id);
