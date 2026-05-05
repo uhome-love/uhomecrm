@@ -7,8 +7,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Check, X, Clock, AlertTriangle, Building2, User, Inbox, ChevronLeft, ChevronRight, Zap } from "lucide-react";
+import { Check, X, Clock, AlertTriangle, Building2, User, Inbox, ChevronLeft, ChevronRight, Zap, History, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Link } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface AcceptedLeadHistory {
+  id: string;
+  nome: string;
+  telefone: string | null;
+  empreendimento: string | null;
+  origem: string | null;
+  aceito_em: string;
+}
 
 interface PendingLead {
   id: string;
@@ -364,88 +377,204 @@ export default function AceiteLeads() {
   const currentLead = leads[currentIndex] || null;
 
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-6">
+    <div className="min-h-[70vh] flex flex-col items-center px-4 py-6">
       {/* Header */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-4">
         <div className="flex items-center justify-center gap-2 mb-1">
           <Inbox className="h-5 w-5 text-primary" />
           <h1 className="text-lg font-bold">Aceite de Leads</h1>
         </div>
-        {leads.length > 0 && (
-          <Badge variant="destructive" className="animate-pulse">
-            {leads.length} pendente{leads.length > 1 ? "s" : ""}
-          </Badge>
-        )}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Clock className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : leads.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-4 py-12"
-        >
-          <div className="w-20 h-20 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
-            <Check className="h-10 w-10 text-muted-foreground/40" />
-          </div>
-          <div>
-            <p className="font-medium text-muted-foreground">Nenhum lead pendente</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Quando um novo lead for distribuído, ele aparecerá aqui.</p>
-          </div>
-        </motion.div>
-      ) : (
-        <>
-          <AnimatePresence mode="wait">
-            {currentLead && (
-              <LeadPopupCard
-                key={currentLead.id}
-                lead={currentLead}
-                onResult={fetchPending}
-                total={leads.length}
-                current={currentIndex + 1}
-              />
+      <Tabs defaultValue="pendentes" className="w-full max-w-md">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="pendentes" className="gap-2">
+            <Inbox className="h-4 w-4" />
+            Pendentes
+            {leads.length > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1 text-[10px] animate-pulse">
+                {leads.length}
+              </Badge>
             )}
-          </AnimatePresence>
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="gap-2">
+            <History className="h-4 w-4" />
+            Histórico
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Navigation dots for multiple leads */}
-          {leads.length > 1 && (
-            <div className="flex items-center gap-3 mt-6">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full"
-                disabled={currentIndex === 0}
-                onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex gap-1.5">
-                {leads.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentIndex(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      i === currentIndex ? "bg-primary w-6" : "bg-muted-foreground/30"
-                    }`}
-                  />
-                ))}
+        <TabsContent value="pendentes" className="mt-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Clock className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : leads.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center space-y-4 py-12"
+            >
+              <div className="w-20 h-20 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
+                <Check className="h-10 w-10 text-muted-foreground/40" />
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full"
-                disabled={currentIndex === leads.length - 1}
-                onClick={() => setCurrentIndex(i => Math.min(leads.length - 1, i + 1))}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <div>
+                <p className="font-medium text-muted-foreground">Nenhum lead pendente</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Quando um novo lead for distribuído, ele aparecerá aqui.</p>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <AnimatePresence mode="wait">
+                {currentLead && (
+                  <LeadPopupCard
+                    key={currentLead.id}
+                    lead={currentLead}
+                    onResult={fetchPending}
+                    total={leads.length}
+                    current={currentIndex + 1}
+                  />
+                )}
+              </AnimatePresence>
+
+              {leads.length > 1 && (
+                <div className="flex items-center gap-3 mt-6">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    disabled={currentIndex === 0}
+                    onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="flex gap-1.5">
+                    {leads.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentIndex(i)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          i === currentIndex ? "bg-primary w-6" : "bg-muted-foreground/30"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    disabled={currentIndex === leads.length - 1}
+                    onClick={() => setCurrentIndex(i => Math.min(leads.length - 1, i + 1))}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           )}
-        </>
-      )}
+        </TabsContent>
+
+        <TabsContent value="historico" className="mt-6">
+          <HistoricoAceites />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function HistoricoAceites() {
+  const { user } = useAuth();
+  const [items, setItems] = useState<AcceptedLeadHistory[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancel = false;
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from("pipeline_leads")
+        .select("id, nome, telefone, empreendimento, origem, aceito_em")
+        .eq("corretor_id", user.id)
+        .eq("aceite_status", "aceito")
+        .not("aceito_em", "is", null)
+        .order("aceito_em", { ascending: false })
+        .limit(30);
+      if (!cancel) {
+        setItems((data as AcceptedLeadHistory[]) || []);
+        setLoading(false);
+      }
+    })();
+    return () => { cancel = true; };
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Clock className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center space-y-3 py-12">
+        <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
+          <History className="h-8 w-8 text-muted-foreground/40" />
+        </div>
+        <p className="text-sm text-muted-foreground">Nenhum lead aceito ainda.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground text-center mb-3">
+        Últimos {items.length} leads aceitos
+      </p>
+      {items.map((lead) => (
+        <Link
+          key={lead.id}
+          to={`/pipeline?lead=${lead.id}`}
+          className="block rounded-xl border bg-card p-3 hover:border-primary/40 hover:shadow-md transition-all"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                <p className="font-semibold truncate">{lead.nome}</p>
+              </div>
+              {lead.telefone && (
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+                  <Phone className="h-3 w-3" />
+                  <span className="font-mono">{lead.telefone}</span>
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                {lead.empreendimento && (
+                  <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px] font-medium">
+                    <Building2 className="h-2.5 w-2.5 inline mr-1" />
+                    {lead.empreendimento}
+                  </span>
+                )}
+                {lead.origem && (
+                  <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded-full text-[10px]">
+                    {lead.origem}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <Badge variant="secondary" className="gap-1 text-[10px]">
+                <Check className="h-2.5 w-2.5" />
+                Aceito
+              </Badge>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {formatDistanceToNow(new Date(lead.aceito_em), { addSuffix: true, locale: ptBR })}
+              </p>
+            </div>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
