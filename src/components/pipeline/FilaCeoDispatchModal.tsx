@@ -42,9 +42,9 @@ function resolveSegmentoNome(
     }
   }
 
-  // Fallback por origem: ImovelWeb e Site → S3 - Avulso
-  const orig = (origem || "").toLowerCase().trim();
-  if (hasAvulsoSegmento && (orig === "imovelweb" || orig === "site_uhome" || orig === "site")) {
+  // Fallback universal: qualquer lead sem match de campanha → S3 - Avulso
+  // (mantém alinhado com distribuir_lead_atomico no banco)
+  if (hasAvulsoSegmento) {
     return SEG_AVULSO;
   }
   return null;
