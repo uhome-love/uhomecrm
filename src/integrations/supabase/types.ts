@@ -1362,6 +1362,57 @@ export type Database = {
         }
         Relationships: []
       }
+      corretor_calendar_integrations: {
+        Row: {
+          access_token: string | null
+          account_email: string | null
+          connected_at: string
+          corretor_id: string
+          created_at: string
+          id: string
+          last_error: string | null
+          last_used_at: string | null
+          provider: string
+          refresh_token: string | null
+          scopes: string[] | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          account_email?: string | null
+          connected_at?: string
+          corretor_id: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_used_at?: string | null
+          provider?: string
+          refresh_token?: string | null
+          scopes?: string[] | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          account_email?: string | null
+          connected_at?: string
+          corretor_id?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_used_at?: string | null
+          provider?: string
+          refresh_token?: string | null
+          scopes?: string[] | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       corretor_conquistas: {
         Row: {
           conquista_id: string
@@ -8129,6 +8180,8 @@ export type Database = {
       visitas: {
         Row: {
           cancel_reason: string | null
+          confirmacao_enviada_em: string | null
+          confirmacao_status: string | null
           confirmation_token: string | null
           confirmed_at: string | null
           converted_to_pdn_at: string | null
@@ -8139,6 +8192,8 @@ export type Database = {
           data_visita: string
           empreendimento: string | null
           gerente_id: string
+          google_event_id: string | null
+          google_event_link: string | null
           hora_visita: string | null
           id: string
           lead_id: string | null
@@ -8163,6 +8218,8 @@ export type Database = {
         }
         Insert: {
           cancel_reason?: string | null
+          confirmacao_enviada_em?: string | null
+          confirmacao_status?: string | null
           confirmation_token?: string | null
           confirmed_at?: string | null
           converted_to_pdn_at?: string | null
@@ -8173,6 +8230,8 @@ export type Database = {
           data_visita: string
           empreendimento?: string | null
           gerente_id: string
+          google_event_id?: string | null
+          google_event_link?: string | null
           hora_visita?: string | null
           id?: string
           lead_id?: string | null
@@ -8197,6 +8256,8 @@ export type Database = {
         }
         Update: {
           cancel_reason?: string | null
+          confirmacao_enviada_em?: string | null
+          confirmacao_status?: string | null
           confirmation_token?: string | null
           confirmed_at?: string | null
           converted_to_pdn_at?: string | null
@@ -8207,6 +8268,8 @@ export type Database = {
           data_visita?: string
           empreendimento?: string | null
           gerente_id?: string
+          google_event_id?: string | null
+          google_event_link?: string | null
           hora_visita?: string | null
           id?: string
           lead_id?: string | null
