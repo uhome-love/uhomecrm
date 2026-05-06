@@ -41,6 +41,7 @@ const WhatsAppLanding = lazyRetry(() => import("./pages/WhatsAppLanding"));
 const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
+const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,6 +84,7 @@ const App = () => (
               <Route path="/privacidade" element={<Suspense fallback={<PageLoader />}><PrivacidadePage /></Suspense>} />
               <Route path="/casatua" element={<Suspense fallback={<PageLoader />}><CasaTuaLanding /></Suspense>} />
               <Route path="/placar-do-dia" element={<Suspense fallback={<PageLoader />}><PlacarDoDia /></Suspense>} />
+              <Route path="/oauth/google/callback" element={<Suspense fallback={<PageLoader />}><OAuthGoogleCallback /></Suspense>} />
 
               {/* Redirects */}
               <Route path="/fechamento-day" element={<Navigate to="/placar-do-dia" replace />} />
