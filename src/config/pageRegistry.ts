@@ -102,6 +102,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "gestao-whatsapp": lazyRetry(() => import("@/pages/GestaoWhatsAppDashboard")),
   "report-center": lazyRetry(() => import("@/pages/ReportCenter")),
   materiais: lazyRetry(() => import("@/pages/MateriaisPage")),
+  integracoes: lazyRetry(() => import("@/pages/IntegracoesPage")),
 };
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
@@ -147,6 +148,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/busca-leads":           { key: "busca-leads",          label: "Busca Leads",         icon: "Search",        roles: ["gestor", "admin"] },
   "/configuracoes":         { key: "configuracoes",        label: "Configurações",       icon: "Settings" },
   "/configuracoes/whatsapp":{ key: "config-whatsapp",      label: "Meu WhatsApp",        icon: "Smartphone",    roles: ["corretor", "admin"] },
+  "/integracoes":           { key: "integracoes",          label: "Integrações",         icon: "Plug" },
   "/links-site":            { key: "links-site",           label: "Meus Links",          icon: "Link2" },
   "/notificacoes":          { key: "notificacoes",         label: "Notificações",        icon: "BellRing" },
   "/whatsapp":              { key: "whatsapp",             label: "WhatsApp",            icon: "MessageSquare", roles: ["corretor", "gestor", "admin"], noPadding: true },
