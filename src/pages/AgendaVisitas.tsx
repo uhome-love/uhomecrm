@@ -321,6 +321,7 @@ function DayGroup({
 /* ═══════ MAIN PAGE ═══════ */
 export default function AgendaVisitas() {
   const { isAdmin, isGestor } = useUserRole();
+  const { integration, connect, disconnect, connecting, disconnecting } = useCalendarIntegration();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
