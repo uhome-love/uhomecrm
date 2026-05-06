@@ -606,6 +606,26 @@ export default function AgendaVisitas() {
           </button>
         )}
 
+        {/* Google Calendar */}
+        {integration?.connected ? (
+          <button
+            onClick={() => disconnect()}
+            disabled={disconnecting}
+            title={`Conectado: ${integration.email}`}
+            className="h-[32px] px-3 bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+          >
+            <Link2 size={12} /> Agenda conectada
+          </button>
+        ) : (
+          <button
+            onClick={() => connect()}
+            disabled={connecting}
+            className="h-[32px] px-3 bg-white dark:bg-white/5 hover:bg-[#4969FF]/5 text-[#4969FF] border border-[#4969FF]/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+          >
+            <Link2Off size={12} /> {connecting ? "Conectando…" : "Vincular Google Agenda"}
+          </button>
+        )}
+
         {/* Nova Visita */}
         <button
           onClick={() => setShowTypeSelector(true)}
