@@ -5,7 +5,8 @@ import {
   addDays, isToday, isBefore,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User, RotateCcw, ChevronDown } from "lucide-react";
+import { CalendarDays, Plus, Search, X, Check, XCircle, Users, User, RotateCcw, ChevronDown, Link2, Link2Off } from "lucide-react";
+import { useCalendarIntegration } from "@/hooks/useCalendarIntegration";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
 import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
@@ -320,6 +321,7 @@ function DayGroup({
 /* ═══════ MAIN PAGE ═══════ */
 export default function AgendaVisitas() {
   const { isAdmin, isGestor } = useUserRole();
+  const { integration, connect, disconnect, connecting, disconnecting } = useCalendarIntegration();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -601,6 +603,26 @@ export default function AgendaVisitas() {
             className="text-[11px] text-[#ef4444] hover:bg-[#fef2f2] px-2 py-1 rounded-[6px] transition-colors"
           >
             {pendingVisitas.length} pendente{pendingVisitas.length !== 1 ? "s" : ""}
+          </button>
+        )}
+
+        {/* Google Calendar */}
+        {integration?.connected ? (
+          <button
+            onClick={() => disconnect()}
+            disabled={disconnecting}
+            title={`Conectado: ${integration.email}`}
+            className="h-[32px] px-3 bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+          >
+            <Link2 size={12} /> Agenda conectada
+          </button>
+        ) : (
+          <button
+            onClick={() => connect()}
+            disabled={connecting}
+            className="h-[32px] px-3 bg-white dark:bg-white/5 hover:bg-[#4969FF]/5 text-[#4969FF] border border-[#4969FF]/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+          >
+            <Link2Off size={12} /> {connecting ? "Conectando…" : "Vincular Google Agenda"}
           </button>
         )}
 
