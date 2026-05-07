@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,20 +74,17 @@ async function distributeWithRetry(
     }
 
     try {
-      const resp = await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${serviceKey}`,
-          "Content-Type": "application/json",
-          "x-trace-id": traceId,
-        },
-        body: JSON.stringify({ action: "distribute_single", pipeline_lead_id: leadId }),
+      const result = await distributeLeadDirect(supabaseUrl, serviceKey, leadId, traceId, {
+        warn: (msg, ctx, err) => _emit("warn", msg, traceId, ctx, err),
+      }, 0);
+      if (result.success) return true;
+      _emit("warn", `direct distribution attempt ${attempt} failed`, traceId, {
+        leadId,
+        reason: result.reason,
+        detail: result.error,
       });
-      if (resp.ok) return true;
-      const body = await resp.text().catch(() => "");
-      _emit("warn", `distribute-lead attempt ${attempt} failed (${resp.status})`, traceId, { leadId, body });
     } catch (err) {
-      _emit("warn", `distribute-lead attempt ${attempt} error`, traceId, { leadId }, err);
+      _emit("warn", `direct distribution attempt ${attempt} error`, traceId, { leadId }, err);
     }
 
     if (attempt < maxRetries) {
@@ -386,7 +384,39 @@ Deno.serve(async (req) => {
       );
     }
 
-    const stuckRedistributed = autoRedistributed;
+    let backlogRecovered = 0;
+    let backlogStillQueued = 0;
+
+    const { data: backlogLeads } = await supabase
+      .from("pipeline_leads")
+      .select("id, nome, empreendimento, origem, created_at")
+      .eq("aceite_status", "pendente_distribuicao")
+      .is("corretor_id", null)
+      .order("created_at", { ascending: true })
+      .limit(50);
+
+    if (backlogLeads && backlogLeads.length > 0) {
+      for (const backlogLead of backlogLeads) {
+        const recovered = await distributeWithRetry(supabaseUrl, serviceKey, backlogLead.id, `${traceId}-backlog`, 0, supabase);
+        if (recovered) {
+          const { data: check } = await supabase
+            .from("pipeline_leads")
+            .select("aceite_status, corretor_id")
+            .eq("id", backlogLead.id)
+            .maybeSingle();
+
+          if (check?.corretor_id && check.aceite_status === "aguardando_aceite") {
+            backlogRecovered++;
+          } else {
+            backlogStillQueued++;
+          }
+        } else {
+          backlogStillQueued++;
+        }
+      }
+    }
+
+    const stuckRedistributed = autoRedistributed + backlogRecovered;
 
     // 4d. Reciclar leads "Sem Contato" inativos há 48h
     let semContatoRecycled = 0;
@@ -475,12 +505,14 @@ Deno.serve(async (req) => {
       sem_contato_recycled: semContatoRecycled,
       stuck_redistributed: stuckRedistributed,
       locks_cleaned: cleanedCount || 0,
-      timestamp: new Date().toISOString(),
+        backlog_recovered: backlogRecovered,
+        backlog_still_queued: backlogStillQueued,
+        timestamp: new Date().toISOString(),
     };
 
     L.info("Lead escalation run", result);
-    if (result.escalated > 0 || result.recycled > 0 || result.sem_contato_recycled > 0 || result.auto_redistributed > 0) {
-      logOps("info", "business", `Escalation run: ${result.escalated} escalated, ${result.recycled} recycled (${result.auto_redistributed} auto, ${result.sent_to_ceo_queue} CEO), ${result.sem_contato_recycled} sem_contato`, result as unknown as Record<string, unknown>);
+    if (result.escalated > 0 || result.recycled > 0 || result.sem_contato_recycled > 0 || result.auto_redistributed > 0 || result.backlog_recovered > 0 || result.backlog_still_queued > 0) {
+      logOps("info", "business", `Escalation run: ${result.escalated} escalated, ${result.recycled} recycled (${result.auto_redistributed} auto, ${result.sent_to_ceo_queue} CEO), backlog ${result.backlog_recovered}/${result.backlog_still_queued}, ${result.sem_contato_recycled} sem_contato`, result as unknown as Record<string, unknown>);
     }
 
     return new Response(JSON.stringify(result), {
