@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
+import { distributeLeadDirect } from '../_shared/roleta-distribution.ts'
 
 const VALID_TIPOS = ['lead', 'agendamento', 'captacao', 'whatsapp_click'] as const
 const NOVO_LEAD_STAGE_ID = 'd3843b2f-2fa1-4c31-9129-4eb0ed21f019'
@@ -329,24 +330,21 @@ Deno.serve(async (req) => {
 
         // ── Auto-distribute new lead ──
         try {
-          const distResp = await fetch(
-            `${Deno.env.get('SUPABASE_URL')}/functions/v1/distribute-lead`,
+          const distResult = await distributeLeadDirect(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+            newLead.id,
+            `crm-${Date.now().toString(36)}`,
             {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`, 'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-              },
-              body: JSON.stringify({ action: 'distribute_single', lead_id: newLead.id }),
-            }
+              warn: (msg, ctx, err) => console.warn('[crm-webhook]', msg, ctx, err ?? ''),
+            },
           )
-          const distResult = await distResp.json()
-          console.log(`[crm-webhook] distribute-lead response:`, distResult)
+          console.log(`[crm-webhook] direct distribution response:`, distResult)
           if (distResult?.corretor_id) {
             existingCorretorId = distResult.corretor_id
           }
         } catch (distErr) {
-          console.error('[crm-webhook] distribute-lead failed (lead stays in fila_ceo):', distErr)
+          console.error('[crm-webhook] direct distribution failed (lead stays in fila_ceo):', distErr)
         }
       }
 

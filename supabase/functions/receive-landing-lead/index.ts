@@ -18,6 +18,7 @@
  * }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,34 +50,6 @@ function normalizePhone(phone: string | null | undefined): string | null {
   if (digits.length < 10) return null;
   if (digits.startsWith("55") && digits.length >= 12) return digits.slice(2);
   return digits;
-}
-
-/** Retry distribute-lead call with exponential backoff */
-async function distributeWithRetry(
-  supabaseUrl: string, serviceKey: string, leadId: string, traceId: string,
-  L: { warn: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => void },
-  maxRetries = 2
-): Promise<boolean> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const resp = await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${serviceKey}`, apikey: serviceKey,
-          "Content-Type": "application/json",
-          "x-trace-id": traceId,
-        },
-        body: JSON.stringify({ action: "distribute_single", pipeline_lead_id: leadId }),
-      });
-      if (resp.ok) return true;
-      const body = await resp.text().catch(() => "");
-      L.warn(`Distribute attempt ${attempt + 1} failed`, { leadId, status: resp.status, body: body.slice(0, 200) });
-    } catch (err) {
-      L.warn(`Distribute attempt ${attempt + 1} exception`, { leadId, attempt }, err);
-    }
-    if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-  }
-  return false;
 }
 
 Deno.serve(async (req) => {
@@ -371,9 +344,9 @@ Deno.serve(async (req) => {
     logOps("info", "business", "Lead created via Landing Page", { lead_id: insertedLead.id, name, empreendimento, source });
 
     // ── Auto-distribute (with retry + trace propagation) ──
-    const distributed = await distributeWithRetry(supabaseUrl, serviceKey, insertedLead.id, traceId, L);
-    if (!distributed) {
-      logOps("error", "integration", "Distribution failed after retries — lead orphaned", { lead_id: insertedLead.id, name, empreendimento });
+    const distribution = await distributeLeadDirect(supabaseUrl, serviceKey, insertedLead.id, traceId, L);
+    if (!distribution.success) {
+      logOps("error", "integration", "Distribution failed after retries — lead orphaned", { lead_id: insertedLead.id, name, empreendimento, reason: distribution.reason || null, detail: distribution.error || null });
     }
 
     // ── Register entry activity ──
