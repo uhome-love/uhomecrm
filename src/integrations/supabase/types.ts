@@ -9443,6 +9443,7 @@ export type Database = {
         Returns: Json
       }
       escalonar_notificacoes_leads: { Args: never; Returns: number }
+      expirar_aceites_roleta: { Args: never; Returns: Json }
       fetch_next_lead: {
         Args: {
           p_corretor_id: string
