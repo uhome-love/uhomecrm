@@ -347,7 +347,7 @@ export default function RoletaStatusBar() {
     const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const janelaDb = toDbJanela(janela);
 
-    const { error } = await supabase.from("roleta_credenciamentos").upsert({
+    const payload = {
       corretor_id: profileId,
       auth_user_id: user.id,
       data: today,
@@ -355,13 +355,25 @@ export default function RoletaStatusBar() {
       segmento_1_id: selectedIds[0] || null,
       segmento_2_id: selectedIds[1] || null,
       status: "pendente",
-    } as any, {
-      onConflict: "corretor_id,data,janela",
-    });
+    } as any;
 
-    if (error) {
-      console.error("Credenciamento error:", error);
-      toast.error(`Erro ao salvar credenciamento: ${error.message}`);
+    // Retry up to 3x on transient AbortError "Lock was stolen" (supabase-js navigator.locks race)
+    let lastError: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { error } = await supabase.from("roleta_credenciamentos").upsert(payload, {
+        onConflict: "corretor_id,data,janela",
+      });
+      if (!error) { lastError = null; break; }
+      lastError = error;
+      const msg = String(error?.message || "");
+      const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || error?.name === "AbortError";
+      if (!isLockError) break;
+      await new Promise(r => setTimeout(r, 250 * (attempt + 1)));
+    }
+
+    if (lastError) {
+      console.error("Credenciamento error:", lastError);
+      toast.error(`Erro ao salvar credenciamento: ${lastError.message}`);
       setSaving(false);
       return;
     }
