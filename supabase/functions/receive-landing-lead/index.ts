@@ -62,7 +62,7 @@ async function distributeWithRetry(
       const resp = await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${serviceKey}`,
+          Authorization: `Bearer ${serviceKey}`, apikey: serviceKey,
           "Content-Type": "application/json",
           "x-trace-id": traceId,
         },
@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
         try {
           await fetch(`${supabaseUrl}/functions/v1/send-push`, {
             method: "POST",
-            headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+            headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json" },
             body: JSON.stringify({
               user_id: existing.corretor_id,
               title: "🔄 Lead reativado!",
