@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,20 +74,17 @@ async function distributeWithRetry(
     }
 
     try {
-      const resp = await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${serviceKey}`,
-          "Content-Type": "application/json",
-          "x-trace-id": traceId,
-        },
-        body: JSON.stringify({ action: "distribute_single", pipeline_lead_id: leadId }),
+      const result = await distributeLeadDirect(supabaseUrl, serviceKey, leadId, traceId, {
+        warn: (msg, ctx, err) => _emit("warn", msg, traceId, ctx, err),
+      }, 0);
+      if (result.success) return true;
+      _emit("warn", `direct distribution attempt ${attempt} failed`, traceId, {
+        leadId,
+        reason: result.reason,
+        detail: result.error,
       });
-      if (resp.ok) return true;
-      const body = await resp.text().catch(() => "");
-      _emit("warn", `distribute-lead attempt ${attempt} failed (${resp.status})`, traceId, { leadId, body });
     } catch (err) {
-      _emit("warn", `distribute-lead attempt ${attempt} error`, traceId, { leadId }, err);
+      _emit("warn", `direct distribution attempt ${attempt} error`, traceId, { leadId }, err);
     }
 
     if (attempt < maxRetries) {
