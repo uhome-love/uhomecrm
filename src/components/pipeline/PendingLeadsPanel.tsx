@@ -31,11 +31,19 @@ export default function PendingLeadsPanel() {
     setRedistributing(true);
     try {
       const { data, error } = await supabase.functions.invoke("distribute-lead", {
-        body: { action: "redistribuir_pendentes", segmento_id: segmentoId || null },
+        body: { action: "dispatch_fila_ceo", janela: null, segmento_id: segmentoId || null },
       });
       if (error) throw error;
       const result = data as any;
-      toast.success(`${result?.redistributed || 0} leads redistribuídos!`);
+      const dispatched = result?.dispatched || 0;
+      const failed = result?.failed || 0;
+      if (dispatched > 0 && failed === 0) {
+        toast.success(`${dispatched} leads redistribuídos!`);
+      } else if (dispatched > 0) {
+        toast.success(`${dispatched} leads redistribuídos, ${failed} ainda pendentes.`);
+      } else {
+        toast.error("Nenhum lead pôde ser redistribuído agora");
+      }
       qc.invalidateQueries({ queryKey: ["pending-leads"] });
     } catch {
       toast.error("Erro ao redistribuir leads");
