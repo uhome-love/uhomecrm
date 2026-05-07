@@ -72,12 +72,12 @@ Deno.serve(async (req) => {
     }
 
     // ─── Batch dispatch (uses atomic RPC sequentially) ───
-    if (action === "dispatch_batch" || action === "dispatch_fila_ceo") {
+    if (action === "dispatch_batch" || action === "dispatch_fila_ceo" || action === "redistribuir_pendentes") {
       let allLeadIds: string[] = batchLeadIds.length
         ? batchLeadIds
         : (singleLeadId ? [singleLeadId] : []);
 
-      if (action === "dispatch_fila_ceo" && allLeadIds.length === 0) {
+      if ((action === "dispatch_fila_ceo" || action === "redistribuir_pendentes") && allLeadIds.length === 0) {
         const { data: pendingQueueLeads, error: pendingQueueError } = await supabase
           .from("pipeline_leads")
           .select("id")
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       const failedByReason: Record<string, number> = {};
       const distributionLog: Array<{ leadId: string; corretorId: string; segmento: string }> = [];
 
-      const forceDispatch = (action === "dispatch_fila_ceo");
+      const forceDispatch = (action === "dispatch_fila_ceo" || action === "redistribuir_pendentes");
 
       for (const lid of allLeadIds) {
         const result = await distributeViaRPC(supabase, supabaseUrl, serviceKey, lid, targetJanela, null, L, forceDispatch);
