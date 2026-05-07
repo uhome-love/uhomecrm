@@ -12,6 +12,7 @@
  * { name, email, phone, empreendimento, ... }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,34 +42,6 @@ function isLikelyTestLead(name: string, email: string): boolean {
   const combined = `${normalizeLower(name)} ${normalizeLower(email)}`;
   if (combined.includes("test@") || combined.includes("teste@")) return true;
   if (combined.includes("lead teste") || combined.includes("dummy")) return true;
-  return false;
-}
-
-/** Retry distribute-lead call with exponential backoff */
-async function distributeWithRetry(
-  supabaseUrl: string, serviceKey: string, leadId: string, traceId: string,
-  L: { warn: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => void },
-  maxRetries = 2
-): Promise<boolean> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const resp = await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${serviceKey}`, apikey: serviceKey,
-          "Content-Type": "application/json",
-          "x-trace-id": traceId,
-        },
-        body: JSON.stringify({ action: "distribute_single", pipeline_lead_id: leadId }),
-      });
-      if (resp.ok) return true;
-      const body = await resp.text().catch(() => "");
-      L.warn(`Distribute attempt ${attempt + 1} failed`, { leadId, status: resp.status, body: body.slice(0, 200) });
-    } catch (err) {
-      L.warn(`Distribute attempt ${attempt + 1} exception`, { leadId, attempt }, err);
-    }
-    if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-  }
   return false;
 }
 
@@ -451,9 +424,9 @@ async function processLead(
   }).then(r => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });
 
   // ── Auto-distribute via roleta ──
-  const distributed = await distributeWithRetry(supabaseUrl, serviceKey, insertedLead.id, traceId, L as any);
-  if (!distributed) {
-    logOps("error", "integration", "Distribution failed — lead orphaned", { lead_id: insertedLead.id });
+  const distribution = await distributeLeadDirect(supabaseUrl, serviceKey, insertedLead.id, traceId, L as any);
+  if (!distribution.success) {
+    logOps("error", "integration", "Distribution failed — lead orphaned", { lead_id: insertedLead.id, reason: distribution.reason || null, detail: distribution.error || null });
   }
 
   // ── Audit ──
@@ -466,5 +439,5 @@ async function processLead(
     request_id: traceId,
   }).then(r => { if (r.error) L.warn("Audit insert failed", {}, r.error); });
 
-  return { action: "created", lead_id: insertedLead.id, empreendimento, distributed };
+  return { action: "created", lead_id: insertedLead.id, empreendimento, distributed: distribution.success, distribution };
 }
