@@ -64,7 +64,7 @@ export function formatBRT(value: DateInput, pattern: string, fallback = "—"): 
     .replace(/HH/g, lookup.hour ?? "")
     .replace(/mm/g, lookup.minute ?? "")
     .replace(/ss/g, lookup.second ?? "")
-    .replace(/SSS/g, lookup.fractionalSecond ?? "000");
+    .replace(/SSS/g, String(d.getMilliseconds()).padStart(3, "0"));
 }
 
 /**
