@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { History, MessageCircle, Mail } from "lucide-react";
 import { format } from "date-fns";
+import { formatBRT } from "@/lib/brtTime";
 
 export default function HistoricoEnviosTab() {
   const [filtroCanal, setFiltroCanal] = useState("todos");
@@ -81,7 +82,7 @@ export default function HistoricoEnviosTab() {
                 {envios.map((e: any) => (
                   <tr key={e.id} className="border-b hover:bg-muted/30">
                     <td className="py-2 px-2">
-                      {e.sent_at ? format(new Date(e.sent_at), "dd/MM HH:mm") : "—"}
+                      {e.sent_at ? formatBRT(e.sent_at, "dd/MM HH:mm") : "—"}
                     </td>
                     <td className="py-2 px-2 font-medium">{e.pipeline_leads?.nome || "—"}</td>
                     <td className="py-2 px-2 text-center">

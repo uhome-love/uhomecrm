@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { History, Phone, MessageCircle, Mail } from "lucide-react";
 import { format } from "date-fns";
+import { formatBRT } from "@/lib/brtTime";
 
 interface Props {
   leadId: string;
@@ -52,7 +53,7 @@ export default function AttemptHistory({ leadId }: Props) {
               <Badge variant="outline" className={`text-[9px] h-4 ${res.color}`}>{res.label}</Badge>
               <span className="text-muted-foreground flex-1 truncate">{a.feedback}</span>
               <span className="text-muted-foreground shrink-0">
-                {format(new Date(a.created_at), "dd/MM HH:mm")}
+                {formatBRT(a.created_at, "dd/MM HH:mm")}
               </span>
             </div>
           );

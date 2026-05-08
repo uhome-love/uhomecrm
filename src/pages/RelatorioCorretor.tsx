@@ -17,6 +17,7 @@ import { formatBRLCompact } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
 import GerarManualTab from "@/components/relatorio/GerarManualTab";
+import { formatBRT } from "@/lib/brtTime";
 
 interface TeamMember { id: string; nome: string; user_id: string | null; }
 
@@ -268,8 +269,8 @@ export default function RelatorioCorretor() {
       body: {
         corretor_nome: corretorNome,
         gerente_nome: gerenteNome,
-        periodo_inicio: format(new Date(dataInicio), "dd/MM/yyyy"),
-        periodo_fim: format(new Date(dataFim), "dd/MM/yyyy"),
+        periodo_inicio: formatBRT(dataInicio, "dd/MM/yyyy"),
+        periodo_fim: formatBRT(dataFim, "dd/MM/yyyy"),
         periodo_tipo: periodoTipo,
         metricas,
         taxas_conversao: taxas,
@@ -445,7 +446,7 @@ export default function RelatorioCorretor() {
               <div className="flex items-center gap-2 flex-wrap">
                 <Button variant="ghost" size="sm" onClick={() => setViewingAuto(null)}>← Voltar</Button>
                 <h3 className="font-display font-semibold text-sm flex-1">
-                  {viewingAuto.corretor_nome} — {format(new Date(viewingAuto.periodo_inicio + "T12:00:00"), "dd/MM")} a {format(new Date(viewingAuto.periodo_fim + "T12:00:00"), "dd/MM/yyyy")}
+                  {viewingAuto.corretor_nome} — {formatBRT(viewingAuto.periodo_inicio + "T12:00:00", "dd/MM")} a {formatBRT(viewingAuto.periodo_fim + "T12:00:00", "dd/MM/yyyy")}
                 </h3>
                 <Button
                   variant="default"
@@ -540,7 +541,7 @@ export default function RelatorioCorretor() {
                         <div className="flex-1 min-w-0">
                           <p className="font-display font-semibold text-sm text-foreground truncate">{r.corretor_nome}</p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(r.periodo_inicio + "T12:00:00"), "dd/MM")} a {format(new Date(r.periodo_fim + "T12:00:00"), "dd/MM/yyyy")}
+                            {formatBRT(r.periodo_inicio + "T12:00:00", "dd/MM")} a {formatBRT(r.periodo_fim + "T12:00:00", "dd/MM/yyyy")}
                           </p>
                         </div>
                         {r.score_performance != null && (
@@ -587,7 +588,7 @@ export default function RelatorioCorretor() {
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setViewingReport(null)}>← Voltar</Button>
                 <h3 className="font-display font-semibold text-sm flex-1">
-                  {viewingReport.corretor_nome} — {format(new Date(viewingReport.periodo_inicio), "dd/MM")} a {format(new Date(viewingReport.periodo_fim), "dd/MM/yyyy")}
+                  {viewingReport.corretor_nome} — {formatBRT(viewingReport.periodo_inicio, "dd/MM")} a {formatBRT(viewingReport.periodo_fim, "dd/MM/yyyy")}
                 </h3>
                 <Button variant="outline" size="sm" onClick={() => {
                   const printWindow = window.open("", "_blank");
@@ -652,7 +653,7 @@ export default function RelatorioCorretor() {
                       <div className="flex-1 min-w-0">
                         <p className="font-display font-semibold text-sm text-foreground truncate">{r.corretor_nome}</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(r.periodo_inicio), "dd/MM")} a {format(new Date(r.periodo_fim), "dd/MM/yyyy")} • {r.periodo_tipo}
+                          {formatBRT(r.periodo_inicio, "dd/MM")} a {formatBRT(r.periodo_fim, "dd/MM/yyyy")} • {r.periodo_tipo}
                         </p>
                       </div>
                       {r.score_performance != null && (
@@ -661,7 +662,7 @@ export default function RelatorioCorretor() {
                         </div>
                       )}
                       <p className="text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(r.created_at), "dd/MM/yy HH:mm")}
+                        {formatBRT(r.created_at, "dd/MM/yy HH:mm")}
                       </p>
                       <Button variant="ghost" size="sm" className="text-destructive h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); deleteReport(r.id); }}>
                         <Trash2 className="h-3.5 w-3.5" />

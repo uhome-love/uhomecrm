@@ -10,6 +10,7 @@ import { Loader2, Activity, Users, Phone, ThumbsUp, AlertTriangle, TrendingUp, Z
 import { format, differenceInMinutes } from "date-fns";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { formatBRT } from "@/lib/brtTime";
 interface CorretorLive {
   corretor_id: string;
   nome: string;
@@ -616,7 +617,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
                                 <motion.span animate={{ opacity: [1, 0.5, 1] }} transition={{ duration: 1, repeat: Infinity }} className="text-emerald-400">agora</motion.span>
                               ) :
                               c.minutos_parado < 60 ? `${c.minutos_parado}m` :
-                              format(new Date(c.ultima_tentativa), "HH:mm")
+                              formatBRT(c.ultima_tentativa, "HH:mm")
                             ) : "—"}
                           </p>
                           <p className="text-[9px] text-muted-foreground mt-0.5">Última</p>

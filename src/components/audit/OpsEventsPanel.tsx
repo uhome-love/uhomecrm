@@ -13,6 +13,7 @@ import { Radio, Search, CalendarIcon, ChevronDown, ChevronRight, X, RefreshCw } 
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
+import { formatBRT } from "@/lib/brtTime";
 
 interface OpsEvent {
   id: string;
@@ -238,7 +239,7 @@ export function OpsEventsPanel() {
                           : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
                       </TableCell>
                       <TableCell className="text-xs whitespace-nowrap">
-                        {format(new Date(ev.created_at), "dd/MM HH:mm:ss")}
+                        {formatBRT(ev.created_at, "dd/MM HH:mm:ss")}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[10px] font-mono">{ev.fn}</Badge>
@@ -285,7 +286,7 @@ export function OpsEventsPanel() {
                                 )}
                                 <div className="flex gap-2">
                                   <dt className="text-muted-foreground">Timestamp:</dt>
-                                  <dd>{format(new Date(ev.created_at), "dd/MM/yyyy HH:mm:ss.SSS")}</dd>
+                                  <dd>{formatBRT(ev.created_at, "dd/MM/yyyy HH:mm:ss.SSS")}</dd>
                                 </div>
                               </dl>
                             </div>

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Users, Pause, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { formatBRT } from "@/lib/brtTime";
 
 export default function LeadsNutricaoTab() {
   const qc = useQueryClient();
@@ -136,7 +137,7 @@ export default function LeadsNutricaoTab() {
                       </td>
                       <td className="py-2 px-2 text-center">{l.step_atual}</td>
                       <td className="py-2 px-2">
-                        {l.proximo_step_at ? format(new Date(l.proximo_step_at), "dd/MM HH:mm") : "—"}
+                        {l.proximo_step_at ? formatBRT(l.proximo_step_at, "dd/MM HH:mm") : "—"}
                       </td>
                       <td className="py-2 px-2 text-center">
                         <Badge className={`text-[10px] ${statusColor[l.status] || ""}`}>{l.status}</Badge>

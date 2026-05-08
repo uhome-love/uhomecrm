@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDisponibilidadeGerencial, type Disponibilidade, type DisponibilidadeStatus } from "@/hooks/useCorretorDisponibilidade";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatBRT } from "@/lib/brtTime";
 
 const STATUS_ICON: Record<DisponibilidadeStatus, { icon: React.ElementType; color: string; label: string }> = {
   offline: { icon: WifiOff, color: "text-muted-foreground", label: "Offline" },
@@ -129,7 +130,7 @@ export default function DisponibilidadeGerencialPanel() {
                   <div className="text-right shrink-0">
                     {c.entrada_em && (
                       <p className="text-[10px] text-muted-foreground">
-                        Entrada: {format(new Date(c.entrada_em), "HH:mm", { locale: ptBR })}
+                        Entrada: {formatBRT(c.entrada_em, "HH:mm")}
                       </p>
                     )}
                     <p className="text-[10px] text-muted-foreground">
