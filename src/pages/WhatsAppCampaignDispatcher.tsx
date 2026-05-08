@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatBRT } from "@/lib/brtTime";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -690,7 +691,7 @@ function CampanhasTab({ selectedBatchId, onSelect }: { selectedBatchId: string |
                       <TableCell className="text-xs font-medium">{s.nome || "—"}</TableCell>
                       <TableCell className="text-xs">{s.telefone_normalizado || s.telefone || "—"}</TableCell>
                       <TableCell><StatusBadge status={s.status_envio} /></TableCell>
-                      <TableCell className="text-xs">{s.sent_at ? new Date(s.sent_at).toLocaleString("pt-BR") : "—"}</TableCell>
+                      <TableCell className="text-xs">{s.sent_at ? formatBRT(s.sent_at, "dd/MM/yyyy HH:mm") : "—"}</TableCell>
                       <TableCell className="text-xs text-red-500 max-w-32 truncate">{s.error_message || "—"}</TableCell>
                     </TableRow>
                   ))}

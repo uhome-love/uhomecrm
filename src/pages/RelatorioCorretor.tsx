@@ -331,7 +331,7 @@ export default function RelatorioCorretor() {
     </style></head><body>
     ${reportRef.current.innerHTML}
     <div class="footer">
-      <p><strong>Uhome Gestão e IA</strong> — Relatório gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
+      <p><strong>Uhome Gestão e IA</strong> — Relatório gerado em ${formatBRT(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
       <p>Gerente: ${gerenteNome}</p>
     </div>
     </body></html>`);
@@ -605,7 +605,7 @@ export default function RelatorioCorretor() {
                     th { background: #f0f0f8; font-weight: 600; } strong { font-weight: 600; } hr { border: none; border-top: 1px solid #e0e0e0; margin: 16px 0; }
                     .footer { margin-top: 40px; padding-top: 16px; border-top: 2px solid #1a1a2e; font-size: 11px; color: #666; text-align: center; }
                   </style></head><body><div id="content"></div>
-                  <div class="footer"><p><strong>Uhome Gestão e IA</strong> — Relatório gerado em ${format(new Date(viewingReport.created_at), "dd/MM/yyyy 'às' HH:mm")}</p></div>
+                  <div class="footer"><p><strong>Uhome Gestão e IA</strong> — Relatório gerado em ${formatBRT(viewingReport.created_at, "dd/MM/yyyy 'às' HH:mm")}</p></div>
                   </body></html>`);
                   const contentDiv = printWindow.document.getElementById("content");
                   if (contentDiv) contentDiv.innerHTML = printWindow.document.body.querySelector("#content")?.innerHTML || "";

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatBRT } from "@/lib/brtTime";
 
 const subtitles = [
   "Marketing, Financeiro & Operações",
@@ -65,7 +66,7 @@ export default function BackofficeDashboard() {
     const fetchFin = async () => {
       const { data }: any = await supabase.from("pagadorias").select("status, created_at").order("created_at", { ascending: false });
       const pendentes = (data || []).filter((p: any) => p.status === "pendente" || p.status === "rascunho").length;
-      setFinStats({ pendentes, ultimoContrato: data?.[0]?.created_at ? format(new Date(data[0].created_at), "dd/MM") : "—" });
+      setFinStats({ pendentes, ultimoContrato: data?.[0]?.created_at ? formatBRT(data[0].created_at, "dd/MM") : "—" });
     };
     fetchFin();
   }, []);
