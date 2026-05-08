@@ -17,6 +17,7 @@ import {
   ThumbsUp, ThumbsDown, MessageSquare, AlertCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatBRT } from "@/lib/brtTime";
 import { useOAListas, type OALead } from "@/hooks/useOfertaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -511,7 +512,7 @@ export default function DisparadorLigacoesIA() {
                 <p className="text-xs text-muted-foreground mt-1">
                   {pendingSession.total_leads} leads no total ·{" "}
                   {pendingSession.total_leads - pendingSession.current_index} restantes ·{" "}
-                  Criada em {new Date(pendingSession.created_at).toLocaleString("pt-BR")}
+                  Criada em {formatBRT(pendingSession.created_at, "dd/MM/yyyy HH:mm")}
                 </p>
                 <div className="flex gap-2 mt-3">
                   <Button size="sm" onClick={() => restoreSession(pendingSession)} className="gap-1.5">
