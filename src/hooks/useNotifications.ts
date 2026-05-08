@@ -37,6 +37,58 @@ export function useNotifications() {
 
   // Track already-toasted notification IDs to prevent duplicate toasts
   const toastedIds = useRef(new Set<string>());
+  const seededInitialIds = useRef(false);
+
+  const { data: preferences } = useQuery({
+    queryKey: ["notification-preferences", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("notification_preferences")
+        .select("popup_enabled")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const popupEnabled = preferences?.popup_enabled ?? true;
+
+  const getNotificationUrl = (notification: Notification | Record<string, any>) => {
+    const dados = notification?.dados as Record<string, any> | undefined;
+    if (typeof dados?.url === "string" && dados.url.length > 0) return dados.url;
+
+    const leadId = dados?.pipeline_lead_id || dados?.lead_id;
+    if (typeof leadId === "string" && leadId.length > 0) {
+      return `/aceite?lead=${leadId}`;
+    }
+
+    return "/notificacoes";
+  };
+
+  const showDesktopNotification = async (notification: Notification) => {
+    if (typeof window === "undefined" || typeof Notification === "undefined") return;
+    if (Notification.permission !== "granted") return;
+
+    const options = {
+      body: notification.mensagem,
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/icon-192x192.png",
+      tag: `notif-${notification.id}`,
+      renotify: true,
+      requireInteraction: ["novo_lead", "lead_novo", "lead_urgente", "lead_ultimo_alerta"].includes(notification.categoria),
+      data: { url: getNotificationUrl(notification) },
+    };
+
+    if ("serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(notification.titulo, options);
+      return;
+    }
+
+    new Notification(notification.titulo, options);
+  };
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["notifications", user?.id, cargo],
@@ -50,8 +102,10 @@ export function useNotifications() {
         .limit(50);
       if (error) throw error;
       const results = data as unknown as Notification[];
-      // Seed toastedIds with existing IDs so we never toast old notifications
-      results.forEach(n => toastedIds.current.add(n.id));
+      if (!seededInitialIds.current) {
+        results.forEach((n) => toastedIds.current.add(n.id));
+        seededInitialIds.current = true;
+      }
       return results;
     },
     enabled: !!user,
@@ -63,6 +117,12 @@ export function useNotifications() {
   // Realtime subscription — deduplicated toasts
   useEffect(() => {
     if (!user) return;
+
+    if (!seededInitialIds.current) {
+      toastedIds.current.clear();
+      seededInitialIds.current = false;
+    }
+
     const channel = supabase
       .channel("notifications-realtime")
       .on(
@@ -83,9 +143,26 @@ export function useNotifications() {
             const arr = Array.from(toastedIds.current);
             toastedIds.current = new Set(arr.slice(-100));
           }
+
           queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
-          // Use toast id to prevent sonner from showing duplicates
-          toast(n.titulo, { description: n.mensagem, id: `notif-${n.id}` });
+
+          if (!popupEnabled) return;
+
+          const notification = n as Notification;
+          const shouldShowDesktop = document.visibilityState !== "visible";
+
+          if (shouldShowDesktop) {
+            void showDesktopNotification(notification).catch(() => undefined);
+          }
+
+          toast(notification.titulo, {
+            description: notification.mensagem,
+            id: `notif-${notification.id}`,
+            action: {
+              label: "Abrir",
+              onClick: () => window.location.assign(getNotificationUrl(notification)),
+            },
+          });
         }
       )
       .subscribe();
@@ -93,7 +170,27 @@ export function useNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, queryClient]);
+  }, [user, queryClient, popupEnabled]);
+
+  useEffect(() => {
+    if (!user || !popupEnabled) return;
+    if (typeof window === "undefined" || typeof Notification === "undefined") return;
+    if (Notification.permission !== "default") return;
+
+    const requestPermission = () => {
+      Notification.requestPermission().catch(() => undefined);
+      window.removeEventListener("click", requestPermission);
+      window.removeEventListener("keydown", requestPermission);
+    };
+
+    window.addEventListener("click", requestPermission, { once: true });
+    window.addEventListener("keydown", requestPermission, { once: true });
+
+    return () => {
+      window.removeEventListener("click", requestPermission);
+      window.removeEventListener("keydown", requestPermission);
+    };
+  }, [user, popupEnabled]);
 
   // Auto-refresh on tab visibility
   useEffect(() => {
