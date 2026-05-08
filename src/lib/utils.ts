@@ -51,6 +51,8 @@ function parseDateValue(value: string | Date | null | undefined, dateOnly = fals
 /**
  * Returns today's date as "YYYY-MM-DD" in America/Sao_Paulo timezone.
  * Use this everywhere instead of `new Date().toISOString().slice(0,10)` or `format(new Date(), "yyyy-MM-dd")`.
+ *
+ * @deprecated Prefira importar de `@/lib/brtTime` diretamente.
  */
 export function todayBRT(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
@@ -58,10 +60,14 @@ export function todayBRT(): string {
 
 /**
  * Returns a given Date as "YYYY-MM-DD" in America/Sao_Paulo timezone.
+ * @deprecated Prefira importar de `@/lib/brtTime` diretamente.
  */
 export function dateToBRT(date: Date): string {
   return date.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
+
+// Re-exporta helpers BRT centralizados para conveniência
+export { formatBRT, formatBRTLocale, nowBRT, minutesSince, secondsUntil, normalizeToBRT, brtMinutesOfDay, BRT_TIMEZONE } from "./brtTime";
 
 /**
  * Converts a BRT date range (YYYY-MM-DD) to UTC ISO timestamps.
