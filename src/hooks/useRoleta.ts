@@ -454,23 +454,30 @@ export function useRoleta() {
     setSubmitting(true);
     try {
       let lastError: any = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const { error } = await supabase.from("roleta_credenciamentos").upsert({
-          corretor_id: profileId,
-          janela,
-          segmento_1_id: segmento1Id,
-          segmento_2_id: segmento2Id || null,
-          data: hoje,
-          status: "pendente",
-        } as any, {
-          onConflict: "corretor_id,data,janela",
-        });
-        if (!error) { lastError = null; break; }
-        lastError = error;
-        const msg = String(error?.message || "");
-        const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || (error as any)?.name === "AbortError";
-        if (!isLockError) break;
-        await new Promise(r => setTimeout(r, 250 * (attempt + 1)));
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          const { error } = await supabase.from("roleta_credenciamentos").upsert({
+            corretor_id: profileId,
+            janela,
+            segmento_1_id: segmento1Id,
+            segmento_2_id: segmento2Id || null,
+            data: hoje,
+            status: "pendente",
+          } as any, {
+            onConflict: "corretor_id,data,janela",
+          });
+          if (!error) { lastError = null; break; }
+          lastError = error;
+          const msg = String(error?.message || "");
+          const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || (error as any)?.name === "AbortError";
+          if (!isLockError) break;
+        } catch (thrown: any) {
+          lastError = thrown;
+          const msg = String(thrown?.message || "");
+          const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || thrown?.name === "AbortError";
+          if (!isLockError) break;
+        }
+        await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
       }
       if (lastError) throw lastError;
       toast.success("Credenciamento enviado! Aguardando aprovação.");
