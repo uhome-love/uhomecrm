@@ -384,39 +384,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    let backlogRecovered = 0;
-    let backlogStillQueued = 0;
-
-    const { data: backlogLeads } = await supabase
-      .from("pipeline_leads")
-      .select("id, nome, empreendimento, origem, created_at")
-      .eq("aceite_status", "pendente_distribuicao")
-      .is("corretor_id", null)
-      .order("created_at", { ascending: true })
-      .limit(50);
-
-    if (backlogLeads && backlogLeads.length > 0) {
-      for (const backlogLead of backlogLeads) {
-        const recovered = await distributeWithRetry(supabaseUrl, serviceKey, backlogLead.id, `${traceId}-backlog`, 0, supabase);
-        if (recovered) {
-          const { data: check } = await supabase
-            .from("pipeline_leads")
-            .select("aceite_status, corretor_id")
-            .eq("id", backlogLead.id)
-            .maybeSingle();
-
-          if (check?.corretor_id && check.aceite_status === "aguardando_aceite") {
-            backlogRecovered++;
-          } else {
-            backlogStillQueued++;
-          }
-        } else {
-          backlogStillQueued++;
-        }
-      }
-    }
-
-    const stuckRedistributed = autoRedistributed + backlogRecovered;
+    // ⚠️ BACKLOG RECOVERY DESABILITADO INTENCIONALMENTE
+    // Regra de negócio: leads acumulados em pendente_distribuicao (fila CEO) NÃO devem
+    // ser redistribuídos automaticamente. O CEO dispara manualmente via PendingLeadsPanel.
+    // Apenas leads novos do turno (via distribute-lead) e leads expirados por timeout
+    // de aceite (já tratados acima) seguem o round-robin 1 a 1 automático.
+    const backlogRecovered = 0;
+    const backlogStillQueued = 0;
+    const stuckRedistributed = autoRedistributed;
 
     // 4d. Reciclar leads "Sem Contato" inativos há 48h
     let semContatoRecycled = 0;
