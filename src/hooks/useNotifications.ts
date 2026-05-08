@@ -172,6 +172,26 @@ export function useNotifications() {
     };
   }, [user, queryClient, popupEnabled]);
 
+  useEffect(() => {
+    if (!user || !popupEnabled) return;
+    if (typeof window === "undefined" || typeof Notification === "undefined") return;
+    if (Notification.permission !== "default") return;
+
+    const requestPermission = () => {
+      Notification.requestPermission().catch(() => undefined);
+      window.removeEventListener("click", requestPermission);
+      window.removeEventListener("keydown", requestPermission);
+    };
+
+    window.addEventListener("click", requestPermission, { once: true });
+    window.addEventListener("keydown", requestPermission, { once: true });
+
+    return () => {
+      window.removeEventListener("click", requestPermission);
+      window.removeEventListener("keydown", requestPermission);
+    };
+  }, [user, popupEnabled]);
+
   // Auto-refresh on tab visibility
   useEffect(() => {
     if (!user) return;
