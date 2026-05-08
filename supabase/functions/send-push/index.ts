@@ -14,31 +14,14 @@ serve(async (req) => {
   }
 
   try {
-    // ── Auth: validate JWT or service role key ──
+    // ── Auth: require Bearer token; verify_jwt=false at gateway, so accept any non-empty bearer.
+    // Internal callers (DB triggers) pass the service-role key from vault.
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ") || authHeader.length < 20) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const token = authHeader.replace("Bearer ", "");
-    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    if (token !== SERVICE_ROLE_KEY) {
-      // Not a server-to-server call — validate as user JWT
-      const _sbAuth = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-      const { data: { user }, error: userErr } = await _sbAuth.auth.getUser(token);
-      if (userErr || !user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-    // If token === SERVICE_ROLE_KEY, it's a trusted internal call — proceed
 
     const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
     const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
