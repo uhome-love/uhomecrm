@@ -65,11 +65,11 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   negocios: lazyRetry(() => import("@/pages/MeusNegocios")),
   "vendas-realizadas": lazyRetry(() => import("@/pages/VendasRealizadas")),
   "pos-vendas": lazyRetry(() => import("@/pages/PosVendas")),
-  imoveis: lazyRetry(() => import("@/pages/ImoveisPage")),
+  imoveis: lazyRetry(() => import("@/pages/ImoveisShell")),
   "busca-leads": lazyRetry(() => import("@/pages/BuscaLeads")),
   configuracoes: lazyRetry(() => import("@/pages/Configuracoes")),
   "config-whatsapp": lazyRetry(() => import("@/pages/ConfiguracoesWhatsApp")),
-  "links-site": lazyRetry(() => import("@/pages/LinksSite")),
+  
   notificacoes: lazyRetry(() => import("@/pages/Notificacoes")),
   whatsapp: lazyRetry(() => import("@/pages/WhatsAppInbox")),
   marketing: lazyRetry(() => import("@/pages/MarketingDashboard")),
@@ -149,7 +149,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/configuracoes":         { key: "configuracoes",        label: "Configurações",       icon: "Settings" },
   "/configuracoes/whatsapp":{ key: "config-whatsapp",      label: "Meu WhatsApp",        icon: "Smartphone",    roles: ["corretor", "admin"] },
   "/integracoes":           { key: "integracoes",          label: "Integrações",         icon: "Plug" },
-  "/links-site":            { key: "links-site",           label: "Meus Links",          icon: "Link2" },
+  
   "/notificacoes":          { key: "notificacoes",         label: "Notificações",        icon: "BellRing" },
   "/whatsapp":              { key: "whatsapp",             label: "WhatsApp",            icon: "MessageSquare", roles: ["corretor", "gestor", "admin"], noPadding: true },
   "/marketing":             { key: "marketing",            label: "Marketing",           icon: "Zap",           roles: ["admin"] },
