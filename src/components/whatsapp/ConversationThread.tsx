@@ -22,6 +22,7 @@ import { format, isToday, isYesterday, addDays, addHours, setHours, setMinutes }
 import { ptBR } from "date-fns/locale";
 import HomiCopilotCard from "./HomiCopilotCard";
 import MediaRenderer from "./MediaRenderer";
+import { formatBRT } from "@/lib/brtTime";
 
 interface Message {
   id: string;
@@ -901,7 +902,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
                       <span className="block text-[9px] font-medium text-amber-700 mb-0.5">Nota interna 🔒</span>
                       {msg.body}
                       <span className="block text-[9px] mt-0.5 text-amber-600">
-                        {format(new Date(msg.timestamp), "HH:mm")}
+                        {formatBRT(msg.timestamp, "HH:mm")}
                       </span>
                     </div>
                   </div>
@@ -953,7 +954,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
                       <span className={`block text-[9px] mt-0.5 ${
                         msg.direction === "sent" ? "text-primary-foreground/70" : "text-muted-foreground"
                       }`}>
-                        {format(new Date(msg.timestamp), "HH:mm")}
+                        {formatBRT(msg.timestamp, "HH:mm")}
                         {msg.direction === "sent" && <DeliveryTicks status={msg.delivery_status} />}
                       </span>
                     </div>

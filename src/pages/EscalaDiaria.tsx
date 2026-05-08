@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatBRT } from "@/lib/brtTime";
 
 const STATUS_ICON: Record<string, { icon: React.ElementType; color: string; label: string }> = {
   na_empresa: { icon: Building2, color: "text-emerald-600", label: "Na empresa" },
@@ -227,7 +228,7 @@ export default function EscalaDiariaPage() {
                                 <p className="text-[9px] text-muted-foreground mt-0.5">
                                   Validado por {approval.aprovadoPor}
                                   {approval.aprovadoEm && (
-                                    <> às {format(new Date(approval.aprovadoEm), "HH:mm")}</>
+                                    <> às {formatBRT(approval.aprovadoEm, "HH:mm")}</>
                                   )}
                                 </p>
                               )}

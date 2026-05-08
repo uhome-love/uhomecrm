@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
 import { format, subHours } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
+import { formatBRT } from "@/lib/brtTime";
 
 interface ErrorLog {
   id: string;
@@ -80,7 +81,7 @@ export function CriticalErrorsPanel() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="destructive" className="text-[10px]">ERROR</Badge>
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(err.triggered_at), "dd/MM HH:mm:ss")}
+                        {formatBRT(err.triggered_at, "dd/MM HH:mm:ss")}
                       </span>
                     </div>
                     <p className="text-xs mt-1 truncate">

@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { formatBRT } from "@/lib/brtTime";
 
 const STATUS_OPTIONS = [
   { value: "todos", label: "Todos" },
@@ -211,7 +212,7 @@ export default function BuscaLeads() {
 
   const formatDate = (d: string | null) => {
     if (!d) return "—";
-    try { return format(new Date(d), "dd/MM/yy HH:mm", { locale: ptBR }); }
+    try { return formatBRT(d, "dd/MM/yy HH:mm"); }
     catch { return d; }
   };
 

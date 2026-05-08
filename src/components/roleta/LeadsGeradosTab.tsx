@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Search, RefreshCw, ArrowUpDown, ExternalLink, Phone, Mail } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatBRT } from "@/lib/brtTime";
 
 interface LeadEntry {
   id: string;
@@ -284,7 +283,7 @@ export default function LeadsGeradosTab() {
                     )}
                     {lead.distribuido_em && (
                       <p className="text-[10px] text-muted-foreground">
-                        Dist: {format(new Date(lead.distribuido_em), "HH:mm", { locale: ptBR })}
+                        Dist: {formatBRT(lead.distribuido_em, "HH:mm")}
                       </p>
                     )}
                   </div>
@@ -302,8 +301,8 @@ export default function LeadsGeradosTab() {
 
                   {/* Data */}
                   <div className="text-[11px] text-muted-foreground">
-                    <p>{format(new Date(lead.created_at), "dd/MM", { locale: ptBR })}</p>
-                    <p>{format(new Date(lead.created_at), "HH:mm", { locale: ptBR })}</p>
+                    <p>{formatBRT(lead.created_at, "dd/MM")}</p>
+                    <p>{formatBRT(lead.created_at, "HH:mm")}</p>
                   </div>
                 </div>
               );

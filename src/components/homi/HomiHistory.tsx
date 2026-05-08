@@ -9,6 +9,7 @@ import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatBRT } from "@/lib/brtTime";
 const homiMascot = "/images/homi-mascot-opt.png";
 
 const ACAO_ICONS: Record<string, typeof MessageSquare> = {
@@ -193,7 +194,7 @@ export default function HomiHistory({ onBack }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{preview}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      {label} · {format(new Date(c.created_at), "dd/MM HH:mm")}
+                      {label} · {formatBRT(c.created_at, "dd/MM HH:mm")}
                       {c.empreendimento && ` · ${c.empreendimento}`}
                     </p>
                   </div>

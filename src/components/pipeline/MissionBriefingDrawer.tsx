@@ -6,6 +6,7 @@ import { Phone, MessageCircle, Mail, Eye, ArrowRight } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { formatBRT } from "@/lib/brtTime";
 
 interface PhaseTheme {
   name: string;
@@ -136,11 +137,11 @@ export default function MissionBriefingDrawer({
               </div>
               <div>
                 <span className="text-gray-500">Criado em</span>
-                <p className="text-gray-300">{format(new Date(lead.created_at), "dd/MM/yyyy", { locale: ptBR })}</p>
+                <p className="text-gray-300">{formatBRT(lead.created_at, "dd/MM/yyyy")}</p>
               </div>
               <div>
                 <span className="text-gray-500">Última atualização</span>
-                <p className="text-gray-300">{format(new Date(lead.updated_at), "dd/MM HH:mm", { locale: ptBR })}</p>
+                <p className="text-gray-300">{formatBRT(lead.updated_at, "dd/MM HH:mm")}</p>
               </div>
             </div>
             {lead.observacoes && (

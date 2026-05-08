@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { History, Phone, MessageCircle, Mail, ChevronDown, User } from "lucide-react";
 import { format } from "date-fns";
+import { formatBRT } from "@/lib/brtTime";
 
 const RESULTADO_LABELS: Record<string, { label: string; color: string }> = {
   com_interesse: { label: "Aproveitado", color: "bg-emerald-500/10 text-emerald-600" },
@@ -99,7 +100,7 @@ export default function RecentCallsHistory() {
                 </div>
                 <div className="text-right shrink-0">
                   <span className="text-[10px] text-muted-foreground">
-                    {format(new Date(call.created_at), "HH:mm")}
+                    {formatBRT(call.created_at, "HH:mm")}
                   </span>
                   {call.empreendimento && (
                     <p className="text-[9px] text-muted-foreground/70 truncate max-w-[80px]">

@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import SolicitarPagadoriaDialog from "./SolicitarPagadoriaDialog";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatBRT } from "@/lib/brtTime";
 
 interface Props {
   open: boolean;
@@ -595,7 +596,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
                 </Button>
                 {fullNeg.data_assinatura && (
                   <span className="text-[10px] text-muted-foreground ml-1">
-                    Atual: {format(new Date(fullNeg.data_assinatura + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                    Atual: {formatBRT(fullNeg.data_assinatura + "T12:00:00", "dd/MM/yyyy")}
                   </span>
                 )}
               </div>
@@ -915,7 +916,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
                           <p className="text-xs font-semibold text-foreground">→ {h.stage_nome}</p>
                           {h.observacao && <p className="text-[11px] text-muted-foreground mt-0.5">{h.observacao}</p>}
                           <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {format(new Date(h.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            {formatBRT(h.created_at, "dd/MM/yyyy HH:mm")}
                           </p>
                         </div>
                       </div>

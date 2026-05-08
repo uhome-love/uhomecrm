@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, eachDayOfInterval, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { todayBRT } from "@/lib/utils";
+import { todayBRT, formatBRT } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -342,7 +342,7 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
                             </td>
                             <td className="py-1.5 px-2 text-muted-foreground">{formatTempo(tempo)}</td>
                             <td className="py-1.5 px-2 text-muted-foreground">
-                              {l.distribuido_em ? format(new Date(l.distribuido_em), "dd/MM HH:mm") : "—"}
+                              {formatBRT(l.distribuido_em, "dd/MM HH:mm")}
                             </td>
                           </tr>
                         );
