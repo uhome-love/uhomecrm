@@ -357,18 +357,26 @@ export default function RoletaStatusBar() {
       status: "pendente",
     } as any;
 
-    // Retry up to 3x on transient AbortError "Lock was stolen" (supabase-js navigator.locks race)
+    // Retry up to 5x on transient AbortError "Lock was stolen" (supabase-js navigator.locks race).
+    // The error can be either THROWN (exception) or returned via { error }, so we handle both.
     let lastError: any = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const { error } = await supabase.from("roleta_credenciamentos").upsert(payload, {
-        onConflict: "corretor_id,data,janela",
-      });
-      if (!error) { lastError = null; break; }
-      lastError = error;
-      const msg = String(error?.message || "");
-      const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || error?.name === "AbortError";
-      if (!isLockError) break;
-      await new Promise(r => setTimeout(r, 250 * (attempt + 1)));
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const { error } = await supabase.from("roleta_credenciamentos").upsert(payload, {
+          onConflict: "corretor_id,data,janela",
+        });
+        if (!error) { lastError = null; break; }
+        lastError = error;
+        const msg = String(error?.message || "");
+        const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || error?.name === "AbortError";
+        if (!isLockError) break;
+      } catch (thrown: any) {
+        lastError = thrown;
+        const msg = String(thrown?.message || "");
+        const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || thrown?.name === "AbortError";
+        if (!isLockError) break;
+      }
+      await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
     }
 
     if (lastError) {
