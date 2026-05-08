@@ -342,7 +342,7 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
                             </td>
                             <td className="py-1.5 px-2 text-muted-foreground">{formatTempo(tempo)}</td>
                             <td className="py-1.5 px-2 text-muted-foreground">
-                              {l.distribuido_em ? format(new Date(l.distribuido_em), "dd/MM HH:mm") : "—"}
+                              {formatBRT(l.distribuido_em, "dd/MM HH:mm")}
                             </td>
                           </tr>
                         );
