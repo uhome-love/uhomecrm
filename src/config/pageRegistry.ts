@@ -76,7 +76,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   auditoria: lazyRetry(() => import("@/pages/AuditDashboard")),
   admin: lazyRetry(() => import("@/pages/AdminPanel")),
   integracao: lazyRetry(() => import("@/pages/IntegracaoJetimob")),
-  "dev-ai": lazyRetry(() => import("@/pages/DevAIPage")),
+  
   "diagnostico-site": lazyRetry(() => import("@/pages/DiagnosticoSite")),
   "disparador-whatsapp": lazyRetry(() => import("@/pages/WhatsAppCampaignDispatcher")),
   "email-marketing": lazyRetry(() => import("@/pages/EmailMarketingPage")),
@@ -156,7 +156,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/auditoria":             { key: "auditoria",            label: "Auditoria",           icon: "ShieldCheck",   roles: ["admin"] },
   "/admin":                 { key: "admin",                label: "Admin",               icon: "Users",         roles: ["admin"] },
   "/integracao":            { key: "integracao",           label: "Integração",          icon: "Layers",        roles: ["admin"] },
-  "/dev-ai":                { key: "dev-ai",               label: "Dev AI",              icon: "Lightbulb",     roles: ["admin"] },
+  
   "/admin/diagnostico-site":{ key: "diagnostico-site",     label: "Diagnóstico",         icon: "Database",      roles: ["admin"] },
   "/disparador-whatsapp":   { key: "disparador-whatsapp",  label: "Disparador WA",       icon: "MessageSquare", roles: ["admin"] },
   "/email-marketing":       { key: "email-marketing",      label: "Email Marketing",     icon: "Mail",          roles: ["admin"] },
