@@ -9833,6 +9833,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      vault_secret_upsert: {
+        Args: { p_name: string; p_secret: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "gestor" | "corretor" | "backoffice" | "rh"
