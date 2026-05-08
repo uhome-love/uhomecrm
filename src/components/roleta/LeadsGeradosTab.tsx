@@ -301,8 +301,8 @@ export default function LeadsGeradosTab() {
 
                   {/* Data */}
                   <div className="text-[11px] text-muted-foreground">
-                    <p>{format(new Date(lead.created_at), "dd/MM", { locale: ptBR })}</p>
-                    <p>{format(new Date(lead.created_at), "HH:mm", { locale: ptBR })}</p>
+                    <p>{formatBRT(lead.created_at, "dd/MM")}</p>
+                    <p>{formatBRT(lead.created_at, "HH:mm")}</p>
                   </div>
                 </div>
               );
