@@ -93,6 +93,7 @@ const App = () => (
               <Route path="/index.html" element={<Navigate to="/" replace />} />
               <Route path="/relatorio-semanal" element={<Navigate to="/central-relatorios?visao=executivo" replace />} />
               <Route path="/relatorios" element={<Navigate to="/central-relatorios?visao=um-a-um" replace />} />
+              <Route path="/links-site" element={<Navigate to="/imoveis?view=links" replace />} />
 
               {/* All authenticated routes — rendered via Chrome-style tab system */}
               <Route path="/*" element={
