@@ -283,7 +283,7 @@ export default function LeadsGeradosTab() {
                     )}
                     {lead.distribuido_em && (
                       <p className="text-[10px] text-muted-foreground">
-                        Dist: {format(new Date(lead.distribuido_em), "HH:mm", { locale: ptBR })}
+                        Dist: {formatBRT(lead.distribuido_em, "HH:mm")}
                       </p>
                     )}
                   </div>
