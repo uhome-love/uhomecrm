@@ -47,7 +47,6 @@ export function formatBRT(value: DateInput, pattern: string, fallback = "—"): 
     minute: "2-digit",
     second: "2-digit",
     hour12: false,
-    fractionalSecondDigits: 3,
   }).formatToParts(d);
 
   const lookup: Record<string, string> = {};
