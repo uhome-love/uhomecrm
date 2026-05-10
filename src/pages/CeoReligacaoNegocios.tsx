@@ -116,7 +116,7 @@ export default function CeoReligacaoNegocios() {
   }, [roleLoading]);
 
   const isResolvido = (m: string | null) =>
-    m === "aprovado_ceo" || m === "aprovado_auto" || m === "aprovado_auto_fuzzy" || m === "rejeitado";
+    m === "aprovado_ceo" || m === "aprovado_auto" || m === "aprovado_auto_fuzzy" || m === "rejeitado" || m === "sem_lead";
 
   const counts = useMemo(() => {
     const c = { todos: 0, ouro: 0, ambiguos: 0, ceo: 0, sem_match: 0, resolvidos: 0 };
