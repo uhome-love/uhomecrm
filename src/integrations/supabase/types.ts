@@ -9849,6 +9849,8 @@ export type Database = {
         Returns: Json
       }
       reset_roleta_turno: { Args: never; Returns: undefined }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       upsert_roleta_fila: {
         Args: {
           p_corretor_id: string

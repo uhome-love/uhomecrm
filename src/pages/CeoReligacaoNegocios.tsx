@@ -41,8 +41,11 @@ const METODO_LABEL: Record<string, { label: string; cor: string }> = {
   B_nome_telefone: { label: "Prata · nome+telefone", cor: "bg-blue-100 text-blue-800" },
   C_telefone_corretor: { label: "Bronze · telefone+corretor", cor: "bg-amber-100 text-amber-800" },
   D_somente_telefone: { label: "Frágil · só telefone", cor: "bg-orange-100 text-orange-800" },
+  E_fuzzy_nome_corretor: { label: "Fuzzy · nome similar+corretor", cor: "bg-cyan-100 text-cyan-800" },
   manual: { label: "Manual", cor: "bg-violet-100 text-violet-800" },
-  aprovado_ceo: { label: "✅ Aprovado", cor: "bg-emerald-200 text-emerald-900" },
+  aprovado_ceo: { label: "✅ Aprovado pelo CEO", cor: "bg-emerald-200 text-emerald-900" },
+  aprovado_auto: { label: "🤖 Auto-aprovado (3 sinais)", cor: "bg-emerald-200 text-emerald-900" },
+  aprovado_auto_fuzzy: { label: "🤖 Auto-aprovado (fuzzy)", cor: "bg-cyan-200 text-cyan-900" },
   rejeitado: { label: "❌ Rejeitado", cor: "bg-rose-100 text-rose-800" },
 };
 
@@ -67,10 +70,10 @@ export default function CeoReligacaoNegocios() {
       .select(
         "id, nome_cliente, telefone, empreendimento, vgv_estimado, vgv_final, fase, created_at, lead_id, lead_id_proposto, lead_id_match_metodo, lead_id_match_score, requer_aprovacao_ceo",
       )
-      .or("lead_id.is.null,lead_id_match_metodo.eq.aprovado_ceo,lead_id_match_metodo.eq.rejeitado")
+      .or("lead_id.is.null,lead_id_match_metodo.in.(aprovado_ceo,aprovado_auto,aprovado_auto_fuzzy,rejeitado)")
       .order("requer_aprovacao_ceo", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(500);
+      .limit(1000);
 
     if (error) {
       toast.error("Erro ao carregar negócios: " + error.message);
@@ -97,11 +100,14 @@ export default function CeoReligacaoNegocios() {
     if (!roleLoading) loadAll();
   }, [roleLoading]);
 
+  const isResolvido = (m: string | null) =>
+    m === "aprovado_ceo" || m === "aprovado_auto" || m === "aprovado_auto_fuzzy" || m === "rejeitado";
+
   const counts = useMemo(() => {
     const c = { todos: 0, ouro: 0, ambiguos: 0, ceo: 0, sem_match: 0, resolvidos: 0 };
     for (const n of negocios) {
       c.todos++;
-      if (n.lead_id_match_metodo === "aprovado_ceo" || n.lead_id_match_metodo === "rejeitado") c.resolvidos++;
+      if (isResolvido(n.lead_id_match_metodo)) c.resolvidos++;
       else if (!n.lead_id_proposto) c.sem_match++;
       else if (n.requer_aprovacao_ceo) c.ceo++;
       else if (n.lead_id_match_score === 2) c.ambiguos++;
@@ -114,12 +120,12 @@ export default function CeoReligacaoNegocios() {
     let arr = negocios;
     if (aba === "ouro")
       arr = arr.filter(
-        (n) => n.lead_id_proposto && !n.requer_aprovacao_ceo && n.lead_id_match_score === 1 && n.lead_id_match_metodo !== "aprovado_ceo" && n.lead_id_match_metodo !== "rejeitado",
+        (n) => n.lead_id_proposto && !n.requer_aprovacao_ceo && n.lead_id_match_score === 1 && !isResolvido(n.lead_id_match_metodo),
       );
-    else if (aba === "ambiguos") arr = arr.filter((n) => n.lead_id_match_score === 2 && n.lead_id_match_metodo !== "aprovado_ceo");
+    else if (aba === "ambiguos") arr = arr.filter((n) => n.lead_id_match_score === 2 && !isResolvido(n.lead_id_match_metodo));
     else if (aba === "ceo") arr = arr.filter((n) => n.requer_aprovacao_ceo);
     else if (aba === "sem_match") arr = arr.filter((n) => !n.lead_id_proposto && !n.lead_id_match_metodo);
-    else if (aba === "resolvidos") arr = arr.filter((n) => n.lead_id_match_metodo === "aprovado_ceo" || n.lead_id_match_metodo === "rejeitado");
+    else if (aba === "resolvidos") arr = arr.filter((n) => isResolvido(n.lead_id_match_metodo));
 
     if (busca.trim()) {
       const q = busca.toLowerCase();
@@ -220,7 +226,7 @@ export default function CeoReligacaoNegocios() {
             const lead = n.lead_id_proposto ? leadsMap[n.lead_id_proposto] : null;
             const vgv = n.vgv_final ?? n.vgv_estimado ?? 0;
             const metodo = n.lead_id_match_metodo ? METODO_LABEL[n.lead_id_match_metodo] : null;
-            const resolvido = n.lead_id_match_metodo === "aprovado_ceo" || n.lead_id_match_metodo === "rejeitado";
+            const resolvido = isResolvido(n.lead_id_match_metodo);
             return (
               <Card key={n.id} className="p-4">
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] gap-4 items-center">
