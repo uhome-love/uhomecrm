@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCorretorIds } from "@/hooks/useCorretorIds";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { todayBRT } from "@/lib/utils";
@@ -16,6 +17,7 @@ export interface SmartAlert {
 
 export function useSmartAlerts() {
   const { user } = useAuth();
+  const { profileId } = useCorretorIds();
   const { isAdmin, isGestor } = useUserRole();
   const [alerts, setAlerts] = useState<SmartAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +115,7 @@ export function useSmartAlerts() {
       try {
         const sevenDaysAgo = format(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), "yyyy-MM-dd");
         let stalledQuery = supabase.from("negocios").select("id, nome_cliente, fase, updated_at").lt("updated_at", sevenDaysAgo).not("fase", "eq", "vendido").neq("status", "perdido");
-        if (!isAdmin) stalledQuery = stalledQuery.eq("gerente_id", user.id);
+        if (!isAdmin && profileId) stalledQuery = stalledQuery.eq("gerente_id", profileId); // FIX: negocios.gerente_id usa profiles.id
         const { data: stalledNegocios } = await stalledQuery;
 
         if (stalledNegocios && stalledNegocios.length > 0) {

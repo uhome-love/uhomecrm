@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCorretorIds } from "@/hooks/useCorretorIds";
 import { useUhomeIa } from "@/hooks/useUhomeIa";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ interface AggregatedData {
 
 export default function FunilContent() {
   const { user } = useAuth();
+  const { profileId } = useCorretorIds();
   const { analyze, loading: iaLoading } = useUhomeIa();
   const [periodoTipo, setPeriodoTipo] = useState<PeriodoTipo>("semanal");
   const [refDate, setRefDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }));
@@ -112,7 +114,7 @@ export default function FunilContent() {
     }
 
     const mesKey = `${start.slice(0, 7)}`;
-    const { data: negs } = await supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, corretor_id, nome_cliente").eq("gerente_id", user.id).gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`);
+    const { data: negs } = await supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, corretor_id, nome_cliente").eq("gerente_id", profileId ?? "00000000-0000-0000-0000-000000000000").gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`); // FIX: negocios.gerente_id usa profiles.id
 
     const pdn_negocios = (negs || []).length;
     const pdn_vgv = (negs || []).reduce((sum: number, p: any) => sum + Number(p.vgv_final || p.vgv_estimado || 0), 0);

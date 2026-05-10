@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useCorretorIds } from "@/hooks/useCorretorIds";
 import { supabase } from "@/integrations/supabase/client";
 import { useUhomeIa } from "@/hooks/useUhomeIa";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,7 @@ const fmtCurrency = formatBRLCompact;
 
 export default function ReportsContent() {
   const { user } = useAuth();
+  const { profileId } = useCorretorIds();
   const { analyze, loading: iaLoading } = useUhomeIa();
   const [reportType, setReportType] = useState<ReportType>("completo");
   const [periodoTipo, setPeriodoTipo] = useState<"semanal" | "mensal">("mensal");
@@ -103,7 +105,7 @@ export default function ReportsContent() {
       // Negocios details (direct query — needs nome_cliente not available in KPI view)
       let negs: any[] = [];
       if (reportType === "forecast" || reportType === "completo") {
-        const { data: negsData } = await supabase.from("negocios").select("nome_cliente, empreendimento, fase, vgv_final, vgv_estimado").eq("gerente_id", user.id).gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`);
+        const { data: negsData } = await supabase.from("negocios").select("nome_cliente, empreendimento, fase, vgv_final, vgv_estimado").eq("gerente_id", profileId ?? "00000000-0000-0000-0000-000000000000").gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`); // FIX: negocios.gerente_id usa profiles.id
         negs = negsData || [];
       }
 
