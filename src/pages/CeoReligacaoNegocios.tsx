@@ -41,8 +41,11 @@ const METODO_LABEL: Record<string, { label: string; cor: string }> = {
   B_nome_telefone: { label: "Prata · nome+telefone", cor: "bg-blue-100 text-blue-800" },
   C_telefone_corretor: { label: "Bronze · telefone+corretor", cor: "bg-amber-100 text-amber-800" },
   D_somente_telefone: { label: "Frágil · só telefone", cor: "bg-orange-100 text-orange-800" },
+  E_fuzzy_nome_corretor: { label: "Fuzzy · nome similar+corretor", cor: "bg-cyan-100 text-cyan-800" },
   manual: { label: "Manual", cor: "bg-violet-100 text-violet-800" },
-  aprovado_ceo: { label: "✅ Aprovado", cor: "bg-emerald-200 text-emerald-900" },
+  aprovado_ceo: { label: "✅ Aprovado pelo CEO", cor: "bg-emerald-200 text-emerald-900" },
+  aprovado_auto: { label: "🤖 Auto-aprovado (3 sinais)", cor: "bg-emerald-200 text-emerald-900" },
+  aprovado_auto_fuzzy: { label: "🤖 Auto-aprovado (fuzzy)", cor: "bg-cyan-200 text-cyan-900" },
   rejeitado: { label: "❌ Rejeitado", cor: "bg-rose-100 text-rose-800" },
 };
 
