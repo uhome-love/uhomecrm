@@ -96,7 +96,7 @@ export function getCurrentWindowInfo(): {
   const t1200 = parseTime("12:00");
   const t1330 = parseTime("13:30");
   const t1800 = parseTime("18:00");
-  const t2000 = parseTime("20:00");
+  const t2130 = parseTime("21:30");
   const t2330 = parseTime("23:30");
 
   const credManhaFimLabel = "09:30";
