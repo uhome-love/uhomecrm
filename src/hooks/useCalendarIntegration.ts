@@ -13,17 +13,18 @@ export interface CalendarIntegration {
 
 export function useCalendarIntegration() {
   const { user } = useAuth();
+  const { profileId } = useCorretorIds();
   const qc = useQueryClient();
 
   const query = useQuery<CalendarIntegration>({
-    queryKey: ["calendar-integration", user?.id],
-    enabled: !!user?.id,
+    queryKey: ["calendar-integration", profileId],
+    enabled: !!profileId,
     staleTime: 30_000,
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("corretor_calendar_integrations")
         .select("account_email, status, connected_at")
-        .eq("corretor_id", user!.id)
+        .eq("corretor_id", profileId!) // FIX: tabela usa profiles.id (ver mem://arquitetura/database/id-mapping-logic)
         .eq("provider", "google")
         .maybeSingle();
       return {
