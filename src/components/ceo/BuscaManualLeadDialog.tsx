@@ -21,7 +21,7 @@ interface LeadResult {
   nome: string;
   telefone: string | null;
   email: string | null;
-  empreendimento_interesse: string | null;
+  empreendimento: string | null;
   created_at: string;
   corretor_id: string | null;
 }
@@ -63,7 +63,7 @@ export default function BuscaManualLeadDialog({ open, onOpenChange, negocio, onL
       const isPhone = onlyDigits.length >= 8;
       let req = supabase
         .from("pipeline_leads")
-        .select("id, nome, telefone, email, empreendimento_interesse, created_at, corretor_id")
+        .select("id, nome, telefone, email, empreendimento, created_at, corretor_id")
         .order("created_at", { ascending: false })
         .limit(25);
 
@@ -146,7 +146,7 @@ export default function BuscaManualLeadDialog({ open, onOpenChange, negocio, onL
                     📞 {l.telefone || "—"} · ✉️ {l.email || "—"}
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
-                    🏢 {l.empreendimento_interesse || "—"} ·{" "}
+                    🏢 {l.empreendimento || "—"} ·{" "}
                     {new Date(l.created_at).toLocaleDateString("pt-BR")}
                   </div>
                 </div>
