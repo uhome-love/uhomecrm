@@ -41,6 +41,7 @@ const DEFAULT_CONV_PV = 0.33; // 33% proposta → venda
 
 export function useForecast(): ForecastData {
   const { user } = useAuth();
+  const { profileId } = useCorretorIds();
   const { isAdmin } = useUserRole();
   const [gerentes, setGerentes] = useState<ForecastGerente[]>([]);
   const [loading, setLoading] = useState(true);
