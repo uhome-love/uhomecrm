@@ -235,7 +235,38 @@ export default function CeoReligacaoNegocios() {
     );
   };
 
-  if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando…</div>;
+  const handleArquivar = async (n: NegocioRelink) => {
+    setAgindo((s) => ({ ...s, [n.id]: true }));
+    try {
+      await negociosRelinkService.archiveNoLead(n.id);
+      toast.success("Arquivado sem vínculo");
+      setNegocios((prev) =>
+        prev.map((x) =>
+          x.id === n.id
+            ? { ...x, lead_id_match_metodo: "sem_lead", lead_id_match_score: null, requer_aprovacao_ceo: false }
+            : x,
+        ),
+      );
+    } catch (e: any) {
+      toast.error("Erro: " + (e?.message || e));
+    } finally {
+      setAgindo((s) => ({ ...s, [n.id]: false }));
+    }
+  };
+
+  const handleApagarTeste = async (n: NegocioRelink) => {
+    if (!confirm(`Apagar permanentemente o negócio "${n.nome_cliente}" (VGV ${fmtBRL(n.vgv_final ?? n.vgv_estimado ?? 0)})?\n\nUse APENAS para dados de teste. Não pode ser desfeito.`)) return;
+    setAgindo((s) => ({ ...s, [n.id]: true }));
+    try {
+      await negociosRelinkService.deleteAsTest(n.id);
+      toast.success("Negócio apagado");
+      setNegocios((prev) => prev.filter((x) => x.id !== n.id));
+    } catch (e: any) {
+      toast.error("Erro: " + (e?.message || e));
+      setAgindo((s) => ({ ...s, [n.id]: false }));
+    }
+  };
+
   if (!isAdmin)
     return (
       <div className="p-8 text-center text-muted-foreground">
