@@ -297,6 +297,10 @@ export default function CeoReligacaoNegocios() {
                     <div className="text-xs text-muted-foreground mt-1">
                       Fase: {n.fase} · Criado: {new Date(n.created_at).toLocaleDateString("pt-BR")}
                     </div>
+                    <div className="text-xs mt-1">
+                      <span className="text-muted-foreground">👤 Corretor:</span>{" "}
+                      <span className="font-medium">{n.corretor_nome || "—"}</span>
+                    </div>
                   </div>
 
                   {/* SETA */}
