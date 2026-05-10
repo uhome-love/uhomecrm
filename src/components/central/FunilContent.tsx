@@ -57,6 +57,7 @@ interface AggregatedData {
 
 export default function FunilContent() {
   const { user } = useAuth();
+  const { profileId } = useCorretorIds();
   const { analyze, loading: iaLoading } = useUhomeIa();
   const [periodoTipo, setPeriodoTipo] = useState<PeriodoTipo>("semanal");
   const [refDate, setRefDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }));
