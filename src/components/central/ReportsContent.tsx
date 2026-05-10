@@ -20,6 +20,7 @@ const fmtCurrency = formatBRLCompact;
 
 export default function ReportsContent() {
   const { user } = useAuth();
+  const { profileId } = useCorretorIds();
   const { analyze, loading: iaLoading } = useUhomeIa();
   const [reportType, setReportType] = useState<ReportType>("completo");
   const [periodoTipo, setPeriodoTipo] = useState<"semanal" | "mensal">("mensal");
