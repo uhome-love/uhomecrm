@@ -47,6 +47,9 @@ function CeoView() {
   const [showIncluirModal, setShowIncluirModal] = useState(false);
   const [selectedCorretor, setSelectedCorretor] = useState("");
   const [selectedSegmentos, setSelectedSegmentos] = useState<string[]>([]);
+  const [selectedJanela, setSelectedJanela] = useState<JanelaId>(
+    windowInfo.janela === "madrugada" ? "manha" : (windowInfo.janela as JanelaId)
+  );
   const [activeTab, setActiveTab] = useState("gestao");
 
   // Load all corretores for manual inclusion
