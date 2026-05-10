@@ -47,6 +47,9 @@ function CeoView() {
   const [showIncluirModal, setShowIncluirModal] = useState(false);
   const [selectedCorretor, setSelectedCorretor] = useState("");
   const [selectedSegmentos, setSelectedSegmentos] = useState<string[]>([]);
+  const [selectedJanela, setSelectedJanela] = useState<JanelaId>(
+    windowInfo.janela === "madrugada" ? "manha" : (windowInfo.janela as JanelaId)
+  );
   const [activeTab, setActiveTab] = useState("gestao");
 
   // Load all corretores for manual inclusion
@@ -269,6 +272,20 @@ function CeoView() {
               </Select>
             </div>
             <div>
+              <label className="text-sm font-medium mb-1 block">Janela da roleta</label>
+              <Select value={selectedJanela} onValueChange={(v) => setSelectedJanela(v as JanelaId)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manha">☀️ Manhã (07h — 12h)</SelectItem>
+                  <SelectItem value="tarde">🌞 Tarde (12h — 18h)</SelectItem>
+                  <SelectItem value="noturna">🌙 Noturna (18h — 23h30)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Janela atual detectada: <span className="font-medium">{windowInfo.label}</span>
+              </p>
+            </div>
+            <div>
               <label className="text-sm font-medium mb-1 block">Segmentos</label>
               <div className="space-y-2 border rounded-md p-3 max-h-48 overflow-y-auto">
                 {segmentos.map(s => {
@@ -298,9 +315,8 @@ function CeoView() {
               className="w-full"
               disabled={!selectedCorretor || selectedSegmentos.length === 0 || submitting}
               onClick={async () => {
-                const janela = windowInfo.janela === "madrugada" ? "manha" : windowInfo.janela;
                 for (const segId of selectedSegmentos) {
-                  await incluirManualNaFila(selectedCorretor, segId, janela);
+                  await incluirManualNaFila(selectedCorretor, segId, selectedJanela);
                 }
                 setSelectedCorretor("");
                 setSelectedSegmentos([]);
