@@ -545,11 +545,11 @@ function CorretorView() {
                       const t1200 = 12 * 60;
                       const t1330 = 13 * 60 + 30;
                       const t1830 = 18 * 60 + 30;
-                      const t2000 = 20 * 60;
+                      const t2130 = 21 * 60 + 30;
                       
                       const manhaEncerrado = mins >= t0930;
                       const tardeEncerrado = mins >= t1330;
-                      const noturnaEncerrado = mins >= t2000;
+                      const noturnaEncerrado = mins >= t2130;
                       const noturnaAindaNaoAbriu = mins < t1830;
                       
                       return (
