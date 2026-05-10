@@ -226,7 +226,7 @@ export default function CeoReligacaoNegocios() {
             const lead = n.lead_id_proposto ? leadsMap[n.lead_id_proposto] : null;
             const vgv = n.vgv_final ?? n.vgv_estimado ?? 0;
             const metodo = n.lead_id_match_metodo ? METODO_LABEL[n.lead_id_match_metodo] : null;
-            const resolvido = n.lead_id_match_metodo === "aprovado_ceo" || n.lead_id_match_metodo === "rejeitado";
+            const resolvido = isResolvido(n.lead_id_match_metodo);
             return (
               <Card key={n.id} className="p-4">
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] gap-4 items-center">
