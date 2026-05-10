@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link2, AlertTriangle, Check, X, Search, Loader2 } from "lucide-react";
+import { Link2, AlertTriangle, Check, X, Search, Loader2, Copy, UserSearch } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { negociosRelinkService } from "@/services/negociosRelinkService";
+import BuscaManualLeadDialog from "@/components/ceo/BuscaManualLeadDialog";
 
 interface NegocioRelink {
   id: string;
@@ -25,6 +26,8 @@ interface NegocioRelink {
   lead_id_match_metodo: string | null;
   lead_id_match_score: number | null;
   requer_aprovacao_ceo: boolean;
+  corretor_id: string | null;
+  corretor_nome?: string | null;
 }
 
 interface LeadCandidato {
@@ -62,13 +65,15 @@ export default function CeoReligacaoNegocios() {
   const [aba, setAba] = useState<FiltroAba>("ouro");
   const [busca, setBusca] = useState("");
   const [agindo, setAgindo] = useState<Record<string, boolean>>({});
+  const [buscaManualOpen, setBuscaManualOpen] = useState(false);
+  const [negocioBusca, setNegocioBusca] = useState<NegocioRelink | null>(null);
 
   const loadAll = async () => {
     setLoading(true);
     const { data: negs, error } = await supabase
       .from("negocios")
       .select(
-        "id, nome_cliente, telefone, empreendimento, vgv_estimado, vgv_final, fase, created_at, lead_id, lead_id_proposto, lead_id_match_metodo, lead_id_match_score, requer_aprovacao_ceo",
+        "id, nome_cliente, telefone, empreendimento, vgv_estimado, vgv_final, fase, created_at, lead_id, lead_id_proposto, lead_id_match_metodo, lead_id_match_score, requer_aprovacao_ceo, corretor_id",
       )
       .or("lead_id.is.null,lead_id_match_metodo.in.(aprovado_ceo,aprovado_auto,aprovado_auto_fuzzy,rejeitado)")
       .order("requer_aprovacao_ceo", { ascending: false })
@@ -80,7 +85,16 @@ export default function CeoReligacaoNegocios() {
       setLoading(false);
       return;
     }
-    const list = (negs || []) as NegocioRelink[];
+    let list = (negs || []) as NegocioRelink[];
+
+    // Resolve corretor_nome via profiles (negocios.corretor_id = profiles.id)
+    const corretorIds = Array.from(new Set(list.map((n) => n.corretor_id).filter(Boolean))) as string[];
+    if (corretorIds.length > 0) {
+      const { data: profs } = await supabase.from("profiles").select("id, nome").in("id", corretorIds);
+      const pmap: Record<string, string> = {};
+      (profs || []).forEach((p: any) => (pmap[p.id] = p.nome));
+      list = list.map((n) => ({ ...n, corretor_nome: n.corretor_id ? pmap[n.corretor_id] : null }));
+    }
     setNegocios(list);
 
     const propostos = Array.from(new Set(list.map((n) => n.lead_id_proposto).filter(Boolean))) as string[];
@@ -178,6 +192,48 @@ export default function CeoReligacaoNegocios() {
     }
   };
 
+  const handleCopiarResumo = (n: NegocioRelink) => {
+    const lead = n.lead_id_proposto ? leadsMap[n.lead_id_proposto] : null;
+    const vgv = (n.vgv_final ?? n.vgv_estimado ?? 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      maximumFractionDigits: 0,
+    });
+    const linhas = [
+      `🔴 NEGÓCIO #${n.id.slice(0, 8)} · ${n.fase.toUpperCase()}`,
+      `Cliente: ${n.nome_cliente}`,
+      `Telefone: ${n.telefone || "—"}`,
+      `Empreendimento: ${n.empreendimento || "—"}`,
+      `VGV: ${vgv}`,
+      `Corretor: ${n.corretor_nome || "—"}`,
+      `Criado: ${new Date(n.created_at).toLocaleDateString("pt-BR")}`,
+      ``,
+      `🟡 LEAD CANDIDATO (${n.lead_id_match_metodo || "—"}, score ${n.lead_id_match_score ?? "—"})`,
+      lead
+        ? `Nome: ${lead.nome}\nTelefone: ${lead.telefone || "—"}\nEmail: ${lead.email || "—"}\nInteresse: ${
+            lead.empreendimento_interesse || "—"
+          }\nCriado: ${new Date(lead.created_at).toLocaleDateString("pt-BR")}`
+        : `Sem candidato — busca manual necessária`,
+    ];
+    navigator.clipboard.writeText(linhas.join("\n"));
+    toast.success("Resumo copiado para revisão");
+  };
+
+  const handleAbrirBuscaManual = (n: NegocioRelink) => {
+    setNegocioBusca(n);
+    setBuscaManualOpen(true);
+  };
+
+  const handleManualLinked = (negocioId: string, leadId: string) => {
+    setNegocios((prev) =>
+      prev.map((x) =>
+        x.id === negocioId
+          ? { ...x, lead_id: leadId, lead_id_proposto: leadId, lead_id_match_metodo: "manual", lead_id_match_score: 1, requer_aprovacao_ceo: false }
+          : x,
+      ),
+    );
+  };
+
   if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando…</div>;
   if (!isAdmin)
     return (
@@ -241,6 +297,10 @@ export default function CeoReligacaoNegocios() {
                     <div className="text-xs text-muted-foreground mt-1">
                       Fase: {n.fase} · Criado: {new Date(n.created_at).toLocaleDateString("pt-BR")}
                     </div>
+                    <div className="text-xs mt-1">
+                      <span className="text-muted-foreground">👤 Corretor:</span>{" "}
+                      <span className="font-medium">{n.corretor_nome || "—"}</span>
+                    </div>
                   </div>
 
                   {/* SETA */}
@@ -272,7 +332,7 @@ export default function CeoReligacaoNegocios() {
                   </div>
 
                   {/* AÇÕES */}
-                  <div className="flex flex-col gap-2 min-w-[140px]">
+                  <div className="flex flex-col gap-2 min-w-[160px]">
                     {resolvido ? (
                       <Badge className={metodo?.cor + " justify-center py-2"}>{metodo?.label}</Badge>
                     ) : lead ? (
@@ -283,11 +343,26 @@ export default function CeoReligacaoNegocios() {
                         <Button size="sm" variant="outline" onClick={() => handleRejeitar(n)} disabled={!!agindo[n.id]}>
                           <X className="w-4 h-4" /> Rejeitar
                         </Button>
+                        {n.requer_aprovacao_ceo && (
+                          <Button size="sm" variant="ghost" onClick={() => handleCopiarResumo(n)}>
+                            <Copy className="w-4 h-4" /> Copiar resumo
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" onClick={() => handleAbrirBuscaManual(n)}>
+                          <UserSearch className="w-4 h-4" /> Buscar outro
+                        </Button>
                       </>
                     ) : (
-                      <Badge variant="secondary" className="justify-center py-2">
-                        Sem ação automática
-                      </Badge>
+                      <>
+                        <Button size="sm" onClick={() => handleAbrirBuscaManual(n)}>
+                          <UserSearch className="w-4 h-4" /> Buscar lead
+                        </Button>
+                        {n.requer_aprovacao_ceo && (
+                          <Button size="sm" variant="ghost" onClick={() => handleCopiarResumo(n)}>
+                            <Copy className="w-4 h-4" /> Copiar resumo
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -296,6 +371,24 @@ export default function CeoReligacaoNegocios() {
           })}
         </div>
       )}
+
+      <BuscaManualLeadDialog
+        open={buscaManualOpen}
+        onOpenChange={setBuscaManualOpen}
+        negocio={
+          negocioBusca
+            ? {
+                id: negocioBusca.id,
+                nome_cliente: negocioBusca.nome_cliente,
+                telefone: negocioBusca.telefone,
+                empreendimento: negocioBusca.empreendimento,
+                corretor_nome: negocioBusca.corretor_nome,
+              }
+            : null
+        }
+        onLinked={handleManualLinked}
+      />
+
     </div>
   );
 }
