@@ -100,11 +100,14 @@ export default function CeoReligacaoNegocios() {
     if (!roleLoading) loadAll();
   }, [roleLoading]);
 
+  const isResolvido = (m: string | null) =>
+    m === "aprovado_ceo" || m === "aprovado_auto" || m === "aprovado_auto_fuzzy" || m === "rejeitado";
+
   const counts = useMemo(() => {
     const c = { todos: 0, ouro: 0, ambiguos: 0, ceo: 0, sem_match: 0, resolvidos: 0 };
     for (const n of negocios) {
       c.todos++;
-      if (n.lead_id_match_metodo === "aprovado_ceo" || n.lead_id_match_metodo === "rejeitado") c.resolvidos++;
+      if (isResolvido(n.lead_id_match_metodo)) c.resolvidos++;
       else if (!n.lead_id_proposto) c.sem_match++;
       else if (n.requer_aprovacao_ceo) c.ceo++;
       else if (n.lead_id_match_score === 2) c.ambiguos++;
@@ -117,12 +120,12 @@ export default function CeoReligacaoNegocios() {
     let arr = negocios;
     if (aba === "ouro")
       arr = arr.filter(
-        (n) => n.lead_id_proposto && !n.requer_aprovacao_ceo && n.lead_id_match_score === 1 && n.lead_id_match_metodo !== "aprovado_ceo" && n.lead_id_match_metodo !== "rejeitado",
+        (n) => n.lead_id_proposto && !n.requer_aprovacao_ceo && n.lead_id_match_score === 1 && !isResolvido(n.lead_id_match_metodo),
       );
-    else if (aba === "ambiguos") arr = arr.filter((n) => n.lead_id_match_score === 2 && n.lead_id_match_metodo !== "aprovado_ceo");
+    else if (aba === "ambiguos") arr = arr.filter((n) => n.lead_id_match_score === 2 && !isResolvido(n.lead_id_match_metodo));
     else if (aba === "ceo") arr = arr.filter((n) => n.requer_aprovacao_ceo);
     else if (aba === "sem_match") arr = arr.filter((n) => !n.lead_id_proposto && !n.lead_id_match_metodo);
-    else if (aba === "resolvidos") arr = arr.filter((n) => n.lead_id_match_metodo === "aprovado_ceo" || n.lead_id_match_metodo === "rejeitado");
+    else if (aba === "resolvidos") arr = arr.filter((n) => isResolvido(n.lead_id_match_metodo));
 
     if (busca.trim()) {
       const q = busca.toLowerCase();
