@@ -390,6 +390,18 @@ export default function CeoReligacaoNegocios() {
                         <Button size="sm" onClick={() => handleAbrirBuscaManual(n)}>
                           <UserSearch className="w-4 h-4" /> Buscar lead
                         </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleArquivar(n)} disabled={!!agindo[n.id]}>
+                          <Archive className="w-4 h-4" /> Sem lead p/ vincular
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                          onClick={() => handleApagarTeste(n)}
+                          disabled={!!agindo[n.id]}
+                        >
+                          <Trash2 className="w-4 h-4" /> Apagar (teste)
+                        </Button>
                         {n.requer_aprovacao_ceo && (
                           <Button size="sm" variant="ghost" onClick={() => handleCopiarResumo(n)}>
                             <Copy className="w-4 h-4" /> Copiar resumo
