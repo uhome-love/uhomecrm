@@ -65,13 +65,15 @@ export default function CeoReligacaoNegocios() {
   const [aba, setAba] = useState<FiltroAba>("ouro");
   const [busca, setBusca] = useState("");
   const [agindo, setAgindo] = useState<Record<string, boolean>>({});
+  const [buscaManualOpen, setBuscaManualOpen] = useState(false);
+  const [negocioBusca, setNegocioBusca] = useState<NegocioRelink | null>(null);
 
   const loadAll = async () => {
     setLoading(true);
     const { data: negs, error } = await supabase
       .from("negocios")
       .select(
-        "id, nome_cliente, telefone, empreendimento, vgv_estimado, vgv_final, fase, created_at, lead_id, lead_id_proposto, lead_id_match_metodo, lead_id_match_score, requer_aprovacao_ceo",
+        "id, nome_cliente, telefone, empreendimento, vgv_estimado, vgv_final, fase, created_at, lead_id, lead_id_proposto, lead_id_match_metodo, lead_id_match_score, requer_aprovacao_ceo, corretor_id",
       )
       .or("lead_id.is.null,lead_id_match_metodo.in.(aprovado_ceo,aprovado_auto,aprovado_auto_fuzzy,rejeitado)")
       .order("requer_aprovacao_ceo", { ascending: false })
@@ -83,7 +85,16 @@ export default function CeoReligacaoNegocios() {
       setLoading(false);
       return;
     }
-    const list = (negs || []) as NegocioRelink[];
+    let list = (negs || []) as NegocioRelink[];
+
+    // Resolve corretor_nome via profiles (negocios.corretor_id = profiles.id)
+    const corretorIds = Array.from(new Set(list.map((n) => n.corretor_id).filter(Boolean))) as string[];
+    if (corretorIds.length > 0) {
+      const { data: profs } = await supabase.from("profiles").select("id, nome").in("id", corretorIds);
+      const pmap: Record<string, string> = {};
+      (profs || []).forEach((p: any) => (pmap[p.id] = p.nome));
+      list = list.map((n) => ({ ...n, corretor_nome: n.corretor_id ? pmap[n.corretor_id] : null }));
+    }
     setNegocios(list);
 
     const propostos = Array.from(new Set(list.map((n) => n.lead_id_proposto).filter(Boolean))) as string[];
