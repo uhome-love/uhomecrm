@@ -72,4 +72,24 @@ export const negociosRelinkService = {
       .eq("id", negocioId);
     if (error) throw error;
   },
+
+  /** Arquiva como "sem lead disponível" — remove da fila sem deletar negócio */
+  async archiveNoLead(negocioId: string) {
+    const { error } = await supabase
+      .from("negocios")
+      .update({
+        lead_id_match_metodo: "sem_lead",
+        lead_id_match_score: null,
+        requer_aprovacao_ceo: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", negocioId);
+    if (error) throw error;
+  },
+
+  /** Apaga negócio de teste — delete físico (uso exclusivo CEO) */
+  async deleteAsTest(negocioId: string) {
+    const { error } = await supabase.from("negocios").delete().eq("id", negocioId);
+    if (error) throw error;
+  },
 };
