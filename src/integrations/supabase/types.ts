@@ -4418,6 +4418,9 @@ export type Database = {
           id: string
           imovel_interesse: string | null
           lead_id: string | null
+          lead_id_match_metodo: string | null
+          lead_id_match_score: number | null
+          lead_id_proposto: string | null
           negociacao_contra_proposta: string | null
           negociacao_pendencia: string | null
           negociacao_situacao: string | null
@@ -4428,6 +4431,7 @@ export type Database = {
           proposta_imovel: string | null
           proposta_situacao: string | null
           proposta_valor: number | null
+          requer_aprovacao_ceo: boolean
           status: string | null
           telefone: string | null
           unidade: string | null
@@ -4449,6 +4453,9 @@ export type Database = {
           id?: string
           imovel_interesse?: string | null
           lead_id?: string | null
+          lead_id_match_metodo?: string | null
+          lead_id_match_score?: number | null
+          lead_id_proposto?: string | null
           negociacao_contra_proposta?: string | null
           negociacao_pendencia?: string | null
           negociacao_situacao?: string | null
@@ -4459,6 +4466,7 @@ export type Database = {
           proposta_imovel?: string | null
           proposta_situacao?: string | null
           proposta_valor?: number | null
+          requer_aprovacao_ceo?: boolean
           status?: string | null
           telefone?: string | null
           unidade?: string | null
@@ -4480,6 +4488,9 @@ export type Database = {
           id?: string
           imovel_interesse?: string | null
           lead_id?: string | null
+          lead_id_match_metodo?: string | null
+          lead_id_match_score?: number | null
+          lead_id_proposto?: string | null
           negociacao_contra_proposta?: string | null
           negociacao_pendencia?: string | null
           negociacao_situacao?: string | null
@@ -4490,6 +4501,7 @@ export type Database = {
           proposta_imovel?: string | null
           proposta_situacao?: string | null
           proposta_valor?: number | null
+          requer_aprovacao_ceo?: boolean
           status?: string | null
           telefone?: string | null
           unidade?: string | null
@@ -4498,7 +4510,15 @@ export type Database = {
           vgv_final?: number | null
           visita_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_negocios_lead_id_proposto"
+            columns: ["lead_id_proposto"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       negocios_atividades: {
         Row: {
@@ -5834,6 +5854,7 @@ export type Database = {
           created_by: string | null
           dados_site: Json | null
           data_proxima_acao: string | null
+          dedup_grupo_id: string | null
           distribuido_em: string | null
           email: string | null
           empreendimento: string | null
@@ -5878,6 +5899,7 @@ export type Database = {
           radar_status_imovel: string | null
           radar_tipologia: string | null
           radar_valor_max: number | null
+          requer_revisao_dedup: boolean
           roleta_distribuido_em: string | null
           segmento_id: string | null
           stage_changed_at: string
@@ -5911,6 +5933,7 @@ export type Database = {
           created_by?: string | null
           dados_site?: Json | null
           data_proxima_acao?: string | null
+          dedup_grupo_id?: string | null
           distribuido_em?: string | null
           email?: string | null
           empreendimento?: string | null
@@ -5955,6 +5978,7 @@ export type Database = {
           radar_status_imovel?: string | null
           radar_tipologia?: string | null
           radar_valor_max?: number | null
+          requer_revisao_dedup?: boolean
           roleta_distribuido_em?: string | null
           segmento_id?: string | null
           stage_changed_at?: string
@@ -5988,6 +6012,7 @@ export type Database = {
           created_by?: string | null
           dados_site?: Json | null
           data_proxima_acao?: string | null
+          dedup_grupo_id?: string | null
           distribuido_em?: string | null
           email?: string | null
           empreendimento?: string | null
@@ -6032,6 +6057,7 @@ export type Database = {
           radar_status_imovel?: string | null
           radar_tipologia?: string | null
           radar_valor_max?: number | null
+          requer_revisao_dedup?: boolean
           roleta_distribuido_em?: string | null
           segmento_id?: string | null
           stage_changed_at?: string
