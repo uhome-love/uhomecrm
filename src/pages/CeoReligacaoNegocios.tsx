@@ -35,7 +35,7 @@ interface LeadCandidato {
   nome: string;
   telefone: string | null;
   email: string | null;
-  empreendimento_interesse: string | null;
+  empreendimento: string | null;
   created_at: string;
 }
 
@@ -101,7 +101,7 @@ export default function CeoReligacaoNegocios() {
     if (propostos.length > 0) {
       const { data: leads } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, telefone, email, empreendimento_interesse, created_at")
+        .select("id, nome, telefone, email, empreendimento, created_at")
         .in("id", propostos);
       const map: Record<string, LeadCandidato> = {};
       (leads || []).forEach((l: any) => (map[l.id] = l));
@@ -211,7 +211,7 @@ export default function CeoReligacaoNegocios() {
       `🟡 LEAD CANDIDATO (${n.lead_id_match_metodo || "—"}, score ${n.lead_id_match_score ?? "—"})`,
       lead
         ? `Nome: ${lead.nome}\nTelefone: ${lead.telefone || "—"}\nEmail: ${lead.email || "—"}\nInteresse: ${
-            lead.empreendimento_interesse || "—"
+            lead.empreendimento || "—"
           }\nCriado: ${new Date(lead.created_at).toLocaleDateString("pt-BR")}`
         : `Sem candidato — busca manual necessária`,
     ];
@@ -320,7 +320,7 @@ export default function CeoReligacaoNegocios() {
                           📞 {lead.telefone || "—"} · ✉️ {lead.email || "—"}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          🏢 {lead.empreendimento_interesse || "—"} · Criado:{" "}
+                          🏢 {lead.empreendimento || "—"} · Criado:{" "}
                           {new Date(lead.created_at).toLocaleDateString("pt-BR")}
                         </div>
                       </>
