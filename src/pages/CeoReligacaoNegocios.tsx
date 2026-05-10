@@ -192,6 +192,48 @@ export default function CeoReligacaoNegocios() {
     }
   };
 
+  const handleCopiarResumo = (n: NegocioRelink) => {
+    const lead = n.lead_id_proposto ? leadsMap[n.lead_id_proposto] : null;
+    const vgv = (n.vgv_final ?? n.vgv_estimado ?? 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      maximumFractionDigits: 0,
+    });
+    const linhas = [
+      `🔴 NEGÓCIO #${n.id.slice(0, 8)} · ${n.fase.toUpperCase()}`,
+      `Cliente: ${n.nome_cliente}`,
+      `Telefone: ${n.telefone || "—"}`,
+      `Empreendimento: ${n.empreendimento || "—"}`,
+      `VGV: ${vgv}`,
+      `Corretor: ${n.corretor_nome || "—"}`,
+      `Criado: ${new Date(n.created_at).toLocaleDateString("pt-BR")}`,
+      ``,
+      `🟡 LEAD CANDIDATO (${n.lead_id_match_metodo || "—"}, score ${n.lead_id_match_score ?? "—"})`,
+      lead
+        ? `Nome: ${lead.nome}\nTelefone: ${lead.telefone || "—"}\nEmail: ${lead.email || "—"}\nInteresse: ${
+            lead.empreendimento_interesse || "—"
+          }\nCriado: ${new Date(lead.created_at).toLocaleDateString("pt-BR")}`
+        : `Sem candidato — busca manual necessária`,
+    ];
+    navigator.clipboard.writeText(linhas.join("\n"));
+    toast.success("Resumo copiado para revisão");
+  };
+
+  const handleAbrirBuscaManual = (n: NegocioRelink) => {
+    setNegocioBusca(n);
+    setBuscaManualOpen(true);
+  };
+
+  const handleManualLinked = (negocioId: string, leadId: string) => {
+    setNegocios((prev) =>
+      prev.map((x) =>
+        x.id === negocioId
+          ? { ...x, lead_id: leadId, lead_id_proposto: leadId, lead_id_match_metodo: "manual", lead_id_match_score: 1, requer_aprovacao_ceo: false }
+          : x,
+      ),
+    );
+  };
+
   if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando…</div>;
   if (!isAdmin)
     return (
