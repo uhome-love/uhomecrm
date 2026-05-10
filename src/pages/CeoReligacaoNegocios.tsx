@@ -76,7 +76,7 @@ export default function CeoReligacaoNegocios() {
       .select(
         "id, nome_cliente, telefone, empreendimento, vgv_estimado, vgv_final, fase, created_at, lead_id, lead_id_proposto, lead_id_match_metodo, lead_id_match_score, requer_aprovacao_ceo, corretor_id",
       )
-      .or("lead_id.is.null,lead_id_match_metodo.in.(aprovado_ceo,aprovado_auto,aprovado_auto_fuzzy,rejeitado)")
+      .or("lead_id.is.null,lead_id_match_metodo.in.(aprovado_ceo,aprovado_auto,aprovado_auto_fuzzy,rejeitado,sem_lead)")
       .order("requer_aprovacao_ceo", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(1000);
