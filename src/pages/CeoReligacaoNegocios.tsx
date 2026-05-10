@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link2, AlertTriangle, Check, X, Search, Loader2 } from "lucide-react";
+import { Link2, AlertTriangle, Check, X, Search, Loader2, Copy, UserSearch } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { negociosRelinkService } from "@/services/negociosRelinkService";
+import BuscaManualLeadDialog from "@/components/ceo/BuscaManualLeadDialog";
 
 interface NegocioRelink {
   id: string;
@@ -25,6 +26,8 @@ interface NegocioRelink {
   lead_id_match_metodo: string | null;
   lead_id_match_score: number | null;
   requer_aprovacao_ceo: boolean;
+  corretor_id: string | null;
+  corretor_nome?: string | null;
 }
 
 interface LeadCandidato {
