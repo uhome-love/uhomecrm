@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCorretorIds } from "@/hooks/useCorretorIds";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 
