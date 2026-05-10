@@ -115,7 +115,7 @@ export function useSmartAlerts() {
       try {
         const sevenDaysAgo = format(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), "yyyy-MM-dd");
         let stalledQuery = supabase.from("negocios").select("id, nome_cliente, fase, updated_at").lt("updated_at", sevenDaysAgo).not("fase", "eq", "vendido").neq("status", "perdido");
-        if (!isAdmin) stalledQuery = stalledQuery.eq("gerente_id", user.id);
+        if (!isAdmin && profileId) stalledQuery = stalledQuery.eq("gerente_id", profileId); // FIX: negocios.gerente_id usa profiles.id
         const { data: stalledNegocios } = await stalledQuery;
 
         if (stalledNegocios && stalledNegocios.length > 0) {
