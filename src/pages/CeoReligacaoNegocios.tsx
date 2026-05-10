@@ -332,7 +332,7 @@ export default function CeoReligacaoNegocios() {
                   </div>
 
                   {/* AÇÕES */}
-                  <div className="flex flex-col gap-2 min-w-[140px]">
+                  <div className="flex flex-col gap-2 min-w-[160px]">
                     {resolvido ? (
                       <Badge className={metodo?.cor + " justify-center py-2"}>{metodo?.label}</Badge>
                     ) : lead ? (
@@ -343,11 +343,26 @@ export default function CeoReligacaoNegocios() {
                         <Button size="sm" variant="outline" onClick={() => handleRejeitar(n)} disabled={!!agindo[n.id]}>
                           <X className="w-4 h-4" /> Rejeitar
                         </Button>
+                        {n.requer_aprovacao_ceo && (
+                          <Button size="sm" variant="ghost" onClick={() => handleCopiarResumo(n)}>
+                            <Copy className="w-4 h-4" /> Copiar resumo
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" onClick={() => handleAbrirBuscaManual(n)}>
+                          <UserSearch className="w-4 h-4" /> Buscar outro
+                        </Button>
                       </>
                     ) : (
-                      <Badge variant="secondary" className="justify-center py-2">
-                        Sem ação automática
-                      </Badge>
+                      <>
+                        <Button size="sm" onClick={() => handleAbrirBuscaManual(n)}>
+                          <UserSearch className="w-4 h-4" /> Buscar lead
+                        </Button>
+                        {n.requer_aprovacao_ceo && (
+                          <Button size="sm" variant="ghost" onClick={() => handleCopiarResumo(n)}>
+                            <Copy className="w-4 h-4" /> Copiar resumo
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -356,6 +371,24 @@ export default function CeoReligacaoNegocios() {
           })}
         </div>
       )}
+
+      <BuscaManualLeadDialog
+        open={buscaManualOpen}
+        onOpenChange={setBuscaManualOpen}
+        negocio={
+          negocioBusca
+            ? {
+                id: negocioBusca.id,
+                nome_cliente: negocioBusca.nome_cliente,
+                telefone: negocioBusca.telefone,
+                empreendimento: negocioBusca.empreendimento,
+                corretor_nome: negocioBusca.corretor_nome,
+              }
+            : null
+        }
+        onLinked={handleManualLinked}
+      />
+
     </div>
   );
 }
