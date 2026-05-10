@@ -50,6 +50,7 @@ const METODO_LABEL: Record<string, { label: string; cor: string }> = {
   aprovado_auto: { label: "🤖 Auto-aprovado (3 sinais)", cor: "bg-emerald-200 text-emerald-900" },
   aprovado_auto_fuzzy: { label: "🤖 Auto-aprovado (fuzzy)", cor: "bg-cyan-200 text-cyan-900" },
   rejeitado: { label: "❌ Rejeitado", cor: "bg-rose-100 text-rose-800" },
+  sem_lead: { label: "📦 Arquivado · sem lead", cor: "bg-slate-200 text-slate-800" },
 };
 
 const fmtBRL = (v: number | null) =>
