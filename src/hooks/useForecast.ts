@@ -55,11 +55,13 @@ export function useForecast(): ForecastData {
     const mesEnd = format(endOfMonth(now), "yyyy-MM-dd");
     const mesKey = format(now, "yyyy-MM");
 
-    // Get gerente profiles
-    const { data: profiles } = await supabase.from("profiles").select("user_id, nome");
+    // Get gerente profiles (id e user_id — usados em maps de conversão auth↔profile)
+    const { data: profiles } = await supabase.from("profiles").select("id, user_id, nome");
     const profileMap = new Map((profiles || []).map(p => [p.user_id, p.nome]));
+    // FIX: negocios.gerente_id usa profiles.id — precisamos converter auth.users.id → profiles.id
+    const authToProfile = new Map<string, string>((profiles || []).map(p => [p.user_id as string, p.id as string]));
 
-    // Determine which gerentes to show
+    // Determine which gerentes to show (gerenteIds = auth.users.id)
     let gerenteIds: string[] = [];
     if (isAdmin) {
       const { data: roles } = await supabase.from("user_roles").select("user_id").in("role", ["gestor", "admin"]);
@@ -68,7 +70,7 @@ export function useForecast(): ForecastData {
       gerenteIds = [user.id];
     }
 
-    // Get checkpoints this month for visitas_realizadas
+    // Get checkpoints this month for visitas_realizadas (checkpoints.gerente_id = auth.users.id)
     let cpQuery = supabase.from("checkpoints").select("id, gerente_id").gte("data", mesStart).lte("data", mesEnd);
     if (!isAdmin) cpQuery = cpQuery.eq("gerente_id", user.id);
     const { data: cps } = await cpQuery;
@@ -88,23 +90,25 @@ export function useForecast(): ForecastData {
       lines = data || [];
     }
 
-    // Get negocios this month (single source of truth for proposals, sales, VGV)
+    // Get negocios this month — gerente_id é profiles.id (FIX)
     let negQuery = supabase.from("negocios").select("*").gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`);
-    if (!isAdmin) negQuery = negQuery.eq("gerente_id", user.id);
+    if (!isAdmin && profileId) negQuery = negQuery.eq("gerente_id", profileId);
     const { data: pdnData } = await negQuery;
 
-    // Get ceo_metas_mensais
+    // Get ceo_metas_mensais (gerente_id = auth.users.id)
     let metasQuery = supabase.from("ceo_metas_mensais").select("*").eq("mes", mesKey);
     const { data: metas } = await metasQuery;
     const metaMap = new Map((metas || []).map(m => [m.gerente_id, m]));
 
-    // Build per-gerente forecast
+    // Build per-gerente forecast (gId é auth.users.id)
     const result: ForecastGerente[] = [];
 
     for (const gId of gerenteIds) {
       const gCpIds = cpGerenteMap.get(gId) || [];
       const gLines = lines.filter(l => gCpIds.includes(l.checkpoint_id));
-      const gPdn = (pdnData || []).filter(p => p.gerente_id === gId);
+      // FIX: pdnData.gerente_id é profiles.id; converter gId (auth) para comparar
+      const gProfileId = authToProfile.get(gId);
+      const gPdn = (pdnData || []).filter(p => p.gerente_id === gProfileId);
 
       // Aggregate checkpoint data (visitas)
       let visitas_realizadas = 0;
