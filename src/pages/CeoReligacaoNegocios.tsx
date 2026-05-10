@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link2, AlertTriangle, Check, X, Search, Loader2, Copy, UserSearch } from "lucide-react";
+import { Link2, AlertTriangle, Check, X, Search, Loader2, Copy, UserSearch, Trash2, Archive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -50,6 +50,7 @@ const METODO_LABEL: Record<string, { label: string; cor: string }> = {
   aprovado_auto: { label: "🤖 Auto-aprovado (3 sinais)", cor: "bg-emerald-200 text-emerald-900" },
   aprovado_auto_fuzzy: { label: "🤖 Auto-aprovado (fuzzy)", cor: "bg-cyan-200 text-cyan-900" },
   rejeitado: { label: "❌ Rejeitado", cor: "bg-rose-100 text-rose-800" },
+  sem_lead: { label: "📦 Arquivado · sem lead", cor: "bg-slate-200 text-slate-800" },
 };
 
 const fmtBRL = (v: number | null) =>
@@ -75,7 +76,7 @@ export default function CeoReligacaoNegocios() {
       .select(
         "id, nome_cliente, telefone, empreendimento, vgv_estimado, vgv_final, fase, created_at, lead_id, lead_id_proposto, lead_id_match_metodo, lead_id_match_score, requer_aprovacao_ceo, corretor_id",
       )
-      .or("lead_id.is.null,lead_id_match_metodo.in.(aprovado_ceo,aprovado_auto,aprovado_auto_fuzzy,rejeitado)")
+      .or("lead_id.is.null,lead_id_match_metodo.in.(aprovado_ceo,aprovado_auto,aprovado_auto_fuzzy,rejeitado,sem_lead)")
       .order("requer_aprovacao_ceo", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(1000);
@@ -115,7 +116,7 @@ export default function CeoReligacaoNegocios() {
   }, [roleLoading]);
 
   const isResolvido = (m: string | null) =>
-    m === "aprovado_ceo" || m === "aprovado_auto" || m === "aprovado_auto_fuzzy" || m === "rejeitado";
+    m === "aprovado_ceo" || m === "aprovado_auto" || m === "aprovado_auto_fuzzy" || m === "rejeitado" || m === "sem_lead";
 
   const counts = useMemo(() => {
     const c = { todos: 0, ouro: 0, ambiguos: 0, ceo: 0, sem_match: 0, resolvidos: 0 };
@@ -232,6 +233,38 @@ export default function CeoReligacaoNegocios() {
           : x,
       ),
     );
+  };
+
+  const handleArquivar = async (n: NegocioRelink) => {
+    setAgindo((s) => ({ ...s, [n.id]: true }));
+    try {
+      await negociosRelinkService.archiveNoLead(n.id);
+      toast.success("Arquivado sem vínculo");
+      setNegocios((prev) =>
+        prev.map((x) =>
+          x.id === n.id
+            ? { ...x, lead_id_match_metodo: "sem_lead", lead_id_match_score: null, requer_aprovacao_ceo: false }
+            : x,
+        ),
+      );
+    } catch (e: any) {
+      toast.error("Erro: " + (e?.message || e));
+    } finally {
+      setAgindo((s) => ({ ...s, [n.id]: false }));
+    }
+  };
+
+  const handleApagarTeste = async (n: NegocioRelink) => {
+    if (!confirm(`Apagar permanentemente o negócio "${n.nome_cliente}" (VGV ${fmtBRL(n.vgv_final ?? n.vgv_estimado ?? 0)})?\n\nUse APENAS para dados de teste. Não pode ser desfeito.`)) return;
+    setAgindo((s) => ({ ...s, [n.id]: true }));
+    try {
+      await negociosRelinkService.deleteAsTest(n.id);
+      toast.success("Negócio apagado");
+      setNegocios((prev) => prev.filter((x) => x.id !== n.id));
+    } catch (e: any) {
+      toast.error("Erro: " + (e?.message || e));
+      setAgindo((s) => ({ ...s, [n.id]: false }));
+    }
   };
 
   if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando…</div>;
@@ -356,6 +389,18 @@ export default function CeoReligacaoNegocios() {
                       <>
                         <Button size="sm" onClick={() => handleAbrirBuscaManual(n)}>
                           <UserSearch className="w-4 h-4" /> Buscar lead
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleArquivar(n)} disabled={!!agindo[n.id]}>
+                          <Archive className="w-4 h-4" /> Sem lead p/ vincular
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                          onClick={() => handleApagarTeste(n)}
+                          disabled={!!agindo[n.id]}
+                        >
+                          <Trash2 className="w-4 h-4" /> Apagar (teste)
                         </Button>
                         {n.requer_aprovacao_ceo && (
                           <Button size="sm" variant="ghost" onClick={() => handleCopiarResumo(n)}>
