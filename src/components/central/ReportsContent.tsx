@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useCorretorIds } from "@/hooks/useCorretorIds";
 import { supabase } from "@/integrations/supabase/client";
 import { useUhomeIa } from "@/hooks/useUhomeIa";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
