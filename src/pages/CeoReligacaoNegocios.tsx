@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link2, AlertTriangle, Check, X, Search, Loader2, Copy, UserSearch } from "lucide-react";
+import { Link2, AlertTriangle, Check, X, Search, Loader2, Copy, UserSearch, Trash2, Archive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { PageHeader } from "@/components/ui/PageHeader";
