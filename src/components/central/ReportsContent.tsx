@@ -105,7 +105,7 @@ export default function ReportsContent() {
       // Negocios details (direct query — needs nome_cliente not available in KPI view)
       let negs: any[] = [];
       if (reportType === "forecast" || reportType === "completo") {
-        const { data: negsData } = await supabase.from("negocios").select("nome_cliente, empreendimento, fase, vgv_final, vgv_estimado").eq("gerente_id", user.id).gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`);
+        const { data: negsData } = await supabase.from("negocios").select("nome_cliente, empreendimento, fase, vgv_final, vgv_estimado").eq("gerente_id", profileId ?? "00000000-0000-0000-0000-000000000000").gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`); // FIX: negocios.gerente_id usa profiles.id
         negs = negsData || [];
       }
 
