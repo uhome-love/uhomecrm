@@ -17,6 +17,7 @@ export interface SmartAlert {
 
 export function useSmartAlerts() {
   const { user } = useAuth();
+  const { profileId } = useCorretorIds();
   const { isAdmin, isGestor } = useUserRole();
   const [alerts, setAlerts] = useState<SmartAlert[]>([]);
   const [loading, setLoading] = useState(true);
