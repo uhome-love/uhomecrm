@@ -267,6 +267,7 @@ export default function CeoReligacaoNegocios() {
     }
   };
 
+  if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando…</div>;
   if (!isAdmin)
     return (
       <div className="p-8 text-center text-muted-foreground">
