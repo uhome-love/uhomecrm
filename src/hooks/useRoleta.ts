@@ -158,13 +158,13 @@ export function getCurrentWindowInfo(): {
     emoji = "🌞";
     descricao = "Roleta da tarde ativa";
     nextTransitionMins = t1800;
-  } else if (mins < t2000) {
+  } else if (mins < t2130) {
     janela = "noturna";
     emoji = "🌙";
-    descricao = "Roleta noturna ativa · Cred noturno aberto até 20:00";
+    descricao = "Roleta noturna ativa · Cred noturno aberto até 21:30";
     credenciamentoAberto = true;
     credenciamentoJanela = "noturna";
-    nextTransitionMins = t2000;
+    nextTransitionMins = t2130;
   } else if (mins < t2330) {
     janela = "noturna";
     emoji = "🌙";
