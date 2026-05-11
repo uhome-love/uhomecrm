@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, RefreshCw, MessageCircle, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, Send, RefreshCw, MessageCircle, CheckCircle2, XCircle, Clock, Wifi, WifiOff, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 
@@ -111,6 +112,115 @@ export default function ReengajamentoTab() {
     }
   }
 
+  // ===== Conexão da instância de nutrição =====
+  const instanceName = (draft?.evolution_instance ?? cfg?.evolution_instance) || "uhome-nutricao";
+  const [waStatus, setWaStatus] = useState<"open" | "close" | "connecting" | "loading">("loading");
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrBase64, setQrBase64] = useState<string | null>(null);
+  const [qrTimer, setQrTimer] = useState(60);
+  const [waBusy, setWaBusy] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  async function invokeWa(action: string) {
+    const { data, error } = await supabase.functions.invoke("nutricao-instance-connect", {
+      body: { action, instance_name: instanceName },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  useEffect(() => {
+    if (!cfg) return;
+    (async () => {
+      try {
+        const r = await invokeWa("status");
+        setWaStatus(r?.status ?? "close");
+      } catch {
+        setWaStatus("close");
+      }
+    })();
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg, instanceName]);
+
+  function startPolling() {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const r = await invokeWa("status");
+        if (r?.status === "open") {
+          setWaStatus("open");
+          setQrOpen(false);
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (tickRef.current) clearInterval(tickRef.current);
+          toast.success("Instância de nutrição conectada!");
+        }
+      } catch {}
+    }, 3000);
+    setQrTimer(60);
+    if (tickRef.current) clearInterval(tickRef.current);
+    tickRef.current = setInterval(() => {
+      setQrTimer((t) => {
+        if (t <= 1) {
+          if (tickRef.current) clearInterval(tickRef.current);
+          setQrBase64(null);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+  }
+
+  async function handleConnectInstance() {
+    setWaBusy(true);
+    try {
+      await invokeWa("create");
+      const qr = await invokeWa("qrcode");
+      const code = qr?.qrcode;
+      if (!code) throw new Error("QR Code não disponível");
+      setQrBase64(typeof code === "string" ? code : JSON.stringify(code));
+      setQrOpen(true);
+      startPolling();
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setWaBusy(false);
+    }
+  }
+
+  async function handleNewQr() {
+    setWaBusy(true);
+    try {
+      const qr = await invokeWa("qrcode");
+      const code = qr?.qrcode;
+      if (!code) throw new Error("QR Code não disponível");
+      setQrBase64(typeof code === "string" ? code : JSON.stringify(code));
+      startPolling();
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setWaBusy(false);
+    }
+  }
+
+  async function handleDisconnectInstance() {
+    if (!confirm("Desconectar a instância de nutrição? O reengajamento automático parará.")) return;
+    setWaBusy(true);
+    try {
+      await invokeWa("disconnect");
+      setWaStatus("close");
+      toast.success("Instância desconectada");
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setWaBusy(false);
+    }
+  }
+
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="animate-spin h-5 w-5" /></div>;
   if (!cfg) return <div className="text-sm text-muted-foreground">Sem configuração</div>;
 
@@ -123,8 +233,55 @@ export default function ReengajamentoTab() {
     return <Badge variant="outline" className="text-[10px]">{s || "—"}</Badge>;
   };
 
+  const waBadge =
+    waStatus === "open"
+      ? { label: "Conectada", cls: "bg-green-500/15 text-green-700 border-green-300" }
+      : waStatus === "connecting"
+      ? { label: "Conectando", cls: "bg-yellow-500/15 text-yellow-700 border-yellow-300 animate-pulse" }
+      : waStatus === "loading"
+      ? { label: "Carregando…", cls: "bg-muted text-muted-foreground border-border animate-pulse" }
+      : { label: "Desconectada", cls: "bg-muted text-muted-foreground border-border" };
+
   return (
     <div className="space-y-4">
+      {/* Conexão WhatsApp da instância de nutrição */}
+      <Card>
+        <CardHeader className="flex-row items-center gap-3 space-y-0 pb-2">
+          {waStatus === "open" ? (
+            <Wifi className="h-6 w-6 text-green-600" />
+          ) : (
+            <WifiOff className="h-6 w-6 text-muted-foreground" />
+          )}
+          <div className="flex-1">
+            <CardTitle className="text-base">WhatsApp de Nutrição</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Instância: <code className="text-[11px]">{instanceName}</code>
+            </p>
+          </div>
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${waBadge.cls}`}>
+            {waBadge.label}
+          </span>
+        </CardHeader>
+        <CardContent className="pt-0 flex gap-2">
+          {waStatus !== "open" ? (
+            <Button onClick={handleConnectInstance} disabled={waBusy} size="sm">
+              {waBusy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <QrCode className="h-4 w-4 mr-1" />}
+              Conectar instância (escanear QR)
+            </Button>
+          ) : (
+            <Button variant="destructive" size="sm" onClick={handleDisconnectInstance} disabled={waBusy}>
+              Desconectar
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={async () => {
+            const r = await invokeWa("status").catch(() => null);
+            setWaStatus(r?.status ?? "close");
+          }}>
+            <RefreshCw className="h-3.5 w-3.5 mr-1" /> Atualizar
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="p-3">
@@ -253,6 +410,47 @@ export default function ReengajamentoTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal QR Code */}
+      <Dialog open={qrOpen} onOpenChange={(o) => {
+        if (!o) {
+          setQrOpen(false);
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (tickRef.current) clearInterval(tickRef.current);
+        }
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Escaneie com o WhatsApp da nutrição</DialogTitle>
+            <DialogDescription>
+              No celular dedicado: WhatsApp → Dispositivos conectados → Conectar dispositivo → escaneie o QR.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-3 py-2">
+            {qrBase64 ? (
+              <>
+                <img
+                  src={qrBase64.startsWith("data:") ? qrBase64 : `data:image/png;base64,${qrBase64}`}
+                  alt="QR Code"
+                  className="w-56 h-56 rounded-lg border"
+                />
+                <span className="text-xs text-muted-foreground">Expira em <strong>{qrTimer}s</strong></span>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-3 py-6">
+                <p className="text-sm text-muted-foreground">QR Code expirado</p>
+                <Button size="sm" onClick={handleNewQr} disabled={waBusy}>
+                  {waBusy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                  Gerar novo QR
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQrOpen(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
