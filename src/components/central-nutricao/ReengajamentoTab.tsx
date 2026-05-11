@@ -443,25 +443,48 @@ export default function ReengajamentoTab() {
                   <tr className="border-b text-muted-foreground">
                     <th className="text-left py-2 px-2 font-medium">Lead</th>
                     <th className="text-left py-2 px-2 font-medium">Telefone</th>
-                    <th className="text-left py-2 px-2 font-medium">Enviado em</th>
+                    <th className="text-left py-2 px-2 font-medium">Enviado</th>
                     <th className="text-center py-2 px-2 font-medium">Status</th>
-                    <th className="text-center py-2 px-2 font-medium">Reativado</th>
+                    <th className="text-left py-2 px-2 font-medium">Última resposta</th>
+                    <th className="text-center py-2 px-2 font-medium">Ação</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {ultimos.map((l: any) => (
-                    <tr key={l.id} className="border-b hover:bg-muted/30">
-                      <td className="py-2 px-2 font-medium">{l.nome}</td>
-                      <td className="py-2 px-2">{l.telefone}</td>
-                      <td className="py-2 px-2">{l.reengajamento_enviado_at ? formatBRT(l.reengajamento_enviado_at, "dd/MM HH:mm") : "—"}</td>
-                      <td className="py-2 px-2 text-center">{statusBadge(l.reengajamento_status)}</td>
-                      <td className="py-2 px-2 text-center">
-                        {l.reativado_por_nutricao ? (
-                          <Badge className="bg-orange-100 text-orange-800 text-[10px]">🔄 SIM</Badge>
-                        ) : "—"}
-                      </td>
-                    </tr>
-                  ))}
+                  {ultimos.map((l: any) => {
+                    const podeReativar = !l.reativado_por_nutricao && (l.reengajamento_status === "respondeu_outro" || l.reengajamento_status === "respondeu_nao" || l.reengajamento_status === "enviado");
+                    return (
+                      <tr key={l.id} className="border-b hover:bg-muted/30 align-top">
+                        <td className="py-2 px-2 font-medium">
+                          {l.nome}
+                          {l.reativado_por_nutricao && (
+                            <Badge className="bg-orange-100 text-orange-800 text-[9px] ml-1">🔄 REATIVADO</Badge>
+                          )}
+                        </td>
+                        <td className="py-2 px-2 whitespace-nowrap">{l.telefone}</td>
+                        <td className="py-2 px-2 whitespace-nowrap">{l.reengajamento_enviado_at ? formatBRT(l.reengajamento_enviado_at, "dd/MM HH:mm") : "—"}</td>
+                        <td className="py-2 px-2 text-center">{statusBadge(l.reengajamento_status)}</td>
+                        <td className="py-2 px-2 max-w-[280px]">
+                          {l.ultimaResposta ? (
+                            <div className="text-[11px]">
+                              <div className="text-foreground line-clamp-2">"{l.ultimaResposta.body}"</div>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">{formatBRT(l.ultimaResposta.timestamp, "dd/MM HH:mm")}</div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-2 text-center">
+                          {podeReativar ? (
+                            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => reativarManual(l.id, l.nome)}>
+                              🔄 Reativar
+                            </Button>
+                          ) : l.reativado_por_nutricao ? (
+                            <span className="text-[10px] text-green-700">✅ Na roleta</span>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
