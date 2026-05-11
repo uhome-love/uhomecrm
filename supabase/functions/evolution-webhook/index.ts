@@ -285,7 +285,7 @@ Deno.serve(async (req) => {
     const searchPattern = `%${variants[0]}%`;
     const { data: leads, error: leadErr } = await supabase
       .from("pipeline_leads")
-      .select("id")
+      .select("id, nome, reengajamento_status, reativado_por_nutricao")
       .ilike("telefone", searchPattern)
       .limit(1);
 
@@ -293,7 +293,8 @@ Deno.serve(async (req) => {
       return new Response("ok", { status: 200, headers: corsHeaders });
     }
 
-    const leadId = leads[0].id;
+    const lead = leads[0] as any;
+    const leadId = lead.id;
 
     const { data: instancia } = await supabase
       .from("whatsapp_instancias")
