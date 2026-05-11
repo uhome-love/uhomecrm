@@ -49,6 +49,41 @@ function pickVariant(variants: string[], fallback: string, nome: string): string
   return (tpl || fallback || "").replace(/\{nome\}/g, nome);
 }
 
+async function parseResponseBody(resp: Response): Promise<unknown> {
+  const text = await resp.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function stringifyErrorPayload(payload: unknown): string {
+  if (typeof payload === "string") return payload;
+  if (payload == null) return "sem resposta";
+  try {
+    return JSON.stringify(payload);
+  } catch {
+    return String(payload);
+  }
+}
+
+function isEvolutionSystemicError(payload: unknown): boolean {
+  const msg = stringifyErrorPayload(payload).toLowerCase();
+  return msg.includes("connection closed") || msg.includes("cannot read properties of undefined (reading 'id')");
+}
+
+async function getEvolutionConnectionState(evoUrl: string, evoKey: string, instance: string): Promise<string> {
+  const r = await fetch(`${evoUrl}/instance/connectionState/${instance}`, {
+    method: "GET",
+    headers: { apikey: evoKey, "Content-Type": "application/json" },
+  });
+  if (!r.ok) return "close";
+  const data = await parseResponseBody(r);
+  return String((data as any)?.instance?.state ?? (data as any)?.state ?? "close").toLowerCase();
+}
+
 async function validateNumberEvolution(evoUrl: string, evoKey: string, instance: string, phone: string): Promise<boolean> {
   try {
     const r = await fetch(`${evoUrl}/chat/whatsappNumbers/${instance}`, {
@@ -149,6 +184,7 @@ Deno.serve(async (req) => {
       evoUrl = Deno.env.get("EVOLUTION_API_URL") || "";
       evoKey = Deno.env.get("EVOLUTION_API_KEY") || "";
       if (!evoUrl || !evoKey) throw new Error("Evolution env vars missing");
+      if (!cfg.evolution_instance) throw new Error("Instância Evolution não configurada");
     } else {
       metaPhoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || "";
       metaToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
@@ -184,6 +220,25 @@ Deno.serve(async (req) => {
     if (totalAlvo === 0) {
       await updateRun({ status: "completed", finished_at: new Date().toISOString(), motivo_parada: "Nenhum lead elegível encontrado" });
       return new Response(JSON.stringify({ run_id: runId, sent: 0, total: 0, reason: "no_leads", canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (canal === "evolution") {
+      const state = await getEvolutionConnectionState(evoUrl, evoKey, cfg.evolution_instance);
+      if (state !== "open") {
+        const reason = `WhatsApp da nutrição desconectado (${state}). Reconecte a instância antes de disparar.`;
+        await updateRun({
+          status: "error",
+          finished_at: new Date().toISOString(),
+          motivo_parada: reason,
+          enviados: 0,
+          falhas: 0,
+          ignorados: 0,
+        });
+        return new Response(JSON.stringify({ run_id: runId, error: reason, reason: "instance_disconnected", canal }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const delayMin = Math.max(2, Number(cfg.delay_min_seconds || 60));
@@ -282,10 +337,34 @@ Deno.serve(async (req) => {
             headers: { apikey: evoKey, "Content-Type": "application/json" },
             body: JSON.stringify({ number: phone, text }),
           });
-          const result = await resp.json().catch(() => ({}));
+          const result = await parseResponseBody(resp);
           if (!resp.ok) {
+            const payloadText = stringifyErrorPayload(result).slice(0, 300);
+            if (isEvolutionSystemicError(result)) {
+              const reason = `Evolution indisponível durante o disparo: ${payloadText}`;
+              failed++;
+              errs.push(`${lead.nome}: ${payloadText}`);
+              await supabase.from("reengajamento_eventos").insert({
+                lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: `${lead.nome}: ${payloadText}`.slice(0, 500),
+              });
+              await updateRun({
+                status: "error",
+                finished_at: new Date().toISOString(),
+                motivo_parada: reason,
+                enviados: sent,
+                falhas: failed,
+                ignorados: skipped,
+                erros: errs.slice(-20),
+                ultimo_lead_id: lead.id,
+                ultimo_lead_nome: lead.nome,
+              });
+              return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "evolution_unavailable", error: reason, canal }), {
+                status: 502,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
             failed++;
-            const errMsg = `${lead.nome}: ${JSON.stringify(result).slice(0, 160)}`;
+            const errMsg = `${lead.nome}: ${payloadText}`;
             errs.push(errMsg);
             await supabase.from("reengajamento_eventos").insert({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
