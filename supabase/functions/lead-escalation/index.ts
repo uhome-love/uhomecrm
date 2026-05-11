@@ -421,7 +421,36 @@ Deno.serve(async (req) => {
     }
     const stuckRedistributed = autoRedistributed;
 
-    // 4d. Reciclar leads "Sem Contato" inativos há 48h
+    // 4c-pre. Avisar leads próximos do prazo de 72h (aviso 12h antes)
+    try {
+      const { data: avisos, error: avisoErr } = await supabase.rpc("avisar_leads_sem_contato_iminente");
+      if (avisoErr) {
+        L.error("Pre-warning RPC failed", {}, avisoErr);
+      } else if (avisos && avisos.length > 0) {
+        L.info("Sem Contato pre-warnings emitted", { count: avisos.length });
+        for (const a of avisos) {
+          if (!a.corretor_id) continue;
+          await supabase.from("notifications").insert({
+            user_id: a.corretor_id,
+            tipo: "lead_reciclagem_iminente",
+            categoria: "leads",
+            titulo: `⚠️ Lead será redistribuído em ${a.horas_restantes}h`,
+            mensagem: `${a.lead_nome || "Lead"} (${a.lead_empreendimento || "N/A"}) está parado na etapa Sem Contato. Faça uma ação (mensagem, tarefa ou anotação) ou ele será repassado a outro corretor.`,
+            dados: { lead_id: a.lead_id, horas_restantes: a.horas_restantes },
+            cargo_destino: ["corretor"],
+          } as any);
+          await sendPush(supabaseUrl, serviceKey, a.corretor_id,
+            `⚠️ ${a.horas_restantes}h para perder lead`,
+            `${a.lead_nome || "Lead"} será redistribuído. Aja agora.`,
+            { lead_id: a.lead_id }
+          );
+        }
+      }
+    } catch (e) {
+      L.error("Pre-warning error (non-blocking)", {}, e);
+    }
+
+    // 4d. Reciclar leads "Sem Contato" inativos há 72h
     let semContatoRecycled = 0;
     try {
       const { data: recycledSemContato, error: scError } = await supabase.rpc("reciclar_leads_sem_contato");
@@ -435,26 +464,23 @@ Deno.serve(async (req) => {
           // Tentar redistribuir pela roleta
           await distributeWithRetry(supabaseUrl, serviceKey, item.lead_id, traceId, 1, supabase);
 
-          // Notificar corretor original (in-app)
           if (item.corretor_anterior) {
             await supabase.from("notifications").insert({
               user_id: item.corretor_anterior,
               tipo: "lead_reciclado_sem_contato",
               categoria: "leads",
               titulo: `🔄 Lead redistribuído por inatividade`,
-              mensagem: `${item.lead_nome || "Lead"} (${item.lead_empreendimento || "N/A"}) foi redistribuído após 48h sem contato.`,
+              mensagem: `${item.lead_nome || "Lead"} (${item.lead_empreendimento || "N/A"}) foi redistribuído após 72h sem contato.`,
               dados: { lead_id: item.lead_id },
               cargo_destino: ["corretor"],
             } as any);
 
-            // Push ao corretor
             await sendPush(supabaseUrl, serviceKey, item.corretor_anterior,
               "🔄 Lead redistribuído",
-              `${item.lead_nome || "Lead"} foi redistribuído por inatividade 48h.`,
+              `${item.lead_nome || "Lead"} foi redistribuído por inatividade 72h.`,
               { lead_id: item.lead_id }
             );
 
-            // Notificar gerente do corretor
             const { data: tm } = await supabase
               .from("team_members")
               .select("gerente_id")
@@ -477,7 +503,7 @@ Deno.serve(async (req) => {
                   tipo: "lead_reciclado_sem_contato",
                   categoria: "leads",
                   titulo: `🔄 Lead sem contato redistribuído`,
-                  mensagem: `${corretorProfile?.nome || "Corretor"} perdeu ${item.lead_nome || "lead"} por inatividade 48h. Redistribuído automaticamente.`,
+                  mensagem: `${corretorProfile?.nome || "Corretor"} perdeu ${item.lead_nome || "lead"} por inatividade 72h. Redistribuído automaticamente.`,
                   dados: { lead_id: item.lead_id, corretor_id: item.corretor_anterior },
                   cargo_destino: ["gerente"],
                 } as any);

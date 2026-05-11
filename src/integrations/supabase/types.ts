@@ -5899,6 +5899,7 @@ export type Database = {
           radar_status_imovel: string | null
           radar_tipologia: string | null
           radar_valor_max: number | null
+          reciclagem_aviso_at: string | null
           requer_revisao_dedup: boolean
           roleta_distribuido_em: string | null
           segmento_id: string | null
@@ -5978,6 +5979,7 @@ export type Database = {
           radar_status_imovel?: string | null
           radar_tipologia?: string | null
           radar_valor_max?: number | null
+          reciclagem_aviso_at?: string | null
           requer_revisao_dedup?: boolean
           roleta_distribuido_em?: string | null
           segmento_id?: string | null
@@ -6057,6 +6059,7 @@ export type Database = {
           radar_status_imovel?: string | null
           radar_tipologia?: string | null
           radar_valor_max?: number | null
+          reciclagem_aviso_at?: string | null
           requer_revisao_dedup?: boolean
           roleta_distribuido_em?: string | null
           segmento_id?: string | null
@@ -9347,6 +9350,16 @@ export type Database = {
           p_lista_id?: string
         }
         Returns: Json
+      }
+      avisar_leads_sem_contato_iminente: {
+        Args: never
+        Returns: {
+          corretor_id: string
+          horas_restantes: number
+          lead_empreendimento: string
+          lead_id: string
+          lead_nome: string
+        }[]
       }
       buscar_conhecimento: {
         Args: {
