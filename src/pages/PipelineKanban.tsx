@@ -554,12 +554,24 @@ export default function PipelineKanban() {
                 >
                   📥 CEO {filaCeoCount}
                 </button>
-                <button
-                  onClick={() => setDispatchOpen(true)}
-                  className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-violet-600 text-white border-none cursor-pointer"
-                >
-                  <Rocket className="h-[10px] w-[10px]" /> Disparar
-                </button>
+                {filaCeoNovosCount > 0 && (
+                  <button
+                    onClick={() => openDispatch("novos")}
+                    className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-emerald-600 text-white border-none cursor-pointer"
+                    title="Leads novos aguardando distribuição"
+                  >
+                    🆕 Novos {filaCeoNovosCount}
+                  </button>
+                )}
+                {filaCeoRedistCount > 0 && (
+                  <button
+                    onClick={() => openDispatch("redistribuicao")}
+                    className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-amber-600 text-white border-none cursor-pointer"
+                    title="Leads aguardando confirmação de redistribuição"
+                  >
+                    🔄 Redistrib. {filaCeoRedistCount}
+                  </button>
+                )}
               </>
             )}
 
