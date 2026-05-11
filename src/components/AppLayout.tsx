@@ -7,7 +7,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useTheme } from "@/hooks/useTheme";
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { User, Settings, LogOut, ChevronDown, Loader2 } from "lucide-react";
+import { User, Settings, LogOut, ChevronDown, Loader2, Users } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
