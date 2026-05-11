@@ -359,6 +359,92 @@ Deno.serve(async (req) => {
       .update({ updated_at: new Date().toISOString() })
       .eq("id", leadId);
 
+    // ====== Reengajamento: detectar resposta a campanha de nutrição ======
+    if (
+      direction === "received" &&
+      finalBody &&
+      lead.reengajamento_status === "enviado"
+    ) {
+      const txt = finalBody.toLowerCase();
+      const POSITIVE = /\b(sim|quero|tenho|claro|pode|envia|manda|interesse|gostaria|interessad|por\s*favor|pf)\b|👍|✅|🙏/;
+      const NEGATIVE = /\b(n[aã]o|nao quero|parei|comprei|j[aá]\s*comprei|desisti|sair|stop|cancela|remove|para)\b/;
+
+      let outcome: "respondeu_sim" | "respondeu_nao" | "respondeu_outro" = "respondeu_outro";
+      if (POSITIVE.test(txt) && !NEGATIVE.test(txt)) outcome = "respondeu_sim";
+      else if (NEGATIVE.test(txt)) outcome = "respondeu_nao";
+
+      await supabase.from("pipeline_historico").insert({
+        pipeline_lead_id: leadId,
+        observacao: `💬 Resposta de reengajamento: "${finalBody.slice(0, 200)}"`,
+      });
+
+      if (outcome === "respondeu_sim") {
+        const STAGE_SEM_CONTATO = "2fcba9be-1188-4a54-9452-394beefdc330";
+        await supabase
+          .from("pipeline_leads")
+          .update({
+            reengajamento_status: "respondeu_sim",
+            reativado_por_nutricao: true,
+            reativado_em: new Date().toISOString(),
+            stage_id: STAGE_SEM_CONTATO,
+            stage_changed_at: new Date().toISOString(),
+            corretor_id: null,
+            aceite_status: null,
+            aceite_expira_em: null,
+            aceito_em: null,
+            tipo_descarte: null,
+            motivo_descarte: null,
+          })
+          .eq("id", leadId);
+
+        await supabase.from("pipeline_historico").insert({
+          pipeline_lead_id: leadId,
+          observacao: `🔄 REATIVADO POR NUTRIÇÃO — lead respondeu SIM, voltando para a roleta`,
+        });
+
+        // Distribuir via roleta
+        try {
+          const { data: distResult, error: distErr } = await supabase.rpc("distribuir_lead_atomico", {
+            p_lead_id: leadId,
+            p_janela: null,
+            p_exclude_auth_user_id: null,
+            p_force: false,
+          });
+          if (distErr) {
+            console.error("reativação distribuição falhou:", distErr);
+            await supabase.from("pipeline_historico").insert({
+              pipeline_lead_id: leadId,
+              observacao: `⚠️ Reativado mas sem corretor disponível — fila CEO. Erro: ${distErr.message}`,
+            });
+          } else if (distResult?.success) {
+            await supabase.from("pipeline_historico").insert({
+              pipeline_lead_id: leadId,
+              observacao: `✅ Reativado e distribuído para corretor automaticamente`,
+            });
+          }
+        } catch (e) {
+          console.error("rpc distribuir error:", e);
+        }
+      } else if (outcome === "respondeu_nao") {
+        await supabase
+          .from("pipeline_leads")
+          .update({
+            reengajamento_status: "respondeu_nao",
+            tipo_descarte: "definitivo",
+          })
+          .eq("id", leadId);
+        await supabase.from("pipeline_historico").insert({
+          pipeline_lead_id: leadId,
+          observacao: `❌ Lead respondeu NÃO ao reengajamento — marcado como descarte definitivo`,
+        });
+      } else {
+        await supabase
+          .from("pipeline_leads")
+          .update({ reengajamento_status: "respondeu_outro" })
+          .eq("id", leadId);
+      }
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
