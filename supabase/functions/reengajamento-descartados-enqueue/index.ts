@@ -51,7 +51,14 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const force = new URL(req.url).searchParams.get("force") === "1";
+  let bodyForce = false;
+  try {
+    if (req.method === "POST") {
+      const b = await req.clone().json().catch(() => ({}));
+      bodyForce = !!(b as any)?.force;
+    }
+  } catch { /* ignore */ }
+  const force = bodyForce || new URL(req.url).searchParams.get("force") === "1";
   const log: any = { sent: 0, skipped: 0, failed: 0, errors: [] as string[] };
 
   try {
