@@ -214,6 +214,16 @@ export default function PipelineKanban() {
     pipeline.leads.filter(l => !l.corretor_id).length,
     [pipeline.leads]
   );
+  const filaCeoNovosCount = useMemo(() =>
+    pipeline.leads.filter(l => !l.corretor_id && !(l as any).is_redistribuicao).length,
+    [pipeline.leads]
+  );
+  const filaCeoRedistCount = useMemo(() =>
+    pipeline.leads.filter(l => !l.corretor_id && !!(l as any).is_redistribuicao).length,
+    [pipeline.leads]
+  );
+  const [dispatchInitialTab, setDispatchInitialTab] = useState<"novos" | "redistribuicao">("novos");
+  const openDispatch = (tab: "novos" | "redistribuicao") => { setDispatchInitialTab(tab); setDispatchOpen(true); };
 
   const campaignTagCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -544,12 +554,24 @@ export default function PipelineKanban() {
                 >
                   📥 CEO {filaCeoCount}
                 </button>
-                <button
-                  onClick={() => setDispatchOpen(true)}
-                  className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-violet-600 text-white border-none cursor-pointer"
-                >
-                  <Rocket className="h-[10px] w-[10px]" /> Disparar
-                </button>
+                {filaCeoNovosCount > 0 && (
+                  <button
+                    onClick={() => openDispatch("novos")}
+                    className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-emerald-600 text-white border-none cursor-pointer"
+                    title="Leads novos aguardando distribuição"
+                  >
+                    🆕 Novos {filaCeoNovosCount}
+                  </button>
+                )}
+                {filaCeoRedistCount > 0 && (
+                  <button
+                    onClick={() => openDispatch("redistribuicao")}
+                    className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-amber-600 text-white border-none cursor-pointer"
+                    title="Leads aguardando confirmação de redistribuição"
+                  >
+                    🔄 Redistrib. {filaCeoRedistCount}
+                  </button>
+                )}
               </>
             )}
 
@@ -761,7 +783,6 @@ export default function PipelineKanban() {
               <>
                 <div className="w-px h-4 bg-[#e8e8f0] dark:bg-white/[0.07] mx-1 shrink-0" />
                 <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b]">Fila CEO</span>
-                <span className="text-[11px] font-bold text-[#4969FF]">{filaCeoCount}</span>
                 <button
                   onClick={() => setFilaCeoFilter(f => !f)}
                   className={`shrink-0 flex items-center gap-1 transition-colors h-[22px] px-1.5 rounded-md text-[10px] font-bold cursor-pointer border ${
@@ -772,12 +793,24 @@ export default function PipelineKanban() {
                 >
                   {filaCeoFilter ? "Filtrando" : "Filtrar"}
                 </button>
-                <button
-                  onClick={() => setDispatchOpen(true)}
-                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-[#4969FF] hover:bg-[#3350E6] text-white text-[11px] font-semibold border-none cursor-pointer"
-                >
-                  <Rocket size={11} strokeWidth={1.5} /> Disparar
-                </button>
+                {filaCeoNovosCount > 0 && (
+                  <button
+                    onClick={() => openDispatch("novos")}
+                    className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold border-none cursor-pointer"
+                    title="Distribuir leads novos (Meta, site, ImovelWeb...)"
+                  >
+                    🆕 Novos <span className="font-bold">{filaCeoNovosCount}</span>
+                  </button>
+                )}
+                {filaCeoRedistCount > 0 && (
+                  <button
+                    onClick={() => openDispatch("redistribuicao")}
+                    className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold border-none cursor-pointer"
+                    title="Confirmar redistribuição (leads reciclados após 72h)"
+                  >
+                    🔄 Redistrib. <span className="font-bold">{filaCeoRedistCount}</span>
+                  </button>
+                )}
               </>
             )}
 
@@ -997,6 +1030,7 @@ export default function PipelineKanban() {
       <FilaCeoDispatchModal
         open={dispatchOpen}
         onOpenChange={setDispatchOpen}
+        initialTab={dispatchInitialTab}
         onDispatched={() => pipeline.reload()}
       />
 

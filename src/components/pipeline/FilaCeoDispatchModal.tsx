@@ -61,6 +61,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDispatched?: () => void;
+  initialTab?: "novos" | "redistribuicao";
 }
 
 type Destino = "manha" | "tarde" | "noturna" | "qualquer" | "dia_todo" | "oferta_ativa";
@@ -91,7 +92,7 @@ const FAILURE_REASON_LABELS: Record<string, string> = {
   unknown: "motivo desconhecido",
 };
 
-export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched }: Props) {
+export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched, initialTab }: Props) {
   const [loading, setLoading] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [allLeads, setAllLeads] = useState<any[]>([]);
@@ -100,13 +101,17 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
   const isAllDayRoleta = isSunday || isHoliday;
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
   const [includeUnidentified, setIncludeUnidentified] = useState(true);
-  const [activeTab, setActiveTab] = useState<"novos" | "redistribuicao">("novos");
+  const [activeTab, setActiveTab] = useState<"novos" | "redistribuicao">(initialTab ?? "novos");
   const [corretoresMap, setCorretoresMap] = useState<Record<string, string>>({});
 
   // Separa leads por categoria
   const leadsNovos = useMemo(() => allLeads.filter((l) => !l.is_redistribuicao), [allLeads]);
   const leadsRedistribuicao = useMemo(() => allLeads.filter((l) => !!l.is_redistribuicao), [allLeads]);
   const leads = activeTab === "novos" ? leadsNovos : leadsRedistribuicao;
+
+  useEffect(() => {
+    if (open && initialTab) setActiveTab(initialTab);
+  }, [open, initialTab]);
 
   useEffect(() => {
     setSelectedDestino(isAllDayRoleta ? "dia_todo" : "qualquer");
