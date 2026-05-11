@@ -331,14 +331,14 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Rocket className="h-5 w-5 text-primary" />
-            Disparar Fila CEO
+            Fila CEO
           </DialogTitle>
           <DialogDescription>
-            {leads.length} leads serão distribuídos com balanceamento global.
+            Distribua leads novos ou confirme a redistribuição de leads parados há 72h.
           </DialogDescription>
         </DialogHeader>
 
@@ -347,6 +347,56 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="novos" className="gap-2">
+                <Sparkles className="h-3.5 w-3.5" />
+                Novos
+                <Badge variant="secondary" className="ml-1 h-5">{leadsNovos.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="redistribuicao" className="gap-2">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Redistribuição
+                <Badge variant="secondary" className="ml-1 h-5">{leadsRedistribuicao.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="redistribuicao" className="mt-4 space-y-3">
+              {leadsRedistribuicao.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  Nenhum lead aguardando redistribuição. 🎉
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      ⚠️ <strong>Conferência manual:</strong> estes leads ficaram 72h parados na etapa "Sem Contato". Confirme com o corretor anterior antes de redistribuir.
+                    </p>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto space-y-1.5">
+                    {leadsRedistribuicao.map((l) => (
+                      <div key={l.id} className="flex items-start gap-2 p-2.5 rounded-lg border border-border bg-muted/30">
+                        <RefreshCw className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium truncate">{l.nome || "Sem nome"}</span>
+                            <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.empreendimento || "—"}</Badge>
+                            {l.origem && <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.origem}</Badge>}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {l.corretor_anterior_id && corretoresMap[l.corretor_anterior_id]
+                              ? `Corretor anterior: ${corretoresMap[l.corretor_anterior_id]}`
+                              : l.motivo_redistribuicao || "72h sem contato"}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="novos" className="mt-4">
           <div className="space-y-5">
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prévia por segmento</p>
