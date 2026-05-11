@@ -98,6 +98,11 @@ export default function PendingLeadsPanel() {
                     <Badge className={`text-[9px] px-1.5 ${prioridadeColor(lead.prioridade_lead)}`}>
                       {lead.prioridade_lead === "alta" ? "ALTA" : lead.prioridade_lead === "baixa" ? "BAIXA" : "MÉDIA"}
                     </Badge>
+                    {lead.reativado_por_nutricao && (
+                      <Badge className="text-[9px] px-1.5 bg-purple-500/10 text-purple-600 border-purple-500/20">
+                        🔄 Nutrição
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
                     {lead.empreendimento && (
