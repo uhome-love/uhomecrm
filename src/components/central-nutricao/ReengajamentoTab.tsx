@@ -410,6 +410,47 @@ export default function ReengajamentoTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal QR Code */}
+      <Dialog open={qrOpen} onOpenChange={(o) => {
+        if (!o) {
+          setQrOpen(false);
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (tickRef.current) clearInterval(tickRef.current);
+        }
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Escaneie com o WhatsApp da nutrição</DialogTitle>
+            <DialogDescription>
+              No celular dedicado: WhatsApp → Dispositivos conectados → Conectar dispositivo → escaneie o QR.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-3 py-2">
+            {qrBase64 ? (
+              <>
+                <img
+                  src={qrBase64.startsWith("data:") ? qrBase64 : `data:image/png;base64,${qrBase64}`}
+                  alt="QR Code"
+                  className="w-56 h-56 rounded-lg border"
+                />
+                <span className="text-xs text-muted-foreground">Expira em <strong>{qrTimer}s</strong></span>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-3 py-6">
+                <p className="text-sm text-muted-foreground">QR Code expirado</p>
+                <Button size="sm" onClick={handleNewQr} disabled={waBusy}>
+                  {waBusy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                  Gerar novo QR
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQrOpen(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
