@@ -370,11 +370,21 @@ export default function ReengajamentoTab() {
             <Textarea rows={4} value={local.mensagem_template || ""}
               onChange={(e) => setDraft({ ...local, mensagem_template: e.target.value })} />
           </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={dispararAgora} disabled={running}>
-              {running ? <Loader2 className="animate-spin h-3.5 w-3.5 mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
-              Disparar agora
-            </Button>
+          <div className="flex gap-2 justify-end items-center">
+            {(cfg as any)?.paused && !running && (
+              <Badge className="bg-amber-100 text-amber-800 mr-auto">⏸️ Pausado</Badge>
+            )}
+            {running ? (
+              <Button variant="destructive" size="sm" onClick={pausarDisparo}>
+                <XCircle className="h-3.5 w-3.5 mr-1" />
+                Pausar disparo
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={dispararAgora}>
+                <Send className="h-3.5 w-3.5 mr-1" />
+                {(cfg as any)?.paused ? "Retomar disparo" : "Disparar agora"}
+              </Button>
+            )}
             <Button size="sm" onClick={save} disabled={saving || !draft}>
               {saving ? <Loader2 className="animate-spin h-3.5 w-3.5 mr-1" /> : null}
               Salvar
