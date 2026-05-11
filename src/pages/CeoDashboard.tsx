@@ -358,21 +358,13 @@ export default function CeoDashboard() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => navigate("/pipeline-leads")}
+            onClick={() => setDispatchOpen(true)}
+            disabled={filaCeoCount === 0}
             className="gap-1.5 text-xs border-[#4969FF]/30 text-[#4969FF] hover:bg-[#4969FF]/5"
           >
             <Inbox className="h-3.5 w-3.5" />
             Fila CEO
             {filaCeoCount > 0 && <Badge className="bg-[#4969FF] text-white text-[10px] px-1.5 py-0 ml-1">{filaCeoCount}</Badge>}
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => setDispatchOpen(true)}
-            disabled={filaCeoCount === 0}
-            className="gap-1.5 text-xs bg-[#4969FF] hover:bg-[#3350E6] text-white"
-          >
-            <Rocket className="h-3.5 w-3.5" />
-            Disparar Roleta
           </Button>
         </div>
       </div>
