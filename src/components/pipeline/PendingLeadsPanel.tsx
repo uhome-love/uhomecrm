@@ -18,7 +18,7 @@ export default function PendingLeadsPanel() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, telefone, empreendimento, origem, prioridade_lead, created_at, observacoes")
+        .select("id, nome, telefone, empreendimento, origem, prioridade_lead, created_at, observacoes, reativado_por_nutricao")
         .eq("aceite_status", "pendente_distribuicao")
         .order("created_at", { ascending: false });
       if (error) throw error;
