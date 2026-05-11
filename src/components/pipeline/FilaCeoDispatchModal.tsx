@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Rocket, AlertTriangle } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Loader2, Rocket, AlertTriangle, Sparkles, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
 
@@ -93,12 +94,19 @@ const FAILURE_REASON_LABELS: Record<string, string> = {
 export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched }: Props) {
   const [loading, setLoading] = useState(false);
   const [dispatching, setDispatching] = useState(false);
-  const [leads, setLeads] = useState<any[]>([]);
+  const [allLeads, setAllLeads] = useState<any[]>([]);
   const [campanhas, setCampanhas] = useState<CampanhaMap[]>([]);
   const { isSunday, isHoliday } = getBrtDateInfo();
   const isAllDayRoleta = isSunday || isHoliday;
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
   const [includeUnidentified, setIncludeUnidentified] = useState(true);
+  const [activeTab, setActiveTab] = useState<"novos" | "redistribuicao">("novos");
+  const [corretoresMap, setCorretoresMap] = useState<Record<string, string>>({});
+
+  // Separa leads por categoria
+  const leadsNovos = useMemo(() => allLeads.filter((l) => !l.is_redistribuicao), [allLeads]);
+  const leadsRedistribuicao = useMemo(() => allLeads.filter((l) => !!l.is_redistribuicao), [allLeads]);
+  const leads = activeTab === "novos" ? leadsNovos : leadsRedistribuicao;
 
   useEffect(() => {
     setSelectedDestino(isAllDayRoleta ? "dia_todo" : "qualquer");
@@ -108,13 +116,13 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
     if (!open) return;
     let cancelled = false;
     setLoading(true);
-    setLeads([]);
+    setAllLeads([]);
     setCampanhas([]);
     (async () => {
       const [leadsRes, segRes, campRes] = await Promise.all([
         supabase
           .from("pipeline_leads")
-          .select("id, nome, empreendimento, telefone, origem, aceite_status", { count: "exact" })
+          .select("id, nome, empreendimento, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, corretor_anterior_id, updated_at")
           .is("corretor_id", null)
           .eq("aceite_status", "pendente_distribuicao")
           .order("created_at", { ascending: true })
@@ -150,7 +158,6 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
           segmento_ativo: !!c.roleta_segmentos?.ativo,
           ignorar_segmento: !!c.ignorar_segmento,
         }))
-        // Aceita: (a) campanhas com segmento ativo válido OU (b) campanhas marcadas como "ignorar_segmento" (Geral/todos)
         .filter((c) =>
           c.empreendimento &&
           (
@@ -165,8 +172,27 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
       }
 
       setCampanhas(camps);
-      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsRes.data?.length || 0} leads; ${camps.length} campanhas válidas (S1–S4 do banco)`);
-      setLeads(leadsRes.data || []);
+      const leadsList = (leadsRes.data || []) as any[];
+      setAllLeads(leadsList);
+
+      // Carrega nomes dos corretores anteriores (somente redistribuídos)
+      const anteriorIds = Array.from(new Set(leadsList.filter((l) => l.is_redistribuicao && l.corretor_anterior_id).map((l) => l.corretor_anterior_id)));
+      if (anteriorIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", anteriorIds);
+        const map: Record<string, string> = {};
+        (profs || []).forEach((p: any) => { map[p.user_id] = p.nome || ""; });
+        setCorretoresMap(map);
+      }
+
+      // Auto-seleciona aba com leads
+      const novosCount = leadsList.filter((l) => !l.is_redistribuicao).length;
+      const redistCount = leadsList.filter((l) => !!l.is_redistribuicao).length;
+      setActiveTab(novosCount > 0 ? "novos" : redistCount > 0 ? "redistribuicao" : "novos");
+
+      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${redistCount} redistribuição)`);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -305,14 +331,14 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Rocket className="h-5 w-5 text-primary" />
-            Disparar Fila CEO
+            Fila CEO
           </DialogTitle>
           <DialogDescription>
-            {leads.length} leads serão distribuídos com balanceamento global.
+            Distribua leads novos ou confirme a redistribuição de leads parados há 72h.
           </DialogDescription>
         </DialogHeader>
 
@@ -321,6 +347,56 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="novos" className="gap-2">
+                <Sparkles className="h-3.5 w-3.5" />
+                Novos
+                <Badge variant="secondary" className="ml-1 h-5">{leadsNovos.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="redistribuicao" className="gap-2">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Redistribuição
+                <Badge variant="secondary" className="ml-1 h-5">{leadsRedistribuicao.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="redistribuicao" className="mt-4 space-y-3">
+              {leadsRedistribuicao.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  Nenhum lead aguardando redistribuição. 🎉
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      ⚠️ <strong>Conferência manual:</strong> estes leads ficaram 72h parados na etapa "Sem Contato". Confirme com o corretor anterior antes de redistribuir.
+                    </p>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto space-y-1.5">
+                    {leadsRedistribuicao.map((l) => (
+                      <div key={l.id} className="flex items-start gap-2 p-2.5 rounded-lg border border-border bg-muted/30">
+                        <RefreshCw className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium truncate">{l.nome || "Sem nome"}</span>
+                            <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.empreendimento || "—"}</Badge>
+                            {l.origem && <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.origem}</Badge>}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {l.corretor_anterior_id && corretoresMap[l.corretor_anterior_id]
+                              ? `Corretor anterior: ${corretoresMap[l.corretor_anterior_id]}`
+                              : l.motivo_redistribuicao || "72h sem contato"}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="novos" className="mt-4">
           <div className="space-y-5">
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prévia por segmento</p>
@@ -411,6 +487,8 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
               </Button>
             </div>
           </div>
+            </TabsContent>
+          </Tabs>
         )}
       </DialogContent>
     </Dialog>

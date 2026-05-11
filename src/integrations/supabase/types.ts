@@ -5849,6 +5849,7 @@ export type Database = {
           complexidade_score: number
           conjunto_anuncio: string | null
           conversation_window_until: string | null
+          corretor_anterior_id: string | null
           corretor_id: string | null
           created_at: string
           created_by: string | null
@@ -5868,6 +5869,7 @@ export type Database = {
           imovel_codigo: string | null
           imovel_troca: boolean | null
           imovel_url: string | null
+          is_redistribuicao: boolean
           jetimob_lead_id: string | null
           last_escalation_at: string | null
           lead_score: number | null
@@ -5876,6 +5878,7 @@ export type Database = {
           modo_conducao: string
           modulo_atual: string
           motivo_descarte: string | null
+          motivo_redistribuicao: string | null
           motivo_rejeicao: string | null
           negocio_id: string | null
           nivel_interesse: string | null
@@ -5929,6 +5932,7 @@ export type Database = {
           complexidade_score?: number
           conjunto_anuncio?: string | null
           conversation_window_until?: string | null
+          corretor_anterior_id?: string | null
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -5948,6 +5952,7 @@ export type Database = {
           imovel_codigo?: string | null
           imovel_troca?: boolean | null
           imovel_url?: string | null
+          is_redistribuicao?: boolean
           jetimob_lead_id?: string | null
           last_escalation_at?: string | null
           lead_score?: number | null
@@ -5956,6 +5961,7 @@ export type Database = {
           modo_conducao?: string
           modulo_atual?: string
           motivo_descarte?: string | null
+          motivo_redistribuicao?: string | null
           motivo_rejeicao?: string | null
           negocio_id?: string | null
           nivel_interesse?: string | null
@@ -6009,6 +6015,7 @@ export type Database = {
           complexidade_score?: number
           conjunto_anuncio?: string | null
           conversation_window_until?: string | null
+          corretor_anterior_id?: string | null
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -6028,6 +6035,7 @@ export type Database = {
           imovel_codigo?: string | null
           imovel_troca?: boolean | null
           imovel_url?: string | null
+          is_redistribuicao?: boolean
           jetimob_lead_id?: string | null
           last_escalation_at?: string | null
           lead_score?: number | null
@@ -6036,6 +6044,7 @@ export type Database = {
           modo_conducao?: string
           modulo_atual?: string
           motivo_descarte?: string | null
+          motivo_redistribuicao?: string | null
           motivo_rejeicao?: string | null
           negocio_id?: string | null
           nivel_interesse?: string | null

@@ -460,27 +460,33 @@ Deno.serve(async (req) => {
         semContatoRecycled = recycledSemContato.length;
         L.info("Sem Contato leads recycled", { count: semContatoRecycled });
 
-        for (const item of recycledSemContato) {
-          // Tentar redistribuir pela roleta
-          await distributeWithRetry(supabaseUrl, serviceKey, item.lead_id, traceId, 1, supabase);
+        // Notificar CEOs (lead vai para fila CEO de Redistribuição — NÃO redistribui automaticamente)
+        const { data: ceos } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .eq("cargo", "ceo")
+          .eq("ativo", true);
 
+        for (const item of recycledSemContato) {
+          // Notificar corretor anterior
           if (item.corretor_anterior) {
             await supabase.from("notifications").insert({
               user_id: item.corretor_anterior,
               tipo: "lead_reciclado_sem_contato",
               categoria: "leads",
-              titulo: `🔄 Lead redistribuído por inatividade`,
-              mensagem: `${item.lead_nome || "Lead"} (${item.lead_empreendimento || "N/A"}) foi redistribuído após 72h sem contato.`,
+              titulo: `🔄 Lead movido para fila CEO`,
+              mensagem: `${item.lead_nome || "Lead"} (${item.lead_empreendimento || "N/A"}) foi para a fila do CEO após 72h sem contato. Aguardando confirmação para redistribuir.`,
               dados: { lead_id: item.lead_id },
               cargo_destino: ["corretor"],
             } as any);
 
             await sendPush(supabaseUrl, serviceKey, item.corretor_anterior,
-              "🔄 Lead redistribuído",
-              `${item.lead_nome || "Lead"} foi redistribuído por inatividade 72h.`,
+              "🔄 Lead na fila do CEO",
+              `${item.lead_nome || "Lead"} aguarda redistribuição.`,
               { lead_id: item.lead_id }
             );
 
+            // Notificar gerente
             const { data: tm } = await supabase
               .from("team_members")
               .select("gerente_id")
@@ -502,13 +508,34 @@ Deno.serve(async (req) => {
                   user_id: gp.user_id,
                   tipo: "lead_reciclado_sem_contato",
                   categoria: "leads",
-                  titulo: `🔄 Lead sem contato redistribuído`,
-                  mensagem: `${corretorProfile?.nome || "Corretor"} perdeu ${item.lead_nome || "lead"} por inatividade 72h. Redistribuído automaticamente.`,
+                  titulo: `🔄 Lead na fila CEO (Redistribuição)`,
+                  mensagem: `${corretorProfile?.nome || "Corretor"} perdeu ${item.lead_nome || "lead"} por 72h sem contato. Aguarda confirmação do CEO.`,
                   dados: { lead_id: item.lead_id, corretor_id: item.corretor_anterior },
                   cargo_destino: ["gerente"],
                 } as any);
               }
             }
+          }
+        }
+
+        // Notificar todos os CEOs sobre o batch
+        if (ceos && ceos.length > 0) {
+          for (const ceo of ceos) {
+            if (!ceo.user_id) continue;
+            await supabase.from("notifications").insert({
+              user_id: ceo.user_id,
+              tipo: "fila_ceo_redistribuicao",
+              categoria: "leads",
+              titulo: `🔄 ${semContatoRecycled} lead(s) na fila CEO — Redistribuição`,
+              mensagem: `${semContatoRecycled} lead(s) parados há 72h aguardam sua confirmação para redistribuir.`,
+              dados: { count: semContatoRecycled },
+              cargo_destino: ["ceo"],
+            } as any);
+            await sendPush(supabaseUrl, serviceKey, ceo.user_id,
+              `🔄 ${semContatoRecycled} lead(s) para redistribuir`,
+              `Confirme a redistribuição na fila CEO.`,
+              { tab: "redistribuicao" }
+            );
           }
         }
 
