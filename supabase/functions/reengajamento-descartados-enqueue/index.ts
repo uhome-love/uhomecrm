@@ -1,5 +1,5 @@
-// Cron diário: envia mensagem de reengajamento aos leads descartados (reengajavel) dos últimos N dias
-// via Evolution API. Marca reengajamento_enviado_at e reengajamento_status='enviado'.
+// Disparo de reengajamento — registra cada execução em reengajamento_dispatch_runs
+// e cada evento por lead em reengajamento_eventos para acompanhamento na UI.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -8,19 +8,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// stage Descarte
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
+const MAX_RUN_MS = 140_000; // 140s — fica abaixo do timeout do edge function
 
 function nowBRT(): Date {
-  // Approx BRT = UTC-3
   const d = new Date();
   return new Date(d.getTime() - 3 * 60 * 60 * 1000);
 }
 
 function withinWindow(cfg: any): boolean {
   const brt = nowBRT();
-  const dow = brt.getUTCDay() === 0 ? 7 : brt.getUTCDay(); // 1=Mon..7=Sun
-  if (!cfg.dias_semana?.includes(dow)) return false;
+  const dow = brt.getUTCDay() === 0 ? 7 : brt.getUTCDay();
+  if (cfg.dias_semana && !cfg.dias_semana.includes(dow)) return false;
   const hh = brt.getUTCHours();
   const mm = brt.getUTCMinutes();
   const cur = hh * 60 + mm;
@@ -52,14 +51,25 @@ Deno.serve(async (req) => {
   );
 
   let bodyForce = false;
+  let iniciadoPor = "cron";
   try {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
       bodyForce = !!(b as any)?.force;
+      if ((b as any)?.iniciado_por) iniciadoPor = String((b as any).iniciado_por);
+      else if (bodyForce) iniciadoPor = "manual";
     }
   } catch { /* ignore */ }
+
   const force = bodyForce || new URL(req.url).searchParams.get("force") === "1";
-  const log: any = { sent: 0, skipped: 0, failed: 0, errors: [] as string[] };
+  const startedAt = Date.now();
+  let runId: string | null = null;
+  const errs: string[] = [];
+
+  const updateRun = async (patch: Record<string, unknown>) => {
+    if (!runId) return;
+    await supabase.from("reengajamento_dispatch_runs").update(patch).eq("id", runId);
+  };
 
   try {
     const { data: cfg } = await supabase.from("reengajamento_config").select("*").limit(1).maybeSingle();
@@ -70,6 +80,10 @@ Deno.serve(async (req) => {
     }
     if (!withinWindow(cfg) && !force) {
       return new Response(JSON.stringify({ skipped: true, reason: "out_of_window" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (force) {
+      await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
     }
 
     const cutoff = new Date(Date.now() - cfg.lookback_days * 24 * 60 * 60 * 1000).toISOString();
@@ -87,26 +101,54 @@ Deno.serve(async (req) => {
 
     if (leadsErr) throw leadsErr;
 
+    const totalAlvo = (leads || []).length;
+
+    // Cria a execução
+    const { data: runRow } = await supabase
+      .from("reengajamento_dispatch_runs")
+      .insert({ status: "running", total_alvo: totalAlvo, iniciado_por: iniciadoPor })
+      .select("id")
+      .single();
+    runId = runRow?.id ?? null;
+
+    if (totalAlvo === 0) {
+      await updateRun({ status: "completed", finished_at: new Date().toISOString(), motivo_parada: "Nenhum lead elegível encontrado" });
+      return new Response(JSON.stringify({ run_id: runId, sent: 0, total: 0, reason: "no_leads" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const evoUrl = Deno.env.get("EVOLUTION_API_URL");
     const evoKey = Deno.env.get("EVOLUTION_API_KEY");
     if (!evoUrl || !evoKey) throw new Error("Evolution env vars missing");
 
-    // Reset paused flag at start of run (so a previously-paused config can run again)
-    if (force) {
-      await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
-    }
+    const delayMin = Math.max(2, Number(cfg.delay_min_seconds || 8));
+    const delayMax = Math.max(delayMin, Number(cfg.delay_max_seconds || 20));
+
+    let sent = 0, failed = 0, skipped = 0;
+    let stopReason: string | null = null;
 
     for (const lead of leads || []) {
-      // Check pause flag before each send (allows real-time stop from UI)
+      // Limite de tempo do edge function
+      if (Date.now() - startedAt > MAX_RUN_MS) {
+        stopReason = `Limite de tempo do servidor atingido — execute novamente para continuar (${sent}/${totalAlvo} processados)`;
+        await updateRun({ status: "timeout", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "timeout" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Verifica pause/disable em tempo real
       const { data: liveCfg } = await supabase
         .from("reengajamento_config")
         .select("paused, enabled")
         .eq("id", cfg.id)
         .maybeSingle();
-      if (liveCfg?.paused || (!liveCfg?.enabled && !force)) {
-        log.errors.push("paused_by_user");
-        (log as any).paused = true;
-        break;
+      if (liveCfg?.paused) {
+        stopReason = "Pausado pelo usuário";
+        await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "paused", paused: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (!liveCfg?.enabled && !force) {
+        stopReason = "Disparo desativado";
+        await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "disabled" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       const phone = normalizePhone(lead.telefone || "");
@@ -114,7 +156,11 @@ Deno.serve(async (req) => {
         await supabase.from("pipeline_leads")
           .update({ reengajamento_status: "telefone_invalido", reengajamento_enviado_at: new Date().toISOString() })
           .eq("id", lead.id);
-        log.skipped++;
+        await supabase.from("reengajamento_eventos").insert({
+          lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: lead.telefone,
+        });
+        skipped++;
+        await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
         continue;
       }
 
@@ -130,8 +176,13 @@ Deno.serve(async (req) => {
         const result = await resp.json().catch(() => ({}));
 
         if (!resp.ok) {
-          log.failed++;
-          log.errors.push(`${lead.id}: ${JSON.stringify(result).slice(0, 120)}`);
+          failed++;
+          const errMsg = `${lead.nome}: ${JSON.stringify(result).slice(0, 160)}`;
+          errs.push(errMsg);
+          await supabase.from("reengajamento_eventos").insert({
+            lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
+          });
+          await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
           continue;
         }
 
@@ -154,24 +205,44 @@ Deno.serve(async (req) => {
           delivery_status: "sent",
         });
 
-        await supabase.from("pipeline_historico").insert({
-          pipeline_lead_id: lead.id,
-          observacao: `📤 Mensagem de reengajamento enviada (nutrição automática)`,
+        await supabase.from("reengajamento_eventos").insert({
+          lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: phone,
         });
 
-        log.sent++;
-        // delay anti-ban 3-5s
-        await new Promise((r) => setTimeout(r, 3000 + Math.random() * 2000));
+        sent++;
+        await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
+
+        // delay configurável anti-spam
+        const delayMs = (delayMin + Math.random() * (delayMax - delayMin)) * 1000;
+        await new Promise((r) => setTimeout(r, delayMs));
       } catch (e) {
-        log.failed++;
-        log.errors.push(`${lead.id}: ${e instanceof Error ? e.message : String(e)}`);
+        failed++;
+        const errMsg = `${lead.nome}: ${e instanceof Error ? e.message : String(e)}`;
+        errs.push(errMsg);
+        await supabase.from("reengajamento_eventos").insert({
+          lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
+        });
+        await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
       }
     }
 
-    return new Response(JSON.stringify(log), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    await updateRun({
+      status: "completed",
+      finished_at: new Date().toISOString(),
+      motivo_parada: `Disparo concluído (${sent}/${totalAlvo} enviados)`,
+      enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20),
+    });
+
+    return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "completed" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
-    console.error("reengajamento-enqueue error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : String(e), log }), {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("reengajamento-enqueue error:", msg);
+    if (runId) {
+      await updateRun({ status: "error", finished_at: new Date().toISOString(), motivo_parada: msg.slice(0, 500), erros: errs.slice(-20) });
+    }
+    return new Response(JSON.stringify({ run_id: runId, error: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
