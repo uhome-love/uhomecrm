@@ -487,6 +487,8 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
               </Button>
             </div>
           </div>
+            </TabsContent>
+          </Tabs>
         )}
       </DialogContent>
     </Dialog>
