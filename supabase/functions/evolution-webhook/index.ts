@@ -376,9 +376,10 @@ Deno.serve(async (req) => {
       else if (NEGATIVE_STRICT.test(txt) && txt.length < 60) outcome = "respondeu_nao";
       // Tudo o mais (resposta longa, ambígua, com pergunta) → respondeu_outro p/ revisão humana
 
-      await supabase.from("pipeline_historico").insert({
-        pipeline_lead_id: leadId,
-        observacao: `💬 Resposta de reengajamento: "${finalBody.slice(0, 200)}"`,
+      await supabase.from("reengajamento_eventos").insert({
+        lead_id: leadId,
+        tipo: "resposta_recebida",
+        detalhe: finalBody.slice(0, 500),
       });
 
       if (outcome === "respondeu_sim") {
