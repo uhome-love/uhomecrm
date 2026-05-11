@@ -7181,6 +7181,8 @@ export type Database = {
       reengajamento_config: {
         Row: {
           daily_limit: number
+          delay_max_seconds: number
+          delay_min_seconds: number
           dias_semana: number[]
           enabled: boolean
           evolution_instance: string
@@ -7194,6 +7196,8 @@ export type Database = {
         }
         Insert: {
           daily_limit?: number
+          delay_max_seconds?: number
+          delay_min_seconds?: number
           dias_semana?: number[]
           enabled?: boolean
           evolution_instance?: string
@@ -7207,6 +7211,8 @@ export type Database = {
         }
         Update: {
           daily_limit?: number
+          delay_max_seconds?: number
+          delay_min_seconds?: number
           dias_semana?: number[]
           enabled?: boolean
           evolution_instance?: string
@@ -7219,6 +7225,92 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reengajamento_dispatch_runs: {
+        Row: {
+          created_at: string
+          enviados: number
+          erros: Json | null
+          falhas: number
+          finished_at: string | null
+          id: string
+          ignorados: number
+          iniciado_por: string | null
+          motivo_parada: string | null
+          started_at: string
+          status: string
+          total_alvo: number
+          ultimo_lead_id: string | null
+          ultimo_lead_nome: string | null
+        }
+        Insert: {
+          created_at?: string
+          enviados?: number
+          erros?: Json | null
+          falhas?: number
+          finished_at?: string | null
+          id?: string
+          ignorados?: number
+          iniciado_por?: string | null
+          motivo_parada?: string | null
+          started_at?: string
+          status?: string
+          total_alvo?: number
+          ultimo_lead_id?: string | null
+          ultimo_lead_nome?: string | null
+        }
+        Update: {
+          created_at?: string
+          enviados?: number
+          erros?: Json | null
+          falhas?: number
+          finished_at?: string | null
+          id?: string
+          ignorados?: number
+          iniciado_por?: string | null
+          motivo_parada?: string | null
+          started_at?: string
+          status?: string
+          total_alvo?: number
+          ultimo_lead_id?: string | null
+          ultimo_lead_nome?: string | null
+        }
+        Relationships: []
+      }
+      reengajamento_eventos: {
+        Row: {
+          created_at: string
+          detalhe: string | null
+          id: string
+          lead_id: string
+          run_id: string | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          detalhe?: string | null
+          id?: string
+          lead_id: string
+          run_id?: string | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          detalhe?: string | null
+          id?: string
+          lead_id?: string
+          run_id?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reengajamento_eventos_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "reengajamento_dispatch_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       referral_config: {
         Row: {

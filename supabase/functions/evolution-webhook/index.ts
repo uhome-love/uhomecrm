@@ -376,9 +376,10 @@ Deno.serve(async (req) => {
       else if (NEGATIVE_STRICT.test(txt) && txt.length < 60) outcome = "respondeu_nao";
       // Tudo o mais (resposta longa, ambígua, com pergunta) → respondeu_outro p/ revisão humana
 
-      await supabase.from("pipeline_historico").insert({
-        pipeline_lead_id: leadId,
-        observacao: `💬 Resposta de reengajamento: "${finalBody.slice(0, 200)}"`,
+      await supabase.from("reengajamento_eventos").insert({
+        lead_id: leadId,
+        tipo: "resposta_recebida",
+        detalhe: finalBody.slice(0, 500),
       });
 
       if (outcome === "respondeu_sim") {
@@ -400,9 +401,8 @@ Deno.serve(async (req) => {
           })
           .eq("id", leadId);
 
-        await supabase.from("pipeline_historico").insert({
-          pipeline_lead_id: leadId,
-          observacao: `🔄 REATIVADO POR NUTRIÇÃO — lead respondeu SIM, voltando para a roleta`,
+        await supabase.from("reengajamento_eventos").insert({
+          lead_id: leadId, tipo: "classificado_sim", detalhe: finalBody.slice(0, 300),
         });
 
         // Distribuir via roleta
@@ -415,14 +415,13 @@ Deno.serve(async (req) => {
           });
           if (distErr) {
             console.error("reativação distribuição falhou:", distErr);
-            await supabase.from("pipeline_historico").insert({
-              pipeline_lead_id: leadId,
-              observacao: `⚠️ Reativado mas sem corretor disponível — fila CEO. Erro: ${distErr.message}`,
+            await supabase.from("reengajamento_eventos").insert({
+              lead_id: leadId, tipo: "reativado_auto",
+              detalhe: `Sem corretor disponível — fila CEO. ${distErr.message}`,
             });
           } else if (distResult?.success) {
-            await supabase.from("pipeline_historico").insert({
-              pipeline_lead_id: leadId,
-              observacao: `✅ Reativado e distribuído para corretor automaticamente`,
+            await supabase.from("reengajamento_eventos").insert({
+              lead_id: leadId, tipo: "reativado_auto", detalhe: "Distribuído automaticamente",
             });
           }
         } catch (e) {
@@ -436,15 +435,17 @@ Deno.serve(async (req) => {
             tipo_descarte: "definitivo",
           })
           .eq("id", leadId);
-        await supabase.from("pipeline_historico").insert({
-          pipeline_lead_id: leadId,
-          observacao: `❌ Lead respondeu NÃO ao reengajamento — marcado como descarte definitivo`,
+        await supabase.from("reengajamento_eventos").insert({
+          lead_id: leadId, tipo: "classificado_nao", detalhe: finalBody.slice(0, 300),
         });
       } else {
         await supabase
           .from("pipeline_leads")
           .update({ reengajamento_status: "respondeu_outro" })
           .eq("id", leadId);
+        await supabase.from("reengajamento_eventos").insert({
+          lead_id: leadId, tipo: "classificado_outro", detalhe: finalBody.slice(0, 300),
+        });
       }
     }
 
