@@ -366,6 +366,39 @@ Deno.serve(async (req) => {
       lead.reengajamento_status === "enviado"
     ) {
       const txt = finalBody.trim().toLowerCase();
+
+      // AUTO-REPLY DETECTION: WhatsApp Business auto-responses devem ser ignoradas
+      // Padrões típicos: "agradece seu contato", "não estamos disponíveis no momento",
+      // "responderemos assim que possível", "fora do horário", "mensagem automática"
+      const AUTO_REPLY_PATTERNS = [
+        /agradec\w*\s+(seu|pelo|sua)\s+(contato|mensagem)/,
+        /agradec\w*\s+sua\s+mensagem/,
+        /n[aã]o\s+estamos\s+dispon[ií]ve/,
+        /responderemos\s+assim\s+que/,
+        /retornaremos\s+(o\s+)?(contato|assim)/,
+        /fora\s+do\s+(nosso\s+)?hor[aá]rio/,
+        /hor[aá]rio\s+de\s+(atendimento|expediente)/,
+        /mensagem\s+autom[aá]tica/,
+        /resposta\s+autom[aá]tica/,
+        /em\s+breve\s+(entraremos|retornaremos)/,
+        /assim\s+que\s+poss[ií]vel/,
+        /como\s+podemos\s+(te\s+)?ajudar\??$/,
+      ];
+      const isAutoReply = AUTO_REPLY_PATTERNS.some((re) => re.test(txt));
+
+      if (isAutoReply) {
+        await supabase.from("reengajamento_eventos").insert({
+          lead_id: leadId,
+          tipo: "auto_reply_ignorada",
+          detalhe: finalBody.slice(0, 500),
+        });
+        // Não atualiza reengajamento_status — mantém "enviado" aguardando resposta real
+        return new Response(JSON.stringify({ success: true, ignored: "auto_reply" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // POSITIVO: explícito (palavra de aceite + curto OU emoji de aceite)
       const POSITIVE_STRICT = /^(sim|quero|claro|pode\s*(mandar|enviar)|envia|manda|me\s*envia|tenho\s*interesse|gostaria|interessad[oa]|por\s*favor|pf|👍|✅|🙏|s)\b/;
       // NEGATIVO ESTRITO: só rejeição clara (mensagem curta começando com palavra de recusa, ou frases inequívocas)
