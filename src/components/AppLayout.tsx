@@ -223,6 +223,11 @@ export default function AppLayout() {
                     <p className="text-xs text-muted-foreground">{cargoLabel}</p>
                   </div>
                   <DropdownMenuSeparator />
+                  {(isAdmin || isGestor) && (
+                    <DropdownMenuItem onSelect={() => navigate("/meu-time")} className="text-xs gap-2 cursor-pointer">
+                      <Users className="h-3.5 w-3.5" /> {isAdmin ? "Gestão de Usuários" : "Meu Time"}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onSelect={() => navigate("/configuracoes")} className="text-xs gap-2 cursor-pointer">
                     <Settings className="h-3.5 w-3.5" /> Configurações
                   </DropdownMenuItem>
