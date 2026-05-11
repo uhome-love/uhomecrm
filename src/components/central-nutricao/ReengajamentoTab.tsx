@@ -233,8 +233,55 @@ export default function ReengajamentoTab() {
     return <Badge variant="outline" className="text-[10px]">{s || "—"}</Badge>;
   };
 
+  const waBadge =
+    waStatus === "open"
+      ? { label: "Conectada", cls: "bg-green-500/15 text-green-700 border-green-300" }
+      : waStatus === "connecting"
+      ? { label: "Conectando", cls: "bg-yellow-500/15 text-yellow-700 border-yellow-300 animate-pulse" }
+      : waStatus === "loading"
+      ? { label: "Carregando…", cls: "bg-muted text-muted-foreground border-border animate-pulse" }
+      : { label: "Desconectada", cls: "bg-muted text-muted-foreground border-border" };
+
   return (
     <div className="space-y-4">
+      {/* Conexão WhatsApp da instância de nutrição */}
+      <Card>
+        <CardHeader className="flex-row items-center gap-3 space-y-0 pb-2">
+          {waStatus === "open" ? (
+            <Wifi className="h-6 w-6 text-green-600" />
+          ) : (
+            <WifiOff className="h-6 w-6 text-muted-foreground" />
+          )}
+          <div className="flex-1">
+            <CardTitle className="text-base">WhatsApp de Nutrição</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Instância: <code className="text-[11px]">{instanceName}</code>
+            </p>
+          </div>
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${waBadge.cls}`}>
+            {waBadge.label}
+          </span>
+        </CardHeader>
+        <CardContent className="pt-0 flex gap-2">
+          {waStatus !== "open" ? (
+            <Button onClick={handleConnectInstance} disabled={waBusy} size="sm">
+              {waBusy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <QrCode className="h-4 w-4 mr-1" />}
+              Conectar instância (escanear QR)
+            </Button>
+          ) : (
+            <Button variant="destructive" size="sm" onClick={handleDisconnectInstance} disabled={waBusy}>
+              Desconectar
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={async () => {
+            const r = await invokeWa("status").catch(() => null);
+            setWaStatus(r?.status ?? "close");
+          }}>
+            <RefreshCw className="h-3.5 w-3.5 mr-1" /> Atualizar
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="p-3">
