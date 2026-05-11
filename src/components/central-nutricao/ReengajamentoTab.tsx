@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Loader2, Send, RefreshCw, MessageCircle, XCircle, Wifi, WifiOff, QrCode, Play, Pause, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Loader2, Send, RefreshCw, MessageCircle, XCircle, Wifi, WifiOff, QrCode, Play, Pause, AlertCircle, CheckCircle2, Shield, Zap, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 
@@ -456,11 +457,11 @@ export default function ReengajamentoTab() {
         </CardContent></Card>
       </div>
 
-      {/* Configuração */}
+      {/* Configuração com abas por canal */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center justify-between">
-            <span className="flex items-center gap-2"><MessageCircle className="h-4 w-4" /> Configuração</span>
+            <span className="flex items-center gap-2"><MessageCircle className="h-4 w-4" /> Configuração de Reengajamento</span>
             <div className="flex items-center gap-2">
               <Label htmlFor="enabled" className="text-xs">Ativo</Label>
               <Switch
@@ -472,58 +473,234 @@ export default function ReengajamentoTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div>
-              <Label className="text-xs">Limite diário</Label>
-              <Input type="number" value={local.daily_limit ?? 50}
-                onChange={(e) => setDraft({ ...local, daily_limit: Number(e.target.value) })} />
-            </div>
-            <div>
-              <Label className="text-xs">Lookback (dias)</Label>
-              <Input type="number" value={local.lookback_days ?? 60}
-                onChange={(e) => setDraft({ ...local, lookback_days: Number(e.target.value) })} />
-            </div>
-            <div>
-              <Label className="text-xs">Horário início</Label>
-              <Input type="time" value={(local.horario_inicio || "09:00").slice(0, 5)}
-                onChange={(e) => setDraft({ ...local, horario_inicio: e.target.value })} />
-            </div>
-            <div>
-              <Label className="text-xs">Horário fim</Label>
-              <Input type="time" value={(local.horario_fim || "18:00").slice(0, 5)}
-                onChange={(e) => setDraft({ ...local, horario_fim: e.target.value })} />
-            </div>
-          </div>
+          <Tabs
+            value={local.canal || "evolution"}
+            onValueChange={(v) => setDraft({ ...local, canal: v })}
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="meta" className="gap-2">
+                <Shield className="h-3.5 w-3.5" /> Meta Oficial
+                <Badge variant="outline" className="text-[9px] ml-1">recomendado</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="evolution" className="gap-2">
+                <Zap className="h-3.5 w-3.5" /> Evolution (Guerrilha)
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Delay anti-spam */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
-            <div>
-              <Label className="text-xs">Delay mínimo (seg)</Label>
-              <Input type="number" min={2} value={local.delay_min_seconds ?? 8}
-                onChange={(e) => setDraft({ ...local, delay_min_seconds: Number(e.target.value) })} />
-            </div>
-            <div>
-              <Label className="text-xs">Delay máximo (seg)</Label>
-              <Input type="number" min={2} value={local.delay_max_seconds ?? 20}
-                onChange={(e) => setDraft({ ...local, delay_max_seconds: Number(e.target.value) })} />
-            </div>
-            <div className="md:col-span-2 text-[11px] text-muted-foreground">
-              💡 O sistema aguarda um tempo aleatório entre essas faixas a cada mensagem para evitar bloqueio por spam (recomendado: <strong>8–20 seg</strong>).
-            </div>
-          </div>
+            {/* === META OFICIAL === */}
+            <TabsContent value="meta" className="space-y-3 pt-3">
+              <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 p-3 text-[11px] space-y-1">
+                <p className="font-semibold text-blue-900 dark:text-blue-200">✅ Canal oficial — sem risco de banimento</p>
+                <p className="text-muted-foreground">
+                  Usa templates pré-aprovados pela Meta com <strong>botões SIM/NÃO</strong>. As respostas voltam pelo webhook
+                  e classificam automaticamente o lead. Custo aproximado: <strong>R$ 0,11 por mensagem</strong>.
+                </p>
+                <p className="text-muted-foreground mt-1">
+                  📋 <strong>Pré-requisito:</strong> criar template marketing no Meta Business Suite com 1 variável <code>{"{{1}}"}</code> e
+                  2 botões de Resposta Rápida (ex: "✅ Sim, quero ver" / "❌ Não, obrigado").
+                </p>
+              </div>
 
-          <div>
-            <Label className="text-xs">Instância Evolution (dedicada)</Label>
-            <Input value={local.evolution_instance || ""}
-              onChange={(e) => setDraft({ ...local, evolution_instance: e.target.value })} />
-          </div>
-          <div>
-            <Label className="text-xs">Mensagem (use <code>{"{nome}"}</code> para personalizar)</Label>
-            <Textarea rows={4} value={local.mensagem_template || ""}
-              onChange={(e) => setDraft({ ...local, mensagem_template: e.target.value })} />
-          </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Nome do template aprovado</Label>
+                  <Input
+                    placeholder="reengajamento_imovel_v1"
+                    value={local.meta_template_name || ""}
+                    onChange={(e) => setDraft({ ...local, meta_template_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Idioma</Label>
+                  <Input
+                    placeholder="pt_BR"
+                    value={local.meta_template_language || "pt_BR"}
+                    onChange={(e) => setDraft({ ...local, meta_template_language: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Limite diário</Label>
+                  <Input type="number" value={local.daily_limit ?? 200}
+                    onChange={(e) => setDraft({ ...local, daily_limit: Number(e.target.value) })} />
+                </div>
+              </div>
 
-          <div className="flex gap-2 justify-end items-center">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <Label className="text-xs">Lookback (dias)</Label>
+                  <Input type="number" value={local.lookback_days ?? 60}
+                    onChange={(e) => setDraft({ ...local, lookback_days: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Horário início</Label>
+                  <Input type="time" value={(local.horario_inicio || "09:00").slice(0, 5)}
+                    onChange={(e) => setDraft({ ...local, horario_inicio: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Horário fim</Label>
+                  <Input type="time" value={(local.horario_fim || "18:00").slice(0, 5)}
+                    onChange={(e) => setDraft({ ...local, horario_fim: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Delay entre msgs (seg)</Label>
+                  <Input type="number" value={local.delay_min_seconds ?? 4}
+                    onChange={(e) => setDraft({ ...local, delay_min_seconds: Number(e.target.value), delay_max_seconds: Number(e.target.value) + 2 })} />
+                </div>
+              </div>
+
+              <div className="text-[11px] text-muted-foreground border-t pt-2">
+                💡 A variável <code>{"{{1}}"}</code> do template será preenchida com o <strong>primeiro nome</strong> do lead.
+              </div>
+            </TabsContent>
+
+            {/* === EVOLUTION GUERRILHA === */}
+            <TabsContent value="evolution" className="space-y-3 pt-3">
+              <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 p-3 text-[11px] space-y-1">
+                <p className="font-semibold text-amber-900 dark:text-amber-200">⚠️ Canal não-oficial — risco de bloqueio</p>
+                <p className="text-muted-foreground">
+                  Usa instância Evolution dedicada com <strong>Spintax (variantes)</strong>, delays humanos (60–180s) e pausas longas
+                  para parecer comportamento natural. <strong>Limite recomendado: 30–40 msgs/dia/número.</strong>
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <Label className="text-xs">Limite diário</Label>
+                  <Input type="number" value={local.daily_limit ?? 30}
+                    onChange={(e) => setDraft({ ...local, daily_limit: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Lookback (dias)</Label>
+                  <Input type="number" value={local.lookback_days ?? 60}
+                    onChange={(e) => setDraft({ ...local, lookback_days: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Horário início</Label>
+                  <Input type="time" value={(local.horario_inicio || "09:00").slice(0, 5)}
+                    onChange={(e) => setDraft({ ...local, horario_inicio: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Horário fim</Label>
+                  <Input type="time" value={(local.horario_fim || "18:00").slice(0, 5)}
+                    onChange={(e) => setDraft({ ...local, horario_fim: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+                <div>
+                  <Label className="text-xs">Delay mín (seg)</Label>
+                  <Input type="number" min={30} value={local.delay_min_seconds ?? 60}
+                    onChange={(e) => setDraft({ ...local, delay_min_seconds: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Delay máx (seg)</Label>
+                  <Input type="number" min={30} value={local.delay_max_seconds ?? 180}
+                    onChange={(e) => setDraft({ ...local, delay_max_seconds: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Pausa longa a cada N msgs</Label>
+                  <Input type="number" min={3} value={local.pausa_longa_a_cada ?? 6}
+                    onChange={(e) => setDraft({ ...local, pausa_longa_a_cada: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Pausa longa (seg, mín–máx)</Label>
+                  <div className="flex gap-1">
+                    <Input type="number" min={60} value={local.pausa_longa_min_seconds ?? 180}
+                      onChange={(e) => setDraft({ ...local, pausa_longa_min_seconds: Number(e.target.value) })} />
+                    <Input type="number" min={60} value={local.pausa_longa_max_seconds ?? 480}
+                      onChange={(e) => setDraft({ ...local, pausa_longa_max_seconds: Number(e.target.value) })} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <Switch
+                  id="validar"
+                  checked={local.validar_numero ?? true}
+                  onCheckedChange={(v) => setDraft({ ...local, validar_numero: v })}
+                />
+                <Label htmlFor="validar" className="text-xs cursor-pointer">
+                  Validar se número tem WhatsApp antes de enviar (reduz falhas e marcações de spam)
+                </Label>
+              </div>
+
+              <div>
+                <Label className="text-xs">Instância Evolution (dedicada)</Label>
+                <Input value={local.evolution_instance || ""}
+                  onChange={(e) => setDraft({ ...local, evolution_instance: e.target.value })} />
+              </div>
+
+              <div>
+                <Label className="text-xs">Mensagem padrão (use <code>{"{nome}"}</code>)</Label>
+                <Textarea rows={3} value={local.mensagem_template || ""}
+                  onChange={(e) => setDraft({ ...local, mensagem_template: e.target.value })} />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Usada como fallback se nenhuma variante estiver cadastrada.
+                </p>
+              </div>
+
+              {/* Spintax — variantes */}
+              <div className="border-t pt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-xs font-semibold">
+                    Variantes da mensagem (Spintax){" "}
+                    <span className="text-muted-foreground font-normal">— recomendado: 5 a 8</span>
+                  </Label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[10px]"
+                    onClick={() => {
+                      const arr = Array.isArray(local.mensagens_variantes) ? [...local.mensagens_variantes] : [];
+                      arr.push("");
+                      setDraft({ ...local, mensagens_variantes: arr });
+                    }}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Adicionar variante
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mb-2">
+                  💡 O sistema escolhe uma variante aleatória a cada disparo para evitar detecção por assinatura. Use <code>{"{nome}"}</code> em cada uma.
+                </p>
+                <div className="space-y-2">
+                  {(Array.isArray(local.mensagens_variantes) ? local.mensagens_variantes : []).map((v: string, i: number) => (
+                    <div key={i} className="flex gap-2 items-start">
+                      <span className="text-[10px] text-muted-foreground pt-2 w-8">#{i + 1}</span>
+                      <Textarea
+                        rows={2}
+                        value={v}
+                        placeholder="Oi {nome}, tudo bem? Ainda tem interesse em..."
+                        onChange={(e) => {
+                          const arr = [...local.mensagens_variantes];
+                          arr[i] = e.target.value;
+                          setDraft({ ...local, mensagens_variantes: arr });
+                        }}
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => {
+                          const arr = [...local.mensagens_variantes];
+                          arr.splice(i, 1);
+                          setDraft({ ...local, mensagens_variantes: arr });
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                  {(!local.mensagens_variantes || local.mensagens_variantes.length === 0) && (
+                    <p className="text-[11px] text-muted-foreground italic">
+                      Nenhuma variante cadastrada — será usada a mensagem padrão acima.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex gap-2 justify-end items-center pt-3 border-t">
             {(cfg as any)?.paused && !isRunning && (
               <Badge className="bg-amber-100 text-amber-800 mr-auto">⏸️ Pausado</Badge>
             )}
