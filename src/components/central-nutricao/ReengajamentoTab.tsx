@@ -66,9 +66,40 @@ export default function ReengajamentoTab() {
         .order("reengajamento_enviado_at", { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data || [];
+      const leads = data || [];
+      const ids = leads.map((l: any) => l.id);
+      const respostasMap: Record<string, { body: string; timestamp: string }> = {};
+      if (ids.length > 0) {
+        const { data: msgs } = await supabase
+          .from("whatsapp_mensagens")
+          .select("lead_id, body, timestamp")
+          .in("lead_id", ids)
+          .eq("direction", "received")
+          .order("timestamp", { ascending: false })
+          .limit(500);
+        for (const m of (msgs || []) as any[]) {
+          if (!respostasMap[m.lead_id]) {
+            respostasMap[m.lead_id] = { body: m.body, timestamp: m.timestamp };
+          }
+        }
+      }
+      return leads.map((l: any) => ({ ...l, ultimaResposta: respostasMap[l.id] || null }));
     },
   });
+
+  async function reativarManual(leadId: string, nome: string) {
+    if (!confirm(`Reativar "${nome}" e mandar de volta para a roleta?`)) return;
+    try {
+      const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual" as any, { p_lead_id: leadId });
+      if (error) throw error;
+      const dist = (data as any)?.distribuicao;
+      toast.success(dist?.success ? `🔄 ${nome} reativada e distribuída` : `🔄 ${nome} reativada (fila CEO)`);
+      qc.invalidateQueries({ queryKey: ["reengajamento-ultimos"] });
+      qc.invalidateQueries({ queryKey: ["reengajamento-kpis"] });
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    }
+  }
 
   async function save() {
     if (!local?.id) return;
