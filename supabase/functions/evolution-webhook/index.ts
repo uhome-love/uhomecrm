@@ -365,13 +365,16 @@ Deno.serve(async (req) => {
       finalBody &&
       lead.reengajamento_status === "enviado"
     ) {
-      const txt = finalBody.toLowerCase();
-      const POSITIVE = /\b(sim|quero|tenho|claro|pode|envia|manda|interesse|gostaria|interessad|por\s*favor|pf)\b|👍|✅|🙏/;
-      const NEGATIVE = /\b(n[aã]o|nao quero|parei|comprei|j[aá]\s*comprei|desisti|sair|stop|cancela|remove|para)\b/;
+      const txt = finalBody.trim().toLowerCase();
+      // POSITIVO: explícito (palavra de aceite + curto OU emoji de aceite)
+      const POSITIVE_STRICT = /^(sim|quero|claro|pode\s*(mandar|enviar)|envia|manda|me\s*envia|tenho\s*interesse|gostaria|interessad[oa]|por\s*favor|pf|👍|✅|🙏|s)\b/;
+      // NEGATIVO ESTRITO: só rejeição clara (mensagem curta começando com palavra de recusa, ou frases inequívocas)
+      const NEGATIVE_STRICT = /^(n[aã]o\s*(quero|tenho|obrigad|me\s*interesso|preciso)|n[aã]o\.?$|j[aá]\s*comprei|comprei|desisti|stop|sair|cancela|cancelar|para\s+de|me\s*remov|remove|p[aá]ra)/;
 
       let outcome: "respondeu_sim" | "respondeu_nao" | "respondeu_outro" = "respondeu_outro";
-      if (POSITIVE.test(txt) && !NEGATIVE.test(txt)) outcome = "respondeu_sim";
-      else if (NEGATIVE.test(txt)) outcome = "respondeu_nao";
+      if (POSITIVE_STRICT.test(txt)) outcome = "respondeu_sim";
+      else if (NEGATIVE_STRICT.test(txt) && txt.length < 60) outcome = "respondeu_nao";
+      // Tudo o mais (resposta longa, ambígua, com pergunta) → respondeu_outro p/ revisão humana
 
       await supabase.from("pipeline_historico").insert({
         pipeline_lead_id: leadId,
