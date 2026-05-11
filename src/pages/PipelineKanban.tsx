@@ -1030,6 +1030,7 @@ export default function PipelineKanban() {
       <FilaCeoDispatchModal
         open={dispatchOpen}
         onOpenChange={setDispatchOpen}
+        initialTab={dispatchInitialTab}
         onDispatched={() => pipeline.reload()}
       />
 
