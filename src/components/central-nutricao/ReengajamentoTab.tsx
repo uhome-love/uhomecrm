@@ -98,17 +98,34 @@ export default function ReengajamentoTab() {
   async function dispararAgora() {
     setRunning(true);
     try {
+      // Garante que paused esteja false antes de iniciar
+      if (cfg?.id) {
+        await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
+        qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
+      }
       const { data, error } = await supabase.functions.invoke("reengajamento-descartados-enqueue", {
-        body: {},
+        body: { force: true },
       });
       if (error) throw error;
-      toast.success(`Disparo executado: ${data?.sent || 0} enviados, ${data?.failed || 0} falhas`);
+      const paused = (data as any)?.paused;
+      toast.success(`${paused ? "⏸️ Pausado" : "✅ Disparo concluído"}: ${data?.sent || 0} enviados, ${data?.failed || 0} falhas`);
       qc.invalidateQueries({ queryKey: ["reengajamento-kpis"] });
       qc.invalidateQueries({ queryKey: ["reengajamento-ultimos"] });
     } catch (e: any) {
       toast.error("Erro: " + e.message);
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function pausarDisparo() {
+    if (!cfg?.id) return;
+    try {
+      await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
+      toast.info("⏸️ Pausa solicitada — o disparo para após a mensagem atual");
+      qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
+    } catch (e: any) {
+      toast.error("Erro ao pausar: " + e.message);
     }
   }
 
@@ -353,11 +370,21 @@ export default function ReengajamentoTab() {
             <Textarea rows={4} value={local.mensagem_template || ""}
               onChange={(e) => setDraft({ ...local, mensagem_template: e.target.value })} />
           </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={dispararAgora} disabled={running}>
-              {running ? <Loader2 className="animate-spin h-3.5 w-3.5 mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
-              Disparar agora
-            </Button>
+          <div className="flex gap-2 justify-end items-center">
+            {(cfg as any)?.paused && !running && (
+              <Badge className="bg-amber-100 text-amber-800 mr-auto">⏸️ Pausado</Badge>
+            )}
+            {running ? (
+              <Button variant="destructive" size="sm" onClick={pausarDisparo}>
+                <XCircle className="h-3.5 w-3.5 mr-1" />
+                Pausar disparo
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={dispararAgora}>
+                <Send className="h-3.5 w-3.5 mr-1" />
+                {(cfg as any)?.paused ? "Retomar disparo" : "Disparar agora"}
+              </Button>
+            )}
             <Button size="sm" onClick={save} disabled={saving || !draft}>
               {saving ? <Loader2 className="animate-spin h-3.5 w-3.5 mr-1" /> : null}
               Salvar
