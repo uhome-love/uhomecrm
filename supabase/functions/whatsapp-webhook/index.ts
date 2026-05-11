@@ -135,6 +135,19 @@ Deno.serve(async (req) => {
               updatedCount++;
             }
 
+            // ── Reengajamento Meta: atualiza disparo pelo wamid ──
+            const metaPatch: Record<string, unknown> = {};
+            if (statusType === "sent") metaPatch.status = "sent";
+            if (statusType === "delivered") { metaPatch.status = "delivered"; metaPatch.delivered_at = ts; }
+            if (statusType === "read") { metaPatch.status = "read"; metaPatch.read_at = ts; }
+            if (statusType === "failed") { metaPatch.status = "failed"; metaPatch.error_text = status?.errors?.[0]?.title || "Meta delivery failed"; }
+            if (Object.keys(metaPatch).length > 0) {
+              await supabase
+                .from("reengajamento_meta_disparos")
+                .update(metaPatch)
+                .eq("wamid", waMessageId);
+            }
+
             // Notify orchestrator on read
             if (statusType === "read") {
               const { data: sendRecord } = await supabase
