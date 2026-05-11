@@ -61,6 +61,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDispatched?: () => void;
+  initialTab?: "novos" | "redistribuicao";
 }
 
 type Destino = "manha" | "tarde" | "noturna" | "qualquer" | "dia_todo" | "oferta_ativa";
