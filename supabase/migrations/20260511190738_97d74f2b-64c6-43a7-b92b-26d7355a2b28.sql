@@ -1,0 +1,1 @@
+DELETE FROM whatsapp_respostas WHERE id='db10a8c0-e04d-4555-a200-06491e939153';
