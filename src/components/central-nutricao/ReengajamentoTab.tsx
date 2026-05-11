@@ -112,6 +112,115 @@ export default function ReengajamentoTab() {
     }
   }
 
+  // ===== Conexão da instância de nutrição =====
+  const instanceName = (draft?.evolution_instance ?? cfg?.evolution_instance) || "uhome-nutricao";
+  const [waStatus, setWaStatus] = useState<"open" | "close" | "connecting" | "loading">("loading");
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrBase64, setQrBase64] = useState<string | null>(null);
+  const [qrTimer, setQrTimer] = useState(60);
+  const [waBusy, setWaBusy] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  async function invokeWa(action: string) {
+    const { data, error } = await supabase.functions.invoke("nutricao-instance-connect", {
+      body: { action, instance_name: instanceName },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  useEffect(() => {
+    if (!cfg) return;
+    (async () => {
+      try {
+        const r = await invokeWa("status");
+        setWaStatus(r?.status ?? "close");
+      } catch {
+        setWaStatus("close");
+      }
+    })();
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg, instanceName]);
+
+  function startPolling() {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const r = await invokeWa("status");
+        if (r?.status === "open") {
+          setWaStatus("open");
+          setQrOpen(false);
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (tickRef.current) clearInterval(tickRef.current);
+          toast.success("Instância de nutrição conectada!");
+        }
+      } catch {}
+    }, 3000);
+    setQrTimer(60);
+    if (tickRef.current) clearInterval(tickRef.current);
+    tickRef.current = setInterval(() => {
+      setQrTimer((t) => {
+        if (t <= 1) {
+          if (tickRef.current) clearInterval(tickRef.current);
+          setQrBase64(null);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+  }
+
+  async function handleConnectInstance() {
+    setWaBusy(true);
+    try {
+      await invokeWa("create");
+      const qr = await invokeWa("qrcode");
+      const code = qr?.qrcode;
+      if (!code) throw new Error("QR Code não disponível");
+      setQrBase64(typeof code === "string" ? code : JSON.stringify(code));
+      setQrOpen(true);
+      startPolling();
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setWaBusy(false);
+    }
+  }
+
+  async function handleNewQr() {
+    setWaBusy(true);
+    try {
+      const qr = await invokeWa("qrcode");
+      const code = qr?.qrcode;
+      if (!code) throw new Error("QR Code não disponível");
+      setQrBase64(typeof code === "string" ? code : JSON.stringify(code));
+      startPolling();
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setWaBusy(false);
+    }
+  }
+
+  async function handleDisconnectInstance() {
+    if (!confirm("Desconectar a instância de nutrição? O reengajamento automático parará.")) return;
+    setWaBusy(true);
+    try {
+      await invokeWa("disconnect");
+      setWaStatus("close");
+      toast.success("Instância desconectada");
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setWaBusy(false);
+    }
+  }
+
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="animate-spin h-5 w-5" /></div>;
   if (!cfg) return <div className="text-sm text-muted-foreground">Sem configuração</div>;
 
