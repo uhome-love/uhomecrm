@@ -1,21 +1,19 @@
-import { useState, lazy, Suspense } from "react";
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, BarChart3, ListChecks, Volume2, Mail, Workflow, MessageCircle } from "lucide-react";
+import { Loader2, BarChart3, ListChecks, Volume2, Mail, Workflow, MessageCircle, RefreshCw } from "lucide-react";
 import NurturingDashboard from "@/components/automations/NurturingDashboard";
 import SequenceTemplates from "@/components/automations/SequenceTemplates";
 import CampanhasVozContent from "@/components/central-nutricao/CampanhasVozContent";
 import EmailMarketingContent from "@/components/central-nutricao/EmailMarketingContent";
 import AutomacoesContent from "@/components/central-nutricao/AutomacoesContent";
 import WhatsAppTemplatesManager from "@/components/central-nutricao/WhatsAppTemplatesManager";
-
-const TabLoader = () => (
-  <div className="flex items-center justify-center py-16">
-    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-  </div>
-);
+import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
 
 export default function CentralNutricaoPage() {
-  const [activeTab, setActiveTab] = useState("visao-geral");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "reengajamento";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [reloadKey, setReloadKey] = useState(0);
 
   return (
@@ -26,12 +24,17 @@ export default function CentralNutricaoPage() {
           <h1 className="text-xl font-bold">Central de Nutrição</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Orquestração multicanal inteligente — WhatsApp, Email, Voz IA e Automações
+          Reengajamento de descartados, sequências, templates e automações multicanal
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="w-full grid grid-cols-6 h-auto">
+        <TabsList className="w-full grid grid-cols-7 h-auto">
+          <TabsTrigger value="reengajamento" className="text-[11px] gap-1 py-2 flex-col sm:flex-row">
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Reengajamento</span>
+            <span className="sm:hidden">Reeng.</span>
+          </TabsTrigger>
           <TabsTrigger value="visao-geral" className="text-[11px] gap-1 py-2 flex-col sm:flex-row">
             <BarChart3 className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Visão Geral</span>
@@ -62,6 +65,10 @@ export default function CentralNutricaoPage() {
             <span className="sm:hidden">Auto.</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="reengajamento">
+          <ReengajamentoTab />
+        </TabsContent>
 
         <TabsContent value="visao-geral">
           <NurturingDashboard />

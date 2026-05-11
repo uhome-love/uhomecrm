@@ -5902,7 +5902,11 @@ export type Database = {
           radar_status_imovel: string | null
           radar_tipologia: string | null
           radar_valor_max: number | null
+          reativado_em: string | null
+          reativado_por_nutricao: boolean
           reciclagem_aviso_at: string | null
+          reengajamento_enviado_at: string | null
+          reengajamento_status: string | null
           requer_revisao_dedup: boolean
           roleta_distribuido_em: string | null
           segmento_id: string | null
@@ -5985,7 +5989,11 @@ export type Database = {
           radar_status_imovel?: string | null
           radar_tipologia?: string | null
           radar_valor_max?: number | null
+          reativado_em?: string | null
+          reativado_por_nutricao?: boolean
           reciclagem_aviso_at?: string | null
+          reengajamento_enviado_at?: string | null
+          reengajamento_status?: string | null
           requer_revisao_dedup?: boolean
           roleta_distribuido_em?: string | null
           segmento_id?: string | null
@@ -6068,7 +6076,11 @@ export type Database = {
           radar_status_imovel?: string | null
           radar_tipologia?: string | null
           radar_valor_max?: number | null
+          reativado_em?: string | null
+          reativado_por_nutricao?: boolean
           reciclagem_aviso_at?: string | null
+          reengajamento_enviado_at?: string | null
+          reengajamento_status?: string | null
           requer_revisao_dedup?: boolean
           roleta_distribuido_em?: string | null
           segmento_id?: string | null
@@ -7163,6 +7175,45 @@ export type Database = {
           updated_at?: string
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      reengajamento_config: {
+        Row: {
+          daily_limit: number
+          dias_semana: number[]
+          enabled: boolean
+          evolution_instance: string
+          horario_fim: string
+          horario_inicio: string
+          id: string
+          lookback_days: number
+          mensagem_template: string
+          updated_at: string
+        }
+        Insert: {
+          daily_limit?: number
+          dias_semana?: number[]
+          enabled?: boolean
+          evolution_instance?: string
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          lookback_days?: number
+          mensagem_template?: string
+          updated_at?: string
+        }
+        Update: {
+          daily_limit?: number
+          dias_semana?: number[]
+          enabled?: boolean
+          evolution_instance?: string
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          lookback_days?: number
+          mensagem_template?: string
+          updated_at?: string
         }
         Relationships: []
       }

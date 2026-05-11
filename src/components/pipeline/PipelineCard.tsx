@@ -452,8 +452,14 @@ const PipelineCard = memo(function PipelineCard({
         </div>
 
         {/* Badges row — score inline with partnership/negocio */}
-        {(parceiroNome || lead.negocio_id) && (
+        {(parceiroNome || lead.negocio_id || (lead as any).reativado_por_nutricao) && (
           <div className="flex items-center gap-1.5" style={{ marginBottom: 4 }}>
+            {(lead as any).reativado_por_nutricao && (
+              <span title="Lead reativado pela nutrição automática" style={{
+                fontSize: 10, fontWeight: 700, color: "hsl(25 95% 35%)",
+                background: "hsl(25 95% 92%)", padding: "2px 6px", borderRadius: 5,
+              }}>🔄 REATIVADO</span>
+            )}
             {parceiroNome && (
               <span style={{
                 fontSize: 10, fontWeight: 700, color: "hsl(var(--purple-500))",
