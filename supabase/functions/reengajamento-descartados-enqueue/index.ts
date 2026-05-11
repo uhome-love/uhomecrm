@@ -84,7 +84,24 @@ Deno.serve(async (req) => {
     const evoKey = Deno.env.get("EVOLUTION_API_KEY");
     if (!evoUrl || !evoKey) throw new Error("Evolution env vars missing");
 
+    // Reset paused flag at start of run (so a previously-paused config can run again)
+    if (force) {
+      await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
+    }
+
     for (const lead of leads || []) {
+      // Check pause flag before each send (allows real-time stop from UI)
+      const { data: liveCfg } = await supabase
+        .from("reengajamento_config")
+        .select("paused, enabled")
+        .eq("id", cfg.id)
+        .maybeSingle();
+      if (liveCfg?.paused || (!liveCfg?.enabled && !force)) {
+        log.errors.push("paused_by_user");
+        (log as any).paused = true;
+        break;
+      }
+
       const phone = normalizePhone(lead.telefone || "");
       if (!phone) {
         await supabase.from("pipeline_leads")
