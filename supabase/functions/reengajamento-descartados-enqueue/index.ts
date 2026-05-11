@@ -1,5 +1,6 @@
-// Disparo de reengajamento — registra cada execução em reengajamento_dispatch_runs
-// e cada evento por lead em reengajamento_eventos para acompanhamento na UI.
+// Disparo de reengajamento — suporta canal Meta (oficial) ou Evolution (anti-ban v2).
+// Evolution v2: spintax (variantes), delay 60-180s, pausa longa a cada N envios,
+// validação de número, warmup diário, janela horária estrita.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -9,7 +10,7 @@ const corsHeaders = {
 };
 
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
-const MAX_RUN_MS = 140_000; // 140s — fica abaixo do timeout do edge function
+const MAX_RUN_MS = 140_000;
 
 function nowBRT(): Date {
   const d = new Date();
@@ -40,6 +41,59 @@ function normalizePhone(raw: string): string | null {
   }
   if (p.length < 12 || p.length > 13) return null;
   return p;
+}
+
+function pickVariant(variants: string[], fallback: string, nome: string): string {
+  const list = (variants && variants.length > 0) ? variants : [fallback];
+  const tpl = list[Math.floor(Math.random() * list.length)];
+  return (tpl || fallback || "").replace(/\{nome\}/g, nome);
+}
+
+async function validateNumberEvolution(evoUrl: string, evoKey: string, instance: string, phone: string): Promise<boolean> {
+  try {
+    const r = await fetch(`${evoUrl}/chat/whatsappNumbers/${instance}`, {
+      method: "POST",
+      headers: { apikey: evoKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ numbers: [phone] }),
+    });
+    if (!r.ok) return true; // se endpoint falhar, não bloqueia
+    const data = await r.json();
+    const arr = Array.isArray(data) ? data : (data?.numbers || []);
+    const found = arr.find((x: any) => String(x?.number || x?.jid || "").includes(phone));
+    if (!found) return true;
+    return found?.exists !== false;
+  } catch { return true; }
+}
+
+async function sendMetaTemplate(params: {
+  phoneNumberId: string; accessToken: string; to: string; templateName: string; lang: string; nome: string;
+}): Promise<{ ok: boolean; wamid?: string; error?: string }> {
+  const url = `https://graph.facebook.com/v21.0/${params.phoneNumberId}/messages`;
+  const body = {
+    messaging_product: "whatsapp",
+    to: params.to,
+    type: "template",
+    template: {
+      name: params.templateName,
+      language: { code: params.lang },
+      components: [
+        { type: "body", parameters: [{ type: "text", text: params.nome }] },
+      ],
+    },
+  };
+  try {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${params.accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) return { ok: false, error: JSON.stringify(data).slice(0, 300) };
+    const wamid = data?.messages?.[0]?.id;
+    return { ok: true, wamid };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 Deno.serve(async (req) => {
@@ -86,6 +140,24 @@ Deno.serve(async (req) => {
       await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
     }
 
+    const canal: "meta" | "evolution" = (cfg.canal === "meta") ? "meta" : "evolution";
+
+    // Validações por canal
+    let evoUrl = "", evoKey = "";
+    let metaPhoneId = "", metaToken = "", metaTemplate = "", metaLang = "pt_BR";
+    if (canal === "evolution") {
+      evoUrl = Deno.env.get("EVOLUTION_API_URL") || "";
+      evoKey = Deno.env.get("EVOLUTION_API_KEY") || "";
+      if (!evoUrl || !evoKey) throw new Error("Evolution env vars missing");
+    } else {
+      metaPhoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || "";
+      metaToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
+      if (!metaPhoneId || !metaToken) throw new Error("Meta env vars missing");
+      metaTemplate = String(cfg.meta_template_name || "");
+      metaLang = String(cfg.meta_template_language || "pt_BR");
+      if (!metaTemplate) throw new Error("meta_template_name não configurado");
+    }
+
     const cutoff = new Date(Date.now() - cfg.lookback_days * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: leads, error: leadsErr } = await supabase
@@ -100,10 +172,8 @@ Deno.serve(async (req) => {
       .limit(cfg.daily_limit);
 
     if (leadsErr) throw leadsErr;
-
     const totalAlvo = (leads || []).length;
 
-    // Cria a execução
     const { data: runRow } = await supabase
       .from("reengajamento_dispatch_runs")
       .insert({ status: "running", total_alvo: totalAlvo, iniciado_por: iniciadoPor })
@@ -113,42 +183,36 @@ Deno.serve(async (req) => {
 
     if (totalAlvo === 0) {
       await updateRun({ status: "completed", finished_at: new Date().toISOString(), motivo_parada: "Nenhum lead elegível encontrado" });
-      return new Response(JSON.stringify({ run_id: runId, sent: 0, total: 0, reason: "no_leads" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ run_id: runId, sent: 0, total: 0, reason: "no_leads", canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const evoUrl = Deno.env.get("EVOLUTION_API_URL");
-    const evoKey = Deno.env.get("EVOLUTION_API_KEY");
-    if (!evoUrl || !evoKey) throw new Error("Evolution env vars missing");
-
-    const delayMin = Math.max(2, Number(cfg.delay_min_seconds || 8));
-    const delayMax = Math.max(delayMin, Number(cfg.delay_max_seconds || 20));
+    const delayMin = Math.max(2, Number(cfg.delay_min_seconds || 60));
+    const delayMax = Math.max(delayMin, Number(cfg.delay_max_seconds || 180));
+    const pausaA = Math.max(2, Number(cfg.pausa_longa_a_cada || 6));
+    const pausaMin = Math.max(30, Number(cfg.pausa_longa_min_seconds || 180));
+    const pausaMax = Math.max(pausaMin, Number(cfg.pausa_longa_max_seconds || 480));
 
     let sent = 0, failed = 0, skipped = 0;
     let stopReason: string | null = null;
 
     for (const lead of leads || []) {
-      // Limite de tempo do edge function
       if (Date.now() - startedAt > MAX_RUN_MS) {
-        stopReason = `Limite de tempo do servidor atingido — execute novamente para continuar (${sent}/${totalAlvo} processados)`;
+        stopReason = `Limite de tempo atingido — execute novamente para continuar (${sent}/${totalAlvo} processados)`;
         await updateRun({ status: "timeout", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
-        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "timeout" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "timeout", canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      // Verifica pause/disable em tempo real
       const { data: liveCfg } = await supabase
-        .from("reengajamento_config")
-        .select("paused, enabled")
-        .eq("id", cfg.id)
-        .maybeSingle();
+        .from("reengajamento_config").select("paused, enabled").eq("id", cfg.id).maybeSingle();
       if (liveCfg?.paused) {
         stopReason = "Pausado pelo usuário";
         await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
-        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "paused", paused: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "paused", paused: true, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (!liveCfg?.enabled && !force) {
         stopReason = "Disparo desativado";
         await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
-        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "disabled" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "disabled", canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       const phone = normalizePhone(lead.telefone || "");
@@ -164,57 +228,106 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const firstName = (lead.nome || "").split(" ")[0] || "tudo bem";
-      const text = (cfg.mensagem_template || "").replace(/\{nome\}/g, firstName);
-
-      try {
-        const resp = await fetch(`${evoUrl}/message/sendText/${cfg.evolution_instance}`, {
-          method: "POST",
-          headers: { apikey: evoKey, "Content-Type": "application/json" },
-          body: JSON.stringify({ number: phone, text }),
-        });
-        const result = await resp.json().catch(() => ({}));
-
-        if (!resp.ok) {
-          failed++;
-          const errMsg = `${lead.nome}: ${JSON.stringify(result).slice(0, 160)}`;
-          errs.push(errMsg);
+      // Validação prévia (só Evolution)
+      if (canal === "evolution" && cfg.validar_numero) {
+        const exists = await validateNumberEvolution(evoUrl, evoKey, cfg.evolution_instance, phone);
+        if (!exists) {
+          await supabase.from("pipeline_leads")
+            .update({ reengajamento_status: "telefone_invalido", reengajamento_enviado_at: new Date().toISOString() })
+            .eq("id", lead.id);
           await supabase.from("reengajamento_eventos").insert({
-            lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
+            lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: `${phone} sem WhatsApp`,
           });
-          await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
+          skipped++;
+          await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
           continue;
         }
+      }
 
-        const messageId = result?.key?.id || result?.messageId || crypto.randomUUID();
+      const firstName = (lead.nome || "").split(" ")[0] || "tudo bem";
 
-        await supabase.from("pipeline_leads")
-          .update({
+      try {
+        if (canal === "meta") {
+          const r = await sendMetaTemplate({
+            phoneNumberId: metaPhoneId, accessToken: metaToken, to: phone,
+            templateName: metaTemplate, lang: metaLang, nome: firstName,
+          });
+          if (!r.ok) {
+            failed++;
+            const errMsg = `${lead.nome}: ${r.error}`;
+            errs.push(errMsg);
+            await supabase.from("reengajamento_eventos").insert({
+              lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
+            });
+            await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
+            continue;
+          }
+          await supabase.from("reengajamento_meta_disparos").insert({
+            lead_id: lead.id, run_id: runId, wamid: r.wamid, template_name: metaTemplate,
+            template_language: metaLang, phone, status: "sent", sent_at: new Date().toISOString(),
+          });
+          await supabase.from("pipeline_leads").update({
             reengajamento_enviado_at: new Date().toISOString(),
             reengajamento_status: "enviado",
-          })
-          .eq("id", lead.id);
+          }).eq("id", lead.id);
+          await supabase.from("reengajamento_eventos").insert({
+            lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[meta:${metaTemplate}] ${phone}`,
+          });
+          sent++;
+        } else {
+          // EVOLUTION com spintax
+          const text = pickVariant(cfg.mensagens_variantes || [], cfg.mensagem_template, firstName);
+          const resp = await fetch(`${evoUrl}/message/sendText/${cfg.evolution_instance}`, {
+            method: "POST",
+            headers: { apikey: evoKey, "Content-Type": "application/json" },
+            body: JSON.stringify({ number: phone, text }),
+          });
+          const result = await resp.json().catch(() => ({}));
+          if (!resp.ok) {
+            failed++;
+            const errMsg = `${lead.nome}: ${JSON.stringify(result).slice(0, 160)}`;
+            errs.push(errMsg);
+            await supabase.from("reengajamento_eventos").insert({
+              lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
+            });
+            await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
+            continue;
+          }
+          const messageId = result?.key?.id || result?.messageId || crypto.randomUUID();
+          await supabase.from("pipeline_leads").update({
+            reengajamento_enviado_at: new Date().toISOString(),
+            reengajamento_status: "enviado",
+          }).eq("id", lead.id);
+          await supabase.from("whatsapp_mensagens").insert({
+            lead_id: lead.id, instance_name: cfg.evolution_instance, direction: "sent",
+            body: text, whatsapp_message_id: messageId, timestamp: new Date().toISOString(),
+            delivery_status: "sent",
+          });
+          await supabase.from("reengajamento_eventos").insert({
+            lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[evo] ${phone} :: ${text.slice(0, 80)}`,
+          });
+          sent++;
+        }
 
-        await supabase.from("whatsapp_mensagens").insert({
-          lead_id: lead.id,
-          instance_name: cfg.evolution_instance,
-          direction: "sent",
-          body: text,
-          whatsapp_message_id: messageId,
-          timestamp: new Date().toISOString(),
-          delivery_status: "sent",
-        });
-
-        await supabase.from("reengajamento_eventos").insert({
-          lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: phone,
-        });
-
-        sent++;
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
 
-        // delay configurável anti-spam
-        const delayMs = (delayMin + Math.random() * (delayMax - delayMin)) * 1000;
-        await new Promise((r) => setTimeout(r, delayMs));
+        // Delays:
+        // - Meta: rápido (rate limit Meta é altíssimo) — 1-3s só pra não estourar nada
+        // - Evolution: 60-180s + pausa longa a cada N envios
+        if (canal === "meta") {
+          await new Promise(r => setTimeout(r, 1500 + Math.random() * 1500));
+        } else {
+          const isLongPause = sent > 0 && sent % pausaA === 0;
+          const ms = isLongPause
+            ? (pausaMin + Math.random() * (pausaMax - pausaMin)) * 1000
+            : (delayMin + Math.random() * (delayMax - delayMin)) * 1000;
+          if (isLongPause) {
+            await supabase.from("reengajamento_eventos").insert({
+              lead_id: lead.id, run_id: runId, tipo: "pausa_longa", detalhe: `${Math.round(ms/1000)}s após ${sent} envios`,
+            });
+          }
+          await new Promise(r => setTimeout(r, ms));
+        }
       } catch (e) {
         failed++;
         const errMsg = `${lead.nome}: ${e instanceof Error ? e.message : String(e)}`;
@@ -229,11 +342,11 @@ Deno.serve(async (req) => {
     await updateRun({
       status: "completed",
       finished_at: new Date().toISOString(),
-      motivo_parada: `Disparo concluído (${sent}/${totalAlvo} enviados)`,
+      motivo_parada: `Disparo concluído via ${canal} (${sent}/${totalAlvo} enviados)`,
       enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20),
     });
 
-    return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "completed" }), {
+    return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "completed", canal }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

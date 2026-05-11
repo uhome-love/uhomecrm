@@ -135,6 +135,19 @@ Deno.serve(async (req) => {
               updatedCount++;
             }
 
+            // ── Reengajamento Meta: atualiza disparo pelo wamid ──
+            const metaPatch: Record<string, unknown> = {};
+            if (statusType === "sent") metaPatch.status = "sent";
+            if (statusType === "delivered") { metaPatch.status = "delivered"; metaPatch.delivered_at = ts; }
+            if (statusType === "read") { metaPatch.status = "read"; metaPatch.read_at = ts; }
+            if (statusType === "failed") { metaPatch.status = "failed"; metaPatch.error_text = status?.errors?.[0]?.title || "Meta delivery failed"; }
+            if (Object.keys(metaPatch).length > 0) {
+              await supabase
+                .from("reengajamento_meta_disparos")
+                .update(metaPatch)
+                .eq("wamid", waMessageId);
+            }
+
             // Notify orchestrator on read
             if (statusType === "read") {
               const { data: sendRecord } = await supabase
@@ -221,6 +234,84 @@ Deno.serve(async (req) => {
               .select("id, pipeline_lead_id, batch_id");
 
             if (!error) updatedCount++;
+
+            // ── Reengajamento Meta: detecta resposta a template de nutrição via context.id (wamid original) ──
+            const repliedToWamid = msg?.context?.id || null;
+            const buttonId = msg?.interactive?.button_reply?.id || null;
+            const buttonTitle = msg?.interactive?.button_reply?.title || "";
+
+            if (repliedToWamid) {
+              const { data: metaDispatch } = await supabase
+                .from("reengajamento_meta_disparos")
+                .select("id, lead_id, run_id")
+                .eq("wamid", repliedToWamid)
+                .maybeSingle();
+
+              if (metaDispatch) {
+                // Classifica botão ou texto
+                let buttonResp: "sim" | "nao" | null = null;
+                if (buttonId) {
+                  if (/sim|yes/i.test(buttonId) || /sim|quero/i.test(buttonTitle)) buttonResp = "sim";
+                  else if (/nao|não|no/i.test(buttonId) || /n[aã]o/i.test(buttonTitle)) buttonResp = "nao";
+                } else if (mensagemTexto) {
+                  const t = mensagemTexto.trim().toLowerCase();
+                  if (/^(sim|quero|claro|👍|✅|🙏|s)\b/.test(t)) buttonResp = "sim";
+                  else if (/^(n[aã]o|n\.?$|j[aá]\s*comprei|stop|cancela|para)/.test(t) && t.length < 60) buttonResp = "nao";
+                }
+
+                await supabase.from("reengajamento_meta_disparos").update({
+                  status: "responded",
+                  responded_at: new Date().toISOString(),
+                  button_response: buttonResp,
+                  response_text: mensagemTexto.slice(0, 1000),
+                }).eq("id", metaDispatch.id);
+
+                await supabase.from("reengajamento_eventos").insert({
+                  lead_id: metaDispatch.lead_id,
+                  run_id: metaDispatch.run_id,
+                  tipo: buttonResp === "sim" ? "classificado_sim"
+                       : buttonResp === "nao" ? "classificado_nao"
+                       : "classificado_outro",
+                  detalhe: (buttonId ? `[botão] ${buttonTitle}` : mensagemTexto).slice(0, 500),
+                });
+
+                // Reativa lead se respondeu SIM
+                if (buttonResp === "sim") {
+                  const STAGE_SEM_CONTATO = "2fcba9be-1188-4a54-9452-394beefdc330";
+                  await supabase.from("pipeline_leads").update({
+                    reengajamento_status: "respondeu_sim",
+                    reativado_por_nutricao: true,
+                    reativado_em: new Date().toISOString(),
+                    stage_id: STAGE_SEM_CONTATO,
+                    stage_changed_at: new Date().toISOString(),
+                    corretor_id: null,
+                    aceite_status: null,
+                    aceite_expira_em: null,
+                    aceito_em: null,
+                    tipo_descarte: null,
+                    motivo_descarte: null,
+                  }).eq("id", metaDispatch.lead_id);
+
+                  try {
+                    await supabase.rpc("distribuir_lead_atomico", {
+                      p_lead_id: metaDispatch.lead_id,
+                      p_janela: null,
+                      p_exclude_auth_user_id: null,
+                      p_force: false,
+                    });
+                  } catch (e) { console.error("rpc distribuir error:", e); }
+                } else if (buttonResp === "nao") {
+                  await supabase.from("pipeline_leads").update({
+                    reengajamento_status: "respondeu_nao",
+                    tipo_descarte: "definitivo",
+                  }).eq("id", metaDispatch.lead_id);
+                } else {
+                  await supabase.from("pipeline_leads").update({
+                    reengajamento_status: "respondeu_outro",
+                  }).eq("id", metaDispatch.lead_id);
+                }
+              }
+            }
 
             // ── BLOCO 1+2: Process lead reply with 24h window + oferta ativa re-entry ──
             const sendRecord = updatedSends?.[0];

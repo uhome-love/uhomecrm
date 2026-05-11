@@ -141,6 +141,14 @@ export default function ReengajamentoTab() {
     try {
       const { error } = await supabase.from("reengajamento_config").update({
         enabled: local.enabled,
+        canal: local.canal || "evolution",
+        meta_template_name: local.meta_template_name || null,
+        meta_template_language: local.meta_template_language || "pt_BR",
+        mensagens_variantes: local.mensagens_variantes || [],
+        pausa_longa_a_cada: local.pausa_longa_a_cada ?? 6,
+        pausa_longa_min_seconds: local.pausa_longa_min_seconds ?? 180,
+        pausa_longa_max_seconds: local.pausa_longa_max_seconds ?? 480,
+        validar_numero: local.validar_numero ?? true,
         daily_limit: local.daily_limit,
         lookback_days: local.lookback_days,
         evolution_instance: local.evolution_instance,
