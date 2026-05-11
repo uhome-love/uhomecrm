@@ -7180,6 +7180,7 @@ export type Database = {
       }
       reengajamento_config: {
         Row: {
+          canal: string
           daily_limit: number
           delay_max_seconds: number
           delay_min_seconds: number
@@ -7191,10 +7192,18 @@ export type Database = {
           id: string
           lookback_days: number
           mensagem_template: string
+          mensagens_variantes: string[]
+          meta_template_language: string
+          meta_template_name: string | null
+          pausa_longa_a_cada: number
+          pausa_longa_max_seconds: number
+          pausa_longa_min_seconds: number
           paused: boolean
           updated_at: string
+          validar_numero: boolean
         }
         Insert: {
+          canal?: string
           daily_limit?: number
           delay_max_seconds?: number
           delay_min_seconds?: number
@@ -7206,10 +7215,18 @@ export type Database = {
           id?: string
           lookback_days?: number
           mensagem_template?: string
+          mensagens_variantes?: string[]
+          meta_template_language?: string
+          meta_template_name?: string | null
+          pausa_longa_a_cada?: number
+          pausa_longa_max_seconds?: number
+          pausa_longa_min_seconds?: number
           paused?: boolean
           updated_at?: string
+          validar_numero?: boolean
         }
         Update: {
+          canal?: string
           daily_limit?: number
           delay_max_seconds?: number
           delay_min_seconds?: number
@@ -7221,8 +7238,15 @@ export type Database = {
           id?: string
           lookback_days?: number
           mensagem_template?: string
+          mensagens_variantes?: string[]
+          meta_template_language?: string
+          meta_template_name?: string | null
+          pausa_longa_a_cada?: number
+          pausa_longa_max_seconds?: number
+          pausa_longa_min_seconds?: number
           paused?: boolean
           updated_at?: string
+          validar_numero?: boolean
         }
         Relationships: []
       }
@@ -7305,6 +7329,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "reengajamento_eventos_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "reengajamento_dispatch_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reengajamento_meta_disparos: {
+        Row: {
+          button_response: string | null
+          created_at: string
+          delivered_at: string | null
+          error_text: string | null
+          id: string
+          lead_id: string
+          phone: string
+          read_at: string | null
+          responded_at: string | null
+          response_text: string | null
+          run_id: string | null
+          sent_at: string | null
+          status: string
+          template_language: string
+          template_name: string
+          wamid: string | null
+        }
+        Insert: {
+          button_response?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          error_text?: string | null
+          id?: string
+          lead_id: string
+          phone: string
+          read_at?: string | null
+          responded_at?: string | null
+          response_text?: string | null
+          run_id?: string | null
+          sent_at?: string | null
+          status?: string
+          template_language?: string
+          template_name: string
+          wamid?: string | null
+        }
+        Update: {
+          button_response?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          error_text?: string | null
+          id?: string
+          lead_id?: string
+          phone?: string
+          read_at?: string | null
+          responded_at?: string | null
+          response_text?: string | null
+          run_id?: string | null
+          sent_at?: string | null
+          status?: string
+          template_language?: string
+          template_name?: string
+          wamid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reengajamento_meta_disparos_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "reengajamento_dispatch_runs"
