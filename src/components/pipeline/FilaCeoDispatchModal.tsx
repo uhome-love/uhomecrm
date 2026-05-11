@@ -94,12 +94,19 @@ const FAILURE_REASON_LABELS: Record<string, string> = {
 export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched }: Props) {
   const [loading, setLoading] = useState(false);
   const [dispatching, setDispatching] = useState(false);
-  const [leads, setLeads] = useState<any[]>([]);
+  const [allLeads, setAllLeads] = useState<any[]>([]);
   const [campanhas, setCampanhas] = useState<CampanhaMap[]>([]);
   const { isSunday, isHoliday } = getBrtDateInfo();
   const isAllDayRoleta = isSunday || isHoliday;
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
   const [includeUnidentified, setIncludeUnidentified] = useState(true);
+  const [activeTab, setActiveTab] = useState<"novos" | "redistribuicao">("novos");
+  const [corretoresMap, setCorretoresMap] = useState<Record<string, string>>({});
+
+  // Separa leads por categoria
+  const leadsNovos = useMemo(() => allLeads.filter((l) => !l.is_redistribuicao), [allLeads]);
+  const leadsRedistribuicao = useMemo(() => allLeads.filter((l) => !!l.is_redistribuicao), [allLeads]);
+  const leads = activeTab === "novos" ? leadsNovos : leadsRedistribuicao;
 
   useEffect(() => {
     setSelectedDestino(isAllDayRoleta ? "dia_todo" : "qualquer");
@@ -109,13 +116,13 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
     if (!open) return;
     let cancelled = false;
     setLoading(true);
-    setLeads([]);
+    setAllLeads([]);
     setCampanhas([]);
     (async () => {
       const [leadsRes, segRes, campRes] = await Promise.all([
         supabase
           .from("pipeline_leads")
-          .select("id, nome, empreendimento, telefone, origem, aceite_status", { count: "exact" })
+          .select("id, nome, empreendimento, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, corretor_anterior_id, updated_at")
           .is("corretor_id", null)
           .eq("aceite_status", "pendente_distribuicao")
           .order("created_at", { ascending: true })
@@ -151,7 +158,6 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
           segmento_ativo: !!c.roleta_segmentos?.ativo,
           ignorar_segmento: !!c.ignorar_segmento,
         }))
-        // Aceita: (a) campanhas com segmento ativo válido OU (b) campanhas marcadas como "ignorar_segmento" (Geral/todos)
         .filter((c) =>
           c.empreendimento &&
           (
@@ -166,8 +172,27 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
       }
 
       setCampanhas(camps);
-      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsRes.data?.length || 0} leads; ${camps.length} campanhas válidas (S1–S4 do banco)`);
-      setLeads(leadsRes.data || []);
+      const leadsList = (leadsRes.data || []) as any[];
+      setAllLeads(leadsList);
+
+      // Carrega nomes dos corretores anteriores (somente redistribuídos)
+      const anteriorIds = Array.from(new Set(leadsList.filter((l) => l.is_redistribuicao && l.corretor_anterior_id).map((l) => l.corretor_anterior_id)));
+      if (anteriorIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", anteriorIds);
+        const map: Record<string, string> = {};
+        (profs || []).forEach((p: any) => { map[p.user_id] = p.nome || ""; });
+        setCorretoresMap(map);
+      }
+
+      // Auto-seleciona aba com leads
+      const novosCount = leadsList.filter((l) => !l.is_redistribuicao).length;
+      const redistCount = leadsList.filter((l) => !!l.is_redistribuicao).length;
+      setActiveTab(novosCount > 0 ? "novos" : redistCount > 0 ? "redistribuicao" : "novos");
+
+      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${redistCount} redistribuição)`);
       setLoading(false);
     })();
     return () => { cancelled = true; };
