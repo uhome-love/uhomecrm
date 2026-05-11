@@ -418,14 +418,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    const finalStatus = failed > 0 && sent === 0 ? "error" : "completed";
+    const finalReason = finalStatus === "error"
+      ? `Disparo encerrado com falhas via ${canal} (${sent}/${totalAlvo} enviados, ${failed} falhas)`
+      : `Disparo concluído via ${canal} (${sent}/${totalAlvo} enviados${failed > 0 ? `, ${failed} falhas` : ""})`;
+
     await updateRun({
-      status: "completed",
+      status: finalStatus,
       finished_at: new Date().toISOString(),
-      motivo_parada: `Disparo concluído via ${canal} (${sent}/${totalAlvo} enviados)`,
+      motivo_parada: finalReason,
       enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20),
     });
 
-    return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "completed", canal }), {
+    return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: finalStatus, canal }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
