@@ -7189,6 +7189,7 @@ export type Database = {
           id: string
           lookback_days: number
           mensagem_template: string
+          paused: boolean
           updated_at: string
         }
         Insert: {
@@ -7201,6 +7202,7 @@ export type Database = {
           id?: string
           lookback_days?: number
           mensagem_template?: string
+          paused?: boolean
           updated_at?: string
         }
         Update: {
@@ -7213,6 +7215,7 @@ export type Database = {
           id?: string
           lookback_days?: number
           mensagem_template?: string
+          paused?: boolean
           updated_at?: string
         }
         Relationships: []
