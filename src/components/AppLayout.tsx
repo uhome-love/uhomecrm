@@ -7,7 +7,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useTheme } from "@/hooks/useTheme";
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { User, Settings, LogOut, ChevronDown, Loader2 } from "lucide-react";
+import { User, Settings, LogOut, ChevronDown, Loader2, Users } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
@@ -223,6 +223,11 @@ export default function AppLayout() {
                     <p className="text-xs text-muted-foreground">{cargoLabel}</p>
                   </div>
                   <DropdownMenuSeparator />
+                  {(isAdmin || isGestor) && (
+                    <DropdownMenuItem onSelect={() => navigate("/meu-time")} className="text-xs gap-2 cursor-pointer">
+                      <Users className="h-3.5 w-3.5" /> {isAdmin ? "Gestão de Usuários" : "Meu Time"}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onSelect={() => navigate("/configuracoes")} className="text-xs gap-2 cursor-pointer">
                     <Settings className="h-3.5 w-3.5" /> Configurações
                   </DropdownMenuItem>
