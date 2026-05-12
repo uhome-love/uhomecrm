@@ -9595,6 +9595,12 @@ export type Database = {
         }
         Returns: Json
       }
+      auto_arquivar_descartes_24h: {
+        Args: never
+        Returns: {
+          arquivados_count: number
+        }[]
+      }
       avisar_leads_sem_contato_iminente: {
         Args: never
         Returns: {
