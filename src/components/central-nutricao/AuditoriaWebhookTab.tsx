@@ -62,11 +62,23 @@ export default function AuditoriaWebhookTab() {
       if (leadIds.length) {
         const { data: leads } = await supabase
           .from("pipeline_leads")
-          .select("id, nome, reativado_por_nutricao, origem, corretor_id")
+          .select("id, nome, reativado_por_nutricao, origem, corretor_id, empreendimento")
           .in("id", leadIds);
         leadsMap = Object.fromEntries((leads ?? []).map((l: any) => [l.id, l]));
       }
-      return (disparos ?? []).map((d: any) => ({ ...d, lead: leadsMap[d.lead_id] || null })) as Row[];
+      const corretorIds = Array.from(new Set(Object.values(leadsMap).map((l: any) => l.corretor_id).filter(Boolean)));
+      let corretoresMap: Record<string, string> = {};
+      if (corretorIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", corretorIds);
+        corretoresMap = Object.fromEntries((profs ?? []).map((p: any) => [p.user_id, p.nome]));
+      }
+      return (disparos ?? []).map((d: any) => {
+        const lead = leadsMap[d.lead_id] || null;
+        return { ...d, lead, corretor_nome: lead?.corretor_id ? corretoresMap[lead.corretor_id] || null : null };
+      }) as Row[];
     },
     refetchInterval: 5000,
   });
