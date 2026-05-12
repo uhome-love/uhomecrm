@@ -5,7 +5,7 @@ import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookT
 
 export default function CentralNutricaoPage() {
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
+    <div className="p-4 md:p-6 space-y-4 max-w-[1600px] mx-auto">
       <div>
         <div className="flex items-center gap-2">
           <RefreshCw className="h-5 w-5 text-primary" />

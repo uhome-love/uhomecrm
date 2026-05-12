@@ -25,12 +25,12 @@ interface Row {
   corretor_nome?: string | null;
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  sent: "bg-neutral-100 text-neutral-600",
-  delivered: "bg-blue-50 text-blue-700",
-  read: "bg-indigo-50 text-indigo-700",
-  responded: "bg-emerald-50 text-emerald-700",
-  failed: "bg-red-50 text-red-700",
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  sent: { label: "Enviado", className: "bg-neutral-100 text-neutral-600" },
+  delivered: { label: "Entregue", className: "bg-blue-50 text-blue-700" },
+  read: { label: "Lido", className: "bg-indigo-50 text-indigo-700" },
+  responded: { label: "Respondido", className: "bg-emerald-50 text-emerald-700" },
+  failed: { label: "Falhou", className: "bg-red-50 text-red-700" },
 };
 
 function parseResponse(raw: string | null): { text: string; type: string | null } {
@@ -155,73 +155,74 @@ export default function AuditoriaWebhookTab() {
         </div>
       ) : (
         <TooltipProvider>
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <Table>
+          <div className="rounded-lg border bg-card overflow-x-auto">
+            <Table className="min-w-[1280px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Enviado</TableHead>
-                  <TableHead>Lead</TableHead>
-                  <TableHead>Empreendimento</TableHead>
-                  <TableHead>Corretor</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Tipo</TableHead>
+                  <TableHead className="w-[90px]">Enviado</TableHead>
+                  <TableHead className="w-[160px]">Lead</TableHead>
+                  <TableHead className="w-[140px]">Empreendimento</TableHead>
+                  <TableHead className="w-[140px]">Corretor</TableHead>
+                  <TableHead className="w-[120px]">Telefone</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[80px]">Tipo</TableHead>
                   <TableHead>Mensagem recebida</TableHead>
-                  <TableHead>Classificação</TableHead>
-                  <TableHead>Reativado?</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead className="w-[110px]">Classificação</TableHead>
+                  <TableHead className="w-[120px]">Reativado?</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((r) => {
                   const parsed = parseResponse(r.response_text);
                   const cls = r.button_response;
+                  const statusInfo = STATUS_BADGE[r.status || ""];
                   return (
                     <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap text-xs">{r.sent_at ? formatBRT(r.sent_at, "dd/MM HH:mm") : "—"}</TableCell>
-                      <TableCell className="text-sm font-medium">{r.lead?.nome || "—"}</TableCell>
-                      <TableCell className="text-xs">{r.lead?.empreendimento || <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="text-xs">{r.corretor_nome || <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{r.phone || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`text-[10px] ${STATUS_BADGE[r.status || ""] || "bg-neutral-100"}`}>
-                          {r.status || "—"}
+                      <TableCell className="whitespace-nowrap text-xs px-3 py-2">{r.sent_at ? formatBRT(r.sent_at, "dd/MM HH:mm") : "—"}</TableCell>
+                      <TableCell className="text-sm font-medium px-3 py-2 truncate max-w-[160px]">{r.lead?.nome || "—"}</TableCell>
+                      <TableCell className="text-xs px-3 py-2 truncate max-w-[140px]">{r.lead?.empreendimento || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-xs px-3 py-2 truncate max-w-[140px]">{r.corretor_nome || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap px-3 py-2">{r.phone || "—"}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${statusInfo?.className || "bg-neutral-100"}`}>
+                          {statusInfo?.label || r.status || "—"}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-3 py-2">
                         {parsed.type ? (
                           <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700">{parsed.type}</Badge>
                         ) : <span className="text-xs text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-3 py-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="text-sm cursor-default">{parsed.text.length > 50 ? parsed.text.slice(0, 50) + "…" : parsed.text}</span>
+                            <span className="text-sm cursor-default line-clamp-2">{parsed.text}</span>
                           </TooltipTrigger>
                           {parsed.text.length > 50 && <TooltipContent className="max-w-md"><p className="text-xs">{parsed.text}</p></TooltipContent>}
                         </Tooltip>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-3 py-2">
                         {cls === "sim" ? (
-                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200"><CheckCircle2 className="h-3 w-3 mr-1" />SIM</Badge>
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 whitespace-nowrap"><CheckCircle2 className="h-3 w-3 mr-1" />SIM</Badge>
                         ) : cls === "nao" ? (
-                          <Badge className="bg-red-100 text-red-700 border-red-200"><XCircle className="h-3 w-3 mr-1" />NÃO</Badge>
+                          <Badge className="bg-red-100 text-red-700 border-red-200 whitespace-nowrap"><XCircle className="h-3 w-3 mr-1" />NÃO</Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-3 py-2">
                         {r.lead?.reativado_por_nutricao ? (
-                          <Badge variant="purple" className="text-[10px]">🔄 Reativado</Badge>
+                          <Badge variant="purple" className="text-[10px] whitespace-nowrap">🔄 Reativado</Badge>
                         ) : cls === "sim" ? (
-                          <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700">Pendente</Badge>
+                          <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 whitespace-nowrap">Pendente</Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-3 py-2">
                         {r.lead_id && (
-                          <Link to={`/pipeline?lead=${r.lead_id}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
+                          <Link to={`/pipeline?lead=${r.lead_id}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline whitespace-nowrap">
                             <ExternalLink className="h-3 w-3" /> Ver
                           </Link>
                         )}
