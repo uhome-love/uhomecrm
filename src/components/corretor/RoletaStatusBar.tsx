@@ -599,11 +599,36 @@ export default function RoletaStatusBar() {
                       <div className="mt-3 pt-3 border-t border-border space-y-1.5">
                         <p className="text-xs font-medium text-muted-foreground">Para desbloquear, complete hoje:</p>
                         {nightReqs.loading ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">Verificando requisitos…</span>
+                          </div>
                         ) : (
                           <>
-                            <RequirementRow ok={nightReqs.visitaMarcada || nightReqs.visitaRealizada} label="Marcar ou realizar pelo menos 1 visita" />
-                            <RequirementRow ok={nightReqs.sistemaAtualizado} label="Sistema atualizado" />
+                            <RequirementRow
+                              ok={nightReqs.visitaMarcada || nightReqs.visitaRealizada}
+                              label={
+                                nightReqs.visitaMarcada || nightReqs.visitaRealizada
+                                  ? `Visitas: ${nightReqs.visitasCount} hoje/futuras ✓`
+                                  : "Marcar ou realizar ao menos 1 visita (0 hoje)"
+                              }
+                            />
+                            <RequirementRow
+                              ok={nightReqs.sistemaAtualizado}
+                              label={
+                                nightReqs.sistemaAtualizado
+                                  ? "Sistema atualizado ✓"
+                                  : `Atualizar leads pendentes (${nightReqs.leadsDesatualizados}/${nightReqs.limiteLeads} desatualizados)`
+                              }
+                            />
+                            {nightReqs.error && (
+                              <p className="text-[11px] text-destructive mt-1">{nightReqs.error}</p>
+                            )}
+                            {!nightReqs.visitaMarcada && !nightReqs.visitaRealizada && !nightReqs.error && (
+                              <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1.5 leading-snug">
+                                💡 Vá ao pipeline e agende uma visita para hoje ou próximos dias para liberar a janela noturna.
+                              </p>
+                            )}
                           </>
                         )}
                       </div>
