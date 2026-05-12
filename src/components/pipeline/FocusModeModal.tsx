@@ -785,6 +785,20 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                           {activityRegistered ? "Registrado ✓" : "Registrar"}
                         </Button>
                       </div>
+
+                      {currentLead.overdue_task_list.length > 0 && (
+                        <Button
+                          onClick={() => {
+                            const t = currentLead.overdue_task_list[0];
+                            setCompletingOverdue({ id: t.id, titulo: t.titulo });
+                          }}
+                          variant="outline"
+                          className="w-full gap-2 text-xs h-9 border-red-500/30 bg-red-500/5 text-red-300 hover:bg-red-500/15 hover:text-red-200"
+                        >
+                          <CalendarClock className="w-3.5 h-3.5" />
+                          Concluir tarefa vencida{currentLead.overdue_task_list.length > 1 ? ` (${currentLead.overdue_task_list.length})` : ""} e agendar próxima
+                        </Button>
+                      )}
                     </TabsContent>
 
                     {/* TAB: Ligar */}
