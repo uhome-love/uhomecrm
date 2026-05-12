@@ -25,12 +25,12 @@ interface Row {
   corretor_nome?: string | null;
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  sent: "bg-neutral-100 text-neutral-600",
-  delivered: "bg-blue-50 text-blue-700",
-  read: "bg-indigo-50 text-indigo-700",
-  responded: "bg-emerald-50 text-emerald-700",
-  failed: "bg-red-50 text-red-700",
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  sent: { label: "Enviado", className: "bg-neutral-100 text-neutral-600" },
+  delivered: { label: "Entregue", className: "bg-blue-50 text-blue-700" },
+  read: { label: "Lido", className: "bg-indigo-50 text-indigo-700" },
+  responded: { label: "Respondido", className: "bg-emerald-50 text-emerald-700" },
+  failed: { label: "Falhou", className: "bg-red-50 text-red-700" },
 };
 
 function parseResponse(raw: string | null): { text: string; type: string | null } {
