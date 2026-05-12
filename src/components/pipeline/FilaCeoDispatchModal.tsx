@@ -442,34 +442,38 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
             </TabsContent>
 
             <TabsContent value="novos" className="mt-4">
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prévia por segmento</p>
-              {preview.map((p) => (
-                <div key={p.segmento_nome} className={`flex items-center justify-between p-2.5 rounded-lg border ${SEGMENTO_COLORS[p.segmento_nome] || "bg-muted/50 border-border"}`}>
-                  <div>
-                    <span className="text-sm font-medium">● {p.segmento_nome}</span>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{p.empreendimentos.join(", ")}</p>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prévia por segmento</p>
+                {preview.map((p) => (
+                  <div key={p.segmento_nome} className={`flex items-center justify-between p-2.5 rounded-lg border ${SEGMENTO_COLORS[p.segmento_nome] || "bg-muted/50 border-border"}`}>
+                    <div>
+                      <span className="text-sm font-medium">● {p.segmento_nome}</span>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{p.empreendimentos.join(", ")}</p>
+                    </div>
+                    <Badge variant="secondary" className="font-bold">{p.count} leads</Badge>
                   </div>
-                  <Badge variant="secondary" className="font-bold">{p.count} leads</Badge>
-                </div>
-              ))}
-              {unidentifiedCount > 0 && (
-                <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/40">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Sem segmento</span>
+                ))}
+                {unidentifiedCount > 0 && (
+                  <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/40">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Sem segmento</span>
+                    </div>
+                    <Badge variant="secondary" className="font-bold">{unidentifiedCount} leads</Badge>
                   </div>
-                  <Badge variant="secondary" className="font-bold">{unidentifiedCount} leads</Badge>
-                </div>
-              )}
-              <p className="text-[10px] text-muted-foreground">
-                💡 Em domingo e feriado a roleta usa Dia Todo. De segunda a sábado, usa turnos normais.
-              </p>
-            </div>
+                )}
+                <p className="text-[10px] text-muted-foreground">
+                  💡 Em domingo e feriado a roleta usa Dia Todo. De segunda a sábado, usa turnos normais.
+                </p>
+              </div>
+            </TabsContent>
+          </Tabs>
 
+          <div className="space-y-5 mt-5 pt-5 border-t border-border">
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Disparar para onde?</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Disparar {activeTab === "reengajamento" ? "leads de Reengajamento" : activeTab === "redistribuicao" ? "leads de Redistribuição" : "Novos leads"} para onde?
+              </p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1 mb-1">Roleta</p>
               <div className="grid grid-cols-1 gap-1.5">
                 {DESTINO_OPTIONS.filter((d) => d.group === "roleta")
@@ -513,7 +517,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
               </div>
             </div>
 
-            {unidentifiedCount > 0 && (
+            {activeTab === "novos" && unidentifiedCount > 0 && (
               <div className="flex items-center gap-2">
                 <Checkbox id="include-unidentified" checked={includeUnidentified} onCheckedChange={(v) => setIncludeUnidentified(!!v)} />
                 <label htmlFor="include-unidentified" className="text-xs text-muted-foreground cursor-pointer">
@@ -528,12 +532,10 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
               </Button>
               <Button onClick={handleDispatch} disabled={dispatching || leadsToDispatch.length === 0} className="gap-2">
                 {dispatching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
-                {isOfertaAtiva ? "Enviar para Oferta Ativa" : `Disparar ${leadsToDispatch.length} leads`}
+                {isOfertaAtiva ? `Enviar ${leadsToDispatch.length} para Oferta Ativa` : `Disparar ${leadsToDispatch.length} leads`}
               </Button>
             </div>
           </div>
-            </TabsContent>
-          </Tabs>
         )}
       </DialogContent>
     </Dialog>
