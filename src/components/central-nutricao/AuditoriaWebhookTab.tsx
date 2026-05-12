@@ -180,6 +180,8 @@ export default function AuditoriaWebhookTab() {
                     <TableRow key={r.id}>
                       <TableCell className="whitespace-nowrap text-xs">{r.sent_at ? formatBRT(r.sent_at, "dd/MM HH:mm") : "—"}</TableCell>
                       <TableCell className="text-sm font-medium">{r.lead?.nome || "—"}</TableCell>
+                      <TableCell className="text-xs">{r.lead?.empreendimento || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-xs">{r.corretor_nome || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{r.phone || "—"}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`text-[10px] ${STATUS_BADGE[r.status || ""] || "bg-neutral-100"}`}>
