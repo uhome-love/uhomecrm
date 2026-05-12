@@ -1,5 +1,7 @@
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Shield } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
+import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookTab";
 
 export default function CentralNutricaoPage() {
   return (
@@ -14,7 +16,22 @@ export default function CentralNutricaoPage() {
         </p>
       </div>
 
-      <ReengajamentoTab />
+      <Tabs defaultValue="reengajamento">
+        <TabsList>
+          <TabsTrigger value="reengajamento" className="gap-1.5">
+            <RefreshCw className="h-3.5 w-3.5" /> Disparos
+          </TabsTrigger>
+          <TabsTrigger value="auditoria" className="gap-1.5">
+            <Shield className="h-3.5 w-3.5" /> Auditoria Webhook
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="reengajamento" className="mt-4">
+          <ReengajamentoTab />
+        </TabsContent>
+        <TabsContent value="auditoria" className="mt-4">
+          <AuditoriaWebhookTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
