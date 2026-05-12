@@ -194,11 +194,12 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       }
 
       // Auto-seleciona aba com leads
-      const novosCount = leadsList.filter((l) => !l.is_redistribuicao).length;
-      const redistCount = leadsList.filter((l) => !!l.is_redistribuicao).length;
-      setActiveTab(novosCount > 0 ? "novos" : redistCount > 0 ? "redistribuicao" : "novos");
+      const reengCount = leadsList.filter((l) => !!l.reativado_por_nutricao).length;
+      const redistCount = leadsList.filter((l) => !!l.is_redistribuicao && !l.reativado_por_nutricao).length;
+      const novosCount = leadsList.filter((l) => !l.is_redistribuicao && !l.reativado_por_nutricao).length;
+      setActiveTab(novosCount > 0 ? "novos" : reengCount > 0 ? "reengajamento" : redistCount > 0 ? "redistribuicao" : "novos");
 
-      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${redistCount} redistribuição)`);
+      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${redistCount} redistribuição, ${reengCount} reengajamento)`);
       setLoading(false);
     })();
     return () => { cancelled = true; };
