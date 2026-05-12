@@ -537,6 +537,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
               </Button>
             </div>
           </div>
+          </>
         )}
       </DialogContent>
     </Dialog>
