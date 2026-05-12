@@ -786,7 +786,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                         </Button>
                       </div>
 
-                      {currentLead.overdue_task_list.length > 0 && (
+                      {currentLead.overdue_task_list.length > 0 ? (
                         <Button
                           onClick={() => {
                             const t = currentLead.overdue_task_list[0];
@@ -797,6 +797,18 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                         >
                           <CalendarClock className="w-3.5 h-3.5" />
                           Concluir tarefa vencida{currentLead.overdue_task_list.length > 1 ? ` (${currentLead.overdue_task_list.length})` : ""} e agendar próxima
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            setTab("task");
+                            setTaskTitle(`Follow-up: ${currentLead.name}`);
+                          }}
+                          variant="outline"
+                          className="w-full gap-2 text-xs h-9 border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/15 hover:text-amber-200"
+                        >
+                          <CalendarClock className="w-3.5 h-3.5" />
+                          Sem tarefas pendentes · Agendar próxima
                         </Button>
                       )}
                     </TabsContent>
