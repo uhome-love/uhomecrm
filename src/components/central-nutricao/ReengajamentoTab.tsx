@@ -124,7 +124,38 @@ export default function ReengajamentoTab() {
     refetchInterval: 5000,
   });
 
-  async function reativarManual(leadId: string, nome: string) {
+  // 🛡️ Saúde do template Meta — detecta bloqueios sistemáticos
+  const { data: metaHealth } = useQuery({
+    queryKey: ["reengajamento-meta-health"],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      const { data } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("status, error_text, created_at, template_name")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const rows = (data || []) as any[];
+      if (rows.length === 0) return null;
+      const total = rows.length;
+      const failed = rows.filter((r) => r.status === "failed").length;
+      const qualityHits = rows.filter((r) => {
+        const m = String(r.error_text || "").toLowerCase();
+        return r.status === "failed" && (
+          m.includes("ecosystem engagement") ||
+          m.includes("template is paused") ||
+          m.includes("template paused") ||
+          m.includes("part of an experiment") ||
+          m.includes("131049") || m.includes("131050")
+        );
+      }).length;
+      const lastFail = rows.find((r) => r.status === "failed");
+      return { total, failed, qualityHits, failRate: failed / total, lastError: lastFail?.error_text || null, template: lastFail?.template_name || null };
+    },
+    refetchInterval: 15000,
+  });
+
+
     if (!confirm(`Reativar "${nome}" e mandar de volta para a roleta?`)) return;
     try {
       const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual" as any, { p_lead_id: leadId });
