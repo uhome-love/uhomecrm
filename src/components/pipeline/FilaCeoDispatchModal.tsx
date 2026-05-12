@@ -354,6 +354,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
+          <>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="novos" className="gap-2">
