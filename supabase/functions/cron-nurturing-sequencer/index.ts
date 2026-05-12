@@ -188,8 +188,10 @@ Deno.serve(async (req) => {
         erros++;
       }
 
-      // Small delay between sends
-      await new Promise(r => setTimeout(r, 200));
+      // Delay 3-6s aleatório para WhatsApp; 500ms para email
+      const isWa = seq.canal === "whatsapp";
+      const delayMs = isWa ? 3000 + Math.floor(Math.random() * 3000) : 500;
+      await new Promise(r => setTimeout(r, delayMs));
     }
 
     console.log(`Nurturing sequencer done: ${enviados} enviados, ${erros} erros`);
