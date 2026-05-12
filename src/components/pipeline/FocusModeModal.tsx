@@ -19,6 +19,7 @@ import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria } 
 import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import TaskCompletionDialog from "./TaskCompletionDialog";
 
 interface FocusModeModalProps {
   open: boolean;
@@ -86,6 +87,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [taskType, setTaskType] = useState("ligar");
   const [taskDueDate, setTaskDueDate] = useState(format(addDays(new Date(), 1), "yyyy-MM-dd"));
   const [taskCreated, setTaskCreated] = useState(false);
+
+  // Overdue task completion dialog
+  const [completingOverdue, setCompletingOverdue] = useState<{ id: string; titulo: string } | null>(null);
 
   const currentLead = leads[currentIndex] ?? null;
 
@@ -302,6 +306,65 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       setSaving(false);
     }
   }, [currentLead, corretorId, taskTitle, taskType, taskDueDate]);
+
+  const handleCompleteOverdueTask = useCallback(async (
+    obs: string,
+    novaTarefa?: { tipo: string; vence_em: string; hora_vencimento: string; obs: string }
+  ) => {
+    if (!completingOverdue || !currentLead || !corretorId) return;
+    setSaving(true);
+    try {
+      // 1) Mark overdue task as concluida
+      await supabase.from("pipeline_tarefas").update({
+        status: "concluida",
+        concluida_em: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", completingOverdue.id);
+
+      // 2) Touch lead
+      await supabase.from("pipeline_leads").update({
+        ultima_acao_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", currentLead.id);
+
+      // 3) Register activity if observation provided
+      if (obs.trim()) {
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: currentLead.id,
+          created_by: corretorId,
+          tipo: "nota",
+          titulo: `Tarefa concluída: ${completingOverdue.titulo}`,
+          descricao: obs.trim(),
+          status: "concluida",
+          prioridade: "normal",
+        } as any);
+      }
+
+      // 4) Create next task if requested
+      if (novaTarefa) {
+        await supabase.from("pipeline_tarefas").insert({
+          pipeline_lead_id: currentLead.id,
+          created_by: corretorId,
+          titulo: `${novaTarefa.tipo}: ${currentLead.name}`,
+          tipo: novaTarefa.tipo,
+          descricao: novaTarefa.obs || null,
+          vence_em: novaTarefa.vence_em,
+          hora_vencimento: novaTarefa.hora_vencimento || null,
+          status: "pendente",
+          prioridade: "normal",
+        } as any);
+      }
+
+      toast.success(novaTarefa ? "Tarefa concluída e próxima agendada ✅" : "Tarefa concluída ✅");
+      setCompletingOverdue(null);
+      goToNext();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao concluir tarefa.");
+    } finally {
+      setSaving(false);
+    }
+  }, [completingOverdue, currentLead, corretorId, goToNext]);
 
   const handleOpenWhatsApp = useCallback(() => {
     if (!currentLead?.phone) return;
@@ -594,19 +657,27 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
-                    {currentLead.alert_reasons.map((reason, i) => (
-                      <Badge
-                        key={i}
-                        className="text-[10px] font-semibold border-0"
-                        style={{
-                          background: reason.includes("vencida") ? "rgba(239,68,68,0.15)" : reason.includes("parada") ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.1)",
-                          color: reason.includes("vencida") ? "#f87171" : reason.includes("parada") ? "#fbbf24" : "#fb923c",
-                        }}
-                      >
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        {reason}
-                      </Badge>
-                    ))}
+                    {currentLead.alert_reasons.map((reason, i) => {
+                      const isOverdue = reason.includes("vencida");
+                      const canClick = isOverdue && currentLead.overdue_task_list.length > 0;
+                      return (
+                        <Badge
+                          key={i}
+                          onClick={canClick ? () => {
+                            const t = currentLead.overdue_task_list[0];
+                            setCompletingOverdue({ id: t.id, titulo: t.titulo });
+                          } : undefined}
+                          className={`text-[10px] font-semibold border-0 ${canClick ? "cursor-pointer hover:brightness-125 transition" : ""}`}
+                          style={{
+                            background: isOverdue ? "rgba(239,68,68,0.15)" : reason.includes("parada") ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.1)",
+                            color: isOverdue ? "#f87171" : reason.includes("parada") ? "#fbbf24" : "#fb923c",
+                          }}
+                        >
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          {reason}{canClick ? " · concluir" : ""}
+                        </Badge>
+                      );
+                    })}
                   </div>
 
                   {currentLead.tags.length > 0 && (
@@ -714,6 +785,20 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                           {activityRegistered ? "Registrado ✓" : "Registrar"}
                         </Button>
                       </div>
+
+                      {currentLead.overdue_task_list.length > 0 && (
+                        <Button
+                          onClick={() => {
+                            const t = currentLead.overdue_task_list[0];
+                            setCompletingOverdue({ id: t.id, titulo: t.titulo });
+                          }}
+                          variant="outline"
+                          className="w-full gap-2 text-xs h-9 border-red-500/30 bg-red-500/5 text-red-300 hover:bg-red-500/15 hover:text-red-200"
+                        >
+                          <CalendarClock className="w-3.5 h-3.5" />
+                          Concluir tarefa vencida{currentLead.overdue_task_list.length > 1 ? ` (${currentLead.overdue_task_list.length})` : ""} e agendar próxima
+                        </Button>
+                      )}
                     </TabsContent>
 
                     {/* TAB: Ligar */}
@@ -909,6 +994,16 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
           ) : null}
         </div>
       </DialogContent>
+
+      {completingOverdue && (
+        <TaskCompletionDialog
+          open={!!completingOverdue}
+          onOpenChange={(v) => { if (!v) setCompletingOverdue(null); }}
+          tarefaTitulo={completingOverdue.titulo}
+          leadNome={currentLead?.name}
+          onConfirm={handleCompleteOverdueTask}
+        />
+      )}
     </Dialog>
   );
 }
