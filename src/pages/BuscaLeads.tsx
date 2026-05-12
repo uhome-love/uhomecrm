@@ -201,9 +201,13 @@ export default function BuscaLeads() {
               .update({
                 corretor_id: selectedCorretor,
                 stage_id: stageId,
+                stage_changed_at: new Date().toISOString(),
                 aceite_status: "aceito",
                 aceito_em: new Date().toISOString(),
+                aceite_expira_em: null,
+                arquivado: false,
                 observacoes: motivo || `Reatribuído via Busca de Leads (OA) — lead já existia no pipeline`,
+                updated_at: new Date().toISOString(),
               })
               .eq("id", existente.id);
             if (updErr) throw updErr;
