@@ -17,14 +17,36 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    // Fetch pending sequences that are due
+    // === RATE LIMITING (anti-spam Meta policy) ===
+    // Daily cap WhatsApp: 250 envios/dia (somando campanhas + nutrição)
+    const DAILY_WA_CAP = 250;
+    const todayStart = new Date();
+    todayStart.setUTCHours(3, 0, 0, 0); // 00:00 BRT
+    const { count: waSentToday } = await admin
+      .from("whatsapp_campaign_sends")
+      .select("id", { count: "exact", head: true })
+      .eq("status_envio", "sent")
+      .gte("sent_at", todayStart.toISOString());
+    const { count: nurtWaToday } = await admin
+      .from("lead_nurturing_sequences")
+      .select("id", { count: "exact", head: true })
+      .eq("canal", "whatsapp")
+      .eq("status", "enviado")
+      .gte("sent_at", todayStart.toISOString());
+    const totalWaToday = (waSentToday || 0) + (nurtWaToday || 0);
+    const waCapReached = totalWaToday >= DAILY_WA_CAP;
+    if (waCapReached) {
+      console.log(`Daily WhatsApp cap (${DAILY_WA_CAP}) reached: ${totalWaToday}. Pulando envios WhatsApp da nutrição.`);
+    }
+
+    // Conservador: 20 por execução
     const { data: pendentes, error: fetchErr } = await admin
       .from("lead_nurturing_sequences")
       .select("*, pipeline_leads!inner(nome, telefone, email, corretor_id)")
       .eq("status", "pendente")
       .lte("scheduled_at", new Date().toISOString())
       .order("scheduled_at", { ascending: true })
-      .limit(50);
+      .limit(20);
 
     if (fetchErr) {
       console.error("Fetch error:", fetchErr);
