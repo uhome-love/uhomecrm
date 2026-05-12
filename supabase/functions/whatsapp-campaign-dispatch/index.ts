@@ -52,8 +52,31 @@ serve(async (req) => {
         });
       }
 
-      // Get pending sends for this batch (limit to 80 to fit in edge function timeout)
-      const limit = Math.min(batch.batch_size || 80, 80);
+      // === RATE LIMITING (anti-spam Meta policy) ===
+      // Daily cap por número WhatsApp: 250 envios/dia
+      const DAILY_CAP = 250;
+      const todayStart = new Date();
+      todayStart.setUTCHours(3, 0, 0, 0); // 00:00 BRT = 03:00 UTC
+      const { count: sentToday } = await supabase
+        .from("whatsapp_campaign_sends")
+        .select("id", { count: "exact", head: true })
+        .eq("status_envio", "sent")
+        .gte("sent_at", todayStart.toISOString());
+
+      const remainingToday = Math.max(0, DAILY_CAP - (sentToday || 0));
+      if (remainingToday === 0) {
+        console.log(`Daily cap (${DAILY_CAP}) reached. Pausing batch ${batch_id}.`);
+        await supabase
+          .from("whatsapp_campaign_batches")
+          .update({ status: "paused", error_message: `Limite diário de ${DAILY_CAP} envios atingido. Retoma amanhã.` })
+          .eq("id", batch_id);
+        return new Response(JSON.stringify({ paused: true, reason: "daily_cap_reached", sent_today: sentToday }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Conservador: batch máx 30, respeitando cap restante
+      const limit = Math.min(batch.batch_size || 30, 30, remainingToday);
       const { data: sends, error: sendsErr } = await supabase
         .from("whatsapp_campaign_sends")
         .select("*")
@@ -86,7 +109,7 @@ serve(async (req) => {
       let sentCount = 0;
       let failCount = 0;
       const startTime = Date.now();
-      const MAX_EXECUTION_MS = 45_000; // 45s safety margin
+      const MAX_EXECUTION_MS = 110_000; // 110s — espaço para delays maiores
 
       for (const send of sends) {
         // Time guard — stop before edge function timeout
@@ -234,8 +257,9 @@ serve(async (req) => {
             failCount++;
           }
 
-          // Small delay between messages to respect rate limits
-          await new Promise((r) => setTimeout(r, 100));
+          // Delay aleatório 3-6s entre mensagens (anti-spam Meta, parece humano)
+          const jitter = 3000 + Math.floor(Math.random() * 3000);
+          await new Promise((r) => setTimeout(r, jitter));
         } catch (sendErr) {
           await supabase
             .from("whatsapp_campaign_sends")
