@@ -158,12 +158,11 @@ export default function BuscaLeads() {
       try {
         const { data: stages } = await supabase
           .from("pipeline_stages")
-          .select("id")
+          .select("id, tipo")
           .eq("pipeline_tipo", "leads")
           .eq("ativo", true)
-          .order("ordem", { ascending: true })
-          .limit(1);
-        const stageId = stages?.[0]?.id;
+          .order("ordem", { ascending: true });
+        const stageId = stages?.find((s: any) => s.tipo === "novo_lead")?.id || stages?.[0]?.id;
         if (!stageId) {
           toast.error("Nenhum estágio configurado no pipeline");
           setExecuting(false);
@@ -201,9 +200,13 @@ export default function BuscaLeads() {
               .update({
                 corretor_id: selectedCorretor,
                 stage_id: stageId,
+                stage_changed_at: new Date().toISOString(),
                 aceite_status: "aceito",
                 aceito_em: new Date().toISOString(),
+                aceite_expira_em: null,
+                arquivado: false,
                 observacoes: motivo || `Reatribuído via Busca de Leads (OA) — lead já existia no pipeline`,
+                updated_at: new Date().toISOString(),
               })
               .eq("id", existente.id);
             if (updErr) throw updErr;
