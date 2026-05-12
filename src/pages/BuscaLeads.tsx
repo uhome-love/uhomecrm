@@ -190,7 +190,7 @@ export default function BuscaLeads() {
               .from("pipeline_leads")
               .select("id, corretor_id")
               .eq("email", lead.email)
-              .is("inativo_em", null)
+              .neq("aceite_status", "descartado")
               .order("created_at", { ascending: false })
               .limit(1)
               .maybeSingle();
