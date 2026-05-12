@@ -249,6 +249,19 @@ Deno.serve(async (req) => {
 
     let sent = 0, failed = 0, skipped = 0;
     let stopReason: string | null = null;
+    let consecutiveMetaQualityFails = 0;
+
+    const isMetaQualityBlock = (msg: string) => {
+      const m = (msg || "").toLowerCase();
+      return m.includes("ecosystem engagement")
+        || m.includes("template is paused")
+        || m.includes("template paused")
+        || m.includes("template was paused")
+        || m.includes("part of an experiment")
+        || m.includes("(#131049)")
+        || m.includes("(#131050)")
+        || m.includes("quality rating");
+    };
 
     for (const lead of leads || []) {
       if (Date.now() - startedAt > MAX_RUN_MS) {
