@@ -344,9 +344,27 @@ Deno.serve(async (req) => {
             await supabase.from("reengajamento_eventos").insert({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
+
+            // 🛑 Auto-pause: se 5+ falhas consecutivas com sinais de bloqueio Meta (template pausado / qualidade)
+            if (isMetaQualityBlock(r.error || "")) {
+              consecutiveMetaQualityFails++;
+              if (consecutiveMetaQualityFails >= 5) {
+                stopReason = `Auto-pausa: template "${metaTemplate}" provavelmente pausado pela Meta (${consecutiveMetaQualityFails} falhas consecutivas: "${(r.error || "").slice(0, 120)}"). Verifique o WhatsApp Manager.`;
+                await supabase.from("reengajamento_config").update({ paused: true, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+                await supabase.from("reengajamento_eventos").insert({
+                  lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
+                });
+                await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+                return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_meta_quality", paused: true, canal, motivo: stopReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              }
+            } else {
+              consecutiveMetaQualityFails = 0;
+            }
+
             await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
             continue;
           }
+          consecutiveMetaQualityFails = 0;
           await supabase.from("reengajamento_meta_disparos").insert({
             lead_id: lead.id, run_id: runId, wamid: r.wamid, template_name: metaTemplate,
             template_language: metaLang, phone, status: "sent", sent_at: new Date().toISOString(),
