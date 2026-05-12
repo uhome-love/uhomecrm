@@ -252,9 +252,26 @@ Deno.serve(async (req) => {
 
     for (const lead of leads || []) {
       if (Date.now() - startedAt > MAX_RUN_MS) {
-        stopReason = `Limite de tempo atingido — execute novamente para continuar (${sent}/${totalAlvo} processados)`;
-        await updateRun({ status: "timeout", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
-        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "timeout", canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        // Encadeia automaticamente um próximo run para continuar de onde parou
+        // (a query já exclui leads com reengajamento_enviado_at preenchido).
+        const restantes = totalAlvo - sent - failed - skipped;
+        stopReason = `Lote 1 concluído (${sent}/${totalAlvo}). Continuando automaticamente em novo lote para os ${restantes} restantes...`;
+        await updateRun({ status: "completed", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          // fire-and-forget: dispara próximo lote sem bloquear esta resposta
+          fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ force: true, iniciado_por: `${iniciadoPor}_continuacao` }),
+          }).catch((err) => console.error("Falha ao encadear próximo lote:", err));
+        } catch (chainErr) {
+          console.error("Erro ao agendar continuação:", chainErr);
+        }
+
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "batch_continued", canal, continuation: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       const { data: liveCfg } = await supabase
