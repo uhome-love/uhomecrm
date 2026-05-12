@@ -393,6 +393,35 @@ export default function ReengajamentoTab() {
 
   return (
     <div className="space-y-4">
+      {/* 🚨 Banner de saúde do template Meta */}
+      {metaHealth && metaHealth.qualityHits >= 3 && (
+        <Card className="border-red-400 bg-red-50 dark:bg-red-950/30">
+          <CardContent className="p-4 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
+            <div className="text-sm space-y-1 flex-1">
+              <div className="font-semibold text-red-700 dark:text-red-300">
+                Template Meta provavelmente pausado / com baixa qualidade
+              </div>
+              <div className="text-red-700/90 dark:text-red-300/90">
+                Detectamos <strong>{metaHealth.qualityHits} bloqueios</strong> da Meta nas últimas 24h
+                {metaHealth.template ? <> no template <code className="text-[11px]">{metaHealth.template}</code></> : null}
+                {" "}({metaHealth.failed}/{metaHealth.total} falharam = {Math.round(metaHealth.failRate * 100)}%).
+                {" "}Os disparos foram <strong>auto-pausados</strong> para preservar a saúde do número.
+              </div>
+              {metaHealth.lastError && (
+                <div className="text-[11px] text-red-700/70 dark:text-red-300/70 mt-1">
+                  Último erro Meta: <em>"{String(metaHealth.lastError).slice(0, 180)}"</em>
+                </div>
+              )}
+              <div className="text-[12px] text-muted-foreground mt-1.5">
+                ➜ Acesse o <strong>WhatsApp Manager (Meta Business Suite)</strong>, crie/aprove um novo template marketing,
+                atualize o nome em "Configurações Meta" abaixo e despause os disparos.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Conexão WhatsApp */}
       <Card>
         <CardHeader className="flex-row items-center gap-3 space-y-0 pb-2">
