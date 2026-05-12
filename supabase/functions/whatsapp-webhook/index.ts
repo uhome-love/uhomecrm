@@ -282,6 +282,18 @@ Deno.serve(async (req) => {
                   response_text: mensagemTexto.slice(0, 1000),
                 }).eq("id", metaDispatch.id);
 
+                const { data: currentLead } = await supabase
+                  .from("pipeline_leads")
+                  .select("id, reengajamento_status, reativado_por_nutricao")
+                  .eq("id", metaDispatch.lead_id)
+                  .maybeSingle();
+
+                const alreadyReactivated = !!currentLead?.reativado_por_nutricao || currentLead?.reengajamento_status === "respondeu_sim";
+                if (alreadyReactivated) {
+                  console.log(`ℹ️ Ignorando reclassificação tardia do lead ${metaDispatch.lead_id} após reativação`);
+                  continue;
+                }
+
                 await supabase.from("reengajamento_eventos").insert({
                   lead_id: metaDispatch.lead_id,
                   run_id: metaDispatch.run_id,
