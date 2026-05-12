@@ -155,7 +155,7 @@ export default function ReengajamentoTab() {
     refetchInterval: 15000,
   });
 
-
+  async function reativarManual(leadId: string, nome: string) {
     if (!confirm(`Reativar "${nome}" e mandar de volta para a roleta?`)) return;
     try {
       const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual" as any, { p_lead_id: leadId });
