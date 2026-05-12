@@ -433,14 +433,30 @@ export default function AgendaVisitas() {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [filtered]);
 
-  // KPIs
+  // KPIs — refletem período + time + equipe + busca (tudo exceto o próprio kpiFilter)
+  const kpiBase = useMemo(() => {
+    let list = visitas;
+    if (equipeFilter) {
+      list = list.filter(v => (v.equipe || "Sem equipe") === equipeFilter);
+    }
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(v =>
+        v.nome_cliente.toLowerCase().includes(term) ||
+        v.empreendimento?.toLowerCase().includes(term) ||
+        v.corretor_nome?.toLowerCase().includes(term)
+      );
+    }
+    return list;
+  }, [visitas, equipeFilter, searchTerm]);
+
   const kpis = useMemo(() => {
-    const marcadas = visitas.filter(v => ["marcada", "confirmada", "reagendada"].includes(v.status)).length;
-    const realizadas = visitas.filter(v => v.status === "realizada").length;
-    const noShow = visitas.filter(v => v.status === "no_show").length;
+    const marcadas = kpiBase.filter(v => ["marcada", "confirmada", "reagendada"].includes(v.status)).length;
+    const realizadas = kpiBase.filter(v => v.status === "realizada").length;
+    const noShow = kpiBase.filter(v => v.status === "no_show").length;
     const taxa = marcadas + realizadas > 0 ? Math.round((realizadas / (marcadas + realizadas)) * 100) : 0;
     return { marcadas, realizadas, noShow, taxa };
-  }, [visitas]);
+  }, [kpiBase]);
 
   // Pending for cobranca
   const pendingVisitas = useMemo(() => {
