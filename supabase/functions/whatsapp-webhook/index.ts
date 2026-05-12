@@ -64,6 +64,19 @@ async function distributeViroleta(supabaseUrl: string, serviceKey: string, leadI
   }
 }
 
+async function reativarLeadNutricao(supabase: any, leadId: string) {
+  const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual", {
+    p_lead_id: leadId,
+  });
+
+  if (error) {
+    console.error("❌ Nutrição reactivation RPC failed:", error.message);
+    throw error;
+  }
+
+  return data;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -193,6 +206,9 @@ Deno.serve(async (req) => {
             } else if (msg.type === "interactive" && msg.interactive?.type === "button_reply") {
               mensagemTexto = msg.interactive.button_reply?.title || "";
               tipoMsg = "botao";
+            } else if (msg.type === "button") {
+              mensagemTexto = msg.button?.text || msg.button?.payload || "";
+              tipoMsg = "botao";
             } else if (["image", "document", "audio", "video"].includes(msg.type)) {
               mensagemTexto = msg[msg.type]?.caption || `[${msg.type}]`;
               tipoMsg = msg.type;
@@ -237,8 +253,8 @@ Deno.serve(async (req) => {
 
             // ── Reengajamento Meta: detecta resposta a template de nutrição via context.id (wamid original) ──
             const repliedToWamid = msg?.context?.id || null;
-            const buttonId = msg?.interactive?.button_reply?.id || null;
-            const buttonTitle = msg?.interactive?.button_reply?.title || "";
+            const buttonId = msg?.interactive?.button_reply?.id || msg?.button?.payload || null;
+            const buttonTitle = msg?.interactive?.button_reply?.title || msg?.button?.text || "";
 
             if (repliedToWamid) {
               const { data: metaDispatch } = await supabase
@@ -277,29 +293,11 @@ Deno.serve(async (req) => {
 
                 // Reativa lead se respondeu SIM
                 if (buttonResp === "sim") {
-                  const STAGE_SEM_CONTATO = "2fcba9be-1188-4a54-9452-394beefdc330";
-                  await supabase.from("pipeline_leads").update({
-                    reengajamento_status: "respondeu_sim",
-                    reativado_por_nutricao: true,
-                    reativado_em: new Date().toISOString(),
-                    stage_id: STAGE_SEM_CONTATO,
-                    stage_changed_at: new Date().toISOString(),
-                    corretor_id: null,
-                    aceite_status: null,
-                    aceite_expira_em: null,
-                    aceito_em: null,
-                    tipo_descarte: null,
-                    motivo_descarte: null,
-                  }).eq("id", metaDispatch.lead_id);
-
                   try {
-                    await supabase.rpc("distribuir_lead_atomico", {
-                      p_lead_id: metaDispatch.lead_id,
-                      p_janela: null,
-                      p_exclude_auth_user_id: null,
-                      p_force: false,
-                    });
-                  } catch (e) { console.error("rpc distribuir error:", e); }
+                    await reativarLeadNutricao(supabase, metaDispatch.lead_id);
+                  } catch (e) {
+                    console.error("rpc reativar_lead_nutricao_manual error:", e);
+                  }
                 } else if (buttonResp === "nao") {
                   await supabase.from("pipeline_leads").update({
                     reengajamento_status: "respondeu_nao",
