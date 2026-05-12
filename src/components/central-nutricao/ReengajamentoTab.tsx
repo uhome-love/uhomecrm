@@ -70,21 +70,23 @@ export default function ReengajamentoTab() {
       const since7 = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
       const today = new Date(); today.setHours(0,0,0,0);
 
-      const [hoje, sete, trinta, reativados] = await Promise.all([
+      const [hoje, sete, trinta, reativadosSim] = await Promise.all([
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true })
           .eq("reengajamento_status", "enviado").gte("reengajamento_enviado_at", today.toISOString()),
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true })
           .not("reengajamento_enviado_at", "is", null).gte("reengajamento_enviado_at", since7),
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true })
           .not("reengajamento_enviado_at", "is", null).gte("reengajamento_enviado_at", since30),
-        supabase.from("pipeline_leads").select("id", { count: "exact", head: true })
-          .eq("reativado_por_nutricao", true).gte("reativado_em", since30),
+        supabase.from("reengajamento_eventos").select("lead_id")
+          .eq("tipo", "classificado_sim").gte("created_at", since30),
       ]);
+
+      const reativadosCount = new Set((reativadosSim.data || []).map((item: any) => item.lead_id).filter(Boolean)).size;
       return {
         hoje: hoje.count || 0,
         sete: sete.count || 0,
         trinta: trinta.count || 0,
-        reativados: reativados.count || 0,
+        reativados: reativadosCount,
       };
     },
     refetchInterval: 5000,
