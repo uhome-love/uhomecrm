@@ -47,16 +47,25 @@ export default function AuditoriaWebhookTab() {
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["auditoria-meta-webhook"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: disparos, error } = await supabase
         .from("reengajamento_meta_disparos")
-        .select("id, lead_id, phone, status, button_response, response_text, sent_at, responded_at, template_name, lead:pipeline_leads(nome, reativado_por_nutricao, origem, corretor_id)")
+        .select("id, lead_id, phone, status, button_response, response_text, sent_at, responded_at, template_name")
         .order("sent_at", { ascending: false })
         .limit(300);
       if (error) throw error;
-      return (data as any) as Row[];
+      const leadIds = Array.from(new Set((disparos ?? []).map((d: any) => d.lead_id).filter(Boolean)));
+      let leadsMap: Record<string, any> = {};
+      if (leadIds.length) {
+        const { data: leads } = await supabase
+          .from("pipeline_leads")
+          .select("id, nome, reativado_por_nutricao, origem, corretor_id")
+          .in("id", leadIds);
+        leadsMap = Object.fromEntries((leads ?? []).map((l: any) => [l.id, l]));
+      }
+      return (disparos ?? []).map((d: any) => ({ ...d, lead: leadsMap[d.lead_id] || null })) as Row[];
     },
     refetchInterval: 5000,
   });
