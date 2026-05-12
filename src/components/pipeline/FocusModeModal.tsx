@@ -88,6 +88,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [taskDueDate, setTaskDueDate] = useState(format(addDays(new Date(), 1), "yyyy-MM-dd"));
   const [taskCreated, setTaskCreated] = useState(false);
 
+  // Overdue task completion dialog
+  const [completingOverdue, setCompletingOverdue] = useState<{ id: string; titulo: string } | null>(null);
+
   const currentLead = leads[currentIndex] ?? null;
 
   // Load stages for the config screen
