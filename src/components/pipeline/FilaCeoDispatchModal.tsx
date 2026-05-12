@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Rocket, AlertTriangle, Sparkles, RefreshCw } from "lucide-react";
+import { Loader2, Rocket, AlertTriangle, Sparkles, RefreshCw, HeartHandshake } from "lucide-react";
 import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
 
@@ -61,7 +61,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDispatched?: () => void;
-  initialTab?: "novos" | "redistribuicao";
+  initialTab?: "novos" | "redistribuicao" | "reengajamento";
 }
 
 type Destino = "manha" | "tarde" | "noturna" | "qualquer" | "dia_todo" | "oferta_ativa";
@@ -101,13 +101,14 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const isAllDayRoleta = isSunday || isHoliday;
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
   const [includeUnidentified, setIncludeUnidentified] = useState(true);
-  const [activeTab, setActiveTab] = useState<"novos" | "redistribuicao">(initialTab ?? "novos");
+  const [activeTab, setActiveTab] = useState<"novos" | "redistribuicao" | "reengajamento">(initialTab ?? "novos");
   const [corretoresMap, setCorretoresMap] = useState<Record<string, string>>({});
 
   // Separa leads por categoria
-  const leadsNovos = useMemo(() => allLeads.filter((l) => !l.is_redistribuicao), [allLeads]);
-  const leadsRedistribuicao = useMemo(() => allLeads.filter((l) => !!l.is_redistribuicao), [allLeads]);
-  const leads = activeTab === "novos" ? leadsNovos : leadsRedistribuicao;
+  const leadsReengajamento = useMemo(() => allLeads.filter((l) => !!l.reativado_por_nutricao), [allLeads]);
+  const leadsRedistribuicao = useMemo(() => allLeads.filter((l) => !!l.is_redistribuicao && !l.reativado_por_nutricao), [allLeads]);
+  const leadsNovos = useMemo(() => allLeads.filter((l) => !l.is_redistribuicao && !l.reativado_por_nutricao), [allLeads]);
+  const leads = activeTab === "novos" ? leadsNovos : activeTab === "redistribuicao" ? leadsRedistribuicao : leadsReengajamento;
 
   useEffect(() => {
     if (open && initialTab) setActiveTab(initialTab);
@@ -127,7 +128,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       const [leadsRes, segRes, campRes] = await Promise.all([
         supabase
           .from("pipeline_leads")
-          .select("id, nome, empreendimento, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, corretor_anterior_id, updated_at")
+          .select("id, nome, empreendimento, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
           .is("corretor_id", null)
           .eq("aceite_status", "pendente_distribuicao")
           .order("created_at", { ascending: true })
@@ -193,11 +194,12 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       }
 
       // Auto-seleciona aba com leads
-      const novosCount = leadsList.filter((l) => !l.is_redistribuicao).length;
-      const redistCount = leadsList.filter((l) => !!l.is_redistribuicao).length;
-      setActiveTab(novosCount > 0 ? "novos" : redistCount > 0 ? "redistribuicao" : "novos");
+      const reengCount = leadsList.filter((l) => !!l.reativado_por_nutricao).length;
+      const redistCount = leadsList.filter((l) => !!l.is_redistribuicao && !l.reativado_por_nutricao).length;
+      const novosCount = leadsList.filter((l) => !l.is_redistribuicao && !l.reativado_por_nutricao).length;
+      setActiveTab(novosCount > 0 ? "novos" : reengCount > 0 ? "reengajamento" : redistCount > 0 ? "redistribuicao" : "novos");
 
-      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${redistCount} redistribuição)`);
+      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${redistCount} redistribuição, ${reengCount} reengajamento)`);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -353,7 +355,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="novos" className="gap-2">
                 <Sparkles className="h-3.5 w-3.5" />
                 Novos
@@ -364,7 +366,45 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                 Redistribuição
                 <Badge variant="secondary" className="ml-1 h-5">{leadsRedistribuicao.length}</Badge>
               </TabsTrigger>
+              <TabsTrigger value="reengajamento" className="gap-2">
+                <HeartHandshake className="h-3.5 w-3.5" />
+                Reengajamento
+                <Badge variant="secondary" className="ml-1 h-5">{leadsReengajamento.length}</Badge>
+              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="reengajamento" className="mt-4 space-y-3">
+              {leadsReengajamento.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  Nenhum lead reativado pela nutrição aguardando despacho. 🎉
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                    <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                      💚 <strong>Leads reativados pela Nutrição:</strong> responderam positivamente ao disparo de reengajamento. Distribua para um corretor receber como Novo Lead.
+                    </p>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto space-y-1.5">
+                    {leadsReengajamento.map((l) => (
+                      <div key={l.id} className="flex items-start gap-2 p-2.5 rounded-lg border border-border bg-muted/30">
+                        <HeartHandshake className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium truncate">{l.nome || "Sem nome"}</span>
+                            <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.empreendimento || "—"}</Badge>
+                            {l.origem && <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.origem}</Badge>}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {l.reativado_em ? `Reativado em ${new Date(l.reativado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : "Reativado pela Nutrição"}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </TabsContent>
 
             <TabsContent value="redistribuicao" className="mt-4 space-y-3">
               {leadsRedistribuicao.length === 0 ? (
