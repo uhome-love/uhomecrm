@@ -21,7 +21,8 @@ interface Row {
   sent_at: string | null;
   responded_at: string | null;
   template_name: string | null;
-  lead?: { nome: string | null; reativado_por_nutricao: boolean | null; origem: string | null; corretor_id: string | null } | null;
+  lead?: { nome: string | null; reativado_por_nutricao: boolean | null; origem: string | null; corretor_id: string | null; empreendimento: string | null } | null;
+  corretor_nome?: string | null;
 }
 
 const STATUS_BADGE: Record<string, string> = {
