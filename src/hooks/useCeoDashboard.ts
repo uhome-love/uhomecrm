@@ -175,7 +175,9 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const { startUtc, endUtc } = brtRangeToUTC(range);
 
       // Fetch stages (small) + ALL leads in period (paginated, no 2000 cap)
-      const [{ data: stages }, leads] = await Promise.all([
+      // Also fetch leads REATIVADOS (reengajamento) within the period — they should
+      // appear in the roleta KPIs even though created_at is older.
+      const [{ data: stages }, leadsCriados, reativados] = await Promise.all([
         supabase
           .from("pipeline_stages")
           .select("id, nome, tipo, ordem")
@@ -199,7 +201,43 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
             .order("created_at", { ascending: true })
             .range(from, to),
         ),
+        fetchAllRows<{
+          id: string;
+          stage_id: string | null;
+          empreendimento: string | null;
+          updated_at: string | null;
+          created_at: string;
+          origem: string | null;
+          corretor_id: string | null;
+          reativado_em: string | null;
+        }>((from, to) =>
+          supabase
+            .from("pipeline_leads")
+            .select("id, stage_id, empreendimento, updated_at, created_at, origem, corretor_id, reativado_em")
+            .eq("reativado_por_nutricao", true)
+            .gte("reativado_em", startUtc)
+            .lt("reativado_em", endUtc)
+            .order("reativado_em", { ascending: true })
+            .range(from, to),
+        ),
       ]);
+
+      // Merge reativados into the leads list, marking origem as "Reengajamento (Nutrição)"
+      // so they appear as their own bucket in "Leads por Origem" and still count toward
+      // "Leads por Corretor" (using their current corretor_id).
+      const criadosIds = new Set((leadsCriados || []).map(l => l.id));
+      const reativadosNovos = (reativados || [])
+        .filter(r => !criadosIds.has(r.id))
+        .map(r => ({
+          id: r.id,
+          stage_id: r.stage_id,
+          empreendimento: r.empreendimento,
+          updated_at: r.updated_at,
+          created_at: r.reativado_em || r.created_at,
+          origem: "Reengajamento (Nutrição)",
+          corretor_id: r.corretor_id,
+        }));
+      const leads = [...(leadsCriados || []), ...reativadosNovos];
 
       const stageData = (stages || []).map(s => ({
         id: s.id, nome: s.nome, tipo: s.tipo, ordem: s.ordem,
