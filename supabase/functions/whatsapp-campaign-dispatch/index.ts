@@ -109,7 +109,7 @@ serve(async (req) => {
       let sentCount = 0;
       let failCount = 0;
       const startTime = Date.now();
-      const MAX_EXECUTION_MS = 45_000; // 45s safety margin
+      const MAX_EXECUTION_MS = 110_000; // 110s — espaço para delays maiores
 
       for (const send of sends) {
         // Time guard — stop before edge function timeout
