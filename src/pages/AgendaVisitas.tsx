@@ -652,30 +652,34 @@ export default function AgendaVisitas() {
       </div>
 
       {/* ═══════ KPIs ═══════ */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         {[
+          { key: "criadas", label: "Criadas", value: kpiBase.length, color: "text-[#6366f1]", border: "border-l-[#6366f1]" },
           { key: "marcadas", label: "Marcadas", value: kpis.marcadas, color: "text-[#f59e0b]", border: "border-l-[#f59e0b]" },
           { key: "realizadas", label: "Realizadas", value: kpis.realizadas, color: "text-[#10b981]", border: "border-l-[#10b981]" },
           { key: "no_show", label: "No-show", value: kpis.noShow, color: "text-[#ef4444]", border: "border-l-[#ef4444]" },
           { key: "taxa", label: "Taxa realização", value: `${kpis.taxa}%`, color: "text-[#4969FF]", border: "border-l-[#4969FF]" },
-        ].map(kpi => (
-          <button
-            key={kpi.key}
-            onClick={() => {
-              if (kpi.key === "taxa") return;
-              setKpiFilter(kpiFilter === kpi.key ? null : kpi.key);
-            }}
-            className={cn(
-              "bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 border-l-[3px] rounded-[10px] p-3 text-left transition-all",
-              kpi.border,
-              kpi.key !== "taxa" && "cursor-pointer hover:border-[#d4d4d8] dark:hover:border-white/15",
-              kpiFilter === kpi.key && "ring-2 ring-[#4969FF]/30 bg-[#4969FF]/[0.02]"
-            )}
-          >
-            <p className="text-[10px] font-medium text-[#a1a1aa] uppercase tracking-wide">{kpi.label}</p>
-            <p className={cn("text-[22px] font-[800] leading-none mt-1 tracking-[-0.5px]", kpi.color)}>{kpi.value}</p>
-          </button>
-        ))}
+        ].map(kpi => {
+          const isStatic = kpi.key === "taxa" || kpi.key === "criadas";
+          return (
+            <button
+              key={kpi.key}
+              onClick={() => {
+                if (isStatic) return;
+                setKpiFilter(kpiFilter === kpi.key ? null : kpi.key);
+              }}
+              className={cn(
+                "bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 border-l-[3px] rounded-[10px] p-3 text-left transition-all",
+                kpi.border,
+                !isStatic && "cursor-pointer hover:border-[#d4d4d8] dark:hover:border-white/15",
+                kpiFilter === kpi.key && "ring-2 ring-[#4969FF]/30 bg-[#4969FF]/[0.02]"
+              )}
+            >
+              <p className="text-[10px] font-medium text-[#a1a1aa] uppercase tracking-wide">{kpi.label}</p>
+              <p className={cn("text-[22px] font-[800] leading-none mt-1 tracking-[-0.5px]", kpi.color)}>{kpi.value}</p>
+            </button>
+          );
+        })}
       </div>
 
       {/* Active filter badge */}
