@@ -86,6 +86,11 @@ Deno.serve(async (req) => {
             erros++;
             continue;
           }
+          // Cap diário WhatsApp atingido — adia para próxima execução
+          if (waCapReached) {
+            console.log(`Pulando seq ${seq.id} — daily WA cap reached`);
+            continue;
+          }
 
           const { error: waErr } = await admin.functions.invoke("whatsapp-send", {
             body: {
