@@ -102,11 +102,14 @@ export default function AuditoriaWebhookTab() {
 
   const stats = useMemo(() => {
     const rows = data ?? [];
+    // Contar LEADS ÚNICOS (não disparos) para casar com a aba Disparos
+    const uniqueLeadIds = (predicate: (r: Row) => boolean) =>
+      new Set(rows.filter(predicate).map(r => r.lead_id).filter(Boolean)).size;
     return {
       total: rows.length,
-      sim: rows.filter(r => r.button_response === "sim").length,
-      nao: rows.filter(r => r.button_response === "nao").length,
-      reativados: rows.filter(r => r.lead?.reativado_por_nutricao).length,
+      sim: uniqueLeadIds(r => r.button_response === "sim"),
+      nao: uniqueLeadIds(r => r.button_response === "nao"),
+      reativados: uniqueLeadIds(r => !!r.lead?.reativado_por_nutricao),
       responded: rows.filter(r => r.status === "responded").length,
       failed: rows.filter(r => r.status === "failed").length,
     };
