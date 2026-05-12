@@ -144,8 +144,12 @@ function getJanelaStatus(j: JanelaConfig): "aberto" | "encerrado" | "futuro" {
 interface NightRequirements {
   visitaMarcada: boolean;
   visitaRealizada: boolean;
+  visitasCount: number;
   sistemaAtualizado: boolean;
+  leadsDesatualizados: number;
+  limiteLeads: number;
   loading: boolean;
+  error: string | null;
 }
 
 function useNightRequirements(
@@ -153,7 +157,11 @@ function useNightRequirements(
   profileId: string | null,
   refreshKey: number = 0,
 ): NightRequirements & { refresh: () => void } {
-  const [state, setState] = useState<NightRequirements>({ visitaMarcada: false, visitaRealizada: false, sistemaAtualizado: true, loading: true });
+  const [state, setState] = useState<NightRequirements>({
+    visitaMarcada: false, visitaRealizada: false, visitasCount: 0,
+    sistemaAtualizado: true, leadsDesatualizados: 0, limiteLeads: 10,
+    loading: true, error: null,
+  });
   const [internalKey, setInternalKey] = useState(0);
 
   const refresh = useCallback(() => setInternalKey(k => k + 1), []);
@@ -163,44 +171,48 @@ function useNightRequirements(
     let cancelled = false;
 
     const check = async () => {
-      setState(s => ({ ...s, loading: true }));
+      setState(s => ({ ...s, loading: true, error: null }));
       const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-
-      // visitas.corretor_id stores MIXED ids: auth user_id (when broker creates)
-      // or profile_id (when manager creates). We must check BOTH.
-      // Visit counts as valid if scheduled for today or any future date.
       const idsToCheck = [userId, profileId].filter(Boolean) as string[];
 
-      const marcadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
-        .in("corretor_id", idsToCheck)
-        .gte("data_visita", hoje)
-        .in("status", ["marcada", "confirmada", "reagendada"]);
-
-      const realizadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
-        .in("corretor_id", idsToCheck)
-        .eq("status", "realizada")
-        .gte("data_visita", hoje);
-
-      // "Sistema atualizado": leads do corretor sem tarefa pendente futura.
-      // Usa a função canônica via RPC para evitar referenciar colunas inexistentes.
+      let visitaMarcada = false;
+      let visitaRealizada = false;
+      let visitasCount = 0;
       let sistemaAtualizado = true;
+      let leadsDesatualizados = 0;
+      let limiteLeads = 10;
+      let error: string | null = null;
+
+      try {
+        const marcadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
+          .in("corretor_id", idsToCheck)
+          .gte("data_visita", hoje)
+          .in("status", ["marcada", "confirmada", "reagendada"]);
+        const realizadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
+          .in("corretor_id", idsToCheck)
+          .eq("status", "realizada")
+          .gte("data_visita", hoje);
+        visitaMarcada = (marcadasRes.count || 0) > 0;
+        visitaRealizada = (realizadasRes.count || 0) > 0;
+        visitasCount = (marcadasRes.count || 0) + (realizadasRes.count || 0);
+      } catch (e: any) {
+        console.warn("[NightRequirements] Falha ao consultar visitas:", e);
+        error = "Não foi possível verificar visitas. Tente novamente.";
+      }
+
       try {
         const { data: eleg } = await supabase.rpc("get_elegibilidade_roleta", { p_corretor_id: userId });
         if (eleg && typeof (eleg as any).leads_desatualizados === "number") {
-          const limite = (eleg as any).limite_bloqueio ?? 10;
-          sistemaAtualizado = (eleg as any).leads_desatualizados <= limite;
+          leadsDesatualizados = (eleg as any).leads_desatualizados;
+          limiteLeads = (eleg as any).limite_bloqueio ?? 10;
+          sistemaAtualizado = leadsDesatualizados <= limiteLeads;
         }
       } catch (e) {
         console.warn("[NightRequirements] Falha ao checar elegibilidade:", e);
       }
 
       if (cancelled) return;
-      setState({
-        visitaMarcada: (marcadasRes.count || 0) > 0,
-        visitaRealizada: (realizadasRes.count || 0) > 0,
-        sistemaAtualizado,
-        loading: false,
-      });
+      setState({ visitaMarcada, visitaRealizada, visitasCount, sistemaAtualizado, leadsDesatualizados, limiteLeads, loading: false, error });
     };
     check();
     return () => { cancelled = true; };
