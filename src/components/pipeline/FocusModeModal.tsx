@@ -657,19 +657,27 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
-                    {currentLead.alert_reasons.map((reason, i) => (
-                      <Badge
-                        key={i}
-                        className="text-[10px] font-semibold border-0"
-                        style={{
-                          background: reason.includes("vencida") ? "rgba(239,68,68,0.15)" : reason.includes("parada") ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.1)",
-                          color: reason.includes("vencida") ? "#f87171" : reason.includes("parada") ? "#fbbf24" : "#fb923c",
-                        }}
-                      >
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        {reason}
-                      </Badge>
-                    ))}
+                    {currentLead.alert_reasons.map((reason, i) => {
+                      const isOverdue = reason.includes("vencida");
+                      const canClick = isOverdue && currentLead.overdue_task_list.length > 0;
+                      return (
+                        <Badge
+                          key={i}
+                          onClick={canClick ? () => {
+                            const t = currentLead.overdue_task_list[0];
+                            setCompletingOverdue({ id: t.id, titulo: t.titulo });
+                          } : undefined}
+                          className={`text-[10px] font-semibold border-0 ${canClick ? "cursor-pointer hover:brightness-125 transition" : ""}`}
+                          style={{
+                            background: isOverdue ? "rgba(239,68,68,0.15)" : reason.includes("parada") ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.1)",
+                            color: isOverdue ? "#f87171" : reason.includes("parada") ? "#fbbf24" : "#fb923c",
+                          }}
+                        >
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          {reason}{canClick ? " · concluir" : ""}
+                        </Badge>
+                      );
+                    })}
                   </div>
 
                   {currentLead.tags.length > 0 && (
