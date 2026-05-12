@@ -384,41 +384,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 🔄 BACKLOG RECOVERY (reativado): leads recém-chegados que ficaram órfãos
-    // por falta de corretor disponível na hora (gap entre turnos, ninguém credenciado)
-    // são reprocessados automaticamente. Salvaguardas:
-    //   - Apenas leads criados nas últimas 24h (evita ressuscitar leads antigos)
-    //   - Máximo 10 por execução (evita flood de notificações)
-    //   - distribuir_lead_atomico já retorna no_broker_available limpo se ainda não há broker
-    let backlogRecovered = 0;
-    let backlogStillQueued = 0;
-    try {
-      const { data: orphanLeads } = await supabase
-        .from("pipeline_leads")
-        .select("id, created_at")
-        .eq("aceite_status", "pendente_distribuicao")
-        .is("corretor_id", null)
-        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .order("created_at", { ascending: true })
-        .limit(10);
-
-      if (orphanLeads && orphanLeads.length > 0) {
-        L.info("Backlog recovery: orphans detected", { count: orphanLeads.length });
-        for (const lead of orphanLeads) {
-          const ok = await distributeWithRetry(supabaseUrl, serviceKey, lead.id, traceId, 1, supabase);
-          if (ok) {
-            backlogRecovered++;
-          } else {
-            backlogStillQueued++;
-          }
-        }
-        if (backlogRecovered > 0) {
-          logOps("info", "business", `Backlog recovery: ${backlogRecovered} recovered, ${backlogStillQueued} still queued`, { backlogRecovered, backlogStillQueued });
-        }
-      }
-    } catch (err) {
-      L.error("Backlog recovery failed", {}, err);
-    }
+    // 🚫 BACKLOG RECOVERY DESATIVADO
+    // Por decisão de produto: leads na Fila CEO (aceite_status='pendente_distribuicao')
+    // NUNCA são redistribuídos automaticamente. Só saem da fila quando o CEO/admin
+    // dispara manualmente via FilaCeoDispatchModal. Mantemos apenas a métrica zerada
+    // para preservar o shape do response.
+    const backlogRecovered = 0;
+    const backlogStillQueued = 0;
     const stuckRedistributed = autoRedistributed;
 
     // 4c-pre. Avisar leads próximos do prazo de 72h (aviso 12h antes)
