@@ -222,8 +222,8 @@ export default function AuditoriaWebhookTab() {
                       </TableCell>
                       <TableCell className="px-3 py-2">
                         {r.lead_id && (
-                          <Link to={`/pipeline?lead=${r.lead_id}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline whitespace-nowrap">
-                            <ExternalLink className="h-3 w-3" /> Ver
+                          <Link to={`/pipeline-leads?lead=${r.lead_id}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline whitespace-nowrap">
+                            <ExternalLink className="h-3 w-3" /> Abrir lead
                           </Link>
                         )}
                       </TableCell>
