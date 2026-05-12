@@ -101,13 +101,14 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const isAllDayRoleta = isSunday || isHoliday;
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
   const [includeUnidentified, setIncludeUnidentified] = useState(true);
-  const [activeTab, setActiveTab] = useState<"novos" | "redistribuicao">(initialTab ?? "novos");
+  const [activeTab, setActiveTab] = useState<"novos" | "redistribuicao" | "reengajamento">(initialTab ?? "novos");
   const [corretoresMap, setCorretoresMap] = useState<Record<string, string>>({});
 
   // Separa leads por categoria
-  const leadsNovos = useMemo(() => allLeads.filter((l) => !l.is_redistribuicao), [allLeads]);
-  const leadsRedistribuicao = useMemo(() => allLeads.filter((l) => !!l.is_redistribuicao), [allLeads]);
-  const leads = activeTab === "novos" ? leadsNovos : leadsRedistribuicao;
+  const leadsReengajamento = useMemo(() => allLeads.filter((l) => !!l.reativado_por_nutricao), [allLeads]);
+  const leadsRedistribuicao = useMemo(() => allLeads.filter((l) => !!l.is_redistribuicao && !l.reativado_por_nutricao), [allLeads]);
+  const leadsNovos = useMemo(() => allLeads.filter((l) => !l.is_redistribuicao && !l.reativado_por_nutricao), [allLeads]);
+  const leads = activeTab === "novos" ? leadsNovos : activeTab === "redistribuicao" ? leadsRedistribuicao : leadsReengajamento;
 
   useEffect(() => {
     if (open && initialTab) setActiveTab(initialTab);
