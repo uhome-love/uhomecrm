@@ -19,6 +19,7 @@ import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria } 
 import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import TaskCompletionDialog from "./TaskCompletionDialog";
 
 interface FocusModeModalProps {
   open: boolean;
