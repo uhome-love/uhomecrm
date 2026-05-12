@@ -183,14 +183,43 @@ export default function BuscaLeads() {
           aceito_em: new Date().toISOString(),
           observacoes: motivo || `Incluído via Busca de Leads (OA)`,
         });
-        if (error) throw error;
-        toast.success("✅ Lead incluído no pipeline do corretor!");
+        if (error) {
+          // Lead com mesmo email já existe ativo no pipeline → reatribui ao corretor escolhido
+          if (error.code === "23505" && lead.email) {
+            const { data: existente, error: findErr } = await supabase
+              .from("pipeline_leads")
+              .select("id, corretor_id")
+              .eq("email", lead.email)
+              .is("inativo_em", null)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (findErr || !existente) throw error;
+
+            const { error: updErr } = await supabase
+              .from("pipeline_leads")
+              .update({
+                corretor_id: selectedCorretor,
+                stage_id: stageId,
+                aceite_status: "aceito",
+                aceito_em: new Date().toISOString(),
+                observacoes: motivo || `Reatribuído via Busca de Leads (OA) — lead já existia no pipeline`,
+              })
+              .eq("id", existente.id);
+            if (updErr) throw updErr;
+            toast.success("✅ Lead já existia — reatribuído ao corretor selecionado!");
+          } else {
+            throw error;
+          }
+        } else {
+          toast.success("✅ Lead incluído no pipeline do corretor!");
+        }
         setActionModal(null);
         setSelectedLead(null);
         handleSearch();
       } catch (err: any) {
         console.error(err);
-        toast.error("Erro ao incluir no pipeline");
+        toast.error("Erro ao incluir no pipeline: " + (err?.message || "tente novamente"));
       }
       setExecuting(false);
       return;
