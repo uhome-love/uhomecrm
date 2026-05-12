@@ -161,6 +161,8 @@ export default function AuditoriaWebhookTab() {
                 <TableRow>
                   <TableHead>Enviado</TableHead>
                   <TableHead>Lead</TableHead>
+                  <TableHead>Empreendimento</TableHead>
+                  <TableHead>Corretor</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Tipo</TableHead>
