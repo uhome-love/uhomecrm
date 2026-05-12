@@ -192,6 +192,7 @@ export function useFocusLeads(
           last_contact_at: lastContact,
           stage_updated_at: lead.stage_changed_at,
           overdue_tasks: taskInfo?.overdue ?? 0,
+          overdue_task_list: taskInfo?.overdueList ?? [],
           days_without_contact: daysSinceContact,
           days_in_stage: daysInStage,
           corretor_name: "",
