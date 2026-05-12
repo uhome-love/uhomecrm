@@ -257,8 +257,9 @@ serve(async (req) => {
             failCount++;
           }
 
-          // Small delay between messages to respect rate limits
-          await new Promise((r) => setTimeout(r, 100));
+          // Delay aleatório 3-6s entre mensagens (anti-spam Meta, parece humano)
+          const jitter = 3000 + Math.floor(Math.random() * 3000);
+          await new Promise((r) => setTimeout(r, jitter));
         } catch (sendErr) {
           await supabase
             .from("whatsapp_campaign_sends")
