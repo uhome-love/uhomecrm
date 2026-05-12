@@ -77,14 +77,16 @@ export default function ReengajamentoTab() {
           .not("reengajamento_enviado_at", "is", null).gte("reengajamento_enviado_at", since7),
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true })
           .not("reengajamento_enviado_at", "is", null).gte("reengajamento_enviado_at", since30),
-        supabase.from("reengajamento_eventos").select("lead_id", { count: "exact", head: true })
+        supabase.from("reengajamento_eventos").select("lead_id")
           .eq("tipo", "classificado_sim").gte("created_at", since30),
       ]);
+
+      const reativadosCount = new Set((reativadosSim.data || []).map((item: any) => item.lead_id).filter(Boolean)).size;
       return {
         hoje: hoje.count || 0,
         sete: sete.count || 0,
         trinta: trinta.count || 0,
-        reativados: reativadosSim.count || 0,
+        reativados: reativadosCount,
       };
     },
     refetchInterval: 5000,
