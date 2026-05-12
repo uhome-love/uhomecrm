@@ -24,6 +24,7 @@ export interface FocusLead {
   last_contact_at: string | null;
   stage_updated_at: string;
   overdue_tasks: number;
+  overdue_task_list: { id: string; titulo: string; vence_em: string | null; tipo: string | null }[];
   days_without_contact: number;
   days_in_stage: number;
   corretor_name: string;
