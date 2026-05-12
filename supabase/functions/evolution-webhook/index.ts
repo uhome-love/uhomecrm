@@ -97,6 +97,19 @@ function getExtFromMime(mime: string): string {
   return map[mime] || ".bin";
 }
 
+async function reativarLeadNutricao(supabase: any, leadId: string) {
+  const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual", {
+    p_lead_id: leadId,
+  });
+
+  if (error) {
+    console.error("Nutrição reactivation RPC failed:", error);
+    throw error;
+  }
+
+  return data;
+}
+
 async function downloadAndStoreMedia(
   supabase: any,
   instanceName: string,
@@ -416,49 +429,24 @@ Deno.serve(async (req) => {
       });
 
       if (outcome === "respondeu_sim") {
-        const STAGE_SEM_CONTATO = "2fcba9be-1188-4a54-9452-394beefdc330";
-        await supabase
-          .from("pipeline_leads")
-          .update({
-            reengajamento_status: "respondeu_sim",
-            reativado_por_nutricao: true,
-            reativado_em: new Date().toISOString(),
-            stage_id: STAGE_SEM_CONTATO,
-            stage_changed_at: new Date().toISOString(),
-            corretor_id: null,
-            aceite_status: null,
-            aceite_expira_em: null,
-            aceito_em: null,
-            tipo_descarte: null,
-            motivo_descarte: null,
-          })
-          .eq("id", leadId);
-
         await supabase.from("reengajamento_eventos").insert({
           lead_id: leadId, tipo: "classificado_sim", detalhe: finalBody.slice(0, 300),
         });
 
-        // Distribuir via roleta
         try {
-          const { data: distResult, error: distErr } = await supabase.rpc("distribuir_lead_atomico", {
-            p_lead_id: leadId,
-            p_janela: null,
-            p_exclude_auth_user_id: null,
-            p_force: false,
-          });
-          if (distErr) {
-            console.error("reativação distribuição falhou:", distErr);
+          const distResult = await reativarLeadNutricao(supabase, leadId);
+          if (!distResult?.success) {
             await supabase.from("reengajamento_eventos").insert({
               lead_id: leadId, tipo: "reativado_auto",
-              detalhe: `Sem corretor disponível — fila CEO. ${distErr.message}`,
+              detalhe: `Reativação via Nutrição sem distribuição imediata. ${JSON.stringify(distResult)}`,
             });
-          } else if (distResult?.success) {
+          } else {
             await supabase.from("reengajamento_eventos").insert({
               lead_id: leadId, tipo: "reativado_auto", detalhe: "Distribuído automaticamente",
             });
           }
         } catch (e) {
-          console.error("rpc distribuir error:", e);
+          console.error("rpc reativar_lead_nutricao_manual error:", e);
         }
       } else if (outcome === "respondeu_nao") {
         await supabase
