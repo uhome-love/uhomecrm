@@ -994,6 +994,16 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
           ) : null}
         </div>
       </DialogContent>
+
+      {completingOverdue && (
+        <TaskCompletionDialog
+          open={!!completingOverdue}
+          onOpenChange={(v) => { if (!v) setCompletingOverdue(null); }}
+          tarefaTitulo={completingOverdue.titulo}
+          leadNome={currentLead?.name}
+          onConfirm={handleCompleteOverdueTask}
+        />
+      )}
     </Dialog>
   );
 }
