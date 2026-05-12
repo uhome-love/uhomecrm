@@ -307,6 +307,65 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, [currentLead, corretorId, taskTitle, taskType, taskDueDate]);
 
+  const handleCompleteOverdueTask = useCallback(async (
+    obs: string,
+    novaTarefa?: { tipo: string; vence_em: string; hora_vencimento: string; obs: string }
+  ) => {
+    if (!completingOverdue || !currentLead || !corretorId) return;
+    setSaving(true);
+    try {
+      // 1) Mark overdue task as concluida
+      await supabase.from("pipeline_tarefas").update({
+        status: "concluida",
+        concluida_em: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", completingOverdue.id);
+
+      // 2) Touch lead
+      await supabase.from("pipeline_leads").update({
+        ultima_acao_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", currentLead.id);
+
+      // 3) Register activity if observation provided
+      if (obs.trim()) {
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: currentLead.id,
+          created_by: corretorId,
+          tipo: "nota",
+          titulo: `Tarefa concluída: ${completingOverdue.titulo}`,
+          descricao: obs.trim(),
+          status: "concluida",
+          prioridade: "normal",
+        } as any);
+      }
+
+      // 4) Create next task if requested
+      if (novaTarefa) {
+        await supabase.from("pipeline_tarefas").insert({
+          pipeline_lead_id: currentLead.id,
+          created_by: corretorId,
+          titulo: `${novaTarefa.tipo}: ${currentLead.name}`,
+          tipo: novaTarefa.tipo,
+          descricao: novaTarefa.obs || null,
+          vence_em: novaTarefa.vence_em,
+          hora_vencimento: novaTarefa.hora_vencimento || null,
+          status: "pendente",
+          prioridade: "normal",
+        } as any);
+      }
+
+      toast.success(novaTarefa ? "Tarefa concluída e próxima agendada ✅" : "Tarefa concluída ✅");
+      setCompletingOverdue(null);
+      goToNext();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao concluir tarefa.");
+    } finally {
+      setSaving(false);
+    }
+  }, [completingOverdue, currentLead, corretorId, goToNext]);
+
   const handleOpenWhatsApp = useCallback(() => {
     if (!currentLead?.phone) return;
     const phone = currentLead.phone.replace(/\D/g, "");
