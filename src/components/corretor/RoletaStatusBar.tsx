@@ -141,6 +141,23 @@ function getJanelaStatus(j: JanelaConfig): "aberto" | "encerrado" | "futuro" {
   return "aberto";
 }
 
+function getJanelaOperacaoStatus(janela: JanelaKey): "aberto" | "encerrado" | "futuro" {
+  const h = getHoraDecimal();
+
+  const faixa =
+    janela === "manha"
+      ? { inicio: 7, fim: 12 }
+      : janela === "tarde"
+        ? { inicio: 12, fim: 18 }
+        : janela === "noite"
+          ? { inicio: 18, fim: 23.5 }
+          : { inicio: 8, fim: 23.99 };
+
+  if (h < faixa.inicio) return "futuro";
+  if (h >= faixa.fim) return "encerrado";
+  return "aberto";
+}
+
 interface NightRequirements {
   visitaMarcada: boolean;
   visitaRealizada: boolean;
@@ -247,7 +264,7 @@ export default function RoletaStatusBar() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [credenciamentosPorJanela, setCredenciamentosPorJanela] = useState<Record<string, string>>({});
 
-  const nightReqs = useNightRequirements(user?.id, profileId, credModalOpen ? Date.now() : 0);
+  const nightReqs = useNightRequirements(user?.id, profileId, credModalOpen ? 1 : 0);
 
   // Re-fetch requirements every time the credenciamento modal opens
   useEffect(() => {
@@ -280,15 +297,21 @@ export default function RoletaStatusBar() {
         .select("janela, segmento_1_id, segmento_2_id, status")
         .eq("corretor_id", profile.id)
         .eq("data", today)
-        .in("status", ["aprovado", "pendente"]);
+        .in("status", ["aprovado", "pendente"])
+        .order("created_at", { ascending: false });
 
       const porJanela: Record<string, string> = {};
       let activeIds: string[] = [];
       let activeStatus = "";
       (creds || []).forEach(c => {
-        porJanela[toUiJanela(c.janela)] = c.status || "pendente";
+        const uiJanela = toUiJanela(c.janela);
+        porJanela[uiJanela] = c.status || "pendente";
         const ids = [c.segmento_1_id, c.segmento_2_id].filter(Boolean) as string[];
-        if (ids.length > 0) { activeIds = ids; activeStatus = c.status || ""; }
+        const janelaOperacaoAtiva = getJanelaOperacaoStatus(uiJanela) !== "encerrado";
+        if (!activeStatus && janelaOperacaoAtiva && ids.length > 0) {
+          activeIds = ids;
+          activeStatus = c.status || "";
+        }
       });
       setCredenciamentosPorJanela(porJanela);
       setMySegmentoIds(activeIds);
@@ -413,7 +436,9 @@ export default function RoletaStatusBar() {
 
   const segNames = mySegmentoIds.map(id => segmentos.find(s => s.id === id)?.nome).filter(Boolean);
 
-  const activeJanelas = Object.keys(credenciamentosPorJanela);
+  const activeJanelas = Object.keys(credenciamentosPorJanela).filter(
+    (janela) => getJanelaOperacaoStatus(janela as JanelaKey) !== "encerrado"
+  );
 
   if (loading) return <div className="h-12 rounded-xl border border-border bg-card animate-pulse" />;
 
