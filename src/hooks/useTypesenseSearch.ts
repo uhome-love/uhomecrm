@@ -51,20 +51,23 @@ export function buildFilterBy(filters: {
     parts.push(`valor_venda:>0`);
   }
 
+  // Helper: wrap multi-word/special values in backticks for Typesense filter_by
+  const tsVal = (v: string) => /[\s,()`'"]/.test(v) ? `\`${v.replace(/`/g, "")}\`` : v;
+
   // Multi-select bairro
   const bairros = Array.isArray(filters.bairro) ? filters.bairro : (filters.bairro ? [filters.bairro] : []);
   if (bairros.length === 1) {
-    parts.push(`bairro:=${bairros[0]}`);
+    parts.push(`bairro:=${tsVal(bairros[0])}`);
   } else if (bairros.length > 1) {
-    parts.push(`bairro:[${bairros.join(",")}]`);
+    parts.push(`bairro:[${bairros.map(tsVal).join(",")}]`);
   }
 
   // Multi-select tipo
   const tipos = Array.isArray(filters.tipo) ? filters.tipo.filter(t => t && t !== "all") : (filters.tipo && filters.tipo !== "all" ? [filters.tipo] : []);
   if (tipos.length === 1) {
-    parts.push(`tipo:=${tipos[0]}`);
+    parts.push(`tipo:=${tsVal(tipos[0])}`);
   } else if (tipos.length > 1) {
-    parts.push(`tipo:[${tipos.join(",")}]`);
+    parts.push(`tipo:[${tipos.map(tsVal).join(",")}]`);
   }
 
   // Multi-select dormitorios — exact match for selected values
