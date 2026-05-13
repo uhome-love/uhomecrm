@@ -326,7 +326,7 @@ Deno.serve(async (req) => {
                 // Reativa lead se respondeu SIM
                 if (buttonResp === "sim") {
                   try {
-                    await reativarLeadNutricao(supabase, metaDispatch.lead_id);
+                    await reativarLeadNutricao(supabase, metaDispatch.lead_id, { wave: isWave2 ? 2 : 1 });
                   } catch (e) {
                     console.error("rpc reativar_lead_nutricao_manual error:", e);
                   }
