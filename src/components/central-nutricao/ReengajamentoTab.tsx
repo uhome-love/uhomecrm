@@ -801,6 +801,112 @@ export default function ReengajamentoTab() {
                   )}
                 </div>
               </div>
+
+              {/* ===== 2ª Onda de reengajamento ===== */}
+              <div className="border-t pt-3 mt-4 space-y-3 bg-indigo-50/40 dark:bg-indigo-950/10 -mx-3 px-3 py-3 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    🌊 2ª Onda de Reengajamento
+                    <Badge variant="outline" className="text-[10px]">Follow-up</Badge>
+                  </Label>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-8 text-xs"
+                    onClick={dispararWave2}
+                    disabled={starting || isRunning}
+                  >
+                    {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
+                    Disparar 2ª onda agora
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Envia uma segunda mensagem para leads que receberam a 1ª e <strong>não responderam nada</strong>.
+                  Quem disse SIM, NÃO ou número inválido é automaticamente excluído.
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Dias mínimos após a 1ª mensagem</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={local.wave2_min_dias_apos_wave1 ?? 5}
+                      onChange={(e) => setDraft({ ...local, wave2_min_dias_apos_wave1: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Template Meta da 2ª onda (nome aprovado)</Label>
+                    <Input
+                      placeholder="ex: reengajamento_v2"
+                      value={local.meta_template_name_2 || ""}
+                      onChange={(e) => setDraft({ ...local, meta_template_name_2: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Mensagem 2 — fallback Evolution (use <code>{"{nome}"}</code>)</Label>
+                  <Textarea
+                    rows={3}
+                    placeholder="Oi {nome}! Voltamos rapidinho aqui — surgiu algo novo que pode te interessar..."
+                    value={local.mensagem_template_2 || ""}
+                    onChange={(e) => setDraft({ ...local, mensagem_template_2: e.target.value })}
+                  />
+                  {!local.mensagem_template_2 && !local.meta_template_name_2 && (
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+                      ⚠️ Preencha a mensagem (Evolution) ou o template Meta antes de disparar a 2ª onda.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs font-semibold">Variantes da 2ª mensagem (Spintax)</Label>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[10px]"
+                      onClick={() => {
+                        const arr = Array.isArray(local.mensagens_variantes_2) ? [...local.mensagens_variantes_2] : [];
+                        arr.push("");
+                        setDraft({ ...local, mensagens_variantes_2: arr });
+                      }}
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> Adicionar variante
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {(Array.isArray(local.mensagens_variantes_2) ? local.mensagens_variantes_2 : []).map((v: string, i: number) => (
+                      <div key={i} className="flex gap-2 items-start">
+                        <span className="text-[10px] text-muted-foreground pt-2 w-8">#{i + 1}</span>
+                        <Textarea
+                          rows={2}
+                          value={v}
+                          placeholder="Oi {nome}, voltei rapidinho aqui..."
+                          onChange={(e) => {
+                            const arr = [...local.mensagens_variantes_2];
+                            arr[i] = e.target.value;
+                            setDraft({ ...local, mensagens_variantes_2: arr });
+                          }}
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => {
+                            const arr = [...local.mensagens_variantes_2];
+                            arr.splice(i, 1);
+                            setDraft({ ...local, mensagens_variantes_2: arr });
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
 
