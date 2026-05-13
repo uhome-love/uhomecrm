@@ -35,6 +35,7 @@ interface CardScheduleVisitDialogProps {
 export default function CardScheduleVisitDialog({ open, onOpenChange, lead, stages, onMoveLead }: CardScheduleVisitDialogProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { integration, isLoading: integLoading } = useCalendarIntegration();
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("10:00");
