@@ -463,10 +463,7 @@ Deno.serve(async (req) => {
             continue;
           }
           const messageId = result?.key?.id || result?.messageId || crypto.randomUUID();
-          await supabase.from("pipeline_leads").update({
-            reengajamento_enviado_at: new Date().toISOString(),
-            reengajamento_status: "enviado",
-          }).eq("id", lead.id);
+          await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
           await supabase.from("whatsapp_mensagens").insert({
             lead_id: lead.id, instance_name: cfg.evolution_instance, direction: "sent",
             body: text, whatsapp_message_id: messageId, timestamp: new Date().toISOString(),
