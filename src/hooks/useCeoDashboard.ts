@@ -123,7 +123,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   });
 
   // ── Roleta ──
-  const { data: roletaPendentes = [], refetch: reloadRoleta } = useQuery({
+  const { data: roletaPendentesRaw, refetch: reloadRoleta } = useQuery({
     queryKey: ["ceo-roleta", hoje],
     queryFn: async () => {
       const { data: creds } = await supabase.from("roleta_credenciamentos").select("*").eq("data", hoje).eq("status", "pendente").order("created_at");
@@ -551,7 +551,12 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   });
 
   // ── Derived state (stable, no flicker) ──
-  const lastUpdate = new Date();
+  // Stable empty arrays to prevent re-render loops in consumer effects
+  const roletaPendentes = useMemo(() => roletaPendentesRaw ?? EMPTY_ARR, [roletaPendentesRaw]);
+  const lastUpdate = useMemo(() => new Date(), [
+    roletaPendentes,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ]);
 
   return {
     loading: kpisFirstLoad, // true only on very first fetch, false after cache is populated
