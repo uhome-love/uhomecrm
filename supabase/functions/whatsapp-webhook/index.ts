@@ -331,10 +331,53 @@ Deno.serve(async (req) => {
                     console.error("rpc reativar_lead_nutricao_manual error:", e);
                   }
                 } else if (buttonResp === "nao") {
+                  // INATIVAÇÃO: lead respondeu NÃO → Descarte definitivo, NÃO reativar, NÃO mandar p/ roleta
+                  const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
+                  const { data: leadAtual } = await supabase
+                    .from("pipeline_leads")
+                    .select("motivo_descarte")
+                    .eq("id", metaDispatch.lead_id)
+                    .maybeSingle();
+                  const carimbo = `[Inativado em ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}: respondeu NÃO ao reengajamento WhatsApp]`;
+                  const novoMotivo = leadAtual?.motivo_descarte
+                    ? `${leadAtual.motivo_descarte} ${carimbo}`
+                    : `Inativado: respondeu NÃO ao reengajamento WhatsApp`;
                   await supabase.from("pipeline_leads").update({
                     reengajamento_status: statusNao,
                     tipo_descarte: "definitivo",
+                    stage_id: DESCARTE_STAGE_ID,
+                    motivo_descarte: novoMotivo,
+                    stage_changed_at: new Date().toISOString(),
+                    conversation_window_until: null,
+                    reativado_por_nutricao: false,
                   }).eq("id", metaDispatch.lead_id);
+
+                  // Cancela qualquer sequência de nutrição/reativação ativa
+                  await supabase
+                    .from("lead_nurturing_sequences")
+                    .update({ status: "cancelado" })
+                    .eq("pipeline_lead_id", metaDispatch.lead_id)
+                    .eq("status", "pendente");
+
+                  // Marca envios pendentes da campanha como cancelados (evita 2ª onda)
+                  await supabase
+                    .from("reengajamento_meta_disparos")
+                    .update({ status: "canceled" })
+                    .eq("lead_id", metaDispatch.lead_id)
+                    .eq("status", "queued");
+
+                  await supabase.from("pipeline_atividades").insert({
+                    pipeline_lead_id: metaDispatch.lead_id,
+                    tipo: "sistema",
+                    titulo: "🚫 Lead inativado — respondeu NÃO ao reengajamento",
+                    descricao: `Lead respondeu NÃO ao template Meta WhatsApp e foi inativado automaticamente. Não será enviado para roleta.`,
+                    data: new Date().toISOString().slice(0, 10),
+                    status: "concluida",
+                  });
+
+                  console.log(`🚫 Lead ${metaDispatch.lead_id} inativado (respondeu NÃO ao reengajamento) — pulando reentry/roleta`);
+                  // Pula handleExistingLeadReply / handleUnknownReply
+                  continue;
                 } else {
                   await supabase.from("pipeline_leads").update({
                     reengajamento_status: statusOutro,
@@ -383,11 +426,20 @@ async function handleExistingLeadReply(
 ) {
   const { data: lead } = await supabase
     .from("pipeline_leads")
-    .select("id, nome, empreendimento, corretor_id, observacoes")
+    .select("id, nome, empreendimento, corretor_id, observacoes, reengajamento_status, tipo_descarte, stage_id")
     .eq("id", leadId)
     .maybeSingle();
 
   if (!lead) return;
+
+  // GUARD: lead inativado por ter respondido NÃO — não reabrir janela, não notificar, não chamar orchestrator
+  const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
+  const respondeuNao = lead.reengajamento_status === "respondeu_nao" || lead.reengajamento_status === "respondeu_nao_wave2";
+  const inativoDefinitivo = lead.stage_id === DESCARTE_STAGE_ID && lead.tipo_descarte === "definitivo";
+  if (respondeuNao || inativoDefinitivo) {
+    console.log(`🚫 Ignorando reply de lead inativado ${lead.id} (respondeu NÃO / descarte definitivo)`);
+    return;
+  }
 
   const leadNome = lead.nome || "Lead";
   const msgText = mensagemTexto || msg?.type || "mensagem";
@@ -448,12 +500,22 @@ async function handleUnknownReply(
   // 1. Search pipeline_leads by normalized phone
   const { data: existingLeads } = await supabase
     .from("pipeline_leads")
-    .select("id, nome, corretor_id, empreendimento")
+    .select("id, nome, corretor_id, empreendimento, reengajamento_status, tipo_descarte, stage_id")
     .or(`telefone.eq.${from},telefone.like.%${from.slice(-10)}%`)
     .limit(1);
 
   if (existingLeads && existingLeads.length > 0) {
     const lead = existingLeads[0];
+
+    // GUARD: lead inativado por NÃO no reengajamento — não reabrir janela, não notificar, não chamar orchestrator
+    const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
+    const respondeuNao = lead.reengajamento_status === "respondeu_nao" || lead.reengajamento_status === "respondeu_nao_wave2";
+    const inativoDefinitivo = lead.stage_id === DESCARTE_STAGE_ID && lead.tipo_descarte === "definitivo";
+    if (respondeuNao || inativoDefinitivo) {
+      console.log(`🚫 Ignorando reply espontâneo de lead inativado ${lead.id}`);
+      return;
+    }
+
     // Found in pipeline → set window + notify corretor
     const windowUntil = await setConversationWindow(supabase, lead.id);
 
