@@ -128,8 +128,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await (supabase.auth as any).signInWithPassword({ email, password });
-    return { error };
+    // Retry signInWithPassword on transient network errors ("Failed to fetch")
+    // which happen during Supabase auth cold starts / restarts.
+    const MAX_ATTEMPTS = 3;
+    let lastError: any = null;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const { error } = await (supabase.auth as any).signInWithPassword({ email, password });
+        if (!error) return { error: null };
+        const msg = String(error?.message || "");
+        const isNetwork = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+        if (!isNetwork || attempt === MAX_ATTEMPTS) return { error };
+        lastError = error;
+      } catch (err: any) {
+        const msg = String(err?.message || "");
+        const isNetwork = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+        if (!isNetwork || attempt === MAX_ATTEMPTS) {
+          return { error: err ?? new Error("Erro inesperado ao entrar.") };
+        }
+        lastError = err;
+      }
+      // Exponential backoff: 600ms, 1500ms
+      await new Promise((r) => setTimeout(r, attempt === 1 ? 600 : 1500));
+    }
+    return { error: lastError ?? new Error("Falha de conexão. Tente novamente.") };
   }, []);
 
   const signOut = useCallback(async () => {
