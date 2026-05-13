@@ -94,7 +94,7 @@ export default function DialingMode({ lista, onBack }: Props) {
     setShowModal(true);
   };
 
-  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean) => {
+  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean, dataVisita?: string, horaVisita?: string) => {
     if (!lead || !actionTaken) return;
     await registrar(lead, actionTaken, resultado, feedback, lista, undefined, visitaMarcada);
 
@@ -120,6 +120,8 @@ export default function DialingMode({ lista, onBack }: Props) {
         telefone: lead.telefone || undefined,
         empreendimento: lead.empreendimento || undefined,
         observacoes: feedback,
+        dataVisita,
+        horaVisita,
       });
       toast.success("📅 Visita registrada na Agenda de Visitas!");
     }
