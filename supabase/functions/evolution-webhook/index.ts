@@ -444,7 +444,7 @@ Deno.serve(async (req) => {
         });
 
         try {
-          const distResult = await reativarLeadNutricao(supabase, leadId);
+          const distResult = await reativarLeadNutricao(supabase, leadId, { wave: isWave2 ? 2 : 1 });
           if (!distResult?.success) {
             await supabase.from("reengajamento_eventos").insert({
               lead_id: leadId, tipo: "reativado_auto",
