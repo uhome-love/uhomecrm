@@ -97,7 +97,22 @@ function getExtFromMime(mime: string): string {
   return map[mime] || ".bin";
 }
 
-async function reativarLeadNutricao(supabase: any, leadId: string) {
+async function reativarLeadNutricao(supabase: any, leadId: string, opts?: { wave?: 1 | 2 }) {
+  // Wave 2 atual = campanha Casa Tua (template casatua_maio).
+  // Roteia para o segmento Casa Tua via empreendimento.
+  if (opts?.wave === 2) {
+    const { data, error } = await supabase.rpc("reativar_lead_nutricao_campanha", {
+      p_lead_id: leadId,
+      p_empreendimento: "Casa Tua",
+      p_campanha_label: "Casa Tua (Maio/2026)",
+    });
+    if (error) {
+      console.error("Nutrição wave2 reactivation RPC failed:", error);
+      throw error;
+    }
+    return data;
+  }
+
   const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual", {
     p_lead_id: leadId,
   });
