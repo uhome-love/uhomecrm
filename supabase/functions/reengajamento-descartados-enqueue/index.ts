@@ -194,21 +194,45 @@ Deno.serve(async (req) => {
       metaPhoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || "";
       metaToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
       if (!metaPhoneId || !metaToken) throw new Error("Meta env vars missing");
-      metaTemplate = String(cfg.meta_template_name || "");
+      metaTemplate = String((wave === 2 ? cfg.meta_template_name_2 : cfg.meta_template_name) || "");
       metaLang = String(cfg.meta_template_language || "pt_BR");
-      if (!metaTemplate) throw new Error("meta_template_name não configurado");
+      if (!metaTemplate) throw new Error(wave === 2 ? "meta_template_name_2 não configurado" : "meta_template_name não configurado");
+    }
+
+    // Mensagens (Evolution) e variantes — selecionar pela onda
+    const evoTemplate: string = String((wave === 2 ? cfg.mensagem_template_2 : cfg.mensagem_template) || "");
+    const evoVariantes: string[] = (wave === 2 ? cfg.mensagens_variantes_2 : cfg.mensagens_variantes) || [];
+    if (canal === "evolution" && !evoTemplate && (!evoVariantes || evoVariantes.length === 0)) {
+      throw new Error(wave === 2 ? "mensagem_template_2 vazio" : "mensagem_template vazio");
     }
 
     const cutoff = new Date(Date.now() - cfg.lookback_days * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: leads, error: leadsErr } = await supabase
+    // Query base — diferente por onda
+    let leadsQuery = supabase
       .from("pipeline_leads")
-      .select("id, nome, telefone, tipo_descarte, stage_changed_at")
+      .select("id, nome, telefone, tipo_descarte, stage_changed_at, reengajamento_enviado_at")
       .eq("stage_id", STAGE_DESCARTE_ID)
       .eq("tipo_descarte", "reengajavel")
-      .is("reengajamento_enviado_at", null)
-      .not("telefone", "is", null)
-      .gte("stage_changed_at", cutoff)
+      .eq("arquivado", false)
+      .not("telefone", "is", null);
+
+    if (wave === 1) {
+      leadsQuery = leadsQuery
+        .is("reengajamento_enviado_at", null)
+        .gte("stage_changed_at", cutoff);
+    } else {
+      // Wave 2: já receberam a 1ª (status 'enviado'), nunca receberam wave 2,
+      // e a 1ª foi há pelo menos N dias.
+      const minDias = Math.max(0, Number(cfg.wave2_min_dias_apos_wave1 || 5));
+      const wave2Cutoff = new Date(Date.now() - minDias * 24 * 60 * 60 * 1000).toISOString();
+      leadsQuery = leadsQuery
+        .eq("reengajamento_status", "enviado")
+        .is("reengajamento_wave2_at", null)
+        .lte("reengajamento_enviado_at", wave2Cutoff);
+    }
+
+    const { data: leads, error: leadsErr } = await leadsQuery
       .order("stage_changed_at", { ascending: false })
       .limit(cfg.daily_limit);
 
