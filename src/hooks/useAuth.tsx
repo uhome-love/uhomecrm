@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface User {
@@ -29,22 +29,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const sessionRef = useRef<Session | null>(null);
+  const recoveryTimeoutRef = useRef<number | null>(null);
+
+  const applySession = useCallback((nextSession: Session | null) => {
+    if (recoveryTimeoutRef.current) {
+      window.clearTimeout(recoveryTimeoutRef.current);
+      recoveryTimeoutRef.current = null;
+    }
+
+    sessionRef.current = nextSession;
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((_event: string, session: any) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    let isMounted = true;
+
+    const recoverSession = async (graceful = false) => {
+      try {
+        const { data: { session: recoveredSession } } = await (supabase.auth as any).getSession();
+        if (!isMounted) return;
+
+        if (recoveredSession?.user) {
+          applySession(recoveredSession);
+          return;
+        }
+
+        if (graceful && sessionRef.current?.user) {
+          if (recoveryTimeoutRef.current) return;
+          recoveryTimeoutRef.current = window.setTimeout(async () => {
+            recoveryTimeoutRef.current = null;
+            try {
+              const { data: { session: retriedSession } } = await (supabase.auth as any).getSession();
+              if (!isMounted) return;
+              applySession(retriedSession ?? null);
+            } catch {
+              if (!isMounted) return;
+              applySession(null);
+            }
+          }, 1500);
+          setLoading(false);
+          return;
+        }
+
+        applySession(null);
+      } catch {
+        if (!isMounted) return;
+
+        if (graceful && sessionRef.current?.user) {
+          setLoading(false);
+          return;
+        }
+
+        applySession(null);
+      }
+    };
+
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((event: string, nextSession: any) => {
+      if (!isMounted) return;
+
+      if (nextSession?.user) {
+        applySession(nextSession);
+        return;
+      }
+
+      if (event === "SIGNED_OUT") {
+        applySession(null);
+        return;
+      }
+
+      void recoverSession(true);
     });
 
-    (supabase.auth as any).getSession().then(({ data: { session } }: any) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    void recoverSession(false);
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      isMounted = false;
+      if (recoveryTimeoutRef.current) {
+        window.clearTimeout(recoveryTimeoutRef.current);
+        recoveryTimeoutRef.current = null;
+      }
+      subscription.unsubscribe();
+    };
+  }, [applySession]);
 
   const signUp = useCallback(async (email: string, password: string, nome: string) => {
     const { error } = await (supabase.auth as any).signUp({
