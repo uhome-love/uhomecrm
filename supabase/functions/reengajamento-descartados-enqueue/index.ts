@@ -228,8 +228,11 @@ Deno.serve(async (req) => {
       .select("id, nome, telefone, tipo_descarte, stage_changed_at, reengajamento_enviado_at")
       .eq("stage_id", STAGE_DESCARTE_ID)
       .eq("tipo_descarte", "reengajavel")
-      .eq("arquivado", false)
       .not("telefone", "is", null);
+
+    if (!bodyIncludeArchived) {
+      leadsQuery = leadsQuery.eq("arquivado", false);
+    }
 
     if (wave === 1) {
       leadsQuery = leadsQuery
@@ -237,8 +240,10 @@ Deno.serve(async (req) => {
         .gte("stage_changed_at", cutoff);
     } else {
       // Wave 2: já receberam a 1ª (status 'enviado'), nunca receberam wave 2,
-      // e a 1ª foi há pelo menos N dias.
-      const minDias = Math.max(0, Number(cfg.wave2_min_dias_apos_wave1 || 5));
+      // e a 1ª foi há pelo menos N dias (ou override do body).
+      const minDias = Math.max(0, Number(
+        bodyMinDiasOverride !== null ? bodyMinDiasOverride : (cfg.wave2_min_dias_apos_wave1 || 5)
+      ));
       const wave2Cutoff = new Date(Date.now() - minDias * 24 * 60 * 60 * 1000).toISOString();
       leadsQuery = leadsQuery
         .eq("reengajamento_status", "enviado")
@@ -246,9 +251,13 @@ Deno.serve(async (req) => {
         .lte("reengajamento_enviado_at", wave2Cutoff);
     }
 
+    const effectiveLimit = bodyDailyLimitOverride && bodyDailyLimitOverride > 0
+      ? bodyDailyLimitOverride
+      : cfg.daily_limit;
+
     const { data: leads, error: leadsErr } = await leadsQuery
       .order("stage_changed_at", { ascending: false })
-      .limit(cfg.daily_limit);
+      .limit(effectiveLimit);
 
     if (leadsErr) throw leadsErr;
     const totalAlvo = (leads || []).length;
