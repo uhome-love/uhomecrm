@@ -363,7 +363,7 @@ Deno.serve(async (req) => {
         const exists = await validateNumberEvolution(evoUrl, evoKey, cfg.evolution_instance, phone);
         if (!exists) {
           await supabase.from("pipeline_leads")
-            .update({ reengajamento_status: "telefone_invalido", reengajamento_enviado_at: new Date().toISOString() })
+            .update(markPhoneInvalidPatch())
             .eq("id", lead.id);
           await supabase.from("reengajamento_eventos").insert({
             lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: `${phone} sem WhatsApp`,
