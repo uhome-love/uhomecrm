@@ -421,7 +421,7 @@ Deno.serve(async (req) => {
           sent++;
         } else {
           // EVOLUTION com spintax
-          const text = pickVariant(cfg.mensagens_variantes || [], cfg.mensagem_template, firstName);
+          const text = pickVariant(evoVariantes, evoTemplate, firstName);
           const resp = await fetch(`${evoUrl}/message/sendText/${cfg.evolution_instance}`, {
             method: "POST",
             headers: { apikey: evoKey, "Content-Type": "application/json" },
