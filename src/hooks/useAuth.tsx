@@ -47,11 +47,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
+    // Defensive boot: if local Supabase auth tokens are corrupted (malformed JSON,
+    // wrong project ref, or "sub claim missing"-type payloads), purge them so the
+    // app can show /auth instead of looping in "Failed to fetch".
+    const purgeCorruptedAuthStorage = () => {
+      try {
+        const keys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && (k.startsWith("sb-") || k.includes("supabase.auth"))) keys.push(k);
+        }
+        for (const k of keys) {
+          try {
+            const raw = localStorage.getItem(k);
+            if (!raw) continue;
+            const parsed = JSON.parse(raw);
+            const token = parsed?.access_token || parsed?.currentSession?.access_token;
+            if (token && typeof token === "string") {
+              const parts = token.split(".");
+              if (parts.length === 3) {
+                const payload = JSON.parse(
+                  atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
+                );
+                if (!payload?.sub) {
+                  localStorage.removeItem(k);
+                }
+              } else {
+                localStorage.removeItem(k);
+              }
+            }
+          } catch {
+            // unparseable token storage → remove
+            try { localStorage.removeItem(k); } catch {}
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    purgeCorruptedAuthStorage();
+
     const getSessionWithRetry = async (attempts = 3): Promise<any> => {
       let lastErr: any = null;
       for (let i = 1; i <= attempts; i++) {
         try {
-          const { data } = await (supabase.auth as any).getSession();
+          const { data, error } = await (supabase.auth as any).getSession();
+          if (error) {
+            const msg = String(error?.message || "");
+            // Token rejected by server (expired/invalid/missing sub) → drop local session
+            if (
+              msg.includes("missing sub") ||
+              msg.includes("invalid claim") ||
+              msg.includes("bad_jwt") ||
+              msg.includes("JWT expired") ||
+              msg.includes("Invalid Refresh Token")
+            ) {
+              try { await (supabase.auth as any).signOut({ scope: "local" }); } catch {}
+              purgeCorruptedAuthStorage();
+              return null;
+            }
+            throw error;
+          }
           return data?.session ?? null;
         } catch (err: any) {
           lastErr = err;
