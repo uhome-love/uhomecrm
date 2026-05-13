@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow, isBefore, startOfDay, addHours } from "date-fns";
 import { dateToBRT, parseDateBRT } from "@/lib/utils";
+import { runQueryWithRetry } from "@/lib/taskQueryUtils";
 import { Phone, MessageCircle, CheckCircle2, Clock, ClipboardList, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,21 +65,25 @@ export default function MinhaAgendaWidget() {
     queryKey: ["agenda-widget-leads", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
-        .from("pipeline_tarefas")
-        .select("*")
-        .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
-        .eq("status", "pendente")
-        .order("vence_em", { ascending: true })
-        .order("hora_vencimento", { ascending: true })
-        .limit(20);
+      const { data } = await runQueryWithRetry<any[]>(() =>
+        supabase
+          .from("pipeline_tarefas")
+          .select("*")
+          .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
+          .eq("status", "pendente")
+          .order("vence_em", { ascending: true })
+          .order("hora_vencimento", { ascending: true })
+          .limit(20)
+      );
       const rows = (data || []) as any[];
       const leadIds = [...new Set(rows.map(r => r.pipeline_lead_id).filter(Boolean))];
       if (leadIds.length > 0) {
-        const { data: leads } = await supabase
-          .from("pipeline_leads")
-          .select("id, nome, telefone, empreendimento")
-          .in("id", leadIds);
+        const { data: leads } = await runQueryWithRetry<any[]>(() =>
+          supabase
+            .from("pipeline_leads")
+            .select("id, nome, telefone, empreendimento")
+            .in("id", leadIds)
+        );
         const leadMap = new Map((leads as any[] || []).map(l => [l.id, l]));
         rows.forEach(r => {
           const lead = leadMap.get(r.pipeline_lead_id);
@@ -97,21 +102,25 @@ export default function MinhaAgendaWidget() {
     queryKey: ["agenda-widget-negocios", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
-        .from("negocios_tarefas")
-        .select("*")
-        .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
-        .eq("status", "pendente")
-        .order("vence_em", { ascending: true })
-        .order("hora_vencimento", { ascending: true })
-        .limit(20);
+      const { data } = await runQueryWithRetry<any[]>(() =>
+        supabase
+          .from("negocios_tarefas")
+          .select("*")
+          .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
+          .eq("status", "pendente")
+          .order("vence_em", { ascending: true })
+          .order("hora_vencimento", { ascending: true })
+          .limit(20)
+      );
       const rows = (data || []) as any[];
       const negIds = [...new Set(rows.map(r => r.negocio_id).filter(Boolean))];
       if (negIds.length > 0) {
-        const { data: negs } = await supabase
-          .from("negocios")
-          .select("id, nome_cliente")
-          .in("id", negIds);
+        const { data: negs } = await runQueryWithRetry<any[]>(() =>
+          supabase
+            .from("negocios")
+            .select("id, nome_cliente")
+            .in("id", negIds)
+        );
         const negMap = new Map((negs as any[] || []).map(n => [n.id, n]));
         rows.forEach(r => {
           const neg = negMap.get(r.negocio_id);
