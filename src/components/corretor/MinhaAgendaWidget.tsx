@@ -126,30 +126,25 @@ export default function MinhaAgendaWidget() {
   });
 
   const now = new Date();
-  const todayStart = startOfDay(now);
+  const today = now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const tomorrow = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); })();
+  const nowHHMM = now.toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 
   const classify = (tarefas: TarefaAgenda[]) => {
     const atrasadas = tarefas.filter(t => {
       if (!t.vence_em) return false;
-      const d = parseDateBRT(t.vence_em);
-      if (isBefore(d, todayStart)) return true;
-      if (isToday(d) && t.hora_vencimento) {
-        const [h, m] = t.hora_vencimento.split(":").map(Number);
-        const taskTime = new Date(d); taskTime.setHours(h, m, 0);
-        return isBefore(taskTime, now);
+      if (t.vence_em < today) return true;
+      if (t.vence_em === today && t.hora_vencimento) {
+        return t.hora_vencimento.slice(0, 5) < nowHHMM;
       }
       return false;
     });
     const proximas = tarefas.filter(t => {
-      if (!t.vence_em) return false;
-      const d = parseDateBRT(t.vence_em);
-      if (!isToday(d)) return false;
+      if (t.vence_em !== today) return false;
       if (!t.hora_vencimento) return true;
-      const [h, m] = t.hora_vencimento.split(":").map(Number);
-      const taskTime = new Date(d); taskTime.setHours(h, m, 0);
-      return !isBefore(taskTime, now);
+      return t.hora_vencimento.slice(0, 5) >= nowHHMM;
     });
-    const amanha = tarefas.filter(t => t.vence_em && isTomorrow(parseDateBRT(t.vence_em)));
+    const amanha = tarefas.filter(t => t.vence_em === tomorrow);
     return { atrasadas, proximas, amanha, totalHoje: atrasadas.length + proximas.length };
   };
 
