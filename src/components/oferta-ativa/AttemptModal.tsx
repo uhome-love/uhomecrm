@@ -73,6 +73,10 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   const [submitting, setSubmitting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showRetirarConfirm, setShowRetirarConfirm] = useState(false);
+  const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); })();
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const [visitaData, setVisitaData] = useState(tomorrowStr);
+  const [visitaHora, setVisitaHora] = useState("10:00");
 
   const RETIRAR_FEEDBACK = "🚫 Retirar do sistema — não quer ser mais contatado";
   const isRetirar = feedback === RETIRAR_FEEDBACK;
