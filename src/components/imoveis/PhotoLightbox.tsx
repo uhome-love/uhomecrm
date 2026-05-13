@@ -81,8 +81,11 @@ const PhotoLightboxInner = forwardRef<HTMLDivElement, PhotoLightboxProps>(functi
     >
       {/* Close button */}
       <button
-        onClick={onClose}
-        className="absolute top-4 right-4 z-50 bg-white/10 hover:bg-white/20 rounded-full p-2.5 text-white backdrop-blur-sm transition-all"
+        type="button"
+        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
+        onPointerDown={(e) => e.stopPropagation()}
+        aria-label="Fechar"
+        className="absolute top-4 right-4 z-[10002] bg-white/10 hover:bg-white/20 rounded-full p-2.5 text-white backdrop-blur-sm transition-all pointer-events-auto cursor-pointer"
       >
         <X className="h-5 w-5" />
       </button>
