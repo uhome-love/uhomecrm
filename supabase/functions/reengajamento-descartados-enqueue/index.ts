@@ -323,7 +323,7 @@ Deno.serve(async (req) => {
           fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
             method: "POST",
             headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ force: true, iniciado_por: `${iniciadoPor}_continuacao` }),
+            body: JSON.stringify({ force: true, wave, iniciado_por: `${iniciadoPor}_continuacao` }),
           }).catch((err) => console.error("Falha ao encadear próximo lote:", err));
         } catch (chainErr) {
           console.error("Erro ao agendar continuação:", chainErr);
