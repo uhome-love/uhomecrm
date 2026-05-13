@@ -530,6 +530,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               telefone: lead.telefone || undefined,
               empreendimento: lead.empreendimento || undefined,
               observacoes: feedback,
+              dataVisita: proximaAcao?.venceEm,
+              horaVisita: proximaAcao?.horaVencimento,
             });
             toast.success("📅 Visita registrada na Agenda!");
           }
