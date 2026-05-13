@@ -12,6 +12,7 @@ import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { useCalendarIntegration, sendVisitaInvite } from "@/hooks/useCalendarIntegration";
+import { useQueryClient } from "@tanstack/react-query";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 
 function cleanName(name: string) {
