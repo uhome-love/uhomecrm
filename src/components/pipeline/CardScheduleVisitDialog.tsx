@@ -75,6 +75,21 @@ export default function CardScheduleVisitDialog({ open, onOpenChange, lead, stag
 
       if (error) throw error;
 
+      // Update lead's last action timestamp
+      await supabase.from("pipeline_leads").update({
+        ultima_acao_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", lead.id);
+
+      // Invalidate caches so Agenda + widgets refresh
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["visitas"] }),
+        queryClient.invalidateQueries({ queryKey: ["agenda-visitas"] }),
+        queryClient.invalidateQueries({ queryKey: ["agenda-widget-leads"] }),
+        queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] }),
+        queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
+      ]);
+
       if (onMoveLead) {
         const visitaStage = stages.find(s => s.nome.toLowerCase().includes("visita marcada") || s.tipo === "visita");
         if (visitaStage) onMoveLead(lead.id, visitaStage.id);
