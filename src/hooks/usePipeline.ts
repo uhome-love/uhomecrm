@@ -395,14 +395,15 @@ export function usePipeline(pipelineTipo: string = "leads") {
     };
   }, [userId]);
 
-  // Reload leads when tab becomes visible again (e.g. after accepting a lead on another page)
+  // Reload leads when tab becomes visible again after a long absence.
+  // Threshold raised from 3s → 60s to avoid hammering the backend on
+  // quick alt-tabs and to prevent the kanban from flickering empty.
   useEffect(() => {
     if (!userId) return;
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         const elapsed = Date.now() - lastVisibleRef.current;
-        // Reload if away for more than 3 seconds
-        if (elapsed > 3000) {
+        if (elapsed > 60_000) {
           loadLeads();
         }
       } else {
