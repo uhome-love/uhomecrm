@@ -541,7 +541,7 @@ function HistoricoAceites() {
       {items.map((lead) => (
         <Link
           key={lead.id}
-          to={`/pipeline?lead=${lead.id}`}
+          to={`/pipeline-leads?lead=${lead.id}`}
           className="block rounded-xl border bg-card p-3 hover:border-primary/40 hover:shadow-md transition-all"
         >
           <div className="flex items-start justify-between gap-3">
