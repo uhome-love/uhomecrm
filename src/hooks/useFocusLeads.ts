@@ -67,7 +67,7 @@ export function useFocusLeads(
       const todayStr = today.toISOString().split("T")[0];
 
       // 1. Get stages for name mapping — exclude descarte and convertido
-      const { data: stagesData, error: stagesError } = await runQueryWithRetry(() =>
+      const { data: stagesData, error: stagesError } = await runQueryWithRetry<Array<{ id: string; nome: string; tipo: string | null; pipeline_tipo: string | null }>>(() =>
         supabase
           .from("pipeline_stages")
           .select("id, nome, tipo, pipeline_tipo")
@@ -107,7 +107,22 @@ export function useFocusLeads(
         query = query.is("negocio_id", null);
       }
 
-      const { data: leadsData, error: leadsError } = await runQueryWithRetry(() => query);
+      const { data: leadsData, error: leadsError } = await runQueryWithRetry<Array<{
+        id: string;
+        nome: string;
+        telefone: string | null;
+        telefone2: string | null;
+        email: string | null;
+        stage_id: string;
+        stage_changed_at: string;
+        origem: string | null;
+        empreendimento: string | null;
+        ultima_acao_at: string | null;
+        tags: string[] | null;
+        negocio_id: string | null;
+        corretor_id: string | null;
+        updated_at: string;
+      }>>(() => query);
       if (leadsError) throw leadsError;
       if (!leadsData || leadsData.length === 0) {
         setLeads([]);
