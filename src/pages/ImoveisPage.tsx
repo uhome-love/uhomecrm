@@ -275,13 +275,28 @@ export default function ImoveisPage() {
     return filters.bairro ? filters.bairro.split(",").map(s => s.trim()).filter(Boolean) : [];
   }, [filters.bairro]);
 
+  const stripAccents = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   const bairroSuggestions = useMemo(() => {
     const all = bairros.map(b => b.bairro);
     const filtered = all.filter(b => !bairrosSelecionados.includes(b));
     if (!bairroInput.trim()) return filtered.slice(0, 8);
-    const q = bairroInput.toLowerCase();
-    return filtered.filter(b => b.toLowerCase().includes(q)).slice(0, 10);
+    const q = stripAccents(bairroInput.trim());
+    return filtered.filter(b => stripAccents(b).includes(q)).slice(0, 12);
   }, [bairroInput, bairrosSelecionados, bairros]);
+
+  // Cidade + tipo suggestions for the same combobox
+  const cidadeSuggestions = useMemo(() => {
+    if (!bairroInput.trim()) return [] as string[];
+    const q = stripAccents(bairroInput.trim());
+    return CIDADES_PERMITIDAS.filter(c => stripAccents(c).includes(q)).slice(0, 5);
+  }, [bairroInput]);
+
+  const tipoSuggestions = useMemo(() => {
+    if (!bairroInput.trim()) return [] as { value: string; label: string }[];
+    const q = stripAccents(bairroInput.trim());
+    return PROPERTY_TYPES.filter(t => stripAccents(t.label).includes(q) || stripAccents(t.value).includes(q)).slice(0, 5);
+  }, [bairroInput]);
 
   const hasSearchFilters = !!(
     filters.tipo || filters.bairro || filters.precoMin || filters.precoMax ||
@@ -1028,20 +1043,54 @@ export default function ImoveisPage() {
             </Button>
           </div>
         </div>
-        {/* Bairro dropdown — outside overflow container */}
-        {showBairroDropdown && bairroSuggestions.length > 0 && (
-          <div className="absolute left-4 sm:left-5 top-full z-[60] mt-1 max-h-64 w-80 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-xl">
-            <p className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Bairros</p>
-            {bairroSuggestions.map(b => (
-              <button
-                key={b}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => addBairro(b)}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent/50"
-              >
-                <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {b}
-              </button>
-            ))}
+        {/* Bairro / cidade / tipo dropdown — outside overflow container */}
+        {showBairroDropdown && (bairroSuggestions.length > 0 || cidadeSuggestions.length > 0 || tipoSuggestions.length > 0) && (
+          <div className="absolute left-4 sm:left-5 top-full z-[60] mt-1 max-h-80 w-80 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-xl">
+            {bairroSuggestions.length > 0 && (
+              <>
+                <p className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Bairros</p>
+                {bairroSuggestions.map(b => (
+                  <button
+                    key={`b-${b}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { addBairro(b); setBairroInput(""); }}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent/50"
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {b}
+                  </button>
+                ))}
+              </>
+            )}
+            {cidadeSuggestions.length > 0 && (
+              <>
+                <p className="mt-1 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Cidades</p>
+                {cidadeSuggestions.map(c => (
+                  <button
+                    key={`c-${c}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { setFilter("cidade", c); setBairroInput(""); setShowBairroDropdown(false); setPage(0); setAllImoveis([]); }}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent/50"
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {c}
+                  </button>
+                ))}
+              </>
+            )}
+            {tipoSuggestions.length > 0 && (
+              <>
+                <p className="mt-1 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tipos</p>
+                {tipoSuggestions.map(t => (
+                  <button
+                    key={`t-${t.value}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { setFilter("tipo", t.value); setBairroInput(""); setShowBairroDropdown(false); setPage(0); setAllImoveis([]); }}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent/50"
+                  >
+                    <Search className="h-3.5 w-3.5 text-muted-foreground" /> {t.label}
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         )}
       </div>
