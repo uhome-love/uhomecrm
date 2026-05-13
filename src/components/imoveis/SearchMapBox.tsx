@@ -91,6 +91,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
   // Preview popup state (React-rendered, like site)
   const [previewPin, setPreviewPin] = useState<MapPin | null>(null);
   const [previewPos, setPreviewPos] = useState<{ x: number; y: number } | null>(null);
+  const previewPinRef = useRef<MapPin | null>(null);
 
   // Draw mode
   const [drawMode, setDrawMode] = useState(false);
@@ -110,6 +111,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
   useEffect(() => { onPinClickRef.current = onPinClick; }, [onPinClick]);
   useEffect(() => { drawPointsRef.current = drawPoints; }, [drawPoints]);
   useEffect(() => { autoSearchRef.current = autoSearch; }, [autoSearch]);
+  useEffect(() => { previewPinRef.current = previewPin; }, [previewPin]);
 
   // Cleanup user marker
   useEffect(() => { return () => { userMarkerRef.current?.remove(); }; }, []);
@@ -316,10 +318,11 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
       if (!mapReadyRef.current) return;
       boundsRef.current = map.getBounds();
 
-      const projectedPreview = previewPin
-        ? map.project([Number(previewPin.longitude), Number(previewPin.latitude)])
+      const activePreviewPin = previewPinRef.current;
+      const projectedPreview = activePreviewPin
+        ? map.project([Number(activePreviewPin.longitude), Number(activePreviewPin.latitude)])
         : null;
-      if (previewPin && projectedPreview) {
+      if (activePreviewPin && projectedPreview) {
         setPreviewPos({ x: projectedPreview.x, y: projectedPreview.y });
       }
 
