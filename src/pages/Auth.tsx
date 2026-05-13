@@ -198,15 +198,26 @@ export default function Auth() {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          if (error.message?.includes("Invalid login")) toast.error("Email ou senha incorretos.");
-          else if (error.message?.includes("Email not confirmed")) toast.error("Confirme seu email antes de entrar.");
-          else toast.error(error.message || "Erro ao entrar.");
+          const msg = String(error.message || "");
+          if (msg.includes("Invalid login")) toast.error("Email ou senha incorretos.");
+          else if (msg.includes("Email not confirmed")) toast.error("Confirme seu email antes de entrar.");
+          else if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network")) {
+            toast.error("Falha de conexão. Verifique sua internet e tente novamente em alguns segundos.");
+          }
+          else toast.error(msg || "Erro ao entrar.");
         }
       } else {
         if (!nome.trim()) { toast.error("Informe seu nome."); setSubmitting(false); return; }
         const { error } = await signUp(email, password, nome);
         if (error) toast.error(error.message || "Erro ao criar conta.");
         else toast.success("Conta criada! Verifique seu email para confirmar.");
+      }
+    } catch (err: any) {
+      const msg = String(err?.message || "");
+      if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+        toast.error("Falha de conexão. Tente novamente em alguns segundos.");
+      } else {
+        toast.error(msg || "Erro inesperado. Tente novamente.");
       }
     } finally { setSubmitting(false); }
   };
