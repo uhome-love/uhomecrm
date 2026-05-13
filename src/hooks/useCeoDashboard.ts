@@ -98,6 +98,7 @@ async function fetchKPIs(r: { start: string; end: string }): Promise<KPIs> {
 }
 
 const EMPTY_KPIS: KPIs = { ligacoes: 0, aproveitados: 0, taxaConversao: 0, visitasMarcadas: 0, visitasRealizadas: 0, taxaRealizacao: 0, vgvGerado: 0, vgvAssinado: 0, propostas: 0, negociosPerdidos: 0, noShows: 0 };
+const EMPTY_ARR: any[] = [];
 
 export function useCeoDashboard(period: DashPeriod, customRange?: { start: string; end: string }) {
   const { user } = useAuth();
