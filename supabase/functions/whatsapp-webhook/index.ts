@@ -500,12 +500,22 @@ async function handleUnknownReply(
   // 1. Search pipeline_leads by normalized phone
   const { data: existingLeads } = await supabase
     .from("pipeline_leads")
-    .select("id, nome, corretor_id, empreendimento")
+    .select("id, nome, corretor_id, empreendimento, reengajamento_status, tipo_descarte, stage_id")
     .or(`telefone.eq.${from},telefone.like.%${from.slice(-10)}%`)
     .limit(1);
 
   if (existingLeads && existingLeads.length > 0) {
     const lead = existingLeads[0];
+
+    // GUARD: lead inativado por NÃO no reengajamento — não reabrir janela, não notificar, não chamar orchestrator
+    const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
+    const respondeuNao = lead.reengajamento_status === "respondeu_nao" || lead.reengajamento_status === "respondeu_nao_wave2";
+    const inativoDefinitivo = lead.stage_id === DESCARTE_STAGE_ID && lead.tipo_descarte === "definitivo";
+    if (respondeuNao || inativoDefinitivo) {
+      console.log(`🚫 Ignorando reply espontâneo de lead inativado ${lead.id}`);
+      return;
+    }
+
     // Found in pipeline → set window + notify corretor
     const windowUntil = await setConversationWindow(supabase, lead.id);
 
