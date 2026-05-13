@@ -89,7 +89,7 @@ function buildActions(tipo: string, ctx: any, _dbAlertId: string) {
       if (ctx?.corretor_id) {
         actions.push({
           label: `Ver leads (${ctx.count || "?"})`,
-          action: () => { window.location.href = `/pipeline?corretor=${ctx.corretor_id}`; },
+          action: () => { window.location.href = `/pipeline-leads?corretor=${ctx.corretor_id}`; },
         });
       }
       break;
@@ -98,12 +98,12 @@ function buildActions(tipo: string, ctx: any, _dbAlertId: string) {
     case "visita_sem_confirmacao":
       actions.push({
         label: "Ver visitas",
-        action: () => { window.location.href = "/visitas"; },
+        action: () => { window.location.href = "/agenda-visitas"; },
       });
       if (ctx?.corretor_id) {
         actions.push({
           label: "Ver corretor",
-          action: () => { window.location.href = `/pipeline?corretor=${ctx.corretor_id}`; },
+          action: () => { window.location.href = `/pipeline-leads?corretor=${ctx.corretor_id}`; },
         });
       }
       break;
@@ -112,7 +112,7 @@ function buildActions(tipo: string, ctx: any, _dbAlertId: string) {
     case "corretor_inativo":
       actions.push({
         label: `Ver leads (${ctx?.pending_leads || "?"})`,
-        action: () => { window.location.href = `/pipeline?corretor=${ctx?.corretor_id}`; },
+        action: () => { window.location.href = `/pipeline-leads?corretor=${ctx?.corretor_id}`; },
       });
       break;
 
@@ -121,7 +121,7 @@ function buildActions(tipo: string, ctx: any, _dbAlertId: string) {
       if (ctx?.corretor_id) {
         actions.push({
           label: `Ver tarefas (${ctx.count || "?"})`,
-          action: () => { window.location.href = `/pipeline?corretor=${ctx.corretor_id}`; },
+          action: () => { window.location.href = `/pipeline-leads?corretor=${ctx.corretor_id}`; },
         });
       }
       break;

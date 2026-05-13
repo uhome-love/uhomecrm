@@ -845,7 +845,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
           <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSearchOpen(!searchOpen)}>
             <Search size={12} />
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => navigate(`/pipeline?lead=${leadInfo.id}`)}>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => navigate(`/pipeline-leads?lead=${leadInfo.id}`)}>
             <Eye size={12} /> Pipeline
           </Button>
         </div>
