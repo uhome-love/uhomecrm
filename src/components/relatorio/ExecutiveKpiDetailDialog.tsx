@@ -182,7 +182,7 @@ export default function ExecutiveKpiDetailDialog({ open, onOpenChange, type, lab
 
   const goToLead = (leadId: string) => {
     onOpenChange(false);
-    navigate(`/pipeline?lead=${leadId}`);
+    navigate(`/pipeline-leads?lead=${leadId}`);
   };
 
   const grouped = rows.reduce<Record<string, DetailRow[]>>((acc, row) => {

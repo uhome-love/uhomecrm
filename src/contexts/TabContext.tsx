@@ -55,7 +55,9 @@ function loadFromStorage(): { tabs: Tab[]; activeTabId: string } | null {
     const data = JSON.parse(raw);
     if (Array.isArray(data.tabs) && typeof data.activeTabId === "string") {
       // Remove ghost tabs from legacy "/" route
-      const cleaned = data.tabs.filter((t: any) => t.path !== "/" && t.path !== "/index.html" && t.path !== "/index");
+      const cleaned = data.tabs
+        .filter((t: any) => t.path !== "/" && t.path !== "/index.html" && t.path !== "/index")
+        .map((t: any) => ({ ...t, path: normalizeLegacyPath(t.path) }));
       const activeStillExists = cleaned.some((t: any) => t.id === data.activeTabId);
       return {
         tabs: cleaned,
@@ -64,6 +66,14 @@ function loadFromStorage(): { tabs: Tab[]; activeTabId: string } | null {
     }
   } catch {}
   return null;
+}
+
+function normalizeLegacyPath(path: string): string {
+  if (path === "/pipeline") return "/pipeline-leads";
+  if (path.startsWith("/pipeline?")) return path.replace("/pipeline?", "/pipeline-leads?");
+  if (path === "/visitas") return "/agenda-visitas";
+  if (path.startsWith("/visitas?")) return path.replace("/visitas?", "/agenda-visitas?");
+  return path;
 }
 
 // ─── Provider ────────────────────────────────────────────────────────────────
@@ -121,6 +131,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
   // ── openTab ────────────────────────────────────────────────────────────────
   const openTab = useCallback((path: string, skipNav = false) => {
+    path = normalizeLegacyPath(path);
     const pathname = path.split("?")[0].split("#")[0];
     const resolved = resolveRoute(pathname);
     if (!resolved) return;
@@ -200,7 +211,8 @@ export function TabProvider({ children }: { children: ReactNode }) {
     syncingRef.current = true;
 
     const fullPath = location.pathname + location.search;
-    const pathname = location.pathname;
+    const normalizedFullPath = normalizeLegacyPath(fullPath);
+    const pathname = normalizedFullPath.split("?")[0];
 
     // "/" is a redirect hub — route to role-specific dashboard
     // Wait for roles to load before redirecting (prevents blank screen race condition)
@@ -217,6 +229,12 @@ export function TabProvider({ children }: { children: ReactNode }) {
       else if (r.includes("rh")) dest = "/rh";
       else if (r.includes("gestor")) dest = "/gerente/dashboard";
       navigateRef.current(dest, { replace: true });
+      requestAnimationFrame(() => { syncingRef.current = false; });
+      return;
+    }
+
+    if (normalizedFullPath !== fullPath) {
+      navigateRef.current(normalizedFullPath, { replace: true });
       requestAnimationFrame(() => { syncingRef.current = false; });
       return;
     }

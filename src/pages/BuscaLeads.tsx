@@ -462,7 +462,7 @@ export default function BuscaLeads() {
                                 size="sm"
                                 variant="ghost"
                                 className="h-7 text-xs"
-                                onClick={() => navigate(`/pipeline?lead=${lead.id}`)}
+                                onClick={() => navigate(`/pipeline-leads?lead=${lead.id}`)}
                               >
                                 Abrir
                               </Button>
@@ -629,7 +629,7 @@ export default function BuscaLeads() {
                       size="sm"
                       variant="outline"
                       className="text-xs"
-                      onClick={() => navigate(`/pipeline?lead=${selectedLead.id}`)}
+                      onClick={() => navigate(`/pipeline-leads?lead=${selectedLead.id}`)}
                     >
                       Abrir no Pipeline
                     </Button>
