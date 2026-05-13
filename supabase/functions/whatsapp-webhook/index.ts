@@ -703,16 +703,19 @@ async function handleUnknownReply(
     .limit(1)
     .maybeSingle();
 
+  const nowIso = new Date().toISOString();
   const { data: newLead, error: createErr } = await supabase
     .from("pipeline_leads")
     .insert({
       nome: contactName || "Lead WhatsApp",
       telefone: from,
-      origem: "whatsapp_inbound",
+      origem: "reativacao_nutricao",
+      reativado_por_nutricao: true,
+      reativado_em: nowIso,
       stage_id: firstStage?.id || null,
-      stage_changed_at: new Date().toISOString(),
+      stage_changed_at: nowIso,
       conversation_window_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      observacoes: `Lead criado a partir de mensagem WhatsApp: "${msgText.slice(0, 200)}"`,
+      observacoes: `🔄 Lead reativado via reengajamento WhatsApp (remetente novo). Respondeu: "${msgText.slice(0, 200)}"`,
     })
     .select("id")
     .single();
