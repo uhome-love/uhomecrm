@@ -585,6 +585,8 @@ export async function createVisitaFromOA(params: {
   empreendimento?: string;
   attemptId?: string;
   observacoes?: string;
+  dataVisita?: string; // yyyy-MM-dd (BRT)
+  horaVisita?: string; // HH:mm
 }) {
   const { data: tm } = await supabase
     .from("team_members")
@@ -595,7 +597,9 @@ export async function createVisitaFromOA(params: {
     .maybeSingle();
 
   const gerenteId = tm?.gerente_id || params.corretorId;
-  const dataVisita = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const dataVisita = params.dataVisita
+    || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const horaVisita = params.horaVisita || null;
 
   const payload = {
     corretor_id: params.corretorId,
@@ -606,6 +610,7 @@ export async function createVisitaFromOA(params: {
     empreendimento: sanitizeText(params.empreendimento),
     origem: "oferta_ativa",
     data_visita: dataVisita,
+    hora_visita: horaVisita,
     status: "marcada",
     observacoes: sanitizeText(params.observacoes),
     created_by: params.corretorId,
