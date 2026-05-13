@@ -69,7 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const payload = JSON.parse(
                   atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
                 );
-                if (!payload?.sub) {
+                const nowSec = Math.floor(Date.now() / 1000);
+                const expired = typeof payload?.exp === "number" && payload.exp < nowSec - 5;
+                if (!payload?.sub || expired) {
                   localStorage.removeItem(k);
                 }
               } else {
