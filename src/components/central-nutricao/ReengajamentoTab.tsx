@@ -631,6 +631,15 @@ export default function ReengajamentoTab() {
                 </div>
               </div>
 
+              <div>
+                <Label className="text-xs">URL da imagem do header (opcional)</Label>
+                <Input
+                  placeholder="https://… (preencha apenas se o template tem header de IMAGEM)"
+                  value={local.meta_header_image_url || ""}
+                  onChange={(e) => setDraft({ ...local, meta_header_image_url: e.target.value })}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Use o mesmo URL da imagem aprovada no template Meta. Deixe vazio se o template não tem header de imagem.</p>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
                   <Label className="text-xs">Lookback (dias)</Label>
