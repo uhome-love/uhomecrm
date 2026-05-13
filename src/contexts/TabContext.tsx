@@ -55,7 +55,9 @@ function loadFromStorage(): { tabs: Tab[]; activeTabId: string } | null {
     const data = JSON.parse(raw);
     if (Array.isArray(data.tabs) && typeof data.activeTabId === "string") {
       // Remove ghost tabs from legacy "/" route
-      const cleaned = data.tabs.filter((t: any) => t.path !== "/" && t.path !== "/index.html" && t.path !== "/index");
+      const cleaned = data.tabs
+        .filter((t: any) => t.path !== "/" && t.path !== "/index.html" && t.path !== "/index")
+        .map((t: any) => ({ ...t, path: normalizeLegacyPath(t.path) }));
       const activeStillExists = cleaned.some((t: any) => t.id === data.activeTabId);
       return {
         tabs: cleaned,

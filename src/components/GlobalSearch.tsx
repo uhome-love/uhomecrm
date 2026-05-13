@@ -100,7 +100,7 @@ export default function GlobalSearch() {
           title: l.nome,
           subtitle: [l.empreendimento, stageMap[l.stage_id], l.oportunidade_score ? `Score ${l.oportunidade_score}` : ""].filter(Boolean).join(" · "),
           badge: stageMap[l.stage_id] || "Lead",
-          url: `/pipeline?lead=${l.id}`,
+          url: `/pipeline-leads?lead=${l.id}`,
         });
       });
 
