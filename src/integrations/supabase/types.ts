@@ -7198,6 +7198,8 @@ export type Database = {
           mensagem_template_2: string | null
           mensagens_variantes: string[]
           mensagens_variantes_2: string[] | null
+          meta_header_image_url: string | null
+          meta_header_image_url_2: string | null
           meta_template_language: string
           meta_template_name: string | null
           meta_template_name_2: string | null
@@ -7225,6 +7227,8 @@ export type Database = {
           mensagem_template_2?: string | null
           mensagens_variantes?: string[]
           mensagens_variantes_2?: string[] | null
+          meta_header_image_url?: string | null
+          meta_header_image_url_2?: string | null
           meta_template_language?: string
           meta_template_name?: string | null
           meta_template_name_2?: string | null
@@ -7252,6 +7256,8 @@ export type Database = {
           mensagem_template_2?: string | null
           mensagens_variantes?: string[]
           mensagens_variantes_2?: string[] | null
+          meta_header_image_url?: string | null
+          meta_header_image_url_2?: string | null
           meta_template_language?: string
           meta_template_name?: string | null
           meta_template_name_2?: string | null
