@@ -5907,6 +5907,7 @@ export type Database = {
           reciclagem_aviso_at: string | null
           reengajamento_enviado_at: string | null
           reengajamento_status: string | null
+          reengajamento_wave2_at: string | null
           requer_revisao_dedup: boolean
           roleta_distribuido_em: string | null
           segmento_id: string | null
@@ -5994,6 +5995,7 @@ export type Database = {
           reciclagem_aviso_at?: string | null
           reengajamento_enviado_at?: string | null
           reengajamento_status?: string | null
+          reengajamento_wave2_at?: string | null
           requer_revisao_dedup?: boolean
           roleta_distribuido_em?: string | null
           segmento_id?: string | null
@@ -6081,6 +6083,7 @@ export type Database = {
           reciclagem_aviso_at?: string | null
           reengajamento_enviado_at?: string | null
           reengajamento_status?: string | null
+          reengajamento_wave2_at?: string | null
           requer_revisao_dedup?: boolean
           roleta_distribuido_em?: string | null
           segmento_id?: string | null
@@ -7192,15 +7195,19 @@ export type Database = {
           id: string
           lookback_days: number
           mensagem_template: string
+          mensagem_template_2: string | null
           mensagens_variantes: string[]
+          mensagens_variantes_2: string[] | null
           meta_template_language: string
           meta_template_name: string | null
+          meta_template_name_2: string | null
           pausa_longa_a_cada: number
           pausa_longa_max_seconds: number
           pausa_longa_min_seconds: number
           paused: boolean
           updated_at: string
           validar_numero: boolean
+          wave2_min_dias_apos_wave1: number | null
         }
         Insert: {
           canal?: string
@@ -7215,15 +7222,19 @@ export type Database = {
           id?: string
           lookback_days?: number
           mensagem_template?: string
+          mensagem_template_2?: string | null
           mensagens_variantes?: string[]
+          mensagens_variantes_2?: string[] | null
           meta_template_language?: string
           meta_template_name?: string | null
+          meta_template_name_2?: string | null
           pausa_longa_a_cada?: number
           pausa_longa_max_seconds?: number
           pausa_longa_min_seconds?: number
           paused?: boolean
           updated_at?: string
           validar_numero?: boolean
+          wave2_min_dias_apos_wave1?: number | null
         }
         Update: {
           canal?: string
@@ -7238,15 +7249,19 @@ export type Database = {
           id?: string
           lookback_days?: number
           mensagem_template?: string
+          mensagem_template_2?: string | null
           mensagens_variantes?: string[]
+          mensagens_variantes_2?: string[] | null
           meta_template_language?: string
           meta_template_name?: string | null
+          meta_template_name_2?: string | null
           pausa_longa_a_cada?: number
           pausa_longa_max_seconds?: number
           pausa_longa_min_seconds?: number
           paused?: boolean
           updated_at?: string
           validar_numero?: boolean
+          wave2_min_dias_apos_wave1?: number | null
         }
         Relationships: []
       }

@@ -141,16 +141,21 @@ Deno.serve(async (req) => {
 
   let bodyForce = false;
   let iniciadoPor = "cron";
+  let bodyWave: number | null = null;
   try {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
       bodyForce = !!(b as any)?.force;
       if ((b as any)?.iniciado_por) iniciadoPor = String((b as any).iniciado_por);
       else if (bodyForce) iniciadoPor = "manual";
+      if ((b as any)?.wave) bodyWave = Number((b as any).wave);
     }
   } catch { /* ignore */ }
 
-  const force = bodyForce || new URL(req.url).searchParams.get("force") === "1";
+  const url = new URL(req.url);
+  const force = bodyForce || url.searchParams.get("force") === "1";
+  const waveParam = bodyWave ?? Number(url.searchParams.get("wave") || "1");
+  const wave: 1 | 2 = waveParam === 2 ? 2 : 1;
   const startedAt = Date.now();
   let runId: string | null = null;
   const errs: string[] = [];
@@ -189,21 +194,45 @@ Deno.serve(async (req) => {
       metaPhoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || "";
       metaToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
       if (!metaPhoneId || !metaToken) throw new Error("Meta env vars missing");
-      metaTemplate = String(cfg.meta_template_name || "");
+      metaTemplate = String((wave === 2 ? cfg.meta_template_name_2 : cfg.meta_template_name) || "");
       metaLang = String(cfg.meta_template_language || "pt_BR");
-      if (!metaTemplate) throw new Error("meta_template_name não configurado");
+      if (!metaTemplate) throw new Error(wave === 2 ? "meta_template_name_2 não configurado" : "meta_template_name não configurado");
+    }
+
+    // Mensagens (Evolution) e variantes — selecionar pela onda
+    const evoTemplate: string = String((wave === 2 ? cfg.mensagem_template_2 : cfg.mensagem_template) || "");
+    const evoVariantes: string[] = (wave === 2 ? cfg.mensagens_variantes_2 : cfg.mensagens_variantes) || [];
+    if (canal === "evolution" && !evoTemplate && (!evoVariantes || evoVariantes.length === 0)) {
+      throw new Error(wave === 2 ? "mensagem_template_2 vazio" : "mensagem_template vazio");
     }
 
     const cutoff = new Date(Date.now() - cfg.lookback_days * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: leads, error: leadsErr } = await supabase
+    // Query base — diferente por onda
+    let leadsQuery = supabase
       .from("pipeline_leads")
-      .select("id, nome, telefone, tipo_descarte, stage_changed_at")
+      .select("id, nome, telefone, tipo_descarte, stage_changed_at, reengajamento_enviado_at")
       .eq("stage_id", STAGE_DESCARTE_ID)
       .eq("tipo_descarte", "reengajavel")
-      .is("reengajamento_enviado_at", null)
-      .not("telefone", "is", null)
-      .gte("stage_changed_at", cutoff)
+      .eq("arquivado", false)
+      .not("telefone", "is", null);
+
+    if (wave === 1) {
+      leadsQuery = leadsQuery
+        .is("reengajamento_enviado_at", null)
+        .gte("stage_changed_at", cutoff);
+    } else {
+      // Wave 2: já receberam a 1ª (status 'enviado'), nunca receberam wave 2,
+      // e a 1ª foi há pelo menos N dias.
+      const minDias = Math.max(0, Number(cfg.wave2_min_dias_apos_wave1 || 5));
+      const wave2Cutoff = new Date(Date.now() - minDias * 24 * 60 * 60 * 1000).toISOString();
+      leadsQuery = leadsQuery
+        .eq("reengajamento_status", "enviado")
+        .is("reengajamento_wave2_at", null)
+        .lte("reengajamento_enviado_at", wave2Cutoff);
+    }
+
+    const { data: leads, error: leadsErr } = await leadsQuery
       .order("stage_changed_at", { ascending: false })
       .limit(cfg.daily_limit);
 
@@ -263,6 +292,22 @@ Deno.serve(async (req) => {
         || m.includes("quality rating");
     };
 
+    // Patches por onda (helpers)
+    const sentStatus = wave === 2 ? "enviado_wave2" : "enviado";
+    const markSentPatch = () => {
+      const nowIso = new Date().toISOString();
+      return wave === 2
+        ? { reengajamento_wave2_at: nowIso, reengajamento_status: sentStatus }
+        : { reengajamento_enviado_at: nowIso, reengajamento_status: sentStatus };
+    };
+    const markPhoneInvalidPatch = () => {
+      const nowIso = new Date().toISOString();
+      // Em wave 2 mantém status original e só marca wave2_at para não retentar
+      return wave === 2
+        ? { reengajamento_wave2_at: nowIso }
+        : { reengajamento_status: "telefone_invalido", reengajamento_enviado_at: nowIso };
+    };
+
     for (const lead of leads || []) {
       if (Date.now() - startedAt > MAX_RUN_MS) {
         // Encadeia automaticamente um próximo run para continuar de onde parou
@@ -278,7 +323,7 @@ Deno.serve(async (req) => {
           fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
             method: "POST",
             headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ force: true, iniciado_por: `${iniciadoPor}_continuacao` }),
+            body: JSON.stringify({ force: true, wave, iniciado_por: `${iniciadoPor}_continuacao` }),
           }).catch((err) => console.error("Falha ao encadear próximo lote:", err));
         } catch (chainErr) {
           console.error("Erro ao agendar continuação:", chainErr);
@@ -303,7 +348,7 @@ Deno.serve(async (req) => {
       const phone = normalizePhone(lead.telefone || "");
       if (!phone) {
         await supabase.from("pipeline_leads")
-          .update({ reengajamento_status: "telefone_invalido", reengajamento_enviado_at: new Date().toISOString() })
+          .update(markPhoneInvalidPatch())
           .eq("id", lead.id);
         await supabase.from("reengajamento_eventos").insert({
           lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: lead.telefone,
@@ -318,7 +363,7 @@ Deno.serve(async (req) => {
         const exists = await validateNumberEvolution(evoUrl, evoKey, cfg.evolution_instance, phone);
         if (!exists) {
           await supabase.from("pipeline_leads")
-            .update({ reengajamento_status: "telefone_invalido", reengajamento_enviado_at: new Date().toISOString() })
+            .update(markPhoneInvalidPatch())
             .eq("id", lead.id);
           await supabase.from("reengajamento_eventos").insert({
             lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: `${phone} sem WhatsApp`,
@@ -369,17 +414,14 @@ Deno.serve(async (req) => {
             lead_id: lead.id, run_id: runId, wamid: r.wamid, template_name: metaTemplate,
             template_language: metaLang, phone, status: "sent", sent_at: new Date().toISOString(),
           });
-          await supabase.from("pipeline_leads").update({
-            reengajamento_enviado_at: new Date().toISOString(),
-            reengajamento_status: "enviado",
-          }).eq("id", lead.id);
+          await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
           await supabase.from("reengajamento_eventos").insert({
             lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[meta:${metaTemplate}] ${phone}`,
           });
           sent++;
         } else {
           // EVOLUTION com spintax
-          const text = pickVariant(cfg.mensagens_variantes || [], cfg.mensagem_template, firstName);
+          const text = pickVariant(evoVariantes, evoTemplate, firstName);
           const resp = await fetch(`${evoUrl}/message/sendText/${cfg.evolution_instance}`, {
             method: "POST",
             headers: { apikey: evoKey, "Content-Type": "application/json" },
@@ -421,10 +463,7 @@ Deno.serve(async (req) => {
             continue;
           }
           const messageId = result?.key?.id || result?.messageId || crypto.randomUUID();
-          await supabase.from("pipeline_leads").update({
-            reengajamento_enviado_at: new Date().toISOString(),
-            reengajamento_status: "enviado",
-          }).eq("id", lead.id);
+          await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
           await supabase.from("whatsapp_mensagens").insert({
             lead_id: lead.id, instance_name: cfg.evolution_instance, direction: "sent",
             body: text, whatsapp_message_id: messageId, timestamp: new Date().toISOString(),
