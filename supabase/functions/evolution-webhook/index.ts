@@ -376,13 +376,12 @@ Deno.serve(async (req) => {
     if (
       direction === "received" &&
       finalBody &&
-      lead.reengajamento_status === "enviado"
+      (lead.reengajamento_status === "enviado" || lead.reengajamento_status === "enviado_wave2")
     ) {
+      const isWave2 = lead.reengajamento_status === "enviado_wave2";
+      const suffix = isWave2 ? "_wave2" : "";
       const txt = finalBody.trim().toLowerCase();
 
-      // AUTO-REPLY DETECTION: WhatsApp Business auto-responses devem ser ignoradas
-      // Padrões típicos: "agradece seu contato", "não estamos disponíveis no momento",
-      // "responderemos assim que possível", "fora do horário", "mensagem automática"
       const AUTO_REPLY_PATTERNS = [
         /agradec\w*\s+(seu|pelo|sua)\s+(contato|mensagem)/,
         /agradec\w*\s+sua\s+mensagem/,
@@ -405,32 +404,28 @@ Deno.serve(async (req) => {
           tipo: "auto_reply_ignorada",
           detalhe: finalBody.slice(0, 500),
         });
-        // Não atualiza reengajamento_status — mantém "enviado" aguardando resposta real
         return new Response(JSON.stringify({ success: true, ignored: "auto_reply" }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // POSITIVO: explícito (palavra de aceite + curto OU emoji de aceite)
       const POSITIVE_STRICT = /^(sim|quero|claro|pode\s*(mandar|enviar)|envia|manda|me\s*envia|tenho\s*interesse|gostaria|interessad[oa]|por\s*favor|pf|👍|✅|🙏|s)\b/;
-      // NEGATIVO ESTRITO: só rejeição clara (mensagem curta começando com palavra de recusa, ou frases inequívocas)
       const NEGATIVE_STRICT = /^(n[aã]o\s*(quero|tenho|obrigad|me\s*interesso|preciso)|n[aã]o\.?$|j[aá]\s*comprei|comprei|desisti|stop|sair|cancela|cancelar|para\s+de|me\s*remov|remove|p[aá]ra)/;
 
       let outcome: "respondeu_sim" | "respondeu_nao" | "respondeu_outro" = "respondeu_outro";
       if (POSITIVE_STRICT.test(txt)) outcome = "respondeu_sim";
       else if (NEGATIVE_STRICT.test(txt) && txt.length < 60) outcome = "respondeu_nao";
-      // Tudo o mais (resposta longa, ambígua, com pergunta) → respondeu_outro p/ revisão humana
 
       await supabase.from("reengajamento_eventos").insert({
         lead_id: leadId,
-        tipo: "resposta_recebida",
+        tipo: "resposta_recebida" + suffix,
         detalhe: finalBody.slice(0, 500),
       });
 
       if (outcome === "respondeu_sim") {
         await supabase.from("reengajamento_eventos").insert({
-          lead_id: leadId, tipo: "classificado_sim", detalhe: finalBody.slice(0, 300),
+          lead_id: leadId, tipo: "classificado_sim" + suffix, detalhe: finalBody.slice(0, 300),
         });
 
         try {
@@ -452,20 +447,20 @@ Deno.serve(async (req) => {
         await supabase
           .from("pipeline_leads")
           .update({
-            reengajamento_status: "respondeu_nao",
+            reengajamento_status: "respondeu_nao" + suffix,
             tipo_descarte: "definitivo",
           })
           .eq("id", leadId);
         await supabase.from("reengajamento_eventos").insert({
-          lead_id: leadId, tipo: "classificado_nao", detalhe: finalBody.slice(0, 300),
+          lead_id: leadId, tipo: "classificado_nao" + suffix, detalhe: finalBody.slice(0, 300),
         });
       } else {
         await supabase
           .from("pipeline_leads")
-          .update({ reengajamento_status: "respondeu_outro" })
+          .update({ reengajamento_status: "respondeu_outro" + suffix })
           .eq("id", leadId);
         await supabase.from("reengajamento_eventos").insert({
-          lead_id: leadId, tipo: "classificado_outro", detalhe: finalBody.slice(0, 300),
+          lead_id: leadId, tipo: "classificado_outro" + suffix, detalhe: finalBody.slice(0, 300),
         });
       }
     }
