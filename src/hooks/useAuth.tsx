@@ -10,6 +10,7 @@ interface User {
 interface Session {
   access_token: string;
   refresh_token: string;
+  expires_at?: number;
   user: User;
   [key: string]: any;
 }
@@ -38,6 +39,12 @@ const isFatalAuthError = (msg: string) =>
 
 const isNetworkLikeError = (msg: string) =>
   msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+
+const isSessionNearExpiry = (currentSession: Session | null, marginSec = 90) => {
+  const expiresAt = currentSession?.expires_at;
+  if (typeof expiresAt !== "number") return false;
+  return expiresAt - Math.floor(Date.now() / 1000) <= marginSec;
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -104,12 +111,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const msg = String(error?.message || "");
           if (isFatalAuthError(msg)) {
             try {
+              const { data: refreshed, error: refreshError } = await (supabase.auth as any).refreshSession();
+              if (!refreshError && refreshed?.session?.user) {
+                return refreshed.session as Session;
+              }
+            } catch {}
+            try {
               const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
               recordFatalAuthError(msg);
             } catch {}
-            try { await (supabase.auth as any).signOut({ scope: "global" }); } catch {
-              try { await (supabase.auth as any).signOut({ scope: "local" }); } catch {}
-            }
             purgeCorruptedAuthStorage();
             return null;
           }
@@ -124,6 +134,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     throw lastErr;
+  }, [purgeCorruptedAuthStorage]);
+
+  const refreshSessionSafely = useCallback(async (): Promise<Session | null> => {
+    try {
+      const { data, error } = await (supabase.auth as any).refreshSession();
+      if (error) throw error;
+      return (data?.session as Session | null) ?? null;
+    } catch (err: any) {
+      const msg = String(err?.message || "");
+      if (isFatalAuthError(msg)) {
+        try {
+          const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
+          recordFatalAuthError(msg);
+        } catch {}
+        purgeCorruptedAuthStorage();
+        return null;
+      }
+      throw err;
+    }
   }, [purgeCorruptedAuthStorage]);
 
   const waitForFreshSession = useCallback(async (timeoutMs = 5000) => {
@@ -146,7 +175,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const recoverSession = async (graceful = false) => {
       try {
-        const recoveredSession = await getSessionWithRetry();
+        let recoveredSession = await getSessionWithRetry();
+
+        if (!recoveredSession?.user && sessionRef.current?.refresh_token) {
+          recoveredSession = await refreshSessionSafely().catch(() => null);
+        } else if (recoveredSession?.user && isSessionNearExpiry(recoveredSession)) {
+          const refreshedSession = await refreshSessionSafely().catch(() => null);
+          if (refreshedSession?.user) recoveredSession = refreshedSession;
+        }
+
         if (!isMounted) return;
 
         if (recoveredSession?.user) {
@@ -159,7 +196,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           recoveryTimeoutRef.current = window.setTimeout(async () => {
             recoveryTimeoutRef.current = null;
             try {
-              const retriedSession = await getSessionWithRetry(2);
+              let retriedSession = await getSessionWithRetry(2);
+              if (!retriedSession?.user && sessionRef.current?.refresh_token) {
+                retriedSession = await refreshSessionSafely().catch(() => null);
+              }
               if (!isMounted) return;
               applySession(retriedSession ?? null);
             } catch {
@@ -203,6 +243,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      if ((event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") && sessionRef.current?.user) {
+        setLoading(false);
+        return;
+      }
+
       void recoverSession(true);
     });
 
@@ -216,7 +261,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       subscription.unsubscribe();
     };
-  }, [applySession, getSessionWithRetry, purgeCorruptedAuthStorage]);
+  }, [applySession, getSessionWithRetry, purgeCorruptedAuthStorage, refreshSessionSafely]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!sessionRef.current?.refresh_token) return;
+      void refreshSessionSafely()
+        .then((nextSession) => {
+          if (nextSession?.user) applySession(nextSession);
+        })
+        .catch(() => undefined);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [applySession, refreshSessionSafely]);
 
   const signUp = useCallback(async (email: string, password: string, nome: string) => {
     const { error } = await (supabase.auth as any).signUp({

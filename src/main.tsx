@@ -3,30 +3,6 @@ import App from "./App.tsx";
 import "./index.css";
 import { installFetchCircuitBreaker } from "./lib/fetchCircuitBreaker";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LIMPEZA GERAL DE CACHE NO BOOT
-// Roda ANTES de tudo. Garante que computadores presos em build antiga
-// (login que não entra, pipeline que não carrega) sejam recuperados.
-// ─────────────────────────────────────────────────────────────────────────────
-async function nukeStaleCachesAndWorkers() {
-  // 1) Desregistra TODOS os service workers (kill-switch publicado em /sw.js
-  //    fará o mesmo, mas garantimos aqui caso o SW antigo nunca atualize)
-  try {
-    if ("serviceWorker" in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((r) => r.unregister().catch(() => false)));
-    }
-  } catch {}
-
-  // 2) Apaga todos os caches do CacheStorage
-  try {
-    if (typeof caches !== "undefined") {
-      const names = await caches.keys();
-      await Promise.all(names.map((n) => caches.delete(n).catch(() => false)));
-    }
-  } catch {}
-}
-
 // Detecta se a URL contém o sinalizador de recuperação ou se o último boot
 // terminou em erro fatal — nesses casos fazemos limpeza síncrona pesada
 // antes de montar o app.
@@ -57,10 +33,6 @@ if (needsHardRecovery) {
   url.searchParams.set("recovered", "1");
   window.history.replaceState({}, "", url.toString());
 }
-
-
-// Dispara limpeza em background — não bloqueia o boot
-void nukeStaleCachesAndWorkers();
 
 // Instala o monitor passivo de fetch (somente telemetria, não derruba sessão)
 installFetchCircuitBreaker();
@@ -102,6 +74,20 @@ async function checkAppVersion() {
 const isLovablePreview =
   window.location.hostname.includes("lovableproject.com") ||
   window.location.hostname.includes("id-preview--");
+
+const isInIframe = (() => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+})();
+
+if (!isLovablePreview && !isInIframe && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  });
+}
 
 if (!isLovablePreview) {
   window.setTimeout(checkAppVersion, 5_000);
