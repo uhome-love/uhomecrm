@@ -16,14 +16,17 @@ const PhotoLightboxInner = forwardRef<HTMLDivElement, PhotoLightboxProps>(functi
 ) {
   const [current, setCurrent] = useState(initialIndex);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const lastNavRef = useRef(0);
   useEffect(() => { setCurrent(initialIndex); }, [initialIndex]);
 
   const goTo = useCallback((idx: number) => {
-    if (isTransitioning) return;
+    const now = Date.now();
+    if (now - lastNavRef.current < 120) return;
+    lastNavRef.current = now;
     setIsTransitioning(true);
     setCurrent(idx);
-    setTimeout(() => setIsTransitioning(false), 250);
-  }, [isTransitioning]);
+    setTimeout(() => setIsTransitioning(false), 200);
+  }, []);
 
   // ── Keyboard: Arrow L/R for photos, Escape to close ──
   useEffect(() => {
