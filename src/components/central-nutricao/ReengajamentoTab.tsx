@@ -196,6 +196,8 @@ export default function ReengajamentoTab() {
         meta_template_name_2: local.meta_template_name_2 || null,
         mensagens_variantes_2: local.mensagens_variantes_2 || [],
         wave2_min_dias_apos_wave1: local.wave2_min_dias_apos_wave1 ?? 5,
+        meta_header_image_url: local.meta_header_image_url || null,
+        meta_header_image_url_2: local.meta_header_image_url_2 || null,
         updated_at: new Date().toISOString(),
       }).eq("id", local.id);
       if (error) throw error;
@@ -629,6 +631,15 @@ export default function ReengajamentoTab() {
                 </div>
               </div>
 
+              <div>
+                <Label className="text-xs">URL da imagem do header (opcional)</Label>
+                <Input
+                  placeholder="https://… (preencha apenas se o template tem header de IMAGEM)"
+                  value={local.meta_header_image_url || ""}
+                  onChange={(e) => setDraft({ ...local, meta_header_image_url: e.target.value })}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Use o mesmo URL da imagem aprovada no template Meta. Deixe vazio se o template não tem header de imagem.</p>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
                   <Label className="text-xs">Lookback (dias)</Label>
@@ -845,6 +856,15 @@ export default function ReengajamentoTab() {
                   </div>
                 </div>
 
+                <div>
+                  <Label className="text-xs">URL da imagem do header da 2ª onda (opcional)</Label>
+                  <Input
+                    placeholder="https://… (preencha apenas se o template tem header de IMAGEM)"
+                    value={local.meta_header_image_url_2 || ""}
+                    onChange={(e) => setDraft({ ...local, meta_header_image_url_2: e.target.value })}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Use a mesma URL da imagem aprovada no template Meta da 2ª onda.</p>
+                </div>
                 <div>
                   <Label className="text-xs">Mensagem 2 — fallback Evolution (use <code>{"{nome}"}</code>)</Label>
                   <Textarea

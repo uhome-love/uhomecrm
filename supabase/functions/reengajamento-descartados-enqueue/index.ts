@@ -101,9 +101,17 @@ async function validateNumberEvolution(evoUrl: string, evoKey: string, instance:
 }
 
 async function sendMetaTemplate(params: {
-  phoneNumberId: string; accessToken: string; to: string; templateName: string; lang: string; nome: string;
+  phoneNumberId: string; accessToken: string; to: string; templateName: string; lang: string; nome: string; headerImageUrl?: string;
 }): Promise<{ ok: boolean; wamid?: string; error?: string }> {
   const url = `https://graph.facebook.com/v21.0/${params.phoneNumberId}/messages`;
+  const components: any[] = [];
+  if (params.headerImageUrl) {
+    components.push({
+      type: "header",
+      parameters: [{ type: "image", image: { link: params.headerImageUrl } }],
+    });
+  }
+  components.push({ type: "body", parameters: [{ type: "text", text: params.nome }] });
   const body = {
     messaging_product: "whatsapp",
     to: params.to,
@@ -111,9 +119,7 @@ async function sendMetaTemplate(params: {
     template: {
       name: params.templateName,
       language: { code: params.lang },
-      components: [
-        { type: "body", parameters: [{ type: "text", text: params.nome }] },
-      ],
+      components,
     },
   };
   try {
@@ -378,9 +384,10 @@ Deno.serve(async (req) => {
 
       try {
         if (canal === "meta") {
+          const headerImageUrl = String((wave === 2 ? cfg.meta_header_image_url_2 : cfg.meta_header_image_url) || "").trim() || undefined;
           const r = await sendMetaTemplate({
             phoneNumberId: metaPhoneId, accessToken: metaToken, to: phone,
-            templateName: metaTemplate, lang: metaLang, nome: firstName,
+            templateName: metaTemplate, lang: metaLang, nome: firstName, headerImageUrl,
           });
           if (!r.ok) {
             failed++;
