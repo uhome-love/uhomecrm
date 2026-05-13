@@ -51,6 +51,26 @@ async function setConversationWindow(supabase: any, leadId: string) {
 }
 
 // ── Distribute lead via roleta ──
+function isPositiveIntent(text: string): boolean {
+  if (!text) return false;
+  const t = text.trim().toLowerCase();
+  if (!t) return false;
+  // Botões/respostas curtas claras
+  if (/^(sim|s|claro|quero|quero sim|tenho interesse|interessado|interessada|pode enviar|pode mandar|aceito|👍|✅|🙏|ok|okay|bora|vamos|positivo|afirmativo|com certeza|certeza|gostaria|me interessa|sim por favor|sim, por favor|sim quero|sim pode)\b/.test(t)) return true;
+  // Frases que indicam interesse claro
+  if (/\b(quero saber|quero conhecer|tenho interesse|me interessei|gostaria de saber|gostaria de conhecer|gostaria de mais informa|pode me enviar|pode me passar|me envia|me manda|manda a|envia a|me chama)\b/.test(t)) return true;
+  return false;
+}
+
+function isNegativeIntent(text: string): boolean {
+  if (!text) return false;
+  const t = text.trim().toLowerCase();
+  if (!t) return false;
+  if (/^(n[aã]o|n|nop|nao quero|n[aã]o quero|n[aã]o tenho interesse|sem interesse|j[aá] comprei|stop|cancela|cancelar|para|parar|remover|sair|descadastrar)\b/.test(t)) return true;
+  if (/\b(n[aã]o tenho interesse|sem interesse|n[aã]o me interessa|por hora n[aã]o|por enquanto n[aã]o|n[aã]o posso|n[aã]o quero mais|j[aá] comprei|j[aá] fechei|n[aã]o sou eu|n[aã]o conhe[çc]o)\b/.test(t)) return true;
+  return false;
+}
+
 async function distributeViroleta(supabaseUrl: string, serviceKey: string, leadId: string) {
   try {
     await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
@@ -578,7 +598,33 @@ async function handleUnknownReply(
 
   if (ofertaLeads && ofertaLeads.length > 0) {
     const oaLead = ofertaLeads[0];
-    console.log(`🔄 Lead from Oferta Ativa responding: ${oaLead.nome} — creating pipeline lead and distributing`);
+
+    // GATE: só reativa/cria pipeline se houver intenção positiva clara.
+    // Resposta negativa → marca sem_interesse na oferta_ativa_leads e encerra.
+    // Resposta neutra/conversa → apenas log + AI reply, sem criar lead.
+    if (isNegativeIntent(msgText)) {
+      console.log(`🚫 OA lead ${oaLead.id} respondeu NÃO — marcando sem_interesse, sem criar pipeline lead`);
+      await supabase.from("oferta_ativa_leads")
+        .update({ status_recuperacao: "sem_interesse", updated_at: new Date().toISOString() })
+        .eq("id", oaLead.id);
+      await logWhatsAppEntry(supabase, {
+        telefone: from, nome_contato: contactName, mensagem_recebida: msgText,
+        tipo_mensagem: "texto", filtro_resultado: "negado_intencao_negativa",
+        lead_id: null, corretor_nome: null, status: "ignorado_resposta_negativa",
+      });
+      return;
+    }
+    if (!isPositiveIntent(msgText)) {
+      console.log(`⏸️ OA lead ${oaLead.id} respondeu sem intenção clara — não cria pipeline lead`);
+      await logWhatsAppEntry(supabase, {
+        telefone: from, nome_contato: contactName, mensagem_recebida: msgText,
+        tipo_mensagem: "texto", filtro_resultado: "ignorado_intencao_neutra",
+        lead_id: null, corretor_nome: null, status: "ignorado_neutro",
+      });
+      return;
+    }
+
+    console.log(`🔄 Lead from Oferta Ativa responding SIM: ${oaLead.nome} — creating pipeline lead and distributing`);
 
     // Get first active stage for the segment
     const { data: firstStage } = await supabase
@@ -633,8 +679,21 @@ async function handleUnknownReply(
     return;
   }
 
-  // 3. Not found anywhere → create new lead and distribute
-  console.log(`🆕 Unknown sender ${from} — creating new lead and distributing`);
+  // 3. Not found anywhere → SÓ cria lead se houver intenção positiva clara.
+  // Conversas pessoais / "boa noite" / mensagens neutras são ignoradas para não poluir a roleta.
+  if (!isPositiveIntent(msgText)) {
+    console.log(`🚫 Unknown sender ${from} sem intenção positiva — não cria lead. Texto: "${msgText.slice(0, 80)}"`);
+    await logWhatsAppEntry(supabase, {
+      telefone: from, nome_contato: contactName, mensagem_recebida: msgText,
+      tipo_mensagem: "texto",
+      filtro_resultado: isNegativeIntent(msgText) ? "negado_intencao_negativa" : "ignorado_intencao_neutra",
+      lead_id: null, corretor_nome: null,
+      status: isNegativeIntent(msgText) ? "ignorado_resposta_negativa" : "ignorado_neutro",
+    });
+    return;
+  }
+
+  console.log(`🆕 Unknown sender ${from} respondeu com intenção positiva — creating new lead and distributing`);
 
   const { data: firstStage } = await supabase
     .from("pipeline_stages")
