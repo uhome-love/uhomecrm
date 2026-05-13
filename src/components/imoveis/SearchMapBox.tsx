@@ -17,6 +17,10 @@ import { toast } from "sonner";
 const MAPBOX_TOKEN = "pk.eyJ1IjoibHVjYXN1aG9tZSIsImEiOiJjbW16c2l2dmUwYmxsMnJwdDI2bGxrazBkIn0.B4dp727gJlQQIWTci7GpFQ";
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
+const CLUSTER_MAX_ZOOM = 15;
+const CLUSTER_RADIUS = 64;
+const PIN_LABEL_MIN_ZOOM = 14;
+
 function toGeoJSON(pins: MapPin[]): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
@@ -155,7 +159,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
       map.addSource("imoveis", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
-        cluster: true, clusterMaxZoom: 13, clusterRadius: 52,
+        cluster: true, clusterMaxZoom: CLUSTER_MAX_ZOOM, clusterRadius: CLUSTER_RADIUS,
         buffer: 64, tolerance: 0.4,
       });
 
@@ -190,7 +194,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
         filter: ["!", ["has", "point_count"]],
         paint: {
           "circle-color": "#FFFFFF",
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 18, 12, 22, 14, 26],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 14, 12, 17, 14, 20, 16, 22],
           "circle-stroke-width": 1.5,
           "circle-stroke-color": "rgba(0,0,0,0.18)",
           "circle-opacity": 0.98,
@@ -201,12 +205,14 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
       map.addLayer({
         id: "imoveis-pin-labels", type: "symbol", source: "imoveis",
         filter: ["!", ["has", "point_count"]],
+        minzoom: PIN_LABEL_MIN_ZOOM,
         layout: {
           "text-field": ["get", "preco_label"],
           "text-font": ["DIN Pro Bold", "Arial Unicode MS Bold"],
-          "text-size": 11,
-          "text-allow-overlap": true,
-          "text-ignore-placement": true,
+          "text-size": ["interpolate", ["linear"], ["zoom"], PIN_LABEL_MIN_ZOOM, 10, 16, 11],
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+          "text-padding": 10,
           "text-anchor": "center",
           "symbol-sort-key": ["get", "preco"],
         },
