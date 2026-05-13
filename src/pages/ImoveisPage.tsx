@@ -432,11 +432,23 @@ export default function ImoveisPage() {
     cidade: filters.cidade || undefined,
     precoMin: filters.precoMin || undefined,
     precoMax: filters.precoMax || undefined,
+    areaMin: filters.areaMin || undefined,
+    areaMax: filters.areaMax || undefined,
     quartos: filters.quartos || undefined,
+    banheiros: filters.banheiros || undefined,
     vagas: filters.vagas || undefined,
     q: filters.q || undefined,
+    codigo: filters.codigo || undefined,
     ordem: filters.ordem,
     bounds: activeBounds,
+    statusImovel: filters.statusImovel || undefined,
+    statusImovelList: filters.statusImovelList?.length ? filters.statusImovelList : undefined,
+    condominioNome: filters.condominioNome || undefined,
+    financiavel: filters.financiavel || undefined,
+    mobiliado: filters.mobiliado || undefined,
+    comodidades: filters.comodidades?.length ? filters.comodidades : undefined,
+    entregaAnoMin: filters.entregaAnoMin || undefined,
+    entregaAnoMax: filters.entregaAnoMax || undefined,
   }), [filters, bairrosSelecionados, activeBounds]);
 
   const { data: mapPins = [] } = useQuery({
