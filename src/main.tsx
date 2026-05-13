@@ -75,6 +75,20 @@ const isLovablePreview =
   window.location.hostname.includes("lovableproject.com") ||
   window.location.hostname.includes("id-preview--");
 
+const isInIframe = (() => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+})();
+
+if (!isLovablePreview && !isInIframe && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  });
+}
+
 if (!isLovablePreview) {
   window.setTimeout(checkAppVersion, 5_000);
   window.setInterval(checkAppVersion, VERSION_POLL_MS);
