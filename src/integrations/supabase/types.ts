@@ -10091,6 +10091,14 @@ export type Database = {
         Args: { p_comentario?: string; p_item_id: string; p_nota: number }
         Returns: undefined
       }
+      reativar_lead_nutricao_campanha: {
+        Args: {
+          p_campanha_label?: string
+          p_empreendimento: string
+          p_lead_id: string
+        }
+        Returns: Json
+      }
       reativar_lead_nutricao_manual: {
         Args: { p_lead_id: string }
         Returns: Json
