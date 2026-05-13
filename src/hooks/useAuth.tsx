@@ -25,12 +25,63 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const isFatalAuthError = (msg: string) =>
+  msg.includes("missing sub") ||
+  msg.includes("invalid claim") ||
+  msg.includes("bad_jwt") ||
+  msg.includes("JWT expired") ||
+  msg.includes("Invalid Refresh Token") ||
+  msg.includes("Session not found") ||
+  msg.includes("session_not_found") ||
+  msg.includes("Refresh Token Not Found") ||
+  msg.includes("User from sub claim in JWT does not exist");
+
+const isNetworkLikeError = (msg: string) =>
+  msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const sessionRef = useRef<Session | null>(null);
   const recoveryTimeoutRef = useRef<number | null>(null);
+
+  const purgeCorruptedAuthStorage = useCallback(() => {
+    try {
+      const keys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith("sb-") || k.includes("supabase.auth"))) keys.push(k);
+      }
+      for (const k of keys) {
+        try {
+          const raw = localStorage.getItem(k);
+          if (!raw) continue;
+          const parsed = JSON.parse(raw);
+          const token = parsed?.access_token || parsed?.currentSession?.access_token;
+          if (token && typeof token === "string") {
+            const parts = token.split(".");
+            if (parts.length === 3) {
+              const payload = JSON.parse(
+                atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
+              );
+              const nowSec = Math.floor(Date.now() / 1000);
+              const expired = typeof payload?.exp === "number" && payload.exp < nowSec - 5;
+              if (!payload?.sub || expired) {
+                localStorage.removeItem(k);
+              }
+            } else {
+              localStorage.removeItem(k);
+            }
+          }
+        } catch {
+          try { localStorage.removeItem(k); } catch {}
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const applySession = useCallback((nextSession: Session | null) => {
     if (recoveryTimeoutRef.current) {
@@ -44,95 +95,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  const getSessionWithRetry = useCallback(async (attempts = 3): Promise<Session | null> => {
+    let lastErr: any = null;
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        const { data, error } = await (supabase.auth as any).getSession();
+        if (error) {
+          const msg = String(error?.message || "");
+          if (isFatalAuthError(msg)) {
+            try {
+              const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
+              recordFatalAuthError(msg);
+            } catch {}
+            try { await (supabase.auth as any).signOut({ scope: "global" }); } catch {
+              try { await (supabase.auth as any).signOut({ scope: "local" }); } catch {}
+            }
+            purgeCorruptedAuthStorage();
+            return null;
+          }
+          throw error;
+        }
+        return (data?.session as Session | null) ?? null;
+      } catch (err: any) {
+        lastErr = err;
+        const msg = String(err?.message || "");
+        if (!isNetworkLikeError(msg) || i === attempts) throw err;
+        await new Promise((r) => setTimeout(r, i === 1 ? 500 : 1200));
+      }
+    }
+    throw lastErr;
+  }, [purgeCorruptedAuthStorage]);
+
+  const waitForFreshSession = useCallback(async (timeoutMs = 5000) => {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+      const nextSession = await getSessionWithRetry(1).catch(() => null);
+      if (nextSession?.user) {
+        applySession(nextSession);
+        return nextSession;
+      }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    return null;
+  }, [applySession, getSessionWithRetry]);
+
   useEffect(() => {
     let isMounted = true;
 
-    // Defensive boot: if local Supabase auth tokens are corrupted (malformed JSON,
-    // wrong project ref, or "sub claim missing"-type payloads), purge them so the
-    // app can show /auth instead of looping in "Failed to fetch".
-    const purgeCorruptedAuthStorage = () => {
-      try {
-        const keys: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && (k.startsWith("sb-") || k.includes("supabase.auth"))) keys.push(k);
-        }
-        for (const k of keys) {
-          try {
-            const raw = localStorage.getItem(k);
-            if (!raw) continue;
-            const parsed = JSON.parse(raw);
-            const token = parsed?.access_token || parsed?.currentSession?.access_token;
-            if (token && typeof token === "string") {
-              const parts = token.split(".");
-              if (parts.length === 3) {
-                const payload = JSON.parse(
-                  atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
-                );
-                const nowSec = Math.floor(Date.now() / 1000);
-                const expired = typeof payload?.exp === "number" && payload.exp < nowSec - 5;
-                if (!payload?.sub || expired) {
-                  localStorage.removeItem(k);
-                }
-              } else {
-                localStorage.removeItem(k);
-              }
-            }
-          } catch {
-            // unparseable token storage → remove
-            try { localStorage.removeItem(k); } catch {}
-          }
-        }
-      } catch {
-        // ignore
-      }
-    };
-
     purgeCorruptedAuthStorage();
-
-    const isFatalAuthError = (msg: string) =>
-      msg.includes("missing sub") ||
-      msg.includes("invalid claim") ||
-      msg.includes("bad_jwt") ||
-      msg.includes("JWT expired") ||
-      msg.includes("Invalid Refresh Token") ||
-      msg.includes("Session not found") ||
-      msg.includes("session_not_found") ||
-      msg.includes("Refresh Token Not Found") ||
-      msg.includes("User from sub claim in JWT does not exist");
-
-    const getSessionWithRetry = async (attempts = 3): Promise<any> => {
-      let lastErr: any = null;
-      for (let i = 1; i <= attempts; i++) {
-        try {
-          const { data, error } = await (supabase.auth as any).getSession();
-          if (error) {
-            const msg = String(error?.message || "");
-            // Token rejected by server → drop local session de verdade (global)
-            if (isFatalAuthError(msg)) {
-              try {
-                const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
-                recordFatalAuthError(msg);
-              } catch {}
-              try { await (supabase.auth as any).signOut({ scope: "global" }); } catch {
-                try { await (supabase.auth as any).signOut({ scope: "local" }); } catch {}
-              }
-              purgeCorruptedAuthStorage();
-              return null;
-            }
-            throw error;
-          }
-          return data?.session ?? null;
-        } catch (err: any) {
-          lastErr = err;
-          const msg = String(err?.message || "");
-          const isNetwork = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
-          if (!isNetwork || i === attempts) throw err;
-          await new Promise((r) => setTimeout(r, i === 1 ? 500 : 1200));
-        }
-      }
-      throw lastErr;
-    };
 
     const recoverSession = async (graceful = false) => {
       try {
@@ -169,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Only confirmed auth errors (bad_jwt, missing sub) clear it,
         // and those are already handled inside getSessionWithRetry.
         const msg = String(err?.message || "");
-        const isNetwork = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+        const isNetwork = isNetworkLikeError(msg);
 
         if ((graceful || isNetwork) && sessionRef.current?.user) {
           setLoading(false);
@@ -206,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       subscription.unsubscribe();
     };
-  }, [applySession]);
+  }, [applySession, getSessionWithRetry, purgeCorruptedAuthStorage]);
 
   const signUp = useCallback(async (email: string, password: string, nome: string) => {
     const { error } = await (supabase.auth as any).signUp({
@@ -227,15 +237,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let lastError: any = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
-        const { error } = await (supabase.auth as any).signInWithPassword({ email, password });
+        const { data, error } = await (supabase.auth as any).signInWithPassword({ email, password });
+        if (!error && data?.session?.user) {
+          applySession(data.session as Session);
+          return { error: null };
+        }
+        if (!error) {
+          const recoveredSession = await waitForFreshSession();
+          if (recoveredSession?.user) return { error: null };
+        }
         if (!error) return { error: null };
         const msg = String(error?.message || "");
-        const isNetwork = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+        const isNetwork = isNetworkLikeError(msg);
         if (!isNetwork || attempt === MAX_ATTEMPTS) return { error };
         lastError = error;
       } catch (err: any) {
         const msg = String(err?.message || "");
-        const isNetwork = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+        const isNetwork = isNetworkLikeError(msg);
         if (!isNetwork || attempt === MAX_ATTEMPTS) {
           return { error: err ?? new Error("Erro inesperado ao entrar.") };
         }
@@ -245,7 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await new Promise((r) => setTimeout(r, attempt === 1 ? 600 : 1500));
     }
     return { error: lastError ?? new Error("Falha de conexão. Tente novamente.") };
-  }, []);
+  }, [applySession, waitForFreshSession]);
 
   const signOut = useCallback(async () => {
     await (supabase.auth as any).signOut();
