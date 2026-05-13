@@ -414,10 +414,7 @@ Deno.serve(async (req) => {
             lead_id: lead.id, run_id: runId, wamid: r.wamid, template_name: metaTemplate,
             template_language: metaLang, phone, status: "sent", sent_at: new Date().toISOString(),
           });
-          await supabase.from("pipeline_leads").update({
-            reengajamento_enviado_at: new Date().toISOString(),
-            reengajamento_status: "enviado",
-          }).eq("id", lead.id);
+          await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
           await supabase.from("reengajamento_eventos").insert({
             lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[meta:${metaTemplate}] ${phone}`,
           });
