@@ -6,6 +6,7 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow, isBefore, startOfDay, endOfWeek, addDays, addHours } from "date-fns";
 import { dateToBRT, parseDateBRT } from "@/lib/utils";
+import { fetchInBatchesWithRetry, normalizeQueryError, runQueryWithRetry } from "@/lib/taskQueryUtils";
 import { ptBR } from "date-fns/locale";
 import { Phone, MessageCircle, CheckCircle2, Clock, Calendar, Building2, User, ClipboardList, Plus, Search, Pencil, BookOpen, Target, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -137,11 +138,13 @@ export default function MinhasTarefas() {
         const leadIds: string[] = [];
 
         for (let from = 0; ; from += PAGE_SIZE) {
-          const { data, error } = await supabase
-            .from("pipeline_leads")
-            .select("id")
-            .in("corretor_id", corretorIds)
-            .range(from, from + PAGE_SIZE - 1);
+          const { data, error } = await runQueryWithRetry(() =>
+            supabase
+              .from("pipeline_leads")
+              .select("id")
+              .in("corretor_id", corretorIds)
+              .range(from, from + PAGE_SIZE - 1)
+          );
 
           if (error) {
             reportLoadError("Erro ao buscar leads do corretor", error);
@@ -158,13 +161,15 @@ export default function MinhasTarefas() {
       };
 
       const [{ data: directRows, error: directErr }, ownedLeadIds] = await Promise.all([
-        supabase
-          .from("pipeline_tarefas")
-          .select("*")
-          .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
-          .order("vence_em", { ascending: true })
-          .order("hora_vencimento", { ascending: true })
-          .limit(2000),
+        runQueryWithRetry(() =>
+          supabase
+            .from("pipeline_tarefas")
+            .select("*")
+            .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
+            .order("vence_em", { ascending: true })
+            .order("hora_vencimento", { ascending: true })
+            .limit(2000)
+        ),
         fetchOwnedLeadIds(),
       ]);
 
@@ -176,23 +181,28 @@ export default function MinhasTarefas() {
       const rows = (directRows || []) as any[];
 
       if (ownedLeadIds.length > 0) {
-        const CHUNK = 100;
+        const { rows: ownedTaskRows, errors: ownedTasksErrors } = await fetchInBatchesWithRetry<any>(
+          ownedLeadIds,
+          (slice) =>
+            supabase
+              .from("pipeline_tarefas")
+              .select("*")
+              .in("pipeline_lead_id", slice)
+              .order("vence_em", { ascending: true })
+              .order("hora_vencimento", { ascending: true }),
+          { chunkSize: 50, minChunkSize: 10 }
+        );
 
-        for (let i = 0; i < ownedLeadIds.length; i += CHUNK) {
-          const slice = ownedLeadIds.slice(i, i + CHUNK);
-          const { data: ownedTaskRows, error: ownedTasksErr } = await supabase
-            .from("pipeline_tarefas")
-            .select("*")
-            .in("pipeline_lead_id", slice)
-            .order("vence_em", { ascending: true })
-            .order("hora_vencimento", { ascending: true });
+        if (ownedTaskRows.length) rows.push(...ownedTaskRows);
 
-          if (ownedTasksErr) {
-            reportLoadError("Erro ao buscar tarefas dos leads do corretor", ownedTasksErr);
-            throw ownedTasksErr;
-          }
+        if (ownedTasksErrors.length && rows.length === 0) {
+          const error = normalizeQueryError(ownedTasksErrors[0], "Erro ao buscar tarefas dos leads do corretor");
+          reportLoadError("Erro ao buscar tarefas dos leads do corretor", error);
+          throw error;
+        }
 
-          if (ownedTaskRows?.length) rows.push(...ownedTaskRows);
+        if (ownedTasksErrors.length) {
+          console.warn("[MinhasTarefas] Algumas consultas de tarefas por lead falharam, mas o restante foi carregado", ownedTasksErrors);
         }
       }
 
@@ -205,10 +215,16 @@ export default function MinhasTarefas() {
         const leadMap = new Map<string, any>();
         for (let i = 0; i < leadIds.length; i += CHUNK) {
           const slice = leadIds.slice(i, i + CHUNK);
-          const { data: leads } = await supabase
-            .from("pipeline_leads")
-            .select("id, nome, telefone, empreendimento")
-            .in("id", slice);
+          const { data: leads, error: leadsErr } = await runQueryWithRetry(() =>
+            supabase
+              .from("pipeline_leads")
+              .select("id, nome, telefone, empreendimento")
+              .in("id", slice)
+          );
+          if (leadsErr) {
+            console.warn("[MinhasTarefas] Falha ao enriquecer tarefas com dados de lead", leadsErr);
+            continue;
+          }
           (leads as any[] || []).forEach((l: any) => leadMap.set(l.id, l));
         }
         uniqueRows.forEach(r => {

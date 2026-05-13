@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { fetchInBatchesWithRetry } from "@/lib/taskQueryUtils";
 import { toast } from "sonner";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/components/pipeline/CardStatusLine";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
@@ -123,32 +124,31 @@ export default function PipelineKanban() {
     queryFn: async () => {
       if (leadIds.length === 0) return {};
       const map: Record<string, ProximaTarefa> = {};
-      // Build all chunk queries and run in parallel
-      const chunkPromises = [];
-      for (let i = 0; i < leadIds.length; i += 200) {
-        const chunk = leadIds.slice(i, i + 200);
-        chunkPromises.push(
+      const { rows, errors } = await fetchInBatchesWithRetry<any>(
+        leadIds,
+        (chunk) =>
           supabase
             .from("pipeline_tarefas")
             .select("pipeline_lead_id, tipo, vence_em, hora_vencimento")
             .in("pipeline_lead_id", chunk)
             .eq("status", "pendente")
             .order("vence_em", { ascending: true })
-            .order("hora_vencimento", { ascending: true })
-        );
-      }
-      const results = await Promise.all(chunkPromises);
-      for (const { data } of results) {
-        if (data) {
-          for (const row of data) {
-            const nextTask: ProximaTarefa = { tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento };
-            const currentTask = map[row.pipeline_lead_id];
-            if (!currentTask || isTaskHigherPriority(nextTask, currentTask)) {
-              map[row.pipeline_lead_id] = nextTask;
-            }
-          }
+            .order("hora_vencimento", { ascending: true }),
+        { chunkSize: 50, minChunkSize: 10 }
+      );
+
+      for (const row of rows) {
+        const nextTask: ProximaTarefa = { tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento };
+        const currentTask = map[row.pipeline_lead_id];
+        if (!currentTask || isTaskHigherPriority(nextTask, currentTask)) {
+          map[row.pipeline_lead_id] = nextTask;
         }
       }
+
+      if (errors.length) {
+        console.warn("[PipelineKanban] Algumas consultas de tarefas falharam e foram isoladas por chunk", errors);
+      }
+
       return map;
     },
     enabled: leadIds.length > 0,
