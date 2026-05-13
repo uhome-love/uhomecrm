@@ -51,6 +51,26 @@ async function setConversationWindow(supabase: any, leadId: string) {
 }
 
 // ── Distribute lead via roleta ──
+function isPositiveIntent(text: string): boolean {
+  if (!text) return false;
+  const t = text.trim().toLowerCase();
+  if (!t) return false;
+  // Botões/respostas curtas claras
+  if (/^(sim|s|claro|quero|quero sim|tenho interesse|interessado|interessada|pode enviar|pode mandar|aceito|👍|✅|🙏|ok|okay|bora|vamos|positivo|afirmativo|com certeza|certeza|gostaria|me interessa|sim por favor|sim, por favor|sim quero|sim pode)\b/.test(t)) return true;
+  // Frases que indicam interesse claro
+  if (/\b(quero saber|quero conhecer|tenho interesse|me interessei|gostaria de saber|gostaria de conhecer|gostaria de mais informa|pode me enviar|pode me passar|me envia|me manda|manda a|envia a|me chama)\b/.test(t)) return true;
+  return false;
+}
+
+function isNegativeIntent(text: string): boolean {
+  if (!text) return false;
+  const t = text.trim().toLowerCase();
+  if (!t) return false;
+  if (/^(n[aã]o|n|nop|nao quero|n[aã]o quero|n[aã]o tenho interesse|sem interesse|j[aá] comprei|stop|cancela|cancelar|para|parar|remover|sair|descadastrar)\b/.test(t)) return true;
+  if (/\b(n[aã]o tenho interesse|sem interesse|n[aã]o me interessa|por hora n[aã]o|por enquanto n[aã]o|n[aã]o posso|n[aã]o quero mais|j[aá] comprei|j[aá] fechei|n[aã]o sou eu|n[aã]o conhe[çc]o)\b/.test(t)) return true;
+  return false;
+}
+
 async function distributeViroleta(supabaseUrl: string, serviceKey: string, leadId: string) {
   try {
     await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
