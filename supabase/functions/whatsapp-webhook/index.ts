@@ -288,18 +288,25 @@ Deno.serve(async (req) => {
                   .eq("id", metaDispatch.lead_id)
                   .maybeSingle();
 
-                const alreadyReactivated = !!currentLead?.reativado_por_nutricao || currentLead?.reengajamento_status === "respondeu_sim";
+                const alreadyReactivated = !!currentLead?.reativado_por_nutricao
+                  || currentLead?.reengajamento_status === "respondeu_sim"
+                  || currentLead?.reengajamento_status === "respondeu_sim_wave2";
                 if (alreadyReactivated) {
                   console.log(`ℹ️ Ignorando reclassificação tardia do lead ${metaDispatch.lead_id} após reativação`);
                   continue;
                 }
 
+                // Detecta se a resposta é à 2ª onda (status enviado_wave2)
+                const isWave2 = currentLead?.reengajamento_status === "enviado_wave2";
+                const statusNao = isWave2 ? "respondeu_nao_wave2" : "respondeu_nao";
+                const statusOutro = isWave2 ? "respondeu_outro_wave2" : "respondeu_outro";
+
                 await supabase.from("reengajamento_eventos").insert({
                   lead_id: metaDispatch.lead_id,
                   run_id: metaDispatch.run_id,
-                  tipo: buttonResp === "sim" ? "classificado_sim"
-                       : buttonResp === "nao" ? "classificado_nao"
-                       : "classificado_outro",
+                  tipo: buttonResp === "sim" ? (isWave2 ? "classificado_sim_wave2" : "classificado_sim")
+                       : buttonResp === "nao" ? (isWave2 ? "classificado_nao_wave2" : "classificado_nao")
+                       : (isWave2 ? "classificado_outro_wave2" : "classificado_outro"),
                   detalhe: (buttonId ? `[botão] ${buttonTitle}` : mensagemTexto).slice(0, 500),
                 });
 
@@ -312,12 +319,12 @@ Deno.serve(async (req) => {
                   }
                 } else if (buttonResp === "nao") {
                   await supabase.from("pipeline_leads").update({
-                    reengajamento_status: "respondeu_nao",
+                    reengajamento_status: statusNao,
                     tipo_descarte: "definitivo",
                   }).eq("id", metaDispatch.lead_id);
                 } else {
                   await supabase.from("pipeline_leads").update({
-                    reengajamento_status: "respondeu_outro",
+                    reengajamento_status: statusOutro,
                   }).eq("id", metaDispatch.lead_id);
                 }
               }
