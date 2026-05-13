@@ -254,7 +254,9 @@ export const CIDADES_PERMITIDAS = ["Porto Alegre", "Canoas", "Cachoeirinha", "Gr
 
 export const PROPERTY_TYPES = [
   { value: "apartamento", label: "Apartamento" },
+  { value: "apartamento garden", label: "Apartamento Garden" },
   { value: "casa", label: "Casa" },
+  { value: "casa de condomínio", label: "Casa em Condomínio" },
   { value: "cobertura", label: "Cobertura" },
   { value: "terreno", label: "Terreno" },
   { value: "comercial", label: "Comercial" },

@@ -461,6 +461,8 @@ export function useVisitas(filters?: {
       queryClient.invalidateQueries({ queryKey: ["visitas"] }),
       queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
       queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] }),
+      queryClient.invalidateQueries({ queryKey: ["pipeline-tarefas"] }),
+      queryClient.invalidateQueries({ queryKey: ["agenda-widget-leads"] }),
       queryClient.invalidateQueries({ queryKey: ["agenda-visitas"] }),
     ]);
 
@@ -511,7 +513,13 @@ export function useVisitas(filters?: {
       return false;
     }
 
-    queryClient.invalidateQueries({ queryKey: ["visitas"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["visitas"] }),
+      queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] }),
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
+      queryClient.invalidateQueries({ queryKey: ["agenda-widget-leads"] }),
+      queryClient.invalidateQueries({ queryKey: ["agenda-visitas"] }),
+    ]);
     if (!silent) toast.success("Visita atualizada!");
     return true;
   }, [queryClient]);
@@ -554,7 +562,13 @@ export function useVisitas(filters?: {
       return false;
     }
 
-    queryClient.invalidateQueries({ queryKey: ["visitas"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["visitas"] }),
+      queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] }),
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
+      queryClient.invalidateQueries({ queryKey: ["agenda-widget-leads"] }),
+      queryClient.invalidateQueries({ queryKey: ["agenda-visitas"] }),
+    ]);
     toast.success("Visita excluída!");
     return true;
   }, [queryClient]);
@@ -571,6 +585,8 @@ export async function createVisitaFromOA(params: {
   empreendimento?: string;
   attemptId?: string;
   observacoes?: string;
+  dataVisita?: string; // yyyy-MM-dd (BRT)
+  horaVisita?: string; // HH:mm
 }) {
   const { data: tm } = await supabase
     .from("team_members")
@@ -581,7 +597,9 @@ export async function createVisitaFromOA(params: {
     .maybeSingle();
 
   const gerenteId = tm?.gerente_id || params.corretorId;
-  const dataVisita = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const dataVisita = params.dataVisita
+    || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const horaVisita = params.horaVisita || null;
 
   const payload = {
     corretor_id: params.corretorId,
@@ -592,6 +610,7 @@ export async function createVisitaFromOA(params: {
     empreendimento: sanitizeText(params.empreendimento),
     origem: "oferta_ativa",
     data_visita: dataVisita,
+    hora_visita: horaVisita,
     status: "marcada",
     observacoes: sanitizeText(params.observacoes),
     created_by: params.corretorId,

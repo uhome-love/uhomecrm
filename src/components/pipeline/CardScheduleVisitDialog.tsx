@@ -12,6 +12,7 @@ import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { useCalendarIntegration, sendVisitaInvite } from "@/hooks/useCalendarIntegration";
+import { useQueryClient } from "@tanstack/react-query";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 
 function cleanName(name: string) {
@@ -34,6 +35,7 @@ interface CardScheduleVisitDialogProps {
 export default function CardScheduleVisitDialog({ open, onOpenChange, lead, stages, onMoveLead }: CardScheduleVisitDialogProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { integration, isLoading: integLoading } = useCalendarIntegration();
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("10:00");
@@ -73,6 +75,21 @@ export default function CardScheduleVisitDialog({ open, onOpenChange, lead, stag
 
       if (error) throw error;
 
+      // Update lead's last action timestamp
+      await supabase.from("pipeline_leads").update({
+        ultima_acao_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", lead.id);
+
+      // Invalidate caches so Agenda + widgets refresh
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["visitas"] }),
+        queryClient.invalidateQueries({ queryKey: ["agenda-visitas"] }),
+        queryClient.invalidateQueries({ queryKey: ["agenda-widget-leads"] }),
+        queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] }),
+        queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
+      ]);
+
       if (onMoveLead) {
         const visitaStage = stages.find(s => s.nome.toLowerCase().includes("visita marcada") || s.tipo === "visita");
         if (visitaStage) onMoveLead(lead.id, visitaStage.id);
@@ -103,7 +120,7 @@ export default function CardScheduleVisitDialog({ open, onOpenChange, lead, stag
     } finally {
       setSubmitting(false);
     }
-  }, [date, time, local, obs, user, lead, stages, onMoveLead, onOpenChange, sendInvite, integration?.connected]);
+  }, [date, time, local, obs, user, lead, stages, onMoveLead, onOpenChange, sendInvite, integration?.connected, queryClient]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
