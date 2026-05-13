@@ -1,56 +1,90 @@
-# Plano de Contenção — Prevenir nova queda do CRM
+# Plano de correção completa da oscilação do CRM
 
-Objetivo: garantir que o incidente de hoje (RPC quebrada por coluna inexistente + sessões corrompidas em PWA cacheado causando "Failed to fetch" em massa) nunca mais derrube o sistema sem detecção imediata.
+## Objetivo
+Eliminar a instabilidade intermitente do CRM (`volta e cai`), restaurar carregamento contínuo do pipeline/tarefas/login e impedir que falhas transitórias de rede derrubem o trabalho dos corretores.
 
-## 1. Guard-rails de banco (impedir RPC com coluna inexistente)
+## Diagnóstico consolidado
+- O backend hospedado está saudável neste momento; não há evidência atual de queda geral da infraestrutura.
+- O preview mostrou o pipeline carregado com dados, então a falha não é um bloqueio permanente de banco ou autenticação agora.
+- Há um erro confirmado no cliente: `Maximum update depth exceeded` em `CeoDashboard.tsx`, indicando loop de renderização/efeitos.
+- A aplicação está pesada sob carga:
+  - heap ~192–209MB
+  - script duration ~9s
+  - page load ~7.2s
+- O pipeline depende de múltiplas consultas grandes e recargas concorrentes (`loadStages`, `loadSegmentos`, `loadLeads`, tarefas por lote, realtime, visibility reload, focus reload).
+- O circuit breaker global de `fetch` hoje pode forçar purge/reload em rajadas transitórias e transformar instabilidade curta em efeito cascata de logout/reload.
+- Há um 401 em `manifest.json` no preview, que não parece ser a causa principal do pipeline, mas deve ser removido do caminho para não gerar ruído.
 
-- **Validação em CI/migração**: toda migration que crie/altere `FUNCTION` ou `TRIGGER` precisa rodar `EXPLAIN` ou `pg_get_functiondef` em ambiente de teste antes do deploy. Bloquear merge se a função referenciar coluna que não existe.
-- **Smoke test pós-migração**: script automático que executa todas as RPCs críticas (`reciclar_leads_sem_contato`, `distribuir_lead_atomico`, `processar_oferta_ativa`, `escalar_leads_sla`) com `SELECT` de validação após cada deploy. Falha → rollback automático.
-- **Auditoria de schema drift**: cron diário compara colunas referenciadas em `pg_proc.prosrc` com `information_schema.columns` e dispara alerta se houver referência órfã.
+## Causa mais provável
+A oscilação está sendo causada por uma combinação de fatores no frontend:
+1. loop de atualização no dashboard CEO;
+2. excesso de recargas/efeitos concorrentes em telas críticas;
+3. estratégia agressiva de recuperação global via `fetchCircuitBreaker`, que pode resetar a sessão em falhas transitórias;
+4. custo alto de queries e renderização, deixando a UI sensível a qualquer variação de rede.
 
-## 2. Monitoramento ativo de crons e RPCs
+## O que vou implementar
 
-- **Tabela `cron_health`**: cada execução de cron (lead-escalation, oferta-ativa, nurturing, etc) grava `started_at`, `finished_at`, `status`, `error_message`. Já existe parcialmente — padronizar em todos os crons.
-- **Alerta automático**: edge function `cron-health-monitor` roda a cada 5 min, verifica se algum cron falhou ≥3 vezes consecutivas e dispara push notification para o CEO + log estruturado.
-- **Dashboard interno** em `/admin/health`: status dos últimos 60 min de cada cron, com semáforo verde/amarelo/vermelho.
+### 1) Remover a fonte do loop no dashboard CEO
+- Corrigir o `Maximum update depth exceeded` em `src/pages/CeoDashboard.tsx`.
+- Tornar estáveis efeitos, callbacks e sincronizações locais que hoje podem disparar re-render infinito.
+- Garantir que o dashboard não derrube o restante da app quando o usuário navega ou quando o layout global monta providers.
 
-## 3. Resiliência de Auth e PWA (frontend)
+### 2) Endurecer o pipeline contra oscilação
+- Revisar `usePipeline` para evitar recargas duplicadas e concorrentes.
+- Reduzir gatilhos redundantes de reload por foco/visibilidade/realtime.
+- Manter cache local visível durante refetch em vez de deixar a tela “sumir”.
+- Melhorar tratamento de erro transitório para não virar estado fatal cedo demais.
 
-- **`useAuth.tsx`** (já implementado hoje): `purgeCorruptedAuthStorage()` na boot + detecção de `bad_jwt`/`missing sub`/`Invalid Refresh Token` → `signOut()` + reload limpo. **Manter e cobrir com teste.**
-- **Circuit breaker de fetch**: wrapper global em `supabase/client.ts` que, ao detectar 3 `Failed to fetch` consecutivos, força `purgeCorruptedAuthStorage()` + reload com `?v=timestamp`. Evita loop infinito.
-- **Versionamento obrigatório**: `public/version.json` precisa ser bumpado em **toda** deploy. Adicionar check no pipeline: se `version.json` não mudou em deploy com mudança em `src/`, bloquear.
-- **Service Worker `sw.js`**: revisar para garantir `NetworkFirst` em navegação HTML (nunca `CacheFirst` no shell). Já é o padrão — adicionar comentário travando a estratégia.
+### 3) Ajustar o circuit breaker global de fetch
+- Revisar `src/lib/fetchCircuitBreaker.ts` para não purgar sessão/recarregar em qualquer rajada curta.
+- Limitar atuação aos cenários realmente irreversíveis (sessão corrompida persistente), não a oscilações normais.
+- Evitar efeito cascata de reload/logoff enquanto o backend ainda responde.
 
-## 4. Domínio legado (`uhomeia.lovable.app`)
+### 4) Blindar autenticação e carregamento inicial
+- Revisar a interação entre `useAuth`, retries de sessão e reload automático.
+- Separar melhor erro de token inválido de erro transitório de rede.
+- Garantir que login e restauração de sessão não entrem em ciclo de recuperação.
 
-- **Redirect 301** de `uhomeia.lovable.app` → `uhomesales.com` para eliminar sessões com chaves antigas circulando.
-- Comunicar corretores que o domínio oficial é `uhomesales.com` (já é, mas reforçar).
+### 5) Reduzir custo operacional da tela do pipeline
+- Revisar consultas auxiliares do kanban (tarefas, visitas, filtros, batches) para cortar trabalho desnecessário na primeira carga.
+- Priorizar renderização do board já com dados principais e postergar complementos pesados quando possível.
+- Diminuir risco de travamento ao abrir o pipeline com muitos leads.
 
-## 5. Processo de deploy
+### 6) Validar ponta a ponta após a correção
+Vou testar até estabilizar:
+- login
+- abertura do CRM
+- pipeline com dados visíveis
+- navegação entre páginas críticas
+- carregamento repetido/refresh
+- observação de console e requests para confirmar que a oscilação cessou
 
-- **Janela de deploy**: evitar deploys de migration entre 8h–20h BRT (horário comercial). Crons críticos rodam o tempo todo; falha em horário de pico = caos.
-- **Checklist obrigatório antes de aprovar migration**:
-  1. Função/trigger referencia colunas que existem? (validar)
-  2. Smoke test rodou? (anexar resultado)
-  3. `version.json` bumpado?
-  4. `useAuth` ainda tem `purgeCorruptedAuthStorage`?
-- **Rollback documentado**: cada migration precisa do SQL inverso pronto.
+## Entregáveis
+- Correção do loop de renderização.
+- Estabilização do pipeline e do fetch global.
+- Ajustes de resiliência em auth/carregamento.
+- Validação prática com testes no preview.
+- Resumo final com causa raiz + medidas de prevenção imediata.
 
-## 6. Observabilidade contínua
+## Detalhes técnicos
+```text
+Foco dos arquivos:
+- src/pages/CeoDashboard.tsx
+- src/hooks/useCeoDashboard.ts
+- src/hooks/usePipeline.ts
+- src/pages/PipelineKanban.tsx
+- src/lib/fetchCircuitBreaker.ts
+- src/hooks/useAuth.tsx
+```
 
-- **Sentry/log central**: enviar erros de console e fetch failures do frontend para uma tabela `client_errors` via edge function. Já existe `error_logs` parcialmente — consolidar.
-- **Alerta volumétrico**: se >20 `Failed to fetch` em 5 min de qualquer corretor → push para o CEO.
+```text
+Critérios de aceite:
+- sem `Maximum update depth exceeded`
+- sem loop de reload/logout automático
+- pipeline abre com dados de forma consistente
+- falha transitória não derruba a sessão inteira
+- navegação entre CRM/tarefas/pipeline permanece funcional
+```
 
-## 7. O que vou implementar agora (se aprovado)
-
-Por escopo de uma única tarefa, proponho começar pelas **3 ações de maior impacto e menor risco**:
-
-1. **Migration `cron_health`**: tabela + função `log_cron_run(name, status, error)` chamada em todos os crons existentes.
-2. **Edge function `cron-health-monitor`**: alerta automático em falhas consecutivas.
-3. **Circuit breaker de fetch** em `src/integrations/supabase/client.ts` + `src/hooks/useAuth.tsx`: 3 falhas → purge + reload.
-
-Os itens 1, 4, 5 e 6 (CI gates, redirect de domínio, processo, Sentry) ficam como follow-ups separados pois envolvem mudança de processo e infraestrutura externa ao código do app.
-
-## Pergunta de aprovação
-
-Aprova começar pelas 3 ações da seção 7, ou prefere priorizar outro item da lista?
+## Resultado esperado
+O CRM deixa de oscilar, o pipeline para de desaparecer/interromper carregamento e os corretores voltam a trabalhar sem quedas intermitentes de fetch e sessão.
