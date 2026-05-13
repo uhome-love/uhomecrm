@@ -679,8 +679,21 @@ async function handleUnknownReply(
     return;
   }
 
-  // 3. Not found anywhere → create new lead and distribute
-  console.log(`🆕 Unknown sender ${from} — creating new lead and distributing`);
+  // 3. Not found anywhere → SÓ cria lead se houver intenção positiva clara.
+  // Conversas pessoais / "boa noite" / mensagens neutras são ignoradas para não poluir a roleta.
+  if (!isPositiveIntent(msgText)) {
+    console.log(`🚫 Unknown sender ${from} sem intenção positiva — não cria lead. Texto: "${msgText.slice(0, 80)}"`);
+    await logWhatsAppEntry(supabase, {
+      telefone: from, nome_contato: contactName, mensagem_recebida: msgText,
+      tipo_mensagem: "texto",
+      filtro_resultado: isNegativeIntent(msgText) ? "negado_intencao_negativa" : "ignorado_intencao_neutra",
+      lead_id: null, corretor_nome: null,
+      status: isNegativeIntent(msgText) ? "ignorado_resposta_negativa" : "ignorado_neutro",
+    });
+    return;
+  }
+
+  console.log(`🆕 Unknown sender ${from} respondeu com intenção positiva — creating new lead and distributing`);
 
   const { data: firstStage } = await supabase
     .from("pipeline_stages")
