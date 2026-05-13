@@ -152,7 +152,8 @@ export default function PipelineKanban() {
       return map;
     },
     enabled: leadIds.length > 0,
-    staleTime: 30_000,
+    staleTime: 10_000,
+    refetchOnWindowFocus: true,
   });
 
   // Query real visitas for the "Visita marcada" filter
