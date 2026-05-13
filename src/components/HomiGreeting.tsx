@@ -65,10 +65,10 @@ function HomiGreetingInner() {
   const [greeting, setGreeting] = useState("");
   const [tip, setTip] = useState("");
 
-  if (pathname === "/imoveis") return null;
+  const hideOnRoute = pathname === "/imoveis";
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || hideOnRoute) return;
 
     const last = localStorage.getItem(STORAGE_KEY);
     const today = new Date().toLocaleDateString("sv-SE");
@@ -91,13 +91,15 @@ function HomiGreetingInner() {
         localStorage.setItem(STORAGE_KEY, today);
         setTimeout(() => setShow(true), 300);
       });
-  }, [user, isAdmin, isGestor]);
+  }, [user, isAdmin, isGestor, hideOnRoute]);
 
   useEffect(() => {
     if (!show) return;
     const timer = setTimeout(() => setShow(false), 8000);
     return () => clearTimeout(timer);
   }, [show]);
+
+  if (hideOnRoute) return null;
 
   return (
     <AnimatePresence>
