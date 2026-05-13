@@ -47,9 +47,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
+    const getSessionWithRetry = async (attempts = 3): Promise<any> => {
+      let lastErr: any = null;
+      for (let i = 1; i <= attempts; i++) {
+        try {
+          const { data } = await (supabase.auth as any).getSession();
+          return data?.session ?? null;
+        } catch (err: any) {
+          lastErr = err;
+          const msg = String(err?.message || "");
+          const isNetwork = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+          if (!isNetwork || i === attempts) throw err;
+          await new Promise((r) => setTimeout(r, i === 1 ? 500 : 1200));
+        }
+      }
+      throw lastErr;
+    };
+
     const recoverSession = async (graceful = false) => {
       try {
-        const { data: { session: recoveredSession } } = await (supabase.auth as any).getSession();
+        const recoveredSession = await getSessionWithRetry();
         if (!isMounted) return;
 
         if (recoveredSession?.user) {
@@ -62,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           recoveryTimeoutRef.current = window.setTimeout(async () => {
             recoveryTimeoutRef.current = null;
             try {
-              const { data: { session: retriedSession } } = await (supabase.auth as any).getSession();
+              const retriedSession = await getSessionWithRetry(2);
               if (!isMounted) return;
               applySession(retriedSession ?? null);
             } catch {
