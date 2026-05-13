@@ -857,6 +857,15 @@ export default function ReengajamentoTab() {
                 </div>
 
                 <div>
+                  <Label className="text-xs">URL da imagem do header da 2ª onda (opcional)</Label>
+                  <Input
+                    placeholder="https://… (preencha apenas se o template tem header de IMAGEM)"
+                    value={local.meta_header_image_url_2 || ""}
+                    onChange={(e) => setDraft({ ...local, meta_header_image_url_2: e.target.value })}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Use a mesma URL da imagem aprovada no template Meta da 2ª onda.</p>
+                </div>
+                <div>
                   <Label className="text-xs">Mensagem 2 — fallback Evolution (use <code>{"{nome}"}</code>)</Label>
                   <Textarea
                     rows={3}
