@@ -110,6 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const msg = String(error?.message || "");
             // Token rejected by server → drop local session de verdade (global)
             if (isFatalAuthError(msg)) {
+              try {
+                const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
+                recordFatalAuthError(msg);
+              } catch {}
               try { await (supabase.auth as any).signOut({ scope: "global" }); } catch {
                 try { await (supabase.auth as any).signOut({ scope: "local" }); } catch {}
               }

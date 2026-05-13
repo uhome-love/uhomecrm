@@ -319,10 +319,21 @@ export function usePipeline(pipelineTipo: string = "leads") {
       setError("O carregamento demorou demais. Tente recarregar.");
     }, 30_000);
 
-    Promise.all([loadStages(), loadSegmentos(), loadLeads()])
-      .catch((err) => {
-        console.error("[usePipeline] Init error:", err);
-        setError(err?.message || "Erro ao carregar pipeline");
+    // Resilient init: a partial failure (e.g. segmentos timeout) must NOT
+    // wipe the entire pipeline. Each query owns its own error handling.
+    Promise.allSettled([loadStages(), loadSegmentos(), loadLeads()])
+      .then((results) => {
+        const failed = results
+          .map((r, i) => ({ r, name: ["stages", "segmentos", "leads"][i] }))
+          .filter((x) => x.r.status === "rejected");
+        if (failed.length > 0) {
+          console.warn("[usePipeline] Partial load failure:", failed.map((f) => f.name));
+          // Only surface error if the CRITICAL queries failed (stages OR leads)
+          const criticalFailed = failed.some((f) => f.name === "stages" || f.name === "leads");
+          if (criticalFailed) {
+            setError("Falha parcial ao carregar pipeline. Tente recarregar.");
+          }
+        }
       })
       .finally(() => {
         clearTimeout(timeout);
