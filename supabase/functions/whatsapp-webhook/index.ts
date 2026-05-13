@@ -598,7 +598,33 @@ async function handleUnknownReply(
 
   if (ofertaLeads && ofertaLeads.length > 0) {
     const oaLead = ofertaLeads[0];
-    console.log(`🔄 Lead from Oferta Ativa responding: ${oaLead.nome} — creating pipeline lead and distributing`);
+
+    // GATE: só reativa/cria pipeline se houver intenção positiva clara.
+    // Resposta negativa → marca sem_interesse na oferta_ativa_leads e encerra.
+    // Resposta neutra/conversa → apenas log + AI reply, sem criar lead.
+    if (isNegativeIntent(msgText)) {
+      console.log(`🚫 OA lead ${oaLead.id} respondeu NÃO — marcando sem_interesse, sem criar pipeline lead`);
+      await supabase.from("oferta_ativa_leads")
+        .update({ status_recuperacao: "sem_interesse", updated_at: new Date().toISOString() })
+        .eq("id", oaLead.id);
+      await logWhatsAppEntry(supabase, {
+        telefone: from, nome_contato: contactName, mensagem_recebida: msgText,
+        tipo_mensagem: "texto", filtro_resultado: "negado_intencao_negativa",
+        lead_id: null, corretor_nome: null, status: "ignorado_resposta_negativa",
+      });
+      return;
+    }
+    if (!isPositiveIntent(msgText)) {
+      console.log(`⏸️ OA lead ${oaLead.id} respondeu sem intenção clara — não cria pipeline lead`);
+      await logWhatsAppEntry(supabase, {
+        telefone: from, nome_contato: contactName, mensagem_recebida: msgText,
+        tipo_mensagem: "texto", filtro_resultado: "ignorado_intencao_neutra",
+        lead_id: null, corretor_nome: null, status: "ignorado_neutro",
+      });
+      return;
+    }
+
+    console.log(`🔄 Lead from Oferta Ativa responding SIM: ${oaLead.nome} — creating pipeline lead and distributing`);
 
     // Get first active stage for the segment
     const { data: firstStage } = await supabase
