@@ -275,13 +275,28 @@ export default function ImoveisPage() {
     return filters.bairro ? filters.bairro.split(",").map(s => s.trim()).filter(Boolean) : [];
   }, [filters.bairro]);
 
+  const stripAccents = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   const bairroSuggestions = useMemo(() => {
     const all = bairros.map(b => b.bairro);
     const filtered = all.filter(b => !bairrosSelecionados.includes(b));
     if (!bairroInput.trim()) return filtered.slice(0, 8);
-    const q = bairroInput.toLowerCase();
-    return filtered.filter(b => b.toLowerCase().includes(q)).slice(0, 10);
+    const q = stripAccents(bairroInput.trim());
+    return filtered.filter(b => stripAccents(b).includes(q)).slice(0, 12);
   }, [bairroInput, bairrosSelecionados, bairros]);
+
+  // Cidade + tipo suggestions for the same combobox
+  const cidadeSuggestions = useMemo(() => {
+    if (!bairroInput.trim()) return [] as string[];
+    const q = stripAccents(bairroInput.trim());
+    return CIDADES_PERMITIDAS.filter(c => stripAccents(c).includes(q)).slice(0, 5);
+  }, [bairroInput]);
+
+  const tipoSuggestions = useMemo(() => {
+    if (!bairroInput.trim()) return [] as { value: string; label: string }[];
+    const q = stripAccents(bairroInput.trim());
+    return PROPERTY_TYPES.filter(t => stripAccents(t.label).includes(q) || stripAccents(t.value).includes(q)).slice(0, 5);
+  }, [bairroInput]);
 
   const hasSearchFilters = !!(
     filters.tipo || filters.bairro || filters.precoMin || filters.precoMax ||
