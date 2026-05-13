@@ -292,6 +292,22 @@ Deno.serve(async (req) => {
         || m.includes("quality rating");
     };
 
+    // Patches por onda (helpers)
+    const sentStatus = wave === 2 ? "enviado_wave2" : "enviado";
+    const markSentPatch = () => {
+      const nowIso = new Date().toISOString();
+      return wave === 2
+        ? { reengajamento_wave2_at: nowIso, reengajamento_status: sentStatus }
+        : { reengajamento_enviado_at: nowIso, reengajamento_status: sentStatus };
+    };
+    const markPhoneInvalidPatch = () => {
+      const nowIso = new Date().toISOString();
+      // Em wave 2 mantém status original e só marca wave2_at para não retentar
+      return wave === 2
+        ? { reengajamento_wave2_at: nowIso }
+        : { reengajamento_status: "telefone_invalido", reengajamento_enviado_at: nowIso };
+    };
+
     for (const lead of leads || []) {
       if (Date.now() - startedAt > MAX_RUN_MS) {
         // Encadeia automaticamente um próximo run para continuar de onde parou
