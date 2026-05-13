@@ -117,7 +117,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
     setSubmitting(true);
     try {
       const isVisita = interesseTipo === "visita_marcada" || visitaMarcada;
-      await onSubmit(resultado, feedback.trim(), isVisita, resultado === "com_interesse" ? interesseTipo : undefined, isRetirar);
+      await onSubmit(resultado, feedback.trim(), isVisita, resultado === "com_interesse" ? interesseTipo : undefined, isRetirar, isVisita ? visitaData : undefined, isVisita ? visitaHora : undefined);
       setResultado("");
       setFeedback("");
       setVisitaMarcada(false);
