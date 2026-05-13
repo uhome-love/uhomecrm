@@ -511,7 +511,13 @@ export function useVisitas(filters?: {
       return false;
     }
 
-    queryClient.invalidateQueries({ queryKey: ["visitas"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["visitas"] }),
+      queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] }),
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
+      queryClient.invalidateQueries({ queryKey: ["agenda-widget-leads"] }),
+      queryClient.invalidateQueries({ queryKey: ["agenda-visitas"] }),
+    ]);
     if (!silent) toast.success("Visita atualizada!");
     return true;
   }, [queryClient]);
