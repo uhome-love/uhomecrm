@@ -148,6 +148,9 @@ Deno.serve(async (req) => {
   let bodyForce = false;
   let iniciadoPor = "cron";
   let bodyWave: number | null = null;
+  let bodyMinDiasOverride: number | null = null;
+  let bodyIncludeArchived = false;
+  let bodyDailyLimitOverride: number | null = null;
   try {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
@@ -155,6 +158,11 @@ Deno.serve(async (req) => {
       if ((b as any)?.iniciado_por) iniciadoPor = String((b as any).iniciado_por);
       else if (bodyForce) iniciadoPor = "manual";
       if ((b as any)?.wave) bodyWave = Number((b as any).wave);
+      if ((b as any)?.min_dias_override !== undefined && (b as any)?.min_dias_override !== null) {
+        bodyMinDiasOverride = Number((b as any).min_dias_override);
+      }
+      bodyIncludeArchived = !!(b as any)?.include_archived;
+      if ((b as any)?.daily_limit_override) bodyDailyLimitOverride = Number((b as any).daily_limit_override);
     }
   } catch { /* ignore */ }
 
