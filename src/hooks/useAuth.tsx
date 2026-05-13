@@ -111,12 +111,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const msg = String(error?.message || "");
           if (isFatalAuthError(msg)) {
             try {
+              const { data: refreshed, error: refreshError } = await (supabase.auth as any).refreshSession();
+              if (!refreshError && refreshed?.session?.user) {
+                return refreshed.session as Session;
+              }
+            } catch {}
+            try {
               const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
               recordFatalAuthError(msg);
             } catch {}
-            try { await (supabase.auth as any).signOut({ scope: "global" }); } catch {
-              try { await (supabase.auth as any).signOut({ scope: "local" }); } catch {}
-            }
             purgeCorruptedAuthStorage();
             return null;
           }
@@ -259,6 +262,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, [applySession, getSessionWithRetry, purgeCorruptedAuthStorage, refreshSessionSafely]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!sessionRef.current?.refresh_token) return;
+      void refreshSessionSafely()
+        .then((nextSession) => {
+          if (nextSession?.user) applySession(nextSession);
+        })
+        .catch(() => undefined);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [applySession, refreshSessionSafely]);
 
   const signUp = useCallback(async (email: string, password: string, nome: string) => {
     const { error } = await (supabase.auth as any).signUp({
