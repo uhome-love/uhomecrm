@@ -85,7 +85,6 @@ async function checkAppVersion() {
 // (desativado em hosts de preview Lovable, que bloqueiam fetch interno por CORS)
 const isLovablePreview =
   window.location.hostname.includes("lovableproject.com") ||
-  window.location.hostname.includes("lovable.app") ||
   window.location.hostname.includes("id-preview--");
 
 if (!isLovablePreview) {
