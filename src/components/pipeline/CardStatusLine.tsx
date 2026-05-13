@@ -54,7 +54,8 @@ export function getLeadStatusFilter(lead: PipelineLead, proximaTarefa: ProximaTa
   // Leads com negócio criado (negocio_id) são sempre considerados "em dia"
   if ((lead as any).negocio_id) return "em_dia";
 
-  const todayStart = startOfDay(new Date());
+  const now = new Date();
+  const todayStart = startOfDay(now);
   const taskDate = getTaskDate(proximaTarefa, lead);
 
   if (!taskDate) {
@@ -62,7 +63,16 @@ export function getLeadStatusFilter(lead: PipelineLead, proximaTarefa: ProximaTa
     return "desatualizado";
   }
 
-  return taskDate < todayStart ? "tarefa_atrasada" : "em_dia";
+  if (taskDate < todayStart) return "tarefa_atrasada";
+
+  // Mesmo dia: considerar hora_vencimento (BRT). Se já passou da hora, é atrasada.
+  if (isTodayFn(taskDate) && proximaTarefa?.hora_vencimento) {
+    const nowHHMM = now.toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+    const taskHHMM = proximaTarefa.hora_vencimento.slice(0, 5);
+    if (taskHHMM < nowHHMM) return "tarefa_atrasada";
+  }
+
+  return "em_dia";
 }
 
 export function isTaskHigherPriority(candidate: ProximaTarefa, current: ProximaTarefa) {
