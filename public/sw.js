@@ -1,61 +1,56 @@
-// UhomeSales Service Worker — KILL SWITCH
-// Estratégia: este SW NÃO faz mais cache nenhum. Ele existe apenas para
-// limpar todo cache antigo, desregistrar workers presos e forçar reload
-// limpo dos clientes que estão com bundle/JS/HTML obsoleto.
-//
-// Por que: corretores estavam presos em build antiga (login que não entra,
-// pipeline que não carrega). Mantemos este SW publicado por pelo menos 1
-// ciclo para garantir que TODOS os dispositivos sejam recuperados.
+// UhomeSales Service Worker — minimal PWA runtime
+// Mantém suporte a push/background sem cachear HTML/JS do app.
 
-self.addEventListener("install", (e) => {
-  // Ativa imediatamente, sem esperar abas fecharem
-  self.skipWaiting();
+self.addEventListener("install", (event) => {
+  event.waitUntil(self.skipWaiting());
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    (async () => {
-      try {
-        // 1) Apaga TODOS os caches antigos (shell, imagens, workbox, qualquer um)
-        const names = await caches.keys();
-        await Promise.all(names.map((n) => caches.delete(n)));
-      } catch {}
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
-      try {
-        // 2) Toma controle de todas as abas abertas
-        await self.clients.claim();
-      } catch {}
+self.addEventListener("push", (event) => {
+  const payload = (() => {
+    try {
+      return event.data ? event.data.json() : {};
+    } catch {
+      return { title: "UhomeSales", body: event.data?.text?.() ?? "Você tem uma nova notificação." };
+    }
+  })();
 
-      try {
-        // 3) Manda cada aba recarregar com cache-bust para baixar bundle novo
-        const all = await self.clients.matchAll({
-          type: "window",
-          includeUncontrolled: true,
-        });
-        await Promise.all(
-          all.map((c) => {
-            try {
-              const url = new URL(c.url);
-              url.searchParams.set("_cc", Date.now().toString());
-              return c.navigate(url.toString());
-            } catch {
-              return null;
-            }
-          }),
-        );
-      } catch {}
+  const title = payload?.title || "UhomeSales";
+  const options = {
+    body: payload?.body || "Você tem uma nova notificação.",
+    icon: payload?.icon || "/icons/icon-192x192.png",
+    badge: payload?.badge || "/icons/icon-192x192.png",
+    tag: payload?.tag || undefined,
+    data: {
+      url: payload?.url || "/notificacoes",
+    },
+  };
 
-      try {
-        // 4) Desregistra a si mesmo — não queremos mais SW gerenciando o app
-        await self.registration.unregister();
-      } catch {}
-    })(),
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification?.data?.url || "/notificacoes";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ("focus" in client) {
+          try {
+            client.navigate(targetUrl);
+          } catch {}
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(targetUrl);
+    })
   );
 });
 
-// Não interceptamos fetch — todas as requisições passam direto para a rede.
-// Isso garante que ninguém sirva HTML/JS/manifest antigo.
-
-self.addEventListener("message", (e) => {
-  if (e.data === "skipWaiting") self.skipWaiting();
+self.addEventListener("message", (event) => {
+  if (event.data === "skipWaiting") self.skipWaiting();
 });
