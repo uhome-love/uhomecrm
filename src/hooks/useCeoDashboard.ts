@@ -554,10 +554,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   // ── Derived state (stable, no flicker) ──
   // Stable empty arrays to prevent re-render loops in consumer effects
   const roletaPendentes = useMemo(() => roletaPendentesRaw ?? EMPTY_ARR, [roletaPendentesRaw]);
-  const lastUpdate = useMemo(() => new Date(), [
-    roletaPendentes,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  ]);
+  const lastUpdate = new Date();
 
   return {
     loading: kpisFirstLoad, // true only on very first fetch, false after cache is populated
