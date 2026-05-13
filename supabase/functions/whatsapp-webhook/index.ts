@@ -426,11 +426,20 @@ async function handleExistingLeadReply(
 ) {
   const { data: lead } = await supabase
     .from("pipeline_leads")
-    .select("id, nome, empreendimento, corretor_id, observacoes")
+    .select("id, nome, empreendimento, corretor_id, observacoes, reengajamento_status, tipo_descarte, stage_id")
     .eq("id", leadId)
     .maybeSingle();
 
   if (!lead) return;
+
+  // GUARD: lead inativado por ter respondido NÃO — não reabrir janela, não notificar, não chamar orchestrator
+  const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
+  const respondeuNao = lead.reengajamento_status === "respondeu_nao" || lead.reengajamento_status === "respondeu_nao_wave2";
+  const inativoDefinitivo = lead.stage_id === DESCARTE_STAGE_ID && lead.tipo_descarte === "definitivo";
+  if (respondeuNao || inativoDefinitivo) {
+    console.log(`🚫 Ignorando reply de lead inativado ${lead.id} (respondeu NÃO / descarte definitivo)`);
+    return;
+  }
 
   const leadNome = lead.nome || "Lead";
   const msgText = mensagemTexto || msg?.type || "mensagem";
