@@ -148,6 +148,9 @@ Deno.serve(async (req) => {
   let bodyForce = false;
   let iniciadoPor = "cron";
   let bodyWave: number | null = null;
+  let bodyMinDiasOverride: number | null = null;
+  let bodyIncludeArchived = false;
+  let bodyDailyLimitOverride: number | null = null;
   try {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
@@ -155,6 +158,11 @@ Deno.serve(async (req) => {
       if ((b as any)?.iniciado_por) iniciadoPor = String((b as any).iniciado_por);
       else if (bodyForce) iniciadoPor = "manual";
       if ((b as any)?.wave) bodyWave = Number((b as any).wave);
+      if ((b as any)?.min_dias_override !== undefined && (b as any)?.min_dias_override !== null) {
+        bodyMinDiasOverride = Number((b as any).min_dias_override);
+      }
+      bodyIncludeArchived = !!(b as any)?.include_archived;
+      if ((b as any)?.daily_limit_override) bodyDailyLimitOverride = Number((b as any).daily_limit_override);
     }
   } catch { /* ignore */ }
 
@@ -220,8 +228,11 @@ Deno.serve(async (req) => {
       .select("id, nome, telefone, tipo_descarte, stage_changed_at, reengajamento_enviado_at")
       .eq("stage_id", STAGE_DESCARTE_ID)
       .eq("tipo_descarte", "reengajavel")
-      .eq("arquivado", false)
       .not("telefone", "is", null);
+
+    if (!bodyIncludeArchived) {
+      leadsQuery = leadsQuery.eq("arquivado", false);
+    }
 
     if (wave === 1) {
       leadsQuery = leadsQuery
@@ -229,8 +240,10 @@ Deno.serve(async (req) => {
         .gte("stage_changed_at", cutoff);
     } else {
       // Wave 2: já receberam a 1ª (status 'enviado'), nunca receberam wave 2,
-      // e a 1ª foi há pelo menos N dias.
-      const minDias = Math.max(0, Number(cfg.wave2_min_dias_apos_wave1 || 5));
+      // e a 1ª foi há pelo menos N dias (ou override do body).
+      const minDias = Math.max(0, Number(
+        bodyMinDiasOverride !== null ? bodyMinDiasOverride : (cfg.wave2_min_dias_apos_wave1 || 5)
+      ));
       const wave2Cutoff = new Date(Date.now() - minDias * 24 * 60 * 60 * 1000).toISOString();
       leadsQuery = leadsQuery
         .eq("reengajamento_status", "enviado")
@@ -238,9 +251,13 @@ Deno.serve(async (req) => {
         .lte("reengajamento_enviado_at", wave2Cutoff);
     }
 
+    const effectiveLimit = bodyDailyLimitOverride && bodyDailyLimitOverride > 0
+      ? bodyDailyLimitOverride
+      : cfg.daily_limit;
+
     const { data: leads, error: leadsErr } = await leadsQuery
       .order("stage_changed_at", { ascending: false })
-      .limit(cfg.daily_limit);
+      .limit(effectiveLimit);
 
     if (leadsErr) throw leadsErr;
     const totalAlvo = (leads || []).length;
@@ -329,7 +346,7 @@ Deno.serve(async (req) => {
           fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
             method: "POST",
             headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ force: true, wave, iniciado_por: `${iniciadoPor}_continuacao` }),
+            body: JSON.stringify({ force: true, wave, iniciado_por: `${iniciadoPor}_continuacao`, min_dias_override: bodyMinDiasOverride, include_archived: bodyIncludeArchived, daily_limit_override: bodyDailyLimitOverride }),
           }).catch((err) => console.error("Falha ao encadear próximo lote:", err));
         } catch (chainErr) {
           console.error("Erro ao agendar continuação:", chainErr);
