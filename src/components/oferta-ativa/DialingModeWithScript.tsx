@@ -320,7 +320,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean) => {
+  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean, dataVisita?: string, horaVisita?: string) => {
     if (!lead || !actionTaken || submitting) return;
     setSubmitting(true);
     try {
@@ -389,6 +389,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               empreendimento: lead.empreendimento || undefined,
               attemptId: (result as any).attempt_id || undefined,
               observacoes: feedback,
+              dataVisita,
+              horaVisita,
             });
             toast.success("📅 Visita registrada na Agenda de Visitas!");
           }
@@ -528,6 +530,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               telefone: lead.telefone || undefined,
               empreendimento: lead.empreendimento || undefined,
               observacoes: feedback,
+              dataVisita: proximaAcao?.venceEm,
+              horaVisita: proximaAcao?.horaVencimento,
             });
             toast.success("📅 Visita registrada na Agenda!");
           }

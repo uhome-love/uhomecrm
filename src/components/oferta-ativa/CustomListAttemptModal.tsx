@@ -140,6 +140,15 @@ export default function CustomListAttemptModal({ open, onClose, onSubmit, leadNa
     }
   }, [resultado]);
 
+  // Auto-enable visit date/time when subOption=marcou_visita
+  useEffect(() => {
+    if (subOption === "marcou_visita") {
+      setCriarAcao(true);
+      setAcaoTipo("visita");
+      setAcaoDesc(prev => prev || "Visita marcada com cliente");
+    }
+  }, [subOption]);
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) {
       if (e.key === "Enter" && e.ctrlKey) {

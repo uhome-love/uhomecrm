@@ -126,30 +126,25 @@ export default function MinhaAgendaWidget() {
   });
 
   const now = new Date();
-  const todayStart = startOfDay(now);
+  const today = now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const tomorrow = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); })();
+  const nowHHMM = now.toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 
   const classify = (tarefas: TarefaAgenda[]) => {
     const atrasadas = tarefas.filter(t => {
       if (!t.vence_em) return false;
-      const d = parseDateBRT(t.vence_em);
-      if (isBefore(d, todayStart)) return true;
-      if (isToday(d) && t.hora_vencimento) {
-        const [h, m] = t.hora_vencimento.split(":").map(Number);
-        const taskTime = new Date(d); taskTime.setHours(h, m, 0);
-        return isBefore(taskTime, now);
+      if (t.vence_em < today) return true;
+      if (t.vence_em === today && t.hora_vencimento) {
+        return t.hora_vencimento.slice(0, 5) < nowHHMM;
       }
       return false;
     });
     const proximas = tarefas.filter(t => {
-      if (!t.vence_em) return false;
-      const d = parseDateBRT(t.vence_em);
-      if (!isToday(d)) return false;
+      if (t.vence_em !== today) return false;
       if (!t.hora_vencimento) return true;
-      const [h, m] = t.hora_vencimento.split(":").map(Number);
-      const taskTime = new Date(d); taskTime.setHours(h, m, 0);
-      return !isBefore(taskTime, now);
+      return t.hora_vencimento.slice(0, 5) >= nowHHMM;
     });
-    const amanha = tarefas.filter(t => t.vence_em && isTomorrow(parseDateBRT(t.vence_em)));
+    const amanha = tarefas.filter(t => t.vence_em === tomorrow);
     return { atrasadas, proximas, amanha, totalHoje: atrasadas.length + proximas.length };
   };
 
@@ -200,8 +195,20 @@ export default function MinhaAgendaWidget() {
     const nome = t._source === "negocio" ? (t.negocio_nome || "Negócio") : (t.lead_nome || "Lead");
     const empreendimento = t._source === "lead" ? t.lead_empreendimento : null;
 
+    const handleOpenLead = () => {
+      if (t._source === "lead" && t.pipeline_lead_id) {
+        navigate(`/pipeline?lead=${t.pipeline_lead_id}`);
+      } else if (t._source === "negocio" && (t as any).negocio_id) {
+        navigate(`/negocios?id=${(t as any).negocio_id}`);
+      }
+    };
+
     return (
-      <div key={t.id} className={`border-l-[3px] rounded-r-lg p-2.5 space-y-1 ${borderClass}`}>
+      <div
+        key={t.id}
+        onClick={handleOpenLead}
+        className={`border-l-[3px] rounded-r-lg p-2.5 space-y-1 ${borderClass} cursor-pointer hover:brightness-110 transition`}
+      >
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
             {timeIcon} {t.hora_vencimento ? t.hora_vencimento.slice(0, 5) : "—"} · {TIPO_LABELS[t.tipo] || t.tipo}
@@ -212,21 +219,21 @@ export default function MinhaAgendaWidget() {
           {t._source === "negocio" ? "💼" : "👤"} {nome} {empreendimento ? `· ${empreendimento}` : ""}
         </p>
         {t.descricao && <p className="text-xs text-muted-foreground italic truncate">📝 {t.descricao}</p>}
-        <div className="flex items-center gap-1 pt-1">
+        <div className="flex items-center gap-1 pt-1" onClick={e => e.stopPropagation()}>
           {t._source === "lead" && t.lead_telefone && (
             <>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => window.open(`tel:${t.lead_telefone}`, "_self")}>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={(e) => { e.stopPropagation(); window.open(`tel:${t.lead_telefone}`, "_self"); }}>
                 <Phone className="h-3 w-3" /> Ligar
               </Button>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => openWhatsApp(t.lead_telefone!)}>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={(e) => { e.stopPropagation(); openWhatsApp(t.lead_telefone!); }}>
                 <MessageCircle className="h-3 w-3" /> WhatsApp
               </Button>
             </>
           )}
-          <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 ml-auto" onClick={() => handleConcluir(t)}>
+          <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 ml-auto" onClick={(e) => { e.stopPropagation(); handleConcluir(t); }}>
             <CheckCircle2 className="h-3 w-3" /> Feito
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => { setAdiarId(t.id); setAdiarSource(t._source); setAdiarData(""); setAdiarHora(""); }}>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={(e) => { e.stopPropagation(); setAdiarId(t.id); setAdiarSource(t._source); setAdiarData(""); setAdiarHora(""); }}>
             <Clock className="h-3 w-3" /> Adiar
           </Button>
         </div>

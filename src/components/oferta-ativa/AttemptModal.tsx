@@ -218,6 +218,31 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
                     </button>
                   ))}
                 </div>
+
+                {/* Date/time picker for visita_marcada */}
+                {(interesseTipo === "visita_marcada" || visitaMarcada) && (
+                  <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5">
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">📅 Data da visita</label>
+                      <input
+                        type="date"
+                        value={visitaData}
+                        min={todayStr}
+                        onChange={e => setVisitaData(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--arena-card-border)] bg-[var(--arena-bg-from)] text-[var(--arena-text)] focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">🕐 Horário</label>
+                      <input
+                        type="time"
+                        value={visitaHora}
+                        onChange={e => setVisitaHora(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--arena-card-border)] bg-[var(--arena-bg-from)] text-[var(--arena-text)] focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
