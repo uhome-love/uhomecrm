@@ -82,12 +82,20 @@ async function checkAppVersion() {
 }
 
 // Primeira checagem após boot e depois periodicamente
-window.setTimeout(checkAppVersion, 5_000);
-window.setInterval(checkAppVersion, VERSION_POLL_MS);
+// (desativado em hosts de preview Lovable, que bloqueiam fetch interno por CORS)
+const isLovablePreview =
+  window.location.hostname.includes("lovableproject.com") ||
+  window.location.hostname.includes("lovable.app") ||
+  window.location.hostname.includes("id-preview--");
 
-// Re-checa quando usuário volta para a aba (caso de PC ligado horas)
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") void checkAppVersion();
-});
+if (!isLovablePreview) {
+  window.setTimeout(checkAppVersion, 5_000);
+  window.setInterval(checkAppVersion, VERSION_POLL_MS);
+
+  // Re-checa quando usuário volta para a aba (caso de PC ligado horas)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") void checkAppVersion();
+  });
+}
 
 createRoot(document.getElementById("root")!).render(<App />);
