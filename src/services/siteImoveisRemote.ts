@@ -89,9 +89,28 @@ function applyFilters(query: any, filters: BuscaFilters = {}) {
   if (cidades.length === 1) q = q.eq("cidade", cidades[0]);
   else if (cidades.length > 1) q = q.in("cidade", cidades);
 
-  // Tipo
+  // Tipo — map CRM/UI canonical labels to site DB enum values
+  // CRM uses "casa de condomínio", "apartamento garden" (with spaces),
+  // site DB uses "casa_condominio", "garden" (snake_case / short)
+  const TIPO_MAP: Record<string, string> = {
+    "casa de condomínio": "casa_condominio",
+    "casa de condominio": "casa_condominio",
+    "casa em condomínio": "casa_condominio",
+    "apartamento garden": "garden",
+    "sala comercial": "sala_comercial",
+    "casa comercial": "casa_comercial",
+    "prédio comercial": "predio_comercial",
+    "predio comercial": "predio_comercial",
+    "conjunto comercial": "conjunto_comercial",
+    "terreno comercial": "terreno_comercial",
+    "ponto comercial": "ponto_comercial",
+    "salão comercial": "salao_comercial",
+    "área rural": "area_rural",
+    "prédio residencial": "predio_residencial",
+  };
+  const mapTipo = (t: string) => TIPO_MAP[t.toLowerCase()] || t;
   if (filters.tipo) {
-    const tipos = filters.tipo.split(",").map((s) => s.trim()).filter(Boolean);
+    const tipos = filters.tipo.split(",").map((s) => s.trim()).filter(Boolean).map(mapTipo);
     if (tipos.length === 1) q = q.eq("tipo", tipos[0]);
     else if (tipos.length > 1) q = q.in("tipo", tipos);
   }
