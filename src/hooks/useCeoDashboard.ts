@@ -98,6 +98,7 @@ async function fetchKPIs(r: { start: string; end: string }): Promise<KPIs> {
 }
 
 const EMPTY_KPIS: KPIs = { ligacoes: 0, aproveitados: 0, taxaConversao: 0, visitasMarcadas: 0, visitasRealizadas: 0, taxaRealizacao: 0, vgvGerado: 0, vgvAssinado: 0, propostas: 0, negociosPerdidos: 0, noShows: 0 };
+const EMPTY_ARR: any[] = [];
 
 export function useCeoDashboard(period: DashPeriod, customRange?: { start: string; end: string }) {
   const { user } = useAuth();
@@ -123,7 +124,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   });
 
   // ── Roleta ──
-  const { data: roletaPendentes = [], refetch: reloadRoleta } = useQuery({
+  const { data: roletaPendentesRaw, refetch: reloadRoleta } = useQuery({
     queryKey: ["ceo-roleta", hoje],
     queryFn: async () => {
       const { data: creds } = await supabase.from("roleta_credenciamentos").select("*").eq("data", hoje).eq("status", "pendente").order("created_at");
@@ -551,6 +552,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   });
 
   // ── Derived state (stable, no flicker) ──
+  // Stable empty arrays to prevent re-render loops in consumer effects
+  const roletaPendentes = useMemo(() => roletaPendentesRaw ?? EMPTY_ARR, [roletaPendentesRaw]);
   const lastUpdate = new Date();
 
   return {

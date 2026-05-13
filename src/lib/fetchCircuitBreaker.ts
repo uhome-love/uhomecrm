@@ -1,43 +1,21 @@
 /**
- * Global fetch circuit breaker.
+ * Global fetch monitor (non-destructive).
  *
- * Detects sustained "Failed to fetch" / network errors against Supabase and,
- * after N consecutive failures, purges corrupted auth storage and forces a
- * clean reload. Prevents the "CRM doesn't load anymore" loop seen on
- * 13/05/2026 when stale PWA + corrupted JWT caused infinite fetch failures.
+ * Tracks sustained network failures against Supabase but does NOT purge
+ * auth or force a reload — that behavior was causing cascading logouts
+ * during normal transient blips ("volta e cai" symptom seen on 13/05/2026).
+ *
+ * Recovery is now handled exclusively in `useAuth` (only on confirmed
+ * `bad_jwt` / `missing sub` errors). This module only logs telemetry so
+ * we can spot real outages without nuking active sessions.
  */
 
-const FAILURE_THRESHOLD = 5;
-const WINDOW_MS = 30_000;
-const COOLDOWN_MS = 60_000;
+const WINDOW_MS = 60_000;
+const LOG_THRESHOLD = 8;
+const LOG_COOLDOWN_MS = 60_000;
 
 let failures: number[] = [];
-let lastTrip = 0;
-
-function purgeAuthStorage() {
-  try {
-    const keys: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && (k.startsWith("sb-") || k.includes("supabase.auth"))) keys.push(k);
-    }
-    keys.forEach((k) => localStorage.removeItem(k));
-  } catch {
-    // ignore
-  }
-}
-
-function trip(reason: string) {
-  const now = Date.now();
-  if (now - lastTrip < COOLDOWN_MS) return;
-  lastTrip = now;
-  // eslint-disable-next-line no-console
-  console.error("[CircuitBreaker] tripped:", reason, "→ purge + reload");
-  purgeAuthStorage();
-  const url = new URL(window.location.href);
-  url.searchParams.set("_cb", String(now));
-  window.location.replace(url.toString());
-}
+let lastLog = 0;
 
 function isSupabaseUrl(input: RequestInfo | URL): boolean {
   try {
@@ -62,7 +40,6 @@ export function installFetchCircuitBreaker() {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     try {
       const res = await originalFetch(input, init);
-      // Reset on success against Supabase
       if (isSupabaseUrl(input) && res.ok) failures = [];
       return res;
     } catch (err) {
@@ -70,8 +47,12 @@ export function installFetchCircuitBreaker() {
         const now = Date.now();
         failures = failures.filter((t) => now - t < WINDOW_MS);
         failures.push(now);
-        if (failures.length >= FAILURE_THRESHOLD) {
-          trip(`${failures.length} fetch failures in ${WINDOW_MS}ms`);
+        if (failures.length >= LOG_THRESHOLD && now - lastLog > LOG_COOLDOWN_MS) {
+          lastLog = now;
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[fetch-monitor] ${failures.length} Supabase fetch failures in last ${WINDOW_MS / 1000}s — backend may be flaky`,
+          );
         }
       }
       throw err;
