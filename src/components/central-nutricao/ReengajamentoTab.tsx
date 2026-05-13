@@ -274,6 +274,7 @@ export default function ReengajamentoTab() {
     }
   }
 
+  async function pausarDisparo() {
     if (!cfg?.id) return;
     try {
       await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
