@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { installFetchCircuitBreaker } from "./lib/fetchCircuitBreaker";
+
+// Install BEFORE any Supabase client call so all fetches are intercepted
+installFetchCircuitBreaker();
 
 // Guard: never register SW inside iframes or preview hosts
 const isInIframe = (() => {

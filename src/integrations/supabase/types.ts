@@ -1650,6 +1650,42 @@ export type Database = {
           },
         ]
       }
+      cron_health: {
+        Row: {
+          created_at: string
+          cron_name: string
+          duration_ms: number | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          cron_name: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          cron_name?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       custom_list_sessions: {
         Row: {
           aproveitados: number
@@ -9364,6 +9400,15 @@ export type Database = {
         }
         Relationships: []
       }
+      v_cron_health_summary: {
+        Row: {
+          cron_name: string | null
+          last_run: string | null
+          last_status: string | null
+          recent_errors: number | null
+        }
+        Relationships: []
+      }
       v_kpi_disponibilidade: {
         Row: {
           auth_user_id: string | null
@@ -10079,6 +10124,16 @@ export type Database = {
           p_lock_minutes?: number
         }
         Returns: Json
+      }
+      log_cron_run: {
+        Args: {
+          p_cron_name: string
+          p_error?: string
+          p_metadata?: Json
+          p_started_at?: string
+          p_status?: string
+        }
+        Returns: string
       }
       marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
       norm_empreendimento: { Args: { s: string }; Returns: string }

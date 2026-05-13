@@ -1,69 +1,56 @@
-# Plano de correção completa
+# Plano de Contenção — Prevenir nova queda do CRM
 
-## Problema principal
-O erro de `failed to fetch` está **generalizado** e não é só login: ele combina **quebra de funções do banco**, **sessões presas em domínio/token antigo** e **cache/PWA servindo cliente defasado**. O efeito final é exatamente o que você descreveu: nada entra, nada carrega, tarefas/pipeline falham e parece que o CRM parou inteiro.
+Objetivo: garantir que o incidente de hoje (RPC quebrada por coluna inexistente + sessões corrompidas em PWA cacheado causando "Failed to fetch" em massa) nunca mais derrube o sistema sem detecção imediata.
 
-## O que será corrigido
+## 1. Guard-rails de banco (impedir RPC com coluna inexistente)
 
-### 1) Corrigir a raiz no banco
-Há funções e rotinas referenciando colunas incompatíveis com o schema atual, o que está quebrando processos centrais:
-- `pipeline_leads.aceite_at` não existe; a coluna real é `aceito_em`
-- há referências inválidas a `oferta_ativa_leads.segmento_id`
-- há erros recorrentes envolvendo `auth_user_id`
-- há inserts em `pipeline_leads` sem `stage_id`, gerando falha de criação
+- **Validação em CI/migração**: toda migration que crie/altere `FUNCTION` ou `TRIGGER` precisa rodar `EXPLAIN` ou `pg_get_functiondef` em ambiente de teste antes do deploy. Bloquear merge se a função referenciar coluna que não existe.
+- **Smoke test pós-migração**: script automático que executa todas as RPCs críticas (`reciclar_leads_sem_contato`, `distribuir_lead_atomico`, `processar_oferta_ativa`, `escalar_leads_sla`) com `SELECT` de validação após cada deploy. Falha → rollback automático.
+- **Auditoria de schema drift**: cron diário compara colunas referenciadas em `pg_proc.prosrc` com `information_schema.columns` e dispara alerta se houver referência órfã.
 
-**Ação:**
-- localizar todas as funções/views/rotinas afetadas
-- criar migration corrigindo os nomes de colunas e joins conforme o schema real
-- ajustar o fluxo de criação de lead para nunca inserir `pipeline_leads` sem `stage_id`
-- validar manualmente as RPCs críticas após a migration
+## 2. Monitoramento ativo de crons e RPCs
 
-### 2) Destravar o fetch generalizado no cliente
-Hoje o frontend já tenta retry em falhas de rede no auth, mas ainda falta tratar o caso em que o navegador está preso com sessão/token inválido ou build antigo.
+- **Tabela `cron_health`**: cada execução de cron (lead-escalation, oferta-ativa, nurturing, etc) grava `started_at`, `finished_at`, `status`, `error_message`. Já existe parcialmente — padronizar em todos os crons.
+- **Alerta automático**: edge function `cron-health-monitor` roda a cada 5 min, verifica se algum cron falhou ≥3 vezes consecutivas e dispara push notification para o CEO + log estruturado.
+- **Dashboard interno** em `/admin/health`: status dos últimos 60 min de cada cron, com semáforo verde/amarelo/vermelho.
 
-**Ação:**
-- reforçar `useAuth.tsx` para detectar sessão inválida/JWT inválido e limpar sessão local de forma segura
-- evitar loop infinito de carregamento quando `getSession()` ou `/user` falharem repetidamente
-- cair para recuperação controlada: limpar sessão corrompida, redirecionar para login e permitir reentrada limpa
+## 3. Resiliência de Auth e PWA (frontend)
 
-### 3) Forçar atualização real do PWA/cache
-Existe service worker ativo e `version.json` ainda está em `v=2`. Se parte dos usuários ficou com build velho/cache velho, eles continuam batendo em cliente desatualizado e podem manter o erro indefinidamente.
+- **`useAuth.tsx`** (já implementado hoje): `purgeCorruptedAuthStorage()` na boot + detecção de `bad_jwt`/`missing sub`/`Invalid Refresh Token` → `signOut()` + reload limpo. **Manter e cobrir com teste.**
+- **Circuit breaker de fetch**: wrapper global em `supabase/client.ts` que, ao detectar 3 `Failed to fetch` consecutivos, força `purgeCorruptedAuthStorage()` + reload com `?v=timestamp`. Evita loop infinito.
+- **Versionamento obrigatório**: `public/version.json` precisa ser bumpado em **toda** deploy. Adicionar check no pipeline: se `version.json` não mudou em deploy com mudança em `src/`, bloquear.
+- **Service Worker `sw.js`**: revisar para garantir `NetworkFirst` em navegação HTML (nunca `CacheFirst` no shell). Já é o padrão — adicionar comentário travando a estratégia.
 
-**Ação:**
-- subir `version.json` para forçar refresh global do app
-- revisar `sw.js` para garantir atualização agressiva do shell quando houver nova versão
-- revisar `main.tsx` para assegurar takeover imediato do novo service worker
-- reduzir a chance de clientes continuarem presos no app antigo
+## 4. Domínio legado (`uhomeia.lovable.app`)
 
-### 4) Fechar a rota do domínio antigo / sessões antigas
-Os logs mostram erro `missing sub claim` vindo do domínio antigo `uhomeia.lovable.app`, enquanto o domínio atual saudável é `uhomesales.com`.
+- **Redirect 301** de `uhomeia.lovable.app` → `uhomesales.com` para eliminar sessões com chaves antigas circulando.
+- Comunicar corretores que o domínio oficial é `uhomesales.com` (já é, mas reforçar).
 
-**Ação:**
-- tratar explicitamente sessão inválida originada de cliente velho
-- garantir que o app não continue tentando operar com token legado
-- se necessário, adicionar proteção para limpar estado local quando detectar ambiente/token incompatível
+## 5. Processo de deploy
 
-### 5) Validar ponta a ponta
-Depois das correções, a validação será completa e focada no incidente:
-- login funcionando novamente
-- CRM abrindo sem tela travada
-- tarefas carregando
-- pipeline carregando
-- sessão recuperando corretamente após refresh
-- clientes com cache antigo sendo atualizados corretamente
-- checagem de logs para confirmar que os erros críticos pararam
+- **Janela de deploy**: evitar deploys de migration entre 8h–20h BRT (horário comercial). Crons críticos rodam o tempo todo; falha em horário de pico = caos.
+- **Checklist obrigatório antes de aprovar migration**:
+  1. Função/trigger referencia colunas que existem? (validar)
+  2. Smoke test rodou? (anexar resultado)
+  3. `version.json` bumpado?
+  4. `useAuth` ainda tem `purgeCorruptedAuthStorage`?
+- **Rollback documentado**: cada migration precisa do SQL inverso pronto.
 
-## Resultado esperado
-Após isso, o CRM volta a:
-- entrar normalmente para os corretores
-- carregar tarefas e pipeline
-- parar de exibir `failed to fetch` em massa
-- se recuperar sozinho de cliente/cache/sessão corrompidos sem depender de limpar cache manualmente
+## 6. Observabilidade contínua
 
-## Detalhes técnicos
-- **Banco:** migration para corrigir funções quebradas e inserts inválidos
-- **Frontend:** endurecer `src/hooks/useAuth.tsx`
-- **PWA:** atualizar `public/version.json`, revisar `public/sw.js` e `src/main.tsx`
-- **Validação:** logs + teste real de login/carregamento
+- **Sentry/log central**: enviar erros de console e fetch failures do frontend para uma tabela `client_errors` via edge function. Já existe `error_logs` parcialmente — consolidar.
+- **Alerta volumétrico**: se >20 `Failed to fetch` em 5 min de qualquer corretor → push para o CEO.
 
-Se você aprovar, eu executo essa correção completa agora.
+## 7. O que vou implementar agora (se aprovado)
+
+Por escopo de uma única tarefa, proponho começar pelas **3 ações de maior impacto e menor risco**:
+
+1. **Migration `cron_health`**: tabela + função `log_cron_run(name, status, error)` chamada em todos os crons existentes.
+2. **Edge function `cron-health-monitor`**: alerta automático em falhas consecutivas.
+3. **Circuit breaker de fetch** em `src/integrations/supabase/client.ts` + `src/hooks/useAuth.tsx`: 3 falhas → purge + reload.
+
+Os itens 1, 4, 5 e 6 (CI gates, redirect de domínio, processo, Sentry) ficam como follow-ups separados pois envolvem mudança de processo e infraestrutura externa ao código do app.
+
+## Pergunta de aprovação
+
+Aprova começar pelas 3 ações da seção 7, ou prefere priorizar outro item da lista?
