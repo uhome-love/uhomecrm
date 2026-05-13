@@ -208,7 +208,7 @@ export default function MinhaAgendaWidget() {
         key={t.id}
         onClick={handleOpenLead}
         className={`border-l-[3px] rounded-r-lg p-2.5 space-y-1 ${borderClass} cursor-pointer hover:brightness-110 transition`}
-      ></div>
+      >
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
             {timeIcon} {t.hora_vencimento ? t.hora_vencimento.slice(0, 5) : "—"} · {TIPO_LABELS[t.tipo] || t.tipo}
