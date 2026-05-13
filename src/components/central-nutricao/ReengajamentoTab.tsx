@@ -237,7 +237,43 @@ export default function ReengajamentoTab() {
     }
   }
 
-  async function pausarDisparo() {
+  async function dispararWave2() {
+    const hasMsg = !!(local?.mensagem_template_2 || (local?.mensagens_variantes_2 && local.mensagens_variantes_2.length > 0));
+    const hasMeta = !!local?.meta_template_name_2;
+    const isMeta = (local?.canal || cfg?.canal) === "meta";
+    if (isMeta && !hasMeta) {
+      toast.error("Configure o nome do template Meta da 2ª onda antes de disparar");
+      return;
+    }
+    if (!isMeta && !hasMsg) {
+      toast.error("Preencha a mensagem da 2ª onda antes de disparar");
+      return;
+    }
+    setStarting(true);
+    try {
+      if (cfg?.id) {
+        await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
+        qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
+      }
+      supabase.functions.invoke("reengajamento-descartados-enqueue", {
+        body: { force: true, wave: 2, iniciado_por: "manual_wave2" },
+      }).then(({ data, error }) => {
+        if (error) toast.error("Erro no disparo wave 2: " + error.message);
+        else if ((data as any)?.reason === "no_leads") toast.info("Nenhum lead elegível para 2ª onda ainda");
+        qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
+        qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
+        qc.invalidateQueries({ queryKey: ["reengajamento-ultimos"] });
+        qc.invalidateQueries({ queryKey: ["reengajamento-kpis"] });
+      });
+      toast.success("🚀 2ª onda iniciada — acompanhe o progresso");
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] }), 1500);
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setStarting(false);
+    }
+  }
+
     if (!cfg?.id) return;
     try {
       await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
