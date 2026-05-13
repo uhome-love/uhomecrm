@@ -1,0 +1,1 @@
+UPDATE public.reengajamento_config SET meta_header_image_url_2 = 'https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/reengajamento/casatua-maio-wave2.jpg';
