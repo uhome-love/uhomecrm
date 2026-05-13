@@ -141,16 +141,21 @@ Deno.serve(async (req) => {
 
   let bodyForce = false;
   let iniciadoPor = "cron";
+  let bodyWave: number | null = null;
   try {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
       bodyForce = !!(b as any)?.force;
       if ((b as any)?.iniciado_por) iniciadoPor = String((b as any).iniciado_por);
       else if (bodyForce) iniciadoPor = "manual";
+      if ((b as any)?.wave) bodyWave = Number((b as any).wave);
     }
   } catch { /* ignore */ }
 
-  const force = bodyForce || new URL(req.url).searchParams.get("force") === "1";
+  const url = new URL(req.url);
+  const force = bodyForce || url.searchParams.get("force") === "1";
+  const waveParam = bodyWave ?? Number(url.searchParams.get("wave") || "1");
+  const wave: 1 | 2 = waveParam === 2 ? 2 : 1;
   const startedAt = Date.now();
   let runId: string | null = null;
   const errs: string[] = [];
