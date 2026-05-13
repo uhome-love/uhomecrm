@@ -149,10 +149,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         applySession(null);
-      } catch {
+      } catch (err: any) {
         if (!isMounted) return;
 
-        if (graceful && sessionRef.current?.user) {
+        // Network/transient errors must NEVER drop an existing session.
+        // Only confirmed auth errors (bad_jwt, missing sub) clear it,
+        // and those are already handled inside getSessionWithRetry.
+        const msg = String(err?.message || "");
+        const isNetwork = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+
+        if ((graceful || isNetwork) && sessionRef.current?.user) {
           setLoading(false);
           return;
         }
