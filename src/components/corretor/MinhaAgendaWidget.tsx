@@ -219,21 +219,21 @@ export default function MinhaAgendaWidget() {
           {t._source === "negocio" ? "💼" : "👤"} {nome} {empreendimento ? `· ${empreendimento}` : ""}
         </p>
         {t.descricao && <p className="text-xs text-muted-foreground italic truncate">📝 {t.descricao}</p>}
-        <div className="flex items-center gap-1 pt-1">
+        <div className="flex items-center gap-1 pt-1" onClick={e => e.stopPropagation()}>
           {t._source === "lead" && t.lead_telefone && (
             <>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => window.open(`tel:${t.lead_telefone}`, "_self")}>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={(e) => { e.stopPropagation(); window.open(`tel:${t.lead_telefone}`, "_self"); }}>
                 <Phone className="h-3 w-3" /> Ligar
               </Button>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => openWhatsApp(t.lead_telefone!)}>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={(e) => { e.stopPropagation(); openWhatsApp(t.lead_telefone!); }}>
                 <MessageCircle className="h-3 w-3" /> WhatsApp
               </Button>
             </>
           )}
-          <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 ml-auto" onClick={() => handleConcluir(t)}>
+          <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 ml-auto" onClick={(e) => { e.stopPropagation(); handleConcluir(t); }}>
             <CheckCircle2 className="h-3 w-3" /> Feito
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => { setAdiarId(t.id); setAdiarSource(t._source); setAdiarData(""); setAdiarHora(""); }}>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={(e) => { e.stopPropagation(); setAdiarId(t.id); setAdiarSource(t._source); setAdiarData(""); setAdiarHora(""); }}>
             <Clock className="h-3 w-3" /> Adiar
           </Button>
         </div>
