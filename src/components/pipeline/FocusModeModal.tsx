@@ -323,6 +323,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       toast.success("Tarefa criada! ✅");
       setTaskCreated(true);
       setTaskTitle("");
+      setTasksRefreshKey(k => k + 1);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao criar tarefa.");
@@ -381,6 +382,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
       toast.success(novaTarefa ? "Tarefa concluída e próxima agendada ✅" : "Tarefa concluída ✅");
       setCompletingOverdue(null);
+      setTasksRefreshKey(k => k + 1);
       goToNext();
     } catch (err) {
       console.error(err);
