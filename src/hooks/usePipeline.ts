@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getManagedTeamProfileIds, resolveProfileIds } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
+import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
 import { toast } from "sonner";
 
 export interface PipelineStage {
@@ -89,11 +90,13 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
   const loadStages = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("pipeline_stages")
-        .select("id, nome, tipo, cor, ordem, pipeline_tipo, ativo")
-        .eq("ativo", true)
-        .order("ordem");
+      const { data, error } = await runQueryWithRetry<any[]>(() =>
+        supabase
+          .from("pipeline_stages")
+          .select("id, nome, tipo, cor, ordem, pipeline_tipo, ativo")
+          .eq("ativo", true)
+          .order("ordem")
+      );
       if (error) {
         console.error("Error loading stages:", error);
         return;
@@ -113,11 +116,13 @@ export function usePipeline(pipelineTipo: string = "leads") {
   }, [pipelineTipo]);
 
   const loadSegmentos = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("pipeline_segmentos")
-      .select("id, nome, cor, ordem, ativo")
-      .eq("ativo", true)
-      .order("ordem");
+    const { data, error } = await runQueryWithRetry<any[]>(() =>
+      supabase
+        .from("pipeline_segmentos")
+        .select("id, nome, cor, ordem, ativo")
+        .eq("ativo", true)
+        .order("ordem")
+    );
     if (error) {
       console.error("Error loading segmentos:", error);
       return;
@@ -148,10 +153,12 @@ export function usePipeline(pipelineTipo: string = "leads") {
       // CEO/Admin: vê TODOS os leads sem filtro
     } else if (isGestor) {
       // Gerentes: leads do time
-      const { data: teamMembers, error: teamError } = await supabase
-        .from("team_members")
-        .select("user_id")
-        .eq("gerente_id", userId);
+      const { data: teamMembers, error: teamError } = await runQueryWithRetry<any[]>(() =>
+        supabase
+          .from("team_members")
+          .select("user_id")
+          .eq("gerente_id", userId)
+      );
 
       if (teamError) {
         console.error("Error loading team members:", teamError);
@@ -178,9 +185,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
     // Load partnership lead IDs for corretores via canonical view
     let partnerLeadIds: string[] = [];
     if (!isAdmin && !isGestor) {
-      const { data: partnerships } = await supabase
-        .from("v_user_partner_leads")
-        .select("pipeline_lead_id");
+      const { data: partnerships } = await runQueryWithRetry<any[]>(() =>
+        supabase
+          .from("v_user_partner_leads")
+          .select("pipeline_lead_id")
+      );
       partnerLeadIds = (partnerships || []).map((p: any) => p.pipeline_lead_id).filter(Boolean);
     }
 
@@ -204,7 +213,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
         query = query.in("corretor_id", ownScopeIds).in("aceite_status", ["aceito", "pendente", "aguardando_aceite"]);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await runQueryWithRetry<PipelineLead[]>(() => query);
       if (error) {
         console.error("Error loading pipeline leads:", error);
         return;
@@ -222,11 +231,19 @@ export function usePipeline(pipelineTipo: string = "leads") {
       const existingIds = new Set(allRows.map(l => l.id));
       const missingIds = partnerLeadIds.filter(id => !existingIds.has(id));
       if (missingIds.length > 0) {
-        const { data: partnerLeads } = await supabase
-          .from("pipeline_leads")
-          .select(selectFields)
-          .in("id", missingIds);
-        if (partnerLeads) allRows.push(...(partnerLeads as PipelineLead[]));
+        const { rows: partnerLeads, errors: partnerErrors } = await fetchInBatchesWithRetry<PipelineLead>(
+          missingIds,
+          (chunk) =>
+            supabase
+              .from("pipeline_leads")
+              .select(selectFields)
+              .in("id", chunk),
+          { chunkSize: 50, minChunkSize: 10 }
+        );
+        if (partnerLeads.length) allRows.push(...partnerLeads);
+        if (partnerErrors.length) {
+          console.warn("[usePipeline] Falhas isoladas ao buscar leads de parceria", partnerErrors);
+        }
       }
     }
 
