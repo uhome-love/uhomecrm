@@ -91,6 +91,10 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   // Overdue task completion dialog
   const [completingOverdue, setCompletingOverdue] = useState<{ id: string; titulo: string } | null>(null);
 
+  // All pending tasks for current lead (overdue + future)
+  const [pendingTasks, setPendingTasks] = useState<Array<{ id: string; titulo: string; tipo: string | null; vence_em: string | null; hora_vencimento: string | null }>>([]);
+  const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
+
   const currentLead = leads[currentIndex] ?? null;
 
   // Load stages for the config screen
