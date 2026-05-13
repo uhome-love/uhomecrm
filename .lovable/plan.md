@@ -1,90 +1,136 @@
-# Plano de correção completa da oscilação do CRM
-
 ## Objetivo
-Eliminar a instabilidade intermitente do CRM (`volta e cai`), restaurar carregamento contínuo do pipeline/tarefas/login e impedir que falhas transitórias de rede derrubem o trabalho dos corretores.
+
+Corrigir a falha geral de login/carregamento e **incluir uma limpeza geral de cache** para que todos os corretores passem a usar apenas a versão estável do CRM.
 
 ## Diagnóstico consolidado
-- O backend hospedado está saudável neste momento; não há evidência atual de queda geral da infraestrutura.
-- O preview mostrou o pipeline carregado com dados, então a falha não é um bloqueio permanente de banco ou autenticação agora.
-- Há um erro confirmado no cliente: `Maximum update depth exceeded` em `CeoDashboard.tsx`, indicando loop de renderização/efeitos.
-- A aplicação está pesada sob carga:
-  - heap ~192–209MB
-  - script duration ~9s
-  - page load ~7.2s
-- O pipeline depende de múltiplas consultas grandes e recargas concorrentes (`loadStages`, `loadSegmentos`, `loadLeads`, tarefas por lote, realtime, visibility reload, focus reload).
-- O circuit breaker global de `fetch` hoje pode forçar purge/reload em rajadas transitórias e transformar instabilidade curta em efeito cascata de logout/reload.
-- Há um 401 em `manifest.json` no preview, que não parece ser a causa principal do pipeline, mas deve ser removido do caminho para não gerar ruído.
 
-## Causa mais provável
-A oscilação está sendo causada por uma combinação de fatores no frontend:
-1. loop de atualização no dashboard CEO;
-2. excesso de recargas/efeitos concorrentes em telas críticas;
-3. estratégia agressiva de recuperação global via `fetchCircuitBreaker`, que pode resetar a sessão em falhas transitórias;
-4. custo alto de queries e renderização, deixando a UI sensível a qualquer variação de rede.
+O problema está vindo da combinação de 3 fatores:
 
-## O que vou implementar
+1. **Sessões inválidas de autenticação**
+   - Há eventos de `bad_jwt`, `missing sub claim` e `session_not_found`.
+   - Isso faz o usuário cair para o login ou travar antes de autenticar.
 
-### 1) Remover a fonte do loop no dashboard CEO
-- Corrigir o `Maximum update depth exceeded` em `src/pages/CeoDashboard.tsx`.
-- Tornar estáveis efeitos, callbacks e sincronizações locais que hoje podem disparar re-render infinito.
-- Garantir que o dashboard não derrube o restante da app quando o usuário navega ou quando o layout global monta providers.
+2. **Service Worker / cache antigo distribuindo bundle velho**
+   - O projeto ainda registra `sw.js` e mantém shell cacheado.
+   - Depois de atualização, alguns computadores continuam abrindo arquivos antigos.
+   - Isso explica comportamento como:
+     - estava funcionando e saiu sozinho,
+     - volta para login,
+     - não entra mais,
+     - pipeline não carrega,
+     - tela em loading ou vazia.
 
-### 2) Endurecer o pipeline contra oscilação
-- Revisar `usePipeline` para evitar recargas duplicadas e concorrentes.
-- Reduzir gatilhos redundantes de reload por foco/visibilidade/realtime.
-- Manter cache local visível durante refetch em vez de deixar a tela “sumir”.
-- Melhorar tratamento de erro transitório para não virar estado fatal cedo demais.
+3. **Erros paralelos de dados/schema ampliando a quebra**
+   - Existem erros recorrentes no banco e em funções auxiliares.
+   - Eles pioram o carregamento e fazem o CRM parecer totalmente fora, mesmo quando a origem principal é sessão + cache velho.
 
-### 3) Ajustar o circuit breaker global de fetch
-- Revisar `src/lib/fetchCircuitBreaker.ts` para não purgar sessão/recarregar em qualquer rajada curta.
-- Limitar atuação aos cenários realmente irreversíveis (sessão corrompida persistente), não a oscilações normais.
-- Evitar efeito cascata de reload/logoff enquanto o backend ainda responde.
+## Plano de correção completa
 
-### 4) Blindar autenticação e carregamento inicial
-- Revisar a interação entre `useAuth`, retries de sessão e reload automático.
-- Separar melhor erro de token inválido de erro transitório de rede.
-- Garantir que login e restauração de sessão não entrem em ciclo de recuperação.
+### Frente 1 — Limpeza geral de cache para todos
+1. **Transformar o `sw.js` em kill-switch temporário**
+   - No próximo deploy, o Service Worker vai:
+     - limpar todos os caches antigos,
+     - desregistrar workers antigos,
+     - forçar recarga limpa do app.
+   - Isso garante que os computadores presos saiam da versão velha.
 
-### 5) Reduzir custo operacional da tela do pipeline
-- Revisar consultas auxiliares do kanban (tarefas, visitas, filtros, batches) para cortar trabalho desnecessário na primeira carga.
-- Priorizar renderização do board já com dados principais e postergar complementos pesados quando possível.
-- Diminuir risco de travamento ao abrir o pipeline com muitos leads.
+2. **Adicionar limpeza automática no boot do app**
+   - Em `src/main.tsx`, antes de iniciar a aplicação:
+     - limpar caches antigos,
+     - remover service workers antigos em contexto problemático,
+     - forçar carregamento limpo quando detectar versão inconsistente.
 
-### 6) Validar ponta a ponta após a correção
-Vou testar até estabilizar:
-- login
-- abertura do CRM
-- pipeline com dados visíveis
-- navegação entre páginas críticas
-- carregamento repetido/refresh
-- observação de console e requests para confirmar que a oscilação cessou
+3. **Criar política de versão obrigatória**
+   - O cliente vai comparar a versão atual com `version.json`.
+   - Se detectar versão antiga, recarrega para a nova.
+   - Resultado: ninguém permanece numa build quebrada antiga.
 
-## Entregáveis
-- Correção do loop de renderização.
-- Estabilização do pipeline e do fetch global.
-- Ajustes de resiliência em auth/carregamento.
-- Validação prática com testes no preview.
-- Resumo final com causa raiz + medidas de prevenção imediata.
+4. **Remover comportamento de cache agressivo de HTML/JS**
+   - O app não poderá mais servir `index.html` e bundles antigos após deploy.
+   - Fallback offline deixa de prevalecer sobre atualização crítica.
 
-## Detalhes técnicos
+### Frente 2 — Corrigir a autenticação que derruba em massa
+5. **Endurecer `useAuth.tsx` para sessão inválida real**
+   - Tratar `bad_jwt`, `missing sub` e `session_not_found` como sessão vencida/inválida.
+   - Fazer limpeza segura de storage local e retorno limpo ao login.
+   - Evitar loop de “entrando” sem sair do lugar.
+
+6. **Separar falha de rede de falha de sessão**
+   - Revisar o fluxo atual para:
+     - não derrubar usuário por oscilação momentânea,
+     - mas limpar sessão quebrada de verdade.
+
+7. **Evitar reaproveitamento de token podre**
+   - Antes do boot, validar o token local.
+   - Se estiver corrompido/obsoleto, descartar antes que o app monte com estado ruim.
+
+### Frente 3 — Estabilizar o CRM após login
+8. **Refatorar o carregamento do pipeline**
+   - Carregar primeiro o essencial.
+   - Impedir que falha auxiliar derrube a tela inteira.
+   - Preservar último estado válido enquanto recupera novas leituras.
+
+9. **Reduzir sensibilidade a recargas em cascata**
+   - Revisar triggers de reload em `usePipeline.ts` e `PipelineKanban.tsx`.
+   - Evitar comportamento que zera ou reinicia a tela facilmente.
+
+### Frente 4 — Corrigir a camada de dados com erro recorrente
+10. **Sanear migrations e referências quebradas**
+   - Corrigir colunas consultadas que não existem.
+   - Corrigir inserções com `stage_id` nulo.
+   - Ajustar triggers/históricos que estão gerando erro repetido.
+
+11. **Parar ruído estrutural que amplia a percepção de queda geral**
+   - Revisar consultas/funções com erro recorrente para que o CRM volte a responder de forma previsível.
+
+### Frente 5 — Prevenção permanente
+12. **Implantar monitoramento de saúde de autenticação**
+   - Detectar explosão de `bad_jwt` / `session_not_found` cedo.
+
+13. **Criar rotina de smoke test pós-correção**
+   - Validar login, refresh, reentrada, pipeline e troca de versão.
+
+## Limpeza geral de cache pedida por você
+
+Isso fará parte da solução com três camadas:
+
 ```text
-Foco dos arquivos:
-- src/pages/CeoDashboard.tsx
-- src/hooks/useCeoDashboard.ts
-- src/hooks/usePipeline.ts
-- src/pages/PipelineKanban.tsx
-- src/lib/fetchCircuitBreaker.ts
-- src/hooks/useAuth.tsx
+Camada 1: limpar caches antigos do navegador via Service Worker kill-switch
+Camada 2: desregistrar workers antigos presos nas máquinas dos corretores
+Camada 3: impor versionamento obrigatório para carregar só a versão atual
 ```
 
-```text
-Critérios de aceite:
-- sem `Maximum update depth exceeded`
-- sem loop de reload/logout automático
-- pipeline abre com dados de forma consistente
-- falha transitória não derruba a sessão inteira
-- navegação entre CRM/tarefas/pipeline permanece funcional
-```
+Com isso, a ideia é que:
+- os computadores que estão presos em build antiga sejam recuperados,
+- ninguém continue rodando a versão problemática,
+- e as próximas atualizações não repitam esse cenário.
+
+## Arquivos/áreas principais que serão atacados
+
+- `public/sw.js`
+- `src/main.tsx`
+- `src/hooks/useAuth.tsx`
+- `src/lib/fetchCircuitBreaker.ts`
+- `src/hooks/usePipeline.ts`
+- `src/pages/PipelineKanban.tsx`
+- migrations do banco para corrigir schema/trigger/consistência
+
+## Critérios para considerar resolvido
+
+1. O corretor consegue abrir o CRM mesmo após ter ficado preso antes.
+2. O login volta a funcionar sem travar em loading.
+3. O pipeline carrega novamente com dados.
+4. Refresh, sair/entrar e troca de aba continuam funcionando.
+5. Todos passam a usar a mesma versão válida do app.
+6. O cache antigo não consegue mais manter usuários na build quebrada.
 
 ## Resultado esperado
-O CRM deixa de oscilar, o pipeline para de desaparecer/interromper carregamento e os corretores voltam a trabalhar sem quedas intermitentes de fetch e sessão.
+
+Depois da execução:
+- o CRM deixa de cair em massa para login quebrado,
+- o cache antigo é eliminado de forma global,
+- os corretores passam a abrir somente a versão funcional,
+- a autenticação volta a estabilizar,
+- e o problema deixa de reaparecer como falha geral.
+
+Quando você aprovar, eu executo essa correção completa com foco explícito na limpeza geral de cache e na recuperação para todos os usuários.

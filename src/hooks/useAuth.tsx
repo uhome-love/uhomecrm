@@ -69,7 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const payload = JSON.parse(
                   atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
                 );
-                if (!payload?.sub) {
+                const nowSec = Math.floor(Date.now() / 1000);
+                const expired = typeof payload?.exp === "number" && payload.exp < nowSec - 5;
+                if (!payload?.sub || expired) {
                   localStorage.removeItem(k);
                 }
               } else {
@@ -88,6 +90,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     purgeCorruptedAuthStorage();
 
+    const isFatalAuthError = (msg: string) =>
+      msg.includes("missing sub") ||
+      msg.includes("invalid claim") ||
+      msg.includes("bad_jwt") ||
+      msg.includes("JWT expired") ||
+      msg.includes("Invalid Refresh Token") ||
+      msg.includes("Session not found") ||
+      msg.includes("session_not_found") ||
+      msg.includes("Refresh Token Not Found") ||
+      msg.includes("User from sub claim in JWT does not exist");
+
     const getSessionWithRetry = async (attempts = 3): Promise<any> => {
       let lastErr: any = null;
       for (let i = 1; i <= attempts; i++) {
@@ -95,15 +108,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const { data, error } = await (supabase.auth as any).getSession();
           if (error) {
             const msg = String(error?.message || "");
-            // Token rejected by server (expired/invalid/missing sub) → drop local session
-            if (
-              msg.includes("missing sub") ||
-              msg.includes("invalid claim") ||
-              msg.includes("bad_jwt") ||
-              msg.includes("JWT expired") ||
-              msg.includes("Invalid Refresh Token")
-            ) {
-              try { await (supabase.auth as any).signOut({ scope: "local" }); } catch {}
+            // Token rejected by server → drop local session de verdade (global)
+            if (isFatalAuthError(msg)) {
+              try { await (supabase.auth as any).signOut({ scope: "global" }); } catch {
+                try { await (supabase.auth as any).signOut({ scope: "local" }); } catch {}
+              }
               purgeCorruptedAuthStorage();
               return null;
             }
