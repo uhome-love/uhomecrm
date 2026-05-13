@@ -165,7 +165,7 @@ export default function KpiDetailDialog({ open, onOpenChange, type, label, dateR
 
   const goToLead = (leadId: string) => {
     onOpenChange(false);
-    navigate(`/pipeline?lead=${leadId}`);
+    navigate(`/pipeline-leads?lead=${leadId}`);
   };
 
   return (

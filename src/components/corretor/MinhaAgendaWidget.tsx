@@ -197,7 +197,7 @@ export default function MinhaAgendaWidget() {
 
     const handleOpenLead = () => {
       if (t._source === "lead" && t.pipeline_lead_id) {
-        navigate(`/pipeline?lead=${t.pipeline_lead_id}`);
+        navigate(`/pipeline-leads?lead=${t.pipeline_lead_id}`);
       } else if (t._source === "negocio" && (t as any).negocio_id) {
         navigate(`/negocios?id=${(t as any).negocio_id}`);
       }

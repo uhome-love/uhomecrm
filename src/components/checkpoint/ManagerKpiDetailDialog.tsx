@@ -112,7 +112,7 @@ export default function ManagerKpiDetailDialog({ open, onOpenChange, type, label
 
   const goToLead = (leadId: string) => {
     onOpenChange(false);
-    navigate(`/pipeline?lead=${leadId}`);
+    navigate(`/pipeline-leads?lead=${leadId}`);
   };
 
   // Group by corretor
