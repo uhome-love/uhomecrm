@@ -195,8 +195,20 @@ export default function MinhaAgendaWidget() {
     const nome = t._source === "negocio" ? (t.negocio_nome || "Negócio") : (t.lead_nome || "Lead");
     const empreendimento = t._source === "lead" ? t.lead_empreendimento : null;
 
+    const handleOpenLead = () => {
+      if (t._source === "lead" && t.pipeline_lead_id) {
+        navigate(`/pipeline?lead=${t.pipeline_lead_id}`);
+      } else if (t._source === "negocio" && (t as any).negocio_id) {
+        navigate(`/negocios?id=${(t as any).negocio_id}`);
+      }
+    };
+
     return (
-      <div key={t.id} className={`border-l-[3px] rounded-r-lg p-2.5 space-y-1 ${borderClass}`}>
+      <div
+        key={t.id}
+        onClick={handleOpenLead}
+        className={`border-l-[3px] rounded-r-lg p-2.5 space-y-1 ${borderClass} cursor-pointer hover:brightness-110 transition`}
+      ></div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
             {timeIcon} {t.hora_vencimento ? t.hora_vencimento.slice(0, 5) : "—"} · {TIPO_LABELS[t.tipo] || t.tipo}
