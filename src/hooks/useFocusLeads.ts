@@ -10,6 +10,7 @@
  */
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
 
 export interface FocusLead {
   id: string;
@@ -66,10 +67,13 @@ export function useFocusLeads(
       const todayStr = today.toISOString().split("T")[0];
 
       // 1. Get stages for name mapping — exclude descarte and convertido
-      const { data: stagesData } = await supabase
-        .from("pipeline_stages")
-        .select("id, nome, tipo, pipeline_tipo")
-        .eq("pipeline_tipo", pipelineTipo);
+      const { data: stagesData, error: stagesError } = await runQueryWithRetry(() =>
+        supabase
+          .from("pipeline_stages")
+          .select("id, nome, tipo, pipeline_tipo")
+          .eq("pipeline_tipo", pipelineTipo)
+      );
+      if (stagesError) throw stagesError;
 
       const stageMap: Record<string, string> = {};
       let stageIds: string[] = [];
@@ -103,7 +107,7 @@ export function useFocusLeads(
         query = query.is("negocio_id", null);
       }
 
-      const { data: leadsData, error: leadsError } = await query;
+      const { data: leadsData, error: leadsError } = await runQueryWithRetry(() => query);
       if (leadsError) throw leadsError;
       if (!leadsData || leadsData.length === 0) {
         setLeads([]);
@@ -115,30 +119,36 @@ export function useFocusLeads(
       const leadIds = leadsData.map(l => l.id);
       const allTasks: Record<string, { overdue: number; hasFuture: boolean; overdueList: { id: string; titulo: string; vence_em: string | null; tipo: string | null }[] }> = {};
 
-      for (let i = 0; i < leadIds.length; i += 200) {
-        const chunk = leadIds.slice(i, i + 200);
-        const { data: tasksData } = await supabase
-          .from("pipeline_tarefas")
-          .select("id, pipeline_lead_id, titulo, tipo, vence_em, status")
-          .in("pipeline_lead_id", chunk)
-          .eq("status", "pendente");
+      const { rows: tasksData, errors: taskErrors } = await fetchInBatchesWithRetry<any>(
+        leadIds,
+        (chunk) =>
+          supabase
+            .from("pipeline_tarefas")
+            .select("id, pipeline_lead_id, titulo, tipo, vence_em, status")
+            .in("pipeline_lead_id", chunk)
+            .eq("status", "pendente"),
+        { chunkSize: 50, minChunkSize: 10 }
+      );
 
-        for (const t of tasksData || []) {
-          if (!allTasks[t.pipeline_lead_id]) {
-            allTasks[t.pipeline_lead_id] = { overdue: 0, hasFuture: false, overdueList: [] };
-          }
-          if (t.vence_em && t.vence_em < todayStr) {
-            allTasks[t.pipeline_lead_id].overdue++;
-            allTasks[t.pipeline_lead_id].overdueList.push({
-              id: t.id,
-              titulo: t.titulo || "(sem título)",
-              vence_em: t.vence_em,
-              tipo: (t as any).tipo ?? null,
-            });
-          } else {
-            allTasks[t.pipeline_lead_id].hasFuture = true;
-          }
+      for (const t of tasksData || []) {
+        if (!allTasks[t.pipeline_lead_id]) {
+          allTasks[t.pipeline_lead_id] = { overdue: 0, hasFuture: false, overdueList: [] };
         }
+        if (t.vence_em && t.vence_em < todayStr) {
+          allTasks[t.pipeline_lead_id].overdue++;
+          allTasks[t.pipeline_lead_id].overdueList.push({
+            id: t.id,
+            titulo: t.titulo || "(sem título)",
+            vence_em: t.vence_em,
+            tipo: (t as any).tipo ?? null,
+          });
+        } else {
+          allTasks[t.pipeline_lead_id].hasFuture = true;
+        }
+      }
+
+      if (taskErrors.length) {
+        console.warn("[useFocusLeads] Algumas consultas de tarefas falharam e foram isoladas por chunk", taskErrors);
       }
 
       // 4. Build focus leads — filter for those that need attention
