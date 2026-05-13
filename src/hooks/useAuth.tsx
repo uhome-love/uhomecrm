@@ -29,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const userRef = useRef<User | null>(null);
   const sessionRef = useRef<Session | null>(null);
   const recoveryTimeoutRef = useRef<number | null>(null);
 
@@ -40,7 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     sessionRef.current = nextSession;
-    userRef.current = nextSession?.user ?? null;
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
     setLoading(false);
