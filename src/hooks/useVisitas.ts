@@ -461,6 +461,8 @@ export function useVisitas(filters?: {
       queryClient.invalidateQueries({ queryKey: ["visitas"] }),
       queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
       queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] }),
+      queryClient.invalidateQueries({ queryKey: ["pipeline-tarefas"] }),
+      queryClient.invalidateQueries({ queryKey: ["agenda-widget-leads"] }),
       queryClient.invalidateQueries({ queryKey: ["agenda-visitas"] }),
     ]);
 
