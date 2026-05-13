@@ -173,6 +173,27 @@ const styles = `
 .auth-input:focus { border-color: rgba(59,130,246,0.5) !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1), 0 0 16px rgba(59,130,246,0.08) !important }
 `;
 
+function handleHardRecovery() {
+  // Botão "Corrigir acesso" — limpa tudo e recarrega via flag de recuperação.
+  // O wipe acontece no main.tsx assim que a página recarrega.
+  try { localStorage.clear(); } catch {}
+  try { sessionStorage.clear(); } catch {}
+  try {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister().catch(() => {})));
+    }
+  } catch {}
+  try {
+    if ("caches" in window) {
+      caches.keys().then((ks) => ks.forEach((k) => caches.delete(k).catch(() => {})));
+    }
+  } catch {}
+  // Pequeno delay para as promessas acima começarem, depois recarrega limpo
+  setTimeout(() => {
+    window.location.replace("/?_recover=1");
+  }, 150);
+}
+
 export default function Auth() {
   const { user, loading, signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
@@ -182,6 +203,17 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Toast de feedback após recuperação manual
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("recovered") === "1") {
+      toast.success("Acesso recuperado neste dispositivo. Faça login normalmente.");
+      params.delete("recovered");
+      const clean = window.location.pathname + (params.toString() ? `?${params}` : "");
+      window.history.replaceState({}, "", clean);
+    }
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#0A0F1E" }}>
@@ -190,6 +222,7 @@ export default function Auth() {
     );
   }
   if (user) return <Navigate to="/" replace />;
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -322,6 +355,14 @@ export default function Auth() {
         <p className="text-center tracking-wider" style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>
           © {new Date().getFullYear()} Uhome · Impulsione suas vendas · Todos os direitos reservados
         </p>
+        <button
+          type="button"
+          onClick={handleHardRecovery}
+          className="text-[10px] underline-offset-2 hover:underline transition-opacity"
+          style={{ color: "rgba(255,255,255,0.35)" }}
+        >
+          Está preso na tela de login? Corrigir acesso neste dispositivo
+        </button>
       </div>
     </div>
   );

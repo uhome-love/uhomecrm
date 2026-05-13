@@ -30,18 +30,34 @@ async function nukeStaleCachesAndWorkers() {
 // Detecta se a URL contém o sinalizador de recuperação ou se o último boot
 // terminou em erro fatal — nesses casos fazemos limpeza síncrona pesada
 // antes de montar o app.
-const RECOVERY_FLAG = "_recover";
+// Aliases aceitos para o link de recuperação enviado aos corretores.
+// Qualquer um deles dispara wipe completo do estado local.
+const RECOVERY_FLAGS = ["_recover", "recover", "clear_cache", "reset_app"] as const;
 const url = new URL(window.location.href);
-const needsHardRecovery = url.searchParams.has(RECOVERY_FLAG);
+const triggeredFlag = RECOVERY_FLAGS.find((f) => url.searchParams.has(f));
+const needsHardRecovery = !!triggeredFlag;
 
 if (needsHardRecovery) {
   // Limpa storages locais para que o /auth abra 100% limpo
   try { localStorage.clear(); } catch {}
   try { sessionStorage.clear(); } catch {}
-  // Remove o parâmetro para não reentrar em loop
-  url.searchParams.delete(RECOVERY_FLAG);
+  // Tenta também limpar IndexedDB (Supabase persiste sessão lá em alguns browsers)
+  try {
+    const anyIDB: any = (window as any).indexedDB;
+    if (anyIDB?.databases) {
+      anyIDB.databases().then((dbs: any[]) => {
+        dbs?.forEach((db) => db?.name && anyIDB.deleteDatabase(db.name));
+      }).catch(() => {});
+    }
+  } catch {}
+  // Remove TODOS os parâmetros de recuperação para não reentrar em loop
+  RECOVERY_FLAGS.forEach((f) => url.searchParams.delete(f));
+  // Redireciona para /auth?recovered=1 para feedback visual
+  url.pathname = "/auth";
+  url.searchParams.set("recovered", "1");
   window.history.replaceState({}, "", url.toString());
 }
+
 
 // Dispara limpeza em background — não bloqueia o boot
 void nukeStaleCachesAndWorkers();
