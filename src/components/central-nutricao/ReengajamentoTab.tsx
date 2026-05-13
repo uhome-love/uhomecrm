@@ -196,6 +196,8 @@ export default function ReengajamentoTab() {
         meta_template_name_2: local.meta_template_name_2 || null,
         mensagens_variantes_2: local.mensagens_variantes_2 || [],
         wave2_min_dias_apos_wave1: local.wave2_min_dias_apos_wave1 ?? 5,
+        meta_header_image_url: local.meta_header_image_url || null,
+        meta_header_image_url_2: local.meta_header_image_url_2 || null,
         updated_at: new Date().toISOString(),
       }).eq("id", local.id);
       if (error) throw error;
