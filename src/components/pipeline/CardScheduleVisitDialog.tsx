@@ -120,7 +120,7 @@ export default function CardScheduleVisitDialog({ open, onOpenChange, lead, stag
     } finally {
       setSubmitting(false);
     }
-  }, [date, time, local, obs, user, lead, stages, onMoveLead, onOpenChange, sendInvite, integration?.connected]);
+  }, [date, time, local, obs, user, lead, stages, onMoveLead, onOpenChange, sendInvite, integration?.connected, queryClient]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
