@@ -153,6 +153,26 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     fetchHomiSuggestion(currentLead);
   }, [currentIndex, leads.length, open, configPhase]);
 
+  // Fetch pending tasks for current lead
+  useEffect(() => {
+    if (!currentLead?.id || !open || configPhase) {
+      setPendingTasks([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("pipeline_tarefas")
+        .select("id, titulo, tipo, vence_em, hora_vencimento")
+        .eq("pipeline_lead_id", currentLead.id)
+        .eq("status", "pendente")
+        .order("vence_em", { ascending: true })
+        .limit(20);
+      if (!cancelled) setPendingTasks((data || []) as any);
+    })();
+    return () => { cancelled = true; };
+  }, [currentLead?.id, open, configPhase, tasksRefreshKey]);
+
   const fetchHomiSuggestion = useCallback(async (lead: FocusLead) => {
     setHomiLoading(true);
     setHomiInsight("");
