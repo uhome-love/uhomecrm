@@ -112,14 +112,20 @@ const PhotoLightboxInner = forwardRef<HTMLDivElement, PhotoLightboxProps>(functi
       {images.length > 1 && (
         <>
           <button
-            onClick={(e) => { e.stopPropagation(); goTo((current - 1 + images.length) % images.length); }}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-50 bg-white/10 hover:bg-white/25 backdrop-blur-md rounded-full p-3 text-white transition-all hover:scale-110 hidden sm:flex"
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); goTo((current - 1 + images.length) % images.length); }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-[10001] bg-white/10 hover:bg-white/25 backdrop-blur-md rounded-full p-3 text-white transition-all hover:scale-110 hidden sm:flex pointer-events-auto"
+            aria-label="Foto anterior"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); goTo((current + 1) % images.length); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-50 bg-white/10 hover:bg-white/25 backdrop-blur-md rounded-full p-3 text-white transition-all hover:scale-110 hidden sm:flex"
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); goTo((current + 1) % images.length); }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-[10001] bg-white/10 hover:bg-white/25 backdrop-blur-md rounded-full p-3 text-white transition-all hover:scale-110 hidden sm:flex pointer-events-auto"
+            aria-label="Próxima foto"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
