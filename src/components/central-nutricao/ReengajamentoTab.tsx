@@ -191,6 +191,11 @@ export default function ReengajamentoTab() {
         horario_fim: local.horario_fim,
         delay_min_seconds: local.delay_min_seconds,
         delay_max_seconds: local.delay_max_seconds,
+        // 2ª onda
+        mensagem_template_2: local.mensagem_template_2 || null,
+        meta_template_name_2: local.meta_template_name_2 || null,
+        mensagens_variantes_2: local.mensagens_variantes_2 || [],
+        wave2_min_dias_apos_wave1: local.wave2_min_dias_apos_wave1 ?? 5,
         updated_at: new Date().toISOString(),
       }).eq("id", local.id);
       if (error) throw error;
