@@ -17,6 +17,10 @@ import { toast } from "sonner";
 const MAPBOX_TOKEN = "pk.eyJ1IjoibHVjYXN1aG9tZSIsImEiOiJjbW16c2l2dmUwYmxsMnJwdDI2bGxrazBkIn0.B4dp727gJlQQIWTci7GpFQ";
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
+const CLUSTER_MAX_ZOOM = 15;
+const CLUSTER_RADIUS = 64;
+const PIN_LABEL_MIN_ZOOM = 14;
+
 function toGeoJSON(pins: MapPin[]): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
@@ -87,6 +91,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
   // Preview popup state (React-rendered, like site)
   const [previewPin, setPreviewPin] = useState<MapPin | null>(null);
   const [previewPos, setPreviewPos] = useState<{ x: number; y: number } | null>(null);
+  const previewPinRef = useRef<MapPin | null>(null);
 
   // Draw mode
   const [drawMode, setDrawMode] = useState(false);
@@ -106,6 +111,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
   useEffect(() => { onPinClickRef.current = onPinClick; }, [onPinClick]);
   useEffect(() => { drawPointsRef.current = drawPoints; }, [drawPoints]);
   useEffect(() => { autoSearchRef.current = autoSearch; }, [autoSearch]);
+  useEffect(() => { previewPinRef.current = previewPin; }, [previewPin]);
 
   // Cleanup user marker
   useEffect(() => { return () => { userMarkerRef.current?.remove(); }; }, []);
@@ -155,7 +161,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
       map.addSource("imoveis", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
-        cluster: true, clusterMaxZoom: 13, clusterRadius: 52,
+        cluster: true, clusterMaxZoom: CLUSTER_MAX_ZOOM, clusterRadius: CLUSTER_RADIUS,
         buffer: 64, tolerance: 0.4,
       });
 
@@ -190,7 +196,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
         filter: ["!", ["has", "point_count"]],
         paint: {
           "circle-color": "#FFFFFF",
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 18, 12, 22, 14, 26],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 14, 12, 17, 14, 20, 16, 22],
           "circle-stroke-width": 1.5,
           "circle-stroke-color": "rgba(0,0,0,0.18)",
           "circle-opacity": 0.98,
@@ -201,12 +207,14 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
       map.addLayer({
         id: "imoveis-pin-labels", type: "symbol", source: "imoveis",
         filter: ["!", ["has", "point_count"]],
+        minzoom: PIN_LABEL_MIN_ZOOM,
         layout: {
           "text-field": ["get", "preco_label"],
           "text-font": ["DIN Pro Bold", "Arial Unicode MS Bold"],
-          "text-size": 11,
-          "text-allow-overlap": true,
-          "text-ignore-placement": true,
+          "text-size": ["interpolate", ["linear"], ["zoom"], PIN_LABEL_MIN_ZOOM, 10, 16, 11],
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+          "text-padding": 10,
           "text-anchor": "center",
           "symbol-sort-key": ["get", "preco"],
         },
@@ -218,7 +226,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
         filter: ["==", ["get", "id"], ""],
         paint: {
           "circle-color": "#222222",
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 20, 12, 24, 14, 28],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 16, 12, 19, 14, 22, 16, 24],
           "circle-stroke-width": 2,
           "circle-stroke-color": "#222222",
           "circle-opacity": 1,
@@ -228,12 +236,14 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
       map.addLayer({
         id: "imoveis-pins-hover-label", type: "symbol", source: "imoveis",
         filter: ["==", ["get", "id"], ""],
+        minzoom: PIN_LABEL_MIN_ZOOM,
         layout: {
           "text-field": ["get", "preco_label"],
           "text-font": ["DIN Pro Bold", "Arial Unicode MS Bold"],
-          "text-size": 11,
-          "text-allow-overlap": true,
-          "text-ignore-placement": true,
+          "text-size": ["interpolate", ["linear"], ["zoom"], PIN_LABEL_MIN_ZOOM, 10, 16, 11],
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+          "text-padding": 10,
           "text-anchor": "center",
         },
         paint: { "text-color": "#FFFFFF" },
@@ -307,6 +317,14 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
     map.on("moveend", () => {
       if (!mapReadyRef.current) return;
       boundsRef.current = map.getBounds();
+
+      const activePreviewPin = previewPinRef.current;
+      const projectedPreview = activePreviewPin
+        ? map.project([Number(activePreviewPin.longitude), Number(activePreviewPin.latitude)])
+        : null;
+      if (activePreviewPin && projectedPreview) {
+        setPreviewPos({ x: projectedPreview.x, y: projectedPreview.y });
+      }
 
       const newCenter = map.getCenter();
       const distanceMoved = Math.sqrt(

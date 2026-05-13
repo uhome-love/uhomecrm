@@ -1,6 +1,7 @@
 import { memo, useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useHomi } from "@/contexts/HomiContext";
+import { useLocation } from "react-router-dom";
 
 const SNAP_MARGIN = 16;
 const BUTTON_SIZE = 56;
@@ -29,6 +30,7 @@ function loadSavedPosition() {
 
 function HomiAvatarInner() {
   const { isOpen, toggleHomi, unseenCount, isLoading } = useHomi();
+  const { pathname } = useLocation();
   const defaultPos = { x: window.innerWidth - BUTTON_SIZE - SNAP_MARGIN, y: window.innerHeight - BUTTON_SIZE - SNAP_MARGIN };
   const [position, setPosition] = useState(() => loadSavedPosition() || defaultPos);
   const isDragging = useRef(false);
@@ -87,7 +89,7 @@ function HomiAvatarInner() {
     }
   }, [position, toggleHomi]);
 
-  if (isOpen) return null;
+  if (isOpen || pathname === "/imoveis") return null;
 
   return (
     <div

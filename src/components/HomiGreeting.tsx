@@ -5,6 +5,7 @@ import HomiAnimated from "@/components/homi/HomiAnimated";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
+import { useLocation } from "react-router-dom";
 
 const greetings = {
   morning: [
@@ -59,9 +60,12 @@ const STORAGE_KEY = "homi_last_greeting";
 function HomiGreetingInner() {
   const { user } = useAuth();
   const { isAdmin, isGestor } = useUserRole();
+  const { pathname } = useLocation();
   const [show, setShow] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [tip, setTip] = useState("");
+
+  if (pathname === "/imoveis") return null;
 
   useEffect(() => {
     if (!user) return;
