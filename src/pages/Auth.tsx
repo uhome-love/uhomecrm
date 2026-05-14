@@ -327,6 +327,16 @@ export default function Auth() {
                     </button>
                   )}
                 </div>
+                {submittingTooLong && (
+                  <button
+                    type="button"
+                    onClick={handleHardRecovery}
+                    className="mt-2 w-full text-xs underline-offset-2 hover:underline transition-opacity text-center"
+                    style={{ color: "#FCA5A5" }}
+                  >
+                    ⚠️ Demorando demais? Toque aqui para corrigir o acesso neste dispositivo
+                  </button>
+                )}
               </div>
             </div>
           </form>
