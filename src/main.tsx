@@ -46,7 +46,56 @@ installFetchCircuitBreaker();
 // VERSÃO OBRIGATÓRIA — força reload se o servidor publicou nova build
 // ─────────────────────────────────────────────────────────────────────────────
 const VERSION_POLL_MS = 60_000; // checa a cada 60s
+const LAST_VERSION_KEY = "uhome:app:lastVersion";
 let knownVersion: string | null = null;
+let cleaningInProgress = false;
+
+// Limpa TUDO que pode segurar bundle antigo (SW, Cache Storage, IndexedDB do app)
+// e recarrega. Roda automaticamente quando detectamos build nova no servidor.
+async function hardCleanAndReload(newVersion: string) {
+  if (cleaningInProgress) return;
+  cleaningInProgress = true;
+  try {
+    // 1. Unregister TODOS os service workers (PWA antigo cacheando shell)
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister().catch(() => undefined)));
+    }
+    // 2. Limpar Cache Storage (workbox / runtime caches antigos)
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k).catch(() => undefined)));
+    }
+    // 3. Limpar IndexedDB do app (mantém Supabase/auth para não deslogar)
+    if ("indexedDB" in window && "databases" in indexedDB) {
+      try {
+        const dbs = await (indexedDB as any).databases();
+        await Promise.all(
+          (dbs || [])
+            .filter((db: any) => db?.name && (db.name.includes("uhome") || db.name.includes("workbox")))
+            .map(
+              (db: any) =>
+                new Promise<void>((res) => {
+                  const req = indexedDB.deleteDatabase(db.name);
+                  req.onsuccess = () => res();
+                  req.onerror = () => res();
+                  req.onblocked = () => res();
+                }),
+            ),
+        );
+      } catch {}
+    }
+  } catch (err) {
+    console.warn("[update] hard clean falhou, recarregando mesmo assim", err);
+  }
+  try {
+    localStorage.setItem(LAST_VERSION_KEY, newVersion);
+  } catch {}
+  // Reload com cache-bust forte
+  const next = new URL(window.location.href);
+  next.searchParams.set("_v", newVersion);
+  window.location.replace(next.toString());
+}
 
 async function checkAppVersion() {
   try {
@@ -60,14 +109,21 @@ async function checkAppVersion() {
     if (!v) return;
     if (knownVersion === null) {
       knownVersion = v;
+      // Boot: se a versão guardada localmente é diferente, faz clean automático
+      // (cobre o caso de usuário que abriu o app depois do deploy sem ter ficado polling)
+      let last: string | null = null;
+      try { last = localStorage.getItem(LAST_VERSION_KEY); } catch {}
+      if (last && last !== v) {
+        void hardCleanAndReload(v);
+        return;
+      }
+      try { localStorage.setItem(LAST_VERSION_KEY, v); } catch {}
       return;
     }
     if (v !== knownVersion) {
       knownVersion = v;
-      // Nova build → recarrega com cache-bust para baixar bundle novo
-      const next = new URL(window.location.href);
-      next.searchParams.set("_v", v);
-      window.location.replace(next.toString());
+      // Nova build detectada em runtime → limpa tudo e recarrega automaticamente
+      void hardCleanAndReload(v);
     }
   } catch {
     // silencioso — falha de rede não pode quebrar o app
