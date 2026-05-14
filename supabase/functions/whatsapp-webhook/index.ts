@@ -507,7 +507,7 @@ async function handleExistingLeadReply(
   await supabase.from("pipeline_leads").update({ observacoes: mergedObs }).eq("id", lead.id);
 
   // Notify orchestrator
-  notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", lead.id, "whatsapp");
+  notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", lead.id, "whatsapp", { campanha: campanhaLabel });
 }
 
 // ── Handle reply from unknown sender — search pipeline_leads, then oferta_ativa ──
