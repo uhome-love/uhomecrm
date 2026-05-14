@@ -533,6 +533,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
           </div>
         </div>
 
+        <StaleDataBadge staleSince={staleSince} onRetry={() => reload()} />
+
         {/* BODY */}
         <div className="flex-1 overflow-y-auto flex flex-col">
           {configPhase ? (
