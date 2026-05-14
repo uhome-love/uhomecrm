@@ -85,14 +85,9 @@ function currentTarget(): ProxyTarget {
 }
 
 function shouldFailoverEnabled(): boolean {
-  // Desabilita failover dentro do preview iframe do Lovable — o erro lá
-  // vem do proxy lovable.js, não do Cloudflare; trocar host não resolve.
-  try {
-    const host = window.location.hostname;
-    return !host.includes("lovableproject.com") && !host.includes("id-preview--");
-  } catch {
-    return true;
-  }
+  // Failover habilitado em TODOS os ambientes (incluindo preview do Lovable).
+  // Quando api.uhomesales.com falhar, tentamos api-backup.uhomesales.com.
+  return true;
 }
 
 function switchToBackup(reason: string) {
