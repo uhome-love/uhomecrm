@@ -44,7 +44,7 @@ interface Props {
   leadTelefone?: string | null;
   leadEmail?: string | null;
   tarefas: PipelineTarefa[];
-  onAddTarefa: (data: Partial<PipelineTarefa>) => Promise<void>;
+  onAddTarefa: (data: Partial<PipelineTarefa>) => Promise<void | boolean>;
   onToggleTarefa: (id: string, status: string) => Promise<void>;
   onDeleteTarefa: (id: string) => Promise<void>;
   onReload: () => void;
