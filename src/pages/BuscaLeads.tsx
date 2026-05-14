@@ -758,7 +758,7 @@ export default function BuscaLeads() {
               </DialogHeader>
 
               <div className="space-y-3">
-                {(actionModal.acao === "aproveitado" || actionModal.acao === "transferir" || actionModal.acao === "incluir_pipeline") && (
+                {(actionModal.acao === "aproveitado" || actionModal.acao === "transferir" || actionModal.acao === "incluir_pipeline" || actionModal.acao === "repassar_pipeline") && (
                   <div>
                     <Label className="text-xs">Corretor responsável</Label>
                     <Select value={selectedCorretor} onValueChange={setSelectedCorretor}>
