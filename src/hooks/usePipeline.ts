@@ -717,7 +717,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
     getLeadsByStage,
     reload: useCallback(async () => {
       setError(null);
-      await Promise.all([loadStages(), loadSegmentos(), loadLeads()]);
+      // allSettled: recarga manual não pode lançar e quebrar o caller.
+      await Promise.allSettled([loadStages(), loadSegmentos(), loadLeads()]);
     }, [loadStages, loadSegmentos, loadLeads]),
   };
 }
