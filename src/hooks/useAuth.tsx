@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sessionRef = useRef<Session | null>(null);
   const recoveryTimeoutRef = useRef<number | null>(null);
 
-  const purgeCorruptedAuthStorage = useCallback(() => {
+  const purgeCorruptedAuthStorage = useCallback((origin: string = "unknown") => {
     try {
       const keys: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -61,10 +61,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (k && (k.startsWith("sb-") || k.includes("supabase.auth"))) keys.push(k);
       }
       for (const k of keys) {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        const rawLen = raw.length;
+        let parsed: any = null;
         try {
-          const raw = localStorage.getItem(k);
-          if (!raw) continue;
-          const parsed = JSON.parse(raw);
+          parsed = JSON.parse(raw);
+        } catch {
+          // C1.b: parse-fail transitório — NÃO remover. Apenas logar.
+          // Storage pode estar mid-write em iOS PWA / Safari.
+          console.warn(
+            `[auth-purge] parse_fail (kept) key=${k} rawLen=${rawLen} origin=${origin}`,
+          );
+          continue;
+        }
+        try {
           const token = parsed?.access_token || parsed?.currentSession?.access_token;
           if (token && typeof token === "string") {
             const parts = token.split(".");
@@ -75,14 +86,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const nowSec = Math.floor(Date.now() / 1000);
               const expired = typeof payload?.exp === "number" && payload.exp < nowSec - 5;
               if (!payload?.sub || expired) {
+                console.warn(
+                  `[auth-purge] removed key=${k} rawLen=${rawLen} reason=${!payload?.sub ? "missing_sub" : "expired"} origin=${origin}`,
+                );
                 localStorage.removeItem(k);
               }
-            } else {
+            } else if (rawLen > 0) {
+              // Token claramente malformado (não é JWT)
+              console.warn(
+                `[auth-purge] removed key=${k} rawLen=${rawLen} reason=parts_${parts.length} origin=${origin}`,
+              );
               localStorage.removeItem(k);
             }
           }
-        } catch {
-          try { localStorage.removeItem(k); } catch {}
+        } catch (innerErr) {
+          // Erro ao decodificar JWT — não remover, apenas logar
+          console.warn(
+            `[auth-purge] jwt_decode_fail (kept) key=${k} rawLen=${rawLen} origin=${origin}`,
+          );
         }
       }
     } catch {
