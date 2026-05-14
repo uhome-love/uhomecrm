@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode, type Context } from "react";
 import { supabase } from "@/integrations/supabase/customClient";
 import { sendAuthTelemetry } from "@/lib/authTelemetry";
 
@@ -25,7 +25,15 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+declare global {
+  var __uhomeAuthContext__: Context<AuthContextType | undefined> | undefined;
+}
+
+const AuthContext = globalThis.__uhomeAuthContext__ ?? createContext<AuthContextType | undefined>(undefined);
+
+if (!globalThis.__uhomeAuthContext__) {
+  globalThis.__uhomeAuthContext__ = AuthContext;
+}
 
 const isFatalAuthError = (msg: string) =>
   msg.includes("missing sub") ||
