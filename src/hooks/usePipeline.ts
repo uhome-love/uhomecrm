@@ -81,6 +81,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const [corretorAvatars, setCorretorAvatars] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Timestamp da última carga bem-sucedida. Quando uma carga falha mas
+  // preservamos snapshot, expomos esse valor como `staleSince` pra UI sinalizar
+  // "dados de há X min — reconectando…". Volta a null no próximo sucesso.
+  const [staleSince, setStaleSince] = useState<Date | null>(null);
+  const lastSuccessAtRef = useRef<Date | null>(null);
   // Guard: suppress realtime events during local mutations to prevent flicker
   const localMutationRef = useRef(false);
   // Track last visible timestamp for tab-switch debounce
