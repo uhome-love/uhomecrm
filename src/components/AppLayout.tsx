@@ -108,6 +108,10 @@ export default function AppLayout() {
         setCargoLabel("RH · 💚 Carol");
       } else if (isGestor) {
         setCargoLabel("Gerente");
+      } else if (rolesUnavailable) {
+        // Roles indisponíveis por falha de rede — NÃO rebaixar para "Corretor".
+        // Mantém o label atual (se existir) ou mostra placeholder neutro.
+        setCargoLabel((prev) => prev || "—");
       } else {
         const c = (data as any)?.cargo || "";
         const labelMap: Record<string, string> = {
@@ -120,7 +124,7 @@ export default function AppLayout() {
         setCargoLabel(labelMap[c] || c || "Corretor");
       }
     });
-  }, [user, isAdmin, isGestor, isBackoffice, isRh]);
+  }, [user, isAdmin, isGestor, isBackoffice, isRh, rolesUnavailable]);
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
