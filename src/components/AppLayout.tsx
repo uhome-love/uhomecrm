@@ -244,6 +244,7 @@ export default function AppLayout() {
               </DropdownMenu>
               </div>
             </header>
+            <ApiOfflineBanner />
             <PushPromptBanner />
             <TabBar />
             
