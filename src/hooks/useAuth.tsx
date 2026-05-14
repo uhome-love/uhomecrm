@@ -280,10 +280,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     purgeCorruptedAuthStorage("boot");
 
     // Safety ceiling: nunca deixar o app preso em "loading" mais que 8s no boot.
-    // Se chegar aqui, expurga tokens locais e força a tela de login.
-    const bootTimeout = window.setTimeout(() => {
+    // Se chegar aqui E a API estiver offline, NÃO purga storage — apenas libera a UI
+    // mantendo a sessão local; o ApiOfflineBanner avisa o usuário.
+    const bootTimeout = window.setTimeout(async () => {
       if (!isMounted) return;
       if (sessionRef.current?.user) return; // já temos sessão válida
+      let apiOffline = false;
+      try {
+        const { getApiHealth } = await import("@/lib/apiHealth");
+        apiOffline = getApiHealth() !== "online";
+      } catch { /* noop */ }
+      if (apiOffline) {
+        console.warn("[auth-boot] ceiling reached but API offline — keeping local session, unblocking UI");
+        sendAuthTelemetry({ event_type: "transition", origin: "boot_ceiling", reason: "api_offline_kept_session" });
+        setLoading(false);
+        return;
+      }
       console.warn("[auth-boot] ceiling reached (8s) without session — purging and unblocking UI");
       sendAuthTelemetry({ event_type: "transition", origin: "boot_ceiling", reason: "loading_timeout" });
       try { purgeCorruptedAuthStorage("boot_ceiling"); } catch {}
