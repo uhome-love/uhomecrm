@@ -249,13 +249,21 @@ export function useFocusLeads(
       });
 
       setLeads(focusLeads);
+      leadsCountRef.current = focusLeads.length;
+      lastSuccessAtRef.current = new Date();
+      setStaleSince(null);
     } catch (err: any) {
       console.error("[useFocusLeads] error:", err);
-      setError(err.message || "Erro ao buscar leads");
+      // Preservar snapshot: se já há cache em tela, marcar stale e NÃO zerar leads
+      if (leadsCountRef.current > 0 && lastSuccessAtRef.current) {
+        setStaleSince(lastSuccessAtRef.current);
+      } else {
+        setError(err.message || "Erro ao buscar leads");
+      }
     } finally {
       setLoading(false);
     }
   }, [corretorAuthId, pipelineTipo]);
 
-  return { leads, loading, error, reload };
+  return { leads, loading, error, staleSince, reload };
 }
