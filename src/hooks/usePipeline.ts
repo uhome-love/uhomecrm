@@ -344,9 +344,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
           .filter((x) => x.r.status === "rejected");
         if (failed.length > 0) {
           console.warn("[usePipeline] Partial load failure:", failed.map((f) => f.name));
-          // Only surface error if the CRITICAL queries failed (stages OR leads)
           const criticalFailed = failed.some((f) => f.name === "stages" || f.name === "leads");
-          if (criticalFailed) {
+          // Só mostra erro de tela se NÃO há nada cacheado.
+          // Se já existe estado válido, mantemos a UI funcional e tentamos de novo no próximo ciclo.
+          const haveCache = stages.length > 0 && leads.length >= 0;
+          if (criticalFailed && !haveCache) {
             setError("Falha parcial ao carregar pipeline. Tente recarregar.");
           }
         }
