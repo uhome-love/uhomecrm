@@ -54,7 +54,7 @@ interface Props {
   onAddAtividade: (data: Partial<PipelineAtividade>) => Promise<void>;
   onAddAnotacao: (conteudo: string) => Promise<void>;
   onToggleFixar: (id: string, fixada: boolean) => Promise<void>;
-  onAddTarefa: (data: Partial<PipelineTarefa>) => Promise<void>;
+  onAddTarefa: (data: Partial<PipelineTarefa>) => Promise<void | boolean>;
   onReload: () => void;
   onNextAction?: () => void;
 }
