@@ -677,7 +677,7 @@ async function handleUnknownReply(
     callAIReply(supabaseUrl, serviceKey, from, contactName || oaLead.nome || "", msgText, newLead.id, "texto");
 
     // Notify orchestrator
-    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", newLead.id, "whatsapp");
+    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", newLead.id, "whatsapp", { campanha: "Reengajamento Oferta Ativa" });
     return;
   }
 
