@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sendAuthTelemetry } from "@/lib/authTelemetry";
 
 interface User {
   id: string;
@@ -73,6 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.warn(
             `[auth-purge] parse_fail (kept) key=${k} rawLen=${rawLen} origin=${origin}`,
           );
+          sendAuthTelemetry({
+            event_type: "purge_kept",
+            origin,
+            reason: "parse_fail",
+            raw_len: rawLen,
+            storage_key: k,
+          });
           continue;
         }
         try {
@@ -86,9 +94,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const nowSec = Math.floor(Date.now() / 1000);
               const expired = typeof payload?.exp === "number" && payload.exp < nowSec - 5;
               if (!payload?.sub || expired) {
+                const reason = !payload?.sub ? "missing_sub" : "expired";
                 console.warn(
-                  `[auth-purge] removed key=${k} rawLen=${rawLen} reason=${!payload?.sub ? "missing_sub" : "expired"} origin=${origin}`,
+                  `[auth-purge] removed key=${k} rawLen=${rawLen} reason=${reason} origin=${origin}`,
                 );
+                sendAuthTelemetry({
+                  event_type: "purge_removed",
+                  user_id: typeof payload?.sub === "string" ? payload.sub : null,
+                  origin,
+                  reason,
+                  raw_len: rawLen,
+                  storage_key: k,
+                });
                 localStorage.removeItem(k);
               }
             } else if (rawLen > 0) {
@@ -96,6 +113,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.warn(
                 `[auth-purge] removed key=${k} rawLen=${rawLen} reason=parts_${parts.length} origin=${origin}`,
               );
+              sendAuthTelemetry({
+                event_type: "purge_removed",
+                origin,
+                reason: `parts_${parts.length}`,
+                raw_len: rawLen,
+                storage_key: k,
+              });
               localStorage.removeItem(k);
             }
           }
@@ -104,6 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.warn(
             `[auth-purge] jwt_decode_fail (kept) key=${k} rawLen=${rawLen} origin=${origin}`,
           );
+          sendAuthTelemetry({
+            event_type: "purge_kept",
+            origin,
+            reason: "jwt_decode_fail",
+            raw_len: rawLen,
+            storage_key: k,
+            extra: { error: String((innerErr as any)?.message || innerErr) },
+          });
         }
       }
     } catch {
@@ -121,9 +153,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const prevUserId = sessionRef.current?.user?.id ?? null;
     const nextUserId = nextSession?.user?.id ?? null;
     if (prevUserId && !nextUserId) {
+      const stack = new Error("transition_trace").stack;
       console.warn(
-        `[auth-transition] SIGNED_IN → SIGNED_OUT prevUser=${prevUserId}\n${new Error("transition_trace").stack}`,
+        `[auth-transition] SIGNED_IN → SIGNED_OUT prevUser=${prevUserId}\n${stack}`,
       );
+      sendAuthTelemetry({
+        event_type: "transition",
+        user_id: prevUserId,
+        origin: "applySession",
+        reason: "signed_in_to_signed_out",
+        extra: { stack: stack?.slice(0, 4000) ?? null },
+      });
     }
 
     sessionRef.current = nextSession;
@@ -143,14 +183,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // C2.c: log refresh attempt
             try {
               console.warn(`[auth-refresh] start origin=${origin}:fatal-getSession reason="${msg}"`);
+              sendAuthTelemetry({ event_type: "refresh_start", origin: `${origin}:fatal-getSession`, reason: msg });
               const { data: refreshed, error: refreshError } = await (supabase.auth as any).refreshSession();
               if (!refreshError && refreshed?.session?.user) {
                 console.warn(`[auth-refresh] success origin=${origin}:fatal-getSession`);
+                sendAuthTelemetry({
+                  event_type: "refresh_success",
+                  origin: `${origin}:fatal-getSession`,
+                  user_id: refreshed.session.user.id,
+                });
                 return refreshed.session as Session;
               }
               console.warn(`[auth-refresh] failed origin=${origin}:fatal-getSession err="${refreshError?.message || "no-session"}"`);
+              sendAuthTelemetry({
+                event_type: "refresh_failed",
+                origin: `${origin}:fatal-getSession`,
+                reason: refreshError?.message || "no-session",
+              });
             } catch (refreshErr: any) {
               console.warn(`[auth-refresh] threw origin=${origin}:fatal-getSession err="${refreshErr?.message || refreshErr}"`);
+              sendAuthTelemetry({
+                event_type: "refresh_failed",
+                origin: `${origin}:fatal-getSession`,
+                reason: "threw",
+                extra: { error: String(refreshErr?.message || refreshErr) },
+              });
             }
             try {
               const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
@@ -175,15 +232,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshSessionSafely = useCallback(async (origin: string = "unknown"): Promise<Session | null> => {
     // C2.c: log every refresh with origin
     console.warn(`[auth-refresh] start origin=${origin}`);
+    sendAuthTelemetry({ event_type: "refresh_start", origin });
     try {
       const { data, error } = await (supabase.auth as any).refreshSession();
       if (error) throw error;
       const next = (data?.session as Session | null) ?? null;
       console.warn(`[auth-refresh] success origin=${origin} hasUser=${!!next?.user}`);
+      sendAuthTelemetry({
+        event_type: "refresh_success",
+        origin,
+        user_id: next?.user?.id ?? null,
+        extra: { hasUser: !!next?.user },
+      });
       return next;
     } catch (err: any) {
       const msg = String(err?.message || "");
       console.warn(`[auth-refresh] failed origin=${origin} err="${msg}"`);
+      sendAuthTelemetry({ event_type: "refresh_failed", origin, reason: msg });
       if (isFatalAuthError(msg)) {
         try {
           const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
