@@ -10,6 +10,8 @@
  * we can spot real outages without nuking active sessions.
  */
 
+import { recordFailure, recordSuccess } from "./apiHealth";
+
 const WINDOW_MS = 60_000;
 const LOG_THRESHOLD = 8;
 const LOG_COOLDOWN_MS = 60_000;
