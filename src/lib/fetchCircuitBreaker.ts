@@ -242,13 +242,7 @@ export function installFetchCircuitBreaker() {
       attempt++;
 
       // Reaplica reescrita se o switch ocorreu durante o wait
-      const reInput = applyTargetRewrite(input);
-      // Substitui a request usada na próxima iteração
-      // (não dá pra atribuir a `rewritten` por const; simulamos via closure)
-      (function setNext(i: RequestInfo | URL) {
-        // @ts-ignore mutação consciente dentro do loop
-        rewritten = i;
-      })(reInput);
+      rewritten = applyTargetRewrite(input);
     }
 
     throw lastErr instanceof Error ? lastErr : new Error("smart-fetch: unknown error");
