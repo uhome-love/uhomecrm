@@ -34,6 +34,7 @@ import { HomiProvider } from "@/contexts/HomiContext";
 import { useTabContext } from "@/contexts/TabContext";
 import { PAGE_COMPONENTS } from "@/config/pageRegistry";
 import TabBar from "@/components/layout/TabBar";
+import ApiOfflineBanner from "@/components/ApiOfflineBanner";
 const homiMascot = "/images/homi-mascot-official.png";
 
 const HomiPanel = lazy(() => import("@/components/homi/HomiPanel"));
