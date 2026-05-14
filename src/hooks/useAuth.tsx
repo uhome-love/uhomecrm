@@ -279,6 +279,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     purgeCorruptedAuthStorage("boot");
 
+    // Safety ceiling: nunca deixar o app preso em "loading" mais que 8s no boot.
+    // Se chegar aqui, expurga tokens locais e força a tela de login.
+    const bootTimeout = window.setTimeout(() => {
+      if (!isMounted) return;
+      if (sessionRef.current?.user) return; // já temos sessão válida
+      console.warn("[auth-boot] ceiling reached (8s) without session — purging and unblocking UI");
+      sendAuthTelemetry({ event_type: "transition", origin: "boot_ceiling", reason: "loading_timeout" });
+      try { purgeCorruptedAuthStorage("boot_ceiling"); } catch {}
+      applySession(null);
+    }, 8000);
+
     const recoverSession = async (graceful = false) => {
       try {
         let recoveredSession = await getSessionWithRetry();
@@ -321,12 +332,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (err: any) {
         if (!isMounted) return;
 
-        // Network/transient errors must NEVER drop an existing session.
-        // Only confirmed auth errors (bad_jwt, missing sub) clear it,
-        // and those are already handled inside getSessionWithRetry.
         const msg = String(err?.message || "");
         const isNetwork = isNetworkLikeError(msg);
+        const isFatal = isFatalAuthError(msg);
 
+        // Erro fatal de auth (missing sub, bad_jwt, refresh_token inválido):
+        // limpar storage corrompido e devolver para tela de login imediatamente.
+        if (isFatal) {
+          console.warn(`[auth-boot] fatal error during recover: ${msg}`);
+          sendAuthTelemetry({ event_type: "transition", origin: "boot_fatal", reason: msg });
+          try { purgeCorruptedAuthStorage("boot_fatal"); } catch {}
+          applySession(null);
+          return;
+        }
+
+        // Network/transient: preservar sessão atual (se houver) só se já válida.
         if ((graceful || isNetwork) && sessionRef.current?.user) {
           setLoading(false);
           return;
@@ -361,6 +381,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isMounted = false;
+      window.clearTimeout(bootTimeout);
       if (recoveryTimeoutRef.current) {
         window.clearTimeout(recoveryTimeoutRef.current);
         recoveryTimeoutRef.current = null;
