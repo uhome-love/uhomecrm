@@ -729,6 +729,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     corretorAvatars,
     loading,
     error,
+    staleSince,
     moveLead,
     addLead,
     updateLead,
