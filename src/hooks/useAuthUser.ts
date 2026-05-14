@@ -12,7 +12,6 @@ export interface UserProfile {
   cargo: string | null;
   avatar_url: string | null;
   avatar_gamificado_url: string | null;
-  gerente_id: string | null;
 }
 
 /**
