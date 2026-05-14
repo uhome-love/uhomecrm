@@ -202,6 +202,7 @@ export default function Auth() {
   const [nome, setNome] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submittingTooLong, setSubmittingTooLong] = useState(false);
 
   // Toast de feedback após recuperação manual
   useEffect(() => {
@@ -213,6 +214,13 @@ export default function Auth() {
       window.history.replaceState({}, "", clean);
     }
   }, []);
+
+  // Se "Entrando..." passar de 8s, oferecer recuperação visível
+  useEffect(() => {
+    if (!submitting) { setSubmittingTooLong(false); return; }
+    const t = window.setTimeout(() => setSubmittingTooLong(true), 8000);
+    return () => window.clearTimeout(t);
+  }, [submitting]);
 
   if (loading) {
     return (
