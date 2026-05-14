@@ -31,12 +31,12 @@ async function logWhatsAppEntry(supabase: any, data: Record<string, unknown>) {
 }
 
 // ── Notify orchestrator for lead scoring ──
-async function notifyOrchestrator(supabaseUrl: string, serviceKey: string, event_type: string, pipeline_lead_id: string, canal: string) {
+async function notifyOrchestrator(supabaseUrl: string, serviceKey: string, event_type: string, pipeline_lead_id: string, canal: string, metadata?: Record<string, any>) {
   try {
     await fetch(`${supabaseUrl}/functions/v1/nurturing-orchestrator`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({ event_type, pipeline_lead_id, canal }),
+      body: JSON.stringify({ event_type, pipeline_lead_id, canal, metadata }),
     });
   } catch (e) {
     console.error("Orchestrator notify failed:", e);
