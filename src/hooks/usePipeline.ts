@@ -361,6 +361,21 @@ export function usePipeline(pipelineTipo: string = "leads") {
     return () => clearTimeout(timeout);
   }, [userId, roleLoading, loadStages, loadSegmentos, loadLeads]);
 
+  // Auto-retry: se ficamos com stages vazios sem erro (rede flapou silenciosamente),
+  // tenta de novo em 4s — repete uma vez. Evita o usuário ver "Sincronizando..." preso.
+  useEffect(() => {
+    if (!userId || roleLoading) return;
+    if (loading) return;
+    if (stages.length > 0) return;
+    if (error) return; // já há erro visível, não competir com isso
+    const t = window.setTimeout(() => {
+      void loadStages().catch(() => undefined);
+      void loadSegmentos().catch(() => undefined);
+      void loadLeads().catch(() => undefined);
+    }, 4000);
+    return () => window.clearTimeout(t);
+  }, [userId, roleLoading, loading, stages.length, error, loadStages, loadSegmentos, loadLeads]);
+
   // ─── Granular realtime: update only the changed lead in local state ───
   useEffect(() => {
     if (!userId) return;
