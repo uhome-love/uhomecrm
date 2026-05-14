@@ -1,6 +1,7 @@
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useState, useCallback } from "react";
 import { useUserRole } from "@/hooks/useUserRole";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -18,7 +19,7 @@ export function useUhomeIa() {
   }): Promise<string> => {
     setLoading(true);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uhome-ia-core`;
+      const url = `${EDGE_BASE_URL}/functions/v1/uhome-ia-core`;
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const resp = await fetch(url, {

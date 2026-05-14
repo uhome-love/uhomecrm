@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useAcademia, CATEGORIAS, NIVEL_CONFIG, TIPO_CONFIG, type Trilha, type Aula } from "@/hooks/useAcademia";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, GripVertical, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";

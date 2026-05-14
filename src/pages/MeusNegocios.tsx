@@ -27,7 +27,7 @@ import AddNegocioDialog from "@/components/pipeline/AddNegocioDialog";
 import NegocioDetailModal from "@/components/pipeline/NegocioDetailModal";
 import VendaCelebration from "@/components/pipeline/VendaCelebration";
 import FaseTransitionModal, { type TransitionData } from "@/components/pipeline/FaseTransitionModal";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 
 const formatVGV = formatBRLCompact;
 

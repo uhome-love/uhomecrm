@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, memo } from "react";
 import type { PipelineLead } from "@/hooks/usePipeline";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { Phone, Copy, MapPin, Globe, Clock, Eye, FileText, MessageCircle, Check, ClipboardList, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

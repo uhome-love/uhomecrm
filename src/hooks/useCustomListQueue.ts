@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useAuth } from "@/hooks/useAuth";
 import type { OALead, OALista } from "@/hooks/useOfertaAtiva";
 import { useQueryClient } from "@tanstack/react-query";

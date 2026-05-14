@@ -5,7 +5,7 @@
  * This makes all `.from()` queries return `any` instead of `unknown`,
  * restoring the default postgrest-js behavior.
  */
-declare module "@/integrations/supabase/client" {
+declare module "@/integrations/supabase/customClient" {
   import type { SupabaseClient } from "@supabase/supabase-js";
   export const supabase: SupabaseClient<any>;
 }

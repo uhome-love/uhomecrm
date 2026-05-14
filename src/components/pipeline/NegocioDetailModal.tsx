@@ -15,7 +15,7 @@ import {
   CheckCircle2, Building2, Home, ClipboardList, TrendingUp, Handshake, CalendarDays,
   MoreHorizontal, Pencil, Trash2, FileText,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Pencil, Check, Loader2, Building2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebounce } from "@/hooks/useDebounce";
 

@@ -1,5 +1,6 @@
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useEffect, useRef, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 
 /**
  * Tracks client behavior on the public vitrine page.
@@ -50,7 +51,7 @@ export function useVitrineTracking(vitrineId: string | undefined) {
       const seconds = Math.round((Date.now() - startTime.current) / 1000);
       if (seconds > 5) {
         // Use sendBeacon for reliability
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vitrine-public`;
+        const url = `${EDGE_BASE_URL}/functions/v1/vitrine-public`;
         navigator.sendBeacon(url, JSON.stringify({
           action: "track_event",
           vitrine_id: vitrineId,

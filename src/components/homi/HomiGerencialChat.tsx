@@ -1,3 +1,4 @@
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Loader2, BarChart3, ClipboardCheck, Phone, CalendarDays, FileText, GraduationCap, FileEdit } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -5,13 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useAuth } from "@/hooks/useAuth";
 
 const homiMascot = "/images/homi-mascot-official.png";
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/homi-gerencial`;
+const CHAT_URL = `${EDGE_BASE_URL}/functions/v1/homi-gerencial`;
 
 const QUICK_ACTIONS = [
   { id: "analisar_checkpoint", label: "Analisar Checkpoint", icon: ClipboardCheck, color: "text-amber-600" },

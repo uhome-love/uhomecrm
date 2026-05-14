@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useCorretorIds } from "@/hooks/useCorretorIds";
 import { useUhomeIa } from "@/hooks/useUhomeIa";

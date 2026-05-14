@@ -2,11 +2,12 @@
  * CasaTuaLanding — Landing page pública de captura para campanha Casa Tua Abril 2026.
  * Envia o lead para receive-landing-lead → CRM/Roleta.
  */
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Loader2, Home, CheckCircle, MapPin, Gift, AlertTriangle } from "lucide-react";
 
-const EDGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/receive-landing-lead`;
+const EDGE_URL = `${EDGE_BASE_URL}/functions/v1/receive-landing-lead`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export default function CasaTuaLanding() {

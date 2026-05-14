@@ -3,7 +3,7 @@
  * Caches the value in memory so it's only fetched once per session.
  */
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useAuth } from "@/hooks/useAuth";
 
 let cachedSlug: string | null = null;

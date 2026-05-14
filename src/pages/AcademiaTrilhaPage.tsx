@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAcademia, NIVEL_CONFIG, TIPO_CONFIG, type Aula, type QuizQuestion } from "@/hooks/useAcademia";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowLeft, Play, CheckCircle2, Lock, Star, Award, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import ReactMarkdown from "react-markdown";

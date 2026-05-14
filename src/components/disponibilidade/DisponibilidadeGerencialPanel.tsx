@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, Coffee, MapPin, WifiOff, Loader2, Users, RotateCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useDisponibilidadeGerencial, type Disponibilidade, type DisponibilidadeStatus } from "@/hooks/useCorretorDisponibilidade";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";

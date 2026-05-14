@@ -14,7 +14,7 @@ import { X, Search, Sparkles, Home, MapPin, DollarSign, Bed, Car, Ruler, Copy, E
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/utils";
 import { gerarSlugUhome } from "@/utils/imoveisFormat";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 
 export interface RadarProfileData {
   tipos: string[];

@@ -8,7 +8,7 @@ import CompareModal from "./CompareModal";
 import ContactCTA from "./ContactCTA";
 import FooterBranding from "./FooterBranding";
 import type { ShowcaseData, ShowcaseImovel } from "./types";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useVitrineTracking } from "@/hooks/useVitrineTracking";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 

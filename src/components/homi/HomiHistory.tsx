@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, MessageSquare, PhoneCall, RefreshCw, ShieldQuestion, MapPin, MessageCircle, Trash2, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";

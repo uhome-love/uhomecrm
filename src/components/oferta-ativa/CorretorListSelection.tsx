@@ -11,7 +11,7 @@ import DialingModeWithScript from "./DialingModeWithScript";
 import CustomListWizard from "./CustomListWizard";
 import ListaHigienizarDialog from "./ListaHigienizarDialog";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomLists, resolveCustomListLeads, type CustomList } from "@/hooks/useCustomLists";
 import { useNavigate } from "react-router-dom";

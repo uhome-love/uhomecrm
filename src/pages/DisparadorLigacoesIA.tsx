@@ -16,7 +16,7 @@ import {
   Clock, User, Filter, List, BarChart3, RefreshCw, ChevronLeft, RotateCcw,
   ThumbsUp, ThumbsDown, MessageSquare, AlertCircle
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { formatBRT } from "@/lib/brtTime";
 import { useOAListas, type OALead } from "@/hooks/useOfertaAtiva";
 import { useAuth } from "@/hooks/useAuth";

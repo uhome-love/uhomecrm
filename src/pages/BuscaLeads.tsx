@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useBuscaLeads, BuscaFilters, BuscaLead, LeadTentativa } from "@/hooks/useBuscaLeads";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

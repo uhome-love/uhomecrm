@@ -1,3 +1,4 @@
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -19,7 +20,7 @@ import {
   MessageSquare, Bed, Car, Maximize2, RefreshCw,
   Heart, HeartOff, X, Clock, History, Save, ThumbsDown, Wand2
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { supabaseSite } from "@/lib/supabaseSite";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -704,7 +705,7 @@ ${contextParts.join("\n")}
 
 Responda SOMENTE com o JSON, sem markdown.`;
 
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uhome-ia-core`;
+      const url = `${EDGE_BASE_URL}/functions/v1/uhome-ia-core`;
       const resp = await fetch(url, {
         method: "POST",
         headers: {
