@@ -10,7 +10,7 @@
  *  - manualLink(): permite religar a um lead diferente do proposto
  *  - Tudo soft (sem delete), com timestamp updated_at automático.
  */
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 
 export type RelinkMetodo =
   | "A_nome_telefone_corretor"

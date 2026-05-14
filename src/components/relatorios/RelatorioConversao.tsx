@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { TrendingUp } from "lucide-react";
 import { ReportFilters, getDateRange } from "./reportUtils";
 import { fetchAllRows } from "@/lib/paginatedFetch";

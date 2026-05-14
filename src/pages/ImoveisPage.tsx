@@ -11,7 +11,7 @@ import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState, EmptyState } from "@/components/ui/screen-states";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { supabaseSite } from "@/lib/supabaseSite";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { Loader2 } from "lucide-react";
 
 function normalizePhone(phone: string | null | undefined): string | null {

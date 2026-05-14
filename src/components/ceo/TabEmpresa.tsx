@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, CalendarCheck, CalendarDays, Briefcase, DollarSign, Users, Trophy } from "lucide-react";
 import { cn, formatBRLCompact } from "@/lib/utils";

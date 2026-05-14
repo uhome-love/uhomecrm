@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useUserRole } from "@/hooks/useUserRole";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 
 type Message = { role: "user" | "assistant"; content: string };
 

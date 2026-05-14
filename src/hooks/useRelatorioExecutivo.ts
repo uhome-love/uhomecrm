@@ -8,7 +8,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import {
   startOfWeek, endOfWeek, addWeeks, addMonths,

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { toast } from "sonner";
 import { format, isToday, isYesterday, addDays, addHours, setHours, setMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";

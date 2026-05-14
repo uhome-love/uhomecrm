@@ -19,7 +19,7 @@ import {
   MessageSquare, Bed, Car, Maximize2, RefreshCw,
   Heart, HeartOff, X, Clock, History, Save, ThumbsDown, Wand2
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { supabaseSite } from "@/lib/supabaseSite";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";

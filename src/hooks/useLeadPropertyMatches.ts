@@ -2,7 +2,7 @@
  * useLeadPropertyMatches — Fetches and manages auto-matched properties for a lead.
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 
 export interface LeadPropertyMatch {
   id: string;

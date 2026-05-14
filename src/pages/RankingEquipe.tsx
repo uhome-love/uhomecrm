@@ -18,7 +18,7 @@ import RankingVisitas from "@/components/ranking/v2/RankingVisitas";
 import RankingNegocios from "@/components/ranking/v2/RankingNegocios";
 import RankingOfertaAtiva from "@/components/ranking/v2/RankingOfertaAtiva";
 import { exportRankingsPdf } from "@/lib/exportRankingsPdf";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 
 type Period = "hoje" | "semana" | "mes" | "personalizado";
 type TabKey = "presencas" | "pipeline" | "visitas" | "negocios" | "oferta_ativa";

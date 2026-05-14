@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import AgendaEntrevistas from "@/components/rh/AgendaEntrevistas";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Briefcase } from "lucide-react";

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Phone, MessageCircle, Mail, Trophy, CheckCircle, Zap, Bot, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";

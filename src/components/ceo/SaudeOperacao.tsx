@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import { useNavigate } from "react-router-dom";
 import { Activity, Clock, TrendingUp, MapPin, Users, UserX, AlertTriangle } from "lucide-react";
 import { differenceInDays } from "date-fns";

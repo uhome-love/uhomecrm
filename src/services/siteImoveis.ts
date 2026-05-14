@@ -9,7 +9,7 @@
  * Re-exported below as a transition shim so older imports continue to work.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 import type { SiteImovel, MapPin, BuscaFilters, BairroCount } from "@/types/imoveis";
 import {
   gerarSlugUhome,

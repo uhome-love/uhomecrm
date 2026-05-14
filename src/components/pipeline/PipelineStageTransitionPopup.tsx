@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/customClient";
 
 export interface TransitionResult {
   leadId: string;
