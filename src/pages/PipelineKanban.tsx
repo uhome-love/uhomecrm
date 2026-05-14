@@ -9,6 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useParceriasMap } from "@/hooks/useParcerias";
 
