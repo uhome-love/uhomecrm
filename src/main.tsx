@@ -1,3 +1,5 @@
+// PRIMEIRO import: captura window.fetch original antes de qualquer patch.
+import "./lib/originalFetch";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
