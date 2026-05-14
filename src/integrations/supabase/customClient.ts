@@ -45,7 +45,7 @@ export const supabase = createClient<Database>(
 
 // ─── Realtime: força host próprio + watchdog de failover ─────────────────────
 function applyRealtimeEndpoint() {
-  const url = getActiveTarget() === "backup" ? BACKUP.realtime : PRIMARY.realtime;
+  const url = getActiveTarget() === "backup" ? REALTIME_BACKUP_URL : REALTIME_PRIMARY_URL;
   try {
     (supabase.realtime as any).endPoint = url;
     (supabase.realtime as any).endPointURL = () => url;
