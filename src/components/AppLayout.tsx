@@ -69,7 +69,7 @@ type SidebarRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
 
 export default function AppLayout() {
   const { user, signOut } = useAuth();
-  const { isAdmin, isGestor, isBackoffice, isRh } = useUserRole();
+  const { isAdmin, isGestor, isBackoffice, isRh, rolesUnavailable, rolesStale } = useUserRole();
   const { theme, toggle: onThemeToggle } = useTheme();
   useVendaRealtimeNotification();
   useWhatsAppNotifications();
