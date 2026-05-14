@@ -269,7 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [purgeCorruptedAuthStorage]);
 
-  const waitForFreshSession = useCallback(async (timeoutMs = 5000) => {
+  const waitForFreshSession = useCallback(async (timeoutMs = 3000) => {
     const startedAt = Date.now();
     while (Date.now() - startedAt < timeoutMs) {
       const nextSession = await getSessionWithRetry(1).catch(() => null);
@@ -445,7 +445,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     // Retry signInWithPassword on transient network errors ("Failed to fetch")
     // which happen during Supabase auth cold starts / restarts.
-    const MAX_ATTEMPTS = 3;
+    const MAX_ATTEMPTS = 2;
     let lastError: any = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {

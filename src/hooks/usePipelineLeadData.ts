@@ -143,7 +143,11 @@ export function usePipelineLeadData(leadId: string | null) {
   }, [loadAll]);
 
   const addTarefa = useCallback(async (data: Partial<PipelineTarefa>) => {
-    if (!user || !leadId) return;
+    if (!user || !leadId) {
+      console.error("[addTarefa] bloqueado: sem usuário/lead", { hasUser: !!user, leadId });
+      toast.error("Sessão expirou ou lead não carregado. Recarregue a página.");
+      return false;
+    }
     const { error } = await supabase.from("pipeline_tarefas").insert({
       pipeline_lead_id: leadId,
       titulo: data.titulo || "",
@@ -156,7 +160,11 @@ export function usePipelineLeadData(leadId: string | null) {
       hora_vencimento: data.hora_vencimento || null,
       created_by: user.id,
     } as any);
-    if (error) { toast.error("Erro ao criar tarefa: " + error.message); return; }
+    if (error) {
+      console.error("[addTarefa] insert falhou", error);
+      toast.error("Erro ao criar tarefa: " + error.message);
+      return false;
+    }
 
     // Update ultima_acao_at on the lead
     await supabase.from("pipeline_leads").update({
@@ -166,6 +174,7 @@ export function usePipelineLeadData(leadId: string | null) {
 
     toast.success("Tarefa criada ✅");
     loadAll();
+    return true;
   }, [user, leadId, loadAll]);
 
   const deleteTarefa = useCallback(async (id: string) => {

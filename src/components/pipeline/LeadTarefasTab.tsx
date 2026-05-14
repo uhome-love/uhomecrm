@@ -96,33 +96,56 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     }
   };
 
+  const [creating, setCreating] = useState(false);
   const handleCreate = async () => {
-    const finalTipo = tipo === "outro" ? "outro" : tipo;
-    const titulo = tipo === "outro" && customTipo ? customTipo : `${TIPO_LABELS[finalTipo] || finalTipo}: ${leadNome}`;
-    await onAddTarefa({
-      titulo,
-      descricao: obs || null,
-      tipo: finalTipo,
-      vence_em: venceEm || null,
-      hora_vencimento: horaVencimento || null,
-      prioridade: "media",
-    } as any);
-
-    // Update proxima_acao on the lead
-    if (venceEm) {
-      await supabase.from("pipeline_leads").update({
-        proxima_acao: TIPO_LABELS[finalTipo] || titulo,
-        data_proxima_acao: venceEm,
-        updated_at: new Date().toISOString(),
-      } as any).eq("id", leadId);
+    if (creating) return;
+    if (tipo === "outro" && !customTipo.trim()) {
+      toast.error("Informe o tipo personalizado da tarefa.");
+      return;
     }
+    if (!venceEm) {
+      toast.error("Selecione uma data (Hoje ou Amanhã) para a tarefa.");
+      return;
+    }
+    setCreating(true);
+    try {
+      const finalTipo = tipo === "outro" ? "outro" : tipo;
+      const titulo = tipo === "outro" && customTipo ? customTipo : `${TIPO_LABELS[finalTipo] || finalTipo}: ${leadNome}`;
+      const ok = await onAddTarefa({
+        titulo,
+        descricao: obs || null,
+        tipo: finalTipo,
+        vence_em: venceEm,
+        hora_vencimento: horaVencimento || null,
+        prioridade: "media",
+      } as any);
 
-    setShowForm(false);
-    setTipo("follow_up");
-    setCustomTipo("");
-    setVenceEm("");
-    setHoraVencimento("");
-    setObs("");
+      // onAddTarefa pode retornar void (versões antigas) ou boolean. Só aborta se for explicitamente false.
+      if (ok === false) return;
+
+      // Update proxima_acao on the lead
+      try {
+        await supabase.from("pipeline_leads").update({
+          proxima_acao: TIPO_LABELS[finalTipo] || titulo,
+          data_proxima_acao: venceEm,
+          updated_at: new Date().toISOString(),
+        } as any).eq("id", leadId);
+      } catch (err) {
+        console.warn("[LeadTarefasTab] update proxima_acao falhou", err);
+      }
+
+      setShowForm(false);
+      setTipo("follow_up");
+      setCustomTipo("");
+      setVenceEm("");
+      setHoraVencimento("");
+      setObs("");
+    } catch (err: any) {
+      console.error("[LeadTarefasTab] handleCreate erro", err);
+      toast.error("Não foi possível criar a tarefa. Tente novamente.");
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleConcluir = async (tarefa: PipelineTarefa) => {

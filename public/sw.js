@@ -1,8 +1,9 @@
-// UhomeSales Service Worker — minimal PWA runtime
-// Mantém suporte a push/background sem cachear HTML/JS do app.
+// UhomeSales Service Worker — kill-switch + push runtime
+// Não cacheia HTML/JS do app. Toda ativação limpa caches antigos e força
+// reload das abas abertas com cache-bust, garantindo que ninguém fique
+// preso a um bundle vencido após deploy.
 
-// Bump quando precisar forçar update imediato em devices com SW antigo.
-const SW_VERSION = "2026-05-14T01:30Z-fase3";
+const SW_VERSION = "2026-05-14T23:55Z-killswitch";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
@@ -11,16 +12,48 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      await self.clients.claim();
-      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-      for (const client of clients) {
-        try {
-          client.postMessage({ type: "SW_ACTIVATED", version: SW_VERSION });
-        } catch {}
+      try {
+        await self.clients.claim();
+      } catch {}
+
+      // 1. Apaga TODOS os caches (workbox antigo, runtime, vite-plugin-pwa, etc.)
+      try {
+        const names = await caches.keys();
+        await Promise.all(names.map((n) => caches.delete(n).catch(() => {})));
+        if (names.length) console.log(`[SW] purged ${names.length} cache(s)`);
+      } catch (err) {
+        console.warn("[SW] cache purge failed", err);
       }
+
+      // 2. Notifica abas e força reload com cache-bust
+      try {
+        const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+        for (const client of clients) {
+          try {
+            client.postMessage({ type: "SW_ACTIVATED", version: SW_VERSION });
+          } catch {}
+          try {
+            const url = new URL(client.url);
+            // Só recarrega se ainda não carregou via cache-bust nesta versão
+            if (url.searchParams.get("_swv") !== SW_VERSION) {
+              url.searchParams.set("_swv", SW_VERSION);
+              await client.navigate(url.toString()).catch(() => {});
+            }
+          } catch {}
+        }
+      } catch (err) {
+        console.warn("[SW] client reload failed", err);
+      }
+
       console.log(`[SW] activated version=${SW_VERSION}`);
     })()
   );
+});
+
+// Fetch passthrough (sem cache) — garante que nunca servimos HTML/JS antigo.
+// Necessário declarar pelo menos um handler para o SW ser considerado válido.
+self.addEventListener("fetch", () => {
+  // No-op: deixa o browser fazer a request normalmente.
 });
 
 self.addEventListener("push", (event) => {
