@@ -221,7 +221,9 @@ export function usePipeline(pipelineTipo: string = "leads") {
       const { data, error } = await runQueryWithRetry<PipelineLead[]>(() => query);
       if (error) {
         console.error("Error loading pipeline leads:", error);
-        return;
+        // Propaga: a UI precisa distinguir "erro de rede" de "lista vazia".
+        // Sem isso, falha transitória zerava o pipeline silenciosamente.
+        throw error;
       }
 
       const batch = ((data || []) as PipelineLead[]);
