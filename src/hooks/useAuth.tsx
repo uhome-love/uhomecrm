@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sessionRef = useRef<Session | null>(null);
   const recoveryTimeoutRef = useRef<number | null>(null);
 
-  const purgeCorruptedAuthStorage = useCallback(() => {
+  const purgeCorruptedAuthStorage = useCallback((origin: string = "unknown") => {
     try {
       const keys: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -61,10 +61,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (k && (k.startsWith("sb-") || k.includes("supabase.auth"))) keys.push(k);
       }
       for (const k of keys) {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        const rawLen = raw.length;
+        let parsed: any = null;
         try {
-          const raw = localStorage.getItem(k);
-          if (!raw) continue;
-          const parsed = JSON.parse(raw);
+          parsed = JSON.parse(raw);
+        } catch {
+          // C1.b: parse-fail transitório — NÃO remover. Apenas logar.
+          // Storage pode estar mid-write em iOS PWA / Safari.
+          console.warn(
+            `[auth-purge] parse_fail (kept) key=${k} rawLen=${rawLen} origin=${origin}`,
+          );
+          continue;
+        }
+        try {
           const token = parsed?.access_token || parsed?.currentSession?.access_token;
           if (token && typeof token === "string") {
             const parts = token.split(".");
@@ -75,14 +86,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const nowSec = Math.floor(Date.now() / 1000);
               const expired = typeof payload?.exp === "number" && payload.exp < nowSec - 5;
               if (!payload?.sub || expired) {
+                console.warn(
+                  `[auth-purge] removed key=${k} rawLen=${rawLen} reason=${!payload?.sub ? "missing_sub" : "expired"} origin=${origin}`,
+                );
                 localStorage.removeItem(k);
               }
-            } else {
+            } else if (rawLen > 0) {
+              // Token claramente malformado (não é JWT)
+              console.warn(
+                `[auth-purge] removed key=${k} rawLen=${rawLen} reason=parts_${parts.length} origin=${origin}`,
+              );
               localStorage.removeItem(k);
             }
           }
-        } catch {
-          try { localStorage.removeItem(k); } catch {}
+        } catch (innerErr) {
+          // Erro ao decodificar JWT — não remover, apenas logar
+          console.warn(
+            `[auth-purge] jwt_decode_fail (kept) key=${k} rawLen=${rawLen} origin=${origin}`,
+          );
         }
       }
     } catch {
@@ -96,13 +117,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       recoveryTimeoutRef.current = null;
     }
 
+    // C2.a: log SIGNED_IN → SIGNED_OUT transitions com stack trace
+    const prevUserId = sessionRef.current?.user?.id ?? null;
+    const nextUserId = nextSession?.user?.id ?? null;
+    if (prevUserId && !nextUserId) {
+      console.warn(
+        `[auth-transition] SIGNED_IN → SIGNED_OUT prevUser=${prevUserId}\n${new Error("transition_trace").stack}`,
+      );
+    }
+
     sessionRef.current = nextSession;
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
     setLoading(false);
   }, []);
 
-  const getSessionWithRetry = useCallback(async (attempts = 3): Promise<Session | null> => {
+  const getSessionWithRetry = useCallback(async (attempts = 3, origin: string = "getSession"): Promise<Session | null> => {
     let lastErr: any = null;
     for (let i = 1; i <= attempts; i++) {
       try {
@@ -110,17 +140,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) {
           const msg = String(error?.message || "");
           if (isFatalAuthError(msg)) {
+            // C2.c: log refresh attempt
             try {
+              console.warn(`[auth-refresh] start origin=${origin}:fatal-getSession reason="${msg}"`);
               const { data: refreshed, error: refreshError } = await (supabase.auth as any).refreshSession();
               if (!refreshError && refreshed?.session?.user) {
+                console.warn(`[auth-refresh] success origin=${origin}:fatal-getSession`);
                 return refreshed.session as Session;
               }
-            } catch {}
+              console.warn(`[auth-refresh] failed origin=${origin}:fatal-getSession err="${refreshError?.message || "no-session"}"`);
+            } catch (refreshErr: any) {
+              console.warn(`[auth-refresh] threw origin=${origin}:fatal-getSession err="${refreshErr?.message || refreshErr}"`);
+            }
             try {
               const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
               recordFatalAuthError(msg);
             } catch {}
-            purgeCorruptedAuthStorage();
+            purgeCorruptedAuthStorage(`getSessionWithRetry:${origin}`);
             return null;
           }
           throw error;
@@ -136,19 +172,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     throw lastErr;
   }, [purgeCorruptedAuthStorage]);
 
-  const refreshSessionSafely = useCallback(async (): Promise<Session | null> => {
+  const refreshSessionSafely = useCallback(async (origin: string = "unknown"): Promise<Session | null> => {
+    // C2.c: log every refresh with origin
+    console.warn(`[auth-refresh] start origin=${origin}`);
     try {
       const { data, error } = await (supabase.auth as any).refreshSession();
       if (error) throw error;
-      return (data?.session as Session | null) ?? null;
+      const next = (data?.session as Session | null) ?? null;
+      console.warn(`[auth-refresh] success origin=${origin} hasUser=${!!next?.user}`);
+      return next;
     } catch (err: any) {
       const msg = String(err?.message || "");
+      console.warn(`[auth-refresh] failed origin=${origin} err="${msg}"`);
       if (isFatalAuthError(msg)) {
         try {
           const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
           recordFatalAuthError(msg);
         } catch {}
-        purgeCorruptedAuthStorage();
+        purgeCorruptedAuthStorage(`refreshSessionSafely:${origin}`);
         return null;
       }
       throw err;
@@ -171,16 +212,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
-    purgeCorruptedAuthStorage();
+    purgeCorruptedAuthStorage("boot");
 
     const recoverSession = async (graceful = false) => {
       try {
         let recoveredSession = await getSessionWithRetry();
 
         if (!recoveredSession?.user && sessionRef.current?.refresh_token) {
-          recoveredSession = await refreshSessionSafely().catch(() => null);
+          recoveredSession = await refreshSessionSafely("recoverSession:no-session").catch(() => null);
         } else if (recoveredSession?.user && isSessionNearExpiry(recoveredSession)) {
-          const refreshedSession = await refreshSessionSafely().catch(() => null);
+          const refreshedSession = await refreshSessionSafely("near_expiry").catch(() => null);
           if (refreshedSession?.user) recoveredSession = refreshedSession;
         }
 
@@ -196,9 +237,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           recoveryTimeoutRef.current = window.setTimeout(async () => {
             recoveryTimeoutRef.current = null;
             try {
-              let retriedSession = await getSessionWithRetry(2);
+              let retriedSession = await getSessionWithRetry(2, "recoverSession:retry");
               if (!retriedSession?.user && sessionRef.current?.refresh_token) {
-                retriedSession = await refreshSessionSafely().catch(() => null);
+                retriedSession = await refreshSessionSafely("recoverSession:retry").catch(() => null);
               }
               if (!isMounted) return;
               applySession(retriedSession ?? null);
@@ -267,7 +308,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleVisibility = () => {
       if (document.visibilityState !== "visible") return;
       if (!sessionRef.current?.refresh_token) return;
-      void refreshSessionSafely()
+      void refreshSessionSafely("visibility")
         .then((nextSession) => {
           if (nextSession?.user) applySession(nextSession);
         })
