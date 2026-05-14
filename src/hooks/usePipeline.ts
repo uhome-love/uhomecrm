@@ -261,7 +261,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
       seenIds.add(l.id);
       return true;
     });
-    setLeads(leadsData);
+    // Só substitui se o resultado tem dados OU se ainda não temos nada cacheado.
+    // Evita zerar a tela em respostas vazias anômalas pós-erro transitório.
+    if (leadsData.length > 0 || leads.length === 0) {
+      setLeads(leadsData);
+    }
 
     // Load corretor + gerente names (skip for corretores — they only see their own leads)
     if ((isGestor || isAdmin) && allRows.length > 0) {
