@@ -9,6 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useParceriasMap } from "@/hooks/useParcerias";
 
@@ -316,6 +317,11 @@ export default function PipelineKanban() {
       className="flex flex-col w-full max-w-full min-w-0 overflow-hidden bg-[#f0f0f5] dark:bg-[#0e1525]"
       style={{ height: "calc(100vh - 56px)" }}
     >
+      {/* Badge de cache antigo — só renderiza se staleSince !== null. ErrorBoundary interno. */}
+      <StaleDataBadge
+        staleSince={pipeline.staleSince}
+        onRetry={() => pipeline.reload()}
+      />
       {/* ═══ HEADER ═══ */}
       <div
         className="shrink-0 bg-[#f7f7fb] dark:bg-[#141e30] border-b border-[#e8e8f0] dark:border-white/[0.07] sticky top-0 z-40"
