@@ -22,6 +22,10 @@ export const supabase = createClient<Database>(
       storage: localStorage,
       persistSession: true,
       autoRefreshToken: true,
+      // Desabilita navigator.locks (bug "Lock broken by another request with the
+      // 'steal' option" em PWA + múltiplas abas). No-op é seguro: pior caso, abas
+      // fazem refresh redundante de token.
+      lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn(),
     },
     realtime: {
       params: { eventsPerSecond: 10 },
