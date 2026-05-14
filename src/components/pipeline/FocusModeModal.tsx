@@ -56,7 +56,7 @@ const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: strin
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
   const { user } = useAuth();
   const corretorId = user?.id ?? null;
-  const { leads, loading, reload } = useFocusLeads(corretorId, pipelineTipo);
+  const { leads, loading, reload, staleSince } = useFocusLeads(corretorId, pipelineTipo);
 
   // Config screen state
   const [configPhase, setConfigPhase] = useState(true);
