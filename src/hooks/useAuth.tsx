@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  const getSessionWithRetry = useCallback(async (attempts = 3): Promise<Session | null> => {
+  const getSessionWithRetry = useCallback(async (attempts = 3, origin: string = "getSession"): Promise<Session | null> => {
     let lastErr: any = null;
     for (let i = 1; i <= attempts; i++) {
       try {
@@ -140,17 +140,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) {
           const msg = String(error?.message || "");
           if (isFatalAuthError(msg)) {
+            // C2.c: log refresh attempt
             try {
+              console.warn(`[auth-refresh] start origin=${origin}:fatal-getSession reason="${msg}"`);
               const { data: refreshed, error: refreshError } = await (supabase.auth as any).refreshSession();
               if (!refreshError && refreshed?.session?.user) {
+                console.warn(`[auth-refresh] success origin=${origin}:fatal-getSession`);
                 return refreshed.session as Session;
               }
-            } catch {}
+              console.warn(`[auth-refresh] failed origin=${origin}:fatal-getSession err="${refreshError?.message || "no-session"}"`);
+            } catch (refreshErr: any) {
+              console.warn(`[auth-refresh] threw origin=${origin}:fatal-getSession err="${refreshErr?.message || refreshErr}"`);
+            }
             try {
               const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
               recordFatalAuthError(msg);
             } catch {}
-            purgeCorruptedAuthStorage();
+            purgeCorruptedAuthStorage(`getSessionWithRetry:${origin}`);
             return null;
           }
           throw error;
@@ -166,19 +172,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     throw lastErr;
   }, [purgeCorruptedAuthStorage]);
 
-  const refreshSessionSafely = useCallback(async (): Promise<Session | null> => {
+  const refreshSessionSafely = useCallback(async (origin: string = "unknown"): Promise<Session | null> => {
+    // C2.c: log every refresh with origin
+    console.warn(`[auth-refresh] start origin=${origin}`);
     try {
       const { data, error } = await (supabase.auth as any).refreshSession();
       if (error) throw error;
-      return (data?.session as Session | null) ?? null;
+      const next = (data?.session as Session | null) ?? null;
+      console.warn(`[auth-refresh] success origin=${origin} hasUser=${!!next?.user}`);
+      return next;
     } catch (err: any) {
       const msg = String(err?.message || "");
+      console.warn(`[auth-refresh] failed origin=${origin} err="${msg}"`);
       if (isFatalAuthError(msg)) {
         try {
           const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
           recordFatalAuthError(msg);
         } catch {}
-        purgeCorruptedAuthStorage();
+        purgeCorruptedAuthStorage(`refreshSessionSafely:${origin}`);
         return null;
       }
       throw err;
