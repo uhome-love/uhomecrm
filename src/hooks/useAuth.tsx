@@ -117,6 +117,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       recoveryTimeoutRef.current = null;
     }
 
+    // C2.a: log SIGNED_IN → SIGNED_OUT transitions com stack trace
+    const prevUserId = sessionRef.current?.user?.id ?? null;
+    const nextUserId = nextSession?.user?.id ?? null;
+    if (prevUserId && !nextUserId) {
+      console.warn(
+        `[auth-transition] SIGNED_IN → SIGNED_OUT prevUser=${prevUserId}\n${new Error("transition_trace").stack}`,
+      );
+    }
+
     sessionRef.current = nextSession;
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
