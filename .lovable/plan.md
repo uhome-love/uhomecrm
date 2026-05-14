@@ -1,57 +1,41 @@
-## Causa-raiz
+## Kill switch de Service Worker — execução única por usuário
 
-`AbortError: Lock broken by another request with the 'steal' option` aparece em `useHomiAlerts`, `fetchKPIs`, `fetchAllRows` etc. Bug conhecido do `supabase-js` em ambientes com múltiplas abas/requests concorrentes (PWA + StrictMode + React Query): o `navigator.locks` interno é "steal-ed" e qualquer request em curso aborta. Resultado: `Failed to fetch` intermitente, falha de KPIs e listas no `/ceo` mesmo com Cloudflare/Worker 200 OK.
+### Causa
+~30 corretores ainda têm SW antigo registrado (pré-correção do lock). Primeira carga falha com `ERR_NAME_NOT_RESOLVED` até o SW velho expirar. Precisa de limpeza one-shot automática.
 
-## Arquivo confirmado
+### Arquivos
 
-`src/integrations/supabase/customClient.ts` — único `createClient` do projeto. Trecho atual (linhas 17-30):
+**1. Criar `src/lib/swKillSwitch.ts`** (novo)
 
+Função `runKillSwitch()` idempotente, controlada por flag `localStorage["uhome:sw:killswitch:v1"]`:
+- Se flag = `"done"` → retorna imediatamente (linha 1).
+- Senão:
+  1. `navigator.serviceWorker.getRegistrations()` → `unregister()` em todos.
+  2. `caches.keys()` → `caches.delete()` em todos.
+  3. `indexedDB.databases()` → filtra por nome contendo `supabase`/`uhome`/`sb-` e `deleteDatabase()`.
+  4. `localStorage.setItem(KILL_SWITCH_KEY, "done")`.
+  5. `window.location.reload()` uma vez.
+- Catch global: marca `"done"` mesmo em erro para não loopar.
+
+**2. Editar `src/main.tsx`**
+
+Adicionar como **primeiras duas linhas** (antes de `import "./lib/originalFetch"`):
 ```ts
-export const supabase = createClient<Database>(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY,
-  {
-    auth: {
-      storage: localStorage,
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-    realtime: {
-      params: { eventsPerSecond: 10 },
-    },
-  },
-);
+import { runKillSwitch } from "./lib/swKillSwitch";
+runKillSwitch();
 ```
+`originalFetch` permanece logo em seguida. Resto do arquivo intacto.
 
-## Mudança (única)
+### O que NÃO mexer
+`customClient.ts`, `networkTelemetry.ts`, `originalFetch.ts`, `proxyEndpoints.ts`, `fetchCircuitBreaker.ts`, `useAuth.tsx`, hooks, RLS, RPCs, design tokens, `public/sw.js`.
 
-Adicionar **uma linha** dentro do bloco `auth: { ... }`:
+### Critério de aceite
+- Build TS verde.
+- Primeira carga no published: SW velho desregistrado, caches/IDB limpos, flag marcada, reload único, app funciona.
+- Cargas subsequentes: retorno instantâneo.
 
-```ts
-auth: {
-  storage: localStorage,
-  persistSession: true,
-  autoRefreshToken: true,
-  lock: async (_name, _acquireTimeout, fn) => fn(),
-},
-```
+### Reversibilidade
+DevTools: `localStorage.removeItem("uhome:sw:killswitch:v1"); location.reload()`.
 
-Efeito: substitui o lock `navigator.locks` por um no-op que apenas executa o callback. Coordenação cross-tab para refresh de token vira no-op (aceitável — `autoRefreshToken` continua, no pior caso duas abas fazem refresh redundante).
-
-## O que NÃO mexer
-
-- `originalFetch.ts`, `networkTelemetry.ts`, `fetchCircuitBreaker.ts`, `proxyEndpoints.ts`
-- `useAuth.tsx`
-- URLs (`api.uhomesales.com` permanece)
-- Hooks, queries, RPCs, RLS, policies
-- Nenhum arquivo novo
-
-## Critério de aceite
-
-1. Build TypeScript verde.
-2. Após deploy do publicado, navegar `/ceo`, `/pipeline`, listas de leads → **zero** ocorrências de `Lock broken by another request` no console.
-3. Dashboard carrega consistente em wifi e 4G.
-
-## Anti-loop
-
-Caminho e trecho já confirmados acima — não há ambiguidade. Se o build quebrar 2x, paro e volto a Plan Mode com o erro literal.
+### Anti-loop
+Se build quebrar 2x, paro e reporto erro literal.
