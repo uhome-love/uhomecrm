@@ -11,7 +11,17 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { PRIMARY, BACKUP, getActiveTarget } from "@/lib/proxyEndpoints";
 
-const SUPABASE_URL = PRIMARY.api;
+// ⚠️ BYPASS TEMPORÁRIO — propagação DNS Cloudflare (IONOS → CF).
+// Alguns DNS residenciais (Vivo Fibra) ainda servem NXDOMAIN cacheado para
+// api.uhomesales.com. Apontar direto para Supabase enquanto normaliza (6-24h).
+// REVERTER: setar USE_DIRECT_SUPABASE = false e redeploy.
+const USE_DIRECT_SUPABASE = true;
+const DIRECT_API_URL = "https://hunbxqzhvuemgntklyzb.supabase.co";
+const DIRECT_REALTIME_URL = "wss://hunbxqzhvuemgntklyzb.supabase.co/realtime/v1";
+
+const SUPABASE_URL = USE_DIRECT_SUPABASE ? DIRECT_API_URL : PRIMARY.api;
+const REALTIME_PRIMARY_URL = USE_DIRECT_SUPABASE ? DIRECT_REALTIME_URL : PRIMARY.realtime;
+const REALTIME_BACKUP_URL = USE_DIRECT_SUPABASE ? DIRECT_REALTIME_URL : BACKUP.realtime;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const supabase = createClient<Database>(
@@ -35,7 +45,7 @@ export const supabase = createClient<Database>(
 
 // ─── Realtime: força host próprio + watchdog de failover ─────────────────────
 function applyRealtimeEndpoint() {
-  const url = getActiveTarget() === "backup" ? BACKUP.realtime : PRIMARY.realtime;
+  const url = getActiveTarget() === "backup" ? REALTIME_BACKUP_URL : REALTIME_PRIMARY_URL;
   try {
     (supabase.realtime as any).endPoint = url;
     (supabase.realtime as any).endPointURL = () => url;
