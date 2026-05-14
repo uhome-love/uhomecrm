@@ -1,5 +1,7 @@
-const DEFAULT_RETRY_ATTEMPTS = 3;
-const DEFAULT_RETRY_DELAY_MS = 250;
+// Mais tentativas + backoff maior para sobreviver ao "Load failed" do Safari/iOS
+// no PWA (rede flapando, túnel celular, ServiceWorker proxying).
+const DEFAULT_RETRY_ATTEMPTS = 5;
+const DEFAULT_RETRY_DELAY_MS = 400;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
