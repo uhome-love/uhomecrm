@@ -232,15 +232,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshSessionSafely = useCallback(async (origin: string = "unknown"): Promise<Session | null> => {
     // C2.c: log every refresh with origin
     console.warn(`[auth-refresh] start origin=${origin}`);
+    sendAuthTelemetry({ event_type: "refresh_start", origin });
     try {
       const { data, error } = await (supabase.auth as any).refreshSession();
       if (error) throw error;
       const next = (data?.session as Session | null) ?? null;
       console.warn(`[auth-refresh] success origin=${origin} hasUser=${!!next?.user}`);
+      sendAuthTelemetry({
+        event_type: "refresh_success",
+        origin,
+        user_id: next?.user?.id ?? null,
+        extra: { hasUser: !!next?.user },
+      });
       return next;
     } catch (err: any) {
       const msg = String(err?.message || "");
       console.warn(`[auth-refresh] failed origin=${origin} err="${msg}"`);
+      sendAuthTelemetry({ event_type: "refresh_failed", origin, reason: msg });
       if (isFatalAuthError(msg)) {
         try {
           const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
