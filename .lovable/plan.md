@@ -1,101 +1,88 @@
-## Diagnóstico atual
+## Status pós-deploy
 
-A auditoria aponta que **os dados do CRM não sumiram** no backend. As tabelas principais estão íntegras agora:
-- `pipeline_stages` de leads e negócios estão preenchidas
-- `pipeline_segmentos` está preenchida
-- `pipeline_leads` continua com volume normal de leads ativos
-- o backend hospedado está saudável no momento
+O último deploy resolveu a maior parte do problema: o bundle publicado não usa mais `hunbxqzhvuemgntklyzb.supabase.co` para Auth/REST/Functions. No teste pós-login em `https://uhomesales.com/ceo` foram observadas 42 chamadas para `https://api.uhomesales.com`, incluindo `/auth/v1/token`, REST e Functions.
 
-O que aconteceu no app foi um **colapso geral de leitura no cliente**: as capturas mostram `Load failed` em consultas básicas como estágios, segmentos, leads, negócios e KPIs ao mesmo tempo. Isso combina com o sintoma de “tudo zerado / pipeline vazio / foco e tarefas falhando juntos”.
+Restou uma chamada direta ao domínio antigo em Storage/avatar:
+`https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/avatars/.../avatar.png`
 
-A leitura do histórico de hoje mostra que as mudanças mais sensíveis ficaram concentradas em:
-- autenticação e recuperação de sessão (`src/hooks/useAuth.tsx`)
-- boot/PWA/cache/versionamento (`src/main.tsx`, `public/sw.js`)
-- monitor de falhas de rede (`src/lib/fetchCircuitBreaker.ts`)
-- wrappers de retry (`src/lib/taskQueryUtils.ts`)
-- módulos CRM afetados (`src/hooks/usePipeline.ts`, `src/hooks/useFocusLeads.ts`, `src/pages/MinhasTarefas.tsx`, `src/components/corretor/MinhaAgendaWidget.tsx`)
+## Objetivo desta etapa
 
-Minha hipótese principal é:
-1. houve uma falha transitória real de conectividade/sessão no cliente;
-2. os módulos do CRM passaram a reagir mal a isso, **zerando estado visível ou entrando em carga falha em cascata**;
-3. as mudanças de hoje em auth/recovery e fetch resiliente aumentaram a sensibilidade desse comportamento.
+Eliminar 100% do tráfego para `*.supabase.co` no navegador, deixar o boot de auth resiliente a sessões corrompidas e validar Realtime exclusivamente pelo domínio próprio.
 
-## O que vou corrigir
+## Escopo
 
-### 1) Blindar autenticação e recuperação de sessão
-Vou revisar e simplificar o fluxo de sessão para que:
-- falha transitória de rede não seja tratada como sessão inválida;
-- refresh de token não gere cascata de perda de dados na interface;
-- a recuperação não limpe estado útil nem force reinterpretações agressivas da sessão.
+### 1. Normalizar URLs públicas de Storage/avatar
+- Todas as URLs `https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/...` devem ser servidas via `https://api.uhomesales.com/storage/v1/object/public/...`.
+- Inclui:
+  - geração de URLs novas (uploads, avatares, materiais, vitrines)
+  - leitura de URLs antigas já gravadas no banco
+  - qualquer template, tag `<img>`, OG image, link compartilhado
+- Estratégia:
+  - helper único `toPublicStorageUrl(path)` que devolve sempre o domínio próprio
+  - sanitização em runtime quando o valor vier do banco com domínio antigo
+  - migração de dados em tabelas que armazenam URL absoluta para reescrever o host
 
-**Arquivos-alvo**
-- `src/hooks/useAuth.tsx`
-- `src/main.tsx`
-- `src/lib/fetchCircuitBreaker.ts`
+### 2. Endurecer o boot de autenticação
+- Em qualquer um destes casos, limpar imediatamente a sessão local e devolver o usuário para a tela de login, sem loading infinito:
+  - resposta `403 invalid claim: missing sub claim`
+  - JWT em storage sem `sub`
+  - falha em `refreshSession`
+  - erro inesperado em `/auth/v1/user`
+- Garantir que o `purgeCorruptedAuthStorage` seja chamado antes de qualquer redirect.
+- Garantir que `loading` nunca fique travado em `true` quando ocorrer erro fatal de auth.
+- Mostrar toast claro e oferecer “Corrigir acesso neste dispositivo”.
 
-### 2) Impedir que o CRM zere a tela em falhas temporárias
-Vou ajustar os hooks críticos para que, se uma carga falhar temporariamente:
-- mantenham o último snapshot válido na tela;
-- mostrem erro de estado degradado, sem “matar” os dados já carregados;
-- não convertam indisponibilidade temporária em vazio real.
+### 3. Validar Realtime
+- Em tela que use WebSocket (ex.: WhatsApp Inbox), confirmar que a conexão é somente `wss://realtime.uhomesales.com/realtime/v1`.
+- Nenhuma conexão WebSocket pode ir para `*.supabase.co`.
 
-**Arquivos-alvo**
-- `src/hooks/usePipeline.ts`
-- `src/hooks/useFocusLeads.ts`
-- `src/pages/MinhasTarefas.tsx`
-- `src/components/corretor/MinhaAgendaWidget.tsx`
-- `src/hooks/useCorretorHomeData.ts`
+## Critério de aceite
 
-### 3) Eliminar pontos de cascata e carga excessiva
-Vou revisar os pontos onde hoje pode existir efeito dominó:
-- múltiplas queries paralelas repetindo em falha;
-- retries simultâneos em vários módulos;
-- estados que entram como `[]` por fallback silencioso e fazem parecer que o CRM está zerado;
-- telas que dependem de `user.id` em casos onde o dado do domínio usa `profile.id`.
+No domínio publicado, com DevTools aberto:
+- Nenhuma chamada para `*.supabase.co`
+- Auth/REST/Functions/Storage passam por `api.uhomesales.com`
+- Realtime passa por `realtime.uhomesales.com`
 
-### 4) Separar “sem dados” de “erro de carregamento”
-Hoje algumas telas acabam parecendo vazias como se fosse verdade de negócio. Vou padronizar para que:
-- erro de backend/rede apareça como erro mesmo;
-- vazio real só apareça quando a consulta respondeu com sucesso e retornou zero;
-- dashboards e pipelines não mostrem falso zero durante indisponibilidade.
-
-### 5) Validar com auditoria funcional após a correção
-Depois da implementação, vou validar especificamente:
-- pipeline de leads
-- pipeline de negócios
-- foco
-- minhas tarefas
-- rotina/agenda do corretor
-- dashboards que estavam zerando
-
-Também vou conferir se:
-- estágios carregam sempre
-- segmentos carregam sempre
-- leads não desaparecem visualmente em falha transitória
-- a sessão continua estável no PWA e no app aberto
-
-## Resultado esperado
-
-Depois dessa correção, o CRM deve:
-- continuar mostrando os dados já carregados mesmo sob instabilidade momentânea;
-- recuperar sozinho quando o backend voltar a responder;
-- não transformar erro transitório em tela zerada;
-- não depender de solução temporária ou paliativa.
+Cenários a validar nas duas redes (On Net e Claro), limpando sessão local antes do teste na Claro:
+- login
+- reload já logado
+- WhatsApp Inbox com mensagens em tempo real
+- upload de avatar e leitura de avatares antigos
 
 ## Detalhes técnicos
 
 ```text
-Causa mais provável
-backend/transiente -> várias queries falham com Load failed -> hooks tratam como vazio/erro crítico -> CRM inteiro aparenta zerado
-
-Correção definitiva
-sessão mais estável
-+ retry/control mais previsível
-+ preservar último estado válido
-+ distinguir erro transitório de vazio real
-+ reduzir cascata entre módulos
+Camada           Antes                                   Agora
+Auth             *.supabase.co/auth/v1                   api.uhomesales.com/auth/v1
+REST             *.supabase.co/rest/v1                   api.uhomesales.com/rest/v1
+Functions        *.supabase.co/functions/v1              api.uhomesales.com/functions/v1
+Storage (URLs)   *.supabase.co/storage/v1/object/...     api.uhomesales.com/storage/v1/object/...
+Realtime         wss://*.supabase.co/realtime/v1         wss://realtime.uhomesales.com/realtime/v1
 ```
 
-## Escopo da implementação
+### Mudanças previstas no código
+- `src/lib/storageUrl.ts` (novo): `toPublicStorageUrl(rawUrlOrPath: string): string`
+- substituir todos os usos de `getPublicUrl` e URLs absolutas de avatar/storage para passar pelo helper
+- componentes de avatar e qualquer `<img src=...>` que aceite URL do banco devem aplicar o helper
+- `useAuth.tsx`:
+  - tratar `missing sub claim` como erro fatal imediato
+  - garantir `setLoading(false)` em todos os caminhos de erro
+  - chamar `purgeCorruptedAuthStorage` antes de qualquer estado final sem usuário
+- `customClient.ts`:
+  - manter override de `realtime.endPoint` para o domínio próprio
+  - confirmar que `storage.from(...).getPublicUrl(...)` devolve URL no domínio próprio
 
-Vou focar só na causa da regressão de hoje e na blindagem definitiva desses fluxos. Não vou mexer nas regras comerciais nem nos dados do CRM além do necessário para estabilidade.
+### Migração de dados
+- varrer colunas que armazenam URL absoluta de Storage e reescrever host para `api.uhomesales.com`
+- candidatas conhecidas: `profiles.avatar_url`, materiais, vitrines, qualquer coluna de mídia
+- migração idempotente, segura para rodar mais de uma vez
+
+### Validação automatizada de regressão
+- adicionar verificação de runtime que loga em telemetria qualquer URL que ainda contenha `hunbxqzhvuemgntklyzb.supabase.co` ao montar avatar/imagem, para detectar pontos cegos remanescentes
+
+### Rollback
+- helper de URL é puro: rollback é trocar uma constante
+- ajuste de auth é defensivo: rollback é remover a checagem fatal e voltar ao comportamento anterior
+- migração de dados é compatível com o domínio antigo (Cloudflare resolve ambos), então é segura
+
+Se aprovar, eu sigo com a implementação na ordem: helper de Storage e troca dos pontos de uso, hardening do boot de auth, migração de dados, e por último a verificação no WhatsApp Inbox + relatório final do Network nas duas redes.

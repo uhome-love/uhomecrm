@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { emitProfileUpdated } from "@/lib/profileEvents";
+import { toPublicStorageUrl } from "@/lib/storageUrl";
 
 interface AvatarUploadProps {
   avatarUrl: string | null;
@@ -67,7 +68,7 @@ export default function AvatarUpload({ avatarUrl, nome, size = "md", onUploaded 
         .from("avatars")
         .getPublicUrl(filePath);
 
-      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+      const urlWithCacheBust = `${toPublicStorageUrl(publicUrl)}?t=${Date.now()}`;
 
       // Update ALL avatar fields so the new photo takes priority everywhere
       const { error: updateError } = await supabase
@@ -98,7 +99,7 @@ export default function AvatarUpload({ avatarUrl, nome, size = "md", onUploaded 
   return (
     <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
       <Avatar className={`${sizeMap[size]} ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all`}>
-        <AvatarImage src={currentUrl || undefined} alt={nome} />
+        <AvatarImage src={toPublicStorageUrl(currentUrl) || undefined} alt={nome} />
         <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
           {initials}
         </AvatarFallback>
