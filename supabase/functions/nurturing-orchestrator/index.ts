@@ -243,11 +243,14 @@ Deno.serve(async (req) => {
           aiSuggestion = await generateAISuggestion(lead, newScore, event_type);
         }
 
-        const title = action === "notify_corretor_hot"
-          ? `🔥 Lead QUENTE: ${lead.nome || "Lead"} (score ${newScore})`
-          : `💬 ${lead.nome || "Lead"} respondeu via ${canal || "automação"}`;
+        const campanha = (metadata as any)?.campanha || null;
+        const campanhaSuffix = campanha ? ` — campanha "${campanha}"` : "";
 
-        const descParts = [`Evento: ${event_type}. Score atual: ${newScore}. Contato humano recomendado.`];
+        const title = action === "notify_corretor_hot"
+          ? `🔥 Lead QUENTE: ${lead.nome || "Lead"} (score ${newScore})${campanhaSuffix}`
+          : `💬 ${lead.nome || "Lead"} respondeu via ${canal || "automação"}${campanhaSuffix}`;
+
+        const descParts = [`Evento: ${event_type}.${campanha ? ` Campanha: ${campanha}.` : ""} Score atual: ${newScore}. Contato humano recomendado.`];
         if (aiSuggestion) descParts.push(`\n🤖 Sugestão IA: ${aiSuggestion}`);
 
         await supabase.from("pipeline_atividades").insert({
@@ -265,7 +268,7 @@ Deno.serve(async (req) => {
           await supabase.from("pipeline_atividades").insert({
             pipeline_lead_id,
             tipo: "nurturing_sequencia",
-            titulo: `🤖 Sugestão IA para abordagem`,
+            titulo: `🤖 Sugestão IA para abordagem${campanhaSuffix}`,
             descricao: aiSuggestion,
             data: new Date().toLocaleDateString("en-CA"),
             prioridade: "baixa",
@@ -280,11 +283,12 @@ Deno.serve(async (req) => {
     await supabase.from("lead_nurturing_state").update(updates).eq("id", state.id);
 
     // 8. Log in timeline
+    const campanhaLog = (metadata as any)?.campanha || null;
     await supabase.from("pipeline_atividades").insert({
       pipeline_lead_id,
       tipo: "nurturing_sequencia",
-      titulo: `🤖 Evento: ${event_type}`,
-      descricao: `Score: ${state.lead_score || 0} → ${newScore} (${scoreChange >= 0 ? "+" : ""}${scoreChange}). Canal: ${canal || "sistema"}`,
+      titulo: campanhaLog ? `🤖 Evento: ${event_type} — ${campanhaLog}` : `🤖 Evento: ${event_type}`,
+      descricao: `Score: ${state.lead_score || 0} → ${newScore} (${scoreChange >= 0 ? "+" : ""}${scoreChange}). Canal: ${canal || "sistema"}${campanhaLog ? `. Campanha: ${campanhaLog}` : ""}`,
       data: new Date().toLocaleDateString("en-CA"),
       prioridade: "baixa",
       status: "concluida",

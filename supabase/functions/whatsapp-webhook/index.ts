@@ -31,12 +31,12 @@ async function logWhatsAppEntry(supabase: any, data: Record<string, unknown>) {
 }
 
 // ── Notify orchestrator for lead scoring ──
-async function notifyOrchestrator(supabaseUrl: string, serviceKey: string, event_type: string, pipeline_lead_id: string, canal: string) {
+async function notifyOrchestrator(supabaseUrl: string, serviceKey: string, event_type: string, pipeline_lead_id: string, canal: string, metadata?: Record<string, any>) {
   try {
     await fetch(`${supabaseUrl}/functions/v1/nurturing-orchestrator`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({ event_type, pipeline_lead_id, canal }),
+      body: JSON.stringify({ event_type, pipeline_lead_id, canal, metadata }),
     });
   } catch (e) {
     console.error("Orchestrator notify failed:", e);
@@ -507,7 +507,7 @@ async function handleExistingLeadReply(
   await supabase.from("pipeline_leads").update({ observacoes: mergedObs }).eq("id", lead.id);
 
   // Notify orchestrator
-  notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", lead.id, "whatsapp");
+  notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", lead.id, "whatsapp", { campanha: campanhaLabel });
 }
 
 // ── Handle reply from unknown sender — search pipeline_leads, then oferta_ativa ──
@@ -584,7 +584,7 @@ async function handleUnknownReply(
       callAIReply(supabaseUrl, serviceKey, from, contactName || "", msgText, lead.id, "texto");
     }
 
-    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", lead.id, "whatsapp");
+    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", lead.id, "whatsapp", { campanha: "Reengajamento WhatsApp" });
     console.log(`📩 Found existing lead ${lead.id} by phone, 24h window set`);
     return;
   }
@@ -677,7 +677,7 @@ async function handleUnknownReply(
     callAIReply(supabaseUrl, serviceKey, from, contactName || oaLead.nome || "", msgText, newLead.id, "texto");
 
     // Notify orchestrator
-    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", newLead.id, "whatsapp");
+    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", newLead.id, "whatsapp", { campanha: "Reengajamento Oferta Ativa" });
     return;
   }
 
@@ -728,6 +728,6 @@ async function handleUnknownReply(
     // AI reply for new lead
     callAIReply(supabaseUrl, serviceKey, from, contactName || "", msgText, newLead.id, "texto");
 
-    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", newLead.id, "whatsapp");
+    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", newLead.id, "whatsapp", { campanha: "WhatsApp (remetente novo)" });
   }
 }
