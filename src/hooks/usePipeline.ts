@@ -347,7 +347,12 @@ export function usePipeline(pipelineTipo: string = "leads") {
         const failed = results
           .map((r, i) => ({ r, name: ["stages", "segmentos", "leads"][i] }))
           .filter((x) => x.r.status === "rejected");
-        if (failed.length > 0) {
+
+        if (failed.length === 0) {
+          // Sucesso total: marca timestamp e limpa flag de stale.
+          lastSuccessAtRef.current = new Date();
+          setStaleSince(null);
+        } else {
           console.warn("[usePipeline] Partial load failure:", failed.map((f) => f.name));
           const criticalFailed = failed.some((f) => f.name === "stages" || f.name === "leads");
           // Só mostra erro de tela se NÃO há nada cacheado.
@@ -355,6 +360,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
           const haveCache = stages.length > 0 && leads.length >= 0;
           if (criticalFailed && !haveCache) {
             setError("Falha parcial ao carregar pipeline. Tente recarregar.");
+          }
+          // Falha crítica COM cache: marca staleSince pra badge aparecer.
+          if (criticalFailed && haveCache && lastSuccessAtRef.current) {
+            setStaleSince(lastSuccessAtRef.current);
           }
         }
       })
@@ -366,20 +375,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
     return () => clearTimeout(timeout);
   }, [userId, roleLoading, loadStages, loadSegmentos, loadLeads]);
 
-  // Auto-retry: se ficamos com stages vazios sem erro (rede flapou silenciosamente),
-  // tenta de novo em 4s — repete uma vez. Evita o usuário ver "Sincronizando..." preso.
-  useEffect(() => {
-    if (!userId || roleLoading) return;
-    if (loading) return;
-    if (stages.length > 0) return;
-    if (error) return; // já há erro visível, não competir com isso
-    const t = window.setTimeout(() => {
-      void loadStages().catch(() => undefined);
-      void loadSegmentos().catch(() => undefined);
-      void loadLeads().catch(() => undefined);
-    }, 4000);
-    return () => window.clearTimeout(t);
-  }, [userId, roleLoading, loading, stages.length, error, loadStages, loadSegmentos, loadLeads]);
+  // NOTA: o auto-retry de 4s foi removido nesta rodada (Fase 3 / Item 2).
+  // Com runQueryWithRetry agora limitado a 3 tentativas + parada imediata em
+  // 401/403, manter o auto-retry causaria duplicação de fetches e poderia
+  // amplificar problemas de auth quando o JWT está quebrado.
 
   // ─── Granular realtime: update only the changed lead in local state ───
   useEffect(() => {
