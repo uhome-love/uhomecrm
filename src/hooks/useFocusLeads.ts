@@ -97,6 +97,9 @@ export function useFocusLeads(
 
       if (stageIds.length === 0) {
         setLeads([]);
+        leadsCountRef.current = 0;
+        lastSuccessAtRef.current = new Date();
+        setStaleSince(null);
         setLoading(false);
         return;
       }
