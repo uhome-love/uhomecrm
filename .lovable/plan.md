@@ -1,136 +1,101 @@
-## Objetivo
+## Diagnóstico atual
 
-Corrigir a falha geral de login/carregamento e **incluir uma limpeza geral de cache** para que todos os corretores passem a usar apenas a versão estável do CRM.
+A auditoria aponta que **os dados do CRM não sumiram** no backend. As tabelas principais estão íntegras agora:
+- `pipeline_stages` de leads e negócios estão preenchidas
+- `pipeline_segmentos` está preenchida
+- `pipeline_leads` continua com volume normal de leads ativos
+- o backend hospedado está saudável no momento
 
-## Diagnóstico consolidado
+O que aconteceu no app foi um **colapso geral de leitura no cliente**: as capturas mostram `Load failed` em consultas básicas como estágios, segmentos, leads, negócios e KPIs ao mesmo tempo. Isso combina com o sintoma de “tudo zerado / pipeline vazio / foco e tarefas falhando juntos”.
 
-O problema está vindo da combinação de 3 fatores:
+A leitura do histórico de hoje mostra que as mudanças mais sensíveis ficaram concentradas em:
+- autenticação e recuperação de sessão (`src/hooks/useAuth.tsx`)
+- boot/PWA/cache/versionamento (`src/main.tsx`, `public/sw.js`)
+- monitor de falhas de rede (`src/lib/fetchCircuitBreaker.ts`)
+- wrappers de retry (`src/lib/taskQueryUtils.ts`)
+- módulos CRM afetados (`src/hooks/usePipeline.ts`, `src/hooks/useFocusLeads.ts`, `src/pages/MinhasTarefas.tsx`, `src/components/corretor/MinhaAgendaWidget.tsx`)
 
-1. **Sessões inválidas de autenticação**
-   - Há eventos de `bad_jwt`, `missing sub claim` e `session_not_found`.
-   - Isso faz o usuário cair para o login ou travar antes de autenticar.
+Minha hipótese principal é:
+1. houve uma falha transitória real de conectividade/sessão no cliente;
+2. os módulos do CRM passaram a reagir mal a isso, **zerando estado visível ou entrando em carga falha em cascata**;
+3. as mudanças de hoje em auth/recovery e fetch resiliente aumentaram a sensibilidade desse comportamento.
 
-2. **Service Worker / cache antigo distribuindo bundle velho**
-   - O projeto ainda registra `sw.js` e mantém shell cacheado.
-   - Depois de atualização, alguns computadores continuam abrindo arquivos antigos.
-   - Isso explica comportamento como:
-     - estava funcionando e saiu sozinho,
-     - volta para login,
-     - não entra mais,
-     - pipeline não carrega,
-     - tela em loading ou vazia.
+## O que vou corrigir
 
-3. **Erros paralelos de dados/schema ampliando a quebra**
-   - Existem erros recorrentes no banco e em funções auxiliares.
-   - Eles pioram o carregamento e fazem o CRM parecer totalmente fora, mesmo quando a origem principal é sessão + cache velho.
+### 1) Blindar autenticação e recuperação de sessão
+Vou revisar e simplificar o fluxo de sessão para que:
+- falha transitória de rede não seja tratada como sessão inválida;
+- refresh de token não gere cascata de perda de dados na interface;
+- a recuperação não limpe estado útil nem force reinterpretações agressivas da sessão.
 
-## Plano de correção completa
-
-### Frente 1 — Limpeza geral de cache para todos
-1. **Transformar o `sw.js` em kill-switch temporário**
-   - No próximo deploy, o Service Worker vai:
-     - limpar todos os caches antigos,
-     - desregistrar workers antigos,
-     - forçar recarga limpa do app.
-   - Isso garante que os computadores presos saiam da versão velha.
-
-2. **Adicionar limpeza automática no boot do app**
-   - Em `src/main.tsx`, antes de iniciar a aplicação:
-     - limpar caches antigos,
-     - remover service workers antigos em contexto problemático,
-     - forçar carregamento limpo quando detectar versão inconsistente.
-
-3. **Criar política de versão obrigatória**
-   - O cliente vai comparar a versão atual com `version.json`.
-   - Se detectar versão antiga, recarrega para a nova.
-   - Resultado: ninguém permanece numa build quebrada antiga.
-
-4. **Remover comportamento de cache agressivo de HTML/JS**
-   - O app não poderá mais servir `index.html` e bundles antigos após deploy.
-   - Fallback offline deixa de prevalecer sobre atualização crítica.
-
-### Frente 2 — Corrigir a autenticação que derruba em massa
-5. **Endurecer `useAuth.tsx` para sessão inválida real**
-   - Tratar `bad_jwt`, `missing sub` e `session_not_found` como sessão vencida/inválida.
-   - Fazer limpeza segura de storage local e retorno limpo ao login.
-   - Evitar loop de “entrando” sem sair do lugar.
-
-6. **Separar falha de rede de falha de sessão**
-   - Revisar o fluxo atual para:
-     - não derrubar usuário por oscilação momentânea,
-     - mas limpar sessão quebrada de verdade.
-
-7. **Evitar reaproveitamento de token podre**
-   - Antes do boot, validar o token local.
-   - Se estiver corrompido/obsoleto, descartar antes que o app monte com estado ruim.
-
-### Frente 3 — Estabilizar o CRM após login
-8. **Refatorar o carregamento do pipeline**
-   - Carregar primeiro o essencial.
-   - Impedir que falha auxiliar derrube a tela inteira.
-   - Preservar último estado válido enquanto recupera novas leituras.
-
-9. **Reduzir sensibilidade a recargas em cascata**
-   - Revisar triggers de reload em `usePipeline.ts` e `PipelineKanban.tsx`.
-   - Evitar comportamento que zera ou reinicia a tela facilmente.
-
-### Frente 4 — Corrigir a camada de dados com erro recorrente
-10. **Sanear migrations e referências quebradas**
-   - Corrigir colunas consultadas que não existem.
-   - Corrigir inserções com `stage_id` nulo.
-   - Ajustar triggers/históricos que estão gerando erro repetido.
-
-11. **Parar ruído estrutural que amplia a percepção de queda geral**
-   - Revisar consultas/funções com erro recorrente para que o CRM volte a responder de forma previsível.
-
-### Frente 5 — Prevenção permanente
-12. **Implantar monitoramento de saúde de autenticação**
-   - Detectar explosão de `bad_jwt` / `session_not_found` cedo.
-
-13. **Criar rotina de smoke test pós-correção**
-   - Validar login, refresh, reentrada, pipeline e troca de versão.
-
-## Limpeza geral de cache pedida por você
-
-Isso fará parte da solução com três camadas:
-
-```text
-Camada 1: limpar caches antigos do navegador via Service Worker kill-switch
-Camada 2: desregistrar workers antigos presos nas máquinas dos corretores
-Camada 3: impor versionamento obrigatório para carregar só a versão atual
-```
-
-Com isso, a ideia é que:
-- os computadores que estão presos em build antiga sejam recuperados,
-- ninguém continue rodando a versão problemática,
-- e as próximas atualizações não repitam esse cenário.
-
-## Arquivos/áreas principais que serão atacados
-
-- `public/sw.js`
-- `src/main.tsx`
+**Arquivos-alvo**
 - `src/hooks/useAuth.tsx`
+- `src/main.tsx`
 - `src/lib/fetchCircuitBreaker.ts`
+
+### 2) Impedir que o CRM zere a tela em falhas temporárias
+Vou ajustar os hooks críticos para que, se uma carga falhar temporariamente:
+- mantenham o último snapshot válido na tela;
+- mostrem erro de estado degradado, sem “matar” os dados já carregados;
+- não convertam indisponibilidade temporária em vazio real.
+
+**Arquivos-alvo**
 - `src/hooks/usePipeline.ts`
-- `src/pages/PipelineKanban.tsx`
-- migrations do banco para corrigir schema/trigger/consistência
+- `src/hooks/useFocusLeads.ts`
+- `src/pages/MinhasTarefas.tsx`
+- `src/components/corretor/MinhaAgendaWidget.tsx`
+- `src/hooks/useCorretorHomeData.ts`
 
-## Critérios para considerar resolvido
+### 3) Eliminar pontos de cascata e carga excessiva
+Vou revisar os pontos onde hoje pode existir efeito dominó:
+- múltiplas queries paralelas repetindo em falha;
+- retries simultâneos em vários módulos;
+- estados que entram como `[]` por fallback silencioso e fazem parecer que o CRM está zerado;
+- telas que dependem de `user.id` em casos onde o dado do domínio usa `profile.id`.
 
-1. O corretor consegue abrir o CRM mesmo após ter ficado preso antes.
-2. O login volta a funcionar sem travar em loading.
-3. O pipeline carrega novamente com dados.
-4. Refresh, sair/entrar e troca de aba continuam funcionando.
-5. Todos passam a usar a mesma versão válida do app.
-6. O cache antigo não consegue mais manter usuários na build quebrada.
+### 4) Separar “sem dados” de “erro de carregamento”
+Hoje algumas telas acabam parecendo vazias como se fosse verdade de negócio. Vou padronizar para que:
+- erro de backend/rede apareça como erro mesmo;
+- vazio real só apareça quando a consulta respondeu com sucesso e retornou zero;
+- dashboards e pipelines não mostrem falso zero durante indisponibilidade.
+
+### 5) Validar com auditoria funcional após a correção
+Depois da implementação, vou validar especificamente:
+- pipeline de leads
+- pipeline de negócios
+- foco
+- minhas tarefas
+- rotina/agenda do corretor
+- dashboards que estavam zerando
+
+Também vou conferir se:
+- estágios carregam sempre
+- segmentos carregam sempre
+- leads não desaparecem visualmente em falha transitória
+- a sessão continua estável no PWA e no app aberto
 
 ## Resultado esperado
 
-Depois da execução:
-- o CRM deixa de cair em massa para login quebrado,
-- o cache antigo é eliminado de forma global,
-- os corretores passam a abrir somente a versão funcional,
-- a autenticação volta a estabilizar,
-- e o problema deixa de reaparecer como falha geral.
+Depois dessa correção, o CRM deve:
+- continuar mostrando os dados já carregados mesmo sob instabilidade momentânea;
+- recuperar sozinho quando o backend voltar a responder;
+- não transformar erro transitório em tela zerada;
+- não depender de solução temporária ou paliativa.
 
-Quando você aprovar, eu executo essa correção completa com foco explícito na limpeza geral de cache e na recuperação para todos os usuários.
+## Detalhes técnicos
+
+```text
+Causa mais provável
+backend/transiente -> várias queries falham com Load failed -> hooks tratam como vazio/erro crítico -> CRM inteiro aparenta zerado
+
+Correção definitiva
+sessão mais estável
++ retry/control mais previsível
++ preservar último estado válido
++ distinguir erro transitório de vazio real
++ reduzir cascata entre módulos
+```
+
+## Escopo da implementação
+
+Vou focar só na causa da regressão de hoje e na blindagem definitiva desses fluxos. Não vou mexer nas regras comerciais nem nos dados do CRM além do necessário para estabilidade.

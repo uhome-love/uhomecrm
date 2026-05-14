@@ -280,12 +280,26 @@ export default function PipelineKanban() {
     );
   }
 
-  if (pipeline.error || !pipeline.stages || pipeline.stages.length === 0) {
+  // Só mostra tela de erro se houver erro REAL informado pelo hook.
+  // Stages vazios sem erro = ainda pode estar carregando ou rede flapou silenciosamente —
+  // não vamos mais transformar isso em "Nenhuma etapa foi encontrada" indevido.
+  if (pipeline.error) {
     return (
       <ErrorState
         title="Erro ao carregar o Pipeline"
-        description={pipeline.error || "Nenhuma etapa foi encontrada. Tente recarregar."}
+        description={pipeline.error}
         action={{ label: "Tentar novamente", onClick: () => pipeline.reload() }}
+      />
+    );
+  }
+
+  if (!pipeline.stages || pipeline.stages.length === 0) {
+    // Sem stages e sem erro: provavelmente recarga em andamento após uma falha de rede.
+    // Mostra um loading discreto em vez do erro vermelho que assustava o usuário.
+    return (
+      <LoadingState
+        title="Sincronizando pipeline..."
+        description="Aguarde alguns segundos."
       />
     );
   }

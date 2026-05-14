@@ -89,19 +89,24 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const loadingLeadsRef = useRef(false);
 
   const loadStages = useCallback(async () => {
-    try {
-      const { data, error } = await runQueryWithRetry<any[]>(() =>
-        supabase
-          .from("pipeline_stages")
-          .select("id, nome, tipo, cor, ordem, pipeline_tipo, ativo")
-          .eq("ativo", true)
-          .order("ordem")
-      );
-      if (error) {
-        console.error("Error loading stages:", error);
-        return;
-      }
-      const filtered = (data || [] as any[]).filter((s: any) => s.pipeline_tipo === pipelineTipo);
+    const { data, error } = await runQueryWithRetry<any[]>(() =>
+      supabase
+        .from("pipeline_stages")
+        .select("id, nome, tipo, cor, ordem, pipeline_tipo, ativo")
+        .eq("ativo", true)
+        .order("ordem")
+    );
+    if (error) {
+      console.error("Error loading stages:", error);
+      // Propaga: assim Promise.allSettled detecta falha crítica e a UI distingue
+      // "erro de rede" de "não há etapas". NÃO sobrescrevemos stages com [] —
+      // mantemos o último snapshot válido se já houver.
+      throw error;
+    }
+    const filtered = (data || [] as any[]).filter((s: any) => s.pipeline_tipo === pipelineTipo);
+    // Só substitui se a query realmente retornou algo OU se ainda não temos nada.
+    // Isso evita zerar a UI durante uma resposta vazia anômala.
+    if (filtered.length > 0 || stages.length === 0) {
       setStages(filtered.map((s: any) => ({
         id: s.id,
         nome: s.nome,
@@ -110,10 +115,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
         ordem: s.ordem,
         pipeline_tipo: s.pipeline_tipo || pipelineTipo,
       })));
-    } catch (err) {
-      console.error("[usePipeline] loadStages crash:", err);
     }
-  }, [pipelineTipo]);
+  }, [pipelineTipo, stages.length]);
 
   const loadSegmentos = useCallback(async () => {
     const { data, error } = await runQueryWithRetry<any[]>(() =>
@@ -125,15 +128,17 @@ export function usePipeline(pipelineTipo: string = "leads") {
     );
     if (error) {
       console.error("Error loading segmentos:", error);
+      // Não derruba o pipeline — segmentos é não-crítico.
       return;
     }
-    setSegmentos((data || []).map(s => ({
+    const next = (data || []).map(s => ({
       id: s.id,
       nome: s.nome,
       cor: s.cor || "#4969FF",
       ordem: s.ordem,
-    })));
-  }, []);
+    }));
+    if (next.length > 0 || segmentos.length === 0) setSegmentos(next);
+  }, [segmentos.length]);
 
   const loadLeads = useCallback(async () => {
     if (!userId) return;
@@ -216,7 +221,9 @@ export function usePipeline(pipelineTipo: string = "leads") {
       const { data, error } = await runQueryWithRetry<PipelineLead[]>(() => query);
       if (error) {
         console.error("Error loading pipeline leads:", error);
-        return;
+        // Propaga: a UI precisa distinguir "erro de rede" de "lista vazia".
+        // Sem isso, falha transitória zerava o pipeline silenciosamente.
+        throw error;
       }
 
       const batch = ((data || []) as PipelineLead[]);
@@ -254,7 +261,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
       seenIds.add(l.id);
       return true;
     });
-    setLeads(leadsData);
+    // Só substitui se o resultado tem dados OU se ainda não temos nada cacheado.
+    // Evita zerar a tela em respostas vazias anômalas pós-erro transitório.
+    if (leadsData.length > 0 || leads.length === 0) {
+      setLeads(leadsData);
+    }
 
     // Load corretor + gerente names (skip for corretores — they only see their own leads)
     if ((isGestor || isAdmin) && allRows.length > 0) {
@@ -299,11 +310,16 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     } catch (err) {
       console.error("[usePipeline] loadLeads crash:", err);
-      toast.error("Erro ao carregar leads. Tente recarregar a página.");
+      // Só incomoda o usuário com toast se NÃO houver dados cacheados.
+      // Caso contrário a tela continua usável e a próxima reload tenta de novo.
+      if (leads.length === 0) {
+        toast.error("Erro ao carregar leads. Tente recarregar a página.");
+      }
+      throw err; // propaga para Promise.allSettled detectar como falha crítica
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin]);
+  }, [userId, isGestor, isAdmin, leads.length]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
@@ -328,9 +344,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
           .filter((x) => x.r.status === "rejected");
         if (failed.length > 0) {
           console.warn("[usePipeline] Partial load failure:", failed.map((f) => f.name));
-          // Only surface error if the CRITICAL queries failed (stages OR leads)
           const criticalFailed = failed.some((f) => f.name === "stages" || f.name === "leads");
-          if (criticalFailed) {
+          // Só mostra erro de tela se NÃO há nada cacheado.
+          // Se já existe estado válido, mantemos a UI funcional e tentamos de novo no próximo ciclo.
+          const haveCache = stages.length > 0 && leads.length >= 0;
+          if (criticalFailed && !haveCache) {
             setError("Falha parcial ao carregar pipeline. Tente recarregar.");
           }
         }
@@ -342,6 +360,21 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     return () => clearTimeout(timeout);
   }, [userId, roleLoading, loadStages, loadSegmentos, loadLeads]);
+
+  // Auto-retry: se ficamos com stages vazios sem erro (rede flapou silenciosamente),
+  // tenta de novo em 4s — repete uma vez. Evita o usuário ver "Sincronizando..." preso.
+  useEffect(() => {
+    if (!userId || roleLoading) return;
+    if (loading) return;
+    if (stages.length > 0) return;
+    if (error) return; // já há erro visível, não competir com isso
+    const t = window.setTimeout(() => {
+      void loadStages().catch(() => undefined);
+      void loadSegmentos().catch(() => undefined);
+      void loadLeads().catch(() => undefined);
+    }, 4000);
+    return () => window.clearTimeout(t);
+  }, [userId, roleLoading, loading, stages.length, error, loadStages, loadSegmentos, loadLeads]);
 
   // ─── Granular realtime: update only the changed lead in local state ───
   useEffect(() => {
@@ -699,7 +732,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
     getLeadsByStage,
     reload: useCallback(async () => {
       setError(null);
-      await Promise.all([loadStages(), loadSegmentos(), loadLeads()]);
+      // allSettled: recarga manual não pode lançar e quebrar o caller.
+      await Promise.allSettled([loadStages(), loadSegmentos(), loadLeads()]);
     }, [loadStages, loadSegmentos, loadLeads]),
   };
 }
