@@ -591,6 +591,54 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_telemetry: {
+        Row: {
+          build_hash: string | null
+          created_at: string
+          event_type: string
+          extra: Json | null
+          id: string
+          ip: unknown
+          origin: string | null
+          raw_len: number | null
+          reason: string | null
+          session_id: string | null
+          storage_key: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          build_hash?: string | null
+          created_at?: string
+          event_type: string
+          extra?: Json | null
+          id?: string
+          ip?: unknown
+          origin?: string | null
+          raw_len?: number | null
+          reason?: string | null
+          session_id?: string | null
+          storage_key?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          build_hash?: string | null
+          created_at?: string
+          event_type?: string
+          extra?: Json | null
+          id?: string
+          ip?: unknown
+          origin?: string | null
+          raw_len?: number | null
+          reason?: string | null
+          session_id?: string | null
+          storage_key?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       automation_logs: {
         Row: {
           actions_executed: Json
