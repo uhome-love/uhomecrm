@@ -1,12 +1,26 @@
 // UhomeSales Service Worker — minimal PWA runtime
 // Mantém suporte a push/background sem cachear HTML/JS do app.
 
+// Bump quando precisar forçar update imediato em devices com SW antigo.
+const SW_VERSION = "2026-05-14T01:30Z-fase3";
+
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      await self.clients.claim();
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of clients) {
+        try {
+          client.postMessage({ type: "SW_ACTIVATED", version: SW_VERSION });
+        } catch {}
+      }
+      console.log(`[SW] activated version=${SW_VERSION}`);
+    })()
+  );
 });
 
 self.addEventListener("push", (event) => {
