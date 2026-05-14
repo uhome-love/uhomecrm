@@ -25,7 +25,12 @@ function isSupabaseUrl(input: RequestInfo | URL): boolean {
         : input instanceof URL
           ? input.toString()
           : (input as Request).url;
-    return url.includes(".supabase.co") || url.includes("supabase.in");
+    return (
+      url.includes(".supabase.co") ||
+      url.includes("supabase.in") ||
+      url.includes("api.uhomesales.com") ||
+      url.includes("realtime.uhomesales.com")
+    );
   } catch {
     return false;
   }
