@@ -8,7 +8,7 @@
  *
  * Supports filtering by stage and criteria type.
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
 
@@ -46,6 +46,7 @@ interface UseFocusLeadsReturn {
   leads: FocusLead[];
   loading: boolean;
   error: string | null;
+  staleSince: Date | null;
   reload: (filters?: FocusFilters) => Promise<void>;
 }
 
@@ -56,6 +57,11 @@ export function useFocusLeads(
   const [leads, setLeads] = useState<FocusLead[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [staleSince, setStaleSince] = useState<Date | null>(null);
+
+  // Refs para decisões dentro do reload sem re-criar callback
+  const lastSuccessAtRef = useRef<Date | null>(null);
+  const leadsCountRef = useRef<number>(0);
 
   const reload = useCallback(async (filters?: FocusFilters) => {
     if (!corretorAuthId) return;
@@ -91,6 +97,9 @@ export function useFocusLeads(
 
       if (stageIds.length === 0) {
         setLeads([]);
+        leadsCountRef.current = 0;
+        lastSuccessAtRef.current = new Date();
+        setStaleSince(null);
         setLoading(false);
         return;
       }
@@ -126,6 +135,9 @@ export function useFocusLeads(
       if (leadsError) throw leadsError;
       if (!leadsData || leadsData.length === 0) {
         setLeads([]);
+        leadsCountRef.current = 0;
+        lastSuccessAtRef.current = new Date();
+        setStaleSince(null);
         setLoading(false);
         return;
       }
@@ -237,13 +249,21 @@ export function useFocusLeads(
       });
 
       setLeads(focusLeads);
+      leadsCountRef.current = focusLeads.length;
+      lastSuccessAtRef.current = new Date();
+      setStaleSince(null);
     } catch (err: any) {
       console.error("[useFocusLeads] error:", err);
-      setError(err.message || "Erro ao buscar leads");
+      // Preservar snapshot: se já há cache em tela, marcar stale e NÃO zerar leads
+      if (leadsCountRef.current > 0 && lastSuccessAtRef.current) {
+        setStaleSince(lastSuccessAtRef.current);
+      } else {
+        setError(err.message || "Erro ao buscar leads");
+      }
     } finally {
       setLoading(false);
     }
   }, [corretorAuthId, pipelineTipo]);
 
-  return { leads, loading, error, reload };
+  return { leads, loading, error, staleSince, reload };
 }

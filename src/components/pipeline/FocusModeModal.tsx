@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria } from "@/hooks/useFocusLeads";
+import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -55,7 +56,7 @@ const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: strin
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
   const { user } = useAuth();
   const corretorId = user?.id ?? null;
-  const { leads, loading, reload } = useFocusLeads(corretorId, pipelineTipo);
+  const { leads, loading, reload, staleSince } = useFocusLeads(corretorId, pipelineTipo);
 
   // Config screen state
   const [configPhase, setConfigPhase] = useState(true);
@@ -531,6 +532,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
             </Button>
           </div>
         </div>
+
+        <StaleDataBadge staleSince={staleSince} onRetry={() => reload()} />
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto flex flex-col">
