@@ -4704,6 +4704,63 @@ export type Database = {
           },
         ]
       }
+      network_telemetry: {
+        Row: {
+          cf_ray: string | null
+          connection_type: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          error_name: string | null
+          id: string
+          method: string | null
+          online: boolean | null
+          origin_host: string | null
+          profile_role: string | null
+          retry_count: number
+          session_id: string | null
+          url: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cf_ray?: string | null
+          connection_type?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          error_name?: string | null
+          id?: string
+          method?: string | null
+          online?: boolean | null
+          origin_host?: string | null
+          profile_role?: string | null
+          retry_count?: number
+          session_id?: string | null
+          url: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cf_ray?: string | null
+          connection_type?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          error_name?: string | null
+          id?: string
+          method?: string | null
+          online?: boolean | null
+          origin_host?: string | null
+          profile_role?: string | null
+          retry_count?: number
+          session_id?: string | null
+          url?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           agrupar_similares: boolean
@@ -9781,6 +9838,7 @@ export type Database = {
       cleanup_homi_briefings: { Args: never; Returns: undefined }
       cleanup_homi_conversations: { Args: never; Returns: undefined }
       cleanup_jetimob_processed: { Args: never; Returns: undefined }
+      cleanup_old_network_telemetry: { Args: never; Returns: undefined }
       cleanup_ops_events: { Args: never; Returns: undefined }
       contar_leads_desatualizados: {
         Args: { p_corretor_id: string }
@@ -10054,6 +10112,10 @@ export type Database = {
           quartos: number
           tipo: string
         }[]
+      }
+      get_network_telemetry_summary: {
+        Args: { p_horas: number }
+        Returns: Json
       }
       get_oportunidades_do_dia: {
         Args: { p_corretor_id: string }
