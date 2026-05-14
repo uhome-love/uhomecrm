@@ -584,7 +584,7 @@ async function handleUnknownReply(
       callAIReply(supabaseUrl, serviceKey, from, contactName || "", msgText, lead.id, "texto");
     }
 
-    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", lead.id, "whatsapp");
+    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", lead.id, "whatsapp", { campanha: "Reengajamento WhatsApp" });
     console.log(`📩 Found existing lead ${lead.id} by phone, 24h window set`);
     return;
   }
