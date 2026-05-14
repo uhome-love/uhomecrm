@@ -74,6 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.warn(
             `[auth-purge] parse_fail (kept) key=${k} rawLen=${rawLen} origin=${origin}`,
           );
+          sendAuthTelemetry({
+            event_type: "purge_kept",
+            origin,
+            reason: "parse_fail",
+            raw_len: rawLen,
+            storage_key: k,
+          });
           continue;
         }
         try {
@@ -87,9 +94,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const nowSec = Math.floor(Date.now() / 1000);
               const expired = typeof payload?.exp === "number" && payload.exp < nowSec - 5;
               if (!payload?.sub || expired) {
+                const reason = !payload?.sub ? "missing_sub" : "expired";
                 console.warn(
-                  `[auth-purge] removed key=${k} rawLen=${rawLen} reason=${!payload?.sub ? "missing_sub" : "expired"} origin=${origin}`,
+                  `[auth-purge] removed key=${k} rawLen=${rawLen} reason=${reason} origin=${origin}`,
                 );
+                sendAuthTelemetry({
+                  event_type: "purge_removed",
+                  user_id: typeof payload?.sub === "string" ? payload.sub : null,
+                  origin,
+                  reason,
+                  raw_len: rawLen,
+                  storage_key: k,
+                });
                 localStorage.removeItem(k);
               }
             } else if (rawLen > 0) {
@@ -97,6 +113,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.warn(
                 `[auth-purge] removed key=${k} rawLen=${rawLen} reason=parts_${parts.length} origin=${origin}`,
               );
+              sendAuthTelemetry({
+                event_type: "purge_removed",
+                origin,
+                reason: `parts_${parts.length}`,
+                raw_len: rawLen,
+                storage_key: k,
+              });
               localStorage.removeItem(k);
             }
           }
@@ -105,6 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.warn(
             `[auth-purge] jwt_decode_fail (kept) key=${k} rawLen=${rawLen} origin=${origin}`,
           );
+          sendAuthTelemetry({
+            event_type: "purge_kept",
+            origin,
+            reason: "jwt_decode_fail",
+            raw_len: rawLen,
+            storage_key: k,
+            extra: { error: String((innerErr as any)?.message || innerErr) },
+          });
         }
       }
     } catch {
