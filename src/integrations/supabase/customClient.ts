@@ -4,13 +4,14 @@
 // IMPORTANTE: NÃO importar do client.ts oficial — ele é auto-gerado pelo Lovable.
 // O tipo Database vem direto de ./types (também auto-gerado, mas estável e seguro).
 //
-// Rollback: trocar SUPABASE_URL para "https://hunbxqzhvuemgntklyzb.supabase.co"
-// e remover o override de realtime.
+// Failover: o REST sai via window.fetch que é interceptado pelo smartFetch
+// (src/lib/fetchCircuitBreaker.ts) e reescrito para api-backup quando preciso.
+// Para o Realtime (WebSocket) fazemos um watchdog dedicado abaixo.
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
+import { PRIMARY, BACKUP, getActiveTarget } from "@/lib/proxyEndpoints";
 
-const SUPABASE_URL = "https://api.uhomesales.com";
-const REALTIME_URL = "wss://realtime.uhomesales.com/realtime/v1";
+const SUPABASE_URL = PRIMARY.api;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const supabase = createClient<Database>(
@@ -28,12 +29,29 @@ export const supabase = createClient<Database>(
   },
 );
 
-// Força o WebSocket do Realtime a usar o subdomínio próprio.
-// O cliente do supabase-js calcula endPoint internamente a partir da URL principal;
-// sobrescrevemos depois da construção para evitar conexões em wss://*.supabase.co.
-try {
-  (supabase.realtime as any).endPoint = REALTIME_URL;
-  (supabase.realtime as any).endPointURL = () => REALTIME_URL;
-} catch {
-  // noop — fallback silencioso, REST/Auth continuam funcionando
+// ─── Realtime: força host próprio + watchdog de failover ─────────────────────
+function applyRealtimeEndpoint() {
+  const url = getActiveTarget() === "backup" ? BACKUP.realtime : PRIMARY.realtime;
+  try {
+    (supabase.realtime as any).endPoint = url;
+    (supabase.realtime as any).endPointURL = () => url;
+  } catch {
+    // noop
+  }
+}
+
+applyRealtimeEndpoint();
+
+// Quando o smartFetch chavear primary↔backup, reaplica e força reconnect
+if (typeof window !== "undefined") {
+  window.addEventListener("proxy:switched", () => {
+    applyRealtimeEndpoint();
+    try {
+      const rt: any = supabase.realtime;
+      if (typeof rt.disconnect === "function") rt.disconnect();
+      if (typeof rt.connect === "function") setTimeout(() => rt.connect(), 250);
+    } catch {
+      // noop
+    }
+  });
 }
