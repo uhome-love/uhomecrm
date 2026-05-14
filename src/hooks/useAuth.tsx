@@ -212,16 +212,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
-    purgeCorruptedAuthStorage();
+    purgeCorruptedAuthStorage("boot");
 
     const recoverSession = async (graceful = false) => {
       try {
         let recoveredSession = await getSessionWithRetry();
 
         if (!recoveredSession?.user && sessionRef.current?.refresh_token) {
-          recoveredSession = await refreshSessionSafely().catch(() => null);
+          recoveredSession = await refreshSessionSafely("recoverSession:no-session").catch(() => null);
         } else if (recoveredSession?.user && isSessionNearExpiry(recoveredSession)) {
-          const refreshedSession = await refreshSessionSafely().catch(() => null);
+          const refreshedSession = await refreshSessionSafely("near_expiry").catch(() => null);
           if (refreshedSession?.user) recoveredSession = refreshedSession;
         }
 
@@ -237,9 +237,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           recoveryTimeoutRef.current = window.setTimeout(async () => {
             recoveryTimeoutRef.current = null;
             try {
-              let retriedSession = await getSessionWithRetry(2);
+              let retriedSession = await getSessionWithRetry(2, "recoverSession:retry");
               if (!retriedSession?.user && sessionRef.current?.refresh_token) {
-                retriedSession = await refreshSessionSafely().catch(() => null);
+                retriedSession = await refreshSessionSafely("recoverSession:retry").catch(() => null);
               }
               if (!isMounted) return;
               applySession(retriedSession ?? null);
@@ -308,7 +308,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleVisibility = () => {
       if (document.visibilityState !== "visible") return;
       if (!sessionRef.current?.refresh_token) return;
-      void refreshSessionSafely()
+      void refreshSessionSafely("visibility")
         .then((nextSession) => {
           if (nextSession?.user) applySession(nextSession);
         })
