@@ -135,6 +135,9 @@ export function useFocusLeads(
       if (leadsError) throw leadsError;
       if (!leadsData || leadsData.length === 0) {
         setLeads([]);
+        leadsCountRef.current = 0;
+        lastSuccessAtRef.current = new Date();
+        setStaleSince(null);
         setLoading(false);
         return;
       }
