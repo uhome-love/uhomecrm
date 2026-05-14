@@ -46,6 +46,7 @@ interface UseFocusLeadsReturn {
   leads: FocusLead[];
   loading: boolean;
   error: string | null;
+  staleSince: Date | null;
   reload: (filters?: FocusFilters) => Promise<void>;
 }
 
@@ -56,6 +57,11 @@ export function useFocusLeads(
   const [leads, setLeads] = useState<FocusLead[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [staleSince, setStaleSince] = useState<Date | null>(null);
+
+  // Refs para decisões dentro do reload sem re-criar callback
+  const lastSuccessAtRef = useRef<Date | null>(null);
+  const leadsCountRef = useRef<number>(0);
 
   const reload = useCallback(async (filters?: FocusFilters) => {
     if (!corretorAuthId) return;
