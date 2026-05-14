@@ -403,9 +403,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applySession, getSessionWithRetry, purgeCorruptedAuthStorage, refreshSessionSafely]);
 
   useEffect(() => {
-    const handleVisibility = () => {
+    const handleVisibility = async () => {
       if (document.visibilityState !== "visible") return;
       if (!sessionRef.current?.refresh_token) return;
+      // Não martelar refresh quando a API está offline — gera cascata de "Failed to fetch".
+      try {
+        const { getApiHealth } = await import("@/lib/apiHealth");
+        if (getApiHealth() === "offline") return;
+      } catch { /* noop */ }
       void refreshSessionSafely("visibility")
         .then((nextSession) => {
           if (nextSession?.user) applySession(nextSession);
