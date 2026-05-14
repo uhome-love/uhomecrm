@@ -183,14 +183,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // C2.c: log refresh attempt
             try {
               console.warn(`[auth-refresh] start origin=${origin}:fatal-getSession reason="${msg}"`);
+              sendAuthTelemetry({ event_type: "refresh_start", origin: `${origin}:fatal-getSession`, reason: msg });
               const { data: refreshed, error: refreshError } = await (supabase.auth as any).refreshSession();
               if (!refreshError && refreshed?.session?.user) {
                 console.warn(`[auth-refresh] success origin=${origin}:fatal-getSession`);
+                sendAuthTelemetry({
+                  event_type: "refresh_success",
+                  origin: `${origin}:fatal-getSession`,
+                  user_id: refreshed.session.user.id,
+                });
                 return refreshed.session as Session;
               }
               console.warn(`[auth-refresh] failed origin=${origin}:fatal-getSession err="${refreshError?.message || "no-session"}"`);
+              sendAuthTelemetry({
+                event_type: "refresh_failed",
+                origin: `${origin}:fatal-getSession`,
+                reason: refreshError?.message || "no-session",
+              });
             } catch (refreshErr: any) {
               console.warn(`[auth-refresh] threw origin=${origin}:fatal-getSession err="${refreshErr?.message || refreshErr}"`);
+              sendAuthTelemetry({
+                event_type: "refresh_failed",
+                origin: `${origin}:fatal-getSession`,
+                reason: "threw",
+                extra: { error: String(refreshErr?.message || refreshErr) },
+              });
             }
             try {
               const { recordFatalAuthError } = await import("@/lib/authHealthMonitor");
