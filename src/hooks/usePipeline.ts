@@ -89,19 +89,24 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const loadingLeadsRef = useRef(false);
 
   const loadStages = useCallback(async () => {
-    try {
-      const { data, error } = await runQueryWithRetry<any[]>(() =>
-        supabase
-          .from("pipeline_stages")
-          .select("id, nome, tipo, cor, ordem, pipeline_tipo, ativo")
-          .eq("ativo", true)
-          .order("ordem")
-      );
-      if (error) {
-        console.error("Error loading stages:", error);
-        return;
-      }
-      const filtered = (data || [] as any[]).filter((s: any) => s.pipeline_tipo === pipelineTipo);
+    const { data, error } = await runQueryWithRetry<any[]>(() =>
+      supabase
+        .from("pipeline_stages")
+        .select("id, nome, tipo, cor, ordem, pipeline_tipo, ativo")
+        .eq("ativo", true)
+        .order("ordem")
+    );
+    if (error) {
+      console.error("Error loading stages:", error);
+      // Propaga: assim Promise.allSettled detecta falha crítica e a UI distingue
+      // "erro de rede" de "não há etapas". NÃO sobrescrevemos stages com [] —
+      // mantemos o último snapshot válido se já houver.
+      throw error;
+    }
+    const filtered = (data || [] as any[]).filter((s: any) => s.pipeline_tipo === pipelineTipo);
+    // Só substitui se a query realmente retornou algo OU se ainda não temos nada.
+    // Isso evita zerar a UI durante uma resposta vazia anômala.
+    if (filtered.length > 0 || stages.length === 0) {
       setStages(filtered.map((s: any) => ({
         id: s.id,
         nome: s.nome,
@@ -110,10 +115,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
         ordem: s.ordem,
         pipeline_tipo: s.pipeline_tipo || pipelineTipo,
       })));
-    } catch (err) {
-      console.error("[usePipeline] loadStages crash:", err);
     }
-  }, [pipelineTipo]);
+  }, [pipelineTipo, stages.length]);
 
   const loadSegmentos = useCallback(async () => {
     const { data, error } = await runQueryWithRetry<any[]>(() =>
@@ -125,15 +128,17 @@ export function usePipeline(pipelineTipo: string = "leads") {
     );
     if (error) {
       console.error("Error loading segmentos:", error);
+      // Não derruba o pipeline — segmentos é não-crítico.
       return;
     }
-    setSegmentos((data || []).map(s => ({
+    const next = (data || []).map(s => ({
       id: s.id,
       nome: s.nome,
       cor: s.cor || "#4969FF",
       ordem: s.ordem,
-    })));
-  }, []);
+    }));
+    if (next.length > 0 || segmentos.length === 0) setSegmentos(next);
+  }, [segmentos.length]);
 
   const loadLeads = useCallback(async () => {
     if (!userId) return;
