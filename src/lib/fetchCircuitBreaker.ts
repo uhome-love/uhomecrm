@@ -196,7 +196,7 @@ export function installFetchCircuitBreaker() {
     if (!monitored) return originalFetch(input, init);
 
     // Aplica reescrita primary→backup se sticky ativo
-    const rewritten = applyTargetRewrite(input);
+    let rewritten: RequestInfo | URL = applyTargetRewrite(input);
 
     let attempt = 0;
     let lastErr: unknown;
