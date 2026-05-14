@@ -153,9 +153,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const prevUserId = sessionRef.current?.user?.id ?? null;
     const nextUserId = nextSession?.user?.id ?? null;
     if (prevUserId && !nextUserId) {
+      const stack = new Error("transition_trace").stack;
       console.warn(
-        `[auth-transition] SIGNED_IN → SIGNED_OUT prevUser=${prevUserId}\n${new Error("transition_trace").stack}`,
+        `[auth-transition] SIGNED_IN → SIGNED_OUT prevUser=${prevUserId}\n${stack}`,
       );
+      sendAuthTelemetry({
+        event_type: "transition",
+        user_id: prevUserId,
+        origin: "applySession",
+        reason: "signed_in_to_signed_out",
+        extra: { stack: stack?.slice(0, 4000) ?? null },
+      });
     }
 
     sessionRef.current = nextSession;
