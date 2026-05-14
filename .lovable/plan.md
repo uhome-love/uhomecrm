@@ -1,41 +1,57 @@
-## Kill switch de Service Worker — execução única por usuário
+## Problema
 
-### Causa
-~30 corretores ainda têm SW antigo registrado (pré-correção do lock). Primeira carga falha com `ERR_NAME_NOT_RESOLVED` até o SW velho expirar. Precisa de limpeza one-shot automática.
+A corretora Andressa Madril (e potencialmente outros usuários antigos) está com:
 
-### Arquivos
+1. **PC — tela de login travada em "Entrando..."**: bundle/PWA antigo em cache + `signIn` pode levar ~15s sem feedback nem rota de escape.
+2. **Mobile — clica "Criar Tarefa" no detalhe do lead e nada acontece**: combinação de chunk antigo em cache (runtime error silencioso) + bug de UX em `addTarefa` que retorna mudo quando `user` ainda não hidratou.
 
-**1. Criar `src/lib/swKillSwitch.ts`** (novo)
+Confirmado no banco: login dela funciona no servidor (sign-in às 19:15 BRT hoje). Console mostra `Importing a module script failed` e `auth-boot ceiling reached (8s)` — assinatura clássica de cache poluído.
 
-Função `runKillSwitch()` idempotente, controlada por flag `localStorage["uhome:sw:killswitch:v1"]`:
-- Se flag = `"done"` → retorna imediatamente (linha 1).
-- Senão:
-  1. `navigator.serviceWorker.getRegistrations()` → `unregister()` em todos.
-  2. `caches.keys()` → `caches.delete()` em todos.
-  3. `indexedDB.databases()` → filtra por nome contendo `supabase`/`uhome`/`sb-` e `deleteDatabase()`.
-  4. `localStorage.setItem(KILL_SWITCH_KEY, "done")`.
-  5. `window.location.reload()` uma vez.
-- Catch global: marca `"done"` mesmo em erro para não loopar.
+## Correções
 
-**2. Editar `src/main.tsx`**
+### 1. Kill-switch agressivo no service worker (`public/sw.js`)
+Reescrever para sempre que ativar:
+- `caches.keys()` → deletar todos
+- Forçar `client.navigate(url + ?_v=ts)` em todas as abas abertas
+- `unregister()` ao final
 
-Adicionar como **primeiras duas linhas** (antes de `import "./lib/originalFetch"`):
-```ts
-import { runKillSwitch } from "./lib/swKillSwitch";
-runKillSwitch();
-```
-`originalFetch` permanece logo em seguida. Resto do arquivo intacto.
+Isso garante que mesmo dispositivos com SW antigo, na próxima abertura, sejam reciclados de uma vez — sem depender do `main.tsx` carregar primeiro.
 
-### O que NÃO mexer
-`customClient.ts`, `networkTelemetry.ts`, `originalFetch.ts`, `proxyEndpoints.ts`, `fetchCircuitBreaker.ts`, `useAuth.tsx`, hooks, RLS, RPCs, design tokens, `public/sw.js`.
+### 2. UX resiliente em `LeadTarefasTab.handleCreate`
+- Adicionar estado `creating` no botão (spinner + disabled)
+- `try/catch` em volta de `onAddTarefa` com `toast.error`
+- Validar `tipo` e `vence_em` antes de chamar (toast claro se faltar data)
 
-### Critério de aceite
-- Build TS verde.
-- Primeira carga no published: SW velho desregistrado, caches/IDB limpos, flag marcada, reload único, app funciona.
-- Cargas subsequentes: retorno instantâneo.
+### 3. `addTarefa` em `usePipelineLeadData.ts` deixar de falhar mudo
+- Se `!user`, mostrar `toast.error("Sessão expirou — recarregue a página")` em vez de `return` silencioso
+- Logar `console.error` com o motivo
+- Retornar `boolean` para o caller saber o resultado
 
-### Reversibilidade
-DevTools: `localStorage.removeItem("uhome:sw:killswitch:v1"); location.reload()`.
+### 4. Auth — desbloqueio durante "Entrando..."
+- Reduzir `MAX_ATTEMPTS` de signIn de 3 para 2 (mais responsivo) e `waitForFreshSession` de 5s para 3s
+- Mostrar o botão "Corrigir acesso neste dispositivo" também enquanto `submitting=true` (hoje só aparece quando idle)
+- Após 8s travado em "Entrando...", auto-mostrar um aviso "Demorando demais? Toque em corrigir acesso"
 
-### Anti-loop
-Se build quebrar 2x, paro e reporto erro literal.
+### 5. Telemetria
+Adicionar `sendAuthTelemetry({event_type: "task_create_blocked"})` quando `addTarefa` cair no caminho `!user`, para detectarmos esse cenário em outros usuários.
+
+## Arquivos afetados
+
+- `public/sw.js` — kill-switch reforçado
+- `src/components/pipeline/LeadTarefasTab.tsx` — handleCreate com estado loading + try/catch + validação
+- `src/hooks/usePipelineLeadData.ts` — addTarefa com toast/log e retorno boolean
+- `src/hooks/useAuth.tsx` — reduzir timeouts do signIn
+- `src/pages/Auth.tsx` — botão "Corrigir acesso" sempre visível + aviso após 8s
+
+## O que NÃO vai mudar
+
+- RLS, schema de `pipeline_tarefas`, lógica de roleta, fluxo de aceite — nada disso é o problema.
+- Cargo/role da Andressa (já está corretor com profile válido).
+
+## Para a Andressa, no momento do deploy
+
+Como o cache antigo dela ainda vai precisar de UM ciclo para pegar o novo SW, ela vai precisar **uma única vez**:
+- No PC: clicar no link "Está preso na tela de login? Corrigir acesso neste dispositivo" (já existe).
+- No celular: forçar fechar o app PWA e abrir de novo (o novo SW já vai limpar tudo).
+
+Depois disso, todos os deploys futuros são automáticos.
