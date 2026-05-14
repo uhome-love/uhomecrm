@@ -1,3 +1,4 @@
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ export default function LeadInsightsAI({ kpis, empreendimentoPerf, segmentoPerf,
       };
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lead-intelligence-insights`,
+        `${EDGE_BASE_URL}/functions/v1/lead-intelligence-insights`,
         {
           method: "POST",
           headers: {

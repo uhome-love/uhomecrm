@@ -1,3 +1,4 @@
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -704,7 +705,7 @@ ${contextParts.join("\n")}
 
 Responda SOMENTE com o JSON, sem markdown.`;
 
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uhome-ia-core`;
+      const url = `${EDGE_BASE_URL}/functions/v1/uhome-ia-core`;
       const resp = await fetch(url, {
         method: "POST",
         headers: {

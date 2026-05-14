@@ -1,3 +1,4 @@
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/customClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -311,7 +312,7 @@ ${histCtx}
     try {
       const session = await (supabase.auth as any).getSession();
       const token = session.data?.session?.access_token;
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/homi-assistant`;
+      const url = `${EDGE_BASE_URL}/functions/v1/homi-assistant`;
       const resp = await fetch(url, {
         method: "POST",
         headers: {

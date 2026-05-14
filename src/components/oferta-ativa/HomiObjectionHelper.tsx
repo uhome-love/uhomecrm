@@ -1,3 +1,4 @@
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useState } from "react";
 import { Loader2, Copy, X, Bot, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/customClient";
@@ -49,7 +50,7 @@ export default function HomiObjectionHelper({ leadNome, leadEmpreendimento, sele
       const prompt = `Contexto: Estou em uma ligação de vendas.\nLead: ${leadNome}\nEmpreendimento sendo oferecido: ${selectedEmp}\nSituação/Objeção do cliente: ${situacao.trim()}\n\nMe dê uma resposta curta e persuasiva (máximo 3 frases) para usar AGORA na ligação.\nSeja direto, prático e focado em conversão.`;
 
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/homi-chat`,
+        `${EDGE_BASE_URL}/functions/v1/homi-chat`,
         {
           method: "POST",
           headers: {

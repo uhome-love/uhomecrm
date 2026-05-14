@@ -1,3 +1,4 @@
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Loader2, BarChart3, Users, TrendingUp, AlertTriangle, FileText, Lightbulb, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 const homiMascot = "/images/homi-mascot-official.png";
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/homi-ceo`;
+const CHAT_URL = `${EDGE_BASE_URL}/functions/v1/homi-ceo`;
 
 const QUICK_ACTIONS = [
   { id: "visao_geral", label: "Visão Geral", icon: BarChart3, color: "text-amber-600" },

@@ -1,3 +1,4 @@
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -157,7 +158,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
 
     const functionName = CHAT_URL_MAP[homiRole];
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
+    const url = `${EDGE_BASE_URL}/functions/v1/${functionName}`;
 
     let assistantContent = "";
 

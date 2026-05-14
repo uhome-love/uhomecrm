@@ -6,12 +6,13 @@
  * Registers click + upserts lead via campaign-sms-click edge function,
  * then redirects to WhatsApp.
  */
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
 const WHATSAPP_URL = "https://wa.me/5551992597097?text=Quero%20saber%20mais%20sobre%20o%20Melnick%20Day";
-const EDGE_FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/campaign-sms-click`;
+const EDGE_FN_URL = `${EDGE_BASE_URL}/functions/v1/campaign-sms-click`;
 
 /**
  * Parse params from both query string and path segments.
