@@ -22,7 +22,7 @@ let warnedOnce = false;
  */
 export function toPublicStorageUrl<T extends string | null | undefined>(input: T): T {
   if (!input || typeof input !== "string") return input;
-  let out = input;
+  let out: string = input;
   for (const host of LEGACY_HOSTS) {
     if (out.includes(host)) {
       out = out.split(host).join("api.uhomesales.com");
@@ -32,7 +32,7 @@ export function toPublicStorageUrl<T extends string | null | undefined>(input: T
       }
     }
   }
-  return out as T;
+  return out as unknown as T;
 }
 
 /** Garante que a URL final use o proxy, mesmo se vier sem host (path puro). */
