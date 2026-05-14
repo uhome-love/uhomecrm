@@ -728,6 +728,6 @@ async function handleUnknownReply(
     // AI reply for new lead
     callAIReply(supabaseUrl, serviceKey, from, contactName || "", msgText, newLead.id, "texto");
 
-    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", newLead.id, "whatsapp");
+    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_respondeu", newLead.id, "whatsapp", { campanha: "WhatsApp (remetente novo)" });
   }
 }
