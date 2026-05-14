@@ -310,11 +310,16 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     } catch (err) {
       console.error("[usePipeline] loadLeads crash:", err);
-      toast.error("Erro ao carregar leads. Tente recarregar a página.");
+      // Só incomoda o usuário com toast se NÃO houver dados cacheados.
+      // Caso contrário a tela continua usável e a próxima reload tenta de novo.
+      if (leads.length === 0) {
+        toast.error("Erro ao carregar leads. Tente recarregar a página.");
+      }
+      throw err; // propaga para Promise.allSettled detectar como falha crítica
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin]);
+  }, [userId, isGestor, isAdmin, leads.length]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
