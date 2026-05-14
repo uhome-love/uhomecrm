@@ -34,6 +34,7 @@ import { HomiProvider } from "@/contexts/HomiContext";
 import { useTabContext } from "@/contexts/TabContext";
 import { PAGE_COMPONENTS } from "@/config/pageRegistry";
 import TabBar from "@/components/layout/TabBar";
+import ApiOfflineBanner from "@/components/ApiOfflineBanner";
 const homiMascot = "/images/homi-mascot-official.png";
 
 const HomiPanel = lazy(() => import("@/components/homi/HomiPanel"));
@@ -68,7 +69,7 @@ type SidebarRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
 
 export default function AppLayout() {
   const { user, signOut } = useAuth();
-  const { isAdmin, isGestor, isBackoffice, isRh } = useUserRole();
+  const { isAdmin, isGestor, isBackoffice, isRh, rolesUnavailable } = useUserRole();
   const { theme, toggle: onThemeToggle } = useTheme();
   useVendaRealtimeNotification();
   useWhatsAppNotifications();
@@ -107,6 +108,10 @@ export default function AppLayout() {
         setCargoLabel("RH · 💚 Carol");
       } else if (isGestor) {
         setCargoLabel("Gerente");
+      } else if (rolesUnavailable) {
+        // Roles indisponíveis por falha de rede — NÃO rebaixar para "Corretor".
+        // Mantém o label atual (se existir) ou mostra placeholder neutro.
+        setCargoLabel((prev) => prev || "—");
       } else {
         const c = (data as any)?.cargo || "";
         const labelMap: Record<string, string> = {
@@ -119,7 +124,7 @@ export default function AppLayout() {
         setCargoLabel(labelMap[c] || c || "Corretor");
       }
     });
-  }, [user, isAdmin, isGestor, isBackoffice, isRh]);
+  }, [user, isAdmin, isGestor, isBackoffice, isRh, rolesUnavailable]);
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
@@ -239,6 +244,7 @@ export default function AppLayout() {
               </DropdownMenu>
               </div>
             </header>
+            <ApiOfflineBanner />
             <PushPromptBanner />
             <TabBar />
             

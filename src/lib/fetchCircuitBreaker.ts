@@ -10,6 +10,8 @@
  * we can spot real outages without nuking active sessions.
  */
 
+import { recordFailure, recordSuccess } from "./apiHealth";
+
 const WINDOW_MS = 60_000;
 const LOG_THRESHOLD = 8;
 const LOG_COOLDOWN_MS = 60_000;
@@ -43,15 +45,27 @@ export function installFetchCircuitBreaker() {
   const originalFetch = window.fetch.bind(window);
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const isApi = isSupabaseUrl(input);
     try {
       const res = await originalFetch(input, init);
-      if (isSupabaseUrl(input) && res.ok) failures = [];
+      if (isApi) {
+        if (res.ok) {
+          failures = [];
+          recordSuccess();
+        } else if (res.status >= 500) {
+          recordFailure();
+        } else {
+          // 4xx ainda conta como "rede ok"
+          recordSuccess();
+        }
+      }
       return res;
     } catch (err) {
-      if (isSupabaseUrl(input)) {
+      if (isApi) {
         const now = Date.now();
         failures = failures.filter((t) => now - t < WINDOW_MS);
         failures.push(now);
+        recordFailure();
         if (failures.length >= LOG_THRESHOLD && now - lastLog > LOG_COOLDOWN_MS) {
           lastLog = now;
           // eslint-disable-next-line no-console
