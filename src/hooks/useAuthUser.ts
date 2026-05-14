@@ -39,7 +39,7 @@ export function useAuthUser() {
         .eq("user_id", user!.id)
         .single();
       if (error) throw error;
-      return { ...data, gerente_id: null } as UserProfile;
+      return data as UserProfile;
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
