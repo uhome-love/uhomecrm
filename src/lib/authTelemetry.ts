@@ -1,5 +1,6 @@
 // Fire-and-forget client → server telemetry sink for auth events.
 // NEVER throws. NEVER blocks. Errors are silently swallowed.
+import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 
 const SUPABASE_URL = EDGE_BASE_URL as string;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
