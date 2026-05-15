@@ -116,6 +116,28 @@ Deno.serve(async (req) => {
       await supabase.from("visita_amanha_config").update({ paused: false, updated_at: new Date().toISOString() }).eq("id", cfg.id);
     }
 
+    // Lock de execução: evita rodadas paralelas (cron a cada 2min × MAX_RUN_MS=140s)
+    const lockUntil = new Date(Date.now() + (MAX_RUN_MS + 20_000)).toISOString();
+    const nowIso = new Date().toISOString();
+    const { data: lockRows, error: lockErr } = await supabase
+      .from("visita_amanha_config")
+      .update({ running_until: lockUntil })
+      .eq("id", cfg.id)
+      .or(`running_until.is.null,running_until.lt.${nowIso}`)
+      .select("id");
+    if (lockErr) throw lockErr;
+    if (!lockRows || lockRows.length === 0) {
+      return new Response(JSON.stringify({ skipped: true, reason: "another_run_in_progress" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const releaseLock = async () => {
+      try {
+        await supabase.from("visita_amanha_config").update({ running_until: null }).eq("id", cfg.id);
+      } catch { /* ignore */ }
+    };
+
     const metaPhoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || "";
     const metaToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
     if (!metaPhoneId || !metaToken) throw new Error("Meta env vars missing");
@@ -175,6 +197,7 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < leads.length; i++) {
       if (Date.now() - startedAt > MAX_RUN_MS) {
+        await releaseLock();
         return new Response(JSON.stringify({
           partial: true, sent, failed, skipped, total: totalAlvo,
           processed: i, message: "Rodada finalizada — cron continuará automaticamente em 2 min.",
@@ -202,7 +225,7 @@ Deno.serve(async (req) => {
           consecutiveBlock++;
           if (consecutiveBlock >= 5) {
             await supabase.from("visita_amanha_config").update({
-              paused: true, updated_at: new Date().toISOString(),
+              paused: true, running_until: null, updated_at: new Date().toISOString(),
             }).eq("id", cfg.id);
             return new Response(JSON.stringify({
               auto_paused: true, reason: "meta_quality_block", sent, failed, skipped,
@@ -243,6 +266,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    await releaseLock();
     return new Response(JSON.stringify({
       ok: true, sent, failed, skipped, total: totalAlvo,
       duration_ms: Date.now() - startedAt,
@@ -251,6 +275,10 @@ Deno.serve(async (req) => {
 
   } catch (e) {
     console.error("visita-amanha-enqueue error:", e);
+    try {
+      await supabase.from("visita_amanha_config").update({ running_until: null })
+        .not("running_until", "is", null);
+    } catch { /* ignore */ }
     return new Response(JSON.stringify({
       error: e instanceof Error ? e.message : String(e),
       errors: errs.slice(-10),

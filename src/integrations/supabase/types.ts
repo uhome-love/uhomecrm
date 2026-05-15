@@ -8630,6 +8630,7 @@ export type Database = {
           pausa_longa_max_seconds: number
           pausa_longa_min_seconds: number
           paused: boolean
+          running_until: string | null
           stages_alvo: string[]
           updated_at: string
         }
@@ -8647,6 +8648,7 @@ export type Database = {
           pausa_longa_max_seconds?: number
           pausa_longa_min_seconds?: number
           paused?: boolean
+          running_until?: string | null
           stages_alvo?: string[]
           updated_at?: string
         }
@@ -8664,6 +8666,7 @@ export type Database = {
           pausa_longa_max_seconds?: number
           pausa_longa_min_seconds?: number
           paused?: boolean
+          running_until?: string | null
           stages_alvo?: string[]
           updated_at?: string
         }
