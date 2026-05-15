@@ -7,12 +7,15 @@
 
 import { originalFetch } from "./originalFetch";
 
+import { getCurrentApiBase } from "./hostFailover";
+
 const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_KEY = (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-// Endpoint REST direto no backend canônico — alinhado ao customClient.
-// NÃO usar api.uhomesales.com aqui: evita falhas em provedores Wi-Fi com
-// cache negativo de DNS no domínio próprio.
-const TELEMETRY_ENDPOINT = "https://hunbxqzhvuemgntklyzb.supabase.co/rest/v1/network_telemetry";
+// Endpoint REST dinâmico — segue o host pinado atual (proxy ou direct).
+// Telemetria é fire-and-forget: se falhar, persiste em sessionStorage.
+function getTelemetryEndpoint(): string {
+  return `${getCurrentApiBase()}/rest/v1/network_telemetry`;
+}
 const TELEMETRY_PATH_FRAGMENT = "/rest/v1/network_telemetry";
 
 const PENDING_KEY = "uhome:net:pending_telemetry";
