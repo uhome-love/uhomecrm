@@ -4,7 +4,7 @@ import { usePagadorias } from "@/hooks/useBackofficeData";
 import { usePagadoriaConfig } from "@/hooks/usePagadoriaConfig";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

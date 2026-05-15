@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useOARanking } from "@/hooks/useOfertaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { Phone, ThumbsUp, TrendingUp, Flame, Loader2 } from "lucide-react";
 import { getLevel } from "@/lib/gamification";
 import RankingPodium, { type PodiumEntry } from "./RankingPodium";

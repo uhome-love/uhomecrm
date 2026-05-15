@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useOARanking } from "@/hooks/useOfertaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Medal, Phone, ThumbsUp, TrendingUp, Loader2, Flame, Filter } from "lucide-react";
 import { getLevel } from "@/lib/gamification";
 

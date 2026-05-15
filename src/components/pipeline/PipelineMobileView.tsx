@@ -3,7 +3,7 @@ import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/useP
 import PipelineCard from "./PipelineCard";
 import { PIPELINE_STAGE_EMOJIS } from "@/lib/celebrations";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { isTaskHigherPriority, type ProximaTarefa } from "./CardStatusLine";
 

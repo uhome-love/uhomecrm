@@ -11,7 +11,7 @@ import { format, isBefore, startOfDay, addHours, isToday, isTomorrow } from "dat
 import { ptBR } from "date-fns/locale";
 import { dateToBRT, todayBRT, parseDateBRT } from "@/lib/utils";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import type { PipelineTarefa } from "@/hooks/usePipelineLeadData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TaskCompletionDialog from "./TaskCompletionDialog";

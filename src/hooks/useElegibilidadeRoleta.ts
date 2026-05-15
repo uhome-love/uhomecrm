@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 export interface LeadDesatualizado {

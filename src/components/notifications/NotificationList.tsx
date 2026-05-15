@@ -5,7 +5,7 @@ import { Bell, X, Check, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import type { Notification } from "@/hooks/useNotifications";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthUser } from "@/hooks/useAuthUser";
 

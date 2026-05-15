@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Building2 } from "lucide-react";
 import type { ShowcaseData, ShowcaseImovel } from "@/components/showcase/types";
 import ProductPageLayout from "@/components/showcase/ProductPageLayout";

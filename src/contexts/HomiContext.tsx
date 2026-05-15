@@ -2,7 +2,7 @@ import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 
 export type HomiRole = "corretor" | "gestor" | "ceo";

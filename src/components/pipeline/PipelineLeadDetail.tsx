@@ -49,7 +49,7 @@ import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
 import LeadWhatsAppTab from "./LeadWhatsAppTab";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { differenceInDaysSafe, differenceInHoursSafe, formatDateSafe, formatDistanceToNowSafe, parseDateBRTSafe } from "@/lib/utils";
 import { getScoreTemperature } from "@/lib/scoreTemperatureLabels";

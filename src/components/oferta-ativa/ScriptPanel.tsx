@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Copy, FileText, MessageCircle, Pencil, Check, Users, BookOpen, ChevronDown, Building2 } from "lucide-react";
 import { useOATemplates, type OALead } from "@/hooks/useOfertaAtiva";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";

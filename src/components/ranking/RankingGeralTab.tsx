@@ -20,7 +20,7 @@ import { useCeoData, type CeoPeriod } from "@/hooks/useCeoData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Loader2, Star, Phone, ClipboardList, DollarSign, Zap, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { getLevel } from "@/lib/gamification";
 import RankingPodium, { type PodiumEntry } from "./RankingPodium";

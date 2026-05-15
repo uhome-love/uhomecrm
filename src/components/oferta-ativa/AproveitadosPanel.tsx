@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Copy, Loader2, User, Search, UserPlus, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useMemo, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function AproveitadosPanel() {

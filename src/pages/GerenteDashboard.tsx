@@ -5,7 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useGerenteDashboard, Period, formatCurrency } from "@/hooks/useGerenteDashboard";
 import { useDateFilter } from "@/contexts/DateFilterContext";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { fetchAllRows } from "@/lib/paginatedFetch";
 import { motion } from "framer-motion";
 import { format, formatDistanceToNow } from "date-fns";

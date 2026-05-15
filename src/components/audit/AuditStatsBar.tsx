@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Activity, AlertTriangle, FileText, Radio, Zap } from "lucide-react";
 import { subDays } from "date-fns";

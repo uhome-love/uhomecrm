@@ -1,6 +1,6 @@
 import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useEffect, useRef, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Tracks client behavior on the public vitrine page.

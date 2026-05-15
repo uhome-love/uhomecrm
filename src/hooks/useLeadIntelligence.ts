@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, startOfMonth, endOfMonth, subDays, format, getHours } from "date-fns";
 
 export interface LeadIntelData {

@@ -16,7 +16,7 @@
  *   - get_checkpoint_summary(date, user_ids?): aggregated daily data with live OA overlay
  */
 
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { fetchAllRows } from "@/lib/paginatedFetch";
 import { log } from "@/lib/logger";
 import { generateTraceId } from "@/lib/traceContext";

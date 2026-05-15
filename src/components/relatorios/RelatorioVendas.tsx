@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { ShoppingBag, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { ReportFilters, getDateRange, getPeriodoAnterior, fmtMoney, fmtDate } from "./reportUtils";

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CalendarPlus, ArrowRightCircle, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import type { PipelineStage } from "@/hooks/usePipeline";
 import { useAuth } from "@/hooks/useAuth";

@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { DollarSign, FileText, ShoppingBag, Loader2 } from "lucide-react";
 import RankingPodium, { type PodiumEntry } from "./RankingPodium";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 
 const medals = ["👑", "🥈", "🥉"];
