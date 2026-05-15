@@ -308,7 +308,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sendAuthTelemetry({ event_type: "transition", origin: "boot_ceiling", reason: "loading_timeout" });
       try { purgeCorruptedAuthStorage("boot_ceiling"); } catch {}
       applySession(null);
-    }, 8000);
+    }, 6000);
 
     const recoverSession = async (graceful = false) => {
       try {
