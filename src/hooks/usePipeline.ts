@@ -139,7 +139,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     const filtered = (data || [] as any[]).filter((s: any) => s.pipeline_tipo === pipelineTipo);
     // Só substitui se a query realmente retornou algo OU se ainda não temos nada.
     // Isso evita zerar a UI durante uma resposta vazia anômala.
-    if (filtered.length > 0 || stages.length === 0) {
+    if (filtered.length > 0 || stagesRef.current.length === 0) {
       setStages(filtered.map((s: any) => ({
         id: s.id,
         nome: s.nome,
@@ -149,7 +149,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
         pipeline_tipo: s.pipeline_tipo || pipelineTipo,
       })));
     }
-  }, [pipelineTipo, stages.length]);
+  }, [pipelineTipo]);
 
   const loadSegmentos = useCallback(async () => {
     const { data, error } = await runQueryWithRetry<any[]>(() =>
@@ -170,8 +170,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
       cor: s.cor || "#4969FF",
       ordem: s.ordem,
     }));
-    if (next.length > 0 || segmentos.length === 0) setSegmentos(next);
-  }, [segmentos.length]);
+    if (next.length > 0 || segmentosRef.current.length === 0) setSegmentos(next);
+  }, []);
 
   const loadLeads = useCallback(async () => {
     if (!userId) return;
