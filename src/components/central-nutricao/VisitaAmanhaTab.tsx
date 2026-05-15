@@ -113,7 +113,7 @@ export default function VisitaAmanhaTab() {
       } else if (r.auto_paused) {
         toast.error(`Auto-pausa: ${r.reason}. ${r.sent} enviados antes.`);
       } else if (r.partial) {
-        toast.success(`Parcial: ${r.sent} enviados. Clique de novo para continuar.`);
+        toast.success(`✅ ${r.sent} enviados nesta rodada. Sistema continua disparando automaticamente a cada 2 min — pode fechar a tela.`);
       } else {
         toast.success(`✅ ${r.sent} enviados, ${r.failed} falhas, ${r.skipped} pulados`);
       }

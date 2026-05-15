@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
       if (Date.now() - startedAt > MAX_RUN_MS) {
         return new Response(JSON.stringify({
           partial: true, sent, failed, skipped, total: totalAlvo,
-          processed: i, message: "Tempo máximo atingido — chame novamente para continuar.",
+          processed: i, message: "Rodada finalizada — cron continuará automaticamente em 2 min.",
           errors: errs.slice(-10),
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
