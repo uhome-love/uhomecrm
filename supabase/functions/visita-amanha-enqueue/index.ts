@@ -266,6 +266,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    await releaseLock();
     return new Response(JSON.stringify({
       ok: true, sent, failed, skipped, total: totalAlvo,
       duration_ms: Date.now() - startedAt,
@@ -274,6 +275,10 @@ Deno.serve(async (req) => {
 
   } catch (e) {
     console.error("visita-amanha-enqueue error:", e);
+    try {
+      await supabase.from("visita_amanha_config").update({ running_until: null })
+        .not("running_until", "is", null);
+    } catch { /* ignore */ }
     return new Response(JSON.stringify({
       error: e instanceof Error ? e.message : String(e),
       errors: errs.slice(-10),
