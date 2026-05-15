@@ -104,7 +104,7 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
     const profileIdMap = await resolveProfileIds(teamUserIds);
     const teamScopeIds = [...new Set([...teamUserIds, ...Array.from(profileIdMap.values())])];
 
-    const [r2, r3, r5, r6, r8, rLeadsAll, rFollowupLeads, rCheckpoint, rLeadsRecebidos, rTarefasAtrasadas, rTarefasExistentes, rTarefasConcluidas] = await Promise.all([
+    const [r2, r3, r5, r6, r8, rLeadsAll, rFollowupLeads, rCheckpoint, rLeadsRecebidos, rTarefasConcluidas] = await Promise.all([
       supabase.from("profiles").select("user_id, avatar_url").in("user_id", teamUserIds),
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", todayStart).lte("created_at", todayEnd),
       supabase.from("corretor_disponibilidade").select("user_id, status, na_roleta, updated_at").in("user_id", teamUserIds),
@@ -117,8 +117,6 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
         ? supabase.from("checkpoints").select("id").eq("gerente_id", user.id).eq("data", today).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from("distribuicao_historico").select("corretor_id").in("corretor_id", teamUserIds).eq("acao", "aceito").gte("created_at", todayStart).lte("created_at", todayEnd),
-      supabase.from("pipeline_tarefas").select("pipeline_lead_id, vence_em, hora_vencimento").eq("status", "pendente").in("pipeline_lead_id", (rLeadsAll.data || []).map((l: any) => l.id)),
-      supabase.from("pipeline_tarefas").select("pipeline_lead_id, vence_em, hora_vencimento").eq("status", "pendente").in("pipeline_lead_id", (rLeadsAll.data || []).map((l: any) => l.id)),
       // Follow-ups = tarefas concluídas hoje
       supabase.from("pipeline_tarefas").select("responsavel_id").in("responsavel_id", teamUserIds).gte("concluida_em", todayStart).lte("concluida_em", todayEnd),
     ]);
@@ -160,8 +158,17 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
       if (v.status === "realizada") vrCount[v.corretor_id] = (vrCount[v.corretor_id] || 0) + 1;
     });
 
-    // 2. Status do pipeline: regra única = sem tarefa => desatualizado; vencida => atrasado
     const allLeads = rLeadsAll.data || [];
+    const leadIds = allLeads.map((l: any) => l.id).filter(Boolean);
+    const { data: pendingTasks = [] } = leadIds.length > 0
+      ? await supabase
+          .from("pipeline_tarefas")
+          .select("pipeline_lead_id, vence_em, hora_vencimento")
+          .eq("status", "pendente")
+          .in("pipeline_lead_id", leadIds)
+      : { data: [] as any[] };
+
+    // 2. Status do pipeline: regra única = sem tarefa => desatualizado; vencida => atrasado
     const leadOwnerMap: Record<string, string> = {};
     for (const [userId, profileId] of profileIdMap.entries()) {
       leadOwnerMap[profileId] = userId;
@@ -170,7 +177,7 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
 
     const nowHHMM = new Date().toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
     const firstPendingTaskByLead = new Map<string, { vence_em: string | null; hora_vencimento: string | null }>();
-    (rTarefasExistentes.data || []).forEach((t: any) => {
+    pendingTasks.forEach((t: any) => {
       if (!t.pipeline_lead_id) return;
       const current = firstPendingTaskByLead.get(t.pipeline_lead_id);
       const candidateKey = `${t.vence_em || '9999-12-31'}|${(t.hora_vencimento || '23:59').slice(0,5)}`;
