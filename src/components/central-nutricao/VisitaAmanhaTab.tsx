@@ -16,6 +16,8 @@ type StatusFiltro = "todos" | "sim" | "nao" | "sent" | "failed" | "outro";
 export default function VisitaAmanhaTab() {
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
+  const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todos");
+  const [busca, setBusca] = useState("");
 
   const { data: cfg, isLoading: cfgLoading } = useQuery({
     queryKey: ["visita-amanha-config"],
