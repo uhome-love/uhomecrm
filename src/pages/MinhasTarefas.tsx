@@ -358,9 +358,50 @@ export default function MinhasTarefas() {
 
   const activeTarefas = categoria === "leads" ? tarefas : negociosTarefas;
 
+  // Map de leads "elegíveis" (igual ao pipeline: exclui descarte e leads com negócio criado)
+  const ownedLeadsMap = useMemo(() => {
+    const m = new Map<string, OwnedLead>();
+    ownedLeadsFull.forEach(l => m.set(l.id, l));
+    return m;
+  }, [ownedLeadsFull]);
+
+  const isLeadElegivel = (leadId: string | null | undefined) => {
+    if (!leadId) return true; // tarefas sem lead (negócios) seguem normais
+    const l = ownedLeadsMap.get(leadId);
+    if (!l) return true;
+    if (l.stage_tipo === "descarte") return false;
+    if (l.negocio_id) return false;
+    return true;
+  };
+
+  // BRT now HH:mm para checar atraso intra-dia (mesma regra do pipeline CardStatusLine)
+  const nowHHMM_BRT = now.toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+
   const pendentes = useMemo(() => activeTarefas.filter(t => t.status === "pendente"), [activeTarefas]);
   const concluidas = useMemo(() => activeTarefas.filter(t => t.status === "concluida").slice(0, 20), [activeTarefas]);
-  const atrasadas = useMemo(() => pendentes.filter(t => t.vence_em && isBefore(parseDateBRT(t.vence_em), todayStart)), [pendentes]);
+
+  // Atrasadas: usa MESMA regra do pipeline — exclui descarte/com negócio, considera vence<hoje OU mesmo dia + hora<agora.
+  // Conta DISTINCT leads pra bater com o número do pipeline.
+  const atrasadasTarefas = useMemo(() => {
+    if (categoria !== "leads") {
+      return pendentes.filter(t => t.vence_em && isBefore(parseDateBRT(t.vence_em), todayStart));
+    }
+    return pendentes.filter(t => {
+      if (!isLeadElegivel(t.pipeline_lead_id)) return false;
+      if (!t.vence_em) return false;
+      const d = parseDateBRT(t.vence_em);
+      if (isBefore(d, todayStart)) return true;
+      if (isToday(d) && t.hora_vencimento) {
+        return t.hora_vencimento.slice(0, 5) < nowHHMM_BRT;
+      }
+      return false;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendentes, categoria, ownedLeadsMap, nowHHMM_BRT]);
+
+  // Conta de leads únicos atrasados (pra bater com pipeline)
+  const atrasadasLeadCount = useMemo(() => new Set(atrasadasTarefas.map(t => t.pipeline_lead_id).filter(Boolean)).size, [atrasadasTarefas]);
+
   const hoje = useMemo(() => pendentes.filter(t => t.vence_em && isToday(parseDateBRT(t.vence_em))), [pendentes]);
   const amanha = useMemo(() => pendentes.filter(t => t.vence_em && isTomorrow(parseDateBRT(t.vence_em))), [pendentes]);
   const semana = useMemo(() => pendentes.filter(t => {
@@ -369,8 +410,19 @@ export default function MinhasTarefas() {
     return d >= todayStart && d <= weekEnd;
   }), [pendentes]);
 
-  const filteredTarefas = activeTab === "todas" ? pendentes : activeTab === "atrasadas" ? atrasadas : activeTab === "hoje" ? hoje :
-    activeTab === "amanha" ? amanha : activeTab === "concluidas" ? concluidas : semana;
+  // Desatualizados: leads do corretor (elegíveis) SEM nenhuma tarefa pendente
+  const desatualizados = useMemo<OwnedLead[]>(() => {
+    if (categoria !== "leads") return [];
+    const leadsComTarefa = new Set(
+      tarefas.filter(t => t.status === "pendente" && t.pipeline_lead_id).map(t => t.pipeline_lead_id)
+    );
+    return ownedLeadsFull
+      .filter(l => l.stage_tipo !== "descarte" && !l.negocio_id && !leadsComTarefa.has(l.id))
+      .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+  }, [ownedLeadsFull, tarefas, categoria]);
+
+  const filteredTarefas = activeTab === "todas" ? pendentes : activeTab === "atrasadas" ? atrasadasTarefas : activeTab === "hoje" ? hoje :
+    activeTab === "amanha" ? amanha : activeTab === "concluidas" ? concluidas : activeTab === "desatualizados" ? [] : semana;
 
   // Completion dialog state
   const [completingTarefa, setCompletingTarefa] = useState<TarefaComLead | null>(null);
