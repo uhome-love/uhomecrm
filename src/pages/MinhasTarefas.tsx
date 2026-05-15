@@ -306,33 +306,45 @@ export default function MinhasTarefas() {
           .in("corretor_id", corretorIds)
           .in("aceite_status", ["aceito", "pendente", "aguardando_aceite"])
           .range(from, from + PAGE - 1);
-        if (error) break;
+        if (error) {
+          // Não engolir erro: se a 1ª página falha por rede, retornaríamos 0 leads
+          // e a contagem ficaria divergente do pipeline. Propagar para React Query
+          // tentar de novo e a UI mostrar estado de erro.
+          throw error;
+        }
         const batch = (data || []) as any[];
         leads.push(...batch);
         if (batch.length < PAGE) break;
       }
 
-      // 2) Leads de parceria (mesma view canônica usada no pipeline)
+      // 2) Leads de parceria (mesma view canônica usada no pipeline) — paginado
       try {
-        const { data: partnerships } = await supabase
-          .from("v_user_partner_leads")
-          .select("pipeline_lead_id");
-        const partnerIds = (partnerships || [])
-          .map((p: any) => p.pipeline_lead_id)
-          .filter(Boolean) as string[];
+        const partnerIds: string[] = [];
+        for (let off = 0; ; off += PAGE) {
+          const { data: partnerships, error: pErr } = await supabase
+            .from("v_user_partner_leads")
+            .select("pipeline_lead_id")
+            .range(off, off + PAGE - 1);
+          if (pErr) throw pErr;
+          const rows = (partnerships || []) as any[];
+          rows.forEach(p => { if (p.pipeline_lead_id) partnerIds.push(p.pipeline_lead_id); });
+          if (rows.length < PAGE) break;
+        }
         const existing = new Set(leads.map(l => l.id));
         const missing = partnerIds.filter(id => !existing.has(id));
         for (let i = 0; i < missing.length; i += 200) {
           const chunk = missing.slice(i, i + 200);
-          const { data: partnerLeads } = await supabase
+          const { data: partnerLeads, error: plErr } = await supabase
             .from("pipeline_leads")
             .select("id, nome, telefone, empreendimento, stage_id, negocio_id, arquivado")
             .in("id", chunk);
+          if (plErr) throw plErr;
           (partnerLeads || []).forEach((l: any) => {
             if (!l.arquivado) leads.push(l);
           });
         }
       } catch (e) {
+        // Parceria é enriquecimento opcional: log e segue (não derruba a página)
         console.warn("[MinhasTarefas] Falha ao carregar leads de parceria", e);
       }
 
