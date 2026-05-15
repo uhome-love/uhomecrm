@@ -306,7 +306,12 @@ export default function MinhasTarefas() {
           .in("corretor_id", corretorIds)
           .in("aceite_status", ["aceito", "pendente", "aguardando_aceite"])
           .range(from, from + PAGE - 1);
-        if (error) break;
+        if (error) {
+          // Não engolir erro: se a 1ª página falha por rede, retornaríamos 0 leads
+          // e a contagem ficaria divergente do pipeline. Propagar para React Query
+          // tentar de novo e a UI mostrar estado de erro.
+          throw error;
+        }
         const batch = (data || []) as any[];
         leads.push(...batch);
         if (batch.length < PAGE) break;
