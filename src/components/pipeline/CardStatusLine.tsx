@@ -31,12 +31,16 @@ export interface ProximaTarefa {
   hora_vencimento: string | null;
 }
 
-function getTaskDate(task: ProximaTarefa | null | undefined, lead: PipelineLead): Date | null {
+function getTaskDate(task: ProximaTarefa | null | undefined, _lead: PipelineLead): Date | null {
+  // IMPORTANTE: só consideramos a data da TAREFA pendente real (pipeline_tarefas).
+  // Não usar fallback para lead.data_proxima_acao — esse campo legado costuma
+  // ficar desatualizado (não é zerado ao concluir tarefa) e gerava falsos
+  // "🔴 Atrasado" em leads que na verdade não têm tarefa pendente.
   if (task?.vence_em) {
     const taskDate = toValidDateFromYMD(task.vence_em);
     if (taskDate) return taskDate;
   }
-  return toValidDateFromYMD((lead as any).data_proxima_acao);
+  return null;
 }
 
 function getTaskLabel(task: ProximaTarefa | null | undefined, lead: PipelineLead) {
