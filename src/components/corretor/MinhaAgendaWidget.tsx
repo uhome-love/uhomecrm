@@ -110,7 +110,7 @@ export default function MinhaAgendaWidget() {
           .eq("status", "pendente")
           .order("vence_em", { ascending: true })
           .order("hora_vencimento", { ascending: true })
-          .limit(20)
+          .limit(500)
       );
       const rows = (data || []) as any[];
       const negIds = [...new Set(rows.map(r => r.negocio_id).filter(Boolean))];
