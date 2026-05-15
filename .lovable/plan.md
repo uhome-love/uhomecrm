@@ -1,105 +1,115 @@
-# Objetivo
-Corrigir de forma definitiva o problema em que o CRM funciona em dados móveis e falha no Wi‑Fi, eliminando dependências frágeis de DNS/proxy no fluxo normal e deixando uma arquitetura única, validada e observável.
+# Reversão à arquitetura estável + bateria completa de testes
 
-# Diagnóstico fechado
-- O problema original é compatível com falha/intermitência de resolução do domínio próprio em alguns provedores Wi‑Fi, especialmente por cache negativo de DNS após NXDOMAIN. Isso é um comportamento padronizado de DNS (RFC 2308), então não é algo que o app consiga “forçar” a expirar no dispositivo do usuário.
-- Hoje o app está misto:
-  - Login, REST principal e Realtime já conseguem usar o host direto quando a flag está em `true`.
-  - Mas ainda existem pontos relevantes hardcoded em `api.uhomesales.com`, inclusive telemetria de rede e reescrita de URLs públicas de storage.
-- Também existe uma arquitetura de failover `api.uhomesales.com -> api-backup.uhomesales.com`, porém isso só é confiável se ambos os domínios próprios estiverem universalmente resolvendo em todos os provedores. Se o problema é DNS do domínio próprio, manter o caminho crítico dependendo dele continua frágil.
-- Os testes lidos agora mostram:
-  - `api.uhomesales.com` responde do ambiente atual.
-  - `api-backup.uhomesales.com` responde do ambiente atual.
-  - `realtime.uhomesales.com` e `realtime-backup.uhomesales.com` respondem.
-  - O backend direto também está saudável.
-- Os logs de auth mostram outro sintoma paralelo no preview (`/user 403 invalid claim: missing sub claim`), mas isso não explica o padrão “4G funciona / Wi‑Fi não”. O vetor mais forte para esse problema específico continua sendo a camada de nome/proxy.
+## Contexto crítico (DNS Cloudflare)
+Recentemente o domínio `api.uhomesales.com` (e `realtime.uhomesales.com`) foi configurado via Cloudflare como proxy para o Supabase. Esse setup **continua existindo no DNS** e é o que estamos retirando do runtime do app — mas **não vamos mexer nele no Cloudflare**. O domínio continua publicado e funcional para quem quiser bater nele direto via curl/diagnóstico. Apenas o **frontend** deixa de depender dele.
 
-# Solução proposta
-## Fase 1 — Unificar o caminho crítico de autenticação e dados
-Remover do fluxo crítico qualquer dependência de `api.uhomesales.com`/`realtime.uhomesales.com` enquanto estivermos estabilizando a operação.
+Isso é importante porque:
+- Edge Functions, webhooks externos (Make.com, RD Station, ImovelWeb, Meta Ads, site uhomesales.com) podem continuar usando `api.uhomesales.com` se já estiverem configurados assim — **não vamos quebrar nada server-side**.
+- O painel `/diagnostico-rede` continuará podendo testar manualmente o proxy para fins de monitoramento, só não vai mais flipar host automaticamente.
 
-Implementação:
-- Definir uma única estratégia canônica para runtime:
-  - REST/Auth/Revalidation: host direto do backend.
-  - Realtime: host direto do backend.
-  - Edge Functions: host direto do backend.
-- Parar de usar domínio próprio em pontos acessórios que hoje ainda podem disparar falhas no Wi‑Fi:
-  - `src/lib/networkTelemetry.ts`
-  - `src/lib/storageUrl.ts`
-  - qualquer helper/runtime que ainda reescreva para `api.uhomesales.com`
-- Preservar a regra permanente já definida: não alterar as flags sem autorização explícita.
+## Objetivo
+Voltar o runtime de rede do **frontend** ao estado anterior ao commit `2467346c` (14/05 18:10 UTC), quando 100% dos provedores funcionavam. Eliminar todo proxy + failover bidirecional + flips em localStorage **do cliente**, sem tocar no DNS Cloudflare nem em integrações server-side.
 
-Resultado esperado:
-- Zero request para `api.uhomesales.com` no uso normal do app.
-- Login e carregamento de dados usando o mesmo caminho em Wi‑Fi e dados móveis.
+## Princípio
+**Frontend usa um único host canônico em runtime: `hunbxqzhvuemgntklyzb.supabase.co`** (direto). Sem proxy, sem failover, sem reescrita de URL, sem flip.
 
-## Fase 2 — Remover a ambiguidade arquitetural
-Hoje coexistem duas estratégias conflitantes: bypass direto e proxy/failover próprio.
+---
 
-Implementação:
-- Desligar logicamente o failover de domínio próprio no runtime enquanto o caminho oficial for direto.
-- Manter apenas a observabilidade e retries de rede, sem reescrever request para hosts próprios.
-- Ajustar comentários, constantes e nomes para refletir a arquitetura real, evitando futuras regressões “pela metade”.
+## Fase A — Remoção cirúrgica do proxy do runtime frontend
 
-Resultado esperado:
-- Sem comportamento híbrido.
-- Menor chance de alguém reintroduzir proxy próprio no meio do auth sem perceber.
+### 1. `src/integrations/supabase/customClient.ts` — simplificar
+- Substituir `getCurrentApiBase()` por `https://hunbxqzhvuemgntklyzb.supabase.co` fixo
+- Remover bloco de Realtime watchdog que escuta `host:flipped`
+- Manter: auth config (lock no-op), wrapper de telemetria de fetch (apenas observação), identidade leve
 
-## Fase 3 — Blindar assets e endpoints secundários
-Mesmo com login ok, páginas podem falhar parcialmente se imagens/storage/telemetria continuarem dependendo do domínio que falha no Wi‑Fi.
+### 2. `src/lib/fetchCircuitBreaker.ts` — simplificar
+- Remover toda lógica de reescrita para host alternativo e imports de `hostFailover`
+- Manter apenas: timeout 15s, retry com backoff em 5xx (300ms, 800ms), telemetria via `apiHealth`
 
-Implementação:
-- Fazer storage público seguir o mesmo host canônico do runtime.
-- Fazer telemetria usar o mesmo host canônico.
-- Revisar pontos hardcoded restantes do domínio próprio usados pelo app em produção.
+### 3. `src/lib/hostFailover.ts` — DELETAR
+Módulo inteiro deixa de existir.
 
-Resultado esperado:
-- App carrega dados e mídia com o mesmo padrão de conectividade.
-- Menos “entra mas quebra depois”.
+### 4. `src/lib/edgeBaseUrl.ts` — fixar host direto
+Sempre retornar `https://hunbxqzhvuemgntklyzb.supabase.co/functions/v1`.
 
-## Fase 4 — Validação objetiva
-Depois da implementação, validar com checklist real de rede:
-- Login por email/senha.
-- Refresh de sessão.
-- Busca de dados após login.
-- Navegação entre telas principais.
-- Assets/imagens vindos de storage.
-- Realtime básico.
-- Garantir que não existam requests para `api.uhomesales.com` no fluxo normal.
+### 5. `src/lib/networkTelemetry.ts` — fixar host direto
+Sem dependência de `hostFailover`.
 
-# Arquivos prováveis a ajustar
-- `src/integrations/supabase/customClient.ts`
-- `src/lib/edgeBaseUrl.ts`
-- `src/lib/fetchCircuitBreaker.ts`
-- `src/lib/proxyEndpoints.ts`
-- `src/lib/networkTelemetry.ts`
-- `src/lib/storageUrl.ts`
-- possivelmente `src/pages/admin/TelemetriaRede.tsx` apenas para o diagnóstico administrativo continuar coerente
+### 6. `src/lib/storageUrl.ts` — fixar host direto
+Reescrita de URL pública de Storage usa só o host direto.
 
-# Decisão arquitetural recomendada
-A correção definitiva é: parar de depender do domínio próprio no runtime do CRM até que ele seja comprovadamente estável em todos os provedores alvo. DNS com cache negativo não se resolve do lado do app. Se queremos “sem falhas, sem temporário”, o fluxo crítico deve usar o endpoint que não depende dessa propagação.
+### 7. `src/pages/admin/DiagnosticoRede.tsx` — manter como ferramenta de monitoria
+- **Manter** os probes manuais para `api.uhomesales.com` e `hunbxqzhvuemgntklyzb.supabase.co` (útil para diagnosticar problemas de DNS de corretores)
+- **Remover** os botões que pinam host em localStorage e a leitura/escrita de `uhome:host:pinned`
+- O painel vira read-only de saúde dos dois endpoints, sem efeito colateral no app
 
-# Riscos controlados
-- O app pode continuar funcionando com o domínio próprio em alguns ambientes, mas isso não é o critério; o critério é eliminar o caso Wi‑Fi quebrado.
-- Se o domínio próprio precisar voltar no futuro, isso deve ser feito em uma migração explícita, ponta a ponta, com validação por provedores reais e sem arquitetura híbrida.
+### 8. `src/main.tsx` — limpeza one-shot no boot
+Bloco que faz `localStorage.removeItem("uhome:host:pinned")` e `localStorage.removeItem("uhome:host:flips")` uma única vez. Garante que dispositivos que já flipou para `proxy` durante as últimas horas voltem ao direto sem ação manual.
 
-# Entregável final
-- Runtime unificado em host direto.
-- Zero dependência do domínio próprio no fluxo normal.
-- Sem bypass parcial.
-- Sem failover inconsistente.
-- Fluxo de login e dados consistente em Wi‑Fi e dados móveis.
+### 9. Memória do projeto
+Substituir Core "Runtime 15/05/2026 v3 — FAILOVER BIDIRECIONAL..." por:
+> "Runtime 15/05/2026 v4 — DIRETO ÚNICO: todo o tráfego frontend vai direto para `hunbxqzhvuemgntklyzb.supabase.co`. Sem proxy próprio, sem failover de host, sem `hostFailover.ts`. DNS Cloudflare em `api.uhomesales.com` continua publicado para integrações server-side e diagnóstico, mas não é usado em runtime do app. Não reintroduzir `api.uhomesales.com` no frontend sem validação ponta-a-ponta."
 
-# Detalhes técnicos
-```text
-Hoje:
-Auth/REST/Reatime/Edge = parcialmente direto
-Storage/telemetria/outros = ainda domínio próprio
-Failover = ainda tenta domínio próprio/backup
+Atualizar `mem://arquitetura/proxy-cloudflare-supabase` marcando que é apenas server-side / diagnóstico.
 
-Depois:
-Tudo do runtime crítico = host direto único
-Retries = mantidos
-Observabilidade = mantida
-Proxy próprio = fora do caminho crítico
-```
+---
+
+## Fase B — Bateria completa de testes (obrigatória antes de fechar)
+
+### B.1 Testes estáticos
+- Build limpo (sem erros TypeScript, sem imports quebrados de `hostFailover`)
+- Grep no `src/` para garantir zero referência a `api.uhomesales.com`, `realtime.uhomesales.com`, `getCurrentApiBase`, `hostFailover`, `getPinnedHost`, `flipHost` fora de `DiagnosticoRede.tsx`
+- Grep para garantir que `customClient.ts` é a ÚNICA porta de entrada do Supabase no frontend (regra Core de memória)
+
+### B.2 Testes de runtime no preview (browser tool)
+1. **Carregar `/auth`** → confirmar que a tela de login renderiza sem erros no console
+2. **Inspecionar requests de rede** → confirmar que TODAS as chamadas saem em `hunbxqzhvuemgntklyzb.supabase.co` e ZERO em `api.uhomesales.com` ou `realtime.uhomesales.com`
+3. **Login** com credencial real (pedir ao usuário se não houver disponível)
+4. **Pós-login**: navegar para `/index`, `/pipeline`, `/oferta-ativa`, `/whatsapp/inbox` — confirmar que cada tela carrega dados sem erro 401/403/Failed to fetch
+5. **Realtime**: abrir uma tela com subscription (inbox WhatsApp) e validar que conecta no WebSocket do host direto
+6. **Storage**: abrir uma tela com fotos (vitrine ou imóvel) e confirmar que carregam do host direto
+7. **Edge Functions**: disparar uma chamada (ex.: `log-auth-event` no boot) e confirmar 200 no host direto
+8. **localStorage**: abrir DevTools → Application → confirmar que `uhome:host:pinned` e `uhome:host:flips` foram removidos no boot
+
+### B.3 Diagnóstico de saúde
+- Abrir `/diagnostico-rede` (admin) → confirmar que ambos os probes (proxy e direto) ainda funcionam como diagnóstico, mas que NÃO há mais botão de "forçar host"
+- Confirmar zero auto-flip no console
+
+### B.4 Validação de regressão funcional
+- Confirmar que kill switch do SW continua ativo (cache vazio em DevTools)
+- Confirmar que push notifications, auth refresh e BRT timezone continuam funcionando (smoke test rápido em cada)
+
+### B.5 Validação cross-network (manual, após deploy)
+Pedir confirmação ao usuário ou a um corretor de cada cenário:
+- 4G/5G → deve funcionar (sempre funcionou)
+- Wi-Fi Vivo Fibra → deve voltar a funcionar (era o caso quebrado)
+- Wi-Fi Claro/Oi → deve continuar funcionando
+
+---
+
+## O que NÃO vai mudar
+- DNS Cloudflare (`api.uhomesales.com`, `realtime.uhomesales.com`) — **fica intacto**
+- Service Worker (`public/sw.js`) — kill switch atual fica
+- Auth/login flow (`useAuth.tsx`, `Auth.tsx`)
+- Edge functions (todas continuam com seu config atual)
+- Schema do banco, RLS, qualquer coisa server-side
+- WhatsApp, roleta, pipeline, qualquer feature de produto
+- Integrações externas que apontam para `api.uhomesales.com` (Make, RD Station, etc.)
+
+## Resultado esperado
+- Zero requests do **frontend** para `api.uhomesales.com` ou `realtime.uhomesales.com`
+- Zero estado mutável de host em localStorage
+- Comportamento idêntico em Wi-Fi residencial Vivo/Claro e em 4G/5G
+- DNS Cloudflare segue ativo para integrações server-side e diagnóstico
+- Código de rede ~70% menor
+
+## Risco controlado
+Se algum corretor estiver numa rede que bloqueia `*.supabase.co` (cenário do teste pontual de hoje à noite), ele continuará precisando trocar DNS para 1.1.1.1 — mas era a situação pré-14/05 e funcionou para 100% da operação por semanas.
+
+## Ordem de execução
+1. Fase A (edições em paralelo onde possível)
+2. Fase B.1 (testes estáticos + grep)
+3. Fase B.2 a B.4 (testes runtime no preview com browser tool)
+4. Reportar resultado dos testes ao usuário
+5. Pedir validação cross-network (B.5) com corretor real
+6. Atualizar memória do projeto
