@@ -116,26 +116,8 @@ Deno.serve(async (req) => {
       await supabase.from("visita_amanha_config").update({ paused: false, updated_at: new Date().toISOString() }).eq("id", cfg.id);
     }
 
-    // Lock de execução: evita rodadas paralelas (cron a cada 2min × MAX_RUN_MS=140s)
-    const lockUntil = new Date(Date.now() + (MAX_RUN_MS + 20_000)).toISOString();
-    const nowIso = new Date().toISOString();
-    const { data: lockRows, error: lockErr } = await supabase
-      .from("visita_amanha_config")
-      .update({ running_until: lockUntil })
-      .eq("id", cfg.id)
-      .or(`running_until.is.null,running_until.lt.${nowIso}`)
-      .select("id");
-    if (lockErr) throw lockErr;
-    if (!lockRows || lockRows.length === 0) {
-      return new Response(JSON.stringify({ skipped: true, reason: "another_run_in_progress" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const releaseLock = async () => {
-      try {
-        await supabase.from("visita_amanha_config").update({ running_until: null }).eq("id", cfg.id);
-      } catch { /* ignore */ }
+      return;
     };
 
     const metaPhoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || "";
@@ -225,7 +207,7 @@ Deno.serve(async (req) => {
           consecutiveBlock++;
           if (consecutiveBlock >= 5) {
             await supabase.from("visita_amanha_config").update({
-              paused: true, running_until: null, updated_at: new Date().toISOString(),
+              paused: true, updated_at: new Date().toISOString(),
             }).eq("id", cfg.id);
             return new Response(JSON.stringify({
               auto_paused: true, reason: "meta_quality_block", sent, failed, skipped,
@@ -274,13 +256,15 @@ Deno.serve(async (req) => {
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {
-    console.error("visita-amanha-enqueue error:", e);
-    try {
-      await supabase.from("visita_amanha_config").update({ running_until: null })
-        .not("running_until", "is", null);
-    } catch { /* ignore */ }
+    const serializedError = e instanceof Error
+      ? { message: e.message, stack: e.stack }
+      : typeof e === "object" && e !== null
+        ? e
+        : { message: String(e) };
+
+    console.error("visita-amanha-enqueue error:", serializedError);
     return new Response(JSON.stringify({
-      error: e instanceof Error ? e.message : String(e),
+      error: serializedError,
       errors: errs.slice(-10),
     }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
