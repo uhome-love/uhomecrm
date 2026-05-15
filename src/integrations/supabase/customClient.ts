@@ -1,24 +1,15 @@
-// Wrapper Supabase com failover bidirecional automático.
+// Wrapper Supabase — DIRETO ÚNICO (Runtime 15/05/2026 v4).
 //
-// Arquitetura (15/05/2026):
-//   - Há DOIS hosts candidatos: `proxy` (api.uhomesales.com) e `direct`
-//     (hunbxqzhvuemgntklyzb.supabase.co).
-//   - Quem decide qual está ativo é o módulo `hostFailover`. Ele lê localStorage
-//     no boot, e o `fetchCircuitBreaker` troca em runtime quando há falha de DNS.
-//   - Realtime escuta `host:flipped` e reconecta no novo host.
+// Todo o tráfego frontend vai direto para o host canônico do Supabase.
+// Sem proxy próprio, sem failover, sem flip de host em localStorage.
+// DNS Cloudflare (api.uhomesales.com) continua publicado para integrações
+// server-side e diagnóstico, mas NÃO é usado em runtime do app.
 //
 // IMPORTANTE: NÃO importar do client.ts oficial — ele é auto-gerado pelo Lovable.
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
-import {
-  getCurrentApiBase,
-  getCurrentRealtimeUrl,
-  getApiBaseFor,
-  getRealtimeUrlFor,
-  getPinnedHost,
-} from "@/lib/hostFailover";
 
-const SUPABASE_URL = getCurrentApiBase();
+const SUPABASE_URL = "https://hunbxqzhvuemgntklyzb.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const supabase = createClient<Database>(
@@ -40,67 +31,11 @@ export const supabase = createClient<Database>(
   },
 );
 
-// ─── Realtime: aplica host atual + reconecta no flip ─────────────────────────
-function applyRealtimeEndpoint() {
-  const url = getCurrentRealtimeUrl();
-  try {
-    (supabase.realtime as any).endPoint = url;
-    (supabase.realtime as any).endPointURL = () => url;
-  } catch {
-    // noop
-  }
-}
-
-applyRealtimeEndpoint();
-
-if (typeof window !== "undefined") {
-  // Quando o circuit breaker trocar de host, reaplica endpoint e reconecta
-  window.addEventListener("host:flipped", () => {
-    applyRealtimeEndpoint();
-    try {
-      const rt: any = supabase.realtime;
-      if (typeof rt.disconnect === "function") rt.disconnect();
-      if (typeof rt.connect === "function") setTimeout(() => rt.connect(), 250);
-    } catch {
-      // noop
-    }
-  });
-
-  // Watchdog dedicado: se o WebSocket falhar repetidamente no host atual,
-  // tenta reconectar no host alternativo (sem trocar o pinned global, que é
-  // responsabilidade do circuit breaker via fetch).
-  let wsFailures = 0;
-  const WS_FAILURE_THRESHOLD = 3;
-  const onError = () => {
-    wsFailures++;
-    if (wsFailures >= WS_FAILURE_THRESHOLD) {
-      wsFailures = 0;
-      const altHost = getPinnedHost() === "proxy" ? "direct" : "proxy";
-      const altUrl = getRealtimeUrlFor(altHost);
-      try {
-        (supabase.realtime as any).endPoint = altUrl;
-        (supabase.realtime as any).endPointURL = () => altUrl;
-        (supabase.realtime as any).disconnect?.();
-        setTimeout(() => (supabase.realtime as any).connect?.(), 250);
-        console.warn(`[realtime] WS failover: reconnecting on ${altHost}`);
-      } catch {
-        // noop
-      }
-    }
-  };
-  try {
-    (supabase.realtime as any).onError?.(onError);
-  } catch {
-    // noop
-  }
-}
-
 // ─── Wrapper observador de telemetria (NÃO substitui o circuit breaker) ─────
 if (typeof window !== "undefined" && !(window as any).__netTelemetryWrapped) {
   (window as any).__netTelemetryWrapped = true;
   const inner = window.fetch.bind(window);
-  // Monitora ambos os hosts conhecidos
-  const MONITORED = /(\.uhomesales\.com|hunbxqzhvuemgntklyzb\.supabase\.co)$/i;
+  const MONITORED = /hunbxqzhvuemgntklyzb\.supabase\.co$/i;
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     let url = "";

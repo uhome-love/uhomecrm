@@ -1,34 +1,28 @@
-// Normaliza URLs públicas de Storage para o host atualmente pinado.
-//
-// Regra atual (15/05/2026): runtime usa failover bidirecional. O host pinado
-// é dinâmico (proxy ou direct), gerenciado por src/lib/hostFailover.ts.
-// URLs de storage seguem o mesmo host das demais chamadas REST.
+// Normaliza URLs públicas de Storage para o host canônico do Supabase.
+// Runtime 15/05/2026 v4 — DIRETO ÚNICO.
 
-import { getCurrentApiBase, getAllKnownApiHostnames } from "./hostFailover";
+const DIRECT_HOST = "hunbxqzhvuemgntklyzb.supabase.co";
+const DIRECT_ORIGIN = `https://${DIRECT_HOST}`;
 
-const LEGACY_SUPABASE_IN_HOST = "hunbxqzhvuemgntklyzb.supabase.in";
+// Hosts antigos que podem aparecer em URLs persistidas no banco.
+const LEGACY_HOSTS = [
+  "hunbxqzhvuemgntklyzb.supabase.in",
+  "api.uhomesales.com",
+  "api-backup.uhomesales.com",
+];
 
 let warnedOnce = false;
 
-/**
- * Reescreve a URL para o host pinado atual.
- * - Se já estiver no host pinado, retorna como está.
- * - Se estiver em qualquer host legado conhecido, reescreve para o pinado.
- */
+/** Reescreve a URL para o host canônico se vier de um host legado conhecido. */
 export function toPublicStorageUrl<T extends string | null | undefined>(input: T): T {
   if (!input || typeof input !== "string") return input;
   let out: string = input;
-  const canonicalOrigin = getCurrentApiBase();
-  const canonicalHost = new URL(canonicalOrigin).hostname;
-  const knownHosts = [...getAllKnownApiHostnames(), LEGACY_SUPABASE_IN_HOST];
-
-  for (const host of knownHosts) {
-    if (host === canonicalHost) continue;
+  for (const host of LEGACY_HOSTS) {
     if (out.includes(host)) {
-      out = out.split(host).join(canonicalHost);
+      out = out.split(host).join(DIRECT_HOST);
       if (!warnedOnce && typeof console !== "undefined") {
         warnedOnce = true;
-        console.warn(`[storageUrl] host rewritten (${host} -> ${canonicalHost})`);
+        console.warn(`[storageUrl] host rewritten (${host} -> ${DIRECT_HOST})`);
       }
     }
   }
@@ -41,5 +35,5 @@ export function ensurePublicStorageUrl(pathOrUrl: string | null | undefined): st
   const normalized = toPublicStorageUrl(pathOrUrl)!;
   if (/^https?:\/\//i.test(normalized)) return normalized;
   const path = normalized.startsWith("/") ? normalized : `/${normalized}`;
-  return `${getCurrentApiBase()}${path}`;
+  return `${DIRECT_ORIGIN}${path}`;
 }

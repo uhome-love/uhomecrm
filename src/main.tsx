@@ -39,6 +39,14 @@ if (needsHardRecovery) {
   window.history.replaceState({}, "", url.toString());
 }
 
+// Limpeza one-shot do estado legado de failover de host (Runtime v3 → v4).
+// Garante que dispositivos que flipou para o proxy nas últimas horas voltem
+// ao host direto sem precisar de ação manual do corretor.
+try {
+  localStorage.removeItem("uhome:host:pinned");
+  localStorage.removeItem("uhome:host:flips");
+} catch { /* noop */ }
+
 // Instala o monitor passivo de fetch (somente telemetria, não derruba sessão)
 installFetchCircuitBreaker();
 

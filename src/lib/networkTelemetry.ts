@@ -7,14 +7,12 @@
 
 import { originalFetch } from "./originalFetch";
 
-import { getCurrentApiBase } from "./hostFailover";
-
+const DIRECT_API_BASE = "https://hunbxqzhvuemgntklyzb.supabase.co";
 const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_KEY = (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-// Endpoint REST dinâmico — segue o host pinado atual (proxy ou direct).
-// Telemetria é fire-and-forget: se falhar, persiste em sessionStorage.
+// Endpoint REST fixo no host direto Supabase (Runtime v4 — sem failover).
 function getTelemetryEndpoint(): string {
-  return `${getCurrentApiBase()}/rest/v1/network_telemetry`;
+  return `${DIRECT_API_BASE}/rest/v1/network_telemetry`;
 }
 const TELEMETRY_PATH_FRAGMENT = "/rest/v1/network_telemetry";
 
