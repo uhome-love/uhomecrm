@@ -37,6 +37,51 @@ export function useParceriasMap() {
   });
 }
 
+// ── 1b) Map: corretor (any id format) → Set<lead_id> onde ele é PARCEIRO ──
+// Usado pela visão CEO/Gerente para que, ao filtrar por um corretor,
+// também sejam exibidos os leads em que ele participa como parceiro
+// (não apenas os que ele é corretor principal). Isso alinha as contagens
+// CEO ↔ visão do próprio corretor.
+export function usePartnerLeadsByCorretor() {
+  return useQuery({
+    queryKey: [...parceriaKeys.all, "byCorretor"],
+    queryFn: async () => {
+      const { data: parcerias, error } = await supabase
+        .from("pipeline_parcerias")
+        .select("pipeline_lead_id, corretor_parceiro_id")
+        .eq("status", "ativa");
+      if (error) throw error;
+
+      const parceiroIds = [...new Set((parcerias || []).map(p => p.corretor_parceiro_id).filter(Boolean))] as string[];
+      const idEquivalence: Record<string, string[]> = {};
+      if (parceiroIds.length > 0) {
+        const [{ data: byUserId }, { data: byProfileId }] = await Promise.all([
+          supabase.from("profiles").select("id, user_id").in("user_id", parceiroIds),
+          supabase.from("profiles").select("id, user_id").in("id", parceiroIds),
+        ]);
+        const profiles = [...(byUserId || []), ...(byProfileId || [])];
+        for (const p of profiles) {
+          const ids = [p.id, p.user_id].filter(Boolean) as string[];
+          for (const id of ids) {
+            idEquivalence[id] = ids;
+          }
+        }
+      }
+
+      const map: Record<string, Set<string>> = {};
+      for (const row of parcerias || []) {
+        const equivalents = idEquivalence[row.corretor_parceiro_id] || [row.corretor_parceiro_id];
+        for (const id of equivalents) {
+          if (!map[id]) map[id] = new Set();
+          map[id].add(row.pipeline_lead_id);
+        }
+      }
+      return map;
+    },
+    staleTime: 60_000,
+  });
+}
+
 // ── 2) Full partnership rows for a specific lead ──
 export function useLeadParcerias(leadId: string | null) {
   return useQuery({

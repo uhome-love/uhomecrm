@@ -11,7 +11,7 @@ import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { useParceriasMap } from "@/hooks/useParcerias";
+import { useParceriasMap, usePartnerLeadsByCorretor } from "@/hooks/useParcerias";
 
 const PipelineFlowDashboard = lazy(() => import("@/components/pipeline/PipelineFlowDashboard"));
 const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRadar"));
@@ -72,6 +72,7 @@ export default function PipelineKanban() {
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
   const [filters, setFilters] = useState<PipelineFilters>({ ...EMPTY_FILTERS });
   const { data: parcerias = {} } = useParceriasMap();
+  const { data: partnerLeadsByCorretor = {} } = usePartnerLeadsByCorretor();
   const [activeTab, setActiveTab] = useState("kanban");
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
@@ -190,14 +191,17 @@ export default function PipelineKanban() {
       if (corretorFilter === "sem_corretor") {
         result = result.filter(l => !l.corretor_id);
       } else {
-        result = result.filter(l => l.corretor_id === corretorFilter);
+        // Inclui leads onde o corretor é principal OU parceiro,
+        // alinhando com o que ele vê na própria tela de pipeline.
+        const partnerLeadIds = partnerLeadsByCorretor[corretorFilter] || new Set<string>();
+        result = result.filter(l => l.corretor_id === corretorFilter || partnerLeadIds.has(l.id));
       }
     }
     if (campaignTagFilter && campaignTagFilter !== "all") {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor]);
 
   const filteredLeads = useMemo(() => {
     if (clientStatusFilter !== "todos") {
