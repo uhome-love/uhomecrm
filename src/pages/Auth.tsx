@@ -218,7 +218,7 @@ export default function Auth() {
   // Se "Entrando..." passar de 8s, oferecer recuperação visível
   useEffect(() => {
     if (!submitting) { setSubmittingTooLong(false); return; }
-    const t = window.setTimeout(() => setSubmittingTooLong(true), 8000);
+    const t = window.setTimeout(() => setSubmittingTooLong(true), 6000);
     return () => window.clearTimeout(t);
   }, [submitting]);
 
