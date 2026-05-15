@@ -711,7 +711,7 @@ export default function MinhasTarefas() {
       </div>
 
       {/* Task list */}
-      {(isLoading || isLoadingNegocios) ? (
+      {(isLoading || isLoadingNegocios || isLoadingOwnedLeads || isLoadingOwnedLeadTaskMap) ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
       ) : activeTab === "desatualizados" ? (
         desatualizados.length === 0 ? (
