@@ -226,15 +226,21 @@ Deno.serve(async (req) => {
         }
       } else {
         consecutiveBlock = 0;
-        await supabase.from("visita_amanha_disparos").insert({
+        const { error: insErr } = await supabase.from("visita_amanha_disparos").insert({
           pipeline_lead_id: lead.id,
           wamid: r.wamid,
           phone,
           status: "sent",
           sent_at: new Date().toISOString(),
         });
-        sent++;
-        console.log(`[visita-amanha] OK ${sent} → ${lead.nome} (${phone})`);
+        if (insErr) {
+          failed++;
+          errs.push(`${lead.nome}: insert falhou - ${insErr.message}`);
+          console.log(`[visita-amanha] INSERT FAIL ${lead.nome}: ${insErr.message}`);
+        } else {
+          sent++;
+          console.log(`[visita-amanha] OK ${sent} → ${lead.nome} (${phone})`);
+        }
       }
 
       // Throttle: delay entre envios
