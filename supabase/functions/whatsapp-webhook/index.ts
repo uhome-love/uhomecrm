@@ -410,6 +410,7 @@ Deno.serve(async (req) => {
             }
 
             if (repliedToWamid) {
+              const { data: metaDispatch } = await supabase
                 .from("reengajamento_meta_disparos")
                 .select("id, lead_id, run_id")
                 .eq("wamid", repliedToWamid)
