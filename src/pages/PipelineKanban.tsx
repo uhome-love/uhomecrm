@@ -72,6 +72,7 @@ export default function PipelineKanban() {
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
   const [filters, setFilters] = useState<PipelineFilters>({ ...EMPTY_FILTERS });
   const { data: parcerias = {} } = useParceriasMap();
+  const { data: partnerLeadsByCorretor = {} } = usePartnerLeadsByCorretor();
   const [activeTab, setActiveTab] = useState("kanban");
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
