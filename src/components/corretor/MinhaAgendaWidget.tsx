@@ -266,13 +266,13 @@ export default function MinhaAgendaWidget() {
         {atrasadas.length > 0 && (
           <div className="space-y-2">
             <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider">🔴 Atrasadas ({atrasadas.length})</p>
-            {atrasadas.slice(0, 3).map(t => renderTarefa(t, "atrasada"))}
+            {atrasadas.map(t => renderTarefa(t, "atrasada"))}
           </div>
         )}
         {proximas.length > 0 && (
           <div className="space-y-2">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">⏰ Agora / Próximas</p>
-            {proximas.slice(0, 5 - Math.min(atrasadas.length, 3)).map(t => renderTarefa(t, "proxima"))}
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">⏰ Agora / Próximas ({proximas.length})</p>
+            {proximas.map(t => renderTarefa(t, "proxima"))}
           </div>
         )}
         {amanha.length > 0 && (
