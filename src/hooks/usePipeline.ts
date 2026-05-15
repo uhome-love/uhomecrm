@@ -92,6 +92,18 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const lastVisibleRef = useRef(Date.now());
   // Guard against concurrent loadLeads calls
   const loadingLeadsRef = useRef(false);
+  const discardStageIds = new Set(stages.filter((stage) => stage.tipo === "descarte").map((stage) => stage.id));
+
+  const shouldHideLeadFromPipeline = useCallback((lead: Partial<PipelineLead> | null | undefined) => {
+    if (!lead) return false;
+
+    const motivo = (lead.motivo_descarte || "").trim().toLowerCase();
+    if (motivo.startsWith("inativado:") || motivo.startsWith("descarte:")) return true;
+
+    if (lead.stage_id && discardStageIds.has(lead.stage_id)) return true;
+
+    return false;
+  }, [discardStageIds]);
 
   const loadStages = useCallback(async () => {
     const { data, error } = await runQueryWithRetry<any[]>(() =>
@@ -264,7 +276,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     const leadsData = allRows.filter(l => {
       if (seenIds.has(l.id)) return false;
       seenIds.add(l.id);
-      return true;
+      return !shouldHideLeadFromPipeline(l);
     });
     // Só substitui se o resultado tem dados OU se ainda não temos nada cacheado.
     // Evita zerar a tela em respostas vazias anômalas pós-erro transitório.
@@ -324,7 +336,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin, leads.length]);
+  }, [userId, isGestor, isAdmin, leads.length, shouldHideLeadFromPipeline]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
@@ -400,13 +412,17 @@ export function usePipeline(pipelineTipo: string = "leads") {
             if (oldId) next = next.filter(l => l.id !== oldId);
           } else if (evt.eventType === "INSERT") {
             const row = evt.new_record as PipelineLead;
-            if (row?.id && !next.some(l => l.id === row.id)) {
+            if (row?.id && !shouldHideLeadFromPipeline(row) && !next.some(l => l.id === row.id)) {
               next = [row, ...next];
             }
           } else if (evt.eventType === "UPDATE") {
             const row = evt.new_record as PipelineLead;
             if (!row?.id) continue;
             const idx = next.findIndex(l => l.id === row.id);
+            if (shouldHideLeadFromPipeline(row)) {
+              if (idx >= 0) next.splice(idx, 1);
+              continue;
+            }
             if (idx >= 0) {
               // Merge: keep local fields not in payload, update the rest
               next[idx] = { ...next[idx], ...row };
@@ -441,7 +457,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
       if (batchTimer) clearTimeout(batchTimer);
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, shouldHideLeadFromPipeline]);
 
   // Reload leads when tab becomes visible again after a long absence.
   // Threshold raised from 3s → 60s to avoid hammering the backend on
