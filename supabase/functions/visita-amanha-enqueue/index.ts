@@ -197,6 +197,7 @@ Deno.serve(async (req) => {
       if (!r.ok) {
         failed++;
         errs.push(`${lead.nome}: ${r.error}`);
+        console.log(`[visita-amanha] FAIL ${i+1}/${leads.length} ${lead.nome}: ${r.error}`);
         if (isMetaQualityBlock(r.error || "")) {
           consecutiveBlock++;
           if (consecutiveBlock >= 5) {
@@ -221,6 +222,7 @@ Deno.serve(async (req) => {
           sent_at: new Date().toISOString(),
         });
         sent++;
+        console.log(`[visita-amanha] OK ${sent} → ${lead.nome} (${phone})`);
       }
 
       // Throttle: delay entre envios
