@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getManagedTeamProfileIds, resolveProfileIds } from "@/hooks/useAuthUser";
@@ -92,7 +92,23 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const lastVisibleRef = useRef(Date.now());
   // Guard against concurrent loadLeads calls
   const loadingLeadsRef = useRef(false);
-  const discardStageIds = new Set(stages.filter((stage) => stage.tipo === "descarte").map((stage) => stage.id));
+
+  // Refs com snapshot atual de cada coleção. Usadas dentro de callbacks
+  // estáveis para evitar loops de re-render (não entram nas deps).
+  const stagesRef = useRef<PipelineStage[]>([]);
+  const segmentosRef = useRef<PipelineSegmento[]>([]);
+  const leadsRef = useRef<PipelineLead[]>([]);
+  useEffect(() => { stagesRef.current = stages; }, [stages]);
+  useEffect(() => { segmentosRef.current = segmentos; }, [segmentos]);
+  useEffect(() => { leadsRef.current = leads; }, [leads]);
+
+  // Memoizado: só muda quando a lista de stages muda (não a cada render).
+  // Sem isso, `shouldHideLeadFromPipeline` mudava a cada render → loadLeads
+  // mudava → useEffect refazia fetch infinitamente.
+  const discardStageIds = useMemo(
+    () => new Set(stages.filter((stage) => stage.tipo === "descarte").map((stage) => stage.id)),
+    [stages]
+  );
 
   const shouldHideLeadFromPipeline = useCallback((lead: Partial<PipelineLead> | null | undefined) => {
     if (!lead) return false;
