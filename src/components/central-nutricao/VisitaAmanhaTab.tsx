@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Calendar, Send, Pause, Play, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { Calendar, Send, Pause, Play, AlertTriangle, CheckCircle2, Loader2, Search, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
+import { Link } from "react-router-dom";
+
+type StatusFiltro = "todos" | "sim" | "nao" | "sent" | "failed" | "outro";
 
 export default function VisitaAmanhaTab() {
   const qc = useQueryClient();
