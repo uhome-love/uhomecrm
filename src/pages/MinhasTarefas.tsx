@@ -284,6 +284,50 @@ export default function MinhasTarefas() {
     refetchOnWindowFocus: true,
   });
 
+  // Owned leads enriquecidos com stage_tipo + negocio_id (para "atrasadas" iguais ao pipeline e aba "desatualizados")
+  const { data: ownedLeadsFull = [] } = useQuery({
+    queryKey: ["owned-leads-tarefas", user?.id, profileId],
+    queryFn: async (): Promise<OwnedLead[]> => {
+      if (!user) return [];
+      const corretorIds = [user.id, profileId].filter(Boolean) as string[];
+      if (corretorIds.length === 0) return [];
+
+      const PAGE = 1000;
+      const leads: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("pipeline_leads")
+          .select("id, nome, telefone, empreendimento, stage_id, negocio_id")
+          .in("corretor_id", corretorIds)
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        const batch = (data || []) as any[];
+        leads.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+
+      const stageIds = [...new Set(leads.map(l => l.stage_id).filter(Boolean))];
+      const stageTipoMap = new Map<string, string>();
+      if (stageIds.length > 0) {
+        const { data: stages } = await supabase
+          .from("pipeline_stages").select("id, tipo").in("id", stageIds);
+        (stages || []).forEach((s: any) => stageTipoMap.set(s.id, s.tipo));
+      }
+
+      return leads.map(l => ({
+        id: l.id,
+        nome: l.nome,
+        telefone: l.telefone,
+        empreendimento: l.empreendimento,
+        stage_id: l.stage_id,
+        stage_tipo: l.stage_id ? stageTipoMap.get(l.stage_id) || null : null,
+        negocio_id: l.negocio_id,
+      }));
+    },
+    enabled: !!user,
+    refetchOnWindowFocus: true,
+  });
+
   const { data: searchLeads = [] } = useQuery({
     queryKey: ["lead-search-tarefas", leadSearch],
     queryFn: async () => {
