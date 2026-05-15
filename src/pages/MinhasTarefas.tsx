@@ -71,7 +71,17 @@ const NEGOCIO_TIPO_EMOJI: Record<string, string> = {
   entregar_presente: "🎁",
 };
 
-type TabFilter = "todas" | "hoje" | "amanha" | "semana" | "atrasadas" | "concluidas";
+type TabFilter = "todas" | "hoje" | "amanha" | "semana" | "atrasadas" | "desatualizados" | "concluidas";
+
+interface OwnedLead {
+  id: string;
+  nome: string | null;
+  telefone: string | null;
+  empreendimento: string | null;
+  stage_id: string | null;
+  stage_tipo: string | null;
+  negocio_id: string | null;
+}
 
 function formatPhone(phone: string) {
   const d = phone.replace(/\D/g, "");
