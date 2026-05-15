@@ -176,7 +176,7 @@ async function sendRows(rows: TelemetryRow[]): Promise<boolean> {
       }
     } catch { /* noop */ }
 
-    const res = await originalFetch(TELEMETRY_ENDPOINT, {
+    const res = await originalFetch(getTelemetryEndpoint(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
