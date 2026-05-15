@@ -191,14 +191,17 @@ export default function PipelineKanban() {
       if (corretorFilter === "sem_corretor") {
         result = result.filter(l => !l.corretor_id);
       } else {
-        result = result.filter(l => l.corretor_id === corretorFilter);
+        // Inclui leads onde o corretor é principal OU parceiro,
+        // alinhando com o que ele vê na própria tela de pipeline.
+        const partnerLeadIds = partnerLeadsByCorretor[corretorFilter] || new Set<string>();
+        result = result.filter(l => l.corretor_id === corretorFilter || partnerLeadIds.has(l.id));
       }
     }
     if (campaignTagFilter && campaignTagFilter !== "all") {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor]);
 
   const filteredLeads = useMemo(() => {
     if (clientStatusFilter !== "todos") {
