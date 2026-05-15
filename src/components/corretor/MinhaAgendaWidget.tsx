@@ -293,27 +293,38 @@ export default function MinhaAgendaWidget() {
 
   const totalLeadsHoje = leadsClassified.totalHoje;
   const totalNegociosHoje = negociosClassified.totalHoje;
+  const totalAtrasadas = leadsClassified.atrasadas.length + negociosClassified.atrasadas.length;
+  const totalProximas = leadsClassified.proximas.length + negociosClassified.proximas.length;
+  const leadsAtrasadas = leadsClassified.atrasadas.length;
+  const negociosAtrasadas = negociosClassified.atrasadas.length;
 
   return (
     <>
       <Card className="border-border/60 overflow-hidden">
         <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
               <ClipboardList className="h-4 w-4 text-primary" /> Tarefas
             </h3>
-            <Badge variant={totalLeadsHoje + totalNegociosHoje > 0 ? "default" : "secondary"} className="text-xs">
-              Hoje · {totalLeadsHoje + totalNegociosHoje} 📌
-            </Badge>
+            <div className="flex items-center gap-1.5">
+              {totalAtrasadas > 0 && (
+                <Badge variant="destructive" className="text-xs">
+                  🔴 Atrasadas · {totalAtrasadas}
+                </Badge>
+              )}
+              <Badge variant={totalProximas > 0 ? "default" : "secondary"} className="text-xs">
+                Hoje · {totalProximas} 📌
+              </Badge>
+            </div>
           </div>
 
           <Tabs defaultValue="leads" className="w-full">
             <TabsList className="h-8 w-full">
               <TabsTrigger value="leads" className="text-xs flex-1">
-                👤 Leads {totalLeadsHoje > 0 && <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">{totalLeadsHoje}</Badge>}
+                👤 Leads {(totalLeadsHoje + leadsAtrasadas) > 0 && <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">{totalLeadsHoje}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="negocios" className="text-xs flex-1">
-                💼 Negócios {totalNegociosHoje > 0 && <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">{totalNegociosHoje}</Badge>}
+                💼 Negócios {(totalNegociosHoje + negociosAtrasadas) > 0 && <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">{totalNegociosHoje}</Badge>}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="leads" className="mt-2">
