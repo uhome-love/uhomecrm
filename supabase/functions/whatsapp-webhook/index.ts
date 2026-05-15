@@ -337,6 +337,26 @@ Deno.serve(async (req) => {
                 else if (/^(n[aã]o|agora\s*n|n\.?$)/.test(t) && t.length < 60) vaResp = "nao";
               }
 
+              // Buscar status atual para NÃO sobrescrever resposta SIM já registrada
+              const { data: currentDispatch } = await supabase
+                .from("visita_amanha_disparos")
+                .select("status")
+                .eq("id", vaDispatch.id)
+                .maybeSingle();
+              const currentStatus = currentDispatch?.status;
+
+              // Regra: SIM sempre vence. NÃO só registra se ainda está em 'sent' ou 'outro'.
+              // Qualquer outra coisa só registra se ainda está em 'sent'.
+              const shouldUpdate =
+                vaResp === "sim" ||
+                (vaResp === "nao" && (currentStatus === "sent" || currentStatus === "outro")) ||
+                (!vaResp && currentStatus === "sent");
+
+              if (!shouldUpdate) {
+                console.log(`📅 Visita Amanhã: SKIP update (current=${currentStatus}, novo=${vaResp || "outro"}) — SIM preservado.`);
+                continue;
+              }
+
               await supabase.from("visita_amanha_disparos").update({
                 status: vaResp || "outro",
                 resposta_at: new Date().toISOString(),
