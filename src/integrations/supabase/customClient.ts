@@ -13,7 +13,7 @@ import { PRIMARY, BACKUP, getActiveTarget } from "@/lib/proxyEndpoints";
 
 // Runtime deve priorizar o domínio próprio porque o preview pode falhar em
 // POSTs de auth quando bate direto no host externo.
-const USE_DIRECT_SUPABASE = false;
+const USE_DIRECT_SUPABASE = true;
 const DIRECT_API_URL = "https://hunbxqzhvuemgntklyzb.supabase.co";
 const DIRECT_REALTIME_URL = "wss://hunbxqzhvuemgntklyzb.supabase.co/realtime/v1";
 
