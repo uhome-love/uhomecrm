@@ -659,6 +659,59 @@ export default function MinhasTarefas() {
       {/* Task list */}
       {(isLoading || isLoadingNegocios) ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+      ) : activeTab === "desatualizados" ? (
+        desatualizados.length === 0 ? (
+          <Card className="p-8 text-center">
+            <p className="text-muted-foreground">🎉 Todos os seus leads ativos têm tarefa criada!</p>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              🟡 Leads ativos sem nenhuma tarefa pendente. Crie um follow-up pra não perder o contato.
+            </p>
+            {desatualizados.map(lead => (
+              <Card key={lead.id} className="p-3 border-l-[3px] border-l-amber-400 bg-amber-500/5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    <button
+                      onClick={() => navigate(`/pipeline-leads?lead=${lead.id}`)}
+                      className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1"
+                    >
+                      <User className="h-3.5 w-3.5" /> {lead.nome || "Sem nome"}
+                    </button>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                      {lead.empreendimento && (<span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{lead.empreendimento}</span>)}
+                      {lead.telefone && <span>{formatPhone(lead.telefone)}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {lead.telefone && (
+                      <>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => window.open(`tel:${lead.telefone}`, "_self")}>
+                          <Phone className="h-3.5 w-3.5" /> Ligar
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => openWhatsApp(lead.telefone!)}>
+                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                        </Button>
+                      </>
+                    )}
+                    <Button size="sm" className="h-8 text-xs gap-1" onClick={() => {
+                      setSelectedLeadId(lead.id);
+                      setSelectedLeadNome(lead.nome || "Lead");
+                      setNovoTipo("follow_up");
+                      setNovoData(dateToBRT(new Date()));
+                      setNovoHora("10:00");
+                      setNovoObs("");
+                      setShowNovaTarefa(true);
+                    }}>
+                      <Plus className="h-3.5 w-3.5" /> Criar Tarefa
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )
       ) : filteredTarefas.length === 0 ? (
         <Card className="p-8 text-center">
           <p className="text-muted-foreground">🎉 Nenhuma tarefa {activeTab === "atrasadas" ? "atrasada" : activeTab === "concluidas" ? "concluída recente" : "para este período"}!</p>
