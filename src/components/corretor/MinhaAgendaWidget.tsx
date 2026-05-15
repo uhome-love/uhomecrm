@@ -150,7 +150,7 @@ export default function MinhaAgendaWidget() {
     });
     const proximas = tarefas.filter(t => {
       if (t.vence_em !== today) return false;
-      if (!t.hora_vencimento) return true;
+      if (!t.hora_vencimento) return false;
       return t.hora_vencimento.slice(0, 5) >= nowHHMM;
     });
     const amanha = tarefas.filter(t => t.vence_em === tomorrow);
