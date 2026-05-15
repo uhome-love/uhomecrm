@@ -242,7 +242,7 @@ export default function Auth() {
           const msg = String(error.message || "");
           if (msg.includes("Invalid login")) toast.error("Email ou senha incorretos.");
           else if (msg.includes("Email not confirmed")) toast.error("Confirme seu email antes de entrar.");
-          else if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network")) {
+          else if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network") || msg.includes("Load failed") || msg.includes("offline") || msg.includes("timeout")) {
             toast.error("Falha de conexão. Verifique sua internet e tente novamente em alguns segundos.");
           }
           else toast.error(msg || "Erro ao entrar.");
@@ -255,7 +255,7 @@ export default function Auth() {
       }
     } catch (err: any) {
       const msg = String(err?.message || "");
-      if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+      if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("Load failed") || msg.includes("offline")) {
         toast.error("Falha de conexão. Tente novamente em alguns segundos.");
       } else {
         toast.error(msg || "Erro inesperado. Tente novamente.");
