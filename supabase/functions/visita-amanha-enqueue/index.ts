@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
           consecutiveBlock++;
           if (consecutiveBlock >= 5) {
             await supabase.from("visita_amanha_config").update({
-              paused: true, updated_at: new Date().toISOString(),
+              paused: true, running_until: null, updated_at: new Date().toISOString(),
             }).eq("id", cfg.id);
             return new Response(JSON.stringify({
               auto_paused: true, reason: "meta_quality_block", sent, failed, skipped,
