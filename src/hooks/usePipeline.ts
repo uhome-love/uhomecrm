@@ -412,13 +412,17 @@ export function usePipeline(pipelineTipo: string = "leads") {
             if (oldId) next = next.filter(l => l.id !== oldId);
           } else if (evt.eventType === "INSERT") {
             const row = evt.new_record as PipelineLead;
-            if (row?.id && !next.some(l => l.id === row.id)) {
+            if (row?.id && !shouldHideLeadFromPipeline(row) && !next.some(l => l.id === row.id)) {
               next = [row, ...next];
             }
           } else if (evt.eventType === "UPDATE") {
             const row = evt.new_record as PipelineLead;
             if (!row?.id) continue;
             const idx = next.findIndex(l => l.id === row.id);
+            if (shouldHideLeadFromPipeline(row)) {
+              if (idx >= 0) next.splice(idx, 1);
+              continue;
+            }
             if (idx >= 0) {
               // Merge: keep local fields not in payload, update the rest
               next[idx] = { ...next[idx], ...row };
@@ -453,7 +457,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
       if (batchTimer) clearTimeout(batchTimer);
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, shouldHideLeadFromPipeline]);
 
   // Reload leads when tab becomes visible again after a long absence.
   // Threshold raised from 3s → 60s to avoid hammering the backend on
