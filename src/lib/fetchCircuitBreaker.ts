@@ -85,9 +85,11 @@ function currentTarget(): ProxyTarget {
 }
 
 function shouldFailoverEnabled(): boolean {
-  // Failover habilitado em TODOS os ambientes (incluindo preview do Lovable).
-  // Quando api.uhomesales.com falhar, tentamos api-backup.uhomesales.com.
-  return true;
+  // DESLIGADO (15/05/2026): runtime crítico usa host direto do backend
+  // (ver customClient.ts e edgeBaseUrl.ts). Failover para domínio próprio
+  // não ajuda quando o problema é DNS do próprio domínio em alguns provedores
+  // Wi-Fi. Mantemos retries + telemetria, mas sem reescrever host.
+  return false;
 }
 
 function switchToBackup(reason: string) {
