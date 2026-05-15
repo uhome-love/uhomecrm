@@ -257,7 +257,7 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
           usou_foco: false,
           visitas_marcadas: vm,
           visitas_realizadas: vr,
-          leads_desatualizados: (desatCount[uid] || 0) + (overdueCount[uid] || 0),
+          leads_desatualizados: desatCount[uid] || 0,
           followups_hoje: fu,
           leads_atualizados_hoje: la,
           leads_recebidos_hoje: leadsRecebidosCount[uid] || 0,
