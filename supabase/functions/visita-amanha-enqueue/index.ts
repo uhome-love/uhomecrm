@@ -159,18 +159,25 @@ Deno.serve(async (req) => {
       if (page.length < lim) break;
     }
 
-    // Filtrar os que já receberam disparo
-    const leadIds = alvos.map(l => l.id);
+    // Filtrar os que já receberam disparo (busca paginada SEM filtro .in para evitar URL muito longa do PostgREST)
     const jaEnviados = new Set<string>();
-    for (let i = 0; i < leadIds.length; i += 1000) {
-      const batch = leadIds.slice(i, i + 1000);
-      const { data: existentes } = await supabase
-        .from("visita_amanha_disparos")
-        .select("pipeline_lead_id")
-        .in("pipeline_lead_id", batch);
-      (existentes || []).forEach(e => jaEnviados.add(e.pipeline_lead_id));
+    {
+      const PAGE = 1000;
+      let off = 0;
+      while (true) {
+        const { data: existentes, error: exErr } = await supabase
+          .from("visita_amanha_disparos")
+          .select("pipeline_lead_id")
+          .range(off, off + PAGE - 1);
+        if (exErr) throw new Error(`Erro ao buscar disparos existentes: ${exErr.message}`);
+        if (!existentes || existentes.length === 0) break;
+        existentes.forEach(e => jaEnviados.add(e.pipeline_lead_id));
+        if (existentes.length < PAGE) break;
+        off += PAGE;
+      }
     }
     const leads = alvos.filter(l => !jaEnviados.has(l.id)).slice(0, effectiveLimit);
+    console.log(`[visita-amanha] dedup: ${alvos.length} alvos, ${jaEnviados.size} já enviados, ${leads.length} restantes`);
 
     let sent = 0, failed = 0, skipped = 0;
     let consecutiveBlock = 0;
