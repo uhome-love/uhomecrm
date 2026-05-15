@@ -248,30 +248,67 @@ export default function VisitaAmanhaTab() {
         </CardContent>
       </Card>
 
-      {/* Tabela de envios recentes */}
+      {/* Tabela de envios com filtros */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Últimos disparos</CardTitle>
+        <CardHeader className="pb-3 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <CardTitle className="text-sm">
+              Disparos {recentesFiltrados.length > 0 && <span className="text-muted-foreground font-normal">({recentesFiltrados.length})</span>}
+            </CardTitle>
+            <div className="relative w-full sm:w-64">
+              <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar lead, telefone ou corretor…"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="h-8 pl-7 text-xs"
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {([
+              { k: "todos", label: "Todos", count: (stats?.sent ?? 0) + (stats?.sim ?? 0) + (stats?.nao ?? 0) + (stats?.failed ?? 0) },
+              { k: "sim", label: "✅ SIM", count: stats?.sim ?? 0 },
+              { k: "nao", label: "❌ NÃO", count: stats?.nao ?? 0 },
+              { k: "sent", label: "Enviado (sem resposta)", count: stats?.sent ?? 0 },
+              { k: "failed", label: "Falha", count: stats?.failed ?? 0 },
+            ] as { k: StatusFiltro; label: string; count: number }[]).map((f) => (
+              <Button
+                key={f.k}
+                size="sm"
+                variant={statusFiltro === f.k ? "default" : "outline"}
+                onClick={() => setStatusFiltro(f.k)}
+                className="h-7 text-xs gap-1"
+              >
+                {f.label} <span className="opacity-70">({f.count})</span>
+              </Button>
+            ))}
+          </div>
         </CardHeader>
         <CardContent>
-          {!recentes || recentes.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Nenhum disparo ainda.</p>
+          {recentesFiltrados.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              {busca || statusFiltro !== "todos" ? "Nenhum disparo encontrado com esses filtros." : "Nenhum disparo ainda."}
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b text-muted-foreground">
                     <th className="text-left py-2 px-2 font-medium">Lead</th>
+                    <th className="text-left py-2 px-2 font-medium">Corretor</th>
                     <th className="text-left py-2 px-2 font-medium">Telefone</th>
                     <th className="text-left py-2 px-2 font-medium">Enviado</th>
                     <th className="text-left py-2 px-2 font-medium">Resposta</th>
                     <th className="text-center py-2 px-2 font-medium">Status</th>
+                    <th className="text-center py-2 px-2 font-medium">Abrir</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentes.map((r: any) => (
+                  {recentesFiltrados.map((r: any) => (
                     <tr key={r.id} className="border-b hover:bg-muted/30">
                       <td className="py-2 px-2 font-medium">{r.pipeline_leads?.nome || "—"}</td>
+                      <td className="py-2 px-2 text-muted-foreground">{r.pipeline_leads?.profiles?.nome || "—"}</td>
                       <td className="py-2 px-2 font-mono">{r.phone}</td>
                       <td className="py-2 px-2">{formatBRT(r.sent_at, "dd/MM HH:mm")}</td>
                       <td className="py-2 px-2">{r.resposta_at ? formatBRT(r.resposta_at, "dd/MM HH:mm") : "—"}</td>
@@ -280,6 +317,14 @@ export default function VisitaAmanhaTab() {
                         {r.status === "nao" && <Badge className="bg-amber-100 text-amber-800 text-[10px]">❌ NÃO</Badge>}
                         {r.status === "sent" && <Badge className="bg-emerald-100 text-emerald-800 text-[10px]"><CheckCircle2 className="h-2.5 w-2.5 mr-0.5 inline" />Enviado</Badge>}
                         {r.status === "failed" && <Badge className="bg-red-100 text-red-800 text-[10px]">Falha</Badge>}
+                        {r.status === "outro" && <Badge className="bg-slate-100 text-slate-800 text-[10px]">Outro</Badge>}
+                      </td>
+                      <td className="py-2 px-2 text-center">
+                        {r.pipeline_lead_id && (
+                          <Link to={`/pipeline?lead=${r.pipeline_lead_id}`} className="inline-flex items-center justify-center text-primary hover:underline">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Link>
+                        )}
                       </td>
                     </tr>
                   ))}
