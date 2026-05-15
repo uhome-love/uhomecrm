@@ -171,6 +171,7 @@ Deno.serve(async (req) => {
     let sent = 0, failed = 0, skipped = 0;
     let consecutiveBlock = 0;
     const totalAlvo = leads.length;
+    console.log(`[visita-amanha] start force=${force} leads=${totalAlvo} window_ok=${withinWindow(cfg)} delay=${cfg.delay_min_seconds}-${cfg.delay_max_seconds}s`);
 
     for (let i = 0; i < leads.length; i++) {
       if (Date.now() - startedAt > MAX_RUN_MS) {
@@ -196,6 +197,7 @@ Deno.serve(async (req) => {
       if (!r.ok) {
         failed++;
         errs.push(`${lead.nome}: ${r.error}`);
+        console.log(`[visita-amanha] FAIL ${i+1}/${leads.length} ${lead.nome}: ${r.error}`);
         if (isMetaQualityBlock(r.error || "")) {
           consecutiveBlock++;
           if (consecutiveBlock >= 5) {
@@ -220,6 +222,7 @@ Deno.serve(async (req) => {
           sent_at: new Date().toISOString(),
         });
         sent++;
+        console.log(`[visita-amanha] OK ${sent} → ${lead.nome} (${phone})`);
       }
 
       // Throttle: delay entre envios
