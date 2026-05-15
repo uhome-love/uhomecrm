@@ -54,13 +54,30 @@ export default function VisitaAmanhaTab() {
     queryFn: async () => {
       let q = supabase
         .from("visita_amanha_disparos" as any)
-        .select("id, status, sent_at, resposta_at, phone, pipeline_lead_id, pipeline_leads(nome, corretor_id, profiles:corretor_id(nome))")
+        .select("id, status, sent_at, resposta_at, phone, pipeline_lead_id, pipeline_leads(nome, corretor_id)")
         .order("sent_at", { ascending: false })
         .limit(500);
       if (statusFiltro !== "todos") q = q.eq("status", statusFiltro);
       const { data, error } = await q;
       if (error) throw error;
-      return (data || []) as any[];
+      const rows = (data || []) as any[];
+
+      // Busca nomes dos corretores em uma única query
+      const corretorIds = Array.from(
+        new Set(rows.map((r) => r.pipeline_leads?.corretor_id).filter(Boolean))
+      );
+      let corretorMap: Record<string, string> = {};
+      if (corretorIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, nome")
+          .in("id", corretorIds);
+        corretorMap = Object.fromEntries((profs || []).map((p: any) => [p.id, p.nome]));
+      }
+      return rows.map((r) => ({
+        ...r,
+        corretor_nome: corretorMap[r.pipeline_leads?.corretor_id] || null,
+      }));
     },
     refetchInterval: 5000,
   });
@@ -72,7 +89,7 @@ export default function VisitaAmanhaTab() {
     return recentes.filter((r: any) => {
       const nome = (r.pipeline_leads?.nome || "").toLowerCase();
       const phone = (r.phone || "").toLowerCase();
-      const corretor = (r.pipeline_leads?.profiles?.nome || "").toLowerCase();
+      const corretor = (r.corretor_nome || "").toLowerCase();
       return nome.includes(term) || phone.includes(term) || corretor.includes(term);
     });
   }, [recentes, busca]);
