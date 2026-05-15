@@ -255,7 +255,7 @@ export default function Auth() {
       }
     } catch (err: any) {
       const msg = String(err?.message || "");
-      if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+      if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("Load failed") || msg.includes("offline")) {
         toast.error("Falha de conexão. Tente novamente em alguns segundos.");
       } else {
         toast.error(msg || "Erro inesperado. Tente novamente.");
