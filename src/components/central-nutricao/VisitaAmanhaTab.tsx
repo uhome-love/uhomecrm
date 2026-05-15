@@ -325,7 +325,7 @@ export default function VisitaAmanhaTab() {
                   {recentesFiltrados.map((r: any) => (
                     <tr key={r.id} className="border-b hover:bg-muted/30">
                       <td className="py-2 px-2 font-medium">{r.pipeline_leads?.nome || "—"}</td>
-                      <td className="py-2 px-2 text-muted-foreground">{r.pipeline_leads?.profiles?.nome || "—"}</td>
+                      <td className="py-2 px-2 text-muted-foreground">{r.corretor_nome || "—"}</td>
                       <td className="py-2 px-2 font-mono">{r.phone}</td>
                       <td className="py-2 px-2">{formatBRT(r.sent_at, "dd/MM HH:mm")}</td>
                       <td className="py-2 px-2">{r.resposta_at ? formatBRT(r.resposta_at, "dd/MM HH:mm") : "—"}</td>
