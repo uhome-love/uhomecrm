@@ -116,6 +116,28 @@ Deno.serve(async (req) => {
       await supabase.from("visita_amanha_config").update({ paused: false, updated_at: new Date().toISOString() }).eq("id", cfg.id);
     }
 
+    // Lock de execução: evita rodadas paralelas (cron a cada 2min × MAX_RUN_MS=140s)
+    const lockUntil = new Date(Date.now() + (MAX_RUN_MS + 20_000)).toISOString();
+    const nowIso = new Date().toISOString();
+    const { data: lockRows, error: lockErr } = await supabase
+      .from("visita_amanha_config")
+      .update({ running_until: lockUntil })
+      .eq("id", cfg.id)
+      .or(`running_until.is.null,running_until.lt.${nowIso}`)
+      .select("id");
+    if (lockErr) throw lockErr;
+    if (!lockRows || lockRows.length === 0) {
+      return new Response(JSON.stringify({ skipped: true, reason: "another_run_in_progress" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const releaseLock = async () => {
+      try {
+        await supabase.from("visita_amanha_config").update({ running_until: null }).eq("id", cfg.id);
+      } catch { /* ignore */ }
+    };
+
     const metaPhoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || "";
     const metaToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
     if (!metaPhoneId || !metaToken) throw new Error("Meta env vars missing");
