@@ -92,6 +92,18 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const lastVisibleRef = useRef(Date.now());
   // Guard against concurrent loadLeads calls
   const loadingLeadsRef = useRef(false);
+  const discardStageIds = new Set(stages.filter((stage) => stage.tipo === "descarte").map((stage) => stage.id));
+
+  const shouldHideLeadFromPipeline = useCallback((lead: Partial<PipelineLead> | null | undefined) => {
+    if (!lead) return false;
+
+    const motivo = (lead.motivo_descarte || "").trim().toLowerCase();
+    if (motivo.startsWith("inativado:") || motivo.startsWith("descarte:")) return true;
+
+    if (lead.stage_id && discardStageIds.has(lead.stage_id)) return true;
+
+    return false;
+  }, [discardStageIds]);
 
   const loadStages = useCallback(async () => {
     const { data, error } = await runQueryWithRetry<any[]>(() =>
@@ -264,7 +276,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     const leadsData = allRows.filter(l => {
       if (seenIds.has(l.id)) return false;
       seenIds.add(l.id);
-      return true;
+      return !shouldHideLeadFromPipeline(l);
     });
     // Só substitui se o resultado tem dados OU se ainda não temos nada cacheado.
     // Evita zerar a tela em respostas vazias anômalas pós-erro transitório.
@@ -324,7 +336,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin, leads.length]);
+  }, [userId, isGestor, isAdmin, leads.length, shouldHideLeadFromPipeline]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
