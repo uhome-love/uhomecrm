@@ -11,7 +11,7 @@ import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { useParceriasMap } from "@/hooks/useParcerias";
+import { useParceriasMap, usePartnerLeadsByCorretor } from "@/hooks/useParcerias";
 
 const PipelineFlowDashboard = lazy(() => import("@/components/pipeline/PipelineFlowDashboard"));
 const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRadar"));
