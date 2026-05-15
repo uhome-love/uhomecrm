@@ -50,18 +50,32 @@ export default function VisitaAmanhaTab() {
   });
 
   const { data: recentes } = useQuery({
-    queryKey: ["visita-amanha-recentes"],
+    queryKey: ["visita-amanha-recentes", statusFiltro],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("visita_amanha_disparos" as any)
-        .select("id, status, sent_at, resposta_at, phone, pipeline_leads(nome)")
+        .select("id, status, sent_at, resposta_at, phone, pipeline_lead_id, pipeline_leads(nome, corretor_id, profiles:corretor_id(nome))")
         .order("sent_at", { ascending: false })
-        .limit(30);
+        .limit(500);
+      if (statusFiltro !== "todos") q = q.eq("status", statusFiltro);
+      const { data, error } = await q;
       if (error) throw error;
       return (data || []) as any[];
     },
     refetchInterval: 5000,
   });
+
+  const recentesFiltrados = useMemo(() => {
+    if (!recentes) return [];
+    const term = busca.trim().toLowerCase();
+    if (!term) return recentes;
+    return recentes.filter((r: any) => {
+      const nome = (r.pipeline_leads?.nome || "").toLowerCase();
+      const phone = (r.phone || "").toLowerCase();
+      const corretor = (r.pipeline_leads?.profiles?.nome || "").toLowerCase();
+      return nome.includes(term) || phone.includes(term) || corretor.includes(term);
+    });
+  }, [recentes, busca]);
 
   const { data: elegiveis } = useQuery({
     queryKey: ["visita-amanha-elegiveis", cfg?.stages_alvo],
