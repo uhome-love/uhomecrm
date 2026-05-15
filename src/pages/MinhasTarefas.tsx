@@ -284,7 +284,9 @@ export default function MinhasTarefas() {
     refetchOnWindowFocus: true,
   });
 
-  // Owned leads enriquecidos com stage_tipo + negocio_id (para "atrasadas" iguais ao pipeline e aba "desatualizados")
+  // Owned leads alinhado com usePipeline: arquivado=false, aceite_status válido,
+  // e inclui leads de parceria via v_user_partner_leads (sem isso, contagem de
+  // Atrasadas/Desatualizados diverge do pipeline).
   const { data: ownedLeadsFull = [] } = useQuery({
     queryKey: ["owned-leads-tarefas", user?.id, profileId],
     queryFn: async (): Promise<OwnedLead[]> => {
@@ -294,11 +296,15 @@ export default function MinhasTarefas() {
 
       const PAGE = 1000;
       const leads: any[] = [];
+
+      // 1) Leads onde sou corretor principal (mesma regra do pipeline)
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
           .from("pipeline_leads")
           .select("id, nome, telefone, empreendimento, stage_id, negocio_id")
+          .eq("arquivado", false)
           .in("corretor_id", corretorIds)
+          .in("aceite_status", ["aceito", "pendente", "aguardando_aceite"])
           .range(from, from + PAGE - 1);
         if (error) break;
         const batch = (data || []) as any[];
@@ -306,7 +312,36 @@ export default function MinhasTarefas() {
         if (batch.length < PAGE) break;
       }
 
-      const stageIds = [...new Set(leads.map(l => l.stage_id).filter(Boolean))];
+      // 2) Leads de parceria (mesma view canônica usada no pipeline)
+      try {
+        const { data: partnerships } = await supabase
+          .from("v_user_partner_leads")
+          .select("pipeline_lead_id");
+        const partnerIds = (partnerships || [])
+          .map((p: any) => p.pipeline_lead_id)
+          .filter(Boolean) as string[];
+        const existing = new Set(leads.map(l => l.id));
+        const missing = partnerIds.filter(id => !existing.has(id));
+        for (let i = 0; i < missing.length; i += 200) {
+          const chunk = missing.slice(i, i + 200);
+          const { data: partnerLeads } = await supabase
+            .from("pipeline_leads")
+            .select("id, nome, telefone, empreendimento, stage_id, negocio_id, arquivado")
+            .in("id", chunk);
+          (partnerLeads || []).forEach((l: any) => {
+            if (!l.arquivado) leads.push(l);
+          });
+        }
+      } catch (e) {
+        console.warn("[MinhasTarefas] Falha ao carregar leads de parceria", e);
+      }
+
+      // Dedup
+      const dedup = new Map<string, any>();
+      leads.forEach(l => { if (!dedup.has(l.id)) dedup.set(l.id, l); });
+      const finalLeads = [...dedup.values()];
+
+      const stageIds = [...new Set(finalLeads.map(l => l.stage_id).filter(Boolean))];
       const stageTipoMap = new Map<string, string>();
       if (stageIds.length > 0) {
         const { data: stages } = await supabase
@@ -314,7 +349,7 @@ export default function MinhasTarefas() {
         (stages || []).forEach((s: any) => stageTipoMap.set(s.id, s.tipo));
       }
 
-      return leads.map(l => ({
+      return finalLeads.map(l => ({
         id: l.id,
         nome: l.nome,
         telefone: l.telefone,
