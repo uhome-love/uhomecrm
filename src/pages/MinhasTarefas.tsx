@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
 import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
+import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/components/pipeline/CardStatusLine";
 import { lazy, Suspense } from "react";
 
 const CorretorScriptsView = lazy(() => import("@/components/scripts/CorretorScriptsView"));
@@ -131,8 +132,143 @@ export default function MinhasTarefas() {
   const [editObs, setEditObs] = useState("");
   const [scriptsOpen, setScriptsOpen] = useState(false);
 
+  // Owned leads alinhado com usePipeline: arquivado=false, aceite_status válido,
+  // e inclui leads de parceria via v_user_partner_leads (sem isso, contagem de
+  // Atrasadas/Desatualizados diverge do pipeline).
+  const { data: ownedLeadsFull = [], isLoading: isLoadingOwnedLeads } = useQuery({
+    queryKey: ["owned-leads-tarefas", user?.id, profileId],
+    queryFn: async (): Promise<OwnedLead[]> => {
+      if (!user) return [];
+      const corretorIds = [user.id, profileId].filter(Boolean) as string[];
+      if (corretorIds.length === 0) return [];
+
+      const PAGE = 1000;
+      const leads: any[] = [];
+
+      // 1) Leads onde sou corretor principal (mesma regra do pipeline)
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("pipeline_leads")
+          .select("id, nome, telefone, empreendimento, stage_id, negocio_id")
+          .eq("arquivado", false)
+          .in("corretor_id", corretorIds)
+          .in("aceite_status", ["aceito", "pendente", "aguardando_aceite"])
+          .range(from, from + PAGE - 1);
+        if (error) {
+          throw error;
+        }
+        const batch = (data || []) as any[];
+        leads.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+
+      // 2) Leads de parceria (mesma view canônica usada no pipeline) — paginado
+      try {
+        const partnerIds: string[] = [];
+        for (let off = 0; ; off += PAGE) {
+          const { data: partnerships, error: pErr } = await supabase
+            .from("v_user_partner_leads")
+            .select("pipeline_lead_id")
+            .range(off, off + PAGE - 1);
+          if (pErr) throw pErr;
+          const rows = (partnerships || []) as any[];
+          rows.forEach(p => { if (p.pipeline_lead_id) partnerIds.push(p.pipeline_lead_id); });
+          if (rows.length < PAGE) break;
+        }
+        const existing = new Set(leads.map(l => l.id));
+        const missing = partnerIds.filter(id => !existing.has(id));
+        for (let i = 0; i < missing.length; i += 200) {
+          const chunk = missing.slice(i, i + 200);
+          const { data: partnerLeads, error: plErr } = await supabase
+            .from("pipeline_leads")
+            .select("id, nome, telefone, empreendimento, stage_id, negocio_id, arquivado")
+            .in("id", chunk);
+          if (plErr) throw plErr;
+          (partnerLeads || []).forEach((l: any) => {
+            if (!l.arquivado) leads.push(l);
+          });
+        }
+      } catch (e) {
+        console.warn("[MinhasTarefas] Falha ao carregar leads de parceria", e);
+      }
+
+      const dedup = new Map<string, any>();
+      leads.forEach(l => { if (!dedup.has(l.id)) dedup.set(l.id, l); });
+      const finalLeads = [...dedup.values()];
+
+      const stageIds = [...new Set(finalLeads.map(l => l.stage_id).filter(Boolean))];
+      const stageTipoMap = new Map<string, string>();
+      if (stageIds.length > 0) {
+        const { data: stages } = await supabase
+          .from("pipeline_stages").select("id, tipo").in("id", stageIds);
+        (stages || []).forEach((s: any) => stageTipoMap.set(s.id, s.tipo));
+      }
+
+      return finalLeads.map(l => ({
+        id: l.id,
+        nome: l.nome,
+        telefone: l.telefone,
+        empreendimento: l.empreendimento,
+        stage_id: l.stage_id,
+        stage_tipo: l.stage_id ? stageTipoMap.get(l.stage_id) || null : null,
+        negocio_id: l.negocio_id,
+      }));
+    },
+    enabled: !!user,
+    refetchOnWindowFocus: true,
+  });
+
+  const ownedLeadIds = useMemo(() => ownedLeadsFull.map((lead) => lead.id), [ownedLeadsFull]);
+  const ownedLeadIdsKey = useMemo(() => ownedLeadIds.slice().sort().join(","), [ownedLeadIds]);
+
+  const { data: ownedLeadTaskMap = {}, isLoading: isLoadingOwnedLeadTaskMap } = useQuery({
+    queryKey: ["owned-lead-task-map", ownedLeadIdsKey],
+    queryFn: async (): Promise<Record<string, ProximaTarefa>> => {
+      if (ownedLeadIds.length === 0) return {};
+
+      const map: Record<string, ProximaTarefa> = {};
+      const { rows, errors } = await fetchInBatchesWithRetry<any>(
+        ownedLeadIds,
+        (chunk) =>
+          supabase
+            .from("pipeline_tarefas")
+            .select("pipeline_lead_id, tipo, vence_em, hora_vencimento")
+            .in("pipeline_lead_id", chunk)
+            .eq("status", "pendente")
+            .order("vence_em", { ascending: true })
+            .order("hora_vencimento", { ascending: true }),
+        { chunkSize: 50, minChunkSize: 10 }
+      );
+
+      for (const row of rows) {
+        const nextTask: ProximaTarefa = {
+          tipo: row.tipo,
+          vence_em: row.vence_em,
+          hora_vencimento: row.hora_vencimento,
+        };
+        const currentTask = map[row.pipeline_lead_id];
+        if (!currentTask || isTaskHigherPriority(nextTask, currentTask)) {
+          map[row.pipeline_lead_id] = nextTask;
+        }
+      }
+
+      if (errors.length && rows.length === 0) {
+        throw normalizeQueryError(errors[0], "Erro ao carregar tarefas pendentes dos leads");
+      }
+
+      if (errors.length) {
+        console.warn("[MinhasTarefas] Algumas consultas de tarefas dos leads falharam e foram isoladas por chunk", errors);
+      }
+
+      return map;
+    },
+    enabled: !!user,
+    refetchOnWindowFocus: true,
+    staleTime: 10_000,
+  });
+
   const { data: tarefas = [], isLoading } = useQuery({
-    queryKey: ["minhas-tarefas", user?.id],
+    queryKey: ["minhas-tarefas", user?.id, ownedLeadIdsKey],
     queryFn: async () => {
       if (!user) return [];
 
@@ -141,36 +277,7 @@ export default function MinhasTarefas() {
         toast.error(`Erro ao carregar tarefas: ${error.message || context}`);
       };
 
-      const fetchOwnedLeadIds = async () => {
-        const corretorIds = [user.id, profileId].filter(Boolean) as string[];
-        if (corretorIds.length === 0) return [];
-        const PAGE_SIZE = 1000;
-        const leadIds: string[] = [];
-
-        for (let from = 0; ; from += PAGE_SIZE) {
-          const { data, error } = await runQueryWithRetry(() =>
-            supabase
-              .from("pipeline_leads")
-              .select("id")
-              .in("corretor_id", corretorIds)
-              .range(from, from + PAGE_SIZE - 1)
-          );
-
-          if (error) {
-            reportLoadError("Erro ao buscar leads do corretor", error);
-            throw error;
-          }
-
-          const batch = ((data || []) as { id: string }[]).map((lead) => lead.id);
-          leadIds.push(...batch);
-
-          if (batch.length < PAGE_SIZE) break;
-        }
-
-        return leadIds;
-      };
-
-      const [{ data: directRows, error: directErr }, ownedLeadIds] = await Promise.all([
+      const { data: directRows, error: directErr } = await runQueryWithRetry(() =>
         runQueryWithRetry(() =>
           supabase
             .from("pipeline_tarefas")
@@ -179,9 +286,8 @@ export default function MinhasTarefas() {
             .order("vence_em", { ascending: true })
             .order("hora_vencimento", { ascending: true })
             .limit(2000)
-        ),
-        fetchOwnedLeadIds(),
-      ]);
+        )
+      );
 
       if (directErr) {
         reportLoadError("Erro ao buscar tarefas diretas", directErr);
@@ -250,11 +356,9 @@ export default function MinhasTarefas() {
 
       return uniqueRows as TarefaComLead[];
     },
-    enabled: !!user,
+    enabled: !!user && !isLoadingOwnedLeads,
     refetchOnWindowFocus: true,
   });
-
-  // ── Negocios tasks ──
   const { data: negociosTarefas = [], isLoading: isLoadingNegocios } = useQuery({
     queryKey: ["minhas-tarefas-negocios", user?.id],
     queryFn: async () => {
