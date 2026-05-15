@@ -10408,6 +10408,10 @@ export type Database = {
         Returns: Json
       }
       reset_roleta_turno: { Args: never; Returns: undefined }
+      resolve_corretor_scope_ids: {
+        Args: { p_corretor_id: string }
+        Returns: string[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       upsert_roleta_fila: {

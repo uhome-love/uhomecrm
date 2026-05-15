@@ -1,52 +1,42 @@
 import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ClipboardList, AlertTriangle, CalendarX } from "lucide-react";
+import { ChevronDown, ChevronUp, ClipboardList, AlertTriangle } from "lucide-react";
 import type { PipelineLead } from "@/hooks/usePipeline";
-import { differenceInHours, isBefore, startOfDay } from "date-fns";
+import { differenceInHours } from "date-fns";
+import { getLeadStatusFilter, type ProximaTarefa } from "@/components/pipeline/CardStatusLine";
 import { useNavigate } from "react-router-dom";
 
 interface Props {
   leads: PipelineLead[];
   corretorNomes: Record<string, string>;
+  tarefasMap: Record<string, ProximaTarefa>;
+  stageTypeById: Record<string, string>;
 }
 
-export default function PipelineManagerActions({ leads, corretorNomes }: Props) {
+export default function PipelineManagerActions({ leads, corretorNomes, tarefasMap, stageTypeById }: Props) {
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
-  const today = startOfDay(new Date());
 
-  // 1. Leads sem tarefa (no data_proxima_acao AND no recent activity)
+  // 1. Leads sem tarefa pendente real
   const leadsSemTarefa = useMemo(() => {
     return leads.filter(l => {
       if (!l.corretor_id) return false;
-      const proxAcao = (l as any).data_proxima_acao;
-      if (proxAcao) return false; // has task → skip
+      const status = getLeadStatusFilter(l, tarefasMap[l.id] || null, stageTypeById[l.stage_id]);
+      if (status !== "desatualizado") return false;
       const hoursInSystem = differenceInHours(new Date(), new Date(l.created_at));
-      return hoursInSystem >= 2; // ignore brand new leads
+      return hoursInSystem >= 2;
     });
-  }, [leads]);
+  }, [leads, tarefasMap, stageTypeById]);
 
-  // 2. Leads com tarefa atrasada (data_proxima_acao < today)
+  // 2. Leads com tarefa atrasada real
   const leadsTarefaAtrasada = useMemo(() => {
     return leads.filter(l => {
       if (!l.corretor_id) return false;
-      const proxAcao = (l as any).data_proxima_acao;
-      if (!proxAcao) return false;
-      return isBefore(new Date(proxAcao), today);
+      return getLeadStatusFilter(l, tarefasMap[l.id] || null, stageTypeById[l.stage_id]) === "tarefa_atrasada";
     });
-  }, [leads, today]);
+  }, [leads, tarefasMap, stageTypeById]);
 
-  // 3. Visitas atrasadas (data_visita < today and not completed)
-  const visitasAtrasadas = useMemo(() => {
-    return leads.filter(l => {
-      if (!l.corretor_id) return false;
-      const dataVisita = (l as any).data_visita;
-      if (!dataVisita) return false;
-      return isBefore(new Date(dataVisita), today);
-    });
-  }, [leads, today]);
-
-  const totalAlerts = leadsSemTarefa.length + leadsTarefaAtrasada.length + visitasAtrasadas.length;
+  const totalAlerts = leadsSemTarefa.length + leadsTarefaAtrasada.length;
 
   const alerts = [
     {
@@ -64,14 +54,6 @@ export default function PipelineManagerActions({ leads, corretorNomes }: Props) 
       color: "text-red-500",
       bg: "bg-red-500/10",
       borderColor: "border-red-500/30",
-    },
-    {
-      icon: CalendarX,
-      label: "Visitas atrasadas",
-      count: visitasAtrasadas.length,
-      color: "text-orange-600",
-      bg: "bg-orange-500/10",
-      borderColor: "border-orange-500/30",
     },
   ];
 
@@ -91,7 +73,7 @@ export default function PipelineManagerActions({ leads, corretorNomes }: Props) 
       </button>
 
       {expanded && (
-        <div className="px-3 pb-3 grid grid-cols-3 gap-2">
+        <div className="px-3 pb-3 grid grid-cols-2 gap-2">
           {alerts.map(a => (
             <div
               key={a.label}
