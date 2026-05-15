@@ -597,10 +597,11 @@ export default function MinhasTarefas() {
 
   const tabs: { key: TabFilter; label: string; count: number }[] = [
     { key: "todas", label: "📋 Todas", count: pendentes.length },
-    { key: "atrasadas", label: "🔴 Atrasadas", count: atrasadas.length },
+    { key: "atrasadas", label: "🔴 Atrasadas", count: categoria === "leads" ? atrasadasLeadCount : atrasadasTarefas.length },
     { key: "hoje", label: "📅 Hoje", count: hoje.length },
     { key: "amanha", label: "📅 Amanhã", count: amanha.length },
     { key: "semana", label: "📅 Semana", count: semana.length },
+    ...(categoria === "leads" ? [{ key: "desatualizados" as TabFilter, label: "🟡 Desatualizados", count: desatualizados.length }] : []),
     { key: "concluidas", label: "✅ Concluídas", count: concluidas.length },
   ];
 
