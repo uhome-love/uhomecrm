@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { todayBRT } from "@/lib/utils";
+import { resolveProfileIds } from "@/hooks/useAuthUser";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -100,21 +101,24 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
     });
     const tmIds = members.map(m => m.id);
 
+    const profileIdMap = await resolveProfileIds(teamUserIds);
+    const teamScopeIds = [...new Set([...teamUserIds, ...Array.from(profileIdMap.values())])];
+
     const [r2, r3, r5, r6, r8, rLeadsAll, rFollowupLeads, rCheckpoint, rLeadsRecebidos, rTarefasAtrasadas, rTarefasExistentes, rTarefasConcluidas] = await Promise.all([
       supabase.from("profiles").select("user_id, avatar_url").in("user_id", teamUserIds),
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", todayStart).lte("created_at", todayEnd),
       supabase.from("corretor_disponibilidade").select("user_id, status, na_roleta, updated_at").in("user_id", teamUserIds),
       supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).eq("data_visita", today),
       supabase.from("corretor_daily_goals").select("corretor_id, meta_ligacoes").in("corretor_id", teamUserIds).eq("data", today),
-      supabase.from("pipeline_leads").select("id, corretor_id").in("corretor_id", teamUserIds).eq("arquivado", false),
+      supabase.from("pipeline_leads").select("id, corretor_id").in("corretor_id", teamScopeIds).eq("arquivado", false),
       // Leads atualizados hoje (ultima_acao_at)
-      supabase.from("pipeline_leads").select("id, corretor_id").in("corretor_id", teamUserIds).gte("ultima_acao_at", todayStart).lte("ultima_acao_at", todayEnd),
+      supabase.from("pipeline_leads").select("id, corretor_id").in("corretor_id", teamScopeIds).gte("ultima_acao_at", todayStart).lte("ultima_acao_at", todayEnd),
       tmIds.length > 0
         ? supabase.from("checkpoints").select("id").eq("gerente_id", user.id).eq("data", today).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from("distribuicao_historico").select("corretor_id").in("corretor_id", teamUserIds).eq("acao", "aceito").gte("created_at", todayStart).lte("created_at", todayEnd),
-      supabase.from("pipeline_tarefas").select("pipeline_lead_id").in("responsavel_id", teamUserIds).eq("status", "pendente").lt("data_vencimento", today),
-      supabase.from("pipeline_tarefas").select("pipeline_lead_id").in("responsavel_id", teamUserIds),
+      supabase.from("pipeline_tarefas").select("pipeline_lead_id, vence_em, hora_vencimento").eq("status", "pendente").in("pipeline_lead_id", (rLeadsAll.data || []).map((l: any) => l.id)),
+      supabase.from("pipeline_tarefas").select("pipeline_lead_id, vence_em, hora_vencimento").eq("status", "pendente").in("pipeline_lead_id", (rLeadsAll.data || []).map((l: any) => l.id)),
       // Follow-ups = tarefas concluídas hoje
       supabase.from("pipeline_tarefas").select("responsavel_id").in("responsavel_id", teamUserIds).gte("concluida_em", todayStart).lte("concluida_em", todayEnd),
     ]);
@@ -156,14 +160,40 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
       if (v.status === "realizada") vrCount[v.corretor_id] = (vrCount[v.corretor_id] || 0) + 1;
     });
 
-    // 2. Desatualizados: leads sem tarefa OU com tarefa atrasada
+    // 2. Status do pipeline: regra única = sem tarefa => desatualizado; vencida => atrasado
     const allLeads = rLeadsAll.data || [];
-    const idsComTarefa = new Set((rTarefasExistentes.data || []).map((t: any) => t.pipeline_lead_id).filter(Boolean));
-    const idsAtrasados = new Set((rTarefasAtrasadas.data || []).map((t: any) => t.pipeline_lead_id).filter(Boolean));
+    const leadOwnerMap: Record<string, string> = {};
+    for (const [userId, profileId] of profileIdMap.entries()) {
+      leadOwnerMap[profileId] = userId;
+    }
+    teamUserIds.forEach((id) => { leadOwnerMap[id] = id; });
+
+    const nowHHMM = new Date().toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+    const firstPendingTaskByLead = new Map<string, { vence_em: string | null; hora_vencimento: string | null }>();
+    (rTarefasExistentes.data || []).forEach((t: any) => {
+      if (!t.pipeline_lead_id) return;
+      const current = firstPendingTaskByLead.get(t.pipeline_lead_id);
+      const candidateKey = `${t.vence_em || '9999-12-31'}|${(t.hora_vencimento || '23:59').slice(0,5)}`;
+      const currentKey = current ? `${current.vence_em || '9999-12-31'}|${(current.hora_vencimento || '23:59').slice(0,5)}` : null;
+      if (!currentKey || candidateKey < currentKey) {
+        firstPendingTaskByLead.set(t.pipeline_lead_id, { vence_em: t.vence_em, hora_vencimento: t.hora_vencimento });
+      }
+    });
+
     const desatCount: Record<string, number> = {};
+    const overdueCount: Record<string, number> = {};
     allLeads.forEach((l: any) => {
-      if (!idsComTarefa.has(l.id) || idsAtrasados.has(l.id)) {
-        desatCount[l.corretor_id] = (desatCount[l.corretor_id] || 0) + 1;
+      const ownerId = leadOwnerMap[l.corretor_id] || l.corretor_id;
+      if (!ownerId) return;
+      const task = firstPendingTaskByLead.get(l.id);
+      if (!task) {
+        desatCount[ownerId] = (desatCount[ownerId] || 0) + 1;
+        return;
+      }
+      const hora = task.hora_vencimento?.slice(0, 5) || null;
+      const isOverdue = !!task.vence_em && (task.vence_em < today || (task.vence_em === today && !!hora && hora < nowHHMM));
+      if (isOverdue) {
+        overdueCount[ownerId] = (overdueCount[ownerId] || 0) + 1;
       }
     });
 
@@ -220,7 +250,7 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
           usou_foco: false,
           visitas_marcadas: vm,
           visitas_realizadas: vr,
-          leads_desatualizados: desatCount[uid] || 0,
+          leads_desatualizados: (desatCount[uid] || 0) + (overdueCount[uid] || 0),
           followups_hoje: fu,
           leads_atualizados_hoje: la,
           leads_recebidos_hoje: leadsRecebidosCount[uid] || 0,
