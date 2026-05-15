@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, ClipboardList, Briefcase, Trophy, HeartCrack, ArrowLeft, ArrowRight, Loader2, Flame, Search, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomLists, resolveCustomListLeads, type CustomListFilters } from "@/hooks/useCustomLists";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import HomiInlineSuggestion from "@/components/homi/HomiInlineSuggestion";

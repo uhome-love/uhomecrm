@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { usePendingLeadAlert } from "@/hooks/usePendingLeadAlert";
 import { useVendaRealtimeNotification } from "@/hooks/useVendaRealtimeNotification";
 import { useWhatsAppNotifications } from "@/hooks/useWhatsAppNotifications";
@@ -34,7 +34,6 @@ import { HomiProvider } from "@/contexts/HomiContext";
 import { useTabContext } from "@/contexts/TabContext";
 import { PAGE_COMPONENTS } from "@/config/pageRegistry";
 import TabBar from "@/components/layout/TabBar";
-import ApiOfflineBanner from "@/components/ApiOfflineBanner";
 const homiMascot = "/images/homi-mascot-official.png";
 
 const HomiPanel = lazy(() => import("@/components/homi/HomiPanel"));
@@ -244,7 +243,6 @@ export default function AppLayout() {
               </DropdownMenu>
               </div>
             </header>
-            <ApiOfflineBanner />
             <PushPromptBanner />
             <TabBar />
             

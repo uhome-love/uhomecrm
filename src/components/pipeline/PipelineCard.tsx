@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { calculateLeadScore } from "@/lib/leadScoring";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import PartnershipDialog from "./PartnershipDialog";

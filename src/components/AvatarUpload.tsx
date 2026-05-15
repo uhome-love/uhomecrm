@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Camera, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

@@ -4,7 +4,7 @@ import { useOAServerQueue, useOACampaignQueue, useOARegistrarTentativa, useOATem
 import { useOAPendingQueue } from "@/hooks/useOAPendingQueue";
 import { useOASessionGuard } from "@/hooks/useOASessionGuard";
 import { useCustomListQueue, useCustomListRegistrar, isCustomList } from "@/hooks/useCustomListQueue";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { createVisitaFromOA } from "@/hooks/useVisitas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
 export type CeoPeriod = "dia" | "semana" | "mes" | "custom";

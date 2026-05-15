@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { fetchAllRows } from "@/lib/paginatedFetch";
 import { useAuth } from "@/hooks/useAuth";
 import { Phone, Award, MapPin, Target, AlertTriangle, TrendingDown, ArrowDown, Trophy } from "lucide-react";

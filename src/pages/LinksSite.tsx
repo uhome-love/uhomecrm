@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Copy, ExternalLink, Link2, Check, AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

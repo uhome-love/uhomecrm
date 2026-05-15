@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, MessageSquare, Loader2, UserPlus, ArrowRight, X, FileSearch } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useDebounce } from "@/hooks/useDebounce";

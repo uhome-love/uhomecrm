@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 
 // ── SESSION ID ────────────────────────────────────────
 

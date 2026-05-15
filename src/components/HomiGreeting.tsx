@@ -4,7 +4,7 @@ import { X, Bot } from "lucide-react";
 import HomiAnimated from "@/components/homi/HomiAnimated";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 
 const greetings = {

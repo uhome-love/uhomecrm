@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { ClipboardList, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import { toast } from "sonner";

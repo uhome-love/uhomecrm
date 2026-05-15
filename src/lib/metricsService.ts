@@ -21,7 +21,7 @@
  *   - get_kpis_por_periodo() (aggregated RPC)
  */
 
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { getMetricPeriodRange, periodToTimestamps } from "./metricDefinitions";
 import { log } from "@/lib/logger";
 import { generateTraceId } from "@/lib/traceContext";

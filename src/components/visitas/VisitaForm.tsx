@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CalendarPlus, Search, Handshake, Filter, X, Home, Building2, Trash2 } from "lucide-react";
 import { type Visita } from "@/hooks/useVisitas";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { cn } from "@/lib/utils";

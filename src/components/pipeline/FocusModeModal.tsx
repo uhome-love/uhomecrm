@@ -13,7 +13,7 @@ import {
   ArrowRightCircle, Trash2, Ban
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria } from "@/hooks/useFocusLeads";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";

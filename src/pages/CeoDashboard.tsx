@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2 as Building2Tab } from "lucide-react";
 import TabEmpresa from "@/components/ceo/TabEmpresa";
 import { GreetingBar } from "@/components/ui/GreetingBar";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCeoDashboard, type DashPeriod } from "@/hooks/useCeoDashboard";
 import { useDateFilter } from "@/contexts/DateFilterContext";

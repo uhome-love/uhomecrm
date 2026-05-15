@@ -8,7 +8,7 @@ import { useCeoData, type CeoPeriod } from "@/hooks/useCeoData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Zap, ArrowRight } from "lucide-react";
 import { getLevel } from "@/lib/gamification";
 import RankingPodium, { type PodiumEntry } from "./RankingPodium";

@@ -1,7 +1,7 @@
 import { EDGE_BASE_URL } from "@/lib/edgeBaseUrl";
 import { useState } from "react";
 import { Loader2, Copy, X, Bot, ChevronRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {

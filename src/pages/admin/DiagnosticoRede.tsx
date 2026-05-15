@@ -1,12 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
-import { useApiHealth } from "@/lib/apiHealth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, Wifi } from "lucide-react";
 
-// Runtime 15/05/2026 v4 — DIRETO ÚNICO.
-// Este painel é apenas read-only de saúde. NÃO altera mais host pinado
-// (não existe mais flip de host em runtime).
+// Runtime 16/05/2026 v5 — DIRETO ÚNICO + arquitetura simplificada (pré-13/05).
+// Painel apenas de diagnóstico read-only. Não altera host de runtime.
 const HOSTS = {
   direct: "https://hunbxqzhvuemgntklyzb.supabase.co",
   proxy: "https://api.uhomesales.com",
@@ -33,7 +31,6 @@ async function probe(url: string): Promise<ProbeResult> {
 }
 
 export default function DiagnosticoRede() {
-  const health = useApiHealth();
   const [proxyR, setProxyR] = useState<ProbeResult | null>(null);
   const [directR, setDirectR] = useState<ProbeResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -80,7 +77,7 @@ export default function DiagnosticoRede() {
     <div className="p-6 max-w-3xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          {health === "online" ? <Wifi className="h-6 w-6 text-emerald-500" /> : <WifiOff className="h-6 w-6 text-amber-500" />}
+          <Wifi className="h-6 w-6 text-emerald-500" />
           Diagnóstico de Rede
         </h1>
         <Button onClick={runProbes} disabled={loading} size="sm" variant="outline">
@@ -91,10 +88,11 @@ export default function DiagnosticoRede() {
 
       <Card className="p-4">
         <div className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">Runtime:</span> direto único —
+          <span className="font-semibold text-foreground">Runtime v5:</span> direto único —
           todo o tráfego do app vai para <code>hunbxqzhvuemgntklyzb.supabase.co</code>.
-          O domínio <code>api.uhomesales.com</code> permanece publicado apenas para
-          integrações server-side e como ferramenta de diagnóstico abaixo.
+          Sem fetch wrappers, sem detector agressivo de offline. O domínio
+          <code> api.uhomesales.com</code> permanece publicado apenas para integrações
+          server-side e como ferramenta de diagnóstico abaixo.
         </div>
       </Card>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 
 const PERIOD_CHIPS = [
   { key: "hoje", label: "Hoje" },

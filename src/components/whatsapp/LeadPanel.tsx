@@ -9,7 +9,7 @@ import {
   CheckCircle2, Clock, MessageSquare, Home, PhoneCall,
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 

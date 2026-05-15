@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Calendar, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/customClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format, startOfDay } from "date-fns";
