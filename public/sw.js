@@ -1,103 +1,168 @@
-// UhomeSales Service Worker — kill-switch + push runtime
-// Não cacheia HTML/JS do app. Toda ativação limpa caches antigos e força
-// reload das abas abertas com cache-bust, garantindo que ninguém fique
-// preso a um bundle vencido após deploy.
+// UhomeSales Service Worker — Resilient PWA (Runtime v5 - restaurado para arquitetura pré-13/05)
+// Strategy: Stale-While-Revalidate for app shell so the app ALWAYS opens,
+// even on flaky 4G/Wi-Fi or when launched from the home screen offline.
 
-const SW_VERSION = "2026-05-14T23:55Z-killswitch";
+const APP_SHELL_CACHE = "uhomesales-shell-v5";
+const IMAGE_CACHE = "uhomesales-images-v5";
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(self.skipWaiting());
+let _currentVersion = null;
+
+self.addEventListener("install", (e) => {
+  // Pre-cache the app entry so PWA always opens
+  e.waitUntil(
+    caches.open(APP_SHELL_CACHE).then((cache) =>
+      cache.addAll(["/", "/index.html", "/manifest.json"]).catch(() => {})
+    )
+  );
+  self.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    (async () => {
-      try {
-        await self.clients.claim();
-      } catch {}
-
-      // 1. Apaga TODOS os caches (workbox antigo, runtime, vite-plugin-pwa, etc.)
-      try {
-        const names = await caches.keys();
-        await Promise.all(names.map((n) => caches.delete(n).catch(() => {})));
-        if (names.length) console.log(`[SW] purged ${names.length} cache(s)`);
-      } catch (err) {
-        console.warn("[SW] cache purge failed", err);
-      }
-
-      // 2. Notifica abas e força reload com cache-bust
-      try {
-        const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-        for (const client of clients) {
-          try {
-            client.postMessage({ type: "SW_ACTIVATED", version: SW_VERSION });
-          } catch {}
-          try {
-            const url = new URL(client.url);
-            // Só recarrega se ainda não carregou via cache-bust nesta versão
-            if (url.searchParams.get("_swv") !== SW_VERSION) {
-              url.searchParams.set("_swv", SW_VERSION);
-              await client.navigate(url.toString()).catch(() => {});
-            }
-          } catch {}
-        }
-      } catch (err) {
-        console.warn("[SW] client reload failed", err);
-      }
-
-      console.log(`[SW] activated version=${SW_VERSION}`);
-    })()
+self.addEventListener("activate", (e) => {
+  // Remove old caches but KEEP the current shell cache (so PWA still opens offline)
+  e.waitUntil(
+    caches.keys().then((names) =>
+      Promise.all(
+        names
+          .filter((n) => n !== APP_SHELL_CACHE && n !== IMAGE_CACHE)
+          .map((n) => caches.delete(n))
+      )
+    ).then(() => clients.claim())
   );
 });
 
-// Fetch passthrough (sem cache) — garante que nunca servimos HTML/JS antigo.
-// Necessário declarar pelo menos um handler para o SW ser considerado válido.
-self.addEventListener("fetch", () => {
-  // No-op: deixa o browser fazer a request normalmente.
+self.addEventListener("fetch", (e) => {
+  if (e.request.method !== "GET") return;
+
+  const url = new URL(e.request.url);
+  if (url.pathname.startsWith("/~oauth")) return;
+  if (url.hostname.includes("supabase")) return;
+
+  const dest = e.request.destination;
+
+  // ── Documents (HTML / navigation): Network-First with cache fallback ──
+  if (dest === "document" || e.request.mode === "navigate") {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(APP_SHELL_CACHE).then((cache) => cache.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match(e.request);
+          if (cached) return cached;
+          const root = await caches.match("/");
+          if (root) return root;
+          const indexHtml = await caches.match("/index.html");
+          if (indexHtml) return indexHtml;
+          return new Response("Sem conexão", { status: 503, statusText: "Offline" });
+        })
+    );
+    return;
+  }
+
+  // ── Scripts / Styles: Stale-While-Revalidate ──
+  if (dest === "script" || dest === "style" || dest === "worker") {
+    e.respondWith(
+      caches.open(APP_SHELL_CACHE).then(async (cache) => {
+        const cached = await cache.match(e.request);
+        const networkPromise = fetch(e.request)
+          .then((response) => {
+            if (response.ok) cache.put(e.request, response.clone());
+            return response;
+          })
+          .catch(() => cached);
+        return cached || networkPromise;
+      })
+    );
+    return;
+  }
+
+  // ── Images: cache as offline fallback ──
+  if (dest === "image" && url.origin === self.location.origin) {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(IMAGE_CACHE).then((cache) => cache.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
 });
 
-self.addEventListener("push", (event) => {
-  const payload = (() => {
-    try {
-      return event.data ? event.data.json() : {};
-    } catch {
-      return { title: "UhomeSales", body: event.data?.text?.() ?? "Você tem uma nova notificação." };
+// ── Version check: detect new deploys and force update ──
+async function checkForUpdate() {
+  try {
+    const res = await fetch("/version.json?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (_currentVersion === null) {
+      _currentVersion = data.v;
+      return;
     }
-  })();
+    if (data.v !== _currentVersion) {
+      _currentVersion = data.v;
+      await caches.delete(APP_SHELL_CACHE);
+      const allClients = await clients.matchAll({ type: "window" });
+      allClients.forEach((client) => client.navigate(client.url));
+    }
+  } catch {
+    // Ignore — never break the app due to version check failure
+  }
+}
 
-  const title = payload?.title || "UhomeSales";
-  const options = {
-    body: payload?.body || "Você tem uma nova notificação.",
-    icon: payload?.icon || "/icons/icon-192x192.png",
-    badge: payload?.badge || "/icons/icon-192x192.png",
-    tag: payload?.tag || undefined,
-    data: {
-      url: payload?.url || "/notificacoes",
-    },
-  };
+setInterval(checkForUpdate, 5 * 60 * 1000);
 
-  event.waitUntil(self.registration.showNotification(title, options));
+// ── Push Notifications ──
+self.addEventListener("push", (e) => {
+  if (!e.data) return;
+  try {
+    const data = e.data.json();
+    const options = {
+      body: data.body || "Nova notificação UhomeSales",
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/icon-192x192.png",
+      vibrate: [300, 100, 300, 100, 300],
+      data: { url: data.url || "/" },
+      actions: data.actions || [
+        { action: "open", title: "Abrir" },
+        { action: "dismiss", title: "Fechar" },
+      ],
+      tag: data.data?.tag || "uhome-notification",
+      renotify: true,
+      requireInteraction: true,
+      silent: false,
+    };
+    e.waitUntil(self.registration.showNotification(data.title || "UhomeSales", options));
+  } catch (err) {
+    console.error("Push event error:", err);
+  }
 });
 
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const targetUrl = event.notification?.data?.url || "/notificacoes";
-
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if ("focus" in client) {
-          try {
-            client.navigate(targetUrl);
-          } catch {}
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  if (e.action === "dismiss") return;
+  const url = e.notification.data?.url || "/";
+  e.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          client.navigate(url);
           return client.focus();
         }
       }
-      return self.clients.openWindow(targetUrl);
+      return clients.openWindow(url);
     })
   );
 });
 
-self.addEventListener("message", (event) => {
-  if (event.data === "skipWaiting") self.skipWaiting();
+self.addEventListener("message", (e) => {
+  if (e.data === "skipWaiting") self.skipWaiting();
 });
