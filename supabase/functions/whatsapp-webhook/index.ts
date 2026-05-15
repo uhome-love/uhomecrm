@@ -290,100 +290,126 @@ Deno.serve(async (req) => {
             const buttonTitle = msg?.interactive?.button_reply?.title || msg?.button?.text || "";
 
             // ── Visita Amanhã: detecta resposta ao template visita_amanha_v1 ──
+            // Match por wamid (preferido) OU por telefone (últimos 8 dígitos, últimas 48h) — alguns clientes
+            // não enviam context.id em button_reply, e o "from" do WhatsApp pode vir sem o "9" do celular.
+            const isButtonReply = !!buttonId || !!buttonTitle;
+            const isTextResponse = !!mensagemTexto && !isButtonReply;
+            let vaDispatch: { id: string; pipeline_lead_id: string; phone: string | null } | null = null;
+
             if (repliedToWamid) {
-              const { data: vaDispatch } = await supabase
+              const { data } = await supabase
                 .from("visita_amanha_disparos")
-                .select("id, pipeline_lead_id")
+                .select("id, pipeline_lead_id, phone")
                 .eq("wamid", repliedToWamid)
                 .maybeSingle();
+              if (data) vaDispatch = data;
+            }
 
-              if (vaDispatch) {
-                let vaResp: "sim" | "nao" | null = null;
-                if (buttonId) {
-                  if (/sim|yes|quero/i.test(buttonId) || /sim|quero/i.test(buttonTitle)) vaResp = "sim";
-                  else if (/nao|não|no|agora/i.test(buttonId) || /n[aã]o|agora/i.test(buttonTitle)) vaResp = "nao";
-                } else if (mensagemTexto) {
-                  const t = mensagemTexto.trim().toLowerCase();
-                  if (/^(sim|quero|claro|👍|✅|s)\b/.test(t)) vaResp = "sim";
-                  else if (/^(n[aã]o|agora\s*n|n\.?$)/.test(t) && t.length < 60) vaResp = "nao";
-                }
-
-                await supabase.from("visita_amanha_disparos").update({
-                  status: vaResp || "outro",
-                  resposta_at: new Date().toISOString(),
-                }).eq("id", vaDispatch.id);
-
-                await supabase.from("pipeline_leads").update({
-                  visita_amanha_resposta: vaResp,
-                }).eq("id", vaDispatch.pipeline_lead_id);
-
-                // Busca dados do lead para notificação + atividade
-                const { data: leadData } = await supabase
-                  .from("pipeline_leads")
-                  .select("id, nome, corretor_id")
-                  .eq("id", vaDispatch.pipeline_lead_id)
+            // Fallback por telefone se não achou via wamid (e a mensagem tem cara de resposta ao template)
+            if (!vaDispatch && (isButtonReply || isTextResponse)) {
+              const last8 = (from || "").replace(/\D/g, "").slice(-8);
+              if (last8.length === 8) {
+                const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+                const { data } = await supabase
+                  .from("visita_amanha_disparos")
+                  .select("id, pipeline_lead_id, phone, sent_at")
+                  .ilike("phone", `%${last8}`)
+                  .eq("status", "sent")
+                  .gte("sent_at", cutoff)
+                  .order("sent_at", { ascending: false })
+                  .limit(1)
                   .maybeSingle();
-
-                if (vaResp === "sim" && leadData) {
-                  // Atividade visível no drawer
-                  await supabase.from("pipeline_atividades").insert({
-                    pipeline_lead_id: leadData.id,
-                    tipo: "sistema",
-                    titulo: "🔥 Cliente quer visitar AMANHÃ",
-                    descricao: `Cliente respondeu SIM ao convite de visita amanhã via WhatsApp. Entre em contato para confirmar o horário.`,
-                    data: new Date().toISOString().slice(0, 10),
-                    status: "pendente",
-                    prioridade: "alta",
-                  });
-
-                  // Notificação sino para o corretor
-                  if (leadData.corretor_id) {
-                    // Resolver auth.users.id do corretor (corretor_id pode ser profiles.id)
-                    const { data: prof } = await supabase
-                      .from("profiles")
-                      .select("user_id")
-                      .eq("id", leadData.corretor_id)
-                      .maybeSingle();
-                    const targetUserId = prof?.user_id || leadData.corretor_id;
-
-                    await supabase.from("notifications").insert({
-                      user_id: targetUserId,
-                      tipo: "visita_amanha_sim",
-                      categoria: "lead",
-                      titulo: "🔥 Visita amanhã!",
-                      mensagem: `${leadData.nome} quer visitar amanhã. Entre em contato para marcar o horário.`,
-                      dados: { pipeline_lead_id: leadData.id, lead_nome: leadData.nome },
-                    });
-
-                    // Push web (best-effort)
-                    try {
-                      await supabase.functions.invoke("send-push", {
-                        body: {
-                          user_id: targetUserId,
-                          title: "🔥 Visita amanhã!",
-                          body: `${leadData.nome} quer visitar amanhã.`,
-                          url: `/pipeline?lead=${leadData.id}`,
-                        },
-                      });
-                    } catch (e) {
-                      console.error("send-push visita_amanha error:", e);
-                    }
-                  }
-                } else if (vaResp === "nao" && leadData) {
-                  await supabase.from("pipeline_atividades").insert({
-                    pipeline_lead_id: leadData.id,
-                    tipo: "sistema",
-                    titulo: "❌ Cliente não pode visitar amanhã",
-                    descricao: `Cliente respondeu "Agora não" ao convite de visita amanhã via WhatsApp. Lead permanece na etapa atual.`,
-                    data: new Date().toISOString().slice(0, 10),
-                    status: "concluida",
-                  });
+                if (data) {
+                  vaDispatch = { id: data.id, pipeline_lead_id: data.pipeline_lead_id, phone: data.phone };
+                  console.log(`📅 Visita Amanhã: match por TELEFONE (last8=${last8}) lead=${data.pipeline_lead_id}`);
                 }
+              }
+            }
 
-                console.log(`📅 Visita Amanhã: lead ${vaDispatch.pipeline_lead_id} → ${vaResp || "outro"}`);
-                continue; // Pula handlers seguintes (não é reengajamento)
+            if (vaDispatch) {
+              let vaResp: "sim" | "nao" | null = null;
+              if (buttonId || buttonTitle) {
+                if (/sim|yes|quero/i.test(buttonId || "") || /sim|quero/i.test(buttonTitle)) vaResp = "sim";
+                else if (/nao|não|no|agora/i.test(buttonId || "") || /n[aã]o|agora/i.test(buttonTitle)) vaResp = "nao";
+              } else if (mensagemTexto) {
+                const t = mensagemTexto.trim().toLowerCase();
+                if (/^(sim|quero|claro|👍|✅|s)\b/.test(t)) vaResp = "sim";
+                else if (/^(n[aã]o|agora\s*n|n\.?$)/.test(t) && t.length < 60) vaResp = "nao";
               }
 
+              await supabase.from("visita_amanha_disparos").update({
+                status: vaResp || "outro",
+                resposta_at: new Date().toISOString(),
+              }).eq("id", vaDispatch.id);
+
+              await supabase.from("pipeline_leads").update({
+                visita_amanha_resposta: vaResp,
+              }).eq("id", vaDispatch.pipeline_lead_id);
+
+              // Busca dados do lead para notificação + atividade
+              const { data: leadData } = await supabase
+                .from("pipeline_leads")
+                .select("id, nome, corretor_id")
+                .eq("id", vaDispatch.pipeline_lead_id)
+                .maybeSingle();
+
+              if (vaResp === "sim" && leadData) {
+                await supabase.from("pipeline_atividades").insert({
+                  pipeline_lead_id: leadData.id,
+                  tipo: "sistema",
+                  titulo: "🔥 Cliente quer visitar AMANHÃ",
+                  descricao: `Cliente respondeu SIM ao convite de visita amanhã via WhatsApp. Entre em contato para confirmar o horário.`,
+                  data: new Date().toISOString().slice(0, 10),
+                  status: "pendente",
+                  prioridade: "alta",
+                });
+
+                if (leadData.corretor_id) {
+                  const { data: prof } = await supabase
+                    .from("profiles")
+                    .select("user_id")
+                    .eq("id", leadData.corretor_id)
+                    .maybeSingle();
+                  const targetUserId = prof?.user_id || leadData.corretor_id;
+
+                  await supabase.from("notifications").insert({
+                    user_id: targetUserId,
+                    tipo: "visita_amanha_sim",
+                    categoria: "lead",
+                    titulo: "🔥 Visita amanhã!",
+                    mensagem: `${leadData.nome} quer visitar amanhã. Entre em contato para marcar o horário.`,
+                    dados: { pipeline_lead_id: leadData.id, lead_nome: leadData.nome },
+                  });
+
+                  try {
+                    await supabase.functions.invoke("send-push", {
+                      body: {
+                        user_id: targetUserId,
+                        title: "🔥 Visita amanhã!",
+                        body: `${leadData.nome} quer visitar amanhã.`,
+                        url: `/pipeline?lead=${leadData.id}`,
+                      },
+                    });
+                  } catch (e) {
+                    console.error("send-push visita_amanha error:", e);
+                  }
+                }
+              } else if (vaResp === "nao" && leadData) {
+                await supabase.from("pipeline_atividades").insert({
+                  pipeline_lead_id: leadData.id,
+                  tipo: "sistema",
+                  titulo: "❌ Cliente não pode visitar amanhã",
+                  descricao: `Cliente respondeu "Agora não" ao convite de visita amanhã via WhatsApp. Lead permanece na etapa atual.`,
+                  data: new Date().toISOString().slice(0, 10),
+                  status: "concluida",
+                });
+              }
+
+              console.log(`📅 Visita Amanhã: lead ${vaDispatch.pipeline_lead_id} → ${vaResp || "outro"}`);
+              continue;
+            }
+
+            if (repliedToWamid) {
               const { data: metaDispatch } = await supabase
                 .from("reengajamento_meta_disparos")
                 .select("id, lead_id, run_id")
