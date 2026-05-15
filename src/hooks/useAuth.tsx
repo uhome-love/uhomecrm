@@ -47,7 +47,13 @@ const isFatalAuthError = (msg: string) =>
   msg.includes("User from sub claim in JWT does not exist");
 
 const isNetworkLikeError = (msg: string) =>
-  msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+  msg.includes("Failed to fetch") ||
+  msg.includes("NetworkError") ||
+  msg.includes("network") ||
+  msg.includes("Load failed") || // iOS Safari
+  msg.includes("The Internet connection appears to be offline") || // iOS Safari
+  msg.includes("cancelled") ||
+  msg.includes("timeout");
 
 const isSessionNearExpiry = (currentSession: Session | null, marginSec = 90) => {
   const expiresAt = currentSession?.expires_at;
