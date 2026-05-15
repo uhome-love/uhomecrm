@@ -452,8 +452,14 @@ const PipelineCard = memo(function PipelineCard({
         </div>
 
         {/* Badges row — score inline with partnership/negocio */}
-        {(parceiroNome || lead.negocio_id || (lead as any).reativado_por_nutricao) && (
+        {(parceiroNome || lead.negocio_id || (lead as any).reativado_por_nutricao || (lead as any).visita_amanha_resposta === "sim") && (
           <div className="flex items-center gap-1.5" style={{ marginBottom: 4 }}>
+            {(lead as any).visita_amanha_resposta === "sim" && (
+              <span title="Cliente respondeu SIM ao convite de visita amanhã" style={{
+                fontSize: 10, fontWeight: 700, color: "hsl(220 90% 35%)",
+                background: "hsl(220 95% 92%)", padding: "2px 6px", borderRadius: 5,
+              }}>🔥 QUER VISITAR AMANHÃ</span>
+            )}
             {(lead as any).reativado_por_nutricao && (
               <span title="Lead reativado pela nutrição automática" style={{
                 fontSize: 10, fontWeight: 700, color: "hsl(25 95% 35%)",

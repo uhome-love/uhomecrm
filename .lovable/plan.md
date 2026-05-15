@@ -1,129 +1,167 @@
-## Diagnóstico de raiz
+## O que vai ser construído
 
-Comparei o estado atual com o **commit `ef30ac4e` (13/05 18:55 BRT — último estável)**, antes da cascata começar. O resultado é categórico:
+Disparo de campanha **"Visita Amanhã"** para os leads ativos do pipeline nas etapas **Sem Contato, Contato Iniciado, Busca e Aquecimento** (~1.663 leads com telefone), via WhatsApp Meta oficial (mesma infra do Casa Tua), com botões de resposta rápida.
 
-### O que existia no estado estável (3 meses funcionando em qualquer rede)
-- `src/integrations/supabase/client.ts` — **único** cliente Supabase, plain, sem wrapper
-- `src/main.tsx` — **54 linhas** (apenas createRoot)
-- `src/hooks/useAuth.tsx` — **150 linhas** (auth simples)
-- `public/sw.js` — **172 linhas**, Stale-While-Revalidate real (PWA abria instantâneo até offline)
-- **NENHUM** arquivo de "resiliência" de rede
+Reaproveita 100% do padrão já provado da ferramenta de reengajamento (Meta dispatcher, throttle 60-180s, pausa longa a cada 6 envios, auto-pausa em caso de bloqueio Meta). **NÃO toca em nada existente.**
 
-### O que existe HOJE (mesmo após o revert de ontem à noite)
-- `src/main.tsx` — **171 linhas** (+217%): kill switch one-shot + version polling 60s + recovery flags + cleanup localStorage
-- `src/hooks/useAuth.tsx` — **501 linhas** (+234%): retry, refresh, telemetria, health monitor
-- `public/sw.js` — **103 linhas**: virou kill switch que **purga cache em toda activate** e força reload com cache-bust
-- **11 arquivos novos** de interceptação de rede:
-  - `customClient.ts` — segundo cliente Supabase com **wrapper de fetch** que loga toda falha em `network_telemetry`
-  - `fetchCircuitBreaker.ts` — patcheia `window.fetch` GLOBAL com **timeout 15s via AbortController** + retries
-  - `apiHealth.ts` — flipa para "offline" após **5 falhas em 30s**
-  - `ApiOfflineBanner.tsx` — banner vermelho "Conexão indisponível" que apareceu no print do corretor
-  - `originalFetch.ts`, `networkTelemetry.ts`, `edgeBaseUrl.ts`, `storageUrl.ts`, `swKillSwitch.ts`, `authHealthMonitor.ts`, `authTelemetry.ts`
+## Modelo de mensagem (você submete no Meta — antes do disparo)
 
-### Por que isso quebra Wi-Fi (não 4G)
+```text
+Nome:      visita_amanha_v1
+Categoria: MARKETING
+Idioma:    Português (BR) — pt_BR
 
-Numa Wi-Fi residencial com latência moderada (60–200 ms) e bandwidth limitado, o dashboard dispara ~15–25 queries em paralelo no boot. Cenário real:
+CORPO:
+Oi {{1}}, tudo bem? 👋
 
-1. **Dois fetch wrappers empilhados** (`customClient` telemetry + `fetchCircuitBreaker`) — toda request passa por dois interceptadores antes de sair
-2. **Timeout duro de 15s via AbortController** — uma query KPI grande que naturalmente levaria 8–12 s em Wi-Fi pode ser abortada se o servidor está sob carga, virando `AbortError` e contando como falha
-3. **5 falhas em 30 s = "offline"** — fácil de atingir no boot de um dashboard pesado em Wi-Fi
-4. **Banner aparece em 1.5 s** — corretor vê "Conexão indisponível" mesmo a rede funcionando
-5. **Telemetria de cada falha dispara MAIS fetches** para `network_telemetry`, amplificando o problema sob estresse de rede
-6. **SW kill switch força reload com cache-bust em toda activate** — em vez do PWA antigo que servia shell instantâneo do cache, agora cada visita refaz download completo
+Amanhã é um belo dia para você conhecer pessoalmente o imóvel
+que tanto te interessou. Como já estávamos conversando por aqui,
+queria ver se você tem disponibilidade para uma visita amanhã.
 
-Em 4G/5G a latência baixa e bandwidth alta absorvem tudo. Em Wi-Fi residencial, o efeito combinado faz o boot parecer "servidor offline" mesmo a rede estando OK.
+Posso reservar um horário pra você?
 
-## A solução real
+BOTÕES (Quick Reply — 2 botões):
+  [ Sim, quero visitar ]
+  [ Agora não ]
+```
 
-Restaurar a arquitetura comprovada de pré-13/05 nos pontos que introduziram fragilidade, mas mantendo o que de fato resolveu problemas reais.
+Após aprovação Meta, eu já deixo o nome do template (`visita_amanha_v1`) configurado no painel.
 
-### Camada 1 — Remover interceptação global de rede (raiz do problema em Wi-Fi)
+## Comportamento
 
-| Arquivo | Ação | Por quê |
-|---|---|---|
-| `src/lib/fetchCircuitBreaker.ts` | **Deletar** + remover `installFetchCircuitBreaker()` de `main.tsx` | Patching de `window.fetch` global com timeout 15s aborta requests legítimas em Wi-Fi |
-| `src/lib/originalFetch.ts` | **Deletar** | Só existia para dar fallback ao circuit breaker |
-| `src/lib/apiHealth.ts` | **Deletar** | Detector com thresholds que disparam falso-positivo em Wi-Fi |
-| `src/components/ApiOfflineBanner.tsx` | **Deletar** + remover do layout | Mostra "Conexão indisponível" baseado em apiHealth |
-| `src/lib/networkTelemetry.ts` | **Deletar** + remover wrapper de fetch do `customClient.ts` | Loga em `network_telemetry` e amplifica carga sob estresse |
-| `src/lib/authTelemetry.ts`, `src/lib/authHealthMonitor.ts` | **Deletar** se não tiverem outros consumidores | Mesma motivação |
+**Disparo:**
+- Hoje, em lote único, respeitando janela 09h-20h BRT
+- Throttle: delay 60-180s entre envios, pausa 3-8min a cada 6 envios (anti-ban)
+- Auto-pausa se Meta sinalizar bloqueio de qualidade (5 falhas seguidas)
+- Idempotência: lead que já recebeu este disparo **não recebe de novo**
 
-### Camada 2 — Voltar a um único cliente Supabase
+**Resposta "Sim, quero visitar":**
+1. Cria notificação push + sino para o `corretor_id` dono do lead
+2. Registra evento no histórico do lead (visível no modal/drawer)
+3. Cria badge `🔥 Quer visitar amanhã` no card do pipeline
+4. **NÃO** muda etapa, **NÃO** repassa lead
 
-| Arquivo | Ação |
-|---|---|
-| `src/integrations/supabase/customClient.ts` | **Deletar** |
-| `src/integrations/supabase/client.ts` | Restaurar versão pré-13/05 (importa env vars direto, sem `edgeBaseUrl`) |
-| Todo `import { supabase } from "@/integrations/supabase/customClient"` | Reescrever para `"@/integrations/supabase/client"` (estimativa: 60–120 arquivos, busca + replace mecânico) |
-| `src/lib/edgeBaseUrl.ts`, `src/lib/storageUrl.ts` | Manter apenas como helpers estáticos apontando para o host direto (sem lógica dinâmica) |
+**Resposta "Agora não":**
+1. Apenas registra no histórico do lead (`visita_amanha_negativa`)
+2. Sem notificação ao corretor (evita ruído)
+3. **NÃO** muda etapa, **NÃO** arquiva
 
-### Camada 3 — Simplificar `main.tsx` e `useAuth.tsx`
+**Resposta livre (texto qualquer):**
+- Cai no fluxo normal do WhatsApp Inbox (já existe)
+- Histórico ainda registra a interação como vinda da campanha
 
-| Arquivo | Ação |
-|---|---|
-| `src/main.tsx` | Reduzir aos essenciais: createRoot + kill switch one-shot (mantém) + version polling 60s (mantém — útil) + flags de recovery (mantém — link de recuperação útil). **Remover**: `installFetchCircuitBreaker`, import do `originalFetch`, cleanup de chaves antigas (já não há mais nada para limpar) |
-| `src/hooks/useAuth.tsx` | Comparar com versão pré-13/05 (150 linhas) e remover camadas de retry/telemetria/health monitor que não foram pedidas. Manter apenas: signIn, signOut, session listener, role resolution. Estimativa final: ~180–220 linhas |
-| `public/sw.js` | Restaurar Stale-While-Revalidate de `ef30ac4e` (172 linhas). PWA volta a abrir instantâneo do cache. **Manter** o handler de push notifications atual (foi adicionado depois e funciona) |
+## Arquitetura técnica
 
-### Camada 4 — `/admin/diagnostico-rede`
+```text
+┌─────────────────────────────────┐
+│ Central de Nutrição → nova aba  │
+│ "Disparo Visita Amanhã"         │
+│ [ Configurar ] [ Disparar agora ]│
+└──────────────┬──────────────────┘
+               │
+               ▼
+┌─────────────────────────────────┐
+│ EDGE: visita-amanha-enqueue     │  (clone enxuto do reengajamento)
+│ - Lê visita_amanha_config       │
+│ - Query leads elegíveis         │
+│ - Loop: sendMetaTemplate()      │
+│ - Throttle + auto-pausa         │
+└──────────────┬──────────────────┘
+               │
+               ▼
+┌─────────────────────────────────┐
+│ Meta Cloud API                  │
+│ template visita_amanha_v1       │
+└──────────────┬──────────────────┘
+               │   (resposta do lead)
+               ▼
+┌─────────────────────────────────┐
+│ EDGE: whatsapp-webhook (existe) │
+│ + handler novo:                 │
+│   detecta button_reply de       │
+│   visita_amanha → executa       │
+│   ação Sim/Não                  │
+└─────────────────────────────────┘
+```
 
-Simplificar para apenas mostrar:
-- Health probe ao host direto
-- Health probe ao proxy (diagnóstico, não failover)
-- Latência de cada um
-- Sem botões de "forçar host" (não há mais hostFailover)
+### Migrations (1 tabela + 1 coluna)
 
-## O que é mantido (porque resolveu problemas reais)
+```sql
+-- Tabela de controle (config + histórico de disparos)
+CREATE TABLE public.visita_amanha_disparos (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  pipeline_lead_id uuid REFERENCES pipeline_leads(id) ON DELETE CASCADE,
+  wamid text,
+  phone text,
+  status text DEFAULT 'sent', -- sent | sim | nao | failed
+  resposta_at timestamptz,
+  sent_at timestamptz DEFAULT now(),
+  created_at timestamptz DEFAULT now(),
+  UNIQUE (pipeline_lead_id) -- idempotência: 1 lead = 1 disparo
+);
 
-- ✅ DNS Cloudflare em `api.uhomesales.com` e `realtime.uhomesales.com` — usado por integrações server-side (Make, RD Station, Meta Ads, site)
-- ✅ SW kill switch one-shot (`src/lib/swKillSwitch.ts`) — útil para limpar SW antigo de quem ainda tem cache da versão velha. Roda 1x por usuário e morre.
-- ✅ Version polling em `main.tsx` — força reload quando há deploy novo. Útil.
-- ✅ Recovery flags (`?_recover=1`) — link de emergência funciona.
-- ✅ Push notifications no SW — handler atual está OK.
-- ✅ Todas as features de produto, edge functions, RLS, schema do banco.
+-- Config singleton
+CREATE TABLE public.visita_amanha_config (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  enabled boolean DEFAULT true,
+  paused boolean DEFAULT false,
+  meta_template_name text DEFAULT 'visita_amanha_v1',
+  meta_template_language text DEFAULT 'pt_BR',
+  daily_limit int DEFAULT 500,
+  delay_min_seconds int DEFAULT 60,
+  delay_max_seconds int DEFAULT 180,
+  pausa_longa_a_cada int DEFAULT 6,
+  horario_inicio time DEFAULT '09:00',
+  horario_fim time DEFAULT '20:00',
+  stages_alvo text[] DEFAULT ARRAY['Sem Contato','Contato Iniciado','Busca','Aquecimento'],
+  updated_at timestamptz DEFAULT now()
+);
 
-## Bateria de testes obrigatória
+-- Flag visual no card
+ALTER TABLE public.pipeline_leads
+  ADD COLUMN visita_amanha_resposta text; -- null | 'sim' | 'nao'
 
-### B.1 Estática
-- TypeScript zero erros
-- `bunx vitest run` — 6/6 passa
-- `grep -r "customClient\|fetchCircuitBreaker\|apiHealth\|ApiOfflineBanner\|networkTelemetry"` em `src/` retorna **zero** ocorrências
-- Bundle size diff: comparar `dist/` antes vs depois — espera-se redução
+-- RLS: gerente/CEO veem tudo, corretor só os seus
+ALTER TABLE visita_amanha_disparos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE visita_amanha_config ENABLE ROW LEVEL SECURITY;
+-- policies: read/write para gerente/CEO via has_role()
+```
 
-### B.2 Runtime no preview Lovable
-- `/auth` carrega instantâneo
-- Login funciona
-- Dashboard carrega sem nenhum banner de "conexão"
-- Console limpo (sem `[killswitch]`, `[apiHealth]`, etc.)
-- Network tab: cada request Supabase vai direto, **sem wrapper**, sem timeout artificial
-- Realtime conecta no host direto
+### Arquivos novos
 
-### B.3 Runtime publicado (uhomesales.com)
-- Login em 4G ✅
-- Login em **Wi-Fi do teste de hoje** (que falhou) — tem que funcionar como funcionava 3 meses atrás
-- PWA instalado abre instantâneo do cache (SW restaurado)
-- Push notifications continuam recebendo
+- `supabase/functions/visita-amanha-enqueue/index.ts` — dispatcher
+- `src/components/central-nutricao/VisitaAmanhaTab.tsx` — UI (configurar + disparar + ver progresso)
+- `src/components/pipeline/VisitaAmanhaBadge.tsx` — badge `🔥 Quer visitar amanhã` no card
 
-### B.4 Smoke
-- 1 cron de edge function executa OK (lead-escalation)
-- 1 lead novo entra pela roleta
-- 1 mensagem WhatsApp dispara
+### Arquivos editados (mínimo)
 
-### B.5 Reversibilidade
-- Branch antes de aplicar (snapshot Lovable serve)
-- Em 24h sem reportes negativos: deletar arquivos órfãos definitivamente
+- `supabase/functions/whatsapp-webhook/index.ts` — adicionar handler de `button_reply` para template `visita_amanha_v1` (Sim → notificação + histórico + flag; Não → só histórico)
+- `src/pages/CentralNutricao.tsx` — adicionar nova aba
+- `src/components/pipeline/PipelineCard.tsx` — exibir badge quando `visita_amanha_resposta = 'sim'`
 
-## Risco
+### Notificação ao corretor (Sim)
 
-**Estimativa de impacto**: 60–120 arquivos importam `customClient`. A reescrita é mecânica (sed). Risco de regressão em features de produto: baixo, porque o cliente exposto continua sendo o mesmo objeto Supabase, só vindo de outro arquivo.
+Reusa o sistema já existente:
+- INSERT em `notifications` (sino) com tipo `visita_amanha_sim`
+- Chamada à edge `send-push` (push web)
+- Mensagem: *"⚡ {nome} quer visitar amanhã! Entre em contato para marcar o horário."*
 
-**O que pode dar errado**: algum hook usa funcionalidade específica de `customClient` (ex: `useAuth.tsx` pode estar acoplado ao `setTelemetryIdentity`). Vou auditar dependências antes de deletar — se houver, isolo a função e deleto só o resto.
+### Histórico no modal do lead
 
-## Resultado esperado
+INSERT em `lead_eventos` (tabela já usada pelo drawer do lead):
+- `tipo: 'visita_amanha_resposta'`
+- `descricao: '✅ Cliente respondeu SIM ao convite de visita amanhã'` ou `'❌ Cliente respondeu: agora não'`
 
-Arquitetura idêntica em comportamento à de **13/05 18:55 BRT** — a versão que rodou 3 meses sem nenhum corretor reportar Wi-Fi quebrada. Apenas com:
-- DNS Cloudflare de domínio próprio (apenas server-side)
-- Push notifications ativas
-- Kill switch + version polling como rede de segurança para deploys
+## Fluxo de uso (você)
 
-Sem fetch wrappers. Sem detector de "offline" agressivo. Sem banner que assusta o corretor. Sem segundo cliente Supabase concorrente.
+1. Submete o template `visita_amanha_v1` no Meta WhatsApp Manager
+2. Aguarda aprovação (geralmente ~1h)
+3. Vai em **Central de Nutrição → Visita Amanhã → Disparar agora**
+4. Acompanha o progresso (enviados/falhas/respostas em tempo real)
+5. Conforme as respostas chegam, corretores recebem push/sino e o card do pipeline ganha o badge
+
+## Por que não toca em nada existente
+
+- Tabela e edge function NOVAS — zero risco no fluxo do reengajamento Casa Tua atual
+- Webhook só ganha um `if (templateName === 'visita_amanha_v1')` no início — fluxo legado intacto
+- Pipeline UI só exibe badge a mais — quando `visita_amanha_resposta` for null, nada muda
