@@ -71,7 +71,17 @@ const NEGOCIO_TIPO_EMOJI: Record<string, string> = {
   entregar_presente: "🎁",
 };
 
-type TabFilter = "todas" | "hoje" | "amanha" | "semana" | "atrasadas" | "concluidas";
+type TabFilter = "todas" | "hoje" | "amanha" | "semana" | "atrasadas" | "desatualizados" | "concluidas";
+
+interface OwnedLead {
+  id: string;
+  nome: string | null;
+  telefone: string | null;
+  empreendimento: string | null;
+  stage_id: string | null;
+  stage_tipo: string | null;
+  negocio_id: string | null;
+}
 
 function formatPhone(phone: string) {
   const d = phone.replace(/\D/g, "");
@@ -274,6 +284,50 @@ export default function MinhasTarefas() {
     refetchOnWindowFocus: true,
   });
 
+  // Owned leads enriquecidos com stage_tipo + negocio_id (para "atrasadas" iguais ao pipeline e aba "desatualizados")
+  const { data: ownedLeadsFull = [] } = useQuery({
+    queryKey: ["owned-leads-tarefas", user?.id, profileId],
+    queryFn: async (): Promise<OwnedLead[]> => {
+      if (!user) return [];
+      const corretorIds = [user.id, profileId].filter(Boolean) as string[];
+      if (corretorIds.length === 0) return [];
+
+      const PAGE = 1000;
+      const leads: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("pipeline_leads")
+          .select("id, nome, telefone, empreendimento, stage_id, negocio_id")
+          .in("corretor_id", corretorIds)
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        const batch = (data || []) as any[];
+        leads.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+
+      const stageIds = [...new Set(leads.map(l => l.stage_id).filter(Boolean))];
+      const stageTipoMap = new Map<string, string>();
+      if (stageIds.length > 0) {
+        const { data: stages } = await supabase
+          .from("pipeline_stages").select("id, tipo").in("id", stageIds);
+        (stages || []).forEach((s: any) => stageTipoMap.set(s.id, s.tipo));
+      }
+
+      return leads.map(l => ({
+        id: l.id,
+        nome: l.nome,
+        telefone: l.telefone,
+        empreendimento: l.empreendimento,
+        stage_id: l.stage_id,
+        stage_tipo: l.stage_id ? stageTipoMap.get(l.stage_id) || null : null,
+        negocio_id: l.negocio_id,
+      }));
+    },
+    enabled: !!user,
+    refetchOnWindowFocus: true,
+  });
+
   const { data: searchLeads = [] } = useQuery({
     queryKey: ["lead-search-tarefas", leadSearch],
     queryFn: async () => {
@@ -304,9 +358,50 @@ export default function MinhasTarefas() {
 
   const activeTarefas = categoria === "leads" ? tarefas : negociosTarefas;
 
+  // Map de leads "elegíveis" (igual ao pipeline: exclui descarte e leads com negócio criado)
+  const ownedLeadsMap = useMemo(() => {
+    const m = new Map<string, OwnedLead>();
+    ownedLeadsFull.forEach(l => m.set(l.id, l));
+    return m;
+  }, [ownedLeadsFull]);
+
+  const isLeadElegivel = (leadId: string | null | undefined) => {
+    if (!leadId) return true; // tarefas sem lead (negócios) seguem normais
+    const l = ownedLeadsMap.get(leadId);
+    if (!l) return true;
+    if (l.stage_tipo === "descarte") return false;
+    if (l.negocio_id) return false;
+    return true;
+  };
+
+  // BRT now HH:mm para checar atraso intra-dia (mesma regra do pipeline CardStatusLine)
+  const nowHHMM_BRT = now.toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+
   const pendentes = useMemo(() => activeTarefas.filter(t => t.status === "pendente"), [activeTarefas]);
   const concluidas = useMemo(() => activeTarefas.filter(t => t.status === "concluida").slice(0, 20), [activeTarefas]);
-  const atrasadas = useMemo(() => pendentes.filter(t => t.vence_em && isBefore(parseDateBRT(t.vence_em), todayStart)), [pendentes]);
+
+  // Atrasadas: usa MESMA regra do pipeline — exclui descarte/com negócio, considera vence<hoje OU mesmo dia + hora<agora.
+  // Conta DISTINCT leads pra bater com o número do pipeline.
+  const atrasadasTarefas = useMemo(() => {
+    if (categoria !== "leads") {
+      return pendentes.filter(t => t.vence_em && isBefore(parseDateBRT(t.vence_em), todayStart));
+    }
+    return pendentes.filter(t => {
+      if (!isLeadElegivel(t.pipeline_lead_id)) return false;
+      if (!t.vence_em) return false;
+      const d = parseDateBRT(t.vence_em);
+      if (isBefore(d, todayStart)) return true;
+      if (isToday(d) && t.hora_vencimento) {
+        return t.hora_vencimento.slice(0, 5) < nowHHMM_BRT;
+      }
+      return false;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendentes, categoria, ownedLeadsMap, nowHHMM_BRT]);
+
+  // Conta de leads únicos atrasados (pra bater com pipeline)
+  const atrasadasLeadCount = useMemo(() => new Set(atrasadasTarefas.map(t => t.pipeline_lead_id).filter(Boolean)).size, [atrasadasTarefas]);
+
   const hoje = useMemo(() => pendentes.filter(t => t.vence_em && isToday(parseDateBRT(t.vence_em))), [pendentes]);
   const amanha = useMemo(() => pendentes.filter(t => t.vence_em && isTomorrow(parseDateBRT(t.vence_em))), [pendentes]);
   const semana = useMemo(() => pendentes.filter(t => {
@@ -315,8 +410,19 @@ export default function MinhasTarefas() {
     return d >= todayStart && d <= weekEnd;
   }), [pendentes]);
 
-  const filteredTarefas = activeTab === "todas" ? pendentes : activeTab === "atrasadas" ? atrasadas : activeTab === "hoje" ? hoje :
-    activeTab === "amanha" ? amanha : activeTab === "concluidas" ? concluidas : semana;
+  // Desatualizados: leads do corretor (elegíveis) SEM nenhuma tarefa pendente
+  const desatualizados = useMemo<OwnedLead[]>(() => {
+    if (categoria !== "leads") return [];
+    const leadsComTarefa = new Set(
+      tarefas.filter(t => t.status === "pendente" && t.pipeline_lead_id).map(t => t.pipeline_lead_id)
+    );
+    return ownedLeadsFull
+      .filter(l => l.stage_tipo !== "descarte" && !l.negocio_id && !leadsComTarefa.has(l.id))
+      .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+  }, [ownedLeadsFull, tarefas, categoria]);
+
+  const filteredTarefas = activeTab === "todas" ? pendentes : activeTab === "atrasadas" ? atrasadasTarefas : activeTab === "hoje" ? hoje :
+    activeTab === "amanha" ? amanha : activeTab === "concluidas" ? concluidas : activeTab === "desatualizados" ? [] : semana;
 
   // Completion dialog state
   const [completingTarefa, setCompletingTarefa] = useState<TarefaComLead | null>(null);
@@ -491,10 +597,11 @@ export default function MinhasTarefas() {
 
   const tabs: { key: TabFilter; label: string; count: number }[] = [
     { key: "todas", label: "📋 Todas", count: pendentes.length },
-    { key: "atrasadas", label: "🔴 Atrasadas", count: atrasadas.length },
+    { key: "atrasadas", label: "🔴 Atrasadas", count: categoria === "leads" ? atrasadasLeadCount : atrasadasTarefas.length },
     { key: "hoje", label: "📅 Hoje", count: hoje.length },
     { key: "amanha", label: "📅 Amanhã", count: amanha.length },
     { key: "semana", label: "📅 Semana", count: semana.length },
+    ...(categoria === "leads" ? [{ key: "desatualizados" as TabFilter, label: "🟡 Desatualizados", count: desatualizados.length }] : []),
     { key: "concluidas", label: "✅ Concluídas", count: concluidas.length },
   ];
 
@@ -529,13 +636,14 @@ export default function MinhasTarefas() {
       <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
         <span>📊 <strong className="text-foreground">Total pendentes:</strong> {pendentes.length}</span>
         <span>·</span>
-        <span><strong className="text-destructive">Atrasadas:</strong> {atrasadas.length}</span>
+        <span><strong className="text-destructive">Atrasadas:</strong> {categoria === "leads" ? atrasadasLeadCount : atrasadasTarefas.length}</span>
         <span>·</span>
         <span><strong className="text-foreground">Hoje:</strong> {hoje.length}</span>
         <span>·</span>
         <span><strong className="text-foreground">Amanhã:</strong> {amanha.length}</span>
         <span>·</span>
         <span><strong className="text-foreground">Semana:</strong> {semana.length}</span>
+        {categoria === "leads" && (<><span>·</span><span><strong className="text-amber-600">Desatualizados:</strong> {desatualizados.length}</span></>)}
       </div>
 
       {/* Tabs */}
@@ -551,6 +659,59 @@ export default function MinhasTarefas() {
       {/* Task list */}
       {(isLoading || isLoadingNegocios) ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+      ) : activeTab === "desatualizados" ? (
+        desatualizados.length === 0 ? (
+          <Card className="p-8 text-center">
+            <p className="text-muted-foreground">🎉 Todos os seus leads ativos têm tarefa criada!</p>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              🟡 Leads ativos sem nenhuma tarefa pendente. Crie um follow-up pra não perder o contato.
+            </p>
+            {desatualizados.map(lead => (
+              <Card key={lead.id} className="p-3 border-l-[3px] border-l-amber-400 bg-amber-500/5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    <button
+                      onClick={() => navigate(`/pipeline-leads?lead=${lead.id}`)}
+                      className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1"
+                    >
+                      <User className="h-3.5 w-3.5" /> {lead.nome || "Sem nome"}
+                    </button>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                      {lead.empreendimento && (<span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{lead.empreendimento}</span>)}
+                      {lead.telefone && <span>{formatPhone(lead.telefone)}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {lead.telefone && (
+                      <>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => window.open(`tel:${lead.telefone}`, "_self")}>
+                          <Phone className="h-3.5 w-3.5" /> Ligar
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => openWhatsApp(lead.telefone!)}>
+                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                        </Button>
+                      </>
+                    )}
+                    <Button size="sm" className="h-8 text-xs gap-1" onClick={() => {
+                      setSelectedLeadId(lead.id);
+                      setSelectedLeadNome(lead.nome || "Lead");
+                      setNovoTipo("follow_up");
+                      setNovoData(dateToBRT(new Date()));
+                      setNovoHora("10:00");
+                      setNovoObs("");
+                      setShowNovaTarefa(true);
+                    }}>
+                      <Plus className="h-3.5 w-3.5" /> Criar Tarefa
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )
       ) : filteredTarefas.length === 0 ? (
         <Card className="p-8 text-center">
           <p className="text-muted-foreground">🎉 Nenhuma tarefa {activeTab === "atrasadas" ? "atrasada" : activeTab === "concluidas" ? "concluída recente" : "para este período"}!</p>
