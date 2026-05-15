@@ -241,15 +241,16 @@ export default function PipelineKanban() {
   }, [pipeline.leads]);
 
   // Client status counts — based on pre-filtered leads (respects corretor/campaign filters)
+  const stageTypeById = useMemo(() => Object.fromEntries(pipeline.stages.map((s) => [s.id, s.tipo])), [pipeline.stages]);
+
   const clientStatusCounts = useMemo(() => {
     const counts = { em_dia: 0, desatualizado: 0, tarefa_atrasada: 0 };
-    const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
     for (const l of preFilteredLeads) {
-      const s = getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id));
+      const s = getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageTypeById[l.stage_id]);
       counts[s]++;
     }
     return counts;
-  }, [preFilteredLeads, kanbanTarefasMap, pipeline.stages]);
+  }, [preFilteredLeads, kanbanTarefasMap, stageTypeById]);
 
   const activeFiltersCount = countActiveFilters(filters);
 
@@ -945,6 +946,8 @@ export default function PipelineKanban() {
           <PipelineManagerActions
             leads={pipeline.leads}
             corretorNomes={pipeline.corretorNomes}
+            tarefasMap={kanbanTarefasMap}
+            stageTypeById={stageTypeById}
           />
         </div>
       )}
