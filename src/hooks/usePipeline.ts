@@ -296,7 +296,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     });
     // Só substitui se o resultado tem dados OU se ainda não temos nada cacheado.
     // Evita zerar a tela em respostas vazias anômalas pós-erro transitório.
-    if (leadsData.length > 0 || leads.length === 0) {
+    if (leadsData.length > 0 || leadsRef.current.length === 0) {
       setLeads(leadsData);
     }
 
@@ -345,14 +345,14 @@ export function usePipeline(pipelineTipo: string = "leads") {
       console.error("[usePipeline] loadLeads crash:", err);
       // Só incomoda o usuário com toast se NÃO houver dados cacheados.
       // Caso contrário a tela continua usável e a próxima reload tenta de novo.
-      if (leads.length === 0) {
+      if (leadsRef.current.length === 0) {
         toast.error("Erro ao carregar leads. Tente recarregar a página.");
       }
       throw err; // propaga para Promise.allSettled detectar como falha crítica
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin, leads.length, shouldHideLeadFromPipeline]);
+  }, [userId, isGestor, isAdmin, shouldHideLeadFromPipeline]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
