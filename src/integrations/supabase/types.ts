@@ -6064,6 +6064,7 @@ export type Database = {
           ultima_acao_at: string | null
           updated_at: string
           valor_estimado: number | null
+          visita_amanha_resposta: string | null
         }
         Insert: {
           aceite_expira_em?: string | null
@@ -6152,6 +6153,7 @@ export type Database = {
           ultima_acao_at?: string | null
           updated_at?: string
           valor_estimado?: number | null
+          visita_amanha_resposta?: string | null
         }
         Update: {
           aceite_expira_em?: string | null
@@ -6240,6 +6242,7 @@ export type Database = {
           ultima_acao_at?: string | null
           updated_at?: string
           valor_estimado?: number | null
+          visita_amanha_resposta?: string | null
         }
         Relationships: [
           {
@@ -8611,6 +8614,101 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      visita_amanha_config: {
+        Row: {
+          daily_limit: number
+          delay_max_seconds: number
+          delay_min_seconds: number
+          enabled: boolean
+          horario_fim: string
+          horario_inicio: string
+          id: string
+          meta_template_language: string
+          meta_template_name: string
+          pausa_longa_a_cada: number
+          pausa_longa_max_seconds: number
+          pausa_longa_min_seconds: number
+          paused: boolean
+          stages_alvo: string[]
+          updated_at: string
+        }
+        Insert: {
+          daily_limit?: number
+          delay_max_seconds?: number
+          delay_min_seconds?: number
+          enabled?: boolean
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          meta_template_language?: string
+          meta_template_name?: string
+          pausa_longa_a_cada?: number
+          pausa_longa_max_seconds?: number
+          pausa_longa_min_seconds?: number
+          paused?: boolean
+          stages_alvo?: string[]
+          updated_at?: string
+        }
+        Update: {
+          daily_limit?: number
+          delay_max_seconds?: number
+          delay_min_seconds?: number
+          enabled?: boolean
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          meta_template_language?: string
+          meta_template_name?: string
+          pausa_longa_a_cada?: number
+          pausa_longa_max_seconds?: number
+          pausa_longa_min_seconds?: number
+          paused?: boolean
+          stages_alvo?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      visita_amanha_disparos: {
+        Row: {
+          created_at: string
+          id: string
+          phone: string | null
+          pipeline_lead_id: string
+          resposta_at: string | null
+          sent_at: string
+          status: string
+          wamid: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone?: string | null
+          pipeline_lead_id: string
+          resposta_at?: string | null
+          sent_at?: string
+          status?: string
+          wamid?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone?: string | null
+          pipeline_lead_id?: string
+          resposta_at?: string | null
+          sent_at?: string
+          status?: string
+          wamid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visita_amanha_disparos_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       visitas: {
         Row: {
