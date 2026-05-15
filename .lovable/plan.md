@@ -1,57 +1,105 @@
-## Problema
+# Objetivo
+Corrigir de forma definitiva o problema em que o CRM funciona em dados móveis e falha no Wi‑Fi, eliminando dependências frágeis de DNS/proxy no fluxo normal e deixando uma arquitetura única, validada e observável.
 
-A corretora Andressa Madril (e potencialmente outros usuários antigos) está com:
+# Diagnóstico fechado
+- O problema original é compatível com falha/intermitência de resolução do domínio próprio em alguns provedores Wi‑Fi, especialmente por cache negativo de DNS após NXDOMAIN. Isso é um comportamento padronizado de DNS (RFC 2308), então não é algo que o app consiga “forçar” a expirar no dispositivo do usuário.
+- Hoje o app está misto:
+  - Login, REST principal e Realtime já conseguem usar o host direto quando a flag está em `true`.
+  - Mas ainda existem pontos relevantes hardcoded em `api.uhomesales.com`, inclusive telemetria de rede e reescrita de URLs públicas de storage.
+- Também existe uma arquitetura de failover `api.uhomesales.com -> api-backup.uhomesales.com`, porém isso só é confiável se ambos os domínios próprios estiverem universalmente resolvendo em todos os provedores. Se o problema é DNS do domínio próprio, manter o caminho crítico dependendo dele continua frágil.
+- Os testes lidos agora mostram:
+  - `api.uhomesales.com` responde do ambiente atual.
+  - `api-backup.uhomesales.com` responde do ambiente atual.
+  - `realtime.uhomesales.com` e `realtime-backup.uhomesales.com` respondem.
+  - O backend direto também está saudável.
+- Os logs de auth mostram outro sintoma paralelo no preview (`/user 403 invalid claim: missing sub claim`), mas isso não explica o padrão “4G funciona / Wi‑Fi não”. O vetor mais forte para esse problema específico continua sendo a camada de nome/proxy.
 
-1. **PC — tela de login travada em "Entrando..."**: bundle/PWA antigo em cache + `signIn` pode levar ~15s sem feedback nem rota de escape.
-2. **Mobile — clica "Criar Tarefa" no detalhe do lead e nada acontece**: combinação de chunk antigo em cache (runtime error silencioso) + bug de UX em `addTarefa` que retorna mudo quando `user` ainda não hidratou.
+# Solução proposta
+## Fase 1 — Unificar o caminho crítico de autenticação e dados
+Remover do fluxo crítico qualquer dependência de `api.uhomesales.com`/`realtime.uhomesales.com` enquanto estivermos estabilizando a operação.
 
-Confirmado no banco: login dela funciona no servidor (sign-in às 19:15 BRT hoje). Console mostra `Importing a module script failed` e `auth-boot ceiling reached (8s)` — assinatura clássica de cache poluído.
+Implementação:
+- Definir uma única estratégia canônica para runtime:
+  - REST/Auth/Revalidation: host direto do backend.
+  - Realtime: host direto do backend.
+  - Edge Functions: host direto do backend.
+- Parar de usar domínio próprio em pontos acessórios que hoje ainda podem disparar falhas no Wi‑Fi:
+  - `src/lib/networkTelemetry.ts`
+  - `src/lib/storageUrl.ts`
+  - qualquer helper/runtime que ainda reescreva para `api.uhomesales.com`
+- Preservar a regra permanente já definida: não alterar as flags sem autorização explícita.
 
-## Correções
+Resultado esperado:
+- Zero request para `api.uhomesales.com` no uso normal do app.
+- Login e carregamento de dados usando o mesmo caminho em Wi‑Fi e dados móveis.
 
-### 1. Kill-switch agressivo no service worker (`public/sw.js`)
-Reescrever para sempre que ativar:
-- `caches.keys()` → deletar todos
-- Forçar `client.navigate(url + ?_v=ts)` em todas as abas abertas
-- `unregister()` ao final
+## Fase 2 — Remover a ambiguidade arquitetural
+Hoje coexistem duas estratégias conflitantes: bypass direto e proxy/failover próprio.
 
-Isso garante que mesmo dispositivos com SW antigo, na próxima abertura, sejam reciclados de uma vez — sem depender do `main.tsx` carregar primeiro.
+Implementação:
+- Desligar logicamente o failover de domínio próprio no runtime enquanto o caminho oficial for direto.
+- Manter apenas a observabilidade e retries de rede, sem reescrever request para hosts próprios.
+- Ajustar comentários, constantes e nomes para refletir a arquitetura real, evitando futuras regressões “pela metade”.
 
-### 2. UX resiliente em `LeadTarefasTab.handleCreate`
-- Adicionar estado `creating` no botão (spinner + disabled)
-- `try/catch` em volta de `onAddTarefa` com `toast.error`
-- Validar `tipo` e `vence_em` antes de chamar (toast claro se faltar data)
+Resultado esperado:
+- Sem comportamento híbrido.
+- Menor chance de alguém reintroduzir proxy próprio no meio do auth sem perceber.
 
-### 3. `addTarefa` em `usePipelineLeadData.ts` deixar de falhar mudo
-- Se `!user`, mostrar `toast.error("Sessão expirou — recarregue a página")` em vez de `return` silencioso
-- Logar `console.error` com o motivo
-- Retornar `boolean` para o caller saber o resultado
+## Fase 3 — Blindar assets e endpoints secundários
+Mesmo com login ok, páginas podem falhar parcialmente se imagens/storage/telemetria continuarem dependendo do domínio que falha no Wi‑Fi.
 
-### 4. Auth — desbloqueio durante "Entrando..."
-- Reduzir `MAX_ATTEMPTS` de signIn de 3 para 2 (mais responsivo) e `waitForFreshSession` de 5s para 3s
-- Mostrar o botão "Corrigir acesso neste dispositivo" também enquanto `submitting=true` (hoje só aparece quando idle)
-- Após 8s travado em "Entrando...", auto-mostrar um aviso "Demorando demais? Toque em corrigir acesso"
+Implementação:
+- Fazer storage público seguir o mesmo host canônico do runtime.
+- Fazer telemetria usar o mesmo host canônico.
+- Revisar pontos hardcoded restantes do domínio próprio usados pelo app em produção.
 
-### 5. Telemetria
-Adicionar `sendAuthTelemetry({event_type: "task_create_blocked"})` quando `addTarefa` cair no caminho `!user`, para detectarmos esse cenário em outros usuários.
+Resultado esperado:
+- App carrega dados e mídia com o mesmo padrão de conectividade.
+- Menos “entra mas quebra depois”.
 
-## Arquivos afetados
+## Fase 4 — Validação objetiva
+Depois da implementação, validar com checklist real de rede:
+- Login por email/senha.
+- Refresh de sessão.
+- Busca de dados após login.
+- Navegação entre telas principais.
+- Assets/imagens vindos de storage.
+- Realtime básico.
+- Garantir que não existam requests para `api.uhomesales.com` no fluxo normal.
 
-- `public/sw.js` — kill-switch reforçado
-- `src/components/pipeline/LeadTarefasTab.tsx` — handleCreate com estado loading + try/catch + validação
-- `src/hooks/usePipelineLeadData.ts` — addTarefa com toast/log e retorno boolean
-- `src/hooks/useAuth.tsx` — reduzir timeouts do signIn
-- `src/pages/Auth.tsx` — botão "Corrigir acesso" sempre visível + aviso após 8s
+# Arquivos prováveis a ajustar
+- `src/integrations/supabase/customClient.ts`
+- `src/lib/edgeBaseUrl.ts`
+- `src/lib/fetchCircuitBreaker.ts`
+- `src/lib/proxyEndpoints.ts`
+- `src/lib/networkTelemetry.ts`
+- `src/lib/storageUrl.ts`
+- possivelmente `src/pages/admin/TelemetriaRede.tsx` apenas para o diagnóstico administrativo continuar coerente
 
-## O que NÃO vai mudar
+# Decisão arquitetural recomendada
+A correção definitiva é: parar de depender do domínio próprio no runtime do CRM até que ele seja comprovadamente estável em todos os provedores alvo. DNS com cache negativo não se resolve do lado do app. Se queremos “sem falhas, sem temporário”, o fluxo crítico deve usar o endpoint que não depende dessa propagação.
 
-- RLS, schema de `pipeline_tarefas`, lógica de roleta, fluxo de aceite — nada disso é o problema.
-- Cargo/role da Andressa (já está corretor com profile válido).
+# Riscos controlados
+- O app pode continuar funcionando com o domínio próprio em alguns ambientes, mas isso não é o critério; o critério é eliminar o caso Wi‑Fi quebrado.
+- Se o domínio próprio precisar voltar no futuro, isso deve ser feito em uma migração explícita, ponta a ponta, com validação por provedores reais e sem arquitetura híbrida.
 
-## Para a Andressa, no momento do deploy
+# Entregável final
+- Runtime unificado em host direto.
+- Zero dependência do domínio próprio no fluxo normal.
+- Sem bypass parcial.
+- Sem failover inconsistente.
+- Fluxo de login e dados consistente em Wi‑Fi e dados móveis.
 
-Como o cache antigo dela ainda vai precisar de UM ciclo para pegar o novo SW, ela vai precisar **uma única vez**:
-- No PC: clicar no link "Está preso na tela de login? Corrigir acesso neste dispositivo" (já existe).
-- No celular: forçar fechar o app PWA e abrir de novo (o novo SW já vai limpar tudo).
+# Detalhes técnicos
+```text
+Hoje:
+Auth/REST/Reatime/Edge = parcialmente direto
+Storage/telemetria/outros = ainda domínio próprio
+Failover = ainda tenta domínio próprio/backup
 
-Depois disso, todos os deploys futuros são automáticos.
+Depois:
+Tudo do runtime crítico = host direto único
+Retries = mantidos
+Observabilidade = mantida
+Proxy próprio = fora do caminho crítico
+```

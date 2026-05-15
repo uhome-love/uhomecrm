@@ -9,8 +9,10 @@ import { originalFetch } from "./originalFetch";
 
 const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_KEY = (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-// Endpoint REST direto (via proxy próprio, igual ao customClient)
-const TELEMETRY_ENDPOINT = "https://api.uhomesales.com/rest/v1/network_telemetry";
+// Endpoint REST direto no backend canônico — alinhado ao customClient.
+// NÃO usar api.uhomesales.com aqui: evita falhas em provedores Wi-Fi com
+// cache negativo de DNS no domínio próprio.
+const TELEMETRY_ENDPOINT = "https://hunbxqzhvuemgntklyzb.supabase.co/rest/v1/network_telemetry";
 const TELEMETRY_PATH_FRAGMENT = "/rest/v1/network_telemetry";
 
 const PENDING_KEY = "uhome:net:pending_telemetry";
