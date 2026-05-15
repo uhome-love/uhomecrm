@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getManagedTeamProfileIds, resolveProfileIds } from "@/hooks/useAuthUser";
@@ -92,7 +92,23 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const lastVisibleRef = useRef(Date.now());
   // Guard against concurrent loadLeads calls
   const loadingLeadsRef = useRef(false);
-  const discardStageIds = new Set(stages.filter((stage) => stage.tipo === "descarte").map((stage) => stage.id));
+
+  // Refs com snapshot atual de cada coleção. Usadas dentro de callbacks
+  // estáveis para evitar loops de re-render (não entram nas deps).
+  const stagesRef = useRef<PipelineStage[]>([]);
+  const segmentosRef = useRef<PipelineSegmento[]>([]);
+  const leadsRef = useRef<PipelineLead[]>([]);
+  useEffect(() => { stagesRef.current = stages; }, [stages]);
+  useEffect(() => { segmentosRef.current = segmentos; }, [segmentos]);
+  useEffect(() => { leadsRef.current = leads; }, [leads]);
+
+  // Memoizado: só muda quando a lista de stages muda (não a cada render).
+  // Sem isso, `shouldHideLeadFromPipeline` mudava a cada render → loadLeads
+  // mudava → useEffect refazia fetch infinitamente.
+  const discardStageIds = useMemo(
+    () => new Set(stages.filter((stage) => stage.tipo === "descarte").map((stage) => stage.id)),
+    [stages]
+  );
 
   const shouldHideLeadFromPipeline = useCallback((lead: Partial<PipelineLead> | null | undefined) => {
     if (!lead) return false;
@@ -123,7 +139,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     const filtered = (data || [] as any[]).filter((s: any) => s.pipeline_tipo === pipelineTipo);
     // Só substitui se a query realmente retornou algo OU se ainda não temos nada.
     // Isso evita zerar a UI durante uma resposta vazia anômala.
-    if (filtered.length > 0 || stages.length === 0) {
+    if (filtered.length > 0 || stagesRef.current.length === 0) {
       setStages(filtered.map((s: any) => ({
         id: s.id,
         nome: s.nome,
@@ -133,7 +149,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
         pipeline_tipo: s.pipeline_tipo || pipelineTipo,
       })));
     }
-  }, [pipelineTipo, stages.length]);
+  }, [pipelineTipo]);
 
   const loadSegmentos = useCallback(async () => {
     const { data, error } = await runQueryWithRetry<any[]>(() =>
@@ -154,8 +170,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
       cor: s.cor || "#4969FF",
       ordem: s.ordem,
     }));
-    if (next.length > 0 || segmentos.length === 0) setSegmentos(next);
-  }, [segmentos.length]);
+    if (next.length > 0 || segmentosRef.current.length === 0) setSegmentos(next);
+  }, []);
 
   const loadLeads = useCallback(async () => {
     if (!userId) return;
@@ -280,7 +296,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     });
     // Só substitui se o resultado tem dados OU se ainda não temos nada cacheado.
     // Evita zerar a tela em respostas vazias anômalas pós-erro transitório.
-    if (leadsData.length > 0 || leads.length === 0) {
+    if (leadsData.length > 0 || leadsRef.current.length === 0) {
       setLeads(leadsData);
     }
 
@@ -329,14 +345,14 @@ export function usePipeline(pipelineTipo: string = "leads") {
       console.error("[usePipeline] loadLeads crash:", err);
       // Só incomoda o usuário com toast se NÃO houver dados cacheados.
       // Caso contrário a tela continua usável e a próxima reload tenta de novo.
-      if (leads.length === 0) {
+      if (leadsRef.current.length === 0) {
         toast.error("Erro ao carregar leads. Tente recarregar a página.");
       }
       throw err; // propaga para Promise.allSettled detectar como falha crítica
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin, leads.length, shouldHideLeadFromPipeline]);
+  }, [userId, isGestor, isAdmin, shouldHideLeadFromPipeline]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
@@ -344,48 +360,59 @@ export function usePipeline(pipelineTipo: string = "leads") {
     if (roleLoading) return;
 
     setError(null);
-    setLoading(prev => (stages.length === 0 && leads.length === 0 && segmentos.length === 0 ? true : prev));
+    setLoading(prev => (stagesRef.current.length === 0 && leadsRef.current.length === 0 && segmentosRef.current.length === 0 ? true : prev));
+
+    let cancelled = false;
 
     // Timeout guard: if load takes > 30s, stop and show error
     const timeout = setTimeout(() => {
+      if (cancelled) return;
       setLoading(false);
       setError("O carregamento demorou demais. Tente recarregar.");
     }, 30_000);
 
-    // Resilient init: a partial failure (e.g. segmentos timeout) must NOT
-    // wipe the entire pipeline. Each query owns its own error handling.
-    Promise.allSettled([loadStages(), loadSegmentos(), loadLeads()])
-      .then((results) => {
-        const failed = results
-          .map((r, i) => ({ r, name: ["stages", "segmentos", "leads"][i] }))
-          .filter((x) => x.r.status === "rejected");
+    // ORDEM: stages PRIMEIRO. discardStageIds depende de stages, e
+    // shouldHideLeadFromPipeline filtra leads na hora do setLeads.
+    // Sem isso, leads chegam antes e são classificados/exibidos com filtro
+    // vazio → "50 desatualizados" piscando até stages chegarem.
+    (async () => {
+      const stagesResult = await Promise.allSettled([loadStages()]);
+      if (cancelled) return;
+      const restResults = await Promise.allSettled([loadSegmentos(), loadLeads()]);
+      if (cancelled) return;
 
-        if (failed.length === 0) {
-          // Sucesso total: marca timestamp e limpa flag de stale.
-          lastSuccessAtRef.current = new Date();
-          setStaleSince(null);
-        } else {
-          console.warn("[usePipeline] Partial load failure:", failed.map((f) => f.name));
-          const criticalFailed = failed.some((f) => f.name === "stages" || f.name === "leads");
-          // Só mostra erro de tela se NÃO há nada cacheado.
-          // Se já existe estado válido, mantemos a UI funcional e tentamos de novo no próximo ciclo.
-          const haveCache = stages.length > 0 && leads.length >= 0;
-          if (criticalFailed && !haveCache) {
-            setError("Falha parcial ao carregar pipeline. Tente recarregar.");
-          }
-          // Falha crítica COM cache: marca staleSince pra badge aparecer.
-          if (criticalFailed && haveCache && lastSuccessAtRef.current) {
-            setStaleSince(lastSuccessAtRef.current);
-          }
+      const all = [...stagesResult, ...restResults];
+      const names = ["stages", "segmentos", "leads"];
+      const failed = all
+        .map((r, i) => ({ r, name: names[i] }))
+        .filter((x) => x.r.status === "rejected");
+
+      if (failed.length === 0) {
+        lastSuccessAtRef.current = new Date();
+        setStaleSince(null);
+      } else {
+        console.warn("[usePipeline] Partial load failure:", failed.map((f) => f.name));
+        const criticalFailed = failed.some((f) => f.name === "stages" || f.name === "leads");
+        const haveCache = stagesRef.current.length > 0;
+        if (criticalFailed && !haveCache) {
+          setError("Falha parcial ao carregar pipeline. Tente recarregar.");
         }
-      })
+        if (criticalFailed && haveCache && lastSuccessAtRef.current) {
+          setStaleSince(lastSuccessAtRef.current);
+        }
+      }
+    })()
       .finally(() => {
+        if (cancelled) return;
         clearTimeout(timeout);
         setLoading(false);
       });
 
-    return () => clearTimeout(timeout);
-  }, [userId, roleLoading, loadStages, loadSegmentos, loadLeads]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [userId, roleLoading, pipelineTipo, loadStages, loadSegmentos, loadLeads]);
 
   // NOTA: o auto-retry de 4s foi removido nesta rodada (Fase 3 / Item 2).
   // Com runQueryWithRetry agora limitado a 3 tentativas + parada imediata em

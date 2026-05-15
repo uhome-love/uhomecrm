@@ -245,12 +245,15 @@ export default function PipelineKanban() {
 
   const clientStatusCounts = useMemo(() => {
     const counts = { em_dia: 0, desatualizado: 0, tarefa_atrasada: 0 };
+    // Defesa: sem stages carregados, stageTypeById está vazio e a
+    // classificação ficaria errada (tudo viraria "desatualizado"). Aguarda.
+    if (pipeline.stages.length === 0) return counts;
     for (const l of preFilteredLeads) {
       const s = getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageTypeById[l.stage_id]);
       counts[s]++;
     }
     return counts;
-  }, [preFilteredLeads, kanbanTarefasMap, stageTypeById]);
+  }, [preFilteredLeads, kanbanTarefasMap, stageTypeById, pipeline.stages.length]);
 
   const activeFiltersCount = countActiveFilters(filters);
 
