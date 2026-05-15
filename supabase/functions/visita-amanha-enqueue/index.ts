@@ -197,6 +197,7 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < leads.length; i++) {
       if (Date.now() - startedAt > MAX_RUN_MS) {
+        await releaseLock();
         return new Response(JSON.stringify({
           partial: true, sent, failed, skipped, total: totalAlvo,
           processed: i, message: "Rodada finalizada — cron continuará automaticamente em 2 min.",
