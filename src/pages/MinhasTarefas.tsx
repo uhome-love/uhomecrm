@@ -636,13 +636,14 @@ export default function MinhasTarefas() {
       <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
         <span>📊 <strong className="text-foreground">Total pendentes:</strong> {pendentes.length}</span>
         <span>·</span>
-        <span><strong className="text-destructive">Atrasadas:</strong> {atrasadas.length}</span>
+        <span><strong className="text-destructive">Atrasadas:</strong> {categoria === "leads" ? atrasadasLeadCount : atrasadasTarefas.length}</span>
         <span>·</span>
         <span><strong className="text-foreground">Hoje:</strong> {hoje.length}</span>
         <span>·</span>
         <span><strong className="text-foreground">Amanhã:</strong> {amanha.length}</span>
         <span>·</span>
         <span><strong className="text-foreground">Semana:</strong> {semana.length}</span>
+        {categoria === "leads" && (<><span>·</span><span><strong className="text-amber-600">Desatualizados:</strong> {desatualizados.length}</span></>)}
       </div>
 
       {/* Tabs */}
