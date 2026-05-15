@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ClipboardList, AlertTriangle, CalendarX } from "lucide-react";
+import { ChevronDown, ChevronUp, ClipboardList, AlertTriangle } from "lucide-react";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { differenceInHours } from "date-fns";
 import { getLeadStatusFilter, type ProximaTarefa } from "@/components/pipeline/CardStatusLine";
@@ -36,17 +36,7 @@ export default function PipelineManagerActions({ leads, corretorNomes, tarefasMa
     });
   }, [leads, tarefasMap, stageTypeById]);
 
-  // 3. Visitas atrasadas (data_visita < today and not completed)
-  const visitasAtrasadas = useMemo(() => {
-    return leads.filter(l => {
-      if (!l.corretor_id) return false;
-      const dataVisita = (l as any).data_visita;
-      if (!dataVisita) return false;
-      return isBefore(new Date(dataVisita), today);
-    });
-  }, [leads, today]);
-
-  const totalAlerts = leadsSemTarefa.length + leadsTarefaAtrasada.length + visitasAtrasadas.length;
+  const totalAlerts = leadsSemTarefa.length + leadsTarefaAtrasada.length;
 
   const alerts = [
     {
@@ -64,14 +54,6 @@ export default function PipelineManagerActions({ leads, corretorNomes, tarefasMa
       color: "text-red-500",
       bg: "bg-red-500/10",
       borderColor: "border-red-500/30",
-    },
-    {
-      icon: CalendarX,
-      label: "Visitas atrasadas",
-      count: visitasAtrasadas.length,
-      color: "text-orange-600",
-      bg: "bg-orange-500/10",
-      borderColor: "border-orange-500/30",
     },
   ];
 
@@ -91,7 +73,7 @@ export default function PipelineManagerActions({ leads, corretorNomes, tarefasMa
       </button>
 
       {expanded && (
-        <div className="px-3 pb-3 grid grid-cols-3 gap-2">
+        <div className="px-3 pb-3 grid grid-cols-2 gap-2">
           {alerts.map(a => (
             <div
               key={a.label}
