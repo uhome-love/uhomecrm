@@ -1,25 +1,24 @@
-// Wrapper Supabase apontando para o domínio próprio (proxy Cloudflare).
-// Objetivo: evitar bloqueios de WiFi/firewall/DNS que filtram *.supabase.co.
+// Wrapper Supabase com failover bidirecional automático.
+//
+// Arquitetura (15/05/2026):
+//   - Há DOIS hosts candidatos: `proxy` (api.uhomesales.com) e `direct`
+//     (hunbxqzhvuemgntklyzb.supabase.co).
+//   - Quem decide qual está ativo é o módulo `hostFailover`. Ele lê localStorage
+//     no boot, e o `fetchCircuitBreaker` troca em runtime quando há falha de DNS.
+//   - Realtime escuta `host:flipped` e reconecta no novo host.
 //
 // IMPORTANTE: NÃO importar do client.ts oficial — ele é auto-gerado pelo Lovable.
-// O tipo Database vem direto de ./types (também auto-gerado, mas estável e seguro).
-//
-// Failover: o REST sai via window.fetch que é interceptado pelo smartFetch
-// (src/lib/fetchCircuitBreaker.ts) e reescrito para api-backup quando preciso.
-// Para o Realtime (WebSocket) fazemos um watchdog dedicado abaixo.
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
-import { PRIMARY, BACKUP, getActiveTarget } from "@/lib/proxyEndpoints";
+import {
+  getCurrentApiBase,
+  getCurrentRealtimeUrl,
+  getApiBaseFor,
+  getRealtimeUrlFor,
+  getPinnedHost,
+} from "@/lib/hostFailover";
 
-// Runtime deve priorizar o domínio próprio porque o preview pode falhar em
-// POSTs de auth quando bate direto no host externo.
-const USE_DIRECT_SUPABASE = true;
-const DIRECT_API_URL = "https://hunbxqzhvuemgntklyzb.supabase.co";
-const DIRECT_REALTIME_URL = "wss://hunbxqzhvuemgntklyzb.supabase.co/realtime/v1";
-
-const SUPABASE_URL = USE_DIRECT_SUPABASE ? DIRECT_API_URL : PRIMARY.api;
-const REALTIME_PRIMARY_URL = USE_DIRECT_SUPABASE ? DIRECT_REALTIME_URL : PRIMARY.realtime;
-const REALTIME_BACKUP_URL = USE_DIRECT_SUPABASE ? DIRECT_REALTIME_URL : BACKUP.realtime;
+const SUPABASE_URL = getCurrentApiBase();
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const supabase = createClient<Database>(
@@ -41,9 +40,9 @@ export const supabase = createClient<Database>(
   },
 );
 
-// ─── Realtime: força host próprio + watchdog de failover ─────────────────────
+// ─── Realtime: aplica host atual + reconecta no flip ─────────────────────────
 function applyRealtimeEndpoint() {
-  const url = getActiveTarget() === "backup" ? REALTIME_BACKUP_URL : REALTIME_PRIMARY_URL;
+  const url = getCurrentRealtimeUrl();
   try {
     (supabase.realtime as any).endPoint = url;
     (supabase.realtime as any).endPointURL = () => url;
@@ -54,9 +53,9 @@ function applyRealtimeEndpoint() {
 
 applyRealtimeEndpoint();
 
-// Quando o smartFetch chavear primary↔backup, reaplica e força reconnect
 if (typeof window !== "undefined") {
-  window.addEventListener("proxy:switched", () => {
+  // Quando o circuit breaker trocar de host, reaplica endpoint e reconecta
+  window.addEventListener("host:flipped", () => {
     applyRealtimeEndpoint();
     try {
       const rt: any = supabase.realtime;
@@ -66,15 +65,42 @@ if (typeof window !== "undefined") {
       // noop
     }
   });
+
+  // Watchdog dedicado: se o WebSocket falhar repetidamente no host atual,
+  // tenta reconectar no host alternativo (sem trocar o pinned global, que é
+  // responsabilidade do circuit breaker via fetch).
+  let wsFailures = 0;
+  const WS_FAILURE_THRESHOLD = 3;
+  const onError = () => {
+    wsFailures++;
+    if (wsFailures >= WS_FAILURE_THRESHOLD) {
+      wsFailures = 0;
+      const altHost = getPinnedHost() === "proxy" ? "direct" : "proxy";
+      const altUrl = getRealtimeUrlFor(altHost);
+      try {
+        (supabase.realtime as any).endPoint = altUrl;
+        (supabase.realtime as any).endPointURL = () => altUrl;
+        (supabase.realtime as any).disconnect?.();
+        setTimeout(() => (supabase.realtime as any).connect?.(), 250);
+        console.warn(`[realtime] WS failover: reconnecting on ${altHost}`);
+      } catch {
+        // noop
+      }
+    }
+  };
+  try {
+    (supabase.realtime as any).onError?.(onError);
+  } catch {
+    // noop
+  }
 }
 
 // ─── Wrapper observador de telemetria (NÃO substitui o circuit breaker) ─────
-// Envolve o window.fetch atual (já interceptado pelo smartFetch) para registrar
-// falhas reais sem alterar comportamento. Zero await entre caller e fetch.
 if (typeof window !== "undefined" && !(window as any).__netTelemetryWrapped) {
   (window as any).__netTelemetryWrapped = true;
   const inner = window.fetch.bind(window);
-  const MONITORED = /\.uhomesales\.com$/i;
+  // Monitora ambos os hosts conhecidos
+  const MONITORED = /(\.uhomesales\.com|hunbxqzhvuemgntklyzb\.supabase\.co)$/i;
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     let url = "";
@@ -124,8 +150,7 @@ if (typeof window !== "undefined" && !(window as any).__netTelemetryWrapped) {
   };
 }
 
-// Identidade leve para a telemetria — populada por App.tsx via auth state
-// (mantido aqui apenas como hook de evento para sync inicial)
+// Identidade leve para a telemetria
 if (typeof window !== "undefined") {
   (async () => {
     try {

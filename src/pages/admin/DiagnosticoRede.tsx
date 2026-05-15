@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { useApiHealth } from "@/lib/apiHealth";
 import {
-  PRIMARY,
-  BACKUP,
-  getActiveTarget,
-  setActiveTarget,
-} from "@/lib/proxyEndpoints";
+  getPinnedHost,
+  pinHost,
+  getApiBaseFor,
+  type HostId,
+} from "@/lib/hostFailover";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, XCircle, RefreshCw, Wifi, WifiOff } from "lucide-react";
@@ -32,17 +32,20 @@ async function probe(url: string): Promise<ProbeResult> {
 
 export default function DiagnosticoRede() {
   const health = useApiHealth();
-  const [target, setTarget] = useState(getActiveTarget());
-  const [primaryR, setPrimaryR] = useState<ProbeResult | null>(null);
-  const [backupR, setBackupR] = useState<ProbeResult | null>(null);
+  const [pinned, setPinned] = useState<HostId>(getPinnedHost());
+  const [proxyR, setProxyR] = useState<ProbeResult | null>(null);
+  const [directR, setDirectR] = useState<ProbeResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [switches, setSwitches] = useState<any[]>([]);
+  const [flips, setFlips] = useState<any[]>([]);
 
   const runProbes = useCallback(async () => {
     setLoading(true);
-    const [p, b] = await Promise.all([probe(PRIMARY.api), probe(BACKUP.api)]);
-    setPrimaryR(p);
-    setBackupR(b);
+    const [p, d] = await Promise.all([
+      probe(getApiBaseFor("proxy")),
+      probe(getApiBaseFor("direct")),
+    ]);
+    setProxyR(p);
+    setDirectR(d);
     setLoading(false);
   }, []);
 
@@ -54,16 +57,22 @@ export default function DiagnosticoRede() {
 
   useEffect(() => {
     try {
-      const log = JSON.parse(localStorage.getItem("uhome:proxy:switches") || "[]");
-      setSwitches(log);
+      const log = JSON.parse(localStorage.getItem("uhome:host:flips") || "[]");
+      setFlips(log);
     } catch {
-      setSwitches([]);
+      setFlips([]);
     }
-  }, [target]);
+  }, [pinned]);
 
-  const force = (t: "primary" | "backup") => {
-    setActiveTarget(t);
-    setTarget(t);
+  useEffect(() => {
+    const onFlip = () => setPinned(getPinnedHost());
+    window.addEventListener("host:flipped", onFlip);
+    return () => window.removeEventListener("host:flipped", onFlip);
+  }, []);
+
+  const force = (h: HostId) => {
+    pinHost(h, "manual_diagnostic");
+    setPinned(h);
     setTimeout(runProbes, 200);
   };
 
@@ -108,35 +117,35 @@ export default function DiagnosticoRede() {
         <div className="text-sm mb-2">
           <span className="text-muted-foreground">Estado do app: </span>
           <span className="font-semibold">{health}</span>
-          <span className="text-muted-foreground ml-4">Host ativo: </span>
-          <span className="font-semibold uppercase">{target}</span>
+          <span className="text-muted-foreground ml-4">Host pinado: </span>
+          <span className="font-semibold uppercase">{pinned}</span>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant={target === "primary" ? "default" : "outline"} onClick={() => force("primary")}>
-            Forçar primary
+          <Button size="sm" variant={pinned === "proxy" ? "default" : "outline"} onClick={() => force("proxy")}>
+            Forçar proxy (api.uhomesales.com)
           </Button>
-          <Button size="sm" variant={target === "backup" ? "default" : "outline"} onClick={() => force("backup")}>
-            Forçar backup
+          <Button size="sm" variant={pinned === "direct" ? "default" : "outline"} onClick={() => force("direct")}>
+            Forçar direct (supabase.co)
           </Button>
         </div>
       </Card>
 
       <Card className="p-4">
         <h2 className="font-semibold mb-2">Health checks</h2>
-        <Row label="Primary" url={PRIMARY.api} r={primaryR} />
-        <Row label="Backup" url={BACKUP.api} r={backupR} />
+        <Row label="Proxy" url={getApiBaseFor("proxy")} r={proxyR} />
+        <Row label="Direct" url={getApiBaseFor("direct")} r={directR} />
       </Card>
 
       <Card className="p-4">
-        <h2 className="font-semibold mb-2">Histórico de switches ({switches.length})</h2>
-        {switches.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum switch registrado nesta sessão.</p>
+        <h2 className="font-semibold mb-2">Histórico de flips ({flips.length})</h2>
+        {flips.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum flip registrado.</p>
         ) : (
           <ul className="text-xs space-y-1 font-mono max-h-64 overflow-auto">
-            {switches.map((s, i) => (
+            {flips.map((s, i) => (
               <li key={i} className="flex justify-between gap-3 border-b border-border/40 py-1">
                 <span>{new Date(s.ts).toLocaleTimeString()}</span>
-                <span className="font-bold">→ {s.target}</span>
+                <span className="font-bold">{s.from} → {s.to}</span>
                 <span className="text-muted-foreground">{s.reason}</span>
               </li>
             ))}
