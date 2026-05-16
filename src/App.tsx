@@ -15,14 +15,28 @@ import { Loader2 } from "lucide-react";
 // Retry wrapper for lazy imports — handles stale chunk errors after deployments
 function lazyRetry(factory: () => Promise<any>) {
   return lazy(() =>
-    factory().catch((err) => {
-      const key = "chunk_reload";
-      if (!sessionStorage.getItem(key)) {
-        sessionStorage.setItem(key, "1");
-        window.location.reload();
+    factory().catch(async (err) => {
+      const msg = String(err?.message || err);
+      const isChunkErr =
+        /Importing a module script failed|Failed to fetch dynamically imported module|Loading chunk|ChunkLoadError/i.test(msg);
+      if (!isChunkErr) throw err;
+
+      const key = "chunk_reload_at";
+      const last = Number(sessionStorage.getItem(key) || "0");
+      const now = Date.now();
+      if (now - last > 30_000) {
+        sessionStorage.setItem(key, String(now));
+        try {
+          if ("caches" in window) {
+            const names = await caches.keys();
+            await Promise.all(names.map((n) => caches.delete(n)));
+          }
+        } catch {}
+        const url = new URL(window.location.href);
+        url.searchParams.set("_v", String(now));
+        window.location.replace(url.toString());
         return new Promise(() => {});
       }
-      sessionStorage.removeItem(key);
       throw err;
     })
   );
