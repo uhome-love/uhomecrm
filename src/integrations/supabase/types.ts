@@ -10415,6 +10415,7 @@ export type Database = {
         Args: { p_corretor_id: string }
         Returns: string[]
       }
+      rpc_placar_do_dia: { Args: never; Returns: Json }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       upsert_roleta_fila: {

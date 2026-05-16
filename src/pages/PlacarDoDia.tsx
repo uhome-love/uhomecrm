@@ -165,39 +165,28 @@ export default function PlacarDoDia() {
 
   const atualizarTudo = useCallback(async () => {
     try {
-      const hoje = getHoje();
-      const inicioHoje = `${hoje}T00:00:00-03:00`;
-      const fimHoje = `${hoje}T23:59:59-03:00`;
+      // RPC agregada (sem PII sensível) — funciona para anon e authenticated
+      const { data: payload, error: pErr } = await supabase.rpc("rpc_placar_do_dia");
+      if (pErr) throw pErr;
 
-      const { data: membros, error: mErr } = await supabase
-        .from("team_members")
-        .select("user_id,gerente_id,nome")
-        .eq("status", "ativo");
-      if (mErr) throw mErr;
+      const membros = (payload as any)?.membros ?? [];
+      const todasVisitas = (payload as any)?.visitas ?? [];
 
-      const equipeIds = { gabrielle: [], bruno: [], gabriel: [] };
-      const nomeMap = {};
-      (membros || []).forEach((m) => {
+      const equipeIds: Record<string, string[]> = { gabrielle: [], bruno: [], gabriel: [] };
+      const nomeMap: Record<string, string> = {};
+      membros.forEach((m: any) => {
         const gerente = GERENTES.find(g => g.user_id === m.gerente_id);
         if (gerente && m.user_id) {
           equipeIds[gerente.equipe].push(m.user_id);
         }
         if (m.user_id) nomeMap[m.user_id] = m.nome;
       });
-
-      const allUserIds = Object.values(equipeIds).flat();
-      let todasVisitas = [];
-      if (allUserIds.length > 0) {
-        const { data: visitas, error: vErr } = await supabase
-          .from("visitas")
-          .select("id,corretor_id,created_at,status,nome_cliente,data_visita,empreendimento")
-          .in("corretor_id", allUserIds)
-          .gte("created_at", inicioHoje)
-          .lte("created_at", fimHoje)
-          .in("status", ["marcada", "confirmada", "realizada", "reagendada"]);
-        if (vErr) throw vErr;
-        todasVisitas = visitas || [];
-      }
+      // Fallback: o RPC já traz corretor_nome em cada visita
+      todasVisitas.forEach((v: any) => {
+        if (v.corretor_id && v.corretor_nome && !nomeMap[v.corretor_id]) {
+          nomeMap[v.corretor_id] = v.corretor_nome;
+        }
+      });
 
       const novosDados = { gabrielle: [], bruno: [], gabriel: [] };
       const ultimaPorEquipe = {};
@@ -271,16 +260,10 @@ export default function PlacarDoDia() {
 
   useEffect(() => {
     atualizarTudo();
-    const interval = setInterval(atualizarTudo, 30000);
-    const channel = supabase
-      .channel("visitas-realtime-placar")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "visitas" }, () => {
-        atualizarTudo();
-      })
-      .subscribe();
+    // Poll a cada 15s (substitui o realtime, que exigia SELECT anon nas tabelas)
+    const interval = setInterval(atualizarTudo, 15000);
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
     };
   }, [atualizarTudo]);
 
