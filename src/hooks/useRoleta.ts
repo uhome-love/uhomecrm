@@ -374,7 +374,7 @@ export function useRoleta() {
           .from("pipeline_leads")
           .select("corretor_id")
           .in("corretor_id", authUserIds)
-          .gte("roleta_distribuido_em", todayStart)
+          .gte("distribuido_em", todayStart)
       : { data: [] };
 
     // Build count map: auth_user_id → count
