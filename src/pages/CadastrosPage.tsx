@@ -12,7 +12,11 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import { Loader2, Search, Users, CreditCard, Mail, BadgeCheck, Phone, Pencil, Save } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, Search, Users, CreditCard, Mail, BadgeCheck, Phone, Pencil, Save, Trash2 } from "lucide-react";
 
 type ProfileRow = {
   id: string;
