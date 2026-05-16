@@ -489,7 +489,7 @@ export function useRoleta() {
       for (let attempt = 0; attempt < 5; attempt++) {
         try {
           const { error } = await supabase.from("roleta_credenciamentos").upsert({
-            corretor_id: profileId,
+            corretor_id: effectiveProfileId,
             janela,
             segmento_1_id: segmento1Id,
             segmento_2_id: segmento2Id || null,
