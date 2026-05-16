@@ -391,7 +391,7 @@ export function useRoleta() {
 
     const enriched = filaData.map(f => ({
       ...f,
-      leads_recebidos: f.corretor_id ? profileLeadCount.get(f.corretor_id) ?? (f.leads_recebidos || 0) : 0,
+      leads_recebidos: f.corretor_id ? (profileLeadCount.get(f.corretor_id) ?? 0) : 0,
       corretor_nome: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.nome || "Corretor" : "Corretor",
       corretor_avatar: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.avatar_url || null : null,
     }));
