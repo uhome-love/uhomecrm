@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getManagedTeamProfileIds, resolveProfileIds } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
+import { withTimeout as withTimeoutLib } from "@/lib/queryTimeout";
 import { toast } from "sonner";
 
 export interface PipelineStage {
@@ -93,14 +94,12 @@ export function usePipeline(pipelineTipo: string = "leads") {
   // Guard against concurrent loadLeads calls
   const loadingLeadsRef = useRef(false);
 
-  const withTimeout = useCallback(async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        window.setTimeout(() => reject(new Error(`${label} demorou demais para responder`)), ms);
-      }),
-    ]);
-  }, []);
+  // Reaproveita helper centralizado em @/lib/queryTimeout para garantir
+  // comportamento idêntico em todos os hooks (mesma label/erro/Sentry-grouping).
+  const withTimeout = useCallback(
+    <T,>(promise: Promise<T>, ms: number, label: string) => withTimeoutLib(promise, ms, label),
+    []
+  );
 
   // Refs com snapshot atual de cada coleção. Usadas dentro de callbacks
   // estáveis para evitar loops de re-render (não entram nas deps).
