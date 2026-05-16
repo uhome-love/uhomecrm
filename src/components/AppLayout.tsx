@@ -29,6 +29,7 @@ import LeadAcceptanceDialog from "@/components/pipeline/LeadAcceptanceDialog";
 
 import NewLeadBanner from "@/components/notifications/NewLeadBanner";
 import PushPromptBanner from "@/components/notifications/PushPromptBanner";
+import BackendHealthBanner from "@/components/system/BackendHealthBanner";
 import GlobalSearch from "@/components/GlobalSearch";
 import { Search } from "lucide-react";
 import { HomiProvider } from "@/contexts/HomiContext";
@@ -328,6 +329,7 @@ export default function AppLayout() {
         />
         <NewLeadBanner />
         <GlobalSearch />
+        <BackendHealthBanner />
       </HomiProvider>
     </SidebarProvider>
   );

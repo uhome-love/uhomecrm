@@ -1,113 +1,102 @@
-## Objetivo
-Corrigir de forma completa o travamento de carregamento do pipeline para corretores e eliminar o mesmo padrão em outras telas críticas, sem mexer no backend se não for necessário.
+# Pipeline mais rápido + CRM mais sólido (sem quebrar nada)
 
-## Diagnóstico consolidado
-- O backend hospedado está saudável; não apareceu sinal de indisponibilidade geral.
-- O volume do pipeline é relevante, mas não extremo: cerca de 5.8k leads totais, 2.8k ativos. Há índices importantes já criados em `pipeline_leads`.
-- Não encontrei indício de `statement timeout` ou erro recorrente de banco nos logs consultados.
-- Há dois problemas distintos acontecendo ao mesmo tempo:
-  1. **Travamento funcional do pipeline**: o hook `usePipeline` ainda depende da resolução de cargo/perfil para disparar parte da carga. Quando `user_roles` ou resolução de perfil atrasa/falha/intermite, o usuário fica preso em estados ambíguos ou em recarga parcial.
-  2. **Falha de asset/chunk em clientes reais**: o preview do usuário registrou `TypeError: Importing a module script failed.` Isso indica cliente com bundle/chunk inconsistente, cache antigo ou asset não carregado. Isso pode impedir que páginas protegidas abram, mesmo com a API funcionando.
-- Também encontrei telas com o mesmo risco estrutural:
-  - `useNegocios` / página `MeusNegocios`
-  - `usePipelineLeadData` / drawer do lead
-  - `useRoleta` em vários pontos ainda com `.single()` sensível
-  - vários lookups de `profiles` e `user_roles` espalhados em layout, WhatsApp, relatórios e roleta
+## Princípio condutor
 
-## O que vou corrigir
+**Zero regressão funcional.** Toda mudança é aditiva ou drop-in. Nenhuma feature, rota, hook público ou comportamento de UI muda. Se algo novo falhar, o caminho antigo continua funcionando (fallback automático). Critério de aceitação: testar manualmente Pipeline (kanban + filtros + descarte + aceite + parceria), Negócios, Roleta, WhatsApp Inbox e Tarefas — todos devem se comportar exatamente como hoje, só mais rápidos.
 
-### 1. Blindar o shell de navegação e lazy imports contra cache/chunk quebrado
-- Fortalecer o retry de imports dinâmicos para páginas protegidas e públicas.
-- Padronizar o fallback de erro de chunk para:
-  - limpar caches quando houver erro de módulo/chunk
-  - recarregar com cache-bust controlado
-  - evitar loop infinito de reload
-- Revisar o fluxo de kill switch / recovery para não depender só de ação manual do corretor.
+---
 
-### 2. Reestruturar o `usePipeline` para nunca deixar loading indefinido
-- Separar claramente:
-  - carregamento de `stages`
-  - carregamento de `segmentos`
-  - carregamento de `leads`
-  - resolução de escopo do usuário
-- Garantir que qualquer falha de cargo/perfil leve a um estado explícito de erro ou fallback, nunca a spinner eterno.
-- Colocar timeout por etapa crítica, não apenas timeout global.
-- Persistir último snapshot utilizável com sinalização clara de dado antigo quando a carga falhar.
-- Eliminar caminhos onde `roleLoading` ou uma dependência assíncrona impede a finalização do fluxo visual.
+## Parte 1 — Diagnóstico
 
-### 3. Endurecer a resolução de identidade e escopo
-- Revisar o uso de `useUserRole`, `useAuthUser`, `resolveProfileIds` e pontos que dependem de `profiles`.
-- Trocar usos perigosos de `.single()` por `.maybeSingle()` onde ausência de linha é possível.
-- Adicionar fallback controlado quando o perfil ainda não existir ou vier duplicado/inconsistente.
-- Garantir que o corretor não fique sem pipeline apenas porque a resolução `auth.users.id -> profiles.id` demorou.
+Mapeei a cadeia de carregamento do `/pipeline` e os pontos frágeis recorrentes do CRM.
 
-### 4. Corrigir páginas com o mesmo sintoma estrutural
-Aplicar o mesmo padrão de robustez em:
-- `useNegocios` / `MeusNegocios`
-- `usePipelineLeadData` / detalhe do lead
-- `useRoleta` e páginas relacionadas a credenciamento
-- pontos do `AppLayout` e páginas que carregam perfil via `profiles.single()`
+**Cadeia atual (waterfall escondido):**
 
-O objetivo é evitar que outras telas tenham:
-- spinner infinito
-- erro silencioso
-- tela vazia sem motivo visível
-- falha total por falta de uma linha em `profiles`
-
-### 5. Padronizar estados de tela e observabilidade
-- Padronizar `loading`, `error`, `stale`, `empty` nas telas críticas.
-- Mostrar erro acionável quando houver problema real.
-- Adicionar logs mais úteis nos pontos de falha do pipeline e carregamento de escopo.
-- Evitar toasts excessivos; manter erro visível na tela quando a página ficar inutilizável.
-
-### 6. Validar as rotas críticas após a correção
-Vou validar pelo menos:
-- `/pipeline`
-- `/pipeline-negocios`
-- `/pos-vendas`
-- `/whatsapp`
-- `/roleta`
-- drawer de detalhe do lead
-
-## Arquivos mais prováveis de alteração
-- `src/hooks/usePipeline.ts`
-- `src/hooks/useUserRole.tsx`
-- `src/hooks/useAuthUser.ts`
-- `src/hooks/useNegocios.ts`
-- `src/hooks/usePipelineLeadData.ts`
-- `src/hooks/useRoleta.ts`
-- `src/config/pageRegistry.ts`
-- `src/App.tsx`
-- possivelmente `src/components/AppLayout.tsx` e telas que usam `profiles.single()` em carregamento inicial
-
-## Detalhes técnicos
 ```text
-Problema A: dados
-user_roles / profiles atrasam ou falham
--> escopo do corretor não resolve
--> loadLeads não fecha corretamente
--> pipeline fica preso ou cai em estado parcial
-
-Problema B: frontend/cache
-cliente com chunk antigo ou asset falho
--> import dinâmico quebra antes da tela abrir
--> parece "pipeline não carrega", mas o problema é o shell da página
-
-Correção
-1. robustez de lazy import/cache
-2. pipeline com timeouts por etapa + fallback explícito
-3. identity/profile lookup tolerante a ausência
-4. replicar padrão nas páginas irmãs
+useAuth → useUserRole → usePipeline
+                          ├─ loadStages       (1 query)
+                          ├─ loadSegmentos    (1 query)
+                          └─ loadLeads        (paginado 1000 em 1000)
+                                  ↓ (espera leads chegarem)
+                          useQuery kanbanTarefasMap
+                                  └─ fetchInBatchesWithRetry (chunks de 50, SEQUENCIAIS)
+                                  ↓
+                          + 3 queries de profiles/team_members
+                          + useQuery visitas + parcerias
 ```
 
-## Resultado esperado
-- Corretores conseguem abrir o pipeline mesmo em cenários de rede instável.
-- Quando houver falha real, a tela mostra erro e ação de recuperação, não spinner infinito.
-- Páginas relacionadas deixam de depender de `.single()` frágil para abrir.
-- Reduzimos os casos em que o problema parece “fetch quebrado” mas na verdade é cache/chunk/perfil.
+Para um gerente com ~3.000 leads vira **40+ round-trips encadeados**. Em Wi-Fi com qualquer latência, o tempo explode e os contadores piscam errado.
 
-## Fora de escopo nesta implementação
-- Reestruturação completa do modelo de dados do CRM
-- Mudanças grandes de RLS ou schema sem evidência de necessidade
-- Analytics de uso ou auditoria ampla do sistema
-- Refactor visual amplo sem relação direta com carregamento
+**Causas dos “bugs sozinhos” recentes:**
+
+1. Sem cache persistente — qualquer F5 refaz tudo do zero.
+2. `fetchInBatchesWithRetry` é serial — chunks rodam um após o outro.
+3. Cada hook tem sua própria política de retry/timeout — comportamento inconsistente.
+4. Queries N+1 em profiles + team_members.
+5. Sem health-check global — quando a API flapa, cada hook spinner-eterniza sozinho.
+6. Realtime + reload manual + reload em focus se sobrepõem.
+7. Sem ErrorBoundary por rota — erro num sub-componente derruba a tela.
+
+---
+
+## Parte 2 — O que vou mudar (tudo aditivo, com fallback)
+
+### A. Pipeline ~3× mais rápido
+
+1. **Nova view SQL `v_pipeline_kanban`** (SECURITY INVOKER, respeita RLS): junta `pipeline_leads` + próxima `pipeline_tarefa` pendente numa consulta só. Elimina o waterfall leads → tarefas.
+   - `usePipeline` tenta a view primeiro; **se falhar, cai no caminho atual** (paginação + `fetchInBatchesWithRetry`). Nenhum comportamento existente removido.
+2. **Paralelizar `fetchInBatchesWithRetry`** — janelas de até 4 chunks com `Promise.all`. Mesma assinatura, mesmo fallback de split em caso de erro. Outros consumidores (parcerias, partner leads) ganham o speedup de graça.
+3. **Cache persistente do React Query** via `@tanstack/react-query-persist-client` + IndexedDB. Reabrir o CRM mostra o pipeline instantâneo enquanto revalida em background (stale-while-revalidate).
+   - Persistência **só** para queries marcadas como cacheáveis (whitelist). Queries sensíveis (auth, presença) ficam fora.
+4. **`placeholderData`** no `usePipeline` lendo snapshot do cache — fim do tela-branca de 3s no F5.
+
+### B. CRM mais sólido (vale pra todas as páginas)
+
+5. **`QueryClient` global com defaults consistentes**: retry=2 com parada imediata em 401/403, `staleTime: 30s`, `networkMode: "offlineFirst"`. Já existe um QueryClient — só vou ajustar os defaults, sem trocar a instância nem mexer em hooks.
+6. **`ErrorBoundary` por rota** em `AppLayout` (já existe um global) — erro isolado mostra "Recarregar esta seção" sem derrubar o app inteiro.
+7. **Hook `useBackendHealth`** leve com `useQuery` (não interceptor de fetch — respeita a memória do bug de 13/05). Ping a cada 60s; após 2 falhas, mostra banner único “Reconectando…”.
+8. **RPC `get_pipeline_user_context(user_id)`** devolve role + team_member_ids + profile_ids resolvidos em uma chamada. Hoje são 3-4 queries. Fallback: se a RPC falhar, segue o caminho atual.
+9. **`withTimeout` extraído** para `src/lib/queryTimeout.ts` (mesmo helper que já existe inline em `usePipeline`) e reaproveitado em `useNegocios`, `useRoleta`, inbox do WhatsApp.
+
+### C. Higiene (mudanças cirúrgicas)
+
+10. Unir os dois `supabase.from("profiles")` em `usePipeline` numa só query com `.or(...)`.
+11. `loadSegmentos` vira `useQuery` com `staleTime: 5min` (segmentos quase não mudam).
+12. Subir `staleTime` de parcerias para 2min.
+
+---
+
+## Parte 3 — Garantias de não-regressão
+
+- **Nenhum arquivo deletado.** Nenhum hook público (`usePipeline`, `useRoleta`, etc.) muda assinatura — só implementação interna.
+- **Fallback automático** para view/RPC novas: se erro ou view inexistente, usa caminho atual sem alarde.
+- **Feature flag local** (`localStorage.pipelineFastPath = "0"`) permite forçar o caminho antigo se algo der errado em produção.
+- **Sem novos wrappers de fetch.** Cliente Supabase continua o auto-gerado de `@/integrations/supabase/client` (regra dura da memória — bug Wi-Fi 13/05).
+- **Sem circuit breaker, sem segundo client, sem detector de offline novo.** O `useBackendHealth` é só `useQuery` leve, não toca em fetch.
+- **Migrations agendadas fora de 08–19h BRT** (máximo 2/dia em horário comercial — regra de memória). A view e a RPC são read-only, sem alterar tabelas existentes.
+- **Realtime, push, kill switch, version polling, SW resiliente** — tudo intocado.
+- **Checklist de QA antes de fechar:** Pipeline carrega para Corretor/Gerente/CEO; descarte e aceite continuam funcionando; contadores estabilizam corretamente; drag-drop entre etapas funciona; filtros avançados funcionam; parceria continua exibindo leads do parceiro; modo Foco abre e lista os mesmos leads; reload manual funciona; realtime continua atualizando.
+
+---
+
+## Parte 4 — Detalhes técnicos
+
+**Arquivos novos:**
+- `src/lib/queryTimeout.ts` — `withTimeout` reusável.
+- `src/lib/queryClientConfig.ts` — defaults centralizados.
+- `src/lib/queryPersist.ts` — bootstrap do persister IndexedDB com whitelist.
+- `src/hooks/useBackendHealth.ts` + `src/components/system/BackendHealthBanner.tsx`.
+- Migration SQL: view `v_pipeline_kanban` (SECURITY INVOKER) + RPC `get_pipeline_user_context` (SECURITY DEFINER, set search_path = public).
+
+**Arquivos alterados (cirurgicamente):**
+- `src/main.tsx` — trocar `QueryClientProvider` por `PersistQueryClientProvider` com a mesma instância de QueryClient.
+- `src/lib/taskQueryUtils.ts` — paralelizar chunks (mesma API).
+- `src/hooks/usePipeline.ts` — tenta view + RPC; fallback para caminho atual; merge das duas queries de profiles.
+- `src/pages/PipelineKanban.tsx` — quando a view trouxer próxima tarefa, `kanbanTarefasMap` vira `useMemo`; senão, mantém o `useQuery` atual.
+- `src/components/AppLayout.tsx` — monta `<BackendHealthBanner />` + `<ErrorBoundary>` por outlet.
+
+**Ganho esperado:**
+- Primeiro carregamento (Wi-Fi instável): de ~6–15s para ~1–3s.
+- F5 / reabrir aba: instantâneo (cache persistido) revalidando em background.
+- Erros transitórios: deixam de quebrar a tela; banner único, auto-recovery.
+- Sensação Pipedrive: dados aparecem na hora, atualizam silenciosamente.

@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getManagedTeamProfileIds, resolveProfileIds } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
+import { withTimeout as withTimeoutLib } from "@/lib/queryTimeout";
 import { toast } from "sonner";
 
 export interface PipelineStage {
@@ -93,14 +94,12 @@ export function usePipeline(pipelineTipo: string = "leads") {
   // Guard against concurrent loadLeads calls
   const loadingLeadsRef = useRef(false);
 
-  const withTimeout = useCallback(async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        window.setTimeout(() => reject(new Error(`${label} demorou demais para responder`)), ms);
-      }),
-    ]);
-  }, []);
+  // Reaproveita helper centralizado em @/lib/queryTimeout para garantir
+  // comportamento idêntico em todos os hooks (mesma label/erro/Sentry-grouping).
+  const withTimeout = useCallback(
+    <T,>(promise: Promise<T>, ms: number, label: string) => withTimeoutLib(promise, ms, label),
+    []
+  );
 
   // Refs com snapshot atual de cada coleção. Usadas dentro de callbacks
   // estáveis para evitar loops de re-render (não entram nas deps).
@@ -316,24 +315,23 @@ export function usePipeline(pipelineTipo: string = "leads") {
         ...leadsData.map(l => l.gerente_id).filter(Boolean),
       ])] as string[];
       if (allBrokerIds.length > 0) {
-        const [{ data: members }, { data: profilesByUserId }, { data: profilesByProfileId }] = await Promise.all([
+        // Uma chamada de profiles via .or() em vez de duas (user_id + id).
+        // team_members continua separado (tabela e select diferentes).
+        const inList = allBrokerIds.map((id) => `"${id}"`).join(",");
+        const [{ data: members }, { data: profilesUnified }] = await Promise.all([
           supabase
-          .from("team_members")
-          .select("user_id, nome")
-          .in("user_id", allBrokerIds),
+            .from("team_members")
+            .select("user_id, nome")
+            .in("user_id", allBrokerIds),
           supabase
-          .from("profiles")
-          .select("user_id, nome, avatar_url, avatar_gamificado_url")
-          .in("user_id", allBrokerIds),
-          supabase
-          .from("profiles")
-          .select("id, user_id, nome, avatar_url, avatar_gamificado_url")
-          .in("id", allBrokerIds),
+            .from("profiles")
+            .select("id, user_id, nome, avatar_url, avatar_gamificado_url")
+            .or(`user_id.in.(${inList}),id.in.(${inList})`),
         ]);
         const map: Record<string, string> = {};
         const avatarMap: Record<string, string> = {};
         members?.forEach(m => { if (m.user_id) map[m.user_id] = m.nome; });
-        [...(profilesByUserId || []), ...(profilesByProfileId || [])].forEach((p: any) => {
+        (profilesUnified || []).forEach((p: any) => {
           if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome;
           if (p.id && !map[p.id]) map[p.id] = p.nome;
           if (p.user_id) {
