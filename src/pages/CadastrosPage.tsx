@@ -35,8 +35,10 @@ export default function CadastrosPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<ProfileRow | null>(null);
+  const [deleting, setDeleting] = useState<ProfileRow | null>(null);
   const [form, setForm] = useState({ nome: "", email: "", telefone: "", cpf: "", creci: "" });
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: ["cadastros-profiles"],
