@@ -57,11 +57,8 @@ export default function Configuracoes() {
   async function loadProfile() {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("nome, email, telefone, cargo, cpf, creci, avatar_url, avatar_preview_url")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const { data: rows, error } = await supabase.rpc("get_my_profile_full");
+    const data = Array.isArray(rows) ? rows[0] : rows;
 
     if (error) {
       console.error("Erro ao carregar perfil:", error);

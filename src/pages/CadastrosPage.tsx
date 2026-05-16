@@ -14,14 +14,9 @@ export default function CadastrosPage() {
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: ["cadastros-profiles"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, nome, email, cpf, creci, cargo, telefone, avatar_url")
-        .in("cargo", ["corretor", "gerente", "admin"])
-        .order("cargo")
-        .order("nome");
+      const { data, error } = await supabase.rpc("list_profiles_admin");
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!user,
   });
