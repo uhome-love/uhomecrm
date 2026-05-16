@@ -9856,6 +9856,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_delete_profile: {
+        Args: { _profile_id: string }
+        Returns: undefined
+      }
       admin_update_profile: {
         Args: {
           _cpf?: string
