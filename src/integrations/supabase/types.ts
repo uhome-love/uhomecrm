@@ -10214,6 +10214,21 @@ export type Database = {
           tipo: string
         }[]
       }
+      get_my_profile_full: {
+        Args: never
+        Returns: {
+          avatar_preview_url: string
+          avatar_url: string
+          cargo: string
+          cpf: string
+          creci: string
+          email: string
+          id: string
+          nome: string
+          telefone: string
+          user_id: string
+        }[]
+      }
       get_network_telemetry_summary: {
         Args: { p_horas: number }
         Returns: Json
@@ -10327,6 +10342,19 @@ export type Database = {
       is_my_partner_negocio: {
         Args: { p_pipeline_lead_id: string }
         Returns: boolean
+      }
+      list_profiles_admin: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          cargo: string
+          cpf: string
+          creci: string
+          email: string
+          id: string
+          nome: string
+          telefone: string
+        }[]
       }
       lock_lead_atomic: {
         Args: {
