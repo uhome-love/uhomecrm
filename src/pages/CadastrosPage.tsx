@@ -219,6 +219,18 @@ export default function CadastrosPage() {
                     {p.creci || "CRECI não cadastrado"}
                   </span>
                 </div>
+                <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-2">
+                  <UsersRound className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  {p.equipe || p.gerente_nome ? (
+                    <span className="text-foreground text-xs">
+                      {p.equipe && <span className="font-medium">{p.equipe}</span>}
+                      {p.equipe && p.gerente_nome && <span className="text-muted-foreground"> · </span>}
+                      {p.gerente_nome && <span className="text-muted-foreground">Gerente: {p.gerente_nome}</span>}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground italic text-xs">Sem equipe vinculada</span>
+                  )}
+                </div>
 
                 {missing.length > 0 && (
                   <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-2">
