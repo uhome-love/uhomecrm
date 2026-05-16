@@ -26,7 +26,8 @@ export function usePendingLeadAlert() {
     if (!user) return;
     const corretorIds = [user.id, profileId].filter(Boolean) as string[];
     if (corretorIds.length === 0) return;
-    const nowIso = new Date().toISOString();
+    // 60s de buffer para drift de relógio do dispositivo — espelha AceiteLeads.tsx
+    const nowIso = new Date(Date.now() - 60_000).toISOString();
     const { data } = await supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead")
