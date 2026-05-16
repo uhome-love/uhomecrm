@@ -68,7 +68,7 @@ export default function AdminPanel() {
   } | null>(null);
   const fetchUsers = useCallback(async () => {
     setLoading(true);
-    const { data: profiles } = await supabase.from("profiles").select("user_id, nome, email, jetimob_user_id");
+    const { data: profiles } = await supabase.rpc("list_profiles_admin_with_jetimob");
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
 
     if (profiles) {

@@ -101,7 +101,7 @@ export default function CheckpointCards({ teamUserIds, teamNameMap }: Props) {
     setLoading(true);
 
     const q1: any = supabase.from("team_members").select("id, nome, user_id, equipe").eq("gerente_id", user.id).eq("status", "ativo");
-    const q2: any = supabase.from("profiles").select("user_id, telefone, avatar_url, status_online").in("user_id", teamUserIds);
+    const q2: any = supabase.rpc("get_team_contacts", { _user_ids: teamUserIds });
     const q3: any = supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", `${dateStr}T00:00:00`).lte("created_at", `${dateStr}T23:59:59`);
     const q4: any = supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).eq("data_visita", dateStr);
     const q5: any = supabase.from("checkpoint_diario").select("*").eq("data", dateStr).in("corretor_id", teamUserIds);

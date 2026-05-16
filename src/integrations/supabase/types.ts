@@ -10291,6 +10291,19 @@ export type Database = {
           visitas_realizadas: number
         }[]
       }
+      get_team_contacts: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          avatar_gamificado_url: string
+          avatar_url: string
+          cargo: string
+          email: string
+          nome: string
+          status_online: string
+          telefone: string
+          user_id: string
+        }[]
+      }
       get_team_oa_ranking: { Args: { p_period?: string }; Returns: Json }
       get_team_visitas: {
         Args: { p_date_from?: string; p_date_to?: string }
@@ -10371,6 +10384,15 @@ export type Database = {
           id: string
           nome: string
           telefone: string
+        }[]
+      }
+      list_profiles_admin_with_jetimob: {
+        Args: never
+        Returns: {
+          email: string
+          jetimob_user_id: string
+          nome: string
+          user_id: string
         }[]
       }
       lock_lead_atomic: {

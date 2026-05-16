@@ -33,9 +33,7 @@ export default function VisitasCobrancaDialog({
     try {
       const corretorIds = [...new Set(pendingVisitas.map(v => v.corretor_id).filter(Boolean))] as string[];
       const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, nome, telefone")
-        .in("user_id", corretorIds);
+        .rpc("get_team_contacts", { _user_ids: corretorIds });
 
       let sent = 0;
       for (const p of profiles || []) {
