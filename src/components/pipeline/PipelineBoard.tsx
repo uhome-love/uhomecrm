@@ -291,11 +291,12 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   });
 
   // Fetch leads with unread WhatsApp messages (last msg is direction='received')
-  const { data: whatsappUnreadSet = new Set<string>() } = useQuery({
+  // Returns an array (JSON-serializable for persistQueryClient/IndexedDB).
+  const { data: whatsappUnreadIds = [] as string[] } = useQuery({
     queryKey: ["pipeline-whatsapp-unread", leadIdsKey],
     queryFn: async () => {
-      if (leadIds.length === 0) return new Set<string>();
-      const set = new Set<string>();
+      if (leadIds.length === 0) return [] as string[];
+      const ids: string[] = [];
       for (let i = 0; i < leadIds.length; i += 200) {
         const chunk = leadIds.slice(i, i + 200);
         const { data } = await supabase
@@ -309,16 +310,20 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           for (const m of data) {
             if (!m.lead_id || seen.has(m.lead_id)) continue;
             seen.add(m.lead_id);
-            if (m.direction === "received") set.add(m.lead_id);
+            if (m.direction === "received") ids.push(m.lead_id);
           }
         }
       }
-      return set;
+      return ids;
     },
     enabled: leadIds.length > 0,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
+  const whatsappUnreadSet = useMemo(
+    () => new Set<string>(Array.isArray(whatsappUnreadIds) ? whatsappUnreadIds : []),
+    [whatsappUnreadIds]
+  );
 
   // "Negócio Criado" (convertido) is now visible to ALL users (corretores included)
   const visibleStages = useMemo(() => {
