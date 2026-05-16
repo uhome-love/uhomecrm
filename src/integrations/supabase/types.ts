@@ -10366,6 +10366,8 @@ export type Database = {
           cpf: string
           creci: string
           email: string
+          equipe: string
+          gerente_nome: string
           id: string
           nome: string
           telefone: string

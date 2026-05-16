@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Search, Users, CreditCard, Mail, BadgeCheck, Phone, Pencil, Save, Trash2 } from "lucide-react";
+import { Loader2, Search, Users, CreditCard, Mail, BadgeCheck, Phone, Pencil, Save, Trash2, UsersRound } from "lucide-react";
 
 type ProfileRow = {
   id: string;
@@ -27,6 +27,8 @@ type ProfileRow = {
   cargo: string | null;
   telefone: string | null;
   avatar_url: string | null;
+  equipe: string | null;
+  gerente_nome: string | null;
 };
 
 export default function CadastrosPage() {
@@ -216,6 +218,18 @@ export default function CadastrosPage() {
                   <span className={p.creci ? "text-foreground" : "text-muted-foreground italic"}>
                     {p.creci || "CRECI não cadastrado"}
                   </span>
+                </div>
+                <div className="flex items-center gap-2 pt-1 border-t border-border/50 mt-2">
+                  <UsersRound className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  {p.equipe || p.gerente_nome ? (
+                    <span className="text-foreground text-xs">
+                      {p.equipe && <span className="font-medium">{p.equipe}</span>}
+                      {p.equipe && p.gerente_nome && <span className="text-muted-foreground"> · </span>}
+                      {p.gerente_nome && <span className="text-muted-foreground">Gerente: {p.gerente_nome}</span>}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground italic text-xs">Sem equipe vinculada</span>
+                  )}
                 </div>
 
                 {missing.length > 0 && (
