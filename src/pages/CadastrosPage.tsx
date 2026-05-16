@@ -120,6 +120,20 @@ export default function CadastrosPage() {
     queryClient.invalidateQueries({ queryKey: ["cadastros-profiles"] });
   }
 
+  async function handleDelete() {
+    if (!deleting) return;
+    setRemoving(true);
+    const { error } = await supabase.rpc("admin_delete_profile", { _profile_id: deleting.id });
+    setRemoving(false);
+    if (error) {
+      toast.error("Erro ao apagar: " + error.message);
+      return;
+    }
+    toast.success("Cadastro apagado.");
+    setDeleting(null);
+    queryClient.invalidateQueries({ queryKey: ["cadastros-profiles"] });
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
