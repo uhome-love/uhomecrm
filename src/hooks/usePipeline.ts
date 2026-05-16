@@ -316,24 +316,23 @@ export function usePipeline(pipelineTipo: string = "leads") {
         ...leadsData.map(l => l.gerente_id).filter(Boolean),
       ])] as string[];
       if (allBrokerIds.length > 0) {
-        const [{ data: members }, { data: profilesByUserId }, { data: profilesByProfileId }] = await Promise.all([
+        // Uma chamada de profiles via .or() em vez de duas (user_id + id).
+        // team_members continua separado (tabela e select diferentes).
+        const inList = allBrokerIds.map((id) => `"${id}"`).join(",");
+        const [{ data: members }, { data: profilesUnified }] = await Promise.all([
           supabase
-          .from("team_members")
-          .select("user_id, nome")
-          .in("user_id", allBrokerIds),
+            .from("team_members")
+            .select("user_id, nome")
+            .in("user_id", allBrokerIds),
           supabase
-          .from("profiles")
-          .select("user_id, nome, avatar_url, avatar_gamificado_url")
-          .in("user_id", allBrokerIds),
-          supabase
-          .from("profiles")
-          .select("id, user_id, nome, avatar_url, avatar_gamificado_url")
-          .in("id", allBrokerIds),
+            .from("profiles")
+            .select("id, user_id, nome, avatar_url, avatar_gamificado_url")
+            .or(`user_id.in.(${inList}),id.in.(${inList})`),
         ]);
         const map: Record<string, string> = {};
         const avatarMap: Record<string, string> = {};
         members?.forEach(m => { if (m.user_id) map[m.user_id] = m.nome; });
-        [...(profilesByUserId || []), ...(profilesByProfileId || [])].forEach((p: any) => {
+        (profilesUnified || []).forEach((p: any) => {
           if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome;
           if (p.id && !map[p.id]) map[p.id] = p.nome;
           if (p.user_id) {

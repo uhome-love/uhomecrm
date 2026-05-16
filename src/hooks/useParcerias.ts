@@ -55,12 +55,13 @@ export function usePartnerLeadsByCorretor() {
       const parceiroIds = [...new Set((parcerias || []).map(p => p.corretor_parceiro_id).filter(Boolean))] as string[];
       const idEquivalence: Record<string, string[]> = {};
       if (parceiroIds.length > 0) {
-        const [{ data: byUserId }, { data: byProfileId }] = await Promise.all([
-          supabase.from("profiles").select("id, user_id").in("user_id", parceiroIds),
-          supabase.from("profiles").select("id, user_id").in("id", parceiroIds),
-        ]);
-        const profiles = [...(byUserId || []), ...(byProfileId || [])];
-        for (const p of profiles) {
+        // Uma query só com .or() em vez de 2 round-trips.
+        const inList = parceiroIds.map((id) => `"${id}"`).join(",");
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, user_id")
+          .or(`user_id.in.(${inList}),id.in.(${inList})`);
+        for (const p of profiles || []) {
           const ids = [p.id, p.user_id].filter(Boolean) as string[];
           for (const id of ids) {
             idEquivalence[id] = ids;
