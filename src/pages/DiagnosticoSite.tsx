@@ -213,7 +213,7 @@ export default function DiagnosticoSite() {
 
     // 8. Corretor de plantão
     const t8 = await timed(async () => {
-      const { data, error } = await supabase.from("profiles").select("id, nome").eq("role", "corretor").eq("de_plantao", true).eq("ativo", true);
+      const { data, error } = await supabase.from("profiles").select("id, nome").eq("de_plantao", true).eq("ativo", true);
       return { data, error };
     });
     if (t8.result.error) {
