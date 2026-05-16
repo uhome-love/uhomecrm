@@ -264,11 +264,27 @@ export function useRoleta() {
 
   const hoje = todayBRT();
 
-  // Load profile ID (profiles.id != auth user.id)
+  // Load profile ID (profiles.id != auth user.id) — com retry e maybeSingle
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("id").eq("user_id", user.id).single()
-      .then(({ data }) => { if (data) setProfileId(data.id); });
+    let cancelled = false;
+    (async () => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (data?.id) { setProfileId(data.id); return; }
+        if (error) console.warn("[useRoleta] profileId attempt", attempt + 1, error);
+        await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+      }
+      if (!cancelled) {
+        console.error("[useRoleta] profileId missing após retries");
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user]);
 
   // Load segmentos + campanhas
@@ -450,7 +466,23 @@ export function useRoleta() {
   // ─── Corretor Actions ───
 
   const credenciar = useCallback(async (janela: string, segmento1Id: string, segmento2Id: string | null) => {
-    if (!user || !profileId) return;
+    if (!user) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      return;
+    }
+    // Tenta resolver profileId on-demand se ainda não tiver
+    let effectiveProfileId = profileId;
+    if (!effectiveProfileId) {
+      const { data } = await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle();
+      if (data?.id) {
+        effectiveProfileId = data.id;
+        setProfileId(data.id);
+      }
+    }
+    if (!effectiveProfileId) {
+      toast.error("Não foi possível carregar seu perfil. Recarregue a página (Ctrl+F5).");
+      return;
+    }
     setSubmitting(true);
     try {
       let lastError: any = null;

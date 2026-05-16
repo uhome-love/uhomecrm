@@ -356,20 +356,25 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
-    // Wait for role resolution before loading leads to avoid double-fetch
-    if (roleLoading) return;
 
     setError(null);
     setLoading(prev => (stagesRef.current.length === 0 && leadsRef.current.length === 0 && segmentosRef.current.length === 0 ? true : prev));
 
     let cancelled = false;
 
-    // Timeout guard: if load takes > 30s, stop and show error
+    // Timeout guard: se a carga demorar > 20s, libera a UI com erro acionável.
+    // Reduzido de 30s para 20s — Wi-Fi residencial costuma flapear em janelas curtas.
     const timeout = setTimeout(() => {
       if (cancelled) return;
       setLoading(false);
-      setError("O carregamento demorou demais. Tente recarregar.");
-    }, 30_000);
+      if (stagesRef.current.length === 0) {
+        setError("O carregamento demorou demais. Tente recarregar.");
+      }
+    }, 20_000);
+
+    // Se role ainda está carregando, NÃO bloqueamos: stages/segmentos não dependem de role,
+    // e o efeito vai re-rodar quando roleLoading virar false (deps inclui roleLoading).
+    // Isso evita o "Carregando pipeline…" eterno quando user_roles flapa.
 
     // ORDEM: stages PRIMEIRO. discardStageIds depende de stages, e
     // shouldHideLeadFromPipeline filtra leads na hora do setLeads.
@@ -378,7 +383,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
     (async () => {
       const stagesResult = await Promise.allSettled([loadStages()]);
       if (cancelled) return;
-      const restResults = await Promise.allSettled([loadSegmentos(), loadLeads()]);
+      // Só dispara loadLeads quando role já resolveu (evita filtro errado).
+      // Se role ainda carrega, carrega segmentos e deixa loadLeads p/ próximo run.
+      const leadsTask = roleLoading ? Promise.resolve() : loadLeads();
+      const restResults = await Promise.allSettled([loadSegmentos(), leadsTask]);
       if (cancelled) return;
 
       const all = [...stagesResult, ...restResults];
