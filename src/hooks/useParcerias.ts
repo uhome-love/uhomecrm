@@ -33,7 +33,7 @@ export function useParceriasMap() {
       });
       return map;
     },
-    staleTime: 60_000,
+    staleTime: 120_000,
   });
 }
 
@@ -78,7 +78,7 @@ export function usePartnerLeadsByCorretor() {
       }
       return map;
     },
-    staleTime: 60_000,
+    staleTime: 120_000,
   });
 }
 
