@@ -260,16 +260,10 @@ export default function PlacarDoDia() {
 
   useEffect(() => {
     atualizarTudo();
-    const interval = setInterval(atualizarTudo, 30000);
-    const channel = supabase
-      .channel("visitas-realtime-placar")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "visitas" }, () => {
-        atualizarTudo();
-      })
-      .subscribe();
+    // Poll a cada 15s (substitui o realtime, que exigia SELECT anon nas tabelas)
+    const interval = setInterval(atualizarTudo, 15000);
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
     };
   }, [atualizarTudo]);
 
