@@ -381,15 +381,17 @@ export function usePipeline(pipelineTipo: string = "leads") {
     // Sem isso, leads chegam antes e são classificados/exibidos com filtro
     // vazio → "50 desatualizados" piscando até stages chegarem.
     (async () => {
-      const stagesResult = await Promise.allSettled([loadStages()]);
-      if (cancelled) return;
-      // Só dispara loadLeads quando role já resolveu (evita filtro errado).
-      // Se role ainda carrega, carrega segmentos e deixa loadLeads p/ próximo run.
-      const leadsTask = roleLoading ? Promise.resolve() : loadLeads();
-      const restResults = await Promise.allSettled([loadSegmentos(), leadsTask]);
+      // CRÍTICO: NÃO bloqueamos loadLeads em roleLoading. Se role demora/falha,
+      // o corretor ainda enxerga o próprio pipeline (fallback isAdmin=false/isGestor=false).
+      // Re-run automático acontece quando roleLoading vira false (deps inclui roleLoading).
+      const [stagesResult, segmentosResult, leadsResult] = await Promise.allSettled([
+        loadStages(),
+        loadSegmentos(),
+        loadLeads(),
+      ]);
       if (cancelled) return;
 
-      const all = [...stagesResult, ...restResults];
+      const all = [stagesResult, segmentosResult, leadsResult];
       const names = ["stages", "segmentos", "leads"];
       const failed = all
         .map((r, i) => ({ r, name: names[i] }))
