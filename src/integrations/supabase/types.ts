@@ -10386,6 +10386,15 @@ export type Database = {
           telefone: string
         }[]
       }
+      list_profiles_admin_with_jetimob: {
+        Args: never
+        Returns: {
+          email: string
+          jetimob_user_id: string
+          nome: string
+          user_id: string
+        }[]
+      }
       lock_lead_atomic: {
         Args: {
           p_corretor_id: string
