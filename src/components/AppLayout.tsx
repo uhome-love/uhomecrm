@@ -95,7 +95,7 @@ export default function AppLayout() {
 
   const fetchProfile = useCallback(() => {
     if (!user) return;
-    supabase.from("profiles").select("nome, avatar_url, avatar_gamificado_url, cargo").eq("user_id", user.id).single().then(({ data }) => {
+    supabase.from("profiles").select("nome, avatar_url, avatar_gamificado_url, cargo").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (data?.nome) setNome(data.nome);
       const url = data?.avatar_url || (data as any)?.avatar_gamificado_url || null;
       setAvatarUrl(url);
