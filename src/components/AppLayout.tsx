@@ -7,7 +7,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useTheme } from "@/hooks/useTheme";
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { User, Settings, LogOut, ChevronDown, Loader2, Users } from "lucide-react";
+import { User, Settings, LogOut, ChevronDown, Loader2, Users, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
@@ -234,6 +235,46 @@ export default function AppLayout() {
                   )}
                   <DropdownMenuItem onSelect={() => navigate("/configuracoes")} className="text-xs gap-2 cursor-pointer">
                     <Settings className="h-3.5 w-3.5" /> Configurações
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={async (e) => {
+                      e.preventDefault();
+                      toast.success("Limpando cache e recarregando…");
+                      try {
+                        // 1. sessionStorage inteiro
+                        sessionStorage.clear();
+                        // 2. localStorage: limpa chaves uhome:* exceto auth
+                        const toRemove: string[] = [];
+                        for (let i = 0; i < localStorage.length; i++) {
+                          const k = localStorage.key(i);
+                          if (!k) continue;
+                          if (k.startsWith("uhome:") && !k.startsWith("uhome:auth:")) toRemove.push(k);
+                          if (k.startsWith("react-query") || k.includes("REACT_QUERY")) toRemove.push(k);
+                        }
+                        toRemove.forEach(k => localStorage.removeItem(k));
+                        // 3. Cache Storage do SW
+                        if ("caches" in window) {
+                          const keys = await caches.keys();
+                          await Promise.all(keys.map(k => caches.delete(k)));
+                        }
+                        // 4. Pede SW para sair de skipWaiting
+                        if ("serviceWorker" in navigator) {
+                          const regs = await navigator.serviceWorker.getRegistrations();
+                          regs.forEach(r => r.active?.postMessage({ type: "SKIP_WAITING" }));
+                        }
+                      } catch (err) {
+                        console.warn("[clear-cache] falha parcial", err);
+                      } finally {
+                        // 5. Hard reload com flag de recovery
+                        const url = new URL(window.location.href);
+                        url.searchParams.set("_recover", "cache");
+                        url.searchParams.set("t", String(Date.now()));
+                        window.location.replace(url.toString());
+                      }
+                    }}
+                    className="text-xs gap-2 cursor-pointer"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" /> Limpar cache e recarregar
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={signOut} className="text-xs gap-2 text-destructive cursor-pointer">

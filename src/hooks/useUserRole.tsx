@@ -43,7 +43,10 @@ export function useUserRole() {
     if (cached && cached.length > 0) lastKnownRef.current = cached;
   }, [user?.id]);
 
-  const { data, isLoading: loading, error, isFetching } = useQuery({
+  // Pré-carrega cache sessionStorage para a primeira render (evita loading=true bloqueando UI)
+  const initialCached = user?.id ? readCachedRoles(user.id) : null;
+
+  const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ["user-roles", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -62,13 +65,15 @@ export function useUserRole() {
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
-    retry: (count, err: any) => {
-      const msg = String(err?.message || "");
-      // Tenta de novo em erro de rede; não insiste em erro fatal
-      if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) return count < 3;
-      return false;
-    },
+    // Cache do sessionStorage destrava o loading inicial; refetch acontece em background.
+    placeholderData: initialCached && initialCached.length > 0 ? initialCached : undefined,
+    // Retry curto: não segura a UI por minutos em flap de Wi-Fi.
+    retry: 1,
+    retryDelay: 500,
   });
+
+  // Loading só conta se NÃO temos cache; com cache, UI prossegue.
+  const loading = isLoading && !(initialCached && initialCached.length > 0);
 
   // Se a query falhou e temos cache, usar cache. Caso contrário, array vazio.
   const queryRoles = data ?? [];

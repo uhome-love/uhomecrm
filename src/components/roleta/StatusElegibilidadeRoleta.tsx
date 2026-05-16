@@ -36,7 +36,7 @@ function getCorBarra(desatualizados: number, limite: number): string {
 // Componente principal
 // ---------------------------------------------------------------------------
 export function StatusElegibilidadeRoleta() {
-  const { elegibilidade, carregando } = useElegibilidadeRoleta();
+  const { elegibilidade, carregando, erro, recarregar } = useElegibilidadeRoleta();
   const [expandido, setExpandido] = useState(false);
   const navigate = useNavigate();
   const proximaRoleta = getProximaRoleta();
@@ -47,6 +47,18 @@ export function StatusElegibilidadeRoleta() {
         <div className="h-4 w-48 bg-muted rounded mb-2" />
         <div className="h-3 w-32 bg-muted rounded" />
       </div>
+    );
+  }
+
+  if (erro && !elegibilidade) {
+    return (
+      <button
+        onClick={() => recarregar()}
+        className="w-full rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-left hover:bg-destructive/10 transition-colors"
+      >
+        <p className="text-sm font-semibold text-destructive">Não foi possível verificar elegibilidade</p>
+        <p className="text-xs text-muted-foreground mt-1">Toque para tentar novamente</p>
+      </button>
     );
   }
 
