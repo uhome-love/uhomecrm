@@ -35,21 +35,30 @@ export function useElegibilidadeRoleta() {
   const { user } = useAuth();
   const [elegibilidade, setElegibilidade] = useState<ElegibilidadeRoleta | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     if (!user?.id) return;
     setCarregando(true);
-    try {
-      const { data, error } = await supabase.rpc("get_elegibilidade_roleta", {
-        p_corretor_id: user.id,
-      });
-      if (error) throw error;
-      setElegibilidade(data as ElegibilidadeRoleta);
-    } catch (err) {
-      console.error("[useElegibilidadeRoleta] Erro:", err);
-    } finally {
-      setCarregando(false);
+    setErro(null);
+    let lastErr: any = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { data, error } = await supabase.rpc("get_elegibilidade_roleta", {
+          p_corretor_id: user.id,
+        });
+        if (error) throw error;
+        setElegibilidade(data as ElegibilidadeRoleta);
+        setCarregando(false);
+        return;
+      } catch (err: any) {
+        lastErr = err;
+        console.error("[useElegibilidadeRoleta] tentativa", attempt + 1, err);
+        await new Promise((r) => setTimeout(r, 800));
+      }
     }
+    setErro(lastErr?.message || "Não foi possível verificar elegibilidade");
+    setCarregando(false);
   }, [user?.id]);
 
   useEffect(() => {
@@ -71,6 +80,7 @@ export function useElegibilidadeRoleta() {
   return {
     elegibilidade,
     carregando,
+    erro,
     recarregar: carregar,
     podeFazerRoleta,
     leadsDesatualizados,
