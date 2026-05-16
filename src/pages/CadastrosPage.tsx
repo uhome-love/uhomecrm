@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Search, Users, CreditCard, Mail, BadgeCheck, Phone, Pencil, Save, Trash2 } from "lucide-react";
+import { Loader2, Search, Users, CreditCard, Mail, BadgeCheck, Phone, Pencil, Save, Trash2, UsersRound } from "lucide-react";
 
 type ProfileRow = {
   id: string;
@@ -27,6 +27,8 @@ type ProfileRow = {
   cargo: string | null;
   telefone: string | null;
   avatar_url: string | null;
+  equipe: string | null;
+  gerente_nome: string | null;
 };
 
 export default function CadastrosPage() {
