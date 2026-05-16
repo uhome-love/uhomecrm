@@ -81,8 +81,11 @@ export function useOnboarding() {
       {
         stepId: "perfil_completo",
         check: async () => {
-          const { data } = await supabase.from("profiles").select("telefone, avatar_url").eq("user_id", user.id).maybeSingle();
-          return !!(data?.telefone || data?.avatar_url);
+          const { data: pub } = await supabase.from("profiles").select("avatar_url").eq("user_id", user.id).maybeSingle();
+          if (pub?.avatar_url) return true;
+          const { data: full } = await supabase.rpc("get_my_profile_full");
+          const me: any = Array.isArray(full) ? full[0] : full;
+          return !!(me?.telefone || pub?.avatar_url);
         },
       },
       {

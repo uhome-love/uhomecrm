@@ -33,13 +33,22 @@ export function useAuthUser() {
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["auth-user-profile", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Public columns from profiles
+      const { data: pub, error: pubErr } = await supabase
         .from("profiles")
-        .select("id, user_id, nome, email, telefone, cargo, avatar_url, avatar_gamificado_url")
+        .select("id, user_id, nome, cargo, avatar_url, avatar_gamificado_url")
         .eq("user_id", user!.id)
         .maybeSingle();
-      if (error) throw error;
-      return (data ?? null) as UserProfile | null;
+      if (pubErr) throw pubErr;
+      if (!pub) return null;
+      // Sensitive own-user fields via SECURITY DEFINER RPC
+      const { data: full } = await supabase.rpc("get_my_profile_full");
+      const me = Array.isArray(full) ? full[0] : full;
+      return {
+        ...pub,
+        email: me?.email ?? null,
+        telefone: me?.telefone ?? null,
+      } as UserProfile;
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,

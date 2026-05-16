@@ -117,9 +117,7 @@ export default function TeamManagement() {
 
     const userIds = roles.map((r) => r.user_id);
     const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, nome, email, avatar_url, avatar_gamificado_url, cargo")
-      .in("user_id", userIds);
+      .rpc("get_team_contacts", { _user_ids: userIds });
     if (profiles) setSystemUsers(profiles as SystemUser[]);
   }, []);
 

@@ -198,7 +198,7 @@ export default function DiagnosticoSite() {
 
     // 7. Corretores ativos
     const t7 = await timed(async () => {
-      const { data, error } = await supabase.from("profiles").select("id, nome, email, de_plantao").eq("role", "corretor").eq("ativo", true);
+      const { data, error } = await supabase.from("profiles").select("id, nome, de_plantao").eq("ativo", true);
       return { data, error };
     });
     if (t7.result.error) {
