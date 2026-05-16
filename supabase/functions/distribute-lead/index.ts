@@ -182,13 +182,20 @@ async function distributeViaRPC(
   const normalizedCorretorId = result.corretor_id || null;
   const normalizedProfileId = result.profile_id || null;
 
+  // SLA timer começa AGORA, no mesmo instante em que vamos disparar a notificação/push.
+  // Isso garante que o corretor tenha os 10 minutos completos contados a partir do envio
+  // do aviso, e não do instante (anterior) em que `distribuir_lead_atomico` rodou.
+  const notifiedAt = new Date();
+  const expireAt = new Date(notifiedAt.getTime() + 10 * 60 * 1000);
+
   if (normalizedCorretorId) {
     const { error: normalizeLeadError } = await supabase
       .from("pipeline_leads")
       .update({
         corretor_id: normalizedCorretorId,
         aceite_status: "aguardando_aceite",
-        distribuido_em: new Date().toISOString(),
+        distribuido_em: notifiedAt.toISOString(),
+        aceite_expira_em: expireAt.toISOString(),
       })
       .eq("id", leadId)
       .in("aceite_status", ["pendente", "aguardando_aceite", "pendente_aceite"]);
