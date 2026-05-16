@@ -530,7 +530,7 @@ export function useRoleta() {
       const { data: credData } = await supabase.from("roleta_credenciamentos")
         .select("corretor_id")
         .eq("id", credenciamentoId)
-        .single();
+        .maybeSingle();
 
       await supabase.from("roleta_credenciamentos")
         .update({ status: "saiu", saiu_em: new Date().toISOString() })
@@ -584,7 +584,7 @@ export function useRoleta() {
         .update({ status: "aprovado", aprovado_por: profileId, aprovado_em: new Date().toISOString() })
         .eq("id", credId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (!cred) throw new Error("Credenciamento não encontrado");
 
@@ -742,7 +742,7 @@ export function useRoleta() {
         .from("profiles")
         .select("user_id")
         .eq("id", corretorProfileId)
-        .single();
+        .maybeSingle();
       if (corretorProfile2?.user_id) {
         await supabase
           .from("corretor_disponibilidade")
