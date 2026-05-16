@@ -9856,6 +9856,17 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_update_profile: {
+        Args: {
+          _cpf?: string
+          _creci?: string
+          _email?: string
+          _nome?: string
+          _profile_id: string
+          _telefone?: string
+        }
+        Returns: undefined
+      }
       aprovar_lead_exclusivo: {
         Args: {
           p_canal: string
