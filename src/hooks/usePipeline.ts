@@ -73,7 +73,7 @@ export interface PipelineSegmento {
 export function usePipeline(pipelineTipo: string = "leads") {
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
+  const { isGestor, isAdmin } = useUserRole();
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [leads, setLeads] = useState<PipelineLead[]>([]);
   const [segmentos, setSegmentos] = useState<PipelineSegmento[]>([]);
@@ -92,6 +92,15 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const lastVisibleRef = useRef(Date.now());
   // Guard against concurrent loadLeads calls
   const loadingLeadsRef = useRef(false);
+
+  const withTimeout = useCallback(async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error(`${label} demorou demais para responder`)), ms);
+      }),
+    ]);
+  }, []);
 
   // Refs com snapshot atual de cada coleção. Usadas dentro de callbacks
   // estáveis para evitar loops de re-render (não entram nas deps).
@@ -385,9 +394,9 @@ export function usePipeline(pipelineTipo: string = "leads") {
       // o corretor ainda enxerga o próprio pipeline (fallback isAdmin=false/isGestor=false).
       // Re-run automático acontece quando roleLoading vira false (deps inclui roleLoading).
       const [stagesResult, segmentosResult, leadsResult] = await Promise.allSettled([
-        loadStages(),
-        loadSegmentos(),
-        loadLeads(),
+        withTimeout(loadStages(), 8_000, "Etapas do pipeline"),
+        withTimeout(loadSegmentos(), 6_000, "Segmentos do pipeline"),
+        withTimeout(loadLeads(), 12_000, "Leads do pipeline"),
       ]);
       if (cancelled) return;
 
@@ -422,7 +431,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [userId, roleLoading, pipelineTipo, loadStages, loadSegmentos, loadLeads]);
+  }, [userId, pipelineTipo, loadStages, loadSegmentos, loadLeads, withTimeout]);
 
   // NOTA: o auto-retry de 4s foi removido nesta rodada (Fase 3 / Item 2).
   // Com runQueryWithRetry agora limitado a 3 tentativas + parada imediata em
@@ -505,7 +514,9 @@ export function usePipeline(pipelineTipo: string = "leads") {
       if (document.visibilityState === "visible") {
         const elapsed = Date.now() - lastVisibleRef.current;
         if (elapsed > 60_000) {
-          loadLeads();
+          withTimeout(loadLeads(), 12_000, "Leads do pipeline").catch((err) => {
+            console.warn("[usePipeline] reload por visibility falhou:", err);
+          });
         }
       } else {
         lastVisibleRef.current = Date.now();
@@ -513,7 +524,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [userId, loadLeads]);
+  }, [userId, loadLeads, withTimeout]);
 
   const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
     if (!user) return;
@@ -791,7 +802,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
     reload: useCallback(async () => {
       setError(null);
       // allSettled: recarga manual não pode lançar e quebrar o caller.
-      await Promise.allSettled([loadStages(), loadSegmentos(), loadLeads()]);
-    }, [loadStages, loadSegmentos, loadLeads]),
+      await Promise.allSettled([
+        withTimeout(loadStages(), 8_000, "Etapas do pipeline"),
+        withTimeout(loadSegmentos(), 6_000, "Segmentos do pipeline"),
+        withTimeout(loadLeads(), 12_000, "Leads do pipeline"),
+      ]);
+    }, [loadStages, loadSegmentos, loadLeads, withTimeout]),
   };
 }
