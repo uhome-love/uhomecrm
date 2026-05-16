@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, lazy, Suspense, useEffect } from "react";
+import React, { useState, useMemo, useCallback, lazy, Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LoadingState, ErrorState } from "@/components/ui/screen-states";
 import PeriodBadge from "@/components/PeriodBadge";
@@ -121,7 +121,7 @@ export default function PipelineKanban() {
   // Load tasks for status classification
   const leadIds = useMemo(() => pipeline.leads.map(l => l.id), [pipeline.leads]);
   const leadIdsKey = useMemo(() => leadIds.slice().sort().join(","), [leadIds]);
-  const { data: kanbanTarefasMap = {} } = useQuery({
+  const { data: kanbanTarefasMap = {}, isLoading: tarefasLoading } = useQuery({
     queryKey: ["pipeline-kanban-tarefas", leadIdsKey],
     queryFn: async () => {
       if (leadIds.length === 0) return {};
@@ -254,6 +254,18 @@ export default function PipelineKanban() {
     }
     return counts;
   }, [preFilteredLeads, kanbanTarefasMap, stageTypeById, pipeline.stages.length]);
+
+  const lastStableClientStatusCountsRef = useRef(clientStatusCounts);
+  const clientStatusCountsReady = pipeline.stages.length > 0 && (!leadIds.length || !tarefasLoading);
+
+  useEffect(() => {
+    if (!clientStatusCountsReady) return;
+    lastStableClientStatusCountsRef.current = clientStatusCounts;
+  }, [clientStatusCounts, clientStatusCountsReady]);
+
+  const displayedClientStatusCounts = clientStatusCountsReady
+    ? clientStatusCounts
+    : lastStableClientStatusCountsRef.current;
 
   const activeFiltersCount = countActiveFilters(filters);
 
@@ -432,21 +444,21 @@ export default function PipelineKanban() {
               className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-transparent border-none cursor-pointer"
             >
               <div className="w-[5px] h-[5px] rounded-full bg-emerald-600" />
-              {clientStatusCounts.em_dia}
+              {displayedClientStatusCounts.em_dia}
             </button>
             <button
               onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
               className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-transparent border-none cursor-pointer"
             >
               <div className="w-[5px] h-[5px] rounded-full bg-amber-600" />
-              {clientStatusCounts.desatualizado}
+              {displayedClientStatusCounts.desatualizado}
             </button>
             <button
               onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
               className="flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-transparent border-none cursor-pointer"
             >
               <div className="w-[5px] h-[5px] rounded-full bg-red-600" />
-              {clientStatusCounts.tarefa_atrasada}
+              {displayedClientStatusCounts.tarefa_atrasada}
             </button>
             <div className="flex-1" />
             {hasAnyFilter && (
@@ -554,9 +566,9 @@ export default function PipelineKanban() {
           <div className="flex items-center gap-2 overflow-x-auto h-8 px-4">
             {/* Status chips */}
             {[
-              { key: "em_dia" as const, label: "Em dia", color: "#059669", bg: "bg-emerald-50 dark:bg-emerald-950", border: "border-emerald-300 dark:border-emerald-800", count: clientStatusCounts.em_dia },
-              { key: "desatualizado" as const, label: "Desatual.", color: "#D97706", bg: "bg-amber-50 dark:bg-amber-950", border: "border-amber-300 dark:border-amber-800", count: clientStatusCounts.desatualizado },
-              { key: "tarefa_atrasada" as const, label: "Atrasado", color: "#DC2626", bg: "bg-red-50 dark:bg-red-950", border: "border-red-300 dark:border-red-800", count: clientStatusCounts.tarefa_atrasada },
+              { key: "em_dia" as const, label: "Em dia", color: "#059669", bg: "bg-emerald-50 dark:bg-emerald-950", border: "border-emerald-300 dark:border-emerald-800", count: displayedClientStatusCounts.em_dia },
+              { key: "desatualizado" as const, label: "Desatual.", color: "#D97706", bg: "bg-amber-50 dark:bg-amber-950", border: "border-amber-300 dark:border-amber-800", count: displayedClientStatusCounts.desatualizado },
+              { key: "tarefa_atrasada" as const, label: "Atrasado", color: "#DC2626", bg: "bg-red-50 dark:bg-red-950", border: "border-red-300 dark:border-red-800", count: displayedClientStatusCounts.tarefa_atrasada },
             ].map(chip => (
               <button
                 key={chip.key}
@@ -852,21 +864,21 @@ export default function PipelineKanban() {
                 className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#10b981] bg-transparent border-none cursor-pointer ${clientStatusFilter === "em_dia" ? "opacity-100" : "opacity-70"}`}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
-                {clientStatusCounts.em_dia.toLocaleString("pt-BR")}
+                {displayedClientStatusCounts.em_dia.toLocaleString("pt-BR")}
               </button>
               <button
                 onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
                 className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#f59e0b] bg-transparent border-none cursor-pointer ${clientStatusFilter === "desatualizado" ? "opacity-100" : "opacity-70"}`}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
-                {clientStatusCounts.desatualizado.toLocaleString("pt-BR")}
+                {displayedClientStatusCounts.desatualizado.toLocaleString("pt-BR")}
               </button>
               <button
                 onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
                 className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#ef4444] bg-transparent border-none cursor-pointer ${clientStatusFilter === "tarefa_atrasada" ? "opacity-100" : "opacity-70"}`}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
-                {clientStatusCounts.tarefa_atrasada.toLocaleString("pt-BR")}
+                {displayedClientStatusCounts.tarefa_atrasada.toLocaleString("pt-BR")}
               </button>
             </div>
 
