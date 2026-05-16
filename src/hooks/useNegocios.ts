@@ -192,9 +192,20 @@ export function useNegocios() {
   }, [user, isAdmin, isGestor]);
 
   useEffect(() => {
-    if (!user || roleLoading) { setLoading(false); return; }
-    loadNegocios().finally(() => setLoading(false));
-  }, [user, loadNegocios, roleLoading]);
+    if (!user) { setLoading(false); return; }
+    // Não bloqueia em roleLoading: se role demora, carrega como corretor (fallback seguro).
+    // Re-roda quando roleLoading vira false (via loadNegocios mudar de identidade).
+    let cancelled = false;
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 15000);
+    loadNegocios().finally(() => {
+      if (cancelled) return;
+      window.clearTimeout(timeout);
+      setLoading(false);
+    });
+    return () => { cancelled = true; window.clearTimeout(timeout); };
+  }, [user, loadNegocios]);
 
   // Realtime
   useEffect(() => {

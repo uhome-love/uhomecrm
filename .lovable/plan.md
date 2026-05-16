@@ -1,78 +1,113 @@
-# Correção: pipeline infinito, credenciamento da roleta e cache do corretor
+## Objetivo
+Corrigir de forma completa o travamento de carregamento do pipeline para corretores e eliminar o mesmo padrão em outras telas críticas, sem mexer no backend se não for necessário.
 
-## Diagnóstico (causa raiz)
+## Diagnóstico consolidado
+- O backend hospedado está saudável; não apareceu sinal de indisponibilidade geral.
+- O volume do pipeline é relevante, mas não extremo: cerca de 5.8k leads totais, 2.8k ativos. Há índices importantes já criados em `pipeline_leads`.
+- Não encontrei indício de `statement timeout` ou erro recorrente de banco nos logs consultados.
+- Há dois problemas distintos acontecendo ao mesmo tempo:
+  1. **Travamento funcional do pipeline**: o hook `usePipeline` ainda depende da resolução de cargo/perfil para disparar parte da carga. Quando `user_roles` ou resolução de perfil atrasa/falha/intermite, o usuário fica preso em estados ambíguos ou em recarga parcial.
+  2. **Falha de asset/chunk em clientes reais**: o preview do usuário registrou `TypeError: Importing a module script failed.` Isso indica cliente com bundle/chunk inconsistente, cache antigo ou asset não carregado. Isso pode impedir que páginas protegidas abram, mesmo com a API funcionando.
+- Também encontrei telas com o mesmo risco estrutural:
+  - `useNegocios` / página `MeusNegocios`
+  - `usePipelineLeadData` / drawer do lead
+  - `useRoleta` em vários pontos ainda com `.single()` sensível
+  - vários lookups de `profiles` e `user_roles` espalhados em layout, WhatsApp, relatórios e roleta
 
-Investiguei `usePipeline.ts`, `useUserRole.tsx`, `useRoleta.ts`, `useElegibilidadeRoleta.ts` e `AppLayout.tsx`. As três queixas têm causas independentes e identificadas:
+## O que vou corrigir
 
-### 1. Pipeline "Carregando pipeline…" infinito
-- Em `usePipeline.ts` (linhas 357-415) o efeito principal faz `if (roleLoading) return;` **antes** de armar o timeout de 30s.
-- `useUserRole` usa React Query com `retry` em `Failed to fetch`. Se o corretor está em Wi-Fi instável (caso típico do Acer da foto) e a chamada a `user_roles` flapa, `isLoading` fica `true` enquanto a query retry’a — sem timeout — e o pipeline nunca arma seu próprio timeout. Resultado: spinner eterno, sem error state.
-- O cache em `sessionStorage` existe mas só é usado **depois** da query terminar, não para destravar o `loading` inicial.
+### 1. Blindar o shell de navegação e lazy imports contra cache/chunk quebrado
+- Fortalecer o retry de imports dinâmicos para páginas protegidas e públicas.
+- Padronizar o fallback de erro de chunk para:
+  - limpar caches quando houver erro de módulo/chunk
+  - recarregar com cache-bust controlado
+  - evitar loop infinito de reload
+- Revisar o fluxo de kill switch / recovery para não depender só de ação manual do corretor.
 
-### 2. Corretor não consegue se credenciar na roleta
-- Em `useRoleta.ts` linha 270 a busca do `profileId` usa `.single()`. Se a primeira tentativa falhar (rede) ou retornar 0/2 linhas (perfil ainda não migrado), a promise rejeita silenciosamente, `profileId` permanece `null`, e a função `credenciar()` cai no `if (!user || !profileId) return;` (linha 453) — **sem toast, sem retry, sem log para o usuário**. O corretor clica e nada acontece.
+### 2. Reestruturar o `usePipeline` para nunca deixar loading indefinido
+- Separar claramente:
+  - carregamento de `stages`
+  - carregamento de `segmentos`
+  - carregamento de `leads`
+  - resolução de escopo do usuário
+- Garantir que qualquer falha de cargo/perfil leve a um estado explícito de erro ou fallback, nunca a spinner eterno.
+- Colocar timeout por etapa crítica, não apenas timeout global.
+- Persistir último snapshot utilizável com sinalização clara de dado antigo quando a carga falhar.
+- Eliminar caminhos onde `roleLoading` ou uma dependência assíncrona impede a finalização do fluxo visual.
 
-### 3. Falta botão "Limpar cache" no menu do avatar
-- `AppLayout.tsx` (linhas 224-243) tem o `DropdownMenuContent` com "Configurações" e "Sair" só. Sem opção para o corretor desempacar SW/cache quando algo trava.
+### 3. Endurecer a resolução de identidade e escopo
+- Revisar o uso de `useUserRole`, `useAuthUser`, `resolveProfileIds` e pontos que dependem de `profiles`.
+- Trocar usos perigosos de `.single()` por `.maybeSingle()` onde ausência de linha é possível.
+- Adicionar fallback controlado quando o perfil ainda não existir ou vier duplicado/inconsistente.
+- Garantir que o corretor não fique sem pipeline apenas porque a resolução `auth.users.id -> profiles.id` demorou.
 
----
+### 4. Corrigir páginas com o mesmo sintoma estrutural
+Aplicar o mesmo padrão de robustez em:
+- `useNegocios` / `MeusNegocios`
+- `usePipelineLeadData` / detalhe do lead
+- `useRoleta` e páginas relacionadas a credenciamento
+- pontos do `AppLayout` e páginas que carregam perfil via `profiles.single()`
 
-## Plano de correção
+O objetivo é evitar que outras telas tenham:
+- spinner infinito
+- erro silencioso
+- tela vazia sem motivo visível
+- falha total por falta de uma linha em `profiles`
 
-### A. `src/hooks/usePipeline.ts` — destravar o loading
-1. Remover o early-return em `if (roleLoading) return;`. Em vez disso, **disparar `loadStages` e `loadSegmentos` imediatamente** (não dependem de role) e só atrasar `loadLeads` enquanto role não resolveu.
-2. Adicionar timeout de **8 segundos** específico para `roleLoading`: se passar, prosseguir assumindo `isGestor=false, isAdmin=false` (corretor é o caso mais comum e seguro — vê só os próprios leads).
-3. Garantir que o `setLoading(false)` no `.finally()` rode **mesmo quando o efeito retorna cedo** — mover o timeout de 30s para fora do `if (roleLoading)`.
+### 5. Padronizar estados de tela e observabilidade
+- Padronizar `loading`, `error`, `stale`, `empty` nas telas críticas.
+- Mostrar erro acionável quando houver problema real.
+- Adicionar logs mais úteis nos pontos de falha do pipeline e carregamento de escopo.
+- Evitar toasts excessivos; manter erro visível na tela quando a página ficar inutilizável.
 
-### B. `src/hooks/useUserRole.tsx` — não segurar a UI
-1. Trocar `retry: count < 3` por `retry: 1` com `retryDelay: 500ms`.
-2. Adicionar `placeholderData` lendo o cache de `sessionStorage` no primeiro render, para `isLoading` virar `false` imediatamente quando há cache.
-3. Manter o refetch em background, mas a UI não fica mais bloqueada esperando.
+### 6. Validar as rotas críticas após a correção
+Vou validar pelo menos:
+- `/pipeline`
+- `/pipeline-negocios`
+- `/pos-vendas`
+- `/whatsapp`
+- `/roleta`
+- drawer de detalhe do lead
 
-### C. `src/hooks/useRoleta.ts` — credenciamento confiável
-1. Trocar `.single()` por `.maybeSingle()` na busca do `profileId` (linha 270).
-2. Se não retornar perfil em até 2 tentativas, mostrar `toast.error("Não foi possível carregar seu perfil. Recarregue a página.")` e logar `[useRoleta] profileId missing`.
-3. Em `credenciar()`: se `!profileId`, mostrar toast explicando ao invés de `return` silencioso, e tentar resolver o profileId on-demand antes de desistir.
-
-### D. `src/hooks/useElegibilidadeRoleta.ts` — robustez
-1. Adicionar retry simples (2 tentativas com 800ms de delay) na RPC `get_elegibilidade_roleta`.
-2. Em caso de falha, exibir card com mensagem "Não foi possível verificar elegibilidade — toque para tentar novamente" em vez de retornar `null` e o componente sumir.
-
-### E. `src/components/AppLayout.tsx` — botão "Limpar cache"
-Adicionar novo `DropdownMenuItem` acima de "Sair" com ícone `RefreshCw`:
-
-```
-Limpar cache e recarregar
-```
-
-Ação:
-1. Limpar `sessionStorage` inteiro.
-2. Limpar do `localStorage` apenas as chaves não-críticas (`uhome:*` exceto `uhome:auth:*` para não deslogar). Remover `react-query` cache se houver.
-3. Limpar caches do Service Worker via `caches.keys() → caches.delete()`.
-4. Mandar mensagem `{type: 'SKIP_WAITING'}` para o SW ativo.
-5. `window.location.reload()` (hard reload via `?_recover=cache&t=Date.now()` para furar SW residual — padrão já existente no projeto, conforme `swKillSwitch.ts`).
-6. Mostrar `toast.success("Cache limpo. Recarregando…")` antes do reload.
-
----
+## Arquivos mais prováveis de alteração
+- `src/hooks/usePipeline.ts`
+- `src/hooks/useUserRole.tsx`
+- `src/hooks/useAuthUser.ts`
+- `src/hooks/useNegocios.ts`
+- `src/hooks/usePipelineLeadData.ts`
+- `src/hooks/useRoleta.ts`
+- `src/config/pageRegistry.ts`
+- `src/App.tsx`
+- possivelmente `src/components/AppLayout.tsx` e telas que usam `profiles.single()` em carregamento inicial
 
 ## Detalhes técnicos
+```text
+Problema A: dados
+user_roles / profiles atrasam ou falham
+-> escopo do corretor não resolve
+-> loadLeads não fecha corretamente
+-> pipeline fica preso ou cai em estado parcial
 
-- Nenhuma mudança de schema; apenas frontend.
-- Nenhum edge function tocado.
-- `runQueryWithRetry` e `taskQueryUtils` permanecem como estão (já fazem o trabalho dentro do escopo onde são usados).
-- O kill switch existente (`src/lib/swKillSwitch.ts`) será reutilizado pelo botão de limpar cache — não criamos nova lógica de SW.
-- Sem mudança em `src/integrations/supabase/client.ts` (memória reforça: nunca editar).
+Problema B: frontend/cache
+cliente com chunk antigo ou asset falho
+-> import dinâmico quebra antes da tela abrir
+-> parece "pipeline não carrega", mas o problema é o shell da página
 
-## Arquivos a tocar
+Correção
+1. robustez de lazy import/cache
+2. pipeline com timeouts por etapa + fallback explícito
+3. identity/profile lookup tolerante a ausência
+4. replicar padrão nas páginas irmãs
+```
 
-1. `src/hooks/usePipeline.ts` — destravar loading + role timeout
-2. `src/hooks/useUserRole.tsx` — placeholderData + retry mais curto
-3. `src/hooks/useRoleta.ts` — `.maybeSingle()` + toast no credenciar
-4. `src/hooks/useElegibilidadeRoleta.ts` — retry + estado de erro visível
-5. `src/components/AppLayout.tsx` — item "Limpar cache" no DropdownMenu
+## Resultado esperado
+- Corretores conseguem abrir o pipeline mesmo em cenários de rede instável.
+- Quando houver falha real, a tela mostra erro e ação de recuperação, não spinner infinito.
+- Páginas relacionadas deixam de depender de `.single()` frágil para abrir.
+- Reduzimos os casos em que o problema parece “fetch quebrado” mas na verdade é cache/chunk/perfil.
 
-## Como validar
-
-1. Abrir `/pipeline-leads` como corretor → deve sair do "Carregando pipeline…" em <10s mesmo com rede ruim, ou mostrar mensagem de erro acionável.
-2. `/roleta-leads` → clicar em "Credenciar" e ver toast claro (sucesso ou erro).
-3. Avatar → "Limpar cache e recarregar" → toast + reload duro; após reload, sessão preservada, pipeline carrega normal.
+## Fora de escopo nesta implementação
+- Reestruturação completa do modelo de dados do CRM
+- Mudanças grandes de RLS ou schema sem evidência de necessidade
+- Analytics de uso ou auditoria ampla do sistema
+- Refactor visual amplo sem relação direta com carregamento

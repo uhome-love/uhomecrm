@@ -119,7 +119,7 @@ export function usePipelineLeadData(leadId: string | null) {
 
   const addAnotacao = useCallback(async (conteudo: string) => {
     if (!user || !leadId) return;
-    const profile = await supabase.from("profiles").select("nome").eq("user_id", user.id).single();
+    const profile = await supabase.from("profiles").select("nome").eq("user_id", user.id).maybeSingle();
     const { error } = await supabase.from("pipeline_anotacoes").insert({
       pipeline_lead_id: leadId,
       conteudo,

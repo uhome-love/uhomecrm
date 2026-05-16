@@ -546,7 +546,7 @@ export function useRoleta() {
           .from("profiles")
           .select("user_id")
           .eq("id", credData.corretor_id)
-          .single();
+          .maybeSingle();
         if (corretorProfile?.user_id) {
           await supabase
             .from("corretor_disponibilidade")
@@ -568,7 +568,7 @@ export function useRoleta() {
 
   const getProfileId = useCallback(async (): Promise<string | null> => {
     if (!user) return null;
-    const { data } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
+    const { data } = await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle();
     return data?.id || null;
   }, [user]);
 
@@ -609,7 +609,7 @@ export function useRoleta() {
         .from("profiles")
         .select("user_id")
         .eq("id", cred.corretor_id)
-        .single();
+        .maybeSingle();
       if (corretorProfile?.user_id) {
         await supabase
           .from("corretor_disponibilidade")
@@ -752,7 +752,7 @@ export function useRoleta() {
           );
       }
 
-      const { data: profile } = await supabase.from("profiles").select("nome").eq("id", corretorProfileId).single();
+      const { data: profile } = await supabase.from("profiles").select("nome").eq("id", corretorProfileId).maybeSingle();
       toast.success(`${profile?.nome || "Corretor"} aprovado e adicionado à fila!`);
       await Promise.all([loadCredenciamentos(), loadFila()]);
     } catch (e: any) {
