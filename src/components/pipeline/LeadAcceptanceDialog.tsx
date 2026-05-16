@@ -62,15 +62,9 @@ export default function LeadAcceptanceDialog({ lead, open, onClose, onResult }: 
     return () => clearInterval(iv);
   }, [lead?.aceite_expira_em, open]);
 
-  // Auto-close when timer expires (only when countdown actually reaches 0, not initial state)
-  useEffect(() => {
-    if (remaining === 0 && open && lead) {
-      toast.warning("Tempo expirado! Lead será redistribuído.");
-      onClose();
-      onResult();
-    }
-    // remaining === -1 is the sentinel/initial value, ignore it
-  }, [remaining, open, lead]);
+  // Não fechamos automaticamente quando o timer zera — o corretor ainda pode tentar
+  // aceitar e o backend (`aceitar_lead`) valida com seu grace period. Se o servidor
+  // rejeitar com `sla_expired`, o `handleAccept` já mostra toast e fecha o diálogo.
 
   const handleAccept = useCallback(async () => {
     if (!lead) return;
