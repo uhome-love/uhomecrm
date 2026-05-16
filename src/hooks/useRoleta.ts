@@ -362,24 +362,25 @@ export function useRoleta() {
       .in("id", profileIds);
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
-    // Get auth user IDs to count ONLY roleta-distributed leads (not manual transfers)
+    // Get auth user IDs to count leads currently held by each corretor that were distributed via roleta today.
+    // Counting via pipeline_leads.corretor_id (current owner) instead of distribuicao_historico
+    // ensures that reverted/redistributed leads no longer inflate the previous corretor's count.
     const authUserIds = (profiles || []).map(p => p.user_id).filter(Boolean) as string[];
     // BUG5 fix: use BRT date for lead count, not local timezone
     const todayStart = hoje + "T00:00:00-03:00";
 
-    // Count leads distributed via roleta TODAY per corretor (acao='distribuido' only)
-    const { data: todayDistribuicoes } = authUserIds.length > 0
+    const { data: todayLeads } = authUserIds.length > 0
       ? await supabase
-          .from("distribuicao_historico")
+          .from("pipeline_leads")
           .select("corretor_id")
           .in("corretor_id", authUserIds)
-          .eq("acao", "distribuido")
-          .gte("created_at", todayStart)
+          .gte("roleta_distribuido_em", todayStart)
       : { data: [] };
 
     // Build count map: auth_user_id → count
     const authLeadCount = new Map<string, number>();
-    for (const l of todayDistribuicoes || []) {
+    for (const l of todayLeads || []) {
+      if (!l.corretor_id) continue;
       authLeadCount.set(l.corretor_id, (authLeadCount.get(l.corretor_id) || 0) + 1);
     }
     // Map profile_id → real lead count
@@ -390,7 +391,7 @@ export function useRoleta() {
 
     const enriched = filaData.map(f => ({
       ...f,
-      leads_recebidos: f.corretor_id ? profileLeadCount.get(f.corretor_id) ?? (f.leads_recebidos || 0) : 0,
+      leads_recebidos: f.corretor_id ? (profileLeadCount.get(f.corretor_id) ?? 0) : 0,
       corretor_nome: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.nome || "Corretor" : "Corretor",
       corretor_avatar: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.avatar_url || null : null,
     }));
