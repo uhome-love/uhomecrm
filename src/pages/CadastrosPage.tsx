@@ -181,9 +181,14 @@ export default function CadastrosPage() {
                     </Badge>
                   </div>
                   {isAdmin && (
-                    <Button size="sm" variant="ghost" onClick={() => openEdit(p)} className="h-7 px-2">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(p)} className="h-7 px-2">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setDeleting(p)} className="h-7 px-2 text-destructive hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardHeader>
