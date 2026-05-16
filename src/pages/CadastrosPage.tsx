@@ -12,7 +12,11 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import { Loader2, Search, Users, CreditCard, Mail, BadgeCheck, Phone, Pencil, Save } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, Search, Users, CreditCard, Mail, BadgeCheck, Phone, Pencil, Save, Trash2 } from "lucide-react";
 
 type ProfileRow = {
   id: string;
@@ -31,8 +35,10 @@ export default function CadastrosPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<ProfileRow | null>(null);
+  const [deleting, setDeleting] = useState<ProfileRow | null>(null);
   const [form, setForm] = useState({ nome: "", email: "", telefone: "", cpf: "", creci: "" });
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: ["cadastros-profiles"],
@@ -114,6 +120,20 @@ export default function CadastrosPage() {
     queryClient.invalidateQueries({ queryKey: ["cadastros-profiles"] });
   }
 
+  async function handleDelete() {
+    if (!deleting) return;
+    setRemoving(true);
+    const { error } = await supabase.rpc("admin_delete_profile", { _profile_id: deleting.id });
+    setRemoving(false);
+    if (error) {
+      toast.error("Erro ao apagar: " + error.message);
+      return;
+    }
+    toast.success("Cadastro apagado.");
+    setDeleting(null);
+    queryClient.invalidateQueries({ queryKey: ["cadastros-profiles"] });
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -161,9 +181,14 @@ export default function CadastrosPage() {
                     </Badge>
                   </div>
                   {isAdmin && (
-                    <Button size="sm" variant="ghost" onClick={() => openEdit(p)} className="h-7 px-2">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(p)} className="h-7 px-2">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setDeleting(p)} className="h-7 px-2 text-destructive hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardHeader>
@@ -249,6 +274,28 @@ export default function CadastrosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar cadastro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é permanente. O cadastro de <strong>{deleting?.nome || deleting?.email}</strong> será removido da base de profissionais.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removing}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={removing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Apagar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
