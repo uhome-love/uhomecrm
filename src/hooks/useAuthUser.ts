@@ -37,9 +37,9 @@ export function useAuthUser() {
         .from("profiles")
         .select("id, user_id, nome, email, telefone, cargo, avatar_url, avatar_gamificado_url")
         .eq("user_id", user!.id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      return data as UserProfile;
+      return (data ?? null) as UserProfile | null;
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
