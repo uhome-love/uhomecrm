@@ -69,12 +69,20 @@ Deno.serve(async (req) => {
     const body = await req.json();
     L.info("Raw body received", { hasLeads: !!body.leads, keys: Object.keys(body).slice(0, 10) });
 
-    // ── Auth: validate RD Station private token if configured ──
+    // ── Auth: validate RD Station private token (required) ──
     const rdPrivateToken = Deno.env.get("RDSTATION_PRIVATE_TOKEN");
-    if (rdPrivateToken) {
-      const provided = req.headers.get("x-webhook-secret") || body.secret || body.token || "";
-      // RD Station doesn't send auth by default — skip validation if not provided
-      // The private token is mainly used for API calls TO RD Station
+    if (!rdPrivateToken) {
+      L.warn("RDSTATION_PRIVATE_TOKEN not configured — rejecting request");
+      return new Response(JSON.stringify({ error: "Webhook not configured" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const provided = req.headers.get("x-webhook-secret") || body.secret || body.token || "";
+    if (provided !== rdPrivateToken) {
+      L.warn("RD Station auth failed");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // ── Parse leads: RD Station sends { leads: [...] } or we accept flat format ──

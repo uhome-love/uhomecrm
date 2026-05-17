@@ -74,17 +74,21 @@ Deno.serve(async (req) => {
     const body = await req.json();
     L.info("Raw body received", { source: body.source || body.platform, hasData: !!body.data });
 
-    // ── Auth: simple secret or Authorization header ──
+    // ── Auth: simple secret (required) ──
     const webhookSecret = Deno.env.get("META_WEBHOOK_SECRET");
-    if (webhookSecret) {
-      const provided = body.secret || req.headers.get("x-webhook-secret") || "";
-      if (provided !== webhookSecret) {
-        L.warn("Auth failed", { source: body.source });
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    if (!webhookSecret) {
+      L.warn("META_WEBHOOK_SECRET not configured — rejecting request");
+      return new Response(JSON.stringify({ error: "Webhook not configured" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const provided = body.secret || req.headers.get("x-webhook-secret") || "";
+    if (provided !== webhookSecret) {
+      L.warn("Auth failed", { source: body.source });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // ── Parse fields from top-level body ──

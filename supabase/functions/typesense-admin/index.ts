@@ -215,14 +215,20 @@ serve(async (req) => {
 
     if (!isSyncAuth) {
       const authHeader = req.headers.get("Authorization");
-      if (authHeader?.startsWith("Bearer ")) {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-        const sb = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
-        const { data: { user }, error: authErr } = await sb.auth.getUser();
-        if (authErr || !user) {
-          return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
+      if (!authHeader?.startsWith("Bearer ")) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const token = authHeader.slice(7);
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      // Anon key alone is not a valid credential
+      if (token === anonKey) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const sb = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+      const { data: { user }, error: authErr } = await sb.auth.getUser();
+      if (authErr || !user) {
+        return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 

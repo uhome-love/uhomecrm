@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAcademia, NIVEL_CONFIG, TIPO_CONFIG, type Aula, type QuizQuestion } from "@/hooks/useAcademia";
 import { supabase } from "@/integrations/supabase/client";
@@ -509,7 +510,7 @@ function MediaPlayer({ aula, status, onComplete }: {
         </div>
       )}
       {aula.tipo === "texto" && conteudo?.html && (
-        <div className="prose prose-sm max-w-none dark:prose-invert rounded-xl border border-border p-6 bg-card" dangerouslySetInnerHTML={{ __html: conteudo.html }} />
+        <div className="prose prose-sm max-w-none dark:prose-invert rounded-xl border border-border p-6 bg-card" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(conteudo.html) }} />
       )}
 
       {/* Markdown content from conteudo.markdown */}

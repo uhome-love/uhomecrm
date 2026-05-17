@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const SITE_URL = "https://huigglwvvzuwwyqvpmec.supabase.co";
-const SITE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1aWdnbHd2dnp1d3d5cXZwbWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTMzNzcsImV4cCI6MjA4OTYyOTM3N30.mi8RveT9gYhxP-sfq0GIN1jog-vU3Sxq511LCq5hhw4";
+const SITE_URL = Deno.env.get("SITE_SUPABASE_URL") || "https://huigglwvvzuwwyqvpmec.supabase.co";
+const SITE_ANON = Deno.env.get("SITE_SUPABASE_ANON_KEY") || "";
 const supabaseSiteClient = createClient(SITE_URL, SITE_ANON);
 
 const corsHeaders = {
