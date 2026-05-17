@@ -421,13 +421,38 @@ export default function AceiteLeads() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center space-y-4 py-12"
             >
-              <div className="w-20 h-20 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
-                <Check className="h-10 w-10 text-muted-foreground/40" />
-              </div>
-              <div>
-                <p className="font-medium text-muted-foreground">Nenhum lead pendente</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">Quando um novo lead for distribuído, ele aparecerá aqui.</p>
-              </div>
+              {searchParams.get("lead") ? (
+                <>
+                  <div className="w-20 h-20 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <Clock className="h-10 w-10 text-amber-500/70" />
+                  </div>
+                  <div className="px-6">
+                    <p className="font-medium text-foreground">Este lead não está mais disponível</p>
+                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                      Você abriu a notificação, mas a janela de 10 minutos para aceitar este lead já encerrou
+                      ou ele foi aceito por outro corretor. Fique pronto para o próximo!
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => fetchPending()}
+                    >
+                      Atualizar
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-20 h-20 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
+                    <Check className="h-10 w-10 text-muted-foreground/40" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">Nenhum lead pendente</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">Quando um novo lead for distribuído, ele aparecerá aqui.</p>
+                  </div>
+                </>
+              )}
             </motion.div>
           ) : (
             <div className="flex flex-col items-center">
