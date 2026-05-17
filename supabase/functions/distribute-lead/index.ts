@@ -188,21 +188,36 @@ async function distributeViaRPC(
   const notifiedAt = new Date();
   const expireAt = new Date(notifiedAt.getTime() + 10 * 60 * 1000);
 
-  if (normalizedCorretorId) {
-    const { error: normalizeLeadError } = await supabase
-      .from("pipeline_leads")
-      .update({
-        corretor_id: normalizedCorretorId,
-        aceite_status: "aguardando_aceite",
-        distribuido_em: notifiedAt.toISOString(),
-        aceite_expira_em: expireAt.toISOString(),
-      })
-      .eq("id", leadId)
-      .in("aceite_status", ["pendente", "aguardando_aceite", "pendente_aceite"]);
+  if (!normalizedCorretorId) {
+    L.error("RPC returned success but no corretor_id; aborting notifications", { leadId });
+    logOps("error", "system", "Distribute lead: RPC sem corretor_id", { leadId }, "missing_corretor_id");
+    return { success: false, reason: "missing_corretor_id" };
+  }
 
-    if (normalizeLeadError) {
-      L.error("Failed to normalize distributed lead", { leadId, normalizedCorretorId }, normalizeLeadError);
-    }
+  const { data: updatedRows, error: normalizeLeadError } = await supabase
+    .from("pipeline_leads")
+    .update({
+      corretor_id: normalizedCorretorId,
+      aceite_status: "aguardando_aceite",
+      distribuido_em: notifiedAt.toISOString(),
+      aceite_expira_em: expireAt.toISOString(),
+    })
+    .eq("id", leadId)
+    .in("aceite_status", ["pendente", "aguardando_aceite", "pendente_aceite", "pendente_distribuicao"])
+    .select("id");
+
+  if (normalizeLeadError) {
+    L.error("Failed to normalize distributed lead", { leadId, normalizedCorretorId }, normalizeLeadError);
+    logOps("error", "system", "Distribute lead: UPDATE pipeline_leads falhou", { leadId, normalizedCorretorId }, normalizeLeadError.message);
+    return { success: false, reason: "update_failed", error: normalizeLeadError.message };
+  }
+
+  if (!updatedRows || updatedRows.length === 0) {
+    // No-op silencioso: lead já estava em outro estado (aceito/rejeitado/expirado).
+    // Não dispara notificações — corretor não receberia lead efetivamente.
+    L.warn("Lead not in distributable state; skipping notifications", { leadId, normalizedCorretorId });
+    logOps("warn", "business", "Distribute lead: lead não estava em estado distribuível", { leadId, normalizedCorretorId });
+    return { success: false, reason: "lead_not_distributable" };
   }
 
   if (normalizedProfileId) {
