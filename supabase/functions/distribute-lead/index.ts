@@ -33,10 +33,10 @@ Deno.serve(async (req) => {
     };
 
     const token = authHeader.replace("Bearer ", "");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     let userId: string | null = null;
-    if (token !== serviceKey && token !== anonKey) {
+    if (token !== serviceKey) {
+      // Anon key is NOT a valid credential here — must be a real user JWT or service role
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
       if (authError || !user) {
         return jsonResponse({ error: "Unauthorized" }, 401);

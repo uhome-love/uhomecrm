@@ -117,6 +117,20 @@ serve(async (req) => {
   const L = makeLogger(traceId);
 
   try {
+    // Auth: require x-sync-secret header (called from pg_cron and internal triggers)
+    const syncSecret = Deno.env.get("SYNC_SECRET");
+    const providedSecret = req.headers.get("x-sync-secret");
+    const authHeader = req.headers.get("authorization") || "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const isValidSync = !!syncSecret && providedSecret === syncSecret;
+    const isValidService = !!svcKey && bearerToken === svcKey;
+    if (!isValidSync && !isValidService) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);

@@ -90,16 +90,20 @@ Deno.serve(async (req) => {
     const body = await req.json();
     L.info("Raw body received", { hasData: !!body.data });
 
-    // ── Auth: simple secret ──
+    // ── Auth: simple secret (required) ──
     const webhookSecret = Deno.env.get("TIKTOK_WEBHOOK_SECRET") || Deno.env.get("META_WEBHOOK_SECRET");
-    if (webhookSecret) {
-      const provided = body.secret || req.headers.get("x-webhook-secret") || "";
-      if (provided !== webhookSecret) {
-        L.warn("Auth failed");
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    if (!webhookSecret) {
+      L.warn("TIKTOK_WEBHOOK_SECRET / META_WEBHOOK_SECRET not configured");
+      return new Response(JSON.stringify({ error: "Webhook not configured" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const provided = body.secret || req.headers.get("x-webhook-secret") || "";
+    if (provided !== webhookSecret) {
+      L.warn("Auth failed");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // ── Parse fields ──

@@ -487,10 +487,16 @@ export default function ConversationList({
                             </div>
                             <p className="text-[10px] text-muted-foreground truncate mt-0.5"
                                dangerouslySetInnerHTML={{
-                                 __html: snippet.replace(
-                                   new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"),
-                                   '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>'
-                                 ),
+                                 __html: snippet
+                                   .replace(/&/g, "&amp;")
+                                   .replace(/</g, "&lt;")
+                                   .replace(/>/g, "&gt;")
+                                   .replace(/"/g, "&quot;")
+                                   .replace(/'/g, "&#39;")
+                                   .replace(
+                                     new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"),
+                                     '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>'
+                                   ),
                                }}
                             />
                           </div>

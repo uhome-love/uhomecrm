@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAcademia, NIVEL_CONFIG, TIPO_CONFIG, type Aula, type QuizQuestion } from "@/hooks/useAcademia";
 import { supabase } from "@/integrations/supabase/client";
