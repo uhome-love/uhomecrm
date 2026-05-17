@@ -369,6 +369,7 @@ async function sendWhatsApp(supabase: any, supabaseUrl: string, serviceKey: stri
 
 async function sendPush(supabaseUrl: string, serviceKey: string, authUserId: string, lead: any) {
   try {
+    const targetUrl = lead?.id ? `/aceite?lead=${lead.id}` : "/aceite";
     await fetch(`${supabaseUrl}/functions/v1/send-push`, {
       method: "POST",
       headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
@@ -376,8 +377,12 @@ async function sendPush(supabaseUrl: string, serviceKey: string, authUserId: str
         user_id: authUserId,
         title: "🚨 Novo Lead!",
         body: `${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}. Aceite em 10 min!`,
-        url: lead?.id ? `/aceite?lead=${lead.id}` : "/aceite",
-        data: { tag: `lead_novo_${lead.id}` },
+        url: targetUrl,
+        data: {
+          tag: `lead_novo_${lead.id}`,
+          url: targetUrl,
+          pipeline_lead_id: lead?.id ?? null,
+        },
       }),
     });
   } catch (e) {

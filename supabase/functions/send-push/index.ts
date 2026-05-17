@@ -67,12 +67,14 @@ serve(async (req) => {
       );
     }
 
+    const targetUrl = url || data?.url || "/notificacoes";
     const payload = JSON.stringify({
       title,
       body: body || "",
       icon: "/icons/icon-192x192.png",
       badge: "/icons/icon-192x192.png",
-      data: { url: url || "/notificacoes", ...data },
+      url: targetUrl,
+      data: { ...data, url: targetUrl },
       requireInteraction: true,
     });
 
