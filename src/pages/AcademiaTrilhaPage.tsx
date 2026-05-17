@@ -509,7 +509,7 @@ function MediaPlayer({ aula, status, onComplete }: {
         </div>
       )}
       {aula.tipo === "texto" && conteudo?.html && (
-        <div className="prose prose-sm max-w-none dark:prose-invert rounded-xl border border-border p-6 bg-card" dangerouslySetInnerHTML={{ __html: conteudo.html }} />
+        <div className="prose prose-sm max-w-none dark:prose-invert rounded-xl border border-border p-6 bg-card" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(conteudo.html) }} />
       )}
 
       {/* Markdown content from conteudo.markdown */}
