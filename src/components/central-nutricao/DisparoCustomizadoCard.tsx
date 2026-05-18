@@ -64,6 +64,53 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     },
   });
 
+  // Templates Meta aprovados (Graph API)
+  const { data: metaTemplatesResp, isLoading: loadingTemplates, refetch: refetchTemplates, isFetching: fetchingTemplates } = useQuery({
+    queryKey: ["meta-templates-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("meta-templates-list", { body: {} });
+      if (error) throw error;
+      return data as { templates: Array<{ name: string; language: string; status: string; category: string | null; has_buttons: boolean }>; total: number };
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: canal === "meta",
+  });
+  const metaTemplates = metaTemplatesResp?.templates || [];
+
+  // Default template/language vindo da config (descartados / visita amanha)
+  const { data: cfgDefaults } = useQuery({
+    queryKey: ["reengajamento-config-defaults"],
+    queryFn: async () => {
+      const [{ data: reng }, { data: visita }] = await Promise.all([
+        supabase.from("reengajamento_config").select("meta_template_name, meta_template_name_2, meta_template_language").limit(1).maybeSingle(),
+        supabase.from("visita_amanha_config").select("meta_template_name, meta_template_language").limit(1).maybeSingle(),
+      ]);
+      return { reng, visita };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Pré-preenche o template quando muda canal/source
+  useEffect(() => {
+    if (canal !== "meta" || !cfgDefaults || templateName) return;
+    if (source === "descartados" && cfgDefaults.reng?.meta_template_name) {
+      setTemplateName(cfgDefaults.reng.meta_template_name);
+      setTemplateLanguage(cfgDefaults.reng.meta_template_language || "pt_BR");
+    } else if (source === "visita_amanha" && cfgDefaults.visita?.meta_template_name) {
+      setTemplateName(cfgDefaults.visita.meta_template_name);
+      setTemplateLanguage(cfgDefaults.visita.meta_template_language || "pt_BR");
+    }
+  }, [canal, source, cfgDefaults, templateName]);
+
+  function selectTemplate(name: string, language: string) {
+    setTemplateName(name);
+    setTemplateLanguage(language);
+    setTemplatePickerOpen(false);
+    setPreview(null);
+  }
+
+  const currentTemplateMeta = metaTemplates.find((t) => t.name === templateName && t.language === templateLanguage);
+
   function buildAudience() {
     const periodo = (from || to) ? {
       from: from ? new Date(from + "T00:00:00-03:00").toISOString() : undefined,
@@ -85,7 +132,10 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (source === "pipeline_ativo") base.stage_ids = stageIds;
     if (source === "oferta_ativa_lista") base.lista_id = listaId;
     if (source === "visita_amanha") base.data_visita = dataVisita;
-    if (canal === "meta" && templateName) base.template_name = templateName;
+    if (canal === "meta" && templateName) {
+      base.template_name = templateName;
+      base.template_language = templateLanguage;
+    }
     if (canal === "evolution" && mensagem) base.mensagem = mensagem;
     return base;
   }
