@@ -1,79 +1,106 @@
-# EXECUÇÃO Item 1 Fase 0 — `receive-meta-lead` (v2, com adendo da quebra de hoje 19→21h BRT)
+# Disparo de Reengajamento com seleção de público
 
-## ⚠️ Adendo crítico — quebra de hoje (17/05, ~19→21h BRT)
+Hoje o disparo de reengajamento é fixo: só pega leads em **Descarte** marcados como `reengajavel` dentro da janela `lookback_days`. Você quer escolher o público (pipeline ativo, lista da Oferta Ativa, descartados de uma semana/mês específicos) e ver quem já recebeu.
 
-**Evidência confirmada:**
-- Last success: `2026-05-17 22:00 UTC = 19:00 BRT` (último `Lead created via Meta Ads` em `ops_events`).
-- A partir daí: 100% dos requests retornam 503 `META_WEBHOOK_SECRET not configured`.
-- `secrets--fetch_secrets` agora: **`META_WEBHOOK_SECRET` ausente** (outros `*_WEBHOOK_SECRET` como `LANDING_WEBHOOK_SECRET` estão lá). Removido seletivamente entre 19h e 21h BRT.
-- Você confirmou: **não mexeu**. Então alguém/automação removeu **sem rastro humano direto** — exatamente o cenário que a Regra 9 deve impedir.
+## O que muda na tela `/central-nutricao` → Reengajamento
 
-**Pode recuperar o valor antigo?** Não. A plataforma de secrets não guarda histórico de valor apagado. O que existia era um shared-secret arbitrário; só importa que o valor no projeto bata com o header `x-webhook-secret` nos cenários Make. Geramos novo, você troca no Make, voltou ao normal.
+Adicionar um novo card **"Disparo customizado"** (acima do "Disparar agora" atual, que continua existindo como atalho para o fluxo padrão de descartados).
 
-**Pode recuperar os leads que tentaram entrar 19→agora?** Sim — Make.com guarda execuções por ~7 dias e tem botão **"Run again"** por execução com erro. Após repor o secret + atualizar header, replay manual de cada execução com erro 503 dos cenários Meta. Vou te dar a contagem exata por scenario depois do BLOCO 1.d.
+Estrutura do card:
 
-**Investigação "quem apagou":** após o BLOCO 1, abro adicional **BLOCO 0.2** (read-only): vasculhar `audit_log`, `cron.job_run_details` e qualquer função do projeto que chame `secrets.delete` ou `vault.delete_secret` para identificar a fonte. Se não houver rastro, registro em mem como "remoção fantasma" e a Regra 9 vira tripwire: criar uma edge function `secrets-tripwire` que roda a cada 10min, lista secrets esperados, e dispara push pro CEO se algum sumir.
+```text
+┌─ Disparo customizado ─────────────────────────────────────┐
+│ Público:  ( ) Descartados (padrão)                         │
+│           ( ) Pipeline ativo                               │
+│           ( ) Lista da Oferta Ativa                        │
+│                                                             │
+│ [campos dinâmicos conforme escolha — ver abaixo]           │
+│                                                             │
+│ Período:  [De: __/__/____]  [Até: __/__/____]              │
+│           Atalhos: [Hoje] [Semana] [Mês] [Últimos 30d]     │
+│                                                             │
+│ Empreendimento (opcional): [combobox]                      │
+│                                                             │
+│ ▸ Já receberam disparo:                                    │
+│   (•) Excluir quem já recebeu                              │
+│   ( ) Incluir todos                                        │
+│   ( ) Só quem recebeu antes de [data]  (reativação)        │
+│                                                             │
+│ Onda: ( ) 1ª onda  ( ) 2ª onda                             │
+│                                                             │
+│ Limite máximo: [200]                                        │
+│                                                             │
+│ ─────────────────────────────────────────────────────────  │
+│ Preview: 47 leads elegíveis  [🔍 Recontar]                 │
+│                                                             │
+│ [💬 Disparar para 47 leads]   [Cancelar]                   │
+└─────────────────────────────────────────────────────────────┘
+```
 
----
+Campos dinâmicos por origem:
 
-## BLOCO 0.1 — Tripwire de secrets (NOVO, executar junto com BLOCO 1)
+- **Descartados** — Tipo: `[Reengajáveis] [Definitivos] [Todos]`. Período filtra por `stage_changed_at`.
+- **Pipeline ativo** — Multi-select de stages (Novo, Tentativa de Contato, Em Atendimento, Visita Agendada, etc.). Período filtra por `created_at` do lead. Por padrão exclui Descarte/Negócio Criado/Inativado.
+- **Lista da Oferta Ativa** — Combobox de `oferta_ativa_listas` (mostra nome + empreendimento + total). Pega `oferta_ativa_leads` daquela lista. Período opcional filtra por `created_at`.
 
-a) Criar `supabase/functions/secrets-tripwire/index.ts`: lista esperada `["META_WEBHOOK_SECRET","LANDING_WEBHOOK_SECRET","SYNC_SECRET","WHATSAPP_ACCESS_TOKEN","VAPID_PRIVATE_KEY","EVOLUTION_API_KEY","MAILGUN_API_KEY"]`. Para cada, checar `Deno.env.get(name)`. Se faltar → inserir `notifications` (categoria `sla_urgente`) para todos `user_roles` com role `ceo` + log `error/system` em `ops_events`.
-b) Agendar via `pg_cron` a cada 10min (1 migration). Cota: 1 das 2/dia.
-c) Não precisa UI — alerta vai pro sininho do CEO.
+## O que muda no backend
 
-## BLOCO 0.2 — Forense da remoção (read-only, paralelo)
+### 1. Edge function `reengajamento-descartados-enqueue`
 
-a) Query `audit_log` entre 17/05 18:00 e 22:00 BRT filtrando `modulo ILIKE '%secret%' OR acao ILIKE '%delete%' OR acao ILIKE '%vault%'`.
-b) Listar runs de cron entre essas horas via `cron.job_run_details`.
-c) `rg "deleteSecret\\|vault.*delete\\|secrets.delete" supabase/functions/ src/` para mapear código que pode apagar.
-d) Resultado: registrado em `mem://bugs/meta-webhook-secret-removido-17mai2026` com causa identificada ou marcado como "origem desconhecida — tripwire ativo".
+Aceitar payload `audience` opcional. Se ausente, mantém comportamento atual (sem regressão para o cron e botão "Disparar agora" padrão).
 
----
+```ts
+audience?: {
+  source: 'descartados' | 'pipeline_ativo' | 'oferta_ativa_lista';
+  // descartados:
+  tipo_descarte?: 'reengajavel' | 'definitivo' | 'todos';
+  // pipeline_ativo:
+  stage_ids?: string[];
+  // oferta_ativa_lista:
+  lista_id?: string;
+  // comum:
+  periodo?: { from: string; to: string }; // ISO
+  empreendimento?: string;
+  dedup_mode?: 'exclude_sent' | 'include_all' | 'only_sent_before';
+  dedup_cutoff?: string; // ISO — usado quando dedup_mode='only_sent_before'
+  wave?: 1 | 2;
+  limit?: number;
+}
+```
 
-## Resto do plano (inalterado vs. v1)
+A query base muda conforme `source`, mas todo o resto (validação Meta/Evolution, throttle, pausa longa, auto-pause por quality block, batch continuation) permanece igual.
 
-### BLOCO 1 — Restaurar ingestão
-a) `secrets--add_secret(["META_WEBHOOK_SECRET"])` → gero string aleatória 48 chars.
-b) Devolvo valor + instrução para você colar no header `x-webhook-secret` dos cenários Make Meta.
-c) Aguardo confirmação que Make foi atualizado.
-d) Smoke test via `curl_edge_functions` → 200.
-e) Reporto: quantos 503s ocorreram na janela 19h→agora (estimativa de leads-tentativa para você fazer "Run again" no Make).
+### 2. Rastreio de quem já recebeu
 
-### BLOCO 2 — CANCELADO (0 órfãos no banco, já validado v1).
+- **Descartados**: continua via `pipeline_leads.reengajamento_enviado_at` (já existe).
+- **Pipeline ativo / Oferta Ativa**: usa `reengajamento_eventos` como fonte de verdade. Cada envio bem-sucedido insere `{ tipo: 'enviado_custom', detalhe: source, audience_source, created_at }`. Dedup ('exclude_sent') filtra leads que já têm evento desse source nos últimos 30 dias (configurável).
 
-### BLOCO 3 — Opção A no código
-- Trocar `logOps("error","integration","Distribution failed…orphaned")` por `logOps("info","business","Lead enfileirado na Fila CEO")` quando `no_fila_active`.
-- Atrás de flag `META_FALLBACK_FILA_CEO` (default true).
-- Diff mostrado antes do deploy. Pausa para sua aprovação.
+Sem nova tabela: aproveita `reengajamento_eventos`. Adicionar coluna `audience_source TEXT` via migration (nullable, backfill não necessário).
 
-### BLOCO 4 — `error_detail` em insert failures
-- Capturar `err.message/code/details/hint` + payload anonimizado no catch do INSERT.
-- Deploy junto com BLOCO 3.
+### 3. Endpoint de preview (contagem)
 
-### BLOCO 5 — Painel `/admin/ingestao`
-- Cards taxa sucesso 24h/7d/30d por `receive-*`, contagens, p95.
-- Alerta 503 já coberto pelo BLOCO 0.1 (tripwire) + cron `lead-escalation`.
+Nova edge function leve `reengajamento-audience-preview` (ou um RPC) que recebe o mesmo `audience` e retorna `{ count, sample: [{id, nome, telefone, ultima_atividade}] }` para mostrar antes do disparo. Sem efeitos colaterais.
 
----
+## Tracking pós-disparo (UX)
 
-## Regras a salvar em `mem://rules/engineering/permanent-rules-2026-05`
+O card "Últimos disparos" (que já existe) ganha uma coluna **Público** mostrando a origem (`Descartados`, `Pipeline: Tentativa Contato`, `Lista: Casa Tua – Mai/26`) para que você consiga auditar o que rodou para quem.
 
-- **Regra 9 (secrets):** Nunca deletar secret sem antes `rg "Deno.env.get\\(\"NOME\"\\)" supabase/functions/`. Para remoção segura: renomear `*_DEPRECATED_yyyymm`, esperar 30 dias, então deletar. **Tripwire ativo via `secrets-tripwire` cron a cada 10min — qualquer sumiço dispara push pro CEO.**
-- **Regra 10 (receive-* failover):** Persistir lead sempre. Falha de distribuição é `info/business`, não `error`. Estado canônico de Fila CEO = `pipeline_leads.aceite_status='pendente_distribuicao' AND corretor_id IS NULL`.
+## Detalhes técnicos
 
-## Migrations consumidas
+- **Arquivos a editar:**
+  - `src/components/central-nutricao/ReengajamentoTab.tsx` — novo card de disparo customizado + estado local + preview.
+  - `supabase/functions/reengajamento-descartados-enqueue/index.ts` — parsing de `audience`, query branching, dedup, gravação de `audience_source` em `reengajamento_eventos` e `reengajamento_dispatch_runs`.
+  - **Nova:** `supabase/functions/reengajamento-audience-preview/index.ts` — só conta/sample.
+- **Migration:**
+  - `ALTER TABLE reengajamento_eventos ADD COLUMN audience_source TEXT;`
+  - `ALTER TABLE reengajamento_dispatch_runs ADD COLUMN audience_source TEXT, ADD COLUMN audience_payload JSONB;`
+  - Índice parcial: `CREATE INDEX ON reengajamento_eventos (lead_id, audience_source, created_at DESC) WHERE audience_source IS NOT NULL;`
+- **Compatibilidade:** se `audience` ausente → comportamento idêntico ao atual (cron continua funcionando sem mudanças).
+- **Limites de segurança:** mesmo `daily_limit` global da config se aplica; preview avisa se o filtro retornar > limite.
+- **Janela horária / pausa**: continuam respeitadas — disparo customizado **não** dispara fora da janela (a menos que `force=true`, que você já tem hoje).
 
-- 1 migration (BLOCO 0.1: agendar pg_cron). Restante da cota livre para o dia.
+## Fora de escopo (registro para depois)
 
-## Rollback (atualizado)
-
-- BLOCO 0.1: deletar cron + função → tripwire some, sem efeito colateral.
-- BLOCO 0.2: read-only, sem rollback.
-- BLOCOS 1/3/4/5: idênticos à v1.
-
-## Retorno final
-
-A. Status por bloco. B. Órfãos: **0/0/0**. C. Replays Make + contagem de 503 da janela 19h→agora. D. Achado forense de quem deletou o secret (ou marcação "desconhecido"). E. Impacto fechado: 503 da janela × CPL ponderado ≈ R$ 17/lead. F. Diff `receive-meta-lead` antes do deploy. G. Regras 9 e 10 + tripwire ativo confirmados.
-
-**Aprove "Implement plan" para começar.** Pausarei antes do deploy do BLOCO 3.
+- Agendar disparo customizado recorrente (ex.: "todo sábado dispara para visita-amanhã de Casa Tua") — pode entrar numa Fase 2.
+- Salvar "públicos favoritos" para reusar — Fase 2.
+- Multi-template A/B por público — Fase 2.
