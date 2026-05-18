@@ -167,6 +167,8 @@ Deno.serve(async (req) => {
           inativados_definitivos: inativosCount,
           sem_telefone: semTelefoneCount,
           arquivados: arquivadosCount,
+          em_cooldown: emCooldownCount,
+          cooldown_dias: cooldownDias,
           elegiveis: count ?? leads.length,
         },
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
