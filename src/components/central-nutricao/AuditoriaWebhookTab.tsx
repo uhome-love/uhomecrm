@@ -227,6 +227,99 @@ export default function AuditoriaWebhookTab() {
         </div>
       </div>
 
+      {/* Disparos recentes (runs) — mostra TODOS os disparos, mesmo os 100% falhados */}
+      {recentRuns && recentRuns.length > 0 && (
+        <Collapsible open={showRuns} onOpenChange={setShowRuns}>
+          <Card>
+            <CollapsibleTrigger className="w-full">
+              <CardContent className="p-3 flex items-center justify-between hover:bg-muted/40 transition">
+                <div className="flex items-center gap-2">
+                  <Radio className="h-4 w-4 text-indigo-500" />
+                  <span className="text-sm font-semibold">Disparos recentes</span>
+                  <Badge variant="outline" className="text-[10px]">{recentRuns.length}</Badge>
+                </div>
+                <ChevronDown className={`h-4 w-4 transition ${showRuns ? "rotate-180" : ""}`} />
+              </CardContent>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 pb-3 px-3">
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[900px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[110px]">Início</TableHead>
+                        <TableHead className="w-[100px]">Status</TableHead>
+                        <TableHead className="w-[220px]">Template / Origem</TableHead>
+                        <TableHead className="w-[70px] text-right">Alvo</TableHead>
+                        <TableHead className="w-[80px] text-right text-emerald-700">Enviados</TableHead>
+                        <TableHead className="w-[70px] text-right text-red-700">Falhas</TableHead>
+                        <TableHead className="w-[80px] text-right">Ignorados</TableHead>
+                        <TableHead>Motivo / Primeiro erro</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recentRuns.map((run: any) => {
+                        const payload = (run.audience_payload || {}) as Record<string, unknown>;
+                        const tpl = (payload.template_name as string) || "—";
+                        const firstError = (() => {
+                          const e = run.erros;
+                          if (!e) return null;
+                          if (Array.isArray(e) && e.length > 0) return String(e[0]).slice(0, 200);
+                          if (typeof e === "string") return e.slice(0, 200);
+                          try { return JSON.stringify(e).slice(0, 200); } catch { return null; }
+                        })();
+                        const statusColors: Record<string, string> = {
+                          running: "bg-blue-50 text-blue-700",
+                          completed: "bg-emerald-50 text-emerald-700",
+                          paused: "bg-amber-50 text-amber-700",
+                          failed: "bg-red-50 text-red-700",
+                        };
+                        const hasIssue = run.status !== "running" && (run.enviados ?? 0) === 0 && (run.falhas ?? 0) > 0;
+                        return (
+                          <TableRow key={run.id} className={hasIssue ? "bg-red-50/30" : ""}>
+                            <TableCell className="text-xs whitespace-nowrap">{formatBRT(run.started_at, "dd/MM HH:mm")}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={`text-[10px] ${statusColors[run.status] || "bg-neutral-100"}`}>
+                                {run.status || "—"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <div className="font-medium truncate max-w-[220px]" title={tpl}>{tpl}</div>
+                              <div className="text-[10px] text-muted-foreground truncate max-w-[220px]">{run.audience_source || "—"}</div>
+                            </TableCell>
+                            <TableCell className="text-xs text-right">{run.total_alvo ?? 0}</TableCell>
+                            <TableCell className="text-xs text-right font-semibold text-emerald-700">{run.enviados ?? 0}</TableCell>
+                            <TableCell className="text-xs text-right font-semibold text-red-700">{run.falhas ?? 0}</TableCell>
+                            <TableCell className="text-xs text-right text-muted-foreground">{run.ignorados ?? 0}</TableCell>
+                            <TableCell className="text-xs">
+                              {(run.motivo_parada || firstError) ? (
+                                <div className="flex items-start gap-1.5">
+                                  <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="line-clamp-2 cursor-default">{run.motivo_parada || firstError}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-md"><p className="text-xs whitespace-pre-wrap">{run.motivo_parada || firstError}</p></TooltipContent>
+                                  </Tooltip>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
+
+
+
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
         <Card><CardContent className="p-3"><div className="text-xs text-muted-foreground">Total</div><div className="text-xl font-bold">{stats.total}</div></CardContent></Card>
