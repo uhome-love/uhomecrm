@@ -443,20 +443,88 @@ Deno.serve(async (req) => {
           lead_id: leadId, tipo: "classificado_sim" + suffix, detalhe: finalBody.slice(0, 300),
         });
 
+        // ── Lookup origem do disparo via último dispatch_run do lead ──
+        let audSrc = "legacy";
         try {
-          const distResult = await reativarLeadNutricao(supabase, leadId, { wave: isWave2 ? 2 : 1 });
-          if (!distResult?.success) {
-            await supabase.from("reengajamento_eventos").insert({
-              lead_id: leadId, tipo: "reativado_auto",
-              detalhe: `Reativação via Nutrição sem distribuição imediata. ${JSON.stringify(distResult)}`,
-            });
-          } else {
-            await supabase.from("reengajamento_eventos").insert({
-              lead_id: leadId, tipo: "reativado_auto", detalhe: "Distribuído automaticamente",
-            });
+          const { data: lastEv } = await supabase
+            .from("reengajamento_eventos")
+            .select("run_id")
+            .eq("lead_id", leadId)
+            .eq("tipo", "enviado")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (lastEv?.run_id) {
+            const { data: run } = await supabase
+              .from("reengajamento_dispatch_runs")
+              .select("audience_source")
+              .eq("id", lastEv.run_id)
+              .maybeSingle();
+            const raw = String(run?.audience_source || "");
+            if (raw.startsWith("descartados")) audSrc = "descartados";
+            else if (raw.startsWith("oferta_ativa")) audSrc = "oferta_ativa_lista";
+            else if (raw.startsWith("pipeline")) audSrc = "pipeline_ativo";
+            else if (raw === "visita_amanha") audSrc = "visita_amanha";
           }
         } catch (e) {
-          console.error("rpc reativar_lead_nutricao_manual error:", e);
+          console.error("audience_source lookup error:", e);
+        }
+
+        const routeToRoleta = audSrc === "descartados" || audSrc === "oferta_ativa_lista" || audSrc === "legacy";
+
+        if (routeToRoleta) {
+          try {
+            const distResult = await reativarLeadNutricao(supabase, leadId, { wave: isWave2 ? 2 : 1 });
+            if (!distResult?.success) {
+              await supabase.from("reengajamento_eventos").insert({
+                lead_id: leadId, tipo: "reativado_auto",
+                detalhe: `Reativação via Nutrição sem distribuição imediata. ${JSON.stringify(distResult)}`,
+              });
+            } else {
+              await supabase.from("reengajamento_eventos").insert({
+                lead_id: leadId, tipo: "reativado_auto", detalhe: `Distribuído automaticamente (origem=${audSrc})`,
+              });
+            }
+          } catch (e) {
+            console.error("rpc reativar_lead_nutricao_manual error:", e);
+          }
+        } else {
+          // Pipeline ativo / visita amanhã → mantém corretor, só notifica
+          await supabase.from("pipeline_leads").update({
+            reengajamento_status: "respondeu_sim" + suffix,
+          }).eq("id", leadId);
+
+          const { data: leadFull } = await supabase
+            .from("pipeline_leads")
+            .select("nome, corretor_id")
+            .eq("id", leadId)
+            .maybeSingle();
+
+          await supabase.from("pipeline_atividades").insert({
+            pipeline_lead_id: leadId,
+            tipo: "whatsapp",
+            titulo: `🔥 Interesse confirmado — disparo (Evolution)`,
+            descricao: `Lead respondeu SIM ao disparo Evolution (origem=${audSrc}). Manter atribuição atual.`,
+            data: new Date().toISOString().slice(0, 10),
+            status: "concluida",
+            responsavel_id: leadFull?.corretor_id || null,
+          });
+
+          if (leadFull?.corretor_id) {
+            await supabase.from("notifications").insert({
+              user_id: leadFull.corretor_id,
+              titulo: `🔥 ${leadFull.nome || "Lead"} demonstrou interesse no disparo`,
+              mensagem: `Respondeu SIM ao disparo Evolution. Lead permanece com você no pipeline ativo. Entre em contato agora!`,
+              tipo: "lead_reengajado",
+              categoria: "leads",
+              dados: { pipeline_lead_id: leadId, audience_source: audSrc, route: "pipeline_ativo_keep" },
+            });
+          }
+
+          await supabase.from("reengajamento_eventos").insert({
+            lead_id: leadId, tipo: "reativado_auto",
+            detalhe: `Pipeline ativo: corretor mantido, notificação enviada (origem=${audSrc})`,
+          });
         }
       } else if (outcome === "respondeu_nao") {
         await supabase
