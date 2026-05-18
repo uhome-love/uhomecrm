@@ -25,6 +25,7 @@ interface Audience {
   dedup_mode?: DedupMode;
   dedup_cutoff?: string;
   dedup_lookback_days?: number;
+  cooldown_dias?: number; // NOVO: cooldown entre disparos para o mesmo lead (default 7)
   include_archived?: boolean;
   limit?: number;
 }
@@ -71,13 +72,16 @@ Deno.serve(async (req) => {
 
     if (audience.source === "descartados") {
       // ─── Funil completo (auditoria) ───
-      // 1. Bruto em Descarte
-      const baseDescarte = () => supabase
+      // Regra nova: elegível = em Descarte, com telefone, não terminal, fora do cooldown.
+      // "Quem não respondeu nada continua elegível" — só sai do pool quem respondeu NÃO ou foi marcado terminal.
+      const cooldownDias = Math.max(0, Number(audience.cooldown_dias ?? 7));
+      const cooldownCutoff = new Date(Date.now() - cooldownDias * 24 * 3600 * 1000).toISOString();
+
+      const totalBrutoDescarte = (await supabase
         .from("pipeline_leads")
         .select("id", { count: "exact", head: true })
-        .eq("stage_id", STAGE_DESCARTE_ID);
-
-      const totalBrutoDescarte = (await baseDescarte()).count ?? 0;
+        .eq("stage_id", STAGE_DESCARTE_ID)
+      ).count ?? 0;
 
       const inativosCount = (await supabase
         .from("pipeline_leads")
@@ -100,6 +104,18 @@ Deno.serve(async (req) => {
         .eq("arquivado", true)
       ).count ?? 0;
 
+      // Em cooldown: receberam disparo recente e ainda não passou o cooldown (e não são terminais)
+      const emCooldownCount = cooldownDias > 0 ? ((await supabase
+        .from("pipeline_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("stage_id", STAGE_DESCARTE_ID)
+        .not("telefone", "is", null)
+        .neq("tipo_descarte", "definitivo")
+        .not("reengajamento_status", "in", `(${RESPONDEU_NAO_STATUSES.join(",")})`)
+        .not("reengajamento_enviado_at", "is", null)
+        .gte("reengajamento_enviado_at", cooldownCutoff)
+      ).count ?? 0) : 0;
+
       // 2. Query de elegíveis aplicando filtros do usuário
       let q = supabase
         .from("pipeline_leads")
@@ -115,12 +131,8 @@ Deno.serve(async (req) => {
       } else if (tipo === "definitivo") {
         q = q.eq("tipo_descarte", "definitivo");
       }
-      // tipo === "todos" → sem filtro de tipo
 
-      // Arquivado: por padrão INCLUI tudo (era o bug); usuário pode forçar só não-arquivado
       if (!includeArchived) {
-        // includeArchived=false agora significa "só não arquivados" (compatibilidade)
-        // mas para descartados, default desejado é INCLUIR. UI envia include_archived=true.
         q = q.eq("arquivado", false);
       }
 
@@ -128,10 +140,18 @@ Deno.serve(async (req) => {
       if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
       if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
 
-      if (dedupMode === "exclude_sent") q = q.is("reengajamento_enviado_at", null);
-      else if (dedupMode === "only_sent_before" && audience.dedup_cutoff) {
+      // Dedup novo: cooldown (default). Mantém modos antigos como override.
+      if (dedupMode === "exclude_sent") {
+        q = q.is("reengajamento_enviado_at", null);
+      } else if (dedupMode === "only_sent_before" && audience.dedup_cutoff) {
         q = q.not("reengajamento_enviado_at", "is", null).lte("reengajamento_enviado_at", audience.dedup_cutoff);
+      } else if (dedupMode === "include_all") {
+        // sem filtro de envio
+      } else if (cooldownDias > 0) {
+        // Default: elegível se nunca recebeu OU se passou o cooldown
+        q = q.or(`reengajamento_enviado_at.is.null,reengajamento_enviado_at.lt.${cooldownCutoff}`);
       }
+
 
       const { data, error, count } = await q.order("stage_changed_at", { ascending: false }).limit(limit);
       if (error) throw error;
@@ -147,6 +167,8 @@ Deno.serve(async (req) => {
           inativados_definitivos: inativosCount,
           sem_telefone: semTelefoneCount,
           arquivados: arquivadosCount,
+          em_cooldown: emCooldownCount,
+          cooldown_dias: cooldownDias,
           elegiveis: count ?? leads.length,
         },
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

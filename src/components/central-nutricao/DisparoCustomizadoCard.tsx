@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
 type Canal = "meta" | "evolution";
-type DedupMode = "exclude_sent" | "include_all" | "only_sent_before";
+type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
 
 export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => void }) {
   const [canal, setCanal] = useState<Canal>("meta");
@@ -31,8 +31,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [empreendimento, setEmpreendimento] = useState<string>("");
-  const [dedupMode, setDedupMode] = useState<DedupMode>("exclude_sent");
+  const [dedupMode, setDedupMode] = useState<DedupMode>("cooldown");
   const [dedupCutoff, setDedupCutoff] = useState<string>("");
+  const [cooldownDias, setCooldownDias] = useState<number>(7);
   const [includeArchived, setIncludeArchived] = useState<boolean>(true);
   const [limit, setLimit] = useState<number>(100);
   const [templateName, setTemplateName] = useState<string>("");
@@ -122,6 +123,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       periodo,
       empreendimento: empreendimento || undefined,
       dedup_mode: dedupMode,
+      cooldown_dias: dedupMode === "cooldown" ? cooldownDias : undefined,
       include_archived: includeArchived,
       limit,
     };
@@ -376,14 +378,31 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         {/* Dedup */}
         <div>
           <Label className="text-xs">Quem já recebeu disparo</Label>
-          <Select value={dedupMode} onValueChange={(v) => setDedupMode(v as DedupMode)}>
+          <Select value={dedupMode} onValueChange={(v) => { setDedupMode(v as DedupMode); setPreview(null); }}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="exclude_sent">Excluir quem já recebeu</SelectItem>
-              <SelectItem value="include_all">Incluir todos (mesmo quem já recebeu)</SelectItem>
+              <SelectItem value="cooldown">Reenviar quem não respondeu (com cooldown)</SelectItem>
+              <SelectItem value="exclude_sent">Excluir todo mundo que já recebeu</SelectItem>
+              <SelectItem value="include_all">Incluir todos (sem cooldown)</SelectItem>
               <SelectItem value="only_sent_before">Só quem recebeu antes de…</SelectItem>
             </SelectContent>
           </Select>
+          {dedupMode === "cooldown" && (
+            <div className="mt-2 flex items-center gap-2">
+              <Label className="text-[11px] text-muted-foreground whitespace-nowrap">Cooldown (dias)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={cooldownDias}
+                onChange={(e) => { setCooldownDias(Math.max(1, Number(e.target.value) || 7)); setPreview(null); }}
+                className="h-8 w-20"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Quem não respondeu volta a ficar elegível após {cooldownDias} dias do último envio. Quem clicou em "Não quero mais" fica excluído permanentemente.
+              </p>
+            </div>
+          )}
           {dedupMode === "only_sent_before" && (
             <Input type="date" value={dedupCutoff} onChange={(e) => setDedupCutoff(e.target.value)} className="h-9 mt-2" />
           )}
@@ -539,7 +558,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
               <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
                 <span className="text-muted-foreground">Total em Descarte</span>
                 <span className="text-right font-mono">{preview.funil.total_em_descarte}</span>
-                <span className="text-muted-foreground">— Inativados (respondeu não / definitivo)</span>
+                <span className="text-muted-foreground">— Inativados (respondeu "não" / definitivo / bloqueado)</span>
                 <span className="text-right font-mono text-rose-600">−{preview.funil.inativados_definitivos}</span>
                 <span className="text-muted-foreground">— Sem telefone</span>
                 <span className="text-right font-mono text-rose-600">−{preview.funil.sem_telefone}</span>
@@ -547,9 +566,18 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                 <span className={`text-right font-mono ${includeArchived ? "text-muted-foreground" : "text-rose-600"}`}>
                   {includeArchived ? preview.funil.arquivados : `−${preview.funil.arquivados}`}
                 </span>
+                {dedupMode === "cooldown" && typeof preview.funil.em_cooldown === "number" && (
+                  <>
+                    <span className="text-muted-foreground">— Em cooldown (recebem disparo em {preview.funil.cooldown_dias}d)</span>
+                    <span className="text-right font-mono text-amber-600">−{preview.funil.em_cooldown}</span>
+                  </>
+                )}
                 <span className="font-medium pt-1 border-t mt-1">= Elegíveis para disparo</span>
                 <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.funil.elegiveis}</span>
               </div>
+              <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                💡 Regra: SIM → volta para o pipeline · NÃO → inativa permanentemente · sem resposta → continua elegível no próximo ciclo (respeitando cooldown). Novos descartados entram automaticamente.
+              </p>
               {!includeArchived && preview.funil.arquivados > preview.funil.elegiveis && (
                 <p className="text-[10px] text-amber-600 mt-1">
                   ⚠️ {preview.funil.arquivados} leads arquivados estão sendo excluídos. Marque "Incluir arquivados" para alcançar a base completa.
