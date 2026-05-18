@@ -587,7 +587,7 @@ Deno.serve(async (req) => {
               const reason = `Evolution indisponível durante o disparo: ${payloadText}`;
               failed++;
               errs.push(`${lead.nome}: ${payloadText}`);
-              await supabase.from("reengajamento_eventos").insert({
+              await insertEvento({
                 lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: `${lead.nome}: ${payloadText}`.slice(0, 500),
               });
               await updateRun({
@@ -609,20 +609,22 @@ Deno.serve(async (req) => {
             failed++;
             const errMsg = `${lead.nome}: ${payloadText}`;
             errs.push(errMsg);
-            await supabase.from("reengajamento_eventos").insert({
+            await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
             await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
             continue;
           }
           const messageId = result?.key?.id || result?.messageId || crypto.randomUUID();
-          await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
-          await supabase.from("whatsapp_mensagens").insert({
-            lead_id: lead.id, instance_name: cfg.evolution_instance, direction: "sent",
-            body: text, whatsapp_message_id: messageId, timestamp: new Date().toISOString(),
-            delivery_status: "sent",
-          });
-          await supabase.from("reengajamento_eventos").insert({
+          if (canTouchPipelineLead(lead)) {
+            await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
+            await supabase.from("whatsapp_mensagens").insert({
+              lead_id: lead.id, instance_name: cfg.evolution_instance, direction: "sent",
+              body: text, whatsapp_message_id: messageId, timestamp: new Date().toISOString(),
+              delivery_status: "sent",
+            });
+          }
+          await insertEvento({
             lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[evo] ${phone} :: ${text.slice(0, 80)}`,
           });
           sent++;
@@ -641,7 +643,7 @@ Deno.serve(async (req) => {
             ? (pausaMin + Math.random() * (pausaMax - pausaMin)) * 1000
             : (delayMin + Math.random() * (delayMax - delayMin)) * 1000;
           if (isLongPause) {
-            await supabase.from("reengajamento_eventos").insert({
+            await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "pausa_longa", detalhe: `${Math.round(ms/1000)}s após ${sent} envios`,
             });
           }
@@ -651,7 +653,7 @@ Deno.serve(async (req) => {
         failed++;
         const errMsg = `${lead.nome}: ${e instanceof Error ? e.message : String(e)}`;
         errs.push(errMsg);
-        await supabase.from("reengajamento_eventos").insert({
+        await insertEvento({
           lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
         });
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
