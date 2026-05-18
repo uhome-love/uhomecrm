@@ -200,6 +200,75 @@ export default function AuditoriaWebhookTab() {
   });
   const [showRuns, setShowRuns] = useState(true);
 
+  // Resumo de HOJE (server-side, agregado) — independente da paginação
+  const { data: todayStats } = useQuery({
+    queryKey: ["auditoria-meta-today"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("reengajamento_resumo_hoje" as any);
+      if (error) {
+        // Fallback: agrega no cliente (last 2000 do dia)
+        const sinceBRT = new Date();
+        sinceBRT.setUTCHours(3, 0, 0, 0); // 00:00 BRT
+        const { data: raws } = await supabase
+          .from("reengajamento_meta_disparos")
+          .select("lead_id, status, button_response, response_text, sent_at")
+          .gte("sent_at", sinceBRT.toISOString())
+          .limit(2000);
+        const list = raws ?? [];
+        const simIds = new Set<string>();
+        const naoIds = new Set<string>();
+        let failed = 0, sent = 0, delivered = 0, read = 0, responded = 0;
+        list.forEach((r) => {
+          if (r.status === "failed") failed++;
+          else if (r.status === "sent") sent++;
+          else if (r.status === "delivered") delivered++;
+          else if (r.status === "read") read++;
+          else if (r.status === "responded") responded++;
+          const isSim = r.button_response === "sim" || (r.response_text || "").toLowerCase().startsWith("sim");
+          const isNao = r.button_response === "nao" || /n[aã]o quero/i.test(r.response_text || "");
+          if (r.lead_id && isSim) simIds.add(r.lead_id);
+          if (r.lead_id && isNao) naoIds.add(r.lead_id);
+        });
+        return { total: list.length, sent, delivered, read, responded, failed, sim: simIds.size, nao: naoIds.size };
+      }
+      return data as any;
+    },
+    refetchInterval: 15000,
+  });
+
+  // Detector: bloqueio de qualidade Meta nos últimos 30 min
+  const { data: qualityAlert } = useQuery({
+    queryKey: ["auditoria-quality-alert"],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("status, error_text, template_name")
+        .gte("sent_at", since)
+        .limit(2000);
+      const list = data ?? [];
+      if (list.length < 20) return null;
+      const total = list.length;
+      const failed131049 = list.filter(
+        (r) => r.status === "failed" && /healthy ecosystem/i.test(r.error_text || "")
+      ).length;
+      const rate = failed131049 / total;
+      if (rate < 0.3) return null;
+      const tplCounts: Record<string, number> = {};
+      list.forEach((r) => {
+        if (r.status === "failed" && /healthy ecosystem/i.test(r.error_text || "")) {
+          const t = r.template_name || "—";
+          tplCounts[t] = (tplCounts[t] || 0) + 1;
+        }
+      });
+      const topTpl = Object.entries(tplCounts).sort((a, b) => b[1] - a[1])[0];
+      return { rate, failed131049, total, topTemplate: topTpl?.[0], topCount: topTpl?.[1] || 0 };
+    },
+    refetchInterval: 30000,
+  });
+
+
+
 
   if (isLoading) {
     return (
