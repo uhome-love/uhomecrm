@@ -12,6 +12,7 @@ import { Loader2, CheckCircle2, XCircle, MessageSquare, ExternalLink, MousePoint
 import { formatBRT } from "@/lib/brtTime";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import RespostasRecebidasHoje from "./RespostasRecebidasHoje";
 
 interface Row {
   id: string;
