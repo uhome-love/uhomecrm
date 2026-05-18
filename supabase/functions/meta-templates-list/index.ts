@@ -54,15 +54,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const phoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || "";
+    const wabaId = Deno.env.get("WHATSAPP_BUSINESS_ACCOUNT_ID") || "";
     const accessToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
-    if (!phoneId || !accessToken) {
-      return new Response(JSON.stringify({ error: "Meta credentials missing" }), {
+    if (!wabaId || !accessToken) {
+      return new Response(JSON.stringify({ error: "WHATSAPP_BUSINESS_ACCOUNT_ID ou WHATSAPP_ACCESS_TOKEN ausente" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const wabaId = await resolveWabaId(phoneId, accessToken);
     const all = await fetchAllTemplates(wabaId, accessToken);
 
     const templates = all
