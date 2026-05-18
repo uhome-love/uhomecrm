@@ -255,6 +255,8 @@ Deno.serve(async (req) => {
       if (src === "descartados") {
         const includeArchivedCustom = bodyAudience.include_archived === true;
         const tipoFilter = String(bodyAudience.tipo_descarte || "reengajavel");
+        const cooldownDias = Math.max(0, Number(bodyAudience.cooldown_dias ?? 7));
+        const cooldownCutoff = new Date(Date.now() - cooldownDias * 24 * 3600 * 1000).toISOString();
         const RESPONDEU_NAO = ["respondeu_nao", "respondeu_nao_wave2", "bloqueado", "telefone_invalido"];
         let q = supabase
           .from("pipeline_leads")
@@ -271,9 +273,15 @@ Deno.serve(async (req) => {
         if (bodyAudience.periodo?.from) q = q.gte("stage_changed_at", String(bodyAudience.periodo.from));
         if (bodyAudience.periodo?.to) q = q.lte("stage_changed_at", String(bodyAudience.periodo.to));
         if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
-        if (dedupMode === "exclude_sent") q = q.is("reengajamento_enviado_at", null);
-        else if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
+        // Dedup novo: cooldown (default). Modos antigos como override.
+        if (dedupMode === "exclude_sent") {
+          q = q.is("reengajamento_enviado_at", null);
+        } else if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
           q = q.not("reengajamento_enviado_at", "is", null).lte("reengajamento_enviado_at", String(bodyAudience.dedup_cutoff));
+        } else if (dedupMode === "include_all") {
+          // sem filtro
+        } else if (cooldownDias > 0) {
+          q = q.or(`reengajamento_enviado_at.is.null,reengajamento_enviado_at.lt.${cooldownCutoff}`);
         }
         const { data, error } = await q.order("stage_changed_at", { ascending: false }).limit(effectiveLimit);
         if (error) throw error;
