@@ -219,16 +219,29 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
 
         {/* Filtros dinâmicos */}
         {source === "descartados" && (
-          <div>
-            <Label className="text-xs">Tipo de descarte</Label>
-            <Select value={tipoDescarte} onValueChange={(v) => setTipoDescarte(v as "reengajavel" | "definitivo" | "todos")}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="reengajavel">Reengajáveis</SelectItem>
-                <SelectItem value="definitivo">Definitivos</SelectItem>
-                <SelectItem value="todos">Todos</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-2">
+            <div>
+              <Label className="text-xs">Tipo de descarte</Label>
+              <Select value={tipoDescarte} onValueChange={(v) => setTipoDescarte(v as "reengajavel" | "definitivo" | "todos")}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reengajavel">Reengajáveis (exclui inativados)</SelectItem>
+                  <SelectItem value="definitivo">Apenas inativados definitivos</SelectItem>
+                  <SelectItem value="todos">Todos (inclui inativados)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                "Reengajáveis" remove automaticamente quem respondeu NÃO, foi bloqueado ou está com tipo definitivo.
+              </p>
+            </div>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeArchived}
+                onChange={(e) => { setIncludeArchived(e.target.checked); setPreview(null); }}
+              />
+              Incluir leads arquivados (recomendado — descartados antigos ficam arquivados após 24h)
+            </label>
           </div>
         )}
 
