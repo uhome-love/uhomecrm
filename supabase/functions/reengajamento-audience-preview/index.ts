@@ -25,6 +25,7 @@ interface Audience {
   dedup_mode?: DedupMode;
   dedup_cutoff?: string;
   dedup_lookback_days?: number;
+  include_archived?: boolean;
   limit?: number;
 }
 
@@ -34,6 +35,13 @@ function audienceKey(a: Audience): string {
   if (a.source === "pipeline_ativo") return `pipeline:${(a.stage_ids || []).slice().sort().join(",")}`;
   if (a.source === "visita_amanha") return `visita_amanha:${a.data_visita || ""}`;
   return a.source;
+}
+
+const RESPONDEU_NAO_STATUSES = ["respondeu_nao", "respondeu_nao_wave2", "bloqueado", "telefone_invalido"];
+
+async function exactCount(supabase: any, build: () => any): Promise<number> {
+  const { count } = await build().select("id", { count: "exact", head: true });
+  return count ?? 0;
 }
 
 Deno.serve(async (req) => {
@@ -56,21 +64,66 @@ Deno.serve(async (req) => {
     const limit = Math.min(Math.max(Number(audience.limit || 500), 1), 2000);
     const dedupMode: DedupMode = audience.dedup_mode || "exclude_sent";
     const dedupLookbackDays = Math.max(1, Number(audience.dedup_lookback_days || 30));
+    const includeArchived = audience.include_archived === true;
     const audSource = audienceKey(audience);
 
     let leads: Array<{ id: string; nome: string; telefone: string | null; ref: string }> = [];
 
     if (audience.source === "descartados") {
+      // ─── Funil completo (auditoria) ───
+      // 1. Bruto em Descarte
+      const baseDescarte = () => supabase
+        .from("pipeline_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("stage_id", STAGE_DESCARTE_ID);
+
+      const totalBrutoDescarte = (await baseDescarte()).count ?? 0;
+
+      const inativosCount = (await supabase
+        .from("pipeline_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("stage_id", STAGE_DESCARTE_ID)
+        .or(`tipo_descarte.eq.definitivo,reengajamento_status.in.(${RESPONDEU_NAO_STATUSES.join(",")})`)
+      ).count ?? 0;
+
+      const semTelefoneCount = (await supabase
+        .from("pipeline_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("stage_id", STAGE_DESCARTE_ID)
+        .is("telefone", null)
+      ).count ?? 0;
+
+      const arquivadosCount = (await supabase
+        .from("pipeline_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("stage_id", STAGE_DESCARTE_ID)
+        .eq("arquivado", true)
+      ).count ?? 0;
+
+      // 2. Query de elegíveis aplicando filtros do usuário
       let q = supabase
         .from("pipeline_leads")
-        .select("id, nome, telefone, stage_changed_at, tipo_descarte, reengajamento_enviado_at, empreendimento", { count: "exact" })
+        .select("id, nome, telefone, stage_changed_at, tipo_descarte, reengajamento_status, reengajamento_enviado_at, empreendimento, arquivado", { count: "exact" })
         .eq("stage_id", STAGE_DESCARTE_ID)
-        .eq("arquivado", false)
         .not("telefone", "is", null);
 
-      if (audience.tipo_descarte && audience.tipo_descarte !== "todos") {
-        q = q.eq("tipo_descarte", audience.tipo_descarte);
+      // Inativados (respondeu não / definitivo) SEMPRE excluídos quando tipo = reengajavel
+      const tipo = audience.tipo_descarte || "reengajavel";
+      if (tipo === "reengajavel") {
+        q = q.neq("tipo_descarte", "definitivo")
+             .not("reengajamento_status", "in", `(${RESPONDEU_NAO_STATUSES.join(",")})`);
+      } else if (tipo === "definitivo") {
+        q = q.eq("tipo_descarte", "definitivo");
       }
+      // tipo === "todos" → sem filtro de tipo
+
+      // Arquivado: por padrão INCLUI tudo (era o bug); usuário pode forçar só não-arquivado
+      if (!includeArchived) {
+        // includeArchived=false agora significa "só não arquivados" (compatibilidade)
+        // mas para descartados, default desejado é INCLUIR. UI envia include_archived=true.
+        q = q.eq("arquivado", false);
+      }
+
       if (audience.periodo?.from) q = q.gte("stage_changed_at", audience.periodo.from);
       if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
       if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
@@ -83,11 +136,19 @@ Deno.serve(async (req) => {
       const { data, error, count } = await q.order("stage_changed_at", { ascending: false }).limit(limit);
       if (error) throw error;
       leads = (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" }));
+
       return new Response(JSON.stringify({
         count: count ?? leads.length,
         sample_count: leads.length,
         sample: leads.slice(0, 20),
         audience_source: audSource,
+        funil: {
+          total_em_descarte: totalBrutoDescarte,
+          inativados_definitivos: inativosCount,
+          sem_telefone: semTelefoneCount,
+          arquivados: arquivadosCount,
+          elegiveis: count ?? leads.length,
+        },
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

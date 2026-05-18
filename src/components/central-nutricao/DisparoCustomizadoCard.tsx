@@ -30,10 +30,11 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [empreendimento, setEmpreendimento] = useState<string>("");
   const [dedupMode, setDedupMode] = useState<DedupMode>("exclude_sent");
   const [dedupCutoff, setDedupCutoff] = useState<string>("");
+  const [includeArchived, setIncludeArchived] = useState<boolean>(true);
   const [limit, setLimit] = useState<number>(100);
   const [templateName, setTemplateName] = useState<string>("");
   const [mensagem, setMensagem] = useState<string>("");
-  const [preview, setPreview] = useState<{ count: number; sample: any[] } | null>(null);
+  const [preview, setPreview] = useState<{ count: number; sample: any[]; funil?: Record<string, number> } | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [firing, setFiring] = useState(false);
 
@@ -68,6 +69,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       periodo,
       empreendimento: empreendimento || undefined,
       dedup_mode: dedupMode,
+      include_archived: includeArchived,
       limit,
     };
     if (dedupMode === "only_sent_before" && dedupCutoff) {
@@ -98,9 +100,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         body: { audience: buildAudience() },
       });
       if (error) throw error;
-      const d = data as { error?: string; count?: number; sample?: unknown[] };
+      const d = data as { error?: string; count?: number; sample?: unknown[]; funil?: Record<string, number> };
       if (d?.error) throw new Error(d.error);
-      setPreview({ count: d.count || 0, sample: d.sample || [] });
+      setPreview({ count: d.count || 0, sample: (d.sample as any[]) || [], funil: d.funil });
     } catch (e) {
       toast.error("Erro no preview: " + (e instanceof Error ? e.message : String(e)));
     } finally {
@@ -217,16 +219,29 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
 
         {/* Filtros dinâmicos */}
         {source === "descartados" && (
-          <div>
-            <Label className="text-xs">Tipo de descarte</Label>
-            <Select value={tipoDescarte} onValueChange={(v) => setTipoDescarte(v as "reengajavel" | "definitivo" | "todos")}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="reengajavel">Reengajáveis</SelectItem>
-                <SelectItem value="definitivo">Definitivos</SelectItem>
-                <SelectItem value="todos">Todos</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-2">
+            <div>
+              <Label className="text-xs">Tipo de descarte</Label>
+              <Select value={tipoDescarte} onValueChange={(v) => setTipoDescarte(v as "reengajavel" | "definitivo" | "todos")}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reengajavel">Reengajáveis (exclui inativados)</SelectItem>
+                  <SelectItem value="definitivo">Apenas inativados definitivos</SelectItem>
+                  <SelectItem value="todos">Todos (inclui inativados)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                "Reengajáveis" remove automaticamente quem respondeu NÃO, foi bloqueado ou está com tipo definitivo.
+              </p>
+            </div>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeArchived}
+                onChange={(e) => { setIncludeArchived(e.target.checked); setPreview(null); }}
+              />
+              Incluir leads arquivados (recomendado — descartados antigos ficam arquivados após 24h)
+            </label>
           </div>
         )}
 
@@ -358,6 +373,31 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
               </span>
             )}
           </div>
+
+          {preview?.funil && source === "descartados" && (
+            <div className="text-[11px] border rounded p-2 bg-background space-y-1">
+              <div className="font-medium text-indigo-700 mb-1">Conferência — Funil de descartados</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                <span className="text-muted-foreground">Total em Descarte</span>
+                <span className="text-right font-mono">{preview.funil.total_em_descarte}</span>
+                <span className="text-muted-foreground">— Inativados (respondeu não / definitivo)</span>
+                <span className="text-right font-mono text-rose-600">−{preview.funil.inativados_definitivos}</span>
+                <span className="text-muted-foreground">— Sem telefone</span>
+                <span className="text-right font-mono text-rose-600">−{preview.funil.sem_telefone}</span>
+                <span className="text-muted-foreground">— Arquivados {includeArchived ? "(incluídos)" : "(excluídos)"}</span>
+                <span className={`text-right font-mono ${includeArchived ? "text-muted-foreground" : "text-rose-600"}`}>
+                  {includeArchived ? preview.funil.arquivados : `−${preview.funil.arquivados}`}
+                </span>
+                <span className="font-medium pt-1 border-t mt-1">= Elegíveis para disparo</span>
+                <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.funil.elegiveis}</span>
+              </div>
+              {!includeArchived && preview.funil.arquivados > preview.funil.elegiveis && (
+                <p className="text-[10px] text-amber-600 mt-1">
+                  ⚠️ {preview.funil.arquivados} leads arquivados estão sendo excluídos. Marque "Incluir arquivados" para alcançar a base completa.
+                </p>
+              )}
+            </div>
+          )}
 
           {preview && preview.sample.length > 0 && (
             <div className="text-[11px] text-muted-foreground border rounded p-2 bg-background max-h-32 overflow-y-auto">
