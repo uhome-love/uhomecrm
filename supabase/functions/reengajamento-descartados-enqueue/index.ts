@@ -537,7 +537,7 @@ Deno.serve(async (req) => {
             failed++;
             const errMsg = `${lead.nome}: ${r.error}`;
             errs.push(errMsg);
-            await supabase.from("reengajamento_eventos").insert({
+            await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
 
@@ -547,7 +547,7 @@ Deno.serve(async (req) => {
               if (consecutiveMetaQualityFails >= 5) {
                 stopReason = `Auto-pausa: template "${metaTemplate}" provavelmente pausado pela Meta (${consecutiveMetaQualityFails} falhas consecutivas: "${(r.error || "").slice(0, 120)}"). Verifique o WhatsApp Manager.`;
                 await supabase.from("reengajamento_config").update({ paused: true, updated_at: new Date().toISOString() }).eq("id", cfg.id);
-                await supabase.from("reengajamento_eventos").insert({
+                await insertEvento({
                   lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
                 });
                 await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
@@ -561,12 +561,14 @@ Deno.serve(async (req) => {
             continue;
           }
           consecutiveMetaQualityFails = 0;
-          await supabase.from("reengajamento_meta_disparos").insert({
-            lead_id: lead.id, run_id: runId, wamid: r.wamid, template_name: metaTemplate,
-            template_language: metaLang, phone, status: "sent", sent_at: new Date().toISOString(),
-          });
-          await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
-          await supabase.from("reengajamento_eventos").insert({
+          if (canTouchPipelineLead(lead)) {
+            await supabase.from("reengajamento_meta_disparos").insert({
+              lead_id: lead.id, run_id: runId, wamid: r.wamid, template_name: metaTemplate,
+              template_language: metaLang, phone, status: "sent", sent_at: new Date().toISOString(),
+            });
+            await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
+          }
+          await insertEvento({
             lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[meta:${metaTemplate}] ${phone}`,
           });
           sent++;
