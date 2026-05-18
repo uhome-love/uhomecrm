@@ -184,6 +184,23 @@ export default function AuditoriaWebhookTab() {
     };
   }, [rows, total]);
 
+  // Recent dispatch runs (so the user can see if a dispatch ran at all, even with 0 sent)
+  const { data: recentRuns } = useQuery({
+    queryKey: ["recent-dispatch-runs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reengajamento_dispatch_runs")
+        .select("id, started_at, finished_at, status, total_alvo, enviados, falhas, ignorados, motivo_parada, audience_source, audience_payload, erros")
+        .order("started_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data ?? [];
+    },
+    refetchInterval: 10000,
+  });
+  const [showRuns, setShowRuns] = useState(true);
+
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
