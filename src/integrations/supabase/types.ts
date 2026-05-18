@@ -7417,6 +7417,8 @@ export type Database = {
       }
       reengajamento_dispatch_runs: {
         Row: {
+          audience_payload: Json | null
+          audience_source: string | null
           created_at: string
           enviados: number
           erros: Json | null
@@ -7433,6 +7435,8 @@ export type Database = {
           ultimo_lead_nome: string | null
         }
         Insert: {
+          audience_payload?: Json | null
+          audience_source?: string | null
           created_at?: string
           enviados?: number
           erros?: Json | null
@@ -7449,6 +7453,8 @@ export type Database = {
           ultimo_lead_nome?: string | null
         }
         Update: {
+          audience_payload?: Json | null
+          audience_source?: string | null
           created_at?: string
           enviados?: number
           erros?: Json | null
@@ -7468,6 +7474,7 @@ export type Database = {
       }
       reengajamento_eventos: {
         Row: {
+          audience_source: string | null
           created_at: string
           detalhe: string | null
           id: string
@@ -7476,6 +7483,7 @@ export type Database = {
           tipo: string
         }
         Insert: {
+          audience_source?: string | null
           created_at?: string
           detalhe?: string | null
           id?: string
@@ -7484,6 +7492,7 @@ export type Database = {
           tipo: string
         }
         Update: {
+          audience_source?: string | null
           created_at?: string
           detalhe?: string | null
           id?: string
