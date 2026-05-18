@@ -460,9 +460,12 @@ Deno.serve(async (req) => {
     const sentStatus = wave === 2 ? "enviado_wave2" : "enviado";
     const markSentPatch = () => {
       const nowIso = new Date().toISOString();
+      // Reset reativado_por_nutricao para permitir que o webhook reabra o ciclo de
+      // reativação quando o lead responder SIM novamente (caso já tenha sido
+      // reativado em ciclo anterior e descartado de novo).
       return wave === 2
-        ? { reengajamento_wave2_at: nowIso, reengajamento_status: sentStatus }
-        : { reengajamento_enviado_at: nowIso, reengajamento_status: sentStatus };
+        ? { reengajamento_wave2_at: nowIso, reengajamento_status: sentStatus, reativado_por_nutricao: false }
+        : { reengajamento_enviado_at: nowIso, reengajamento_status: sentStatus, reativado_por_nutricao: false };
     };
     const markPhoneInvalidPatch = () => {
       const nowIso = new Date().toISOString();
