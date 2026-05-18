@@ -1,0 +1,39 @@
+{
+  "_comment": "Lista derivada via `grep -rhoE 'Deno.env.get(\"NAME\")' supabase/functions/` em 18/05/2026. Atualizar quando edge function nova introduzir secret novo. Exclui SUPABASE_* (auto-injetado pela plataforma) e variáveis que são URLs públicas/hosts (TYPESENSE_HOST, *_URL).",
+  "_what_this_checks": "PRESENÇA apenas (Deno.env.get retorna string não-vazia). NÃO valida que a credencial seja válida/aceita pelo serviço externo. Credencial inválida/expirada/revogada é detectada apenas quando a função real falha; isso fica para item futuro (probes ativos por integração).",
+  "_excluded_from_check": {
+    "SITE_SUPABASE_ANON_KEY": "Referência legacy — site atual usa UHOMESITE_SERVICE_KEY/UHOMESITE_URL. Limpar do código.",
+    "SITE_SUPABASE_URL": "Idem.",
+    "TIKTOK_WEBHOOK_SECRET": "Ingestão TikTok não está configurada no projeto. Quando ativar, adicionar.",
+    "WHATSAPP_PHONE_ID": "Nome legacy — canônico é WHATSAPP_PHONE_NUMBER_ID.",
+    "WHATSAPP_TOKEN": "Nome legacy — canônico é WHATSAPP_ACCESS_TOKEN."
+  },
+  "secrets": [
+    "ELEVENLABS_AGENT_ID",
+    "ELEVENLABS_API_KEY",
+    "ELEVENLABS_CONVAI_KEY",
+    "ELEVENLABS_PHONE_NUMBER_ID",
+    "EVOLUTION_API_KEY",
+    "GOOGLE_OAUTH_CLIENT_ID",
+    "GOOGLE_OAUTH_CLIENT_SECRET",
+    "JETIMOB_API_KEY",
+    "JETIMOB_LEADS_PRIVATE_KEY",
+    "JETIMOB_LEADS_URL_KEY",
+    "LANDING_WEBHOOK_SECRET",
+    "LOVABLE_API_KEY",
+    "MAILGUN_API_KEY",
+    "META_WEBHOOK_SECRET",
+    "OPENAI_API_KEY",
+    "RDSTATION_PRIVATE_TOKEN",
+    "SYNC_SECRET",
+    "TYPESENSE_ADMIN_API_KEY",
+    "TYPESENSE_SEARCH_API_KEY",
+    "UHOMESITE_SERVICE_KEY",
+    "UHOME_AI_SECRET",
+    "VAPID_PRIVATE_KEY",
+    "VAPID_PUBLIC_KEY",
+    "WHATSAPP_ACCESS_TOKEN",
+    "WHATSAPP_PHONE_NUMBER_ID",
+    "WHATSAPP_WEBHOOK_VERIFY_TOKEN"
+  ]
+}
