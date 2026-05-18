@@ -341,6 +341,9 @@ export default function AuditoriaWebhookTab() {
         </Card>
       )}
 
+      {/* Auditoria de respostas recebidas hoje (botão + texto + remetente novo) */}
+      <RespostasRecebidasHoje />
+
       {/* Disparos recentes (runs) — mostra TODOS os disparos, mesmo os 100% falhados */}
 
       {recentRuns && recentRuns.length > 0 && (
