@@ -558,7 +558,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
               <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
                 <span className="text-muted-foreground">Total em Descarte</span>
                 <span className="text-right font-mono">{preview.funil.total_em_descarte}</span>
-                <span className="text-muted-foreground">— Inativados (respondeu não / definitivo)</span>
+                <span className="text-muted-foreground">— Inativados (respondeu "não" / definitivo / bloqueado)</span>
                 <span className="text-right font-mono text-rose-600">−{preview.funil.inativados_definitivos}</span>
                 <span className="text-muted-foreground">— Sem telefone</span>
                 <span className="text-right font-mono text-rose-600">−{preview.funil.sem_telefone}</span>
@@ -566,9 +566,18 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                 <span className={`text-right font-mono ${includeArchived ? "text-muted-foreground" : "text-rose-600"}`}>
                   {includeArchived ? preview.funil.arquivados : `−${preview.funil.arquivados}`}
                 </span>
+                {dedupMode === "cooldown" && typeof preview.funil.em_cooldown === "number" && (
+                  <>
+                    <span className="text-muted-foreground">— Em cooldown (recebem disparo em {preview.funil.cooldown_dias}d)</span>
+                    <span className="text-right font-mono text-amber-600">−{preview.funil.em_cooldown}</span>
+                  </>
+                )}
                 <span className="font-medium pt-1 border-t mt-1">= Elegíveis para disparo</span>
                 <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.funil.elegiveis}</span>
               </div>
+              <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                💡 Regra: SIM → volta para o pipeline · NÃO → inativa permanentemente · sem resposta → continua elegível no próximo ciclo (respeitando cooldown). Novos descartados entram automaticamente.
+              </p>
               {!includeArchived && preview.funil.arquivados > preview.funil.elegiveis && (
                 <p className="text-[10px] text-amber-600 mt-1">
                   ⚠️ {preview.funil.arquivados} leads arquivados estão sendo excluídos. Marque "Incluir arquivados" para alcançar a base completa.
