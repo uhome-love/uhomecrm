@@ -123,6 +123,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       periodo,
       empreendimento: empreendimento || undefined,
       dedup_mode: dedupMode,
+      cooldown_dias: dedupMode === "cooldown" ? cooldownDias : undefined,
       include_archived: includeArchived,
       limit,
     };
