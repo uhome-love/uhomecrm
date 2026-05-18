@@ -129,8 +129,8 @@ Deno.serve(async (req) => {
     const metaToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
     if (!metaPhoneId || !metaToken) throw new Error("Meta env vars missing");
 
-    const metaTemplate: string = String(cfg.meta_template_name || "engajamento_visitasabado");
-    const metaLang: string = String(cfg.meta_template_language || "pt_BR");
+    const metaTemplate: string = overrideTemplateName || String(cfg.meta_template_name || "engajamento_visitasabado");
+    const metaLang: string = overrideTemplateLang || String(cfg.meta_template_language || "pt_BR");
     const stagesAlvo: string[] = Array.isArray(cfg.stages_alvo) ? cfg.stages_alvo : [];
 
     // Resolve stage_ids alvo
