@@ -426,11 +426,14 @@ Deno.serve(async (req) => {
       }
 
       const POSITIVE_STRICT = /^(sim|quero|claro|pode\s*(mandar|enviar)|envia|manda|me\s*envia|tenho\s*interesse|gostaria|interessad[oa]|por\s*favor|pf|👍|✅|🙏|s)\b/;
-      const NEGATIVE_STRICT = /^(n[aã]o\s*(quero|tenho|obrigad|me\s*interesso|preciso)|n[aã]o\.?$|j[aá]\s*comprei|comprei|desisti|stop|sair|cancela|cancelar|para\s+de|me\s*remov|remove|p[aá]ra)/;
+      // NEGATIVE: começa com "não" curto OU contém frase negativa clara em qualquer posição (até 200 chars)
+      const NEGATIVE_START = /^(n[aã]o\s*(quero|tenho|obrigad|me\s*interesso|preciso)|n[aã]o\.?$|j[aá]\s*comprei|comprei|desisti|stop|sair|cancela|cancelar|para\s+de|me\s*remov|remove|p[aá]ra)/;
+      const NEGATIVE_PHRASE = /\b(n[aã]o\s+tenho\s+(mais\s+)?interesse|sem\s+interesse|n[aã]o\s+me\s+interess|por\s+(hora|enquanto)\s+n[aã]o|n[aã]o\s+quero\s+(mais|comprar|saber)|j[aá]\s+(comprei|fechei)|desisti|n[aã]o\s+pretendo)\b/;
 
       let outcome: "respondeu_sim" | "respondeu_nao" | "respondeu_outro" = "respondeu_outro";
-      if (POSITIVE_STRICT.test(txt)) outcome = "respondeu_sim";
-      else if (NEGATIVE_STRICT.test(txt) && txt.length < 60) outcome = "respondeu_nao";
+      const isNeg = (NEGATIVE_START.test(txt) && txt.length < 80) || (NEGATIVE_PHRASE.test(txt) && txt.length < 200);
+      if (isNeg) outcome = "respondeu_nao";
+      else if (POSITIVE_STRICT.test(txt)) outcome = "respondeu_sim";
 
       await supabase.from("reengajamento_eventos").insert({
         lead_id: leadId,
