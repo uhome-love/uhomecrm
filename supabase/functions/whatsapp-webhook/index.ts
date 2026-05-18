@@ -432,7 +432,7 @@ Deno.serve(async (req) => {
             if (repliedToWamid) {
               const { data: metaDispatch } = await supabase
                 .from("reengajamento_meta_disparos")
-                .select("id, lead_id, run_id")
+                .select("id, lead_id, run_id, audience_source, template_name")
                 .eq("wamid", repliedToWamid)
                 .maybeSingle();
 
@@ -457,7 +457,7 @@ Deno.serve(async (req) => {
 
                 const { data: currentLead } = await supabase
                   .from("pipeline_leads")
-                  .select("id, reengajamento_status, reativado_por_nutricao")
+                  .select("id, nome, corretor_id, reengajamento_status, reativado_por_nutricao")
                   .eq("id", metaDispatch.lead_id)
                   .maybeSingle();
 
@@ -483,13 +483,51 @@ Deno.serve(async (req) => {
                   detalhe: (buttonId ? `[botão] ${buttonTitle}` : mensagemTexto).slice(0, 500),
                 });
 
-                // Reativa lead se respondeu SIM
-                if (buttonResp === "sim") {
+                // ── ROTEAMENTO POR ORIGEM DO DISPARO ──
+                // descartados / oferta_ativa_lista / legacy → reativa e manda pra roleta
+                // pipeline_ativo / visita_amanha → mantém corretor, só notifica
+                const audSrc = String(metaDispatch.audience_source || "legacy");
+                const routeToRoleta = audSrc === "descartados" || audSrc === "oferta_ativa_lista" || audSrc === "legacy";
+                const justNotifyCorretor = audSrc === "pipeline_ativo" || audSrc === "visita_amanha";
+
+                // Reativa lead se respondeu SIM E origem permite roleta
+                if (buttonResp === "sim" && routeToRoleta) {
                   try {
                     await reativarLeadNutricao(supabase, metaDispatch.lead_id, { wave: isWave2 ? 2 : 1 });
                   } catch (e) {
                     console.error("rpc reativar_lead_nutricao_manual error:", e);
                   }
+                } else if (buttonResp === "sim" && justNotifyCorretor) {
+                  // Pipeline ativo / visita amanhã — não move stage, não chama roleta. Só marca interesse + notifica corretor atual.
+                  await supabase.from("pipeline_leads").update({
+                    reengajamento_status: isWave2 ? "respondeu_sim_wave2" : "respondeu_sim",
+                  }).eq("id", metaDispatch.lead_id);
+
+                  const leadNome = currentLead?.nome || "Lead";
+                  const tplName = metaDispatch.template_name || "reengajamento";
+                  await supabase.from("pipeline_atividades").insert({
+                    pipeline_lead_id: metaDispatch.lead_id,
+                    tipo: "whatsapp",
+                    titulo: `🔥 Interesse confirmado — Disparo: ${tplName}`,
+                    descricao: `Lead respondeu SIM ao template "${tplName}" enviado para o Pipeline Ativo. Manter atribuição atual e entrar em contato imediato.`,
+                    data: new Date().toISOString().slice(0, 10),
+                    status: "concluida",
+                    responsavel_id: currentLead?.corretor_id || null,
+                  });
+
+                  if (currentLead?.corretor_id) {
+                    await supabase.from("notifications").insert({
+                      user_id: currentLead.corretor_id,
+                      titulo: `🔥 ${leadNome} demonstrou interesse no disparo`,
+                      mensagem: `Respondeu SIM ao template "${tplName}". Lead permanece com você no pipeline ativo. Entre em contato agora!`,
+                      tipo: "lead_reengajado",
+                      categoria: "leads",
+                      dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep" },
+                    });
+                  }
+                  console.log(`🔥 Lead ${metaDispatch.lead_id} (origem=${audSrc}) respondeu SIM — mantido com corretor atual, sem roleta`);
+                  continue;
+                }
                 } else if (buttonResp === "nao") {
                   // INATIVAÇÃO: lead respondeu NÃO → Descarte definitivo, NÃO reativar, NÃO mandar p/ roleta
                   const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
