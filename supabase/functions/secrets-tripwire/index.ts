@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  const list: string[] = expected.secrets;
+  const list: string[] = EXPECTED_SECRETS;
   const missing: string[] = [];
 
   for (const name of list) {
