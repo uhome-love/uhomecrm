@@ -171,8 +171,8 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       toast.error("Faça o preview primeiro e confirme que há leads elegíveis");
       return;
     }
-    if (canal === "meta" && !templateName && source !== "visita_amanha" && source !== "descartados") {
-      toast.error("Informe o nome do template Meta aprovado");
+    if (canal === "meta" && !templateName) {
+      toast.error("Selecione o template Meta que será usado neste disparo");
       return;
     }
     if (canal === "evolution" && !mensagem && source !== "descartados") {
