@@ -87,11 +87,16 @@ Deno.serve(async (req) => {
 
   let force = false;
   let dailyLimitOverride: number | null = null;
+  let overrideTemplateName = "";
+  let overrideTemplateLang = "";
   try {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
       force = !!(b as any)?.force;
       if ((b as any)?.daily_limit_override) dailyLimitOverride = Number((b as any).daily_limit_override);
+      const aud = (b as any)?.audience || {};
+      if (aud?.template_name) overrideTemplateName = String(aud.template_name).trim();
+      if (aud?.template_language) overrideTemplateLang = String(aud.template_language).trim();
     }
   } catch { /* ignore */ }
 
