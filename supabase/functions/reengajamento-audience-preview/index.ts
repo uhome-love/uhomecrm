@@ -10,14 +10,16 @@ const corsHeaders = {
 
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 
-type AudienceSource = "descartados" | "pipeline_ativo" | "oferta_ativa_lista";
+type AudienceSource = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
 type DedupMode = "exclude_sent" | "include_all" | "only_sent_before";
 
 interface Audience {
   source: AudienceSource;
+  canal?: "meta" | "evolution";
   tipo_descarte?: "reengajavel" | "definitivo" | "todos";
   stage_ids?: string[];
   lista_id?: string;
+  data_visita?: string;
   periodo?: { from?: string; to?: string };
   empreendimento?: string;
   dedup_mode?: DedupMode;
@@ -30,6 +32,7 @@ function audienceKey(a: Audience): string {
   if (a.source === "descartados") return `descartados:${a.tipo_descarte || "reengajavel"}`;
   if (a.source === "oferta_ativa_lista") return `oferta_ativa:${a.lista_id || "?"}`;
   if (a.source === "pipeline_ativo") return `pipeline:${(a.stage_ids || []).slice().sort().join(",")}`;
+  if (a.source === "visita_amanha") return `visita_amanha:${a.data_visita || ""}`;
   return a.source;
 }
 
@@ -173,6 +176,64 @@ Deno.serve(async (req) => {
         const enviadosSet = new Set((evs || []).map((e: any) => e.lead_id));
         if (dedupMode === "exclude_sent") candidatos = candidatos.filter((c) => !enviadosSet.has(c.id));
         else if (dedupMode === "only_sent_before") candidatos = candidatos.filter((c) => enviadosSet.has(c.id));
+      }
+
+      return new Response(JSON.stringify({
+        count: candidatos.length,
+        count_pre_dedup: count ?? null,
+        sample_count: candidatos.length,
+        sample: candidatos.slice(0, 20),
+        audience_source: audSource,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (audience.source === "visita_amanha") {
+      // Reusa stages_alvo + config de visita_amanha_config
+      const { data: vaCfg } = await supabase
+        .from("visita_amanha_config")
+        .select("stages_alvo")
+        .limit(1)
+        .maybeSingle();
+      const stagesAlvo: string[] = Array.isArray(vaCfg?.stages_alvo) ? vaCfg!.stages_alvo : [];
+      if (stagesAlvo.length === 0) {
+        return new Response(JSON.stringify({ error: "visita_amanha_config.stages_alvo vazio" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: stages } = await supabase
+        .from("pipeline_stages")
+        .select("id, nome")
+        .in("nome", stagesAlvo);
+      const stageIds = (stages || []).map((s: { id: string }) => s.id);
+      if (stageIds.length === 0) {
+        return new Response(JSON.stringify({ count: 0, sample: [], audience_source: audSource }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let q = supabase
+        .from("pipeline_leads")
+        .select("id, nome, telefone, empreendimento", { count: "exact" })
+        .in("stage_id", stageIds)
+        .eq("arquivado", false)
+        .not("telefone", "is", null);
+      if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+
+      const { data, error, count } = await q.order("created_at", { ascending: false }).limit(limit);
+      if (error) throw error;
+      let candidatos = (data || []).map((l: { id: string; nome: string; telefone: string | null }) => ({
+        id: l.id, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead",
+      }));
+
+      // dedup via visita_amanha_disparos
+      if (dedupMode === "exclude_sent" && candidatos.length > 0) {
+        const ids = candidatos.map((c) => c.id);
+        const { data: existentes } = await supabase
+          .from("visita_amanha_disparos")
+          .select("pipeline_lead_id")
+          .in("pipeline_lead_id", ids);
+        const enviados = new Set((existentes || []).map((e: { pipeline_lead_id: string }) => e.pipeline_lead_id));
+        candidatos = candidatos.filter((c) => !enviados.has(c.id));
       }
 
       return new Response(JSON.stringify({

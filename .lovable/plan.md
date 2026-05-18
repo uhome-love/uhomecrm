@@ -1,106 +1,82 @@
-# Disparo de Reengajamento com seleção de público
+## Central de Reengajamento — Unificação em página única
 
-Hoje o disparo de reengajamento é fixo: só pega leads em **Descarte** marcados como `reengajavel` dentro da janela `lookback_days`. Você quer escolher o público (pipeline ativo, lista da Oferta Ativa, descartados de uma semana/mês específicos) e ver quem já recebeu.
+Hoje a página `/central-nutricao` tem 3 abas separadas (Reengajamento Descartados, Visita Amanhã, Auditoria Webhook) com lógicas duplicadas. Vou consolidar tudo em uma única central organizada por seções, onde **"Visita Amanhã" e "Descartados" viram apenas TIPOS de campanha** dentro do mesmo fluxo de disparo customizado.
 
-## O que muda na tela `/central-nutricao` → Reengajamento
-
-Adicionar um novo card **"Disparo customizado"** (acima do "Disparar agora" atual, que continua existindo como atalho para o fluxo padrão de descartados).
-
-Estrutura do card:
+### Estrutura nova da página
 
 ```text
-┌─ Disparo customizado ─────────────────────────────────────┐
-│ Público:  ( ) Descartados (padrão)                         │
-│           ( ) Pipeline ativo                               │
-│           ( ) Lista da Oferta Ativa                        │
-│                                                             │
-│ [campos dinâmicos conforme escolha — ver abaixo]           │
-│                                                             │
-│ Período:  [De: __/__/____]  [Até: __/__/____]              │
-│           Atalhos: [Hoje] [Semana] [Mês] [Últimos 30d]     │
-│                                                             │
-│ Empreendimento (opcional): [combobox]                      │
-│                                                             │
-│ ▸ Já receberam disparo:                                    │
-│   (•) Excluir quem já recebeu                              │
-│   ( ) Incluir todos                                        │
-│   ( ) Só quem recebeu antes de [data]  (reativação)        │
-│                                                             │
-│ Onda: ( ) 1ª onda  ( ) 2ª onda                             │
-│                                                             │
-│ Limite máximo: [200]                                        │
-│                                                             │
-│ ─────────────────────────────────────────────────────────  │
-│ Preview: 47 leads elegíveis  [🔍 Recontar]                 │
-│                                                             │
-│ [💬 Disparar para 47 leads]   [Cancelar]                   │
-└─────────────────────────────────────────────────────────────┘
+/central-nutricao
+├── [Topo] KPIs globais (enviados hoje/7d/30d, resposta %, falhas)
+│
+├── SEÇÃO 1 — Novo disparo (card grande, sempre visível)
+│    ├─ Canal:      ( ) Meta (template oficial)   ( ) Evolution (free text)
+│    ├─ Público:    ( ) Descartados   ( ) Pipeline ativo   ( ) Lista Oferta Ativa   ( ) Visita amanhã
+│    ├─ Filtros dinâmicos por público:
+│    │     • Descartados → tipo (reengajável/definitivo), período
+│    │     • Pipeline ativo → etapas, período de criação
+│    │     • Lista OA → combobox de listas, período
+│    │     • Visita amanhã → data da visita (default: amanhã), empreendimento
+│    ├─ Empreendimento (opcional, para todos)
+│    ├─ Dedup: [ Excluir já receberam ] [ Incluir todos ] [ Só recebidos antes de X ]
+│    ├─ Limite máx
+│    ├─ Template/Mensagem (campo aparece conforme canal escolhido)
+│    └─ [ Calcular público → mostra TOTAL ]  [ Disparar para N leads ]
+│
+├── SEÇÃO 2 — Disparo em andamento + últimos disparos
+│    ├─ Card "Em andamento" (se houver run ativo): progresso, % concluído, cancelar
+│    └─ Tabela últimos 20 disparos: data, canal, público, enviados, respondidos, falhas
+│
+├── SEÇÃO 3 — Auditoria de webhooks (relatório de retorno)
+│    ├─ Filtros: status, busca, período
+│    ├─ Tabela unificada (Meta + Evolution + Visita Amanhã): lead, telefone, canal, status, resposta, sent_at, responded_at
+│    └─ Métricas de webhook: taxa entrega, taxa leitura, taxa resposta
+│
+└── SEÇÃO 4 — Configurações (collapse, fechado por padrão)
+     ├─ Janelas de horário, throttle, cap diário
+     ├─ Templates Meta cadastrados
+     └─ Pausa global (kill switch)
 ```
 
-Campos dinâmicos por origem:
+### Mudanças concretas
 
-- **Descartados** — Tipo: `[Reengajáveis] [Definitivos] [Todos]`. Período filtra por `stage_changed_at`.
-- **Pipeline ativo** — Multi-select de stages (Novo, Tentativa de Contato, Em Atendimento, Visita Agendada, etc.). Período filtra por `created_at` do lead. Por padrão exclui Descarte/Negócio Criado/Inativado.
-- **Lista da Oferta Ativa** — Combobox de `oferta_ativa_listas` (mostra nome + empreendimento + total). Pega `oferta_ativa_leads` daquela lista. Período opcional filtra por `created_at`.
+**Removidas:**
+- Componente de Tabs no topo (`CentralNutricaoPage` atual)
+- `VisitaAmanhaTab` como tela separada — vira opção de público
+- `AuditoriaWebhookTab` como tab — vira Seção 3 inline
 
-## O que muda no backend
+**Refatorados / criados:**
+1. **`CentralNutricaoPage.tsx`** — remove `<Tabs>`, renderiza as 4 seções em ordem
+2. **`DisparoCustomizadoCard.tsx`** (já criado) — expandir para incluir:
+   - Seletor de **canal** (Meta / Evolution) no topo
+   - Novo source `visita_amanha` com filtro de data da visita
+   - Campo de mensagem/template condicional ao canal
+3. **`UltimosDisparosTable.tsx`** (novo) — unifica `reengajamento_dispatch_runs` + `visita_amanha_disparos` agrupando por run, mostra coluna "Canal" e "Público"
+4. **`AuditoriaUnificadaSection.tsx`** (novo) — junta `reengajamento_meta_disparos` + `visita_amanha_disparos` numa única tabela com coluna "Canal"
+5. **`ConfiguracoesReengajamento.tsx`** (novo, collapse) — extrai a parte de config do `ReengajamentoTab` atual (janelas, templates, kill switch)
+6. **`KpisGlobaisHeader.tsx`** (novo) — KPIs no topo
 
-### 1. Edge function `reengajamento-descartados-enqueue`
+**Backend (sem migration nova nesta etapa):**
+- `reengajamento-audience-preview` ganha source `visita_amanha`
+- `reengajamento-descartados-enqueue` ganha branch `visita_amanha` (delega para `visita-amanha-enqueue` existente OU absorve a lógica — preferência: delegar para preservar o que já funciona) e ganha parâmetro `canal: 'meta' | 'evolution'` no payload `audience`
+- Função `visita-amanha-enqueue` continua existindo, mas só é chamada via fluxo unificado
 
-Aceitar payload `audience` opcional. Se ausente, mantém comportamento atual (sem regressão para o cron e botão "Disparar agora" padrão).
+**Não-objetivos (Fase 2, fora deste plano):**
+- Agendamento recorrente, A/B, favoritos
+- Migration de unificação das tabelas `reengajamento_meta_disparos` + `visita_amanha_disparos` (manter separadas, unificar só na UI por enquanto)
+- Mexer em `evolution-webhook` / `whatsapp-360dialog`
 
-```ts
-audience?: {
-  source: 'descartados' | 'pipeline_ativo' | 'oferta_ativa_lista';
-  // descartados:
-  tipo_descarte?: 'reengajavel' | 'definitivo' | 'todos';
-  // pipeline_ativo:
-  stage_ids?: string[];
-  // oferta_ativa_lista:
-  lista_id?: string;
-  // comum:
-  periodo?: { from: string; to: string }; // ISO
-  empreendimento?: string;
-  dedup_mode?: 'exclude_sent' | 'include_all' | 'only_sent_before';
-  dedup_cutoff?: string; // ISO — usado quando dedup_mode='only_sent_before'
-  wave?: 1 | 2;
-  limit?: number;
-}
-```
+### Detalhes técnicos relevantes
+- Respeita teto de 2 migrations/dia BRT — esta etapa é **zero migration**
+- Mantém `canTouchPipelineLead` no enqueue (não polui timestamps de leads ativos)
+- Mantém telemetria via `audience_source` já adicionada na rodada anterior
+- Componentes ficam <300 linhas cada; `CentralNutricaoPage` fica enxuto (<150 linhas) só orquestrando seções
+- Sem `as any` em código novo; tipagem de canal via union literal
+- Sem fetch wrappers / sem cliente custom
 
-A query base muda conforme `source`, mas todo o resto (validação Meta/Evolution, throttle, pausa longa, auto-pause por quality block, batch continuation) permanece igual.
-
-### 2. Rastreio de quem já recebeu
-
-- **Descartados**: continua via `pipeline_leads.reengajamento_enviado_at` (já existe).
-- **Pipeline ativo / Oferta Ativa**: usa `reengajamento_eventos` como fonte de verdade. Cada envio bem-sucedido insere `{ tipo: 'enviado_custom', detalhe: source, audience_source, created_at }`. Dedup ('exclude_sent') filtra leads que já têm evento desse source nos últimos 30 dias (configurável).
-
-Sem nova tabela: aproveita `reengajamento_eventos`. Adicionar coluna `audience_source TEXT` via migration (nullable, backfill não necessário).
-
-### 3. Endpoint de preview (contagem)
-
-Nova edge function leve `reengajamento-audience-preview` (ou um RPC) que recebe o mesmo `audience` e retorna `{ count, sample: [{id, nome, telefone, ultima_atividade}] }` para mostrar antes do disparo. Sem efeitos colaterais.
-
-## Tracking pós-disparo (UX)
-
-O card "Últimos disparos" (que já existe) ganha uma coluna **Público** mostrando a origem (`Descartados`, `Pipeline: Tentativa Contato`, `Lista: Casa Tua – Mai/26`) para que você consiga auditar o que rodou para quem.
-
-## Detalhes técnicos
-
-- **Arquivos a editar:**
-  - `src/components/central-nutricao/ReengajamentoTab.tsx` — novo card de disparo customizado + estado local + preview.
-  - `supabase/functions/reengajamento-descartados-enqueue/index.ts` — parsing de `audience`, query branching, dedup, gravação de `audience_source` em `reengajamento_eventos` e `reengajamento_dispatch_runs`.
-  - **Nova:** `supabase/functions/reengajamento-audience-preview/index.ts` — só conta/sample.
-- **Migration:**
-  - `ALTER TABLE reengajamento_eventos ADD COLUMN audience_source TEXT;`
-  - `ALTER TABLE reengajamento_dispatch_runs ADD COLUMN audience_source TEXT, ADD COLUMN audience_payload JSONB;`
-  - Índice parcial: `CREATE INDEX ON reengajamento_eventos (lead_id, audience_source, created_at DESC) WHERE audience_source IS NOT NULL;`
-- **Compatibilidade:** se `audience` ausente → comportamento idêntico ao atual (cron continua funcionando sem mudanças).
-- **Limites de segurança:** mesmo `daily_limit` global da config se aplica; preview avisa se o filtro retornar > limite.
-- **Janela horária / pausa**: continuam respeitadas — disparo customizado **não** dispara fora da janela (a menos que `force=true`, que você já tem hoje).
-
-## Fora de escopo (registro para depois)
-
-- Agendar disparo customizado recorrente (ex.: "todo sábado dispara para visita-amanhã de Casa Tua") — pode entrar numa Fase 2.
-- Salvar "públicos favoritos" para reusar — Fase 2.
-- Multi-template A/B por público — Fase 2.
+### Ordem de execução
+1. Estender `DisparoCustomizadoCard` (canal + source visita_amanha + campo mensagem)
+2. Atualizar `reengajamento-audience-preview` e `reengajamento-descartados-enqueue` para canal + visita_amanha
+3. Criar `UltimosDisparosTable`, `AuditoriaUnificadaSection`, `ConfiguracoesReengajamento`, `KpisGlobaisHeader`
+4. Reescrever `CentralNutricaoPage.tsx` sem tabs
+5. Deletar arquivos `VisitaAmanhaTab.tsx`, `AuditoriaWebhookTab.tsx`, `ReengajamentoTab.tsx` (config migrada)
+6. Deploy das 2 functions e validação visual no preview
