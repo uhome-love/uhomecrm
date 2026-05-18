@@ -296,7 +296,52 @@ export default function AuditoriaWebhookTab() {
         </div>
       </div>
 
+      {/* Alerta de qualidade Meta */}
+      {qualityAlert && (
+        <Card className="border-red-300 bg-red-50/60">
+          <CardContent className="p-3 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
+            <div className="flex-1 text-xs">
+              <div className="font-semibold text-red-800 text-sm">
+                ⚠️ Bloqueio de qualidade Meta detectado ({Math.round(qualityAlert.rate * 100)}% de falha nos últimos 30 min)
+              </div>
+              <div className="text-red-700 mt-1">
+                {qualityAlert.failed131049} de {qualityAlert.total} mensagens foram bloqueadas pela Meta (erro 131049 — "healthy ecosystem engagement").
+                {qualityAlert.topTemplate && (
+                  <> Template mais afetado: <b>{qualityAlert.topTemplate}</b> ({qualityAlert.topCount} falhas).</>
+                )}
+              </div>
+              <div className="text-red-700 mt-1.5">
+                <b>Ação recomendada:</b> pausar este template, abrir WhatsApp Manager → Templates e verificar quality rating. Disparos seguidos derrubam ainda mais o rating.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resumo de hoje (server-side, não depende da paginação) */}
+      {todayStats && (
+        <Card className="border-indigo-200 bg-indigo-50/40">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-semibold text-indigo-900">📅 Resumo de hoje (BRT)</div>
+              <Badge variant="outline" className="text-[10px]">{todayStats.total} disparos</Badge>
+            </div>
+            <div className="grid grid-cols-3 md:grid-cols-7 gap-2 text-center">
+              <div><div className="text-[10px] text-muted-foreground">Enviados</div><div className="text-base font-bold text-neutral-700">{todayStats.sent}</div></div>
+              <div><div className="text-[10px] text-muted-foreground">Entregues</div><div className="text-base font-bold text-blue-700">{todayStats.delivered}</div></div>
+              <div><div className="text-[10px] text-muted-foreground">Lidos</div><div className="text-base font-bold text-indigo-700">{todayStats.read}</div></div>
+              <div><div className="text-[10px] text-muted-foreground">Responderam</div><div className="text-base font-bold text-emerald-700">{todayStats.responded}</div></div>
+              <div className="bg-emerald-100/60 rounded px-1"><div className="text-[10px] text-emerald-800">✅ SIM (únicos)</div><div className="text-base font-bold text-emerald-700">{todayStats.sim}</div></div>
+              <div><div className="text-[10px] text-muted-foreground">❌ NÃO (únicos)</div><div className="text-base font-bold text-red-700">{todayStats.nao}</div></div>
+              <div><div className="text-[10px] text-muted-foreground">Falhas</div><div className="text-base font-bold text-red-600">{todayStats.failed}</div></div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Disparos recentes (runs) — mostra TODOS os disparos, mesmo os 100% falhados */}
+
       {recentRuns && recentRuns.length > 0 && (
         <Collapsible open={showRuns} onOpenChange={setShowRuns}>
           <Card>
