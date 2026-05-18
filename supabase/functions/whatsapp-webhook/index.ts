@@ -527,7 +527,6 @@ Deno.serve(async (req) => {
                   }
                   console.log(`🔥 Lead ${metaDispatch.lead_id} (origem=${audSrc}) respondeu SIM — mantido com corretor atual, sem roleta`);
                   continue;
-                }
                 } else if (buttonResp === "nao") {
                   // INATIVAÇÃO: lead respondeu NÃO → Descarte definitivo, NÃO reativar, NÃO mandar p/ roleta
                   const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
