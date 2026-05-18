@@ -250,14 +250,20 @@ Deno.serve(async (req) => {
       const dedupSince = new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString();
 
       if (src === "descartados") {
+        const includeArchivedCustom = bodyAudience.include_archived === true;
+        const tipoFilter = String(bodyAudience.tipo_descarte || "reengajavel");
+        const RESPONDEU_NAO = ["respondeu_nao", "respondeu_nao_wave2", "bloqueado", "telefone_invalido"];
         let q = supabase
           .from("pipeline_leads")
           .select("id, nome, telefone, reengajamento_enviado_at")
           .eq("stage_id", STAGE_DESCARTE_ID)
-          .eq("arquivado", false)
           .not("telefone", "is", null);
-        if (bodyAudience.tipo_descarte && bodyAudience.tipo_descarte !== "todos") {
-          q = q.eq("tipo_descarte", String(bodyAudience.tipo_descarte));
+        if (!includeArchivedCustom) q = q.eq("arquivado", false);
+        if (tipoFilter === "reengajavel") {
+          q = q.neq("tipo_descarte", "definitivo")
+               .not("reengajamento_status", "in", `(${RESPONDEU_NAO.join(",")})`);
+        } else if (tipoFilter === "definitivo") {
+          q = q.eq("tipo_descarte", "definitivo");
         }
         if (bodyAudience.periodo?.from) q = q.gte("stage_changed_at", String(bodyAudience.periodo.from));
         if (bodyAudience.periodo?.to) q = q.lte("stage_changed_at", String(bodyAudience.periodo.to));
