@@ -493,10 +493,12 @@ Deno.serve(async (req) => {
 
       const phone = normalizePhone(lead.telefone || "");
       if (!phone) {
-        await supabase.from("pipeline_leads")
-          .update(markPhoneInvalidPatch())
-          .eq("id", lead.id);
-        await supabase.from("reengajamento_eventos").insert({
+        if (canTouchPipelineLead(lead)) {
+          await supabase.from("pipeline_leads")
+            .update(markPhoneInvalidPatch())
+            .eq("id", lead.id);
+        }
+        await insertEvento({
           lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: lead.telefone,
         });
         skipped++;
@@ -508,10 +510,12 @@ Deno.serve(async (req) => {
       if (canal === "evolution" && cfg.validar_numero) {
         const exists = await validateNumberEvolution(evoUrl, evoKey, cfg.evolution_instance, phone);
         if (!exists) {
-          await supabase.from("pipeline_leads")
-            .update(markPhoneInvalidPatch())
-            .eq("id", lead.id);
-          await supabase.from("reengajamento_eventos").insert({
+          if (canTouchPipelineLead(lead)) {
+            await supabase.from("pipeline_leads")
+              .update(markPhoneInvalidPatch())
+              .eq("id", lead.id);
+          }
+          await insertEvento({
             lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: `${phone} sem WhatsApp`,
           });
           skipped++;
