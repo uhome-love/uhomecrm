@@ -1,0 +1,2 @@
+ALTER TABLE public.reengajamento_meta_disparos REPLICA IDENTITY FULL;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.reengajamento_meta_disparos;

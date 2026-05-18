@@ -1,81 +1,56 @@
-## Objetivo
-Fazer uma conferência completa dos leads descartados e corrigir a central para mostrar a base real, separando claramente:
-- descartados totais
-- inativados definitivos (responderam não / não receber)
-- elegíveis para reengajamento
-- impacto de arquivamento, telefone e deduplicação
+# Plano — Central de Reengajamento (auditoria + organização)
 
-## Diagnóstico já confirmado
-Hoje o número baixo do preview não vem de falta de leads; vem do filtro atual da função de preview:
-- a função `reengajamento-audience-preview` usa `arquivado = false` para descartados
-- no banco existem **2873** leads em Descarte
-- desses, **2825** estão `arquivado = true`
-- só **48** estão `arquivado = false`
-- com telefone, temos **2868** no total e **48** não arquivados
-- descartados reengajáveis totais: **2416**
-- descartados reengajáveis com telefone: **2412**
-- respondeu NÃO ao reengajamento: **232**
-- `tipo_descarte = definitivo`: **457**
+## Problemas atuais
+1. `AuditoriaWebhookTab` faz `.limit(300)` → trava em 300 disparos.
+2. Não mostra **qual disparo** (template + audience_source + run_id) gerou cada linha.
+3. Atualiza só com `refetchInterval: 5s` (sem realtime).
+4. Coluna "Mensagem recebida" não diferencia bem **botão clicado** vs **texto digitado**.
+5. Página `CentralNutricao` mistura 4 seções empilhadas — visual pesado, sem hierarquia clara para o fluxo "selecionar lista → selecionar modelo → enviar → ver retorno".
 
-Ou seja: o preview atual está mostrando praticamente só o subconjunto “não arquivado”, e por isso aparece ~46/48 em vez de milhares.
+## Mudanças (apenas frontend + leitura)
 
-## Plano
-### 1) Criar a conferência completa dos descartados
-Adicionar uma visão/auditoria única para descartados com estes blocos:
-- total em Descarte
-- total sem inativados definitivos
-- total com telefone
-- total arquivado vs não arquivado
-- total que respondeu NÃO ao reengajamento
-- total com `tipo_descarte = definitivo`
-- total elegível final para disparo por regra atual
-- total elegível final por regra revisada
+### 1. `AuditoriaWebhookTab.tsx` — refatorar
+- **Remover `.limit(300)`** e adotar paginação por `range()` de 100 em 100 com botão "Carregar mais" + contador "Mostrando X de Y" (total via `count: 'exact', head: true`).
+- **Realtime**: assinar canal Postgres em `reengajamento_meta_disparos` (INSERT + UPDATE) e dar `queryClient.invalidateQueries(['auditoria-meta-webhook'])` no callback. Mostrar pill "🟢 ao vivo".
+- **Nova coluna "Disparo"**: exibir `template_name` + badge colorido do `audience_source` (Descartados / Pipeline ativo / Oferta ativa / Visita amanhã / Legacy). Permitir filtrar por audience_source e por template via selects.
+- **Coluna "Mensagem recebida"** reformulada:
+  - Se `button_response` ∈ {sim,nao} → mostrar chip "Botão: SIM/NÃO".
+  - Senão se `response_text` → mostrar texto livre com ícone 💬.
+  - Senão "—".
+- **Buscar também por nome do template** no input de busca.
+- **Stats cards** ganham um a mais: "Aguardando entrega" (sent sem delivered).
 
-### 2) Separar conceitos que hoje estão misturados
-Ajustar a leitura para distinguir:
-- **Arquivado**: lead oculto operacionalmente, mas não necessariamente inelegível para nutrição
-- **Inativado definitivo**: lead que respondeu não / pediu para não receber / `tipo_descarte = definitivo`
-- **Reengajável**: descartado que não está inativado definitivamente e tem telefone
+### 2. `CentralNutricao.tsx` — reorganizar layout
+Estrutura de 2 colunas em telas grandes, mais respiro:
 
-### 3) Revisar a regra de elegibilidade do público “Descartados”
-Alterar a regra do preview para que “Descartados” não dependa de `arquivado = false` como filtro-base.
-Nova lógica proposta:
-- incluir descartados arquivados e não arquivados
-- excluir apenas inativados definitivos quando o objetivo for “reengajáveis”
-- manter filtros opcionais de período, empreendimento, dedup e telefone
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  Header: Central de Reengajamento (subtítulo curto)         │
+├─────────────────────────────────────────────────────────────┤
+│  [Tabs grandes]  ① Novo disparo   ② Retorno (auditoria)    │
+│                  ③ Configurações                            │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### 4) Incluir relatório explicativo dentro da Central de Reengajamento
-Na página única da central, adicionar um resumo visível com:
-- contagem bruta
-- contagem após excluir inativados
-- contagem após exigir telefone
-- contagem após dedup
-- amostra dos leads finais
+- Trocar a pilha atual de `<section>`s por **Tabs** (`@/components/ui/tabs`) com 3 abas: "Novo disparo", "Retorno em tempo real", "Configurações".
+- Aba 1 = `DisparoCustomizadoCard` (já tem o fluxo lista → modelo → enviar).
+- Aba 2 = `AuditoriaWebhookTab` refatorado (com realtime).
+- Aba 3 = `ReengajamentoTab` + `VisitaAmanhaTab` collapsibles dentro.
+- KPI bar fixa no topo de Aba 2 com 6 cards já existentes + "Aguardando".
+- Manter `max-w-[1600px]`, padding consistente, hierarquia tipográfica (`text-2xl` no h1).
 
-Assim o usuário vê exatamente onde cada redução acontece.
+### 3. Detalhes técnicos
+- Realtime: `supabase.channel('audit-meta').on('postgres_changes', { event: '*', schema: 'public', table: 'reengajamento_meta_disparos' }, () => qc.invalidateQueries(...)).subscribe()`; cleanup no `useEffect` return.
+- Habilitar realtime na tabela: **migration necessária** → `ALTER PUBLICATION supabase_realtime ADD TABLE public.reengajamento_meta_disparos;` (verificar se já não está; é a única alteração de DB).
+- Paginação: estado `page`, queryKey `['auditoria-meta-webhook', page]`, `keepPreviousData`.
+- Audience source badges: mapa local com cores semânticas (sem cores diretas — usar tokens existentes `bg-*-50 text-*-700`).
 
-### 5) Validar com consultas espelho
-Depois do ajuste, validar o resultado comparando:
-- query de auditoria
-- resultado do preview da edge function
-- número exibido no card da central
+## Fora de escopo
+- Mudanças no `DisparoCustomizadoCard` (já refinado).
+- Mudanças no fluxo de webhook (whatsapp-webhook/evolution-webhook).
+- Novos templates, novos canais, recorrência.
 
-Os três precisam bater.
-
-## Arquivos previstos
-- `supabase/functions/reengajamento-audience-preview/index.ts`
-- `src/components/central-nutricao/DisparoCustomizadoCard.tsx`
-- `src/pages/CentralNutricao.tsx`
-
-## Detalhes técnicos
-- manteremos a exclusão de telefone nulo
-- manteremos dedup configurável (`exclude_sent`, `include_all`, `only_sent_before`)
-- a conferência vai expor as etapas do funil de filtragem, para não parecer que os leads “sumiram”
-- não vou mexer na rota de resposta dos webhooks nesta etapa; foco é conferência e elegibilidade do público descartados
-
-## Resultado esperado
-Ao final, a central vai mostrar algo próximo da base real de milhares de descartados reengajáveis, em vez de apenas ~46, e vai deixar explícito quantos foram cortados por:
-- inativação definitiva
-- falta de telefone
-- deduplicação
-- outros filtros manuais
+## Arquivos
+- `src/components/central-nutricao/AuditoriaWebhookTab.tsx` (refatorar)
+- `src/pages/CentralNutricao.tsx` (reorganizar em Tabs)
+- 1 migration: adicionar tabela à publicação `supabase_realtime` (se ainda não estiver)
