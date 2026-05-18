@@ -231,12 +231,13 @@ Deno.serve(async (req) => {
         }
       } else {
         consecutiveBlock = 0;
+        const nowIso = new Date().toISOString();
         const { error: insErr } = await supabase.from("visita_amanha_disparos").insert({
           pipeline_lead_id: lead.id,
           wamid: r.wamid,
           phone,
           status: "sent",
-          sent_at: new Date().toISOString(),
+          sent_at: nowIso,
         });
         if (insErr) {
           failed++;
@@ -246,6 +247,17 @@ Deno.serve(async (req) => {
           sent++;
           console.log(`[visita-amanha] OK ${sent} → ${lead.nome} (${phone})`);
         }
+        // Mirror para auditoria unificada (AuditoriaWebhookTab lê reengajamento_meta_disparos)
+        await supabase.from("reengajamento_meta_disparos").insert({
+          lead_id: lead.id,
+          wamid: r.wamid,
+          template_name: metaTemplate,
+          template_language: metaLang,
+          phone,
+          status: "sent",
+          sent_at: nowIso,
+          audience_source: "visita_amanha",
+        });
       }
 
       // Throttle: delay entre envios
