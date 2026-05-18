@@ -442,6 +442,18 @@ Deno.serve(async (req) => {
         : { reengajamento_status: "telefone_invalido", reengajamento_enviado_at: nowIso };
     };
 
+    // Guard: só altera pipeline_leads quando o público é o legado (descartados)
+    // ou quando o custom é descartados. Em pipeline_ativo/oferta_ativa não polui.
+    const canTouchPipelineLead = (lead: { ref: string }) =>
+      lead.ref === "pipeline_lead" && (!isCustomAudience || String(bodyAudience?.source) === "descartados");
+
+    const insertEvento = async (payload: Record<string, unknown>) => {
+      await supabase.from("reengajamento_eventos").insert({
+        ...payload,
+        audience_source: isCustomAudience ? audSource : null,
+      } as any);
+    };
+
     for (const lead of leads || []) {
       if (Date.now() - startedAt > MAX_RUN_MS) {
         // Encadeia automaticamente um próximo run para continuar de onde parou
