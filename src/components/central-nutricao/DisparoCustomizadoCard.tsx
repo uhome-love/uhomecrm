@@ -378,14 +378,31 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         {/* Dedup */}
         <div>
           <Label className="text-xs">Quem já recebeu disparo</Label>
-          <Select value={dedupMode} onValueChange={(v) => setDedupMode(v as DedupMode)}>
+          <Select value={dedupMode} onValueChange={(v) => { setDedupMode(v as DedupMode); setPreview(null); }}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="exclude_sent">Excluir quem já recebeu</SelectItem>
-              <SelectItem value="include_all">Incluir todos (mesmo quem já recebeu)</SelectItem>
+              <SelectItem value="cooldown">Reenviar quem não respondeu (com cooldown)</SelectItem>
+              <SelectItem value="exclude_sent">Excluir todo mundo que já recebeu</SelectItem>
+              <SelectItem value="include_all">Incluir todos (sem cooldown)</SelectItem>
               <SelectItem value="only_sent_before">Só quem recebeu antes de…</SelectItem>
             </SelectContent>
           </Select>
+          {dedupMode === "cooldown" && (
+            <div className="mt-2 flex items-center gap-2">
+              <Label className="text-[11px] text-muted-foreground whitespace-nowrap">Cooldown (dias)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={cooldownDias}
+                onChange={(e) => { setCooldownDias(Math.max(1, Number(e.target.value) || 7)); setPreview(null); }}
+                className="h-8 w-20"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Quem não respondeu volta a ficar elegível após {cooldownDias} dias do último envio. Quem clicou em "Não quero mais" fica excluído permanentemente.
+              </p>
+            </div>
+          )}
           {dedupMode === "only_sent_before" && (
             <Input type="date" value={dedupCutoff} onChange={(e) => setDedupCutoff(e.target.value)} className="h-9 mt-2" />
           )}
