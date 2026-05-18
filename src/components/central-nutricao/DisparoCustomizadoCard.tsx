@@ -30,10 +30,11 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [empreendimento, setEmpreendimento] = useState<string>("");
   const [dedupMode, setDedupMode] = useState<DedupMode>("exclude_sent");
   const [dedupCutoff, setDedupCutoff] = useState<string>("");
+  const [includeArchived, setIncludeArchived] = useState<boolean>(true);
   const [limit, setLimit] = useState<number>(100);
   const [templateName, setTemplateName] = useState<string>("");
   const [mensagem, setMensagem] = useState<string>("");
-  const [preview, setPreview] = useState<{ count: number; sample: any[] } | null>(null);
+  const [preview, setPreview] = useState<{ count: number; sample: any[]; funil?: Record<string, number> } | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [firing, setFiring] = useState(false);
 
