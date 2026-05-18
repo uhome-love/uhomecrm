@@ -16,6 +16,7 @@
  * }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { PostgrestError } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 
 const corsHeaders = {
@@ -23,6 +24,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// IW-3a: Anonimização inline para logging seguro em ops_events.
+// Duplicado de receive-meta-lead — será consolidado em _shared/anon.ts
+// (ver mem://cleanup/fase-0.5-backlog).
+function anonPhone(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const digits = String(phone).replace(/\D/g, "");
+  if (!digits) return null;
+  return `${digits.slice(0, 4)}***(${digits.length})`;
+}
+function anonEmail(email: string | null | undefined): string | null {
+  if (!email) return null;
+  const s = String(email);
+  const at = s.indexOf("@");
+  if (at < 0) return `${s.slice(0, 4)}***`;
+  return `${s.slice(0, Math.min(4, at))}***${s.slice(at)}`;
+}
+async function sha256Short(input: string): Promise<string> {
+  const buf = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash)).slice(0, 4).map(b => b.toString(16).padStart(2, "0")).join("");
+}
 
 function _emit(level: string, msg: string, traceId?: string, ctx?: Record<string, unknown>, err?: unknown) {
   const payload = {
@@ -79,6 +102,11 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceKey);
   const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
   const L = makeLogger(traceId);
+
+  // IW-2: Feature flag para reclassificar orphan leads (Distribution failed) de
+  // error/integration → info/business "queued_fila_ceo". Default ativo.
+  // Override explícito com IMOVELWEB_FALLBACK_FILA_CEO=false (case-insensitive).
+  const fallbackFilaCeo = (Deno.env.get("IMOVELWEB_FALLBACK_FILA_CEO") ?? "true").toLowerCase() !== "false";
 
   const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
     supabase.from("ops_events").insert({ fn: "receive-imovelweb-lead", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
@@ -212,7 +240,13 @@ Deno.serve(async (req) => {
 
       if (existing) {
         if (!existing.corretor_id) {
+          // IW-3b: dedup event — lead já existe mas ainda pendente de distribuição.
           L.info("Dedup: pending distribution", { telefone, leadId: existing.id });
+          logOps("info", "business", "lead_dedup_skipped_pending", {
+            lead_id: existing.id,
+            anon_phone: anonPhone(telefone),
+            phone_hash: await sha256Short(telefone),
+          });
           return new Response(
             JSON.stringify({ success: true, action: "skipped_duplicate_pending", lead_id: existing.id }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -244,6 +278,12 @@ Deno.serve(async (req) => {
 
         // Notification message also includes codigo
         const notifMsg = `${existing.nome || name} demonstrou novo interesse em ${interestLabel} (ImovelWeb).${codigoAnuncio ? ` Cód: ${codigoAnuncio}` : ""}${mensagem ? ` Msg: "${mensagem.slice(0, 100)}"` : ""}`;
+
+        // IW-1: BUGFIX — `fullDesc` antes era usado sem ser declarado, causando
+        // "Unhandled exception" em todo lead reativado. Construímos localmente
+        // com mesmo formato de notifMsg + contexto temporal BRT.
+        const nowBRT = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        const fullDesc = `Novo interesse via ImovelWeb (${interestLabel}).${codigoAnuncio ? ` Anúncio: ${codigoAnuncio}.` : ""} Mensagem: ${mensagem || "(sem mensagem)"}. Recebido em: ${nowBRT} BRT.`;
 
         await Promise.all([
           supabase.from("notifications").insert({
@@ -280,7 +320,16 @@ Deno.serve(async (req) => {
           });
         } catch (e) { L.warn("Push error", {}, e); }
 
+        // IW-3b: dedup event — reativação efetiva (descartado ou ativo recebendo novo touch).
         L.info("Reactivated existing lead", { telefone, leadId: existing.id });
+        logOps("info", "business", "lead_dedup_reactivated", {
+          lead_id: existing.id,
+          was_discarded: isDiscarded,
+          anon_phone: anonPhone(telefone),
+          phone_hash: await sha256Short(telefone),
+          empreendimento: interestLabel,
+          codigo_anuncio: codigoAnuncio || null,
+        });
         return new Response(
           JSON.stringify({ success: true, action: "reactivated", lead_id: existing.id }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -289,7 +338,13 @@ Deno.serve(async (req) => {
 
       // Skip if phone was ever processed before (permanent dedup)
       if (alreadyProcessed) {
+        // IW-3b: dedup event — telefone já registrado em jetimob_processed (permanente).
         L.info("Dedup: permanent registry", { telefone });
+        logOps("info", "business", "lead_dedup_skipped_permanent", {
+          source: "jetimob_processed_phone",
+          anon_phone: anonPhone(telefone),
+          phone_hash: await sha256Short(telefone),
+        });
         return new Response(
           JSON.stringify({ success: true, action: "skipped_permanent_dedup" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -322,7 +377,13 @@ Deno.serve(async (req) => {
 
       if (registryError) {
         if (registryError.code === "23505") {
+          // IW-3b: dedup event — race condition resolvida pelo unique constraint.
           L.info("Dedup: race condition caught by registry", { dedupRegistryId, telefone });
+          logOps("info", "business", "lead_dedup_skipped_permanent", {
+            source: "race_constraint_23505",
+            anon_phone: anonPhone(telefone),
+            phone_hash: await sha256Short(telefone),
+          });
           return new Response(
             JSON.stringify({ success: true, action: "skipped_race_dedup" }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -366,8 +427,24 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) {
+      // IW-3a: error_detail estruturado (code/hint/details) + payload anonimizado.
+      const pgErr = insertError as PostgrestError;
+      const errorDetail = {
+        message: pgErr.message,
+        code: pgErr.code,
+        details: pgErr.details,
+        hint: pgErr.hint,
+        payload_anon: {
+          name_first4: (name || "").slice(0, 4),
+          anon_phone: anonPhone(telefone),
+          anon_email: anonEmail(email),
+          phone_hash: telefone ? await sha256Short(telefone) : null,
+          empreendimento,
+          codigo_anuncio: codigoAnuncio || null,
+        },
+      };
       L.error("Lead insert failed", { name, telefone, empreendimento }, insertError);
-      logOps("error", "system", "Lead insert failed", { name, telefone, empreendimento }, insertError.message);
+      logOps("error", "system", "Lead insert failed", { name_first4: (name || "").slice(0, 4), empreendimento }, JSON.stringify(errorDetail));
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -392,7 +469,21 @@ Deno.serve(async (req) => {
     // ── Auto-distribute via roleta ──
     const distribution = await distributeLeadDirect(supabaseUrl, serviceKey, insertedLead.id, traceId, L);
     if (!distribution.success) {
-      logOps("error", "integration", "Distribution failed after retries — lead orphaned", { lead_id: insertedLead.id, name, empreendimento, reason: distribution.reason || null, detail: distribution.error || null });
+      // IW-2: orphan path — com flag ativa, classifica como info/business "queued_fila_ceo"
+      // (lead persistiu, será distribuído manualmente pela Fila CEO). Sem flag: mantém o
+      // comportamento legado de error/integration para alarme imediato.
+      if (fallbackFilaCeo) {
+        logOps("info", "business", "queued_fila_ceo", {
+          lead_id: insertedLead.id,
+          name_first4: (name || "").slice(0, 4),
+          empreendimento,
+          reason: distribution.reason || null,
+          detail: distribution.error || null,
+          source: "imovelweb",
+        });
+      } else {
+        logOps("error", "integration", "Distribution failed after retries — lead orphaned", { lead_id: insertedLead.id, name, empreendimento, reason: distribution.reason || null, detail: distribution.error || null });
+      }
     }
 
     // ── Audit ──
