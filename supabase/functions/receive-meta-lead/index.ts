@@ -464,6 +464,11 @@ Deno.serve(async (req) => {
     // Also skip if phone was ever processed before (permanent dedup)
     if (alreadyProcessed) {
       L.info("Dedup: permanent registry", { telefone });
+      // BLOCO 4b: dedup permanente — telefone já em jetimob_processed sem lead ativo
+      logOps("info", "business", "lead_dedup_skipped_permanent", {
+        reason: "telefone_em_jetimob_processed_sem_lead_ativo",
+        telefone_anon: await anonPhone(telefone),
+      });
       return new Response(
         JSON.stringify({ success: true, action: "skipped_permanent_dedup" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
