@@ -546,6 +546,12 @@ Deno.serve(async (req) => {
       // If it's a unique violation, another request already processed this lead
       if (registryError.code === "23505") {
         L.info("Dedup: race condition caught by registry", { dedupRegistryId, telefone });
+        // BLOCO 4b: race condition entre 2 webhooks simultâneos detectada pelo UNIQUE em jetimob_processed
+        logOps("info", "business", "lead_dedup_skipped_permanent", {
+          reason: "race_condition_registry_unique_violation",
+          dedup_registry_id: dedupRegistryId,
+          telefone_anon: await anonPhone(telefone),
+        });
         return new Response(
           JSON.stringify({ success: true, action: "skipped_race_dedup" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
