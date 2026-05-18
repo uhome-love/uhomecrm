@@ -176,6 +176,10 @@ Deno.serve(async (req) => {
           ? `oferta_ativa:${bodyAudience.lista_id || "?"}`
           : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`)
     : "";
+  // Canonical source for routing on reply (column audience_source in reengajamento_meta_disparos)
+  const audienceSourceCanonical: string = isCustomAudience
+    ? String(bodyAudience.source)
+    : "legacy";
 
   const url = new URL(req.url);
   const force = bodyForce || url.searchParams.get("force") === "1";
