@@ -587,8 +587,24 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) {
+      // BLOCO 4a: captura error_detail estruturado (message/code/details/hint) + payload anonimizado.
+      // Tipagem nativa via PostgrestError, sem cast `as unknown`.
+      const errAny = insertError as PostgrestError;
+      const errorDetailObj = {
+        message: errAny.message ?? null,
+        code: errAny.code ?? null,
+        details: errAny.details ?? null,
+        hint: errAny.hint ?? null,
+        payload_anon: {
+          name: name ? `${name.slice(0, 2)}***` : null,
+          telefone_anon: await anonPhone(telefone),
+          email_anon: anonEmail(email),
+          empreendimento,
+          campaign_id: campaignId || null,
+        },
+      };
       L.error("Lead insert failed", { name, telefone, empreendimento }, insertError);
-      logOps("error", "system", "Lead insert failed", { name, telefone, empreendimento }, insertError.message);
+      logOps("error", "system", "Lead insert failed", { name, telefone, empreendimento }, JSON.stringify(errorDetailObj));
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
