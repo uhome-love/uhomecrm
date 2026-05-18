@@ -69,6 +69,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       periodo,
       empreendimento: empreendimento || undefined,
       dedup_mode: dedupMode,
+      include_archived: includeArchived,
       limit,
     };
     if (dedupMode === "only_sent_before" && dedupCutoff) {
