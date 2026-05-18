@@ -10,6 +10,7 @@
  * 3. Meta Ads native: { field_data: [{name, values: [...]}] }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { PostgrestError } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 
 const corsHeaders = {
@@ -17,6 +18,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// ── Anonimização para BLOCO 4a (error_detail em ops_events) ──
+// Pseudonimização defense-in-depth. RLS de ops_events restringe leitura a role 'admin'
+// (policy "Admins can read ops_events"), então pseudonímo fraco é aceitável.
+async function sha256Short(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).slice(0, 4).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+async function anonPhone(phone: string): Promise<string> {
+  if (!phone) return "";
+  const head = phone.slice(0, 4);
+  const tail = phone.slice(-4);
+  return `${head}…${await sha256Short(tail)}`;
+}
+function anonEmail(email: string | null | undefined): string {
+  if (!email || !email.includes("@")) return "";
+  const [user, domain] = email.split("@");
+  return `${user.slice(0, 1)}***@${domain}`;
+}
 
 function normalizePhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
@@ -321,6 +341,11 @@ Deno.serve(async (req) => {
 
       if (existingExternal) {
         L.info("Dedup: external id already processed", { externalLeadId });
+        // BLOCO 4b: logar dedup permanente por external_id em ops_events
+        logOps("info", "business", "lead_dedup_skipped_permanent", {
+          reason: "external_id_em_jetimob_processed",
+          external_lead_id: externalLeadId,
+        });
         return new Response(
           JSON.stringify({ success: true, action: "skipped_external_id_dedup" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -352,6 +377,12 @@ Deno.serve(async (req) => {
       // If lead exists but is still pending distribution (no corretor), just skip silently
       if (!existing.corretor_id) {
         L.info("Dedup: pending distribution", { telefone, leadId: existing.id });
+        // BLOCO 4b: dedup por lead já pendente de distribuição
+        logOps("info", "business", "lead_dedup_skipped_pending", {
+          reason: "lead_existente_aceite_status_pendente_distribuicao",
+          lead_id: existing.id,
+          telefone_anon: await anonPhone(telefone),
+        });
         return new Response(
           JSON.stringify({ success: true, action: "skipped_duplicate_pending", lead_id: existing.id }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -416,6 +447,14 @@ Deno.serve(async (req) => {
       } catch (e) { L.warn("Push error", { leadId: existing.id }, e); }
 
       L.info("Reactivated existing lead", { telefone, leadId: existing.id, corretor: existing.corretor_id });
+      // BLOCO 4b: lead descartado/arquivado reativado por novo touch
+      logOps("info", "business", "lead_dedup_reactivated", {
+        reason: isDiscarded ? "lead_descartado_reativado_para_sem_contato" : "lead_ativo_recebeu_novo_interesse",
+        lead_id: existing.id,
+        corretor_id: existing.corretor_id,
+        was_discarded: isDiscarded,
+        telefone_anon: await anonPhone(telefone),
+      });
       return new Response(
         JSON.stringify({ success: true, action: "reactivated", lead_id: existing.id, trace_id: traceId }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -425,6 +464,11 @@ Deno.serve(async (req) => {
     // Also skip if phone was ever processed before (permanent dedup)
     if (alreadyProcessed) {
       L.info("Dedup: permanent registry", { telefone });
+      // BLOCO 4b: dedup permanente — telefone já em jetimob_processed sem lead ativo
+      logOps("info", "business", "lead_dedup_skipped_permanent", {
+        reason: "telefone_em_jetimob_processed_sem_lead_ativo",
+        telefone_anon: await anonPhone(telefone),
+      });
       return new Response(
         JSON.stringify({ success: true, action: "skipped_permanent_dedup" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -502,6 +546,12 @@ Deno.serve(async (req) => {
       // If it's a unique violation, another request already processed this lead
       if (registryError.code === "23505") {
         L.info("Dedup: race condition caught by registry", { dedupRegistryId, telefone });
+        // BLOCO 4b: race condition entre 2 webhooks simultâneos detectada pelo UNIQUE em jetimob_processed
+        logOps("info", "business", "lead_dedup_skipped_permanent", {
+          reason: "race_condition_registry_unique_violation",
+          dedup_registry_id: dedupRegistryId,
+          telefone_anon: await anonPhone(telefone),
+        });
         return new Response(
           JSON.stringify({ success: true, action: "skipped_race_dedup" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -537,8 +587,24 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) {
+      // BLOCO 4a: captura error_detail estruturado (message/code/details/hint) + payload anonimizado.
+      // Tipagem nativa via PostgrestError, sem cast `as unknown`.
+      const errAny = insertError as PostgrestError;
+      const errorDetailObj = {
+        message: errAny.message ?? null,
+        code: errAny.code ?? null,
+        details: errAny.details ?? null,
+        hint: errAny.hint ?? null,
+        payload_anon: {
+          name: name ? `${name.slice(0, 2)}***` : null,
+          telefone_anon: await anonPhone(telefone),
+          email_anon: anonEmail(email),
+          empreendimento,
+          campaign_id: campaignId || null,
+        },
+      };
       L.error("Lead insert failed", { name, telefone, empreendimento }, insertError);
-      logOps("error", "system", "Lead insert failed", { name, telefone, empreendimento }, insertError.message);
+      logOps("error", "system", "Lead insert failed", { name, telefone, empreendimento }, JSON.stringify(errorDetailObj));
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -568,13 +634,29 @@ Deno.serve(async (req) => {
     // ── Auto-distribute via roleta (with retry) ──
     const distribution = await distributeLeadDirect(supabaseUrl, serviceKey, insertedLead.id, traceId, L);
     if (!distribution.success) {
-      logOps("error", "integration", "Distribution failed after retries — lead orphaned", {
-        lead_id: insertedLead.id,
-        name,
-        empreendimento,
-        reason: distribution.reason || null,
-        detail: distribution.error || null,
-      });
+      // BLOCO 3: feature flag META_FALLBACK_FILA_CEO (default true / ausente = true / "false" desativa).
+      // Quando o fallback Fila CEO está ativo, lead órfão NÃO é erro — é estado canônico
+      // (pipeline_leads.aceite_status='pendente_distribuicao' AND corretor_id IS NULL) coberto
+      // pelo cron lead-escalation. Reclassificamos para info/business para parar falso-positivo
+      // no painel de erros. Se o flag for explicitamente "false", volta a logar como error/integration.
+      const fallbackFilaCeo = (Deno.env.get("META_FALLBACK_FILA_CEO") ?? "true").toLowerCase() !== "false";
+      if (fallbackFilaCeo) {
+        logOps("info", "business", "queued_fila_ceo", {
+          lead_id: insertedLead.id,
+          name,
+          empreendimento,
+          reason: distribution.reason || null,
+          detail: distribution.error || null,
+        });
+      } else {
+        logOps("error", "integration", "Distribution failed after retries — lead orphaned", {
+          lead_id: insertedLead.id,
+          name,
+          empreendimento,
+          reason: distribution.reason || null,
+          detail: distribution.error || null,
+        });
+      }
     }
 
     // ── Audit ──
