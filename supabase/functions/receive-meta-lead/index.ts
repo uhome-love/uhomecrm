@@ -634,13 +634,29 @@ Deno.serve(async (req) => {
     // ── Auto-distribute via roleta (with retry) ──
     const distribution = await distributeLeadDirect(supabaseUrl, serviceKey, insertedLead.id, traceId, L);
     if (!distribution.success) {
-      logOps("error", "integration", "Distribution failed after retries — lead orphaned", {
-        lead_id: insertedLead.id,
-        name,
-        empreendimento,
-        reason: distribution.reason || null,
-        detail: distribution.error || null,
-      });
+      // BLOCO 3: feature flag META_FALLBACK_FILA_CEO (default true / ausente = true / "false" desativa).
+      // Quando o fallback Fila CEO está ativo, lead órfão NÃO é erro — é estado canônico
+      // (pipeline_leads.aceite_status='pendente_distribuicao' AND corretor_id IS NULL) coberto
+      // pelo cron lead-escalation. Reclassificamos para info/business para parar falso-positivo
+      // no painel de erros. Se o flag for explicitamente "false", volta a logar como error/integration.
+      const fallbackFilaCeo = (Deno.env.get("META_FALLBACK_FILA_CEO") ?? "true").toLowerCase() !== "false";
+      if (fallbackFilaCeo) {
+        logOps("info", "business", "queued_fila_ceo", {
+          lead_id: insertedLead.id,
+          name,
+          empreendimento,
+          reason: distribution.reason || null,
+          detail: distribution.error || null,
+        });
+      } else {
+        logOps("error", "integration", "Distribution failed after retries — lead orphaned", {
+          lead_id: insertedLead.id,
+          name,
+          empreendimento,
+          reason: distribution.reason || null,
+          detail: distribution.error || null,
+        });
+      }
     }
 
     // ── Audit ──
