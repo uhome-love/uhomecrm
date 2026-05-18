@@ -7512,6 +7512,7 @@ export type Database = {
       }
       reengajamento_meta_disparos: {
         Row: {
+          audience_source: string | null
           button_response: string | null
           created_at: string
           delivered_at: string | null
@@ -7530,6 +7531,7 @@ export type Database = {
           wamid: string | null
         }
         Insert: {
+          audience_source?: string | null
           button_response?: string | null
           created_at?: string
           delivered_at?: string | null
@@ -7548,6 +7550,7 @@ export type Database = {
           wamid?: string | null
         }
         Update: {
+          audience_source?: string | null
           button_response?: string | null
           created_at?: string
           delivered_at?: string | null

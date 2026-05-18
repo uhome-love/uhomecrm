@@ -176,6 +176,10 @@ Deno.serve(async (req) => {
           ? `oferta_ativa:${bodyAudience.lista_id || "?"}`
           : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`)
     : "";
+  // Canonical source for routing on reply (column audience_source in reengajamento_meta_disparos)
+  const audienceSourceCanonical: string = isCustomAudience
+    ? String(bodyAudience.source)
+    : "legacy";
 
   const url = new URL(req.url);
   const force = bodyForce || url.searchParams.get("force") === "1";
@@ -565,6 +569,7 @@ Deno.serve(async (req) => {
             await supabase.from("reengajamento_meta_disparos").insert({
               lead_id: lead.id, run_id: runId, wamid: r.wamid, template_name: metaTemplate,
               template_language: metaLang, phone, status: "sent", sent_at: new Date().toISOString(),
+              audience_source: audienceSourceCanonical,
             });
             await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
           }

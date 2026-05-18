@@ -1,82 +1,73 @@
-## Central de Reengajamento — Unificação em página única
+# Roteamento de Leads Reengajados (resposta positiva no template Meta)
 
-Hoje a página `/central-nutricao` tem 3 abas separadas (Reengajamento Descartados, Visita Amanhã, Auditoria Webhook) com lógicas duplicadas. Vou consolidar tudo em uma única central organizada por seções, onde **"Visita Amanhã" e "Descartados" viram apenas TIPOS de campanha** dentro do mesmo fluxo de disparo customizado.
+## Regra confirmada
 
-### Estrutura nova da página
+Quando o webhook detecta resposta positiva (texto ou botão "Sim") ao template Meta de reengajamento, o destino depende da **origem do disparo**:
 
-```text
-/central-nutricao
-├── [Topo] KPIs globais (enviados hoje/7d/30d, resposta %, falhas)
-│
-├── SEÇÃO 1 — Novo disparo (card grande, sempre visível)
-│    ├─ Canal:      ( ) Meta (template oficial)   ( ) Evolution (free text)
-│    ├─ Público:    ( ) Descartados   ( ) Pipeline ativo   ( ) Lista Oferta Ativa   ( ) Visita amanhã
-│    ├─ Filtros dinâmicos por público:
-│    │     • Descartados → tipo (reengajável/definitivo), período
-│    │     • Pipeline ativo → etapas, período de criação
-│    │     • Lista OA → combobox de listas, período
-│    │     • Visita amanhã → data da visita (default: amanhã), empreendimento
-│    ├─ Empreendimento (opcional, para todos)
-│    ├─ Dedup: [ Excluir já receberam ] [ Incluir todos ] [ Só recebidos antes de X ]
-│    ├─ Limite máx
-│    ├─ Template/Mensagem (campo aparece conforme canal escolhido)
-│    └─ [ Calcular público → mostra TOTAL ]  [ Disparar para N leads ]
-│
-├── SEÇÃO 2 — Disparo em andamento + últimos disparos
-│    ├─ Card "Em andamento" (se houver run ativo): progresso, % concluído, cancelar
-│    └─ Tabela últimos 20 disparos: data, canal, público, enviados, respondidos, falhas
-│
-├── SEÇÃO 3 — Auditoria de webhooks (relatório de retorno)
-│    ├─ Filtros: status, busca, período
-│    ├─ Tabela unificada (Meta + Evolution + Visita Amanhã): lead, telefone, canal, status, resposta, sent_at, responded_at
-│    └─ Métricas de webhook: taxa entrega, taxa leitura, taxa resposta
-│
-└── SEÇÃO 4 — Configurações (collapse, fechado por padrão)
-     ├─ Janelas de horário, throttle, cap diário
-     ├─ Templates Meta cadastrados
-     └─ Pausa global (kill switch)
+| Origem do disparo | Ação |
+|---|---|
+| **Descartado** (stage Descarte, reengajável) | Envia para **roleta** como `lead_reengajado` + histórico do disparo + notifica corretor sorteado |
+| **Lista Oferta Ativa** | Envia para **roleta** como `lead_reengajado` + histórico do disparo + notifica corretor sorteado |
+| **Pipeline Ativo** (lead já com corretor em estágio ativo) | **NÃO** mexe na atribuição. Apenas cria atividade na timeline + push para o corretor atual avisando do interesse no disparo |
+| **Visita Amanhã** | Igual a Pipeline Ativo (lead já está com corretor) |
+
+## Estado atual vs. desejado
+
+Hoje em `whatsapp-webhook` e `evolution-webhook`:
+- **Lead em pipeline ativo respondendo positivo** → já faz o correto: abre janela 24h, cria atividade, notifica corretor. ✅
+- **Lead descartado respondendo positivo** → cai no `handleExistingLeadReply` e só notifica o corretor antigo. **Não vai para roleta.** ❌ Precisa corrigir.
+- **Lead da Oferta Ativa respondendo positivo** (sem pipeline_lead) → já cria novo pipeline_lead e chama `distributeViroleta`. ✅
+- **Lead da Oferta Ativa respondendo positivo (já tem pipeline_lead em Descarte)** → cai em `handleExistingLeadReply` e não vai pra roleta. ❌
+
+## Mudanças necessárias
+
+### 1. Detectar origem do disparo no momento da resposta
+Em `whatsapp-webhook/index.ts` (handler do `button_reply` + texto positivo casado com `reengajamento_meta_disparos`) e em `evolution-webhook/index.ts` (handler positivo): após identificar o lead, consultar:
+
+- `reengajamento_meta_disparos.audience_source` (a coluna `audience_source` será adicionada — ver §4) ou fallback pelo `run_id` → `reengajamento_dispatch_runs.audience_source`
+- Tipo `descartados` / `oferta_ativa_lista` → **roleta**
+- Tipo `pipeline_ativo` / `visita_amanha` → **só notificação**
+
+### 2. Branch "vai para roleta" em lead descartado
+Novo helper `reactivateAndDistribute(lead)`:
+1. Move o lead do stage Descarte para o stage de entrada da roleta (mesma lógica usada hoje em `lead-reentry-roleta-logic`).
+2. Limpa `corretor_id` para o redistribute funcionar.
+3. Registra atividade `"🔄 Lead reengajado via [campanha] — redistribuído pela roleta"`.
+4. Grava em `pipeline_atividades` o `dispatch_run_id` + nome do template clicado (histórico do disparo).
+5. Chama `distributeViroleta(lead.id)` (já existe).
+6. Após o distribute, busca novo `corretor_id` e envia push: `"🔥 Lead reengajado recebido — respondeu SIM ao template [X]. Próximo passo: ligar nas próximas 2h."`
+
+### 3. Branch "só notifica" em pipeline ativo
+Manter o fluxo atual de `handleExistingLeadReply` mas enriquecer a notificação com:
+- Nome do template/campanha que o lead clicou
+- Categoria push `lead_reengajado_ativo` (já existe `lead_reengajado`, reusar)
+- Atividade na timeline com tag `[Disparo: nome_template]`
+
+### 4. Histórico do disparo (campo `audience_source`)
+Migration nova adicionando coluna em `reengajamento_meta_disparos`:
+```sql
+ALTER TABLE reengajamento_meta_disparos
+  ADD COLUMN IF NOT EXISTS audience_source TEXT;
+-- valores: 'descartados' | 'pipeline_ativo' | 'oferta_ativa_lista' | 'visita_amanha' | 'legacy'
 ```
+E `reengajamento-descartados-enqueue` passa a gravar `audience_source` baseado no payload `audience.source`. Histórico já existente fica como `'legacy'` e cai por padrão na rota **roleta** (comportamento histórico de descartados).
 
-### Mudanças concretas
+### 5. Determinação "está no pipeline ativo?"
+Considera "ativo" se: `stage_id NOT IN (Descarte, Inativado, Negócio Criado)` E `corretor_id IS NOT NULL`. Senão, trata como descartado/órfão → roleta.
 
-**Removidas:**
-- Componente de Tabs no topo (`CentralNutricaoPage` atual)
-- `VisitaAmanhaTab` como tela separada — vira opção de público
-- `AuditoriaWebhookTab` como tab — vira Seção 3 inline
+## Fora de escopo
 
-**Refatorados / criados:**
-1. **`CentralNutricaoPage.tsx`** — remove `<Tabs>`, renderiza as 4 seções em ordem
-2. **`DisparoCustomizadoCard.tsx`** (já criado) — expandir para incluir:
-   - Seletor de **canal** (Meta / Evolution) no topo
-   - Novo source `visita_amanha` com filtro de data da visita
-   - Campo de mensagem/template condicional ao canal
-3. **`UltimosDisparosTable.tsx`** (novo) — unifica `reengajamento_dispatch_runs` + `visita_amanha_disparos` agrupando por run, mostra coluna "Canal" e "Público"
-4. **`AuditoriaUnificadaSection.tsx`** (novo) — junta `reengajamento_meta_disparos` + `visita_amanha_disparos` numa única tabela com coluna "Canal"
-5. **`ConfiguracoesReengajamento.tsx`** (novo, collapse) — extrai a parte de config do `ReengajamentoTab` atual (janelas, templates, kill switch)
-6. **`KpisGlobaisHeader.tsx`** (novo) — KPIs no topo
+- Não mexer no flow de NÃO (já está OK: inativa descartado, marca `sem_interesse` em OA).
+- Não mexer no `roleta-distribute` core.
+- Não criar dashboard de "leads reengajados por origem" agora (fica para Fase 2 da Central).
 
-**Backend (sem migration nova nesta etapa):**
-- `reengajamento-audience-preview` ganha source `visita_amanha`
-- `reengajamento-descartados-enqueue` ganha branch `visita_amanha` (delega para `visita-amanha-enqueue` existente OU absorve a lógica — preferência: delegar para preservar o que já funciona) e ganha parâmetro `canal: 'meta' | 'evolution'` no payload `audience`
-- Função `visita-amanha-enqueue` continua existindo, mas só é chamada via fluxo unificado
+## Migrações
 
-**Não-objetivos (Fase 2, fora deste plano):**
-- Agendamento recorrente, A/B, favoritos
-- Migration de unificação das tabelas `reengajamento_meta_disparos` + `visita_amanha_disparos` (manter separadas, unificar só na UI por enquanto)
-- Mexer em `evolution-webhook` / `whatsapp-360dialog`
+1 migration apenas (adicionar `audience_source`). Respeita limite de 2/dia.
 
-### Detalhes técnicos relevantes
-- Respeita teto de 2 migrations/dia BRT — esta etapa é **zero migration**
-- Mantém `canTouchPipelineLead` no enqueue (não polui timestamps de leads ativos)
-- Mantém telemetria via `audience_source` já adicionada na rodada anterior
-- Componentes ficam <300 linhas cada; `CentralNutricaoPage` fica enxuto (<150 linhas) só orquestrando seções
-- Sem `as any` em código novo; tipagem de canal via union literal
-- Sem fetch wrappers / sem cliente custom
+## Arquivos afetados
 
-### Ordem de execução
-1. Estender `DisparoCustomizadoCard` (canal + source visita_amanha + campo mensagem)
-2. Atualizar `reengajamento-audience-preview` e `reengajamento-descartados-enqueue` para canal + visita_amanha
-3. Criar `UltimosDisparosTable`, `AuditoriaUnificadaSection`, `ConfiguracoesReengajamento`, `KpisGlobaisHeader`
-4. Reescrever `CentralNutricaoPage.tsx` sem tabs
-5. Deletar arquivos `VisitaAmanhaTab.tsx`, `AuditoriaWebhookTab.tsx`, `ReengajamentoTab.tsx` (config migrada)
-6. Deploy das 2 functions e validação visual no preview
+- `supabase/migrations/<nova>.sql` — coluna `audience_source`
+- `supabase/functions/whatsapp-webhook/index.ts` — branch por origem
+- `supabase/functions/evolution-webhook/index.ts` — branch por origem
+- `supabase/functions/reengajamento-descartados-enqueue/index.ts` — gravar `audience_source`
