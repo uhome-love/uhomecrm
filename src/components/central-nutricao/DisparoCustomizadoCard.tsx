@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
 type Canal = "meta" | "evolution";
-type DedupMode = "exclude_sent" | "include_all" | "only_sent_before";
+type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
 
 export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => void }) {
   const [canal, setCanal] = useState<Canal>("meta");
