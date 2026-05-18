@@ -341,6 +341,11 @@ Deno.serve(async (req) => {
 
       if (existingExternal) {
         L.info("Dedup: external id already processed", { externalLeadId });
+        // BLOCO 4b: logar dedup permanente por external_id em ops_events
+        logOps("info", "business", "lead_dedup_skipped_permanent", {
+          reason: "external_id_em_jetimob_processed",
+          external_lead_id: externalLeadId,
+        });
         return new Response(
           JSON.stringify({ success: true, action: "skipped_external_id_dedup" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
