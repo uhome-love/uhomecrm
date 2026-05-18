@@ -19,7 +19,43 @@
 // sem precisar deletar um secret de verdade.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
-import expected from "./expected.json" with { type: "json" };
+
+// Lista derivada via `grep -rhoE 'Deno.env.get("NAME")' supabase/functions/` em 18/05/2026.
+// Excluídos:
+//   - SUPABASE_* (auto-injetados pela plataforma)
+//   - TYPESENSE_HOST / EVOLUTION_API_URL / UHOMESITE_URL (URLs, não secrets)
+//   - SITE_SUPABASE_ANON_KEY / SITE_SUPABASE_URL (legacy — código usa UHOMESITE_*)
+//   - WHATSAPP_PHONE_ID / WHATSAPP_TOKEN (legacy — canônicos WHATSAPP_PHONE_NUMBER_ID/_ACCESS_TOKEN)
+//   - TIKTOK_WEBHOOK_SECRET (ingestão TikTok não configurada)
+// Atualizar quando edge function nova introduzir secret novo. Ver também expected.json (doc).
+const EXPECTED_SECRETS: string[] = [
+  "ELEVENLABS_AGENT_ID",
+  "ELEVENLABS_API_KEY",
+  "ELEVENLABS_CONVAI_KEY",
+  "ELEVENLABS_PHONE_NUMBER_ID",
+  "EVOLUTION_API_KEY",
+  "GOOGLE_OAUTH_CLIENT_ID",
+  "GOOGLE_OAUTH_CLIENT_SECRET",
+  "JETIMOB_API_KEY",
+  "JETIMOB_LEADS_PRIVATE_KEY",
+  "JETIMOB_LEADS_URL_KEY",
+  "LANDING_WEBHOOK_SECRET",
+  "LOVABLE_API_KEY",
+  "MAILGUN_API_KEY",
+  "META_WEBHOOK_SECRET",
+  "OPENAI_API_KEY",
+  "RDSTATION_PRIVATE_TOKEN",
+  "SYNC_SECRET",
+  "TYPESENSE_ADMIN_API_KEY",
+  "TYPESENSE_SEARCH_API_KEY",
+  "UHOMESITE_SERVICE_KEY",
+  "UHOME_AI_SECRET",
+  "VAPID_PRIVATE_KEY",
+  "VAPID_PUBLIC_KEY",
+  "WHATSAPP_ACCESS_TOKEN",
+  "WHATSAPP_PHONE_NUMBER_ID",
+  "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
