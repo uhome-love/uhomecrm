@@ -4,9 +4,6 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
-// In-memory cache for WABA id (per isolate, ~1h)
-let cachedWaba: { id: string; at: number } | null = null;
-
 interface MetaComponent {
   type?: string;
   buttons?: unknown[];
@@ -17,19 +14,6 @@ interface MetaTemplate {
   status: string;
   category?: string;
   components?: MetaComponent[];
-}
-
-async function resolveWabaId(phoneId: string, token: string): Promise<string> {
-  if (cachedWaba && Date.now() - cachedWaba.at < 60 * 60 * 1000) return cachedWaba.id;
-  const r = await fetch(`${GRAPH}/${phoneId}?fields=whatsapp_business_account`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!r.ok) throw new Error(`Falha ao resolver WABA: ${r.status} ${await r.text()}`);
-  const j = await r.json();
-  const id = j?.whatsapp_business_account?.id;
-  if (!id) throw new Error("whatsapp_business_account.id ausente na resposta da Meta");
-  cachedWaba = { id, at: Date.now() };
-  return id;
 }
 
 async function fetchAllTemplates(wabaId: string, token: string): Promise<MetaTemplate[]> {
