@@ -377,6 +377,12 @@ Deno.serve(async (req) => {
       // If lead exists but is still pending distribution (no corretor), just skip silently
       if (!existing.corretor_id) {
         L.info("Dedup: pending distribution", { telefone, leadId: existing.id });
+        // BLOCO 4b: dedup por lead já pendente de distribuição
+        logOps("info", "business", "lead_dedup_skipped_pending", {
+          reason: "lead_existente_aceite_status_pendente_distribuicao",
+          lead_id: existing.id,
+          telefone_anon: await anonPhone(telefone),
+        });
         return new Response(
           JSON.stringify({ success: true, action: "skipped_duplicate_pending", lead_id: existing.id }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
