@@ -104,33 +104,42 @@ async function sendMetaTemplate(params: {
   phoneNumberId: string; accessToken: string; to: string; templateName: string; lang: string; nome: string; headerImageUrl?: string;
 }): Promise<{ ok: boolean; wamid?: string; error?: string }> {
   const url = `https://graph.facebook.com/v21.0/${params.phoneNumberId}/messages`;
-  const components: any[] = [];
-  if (params.headerImageUrl) {
-    components.push({
-      type: "header",
-      parameters: [{ type: "image", image: { link: params.headerImageUrl } }],
-    });
-  }
-  components.push({ type: "body", parameters: [{ type: "text", text: params.nome }] });
-  const body = {
-    messaging_product: "whatsapp",
-    to: params.to,
-    type: "template",
-    template: {
-      name: params.templateName,
-      language: { code: params.lang },
-      components,
-    },
+  const buildBody = (withHeader: boolean) => {
+    const components: any[] = [];
+    if (withHeader && params.headerImageUrl) {
+      components.push({
+        type: "header",
+        parameters: [{ type: "image", image: { link: params.headerImageUrl } }],
+      });
+    }
+    components.push({ type: "body", parameters: [{ type: "text", text: params.nome }] });
+    return {
+      messaging_product: "whatsapp",
+      to: params.to,
+      type: "template",
+      template: { name: params.templateName, language: { code: params.lang }, components },
+    };
   };
-  try {
+  const post = async (withHeader: boolean) => {
     const r = await fetch(url, {
       method: "POST",
       headers: { Authorization: `Bearer ${params.accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(buildBody(withHeader)),
     });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) return { ok: false, error: JSON.stringify(data).slice(0, 300) };
-    const wamid = data?.messages?.[0]?.id;
+    return { ok: r.ok, data };
+  };
+  try {
+    let resp = await post(true);
+    // Auto-retry sem header quando o template não tem header component (Meta #132018)
+    if (!resp.ok && params.headerImageUrl) {
+      const errStr = JSON.stringify(resp.data);
+      if (/132018|does not contain (title|header) component|no parameters allowed/i.test(errStr)) {
+        resp = await post(false);
+      }
+    }
+    if (!resp.ok) return { ok: false, error: JSON.stringify(resp.data).slice(0, 300) };
+    const wamid = resp.data?.messages?.[0]?.id;
     return { ok: true, wamid };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
