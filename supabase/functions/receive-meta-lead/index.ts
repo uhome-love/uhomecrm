@@ -10,6 +10,7 @@
  * 3. Meta Ads native: { field_data: [{name, values: [...]}] }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { PostgrestError } from "https://esm.sh/@supabase/supabase-js@2";
 import { distributeLeadDirect } from "../_shared/roleta-distribution.ts";
 
 const corsHeaders = {
@@ -17,6 +18,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// ── Anonimização para BLOCO 4a (error_detail em ops_events) ──
+// Pseudonimização defense-in-depth. RLS de ops_events restringe leitura a role 'admin'
+// (policy "Admins can read ops_events"), então pseudonímo fraco é aceitável.
+async function sha256Short(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).slice(0, 4).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+async function anonPhone(phone: string): Promise<string> {
+  if (!phone) return "";
+  const head = phone.slice(0, 4);
+  const tail = phone.slice(-4);
+  return `${head}…${await sha256Short(tail)}`;
+}
+function anonEmail(email: string | null | undefined): string {
+  if (!email || !email.includes("@")) return "";
+  const [user, domain] = email.split("@");
+  return `${user.slice(0, 1)}***@${domain}`;
+}
 
 function normalizePhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
