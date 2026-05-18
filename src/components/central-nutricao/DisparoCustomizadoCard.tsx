@@ -374,6 +374,31 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             )}
           </div>
 
+          {preview?.funil && source === "descartados" && (
+            <div className="text-[11px] border rounded p-2 bg-background space-y-1">
+              <div className="font-medium text-indigo-700 mb-1">Conferência — Funil de descartados</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                <span className="text-muted-foreground">Total em Descarte</span>
+                <span className="text-right font-mono">{preview.funil.total_em_descarte}</span>
+                <span className="text-muted-foreground">— Inativados (respondeu não / definitivo)</span>
+                <span className="text-right font-mono text-rose-600">−{preview.funil.inativados_definitivos}</span>
+                <span className="text-muted-foreground">— Sem telefone</span>
+                <span className="text-right font-mono text-rose-600">−{preview.funil.sem_telefone}</span>
+                <span className="text-muted-foreground">— Arquivados {includeArchived ? "(incluídos)" : "(excluídos)"}</span>
+                <span className={`text-right font-mono ${includeArchived ? "text-muted-foreground" : "text-rose-600"}`}>
+                  {includeArchived ? preview.funil.arquivados : `−${preview.funil.arquivados}`}
+                </span>
+                <span className="font-medium pt-1 border-t mt-1">= Elegíveis para disparo</span>
+                <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.funil.elegiveis}</span>
+              </div>
+              {!includeArchived && preview.funil.arquivados > preview.funil.elegiveis && (
+                <p className="text-[10px] text-amber-600 mt-1">
+                  ⚠️ {preview.funil.arquivados} leads arquivados estão sendo excluídos. Marque "Incluir arquivados" para alcançar a base completa.
+                </p>
+              )}
+            </div>
+          )}
+
           {preview && preview.sample.length > 0 && (
             <div className="text-[11px] text-muted-foreground border rounded p-2 bg-background max-h-32 overflow-y-auto">
               <div className="font-medium mb-1">Amostra (primeiros {preview.sample.length}):</div>
