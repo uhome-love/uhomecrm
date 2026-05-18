@@ -1,0 +1,1 @@
+SELECT public.reativar_lead_nutricao_manual('a2853c2f-cbe2-4b80-b012-0d5110833488'::uuid);
