@@ -151,6 +151,7 @@ Deno.serve(async (req) => {
   let bodyMinDiasOverride: number | null = null;
   let bodyIncludeArchived = false;
   let bodyDailyLimitOverride: number | null = null;
+  let bodyAudience: any = null;
   try {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
@@ -163,8 +164,18 @@ Deno.serve(async (req) => {
       }
       bodyIncludeArchived = !!(b as any)?.include_archived;
       if ((b as any)?.daily_limit_override) bodyDailyLimitOverride = Number((b as any).daily_limit_override);
+      if ((b as any)?.audience && typeof (b as any).audience === "object") bodyAudience = (b as any).audience;
     }
   } catch { /* ignore */ }
+
+  const isCustomAudience = !!bodyAudience?.source;
+  const audSource: string = isCustomAudience
+    ? (bodyAudience.source === "descartados"
+        ? `descartados:${bodyAudience.tipo_descarte || "reengajavel"}`
+        : bodyAudience.source === "oferta_ativa_lista"
+          ? `oferta_ativa:${bodyAudience.lista_id || "?"}`
+          : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`)
+    : "";
 
   const url = new URL(req.url);
   const force = bodyForce || url.searchParams.get("force") === "1";
