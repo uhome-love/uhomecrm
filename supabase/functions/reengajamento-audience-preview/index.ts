@@ -10,14 +10,16 @@ const corsHeaders = {
 
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 
-type AudienceSource = "descartados" | "pipeline_ativo" | "oferta_ativa_lista";
+type AudienceSource = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
 type DedupMode = "exclude_sent" | "include_all" | "only_sent_before";
 
 interface Audience {
   source: AudienceSource;
+  canal?: "meta" | "evolution";
   tipo_descarte?: "reengajavel" | "definitivo" | "todos";
   stage_ids?: string[];
   lista_id?: string;
+  data_visita?: string;
   periodo?: { from?: string; to?: string };
   empreendimento?: string;
   dedup_mode?: DedupMode;
@@ -30,6 +32,7 @@ function audienceKey(a: Audience): string {
   if (a.source === "descartados") return `descartados:${a.tipo_descarte || "reengajavel"}`;
   if (a.source === "oferta_ativa_lista") return `oferta_ativa:${a.lista_id || "?"}`;
   if (a.source === "pipeline_ativo") return `pipeline:${(a.stage_ids || []).slice().sort().join(",")}`;
+  if (a.source === "visita_amanha") return `visita_amanha:${a.data_visita || ""}`;
   return a.source;
 }
 
