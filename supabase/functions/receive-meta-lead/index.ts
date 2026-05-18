@@ -447,6 +447,14 @@ Deno.serve(async (req) => {
       } catch (e) { L.warn("Push error", { leadId: existing.id }, e); }
 
       L.info("Reactivated existing lead", { telefone, leadId: existing.id, corretor: existing.corretor_id });
+      // BLOCO 4b: lead descartado/arquivado reativado por novo touch
+      logOps("info", "business", "lead_dedup_reactivated", {
+        reason: isDiscarded ? "lead_descartado_reativado_para_sem_contato" : "lead_ativo_recebeu_novo_interesse",
+        lead_id: existing.id,
+        corretor_id: existing.corretor_id,
+        was_discarded: isDiscarded,
+        telefone_anon: await anonPhone(telefone),
+      });
       return new Response(
         JSON.stringify({ success: true, action: "reactivated", lead_id: existing.id, trace_id: traceId }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
