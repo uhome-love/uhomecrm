@@ -223,8 +223,11 @@ Deno.serve(async (req) => {
       metaPhoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || "";
       metaToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
       if (!metaPhoneId || !metaToken) throw new Error("Meta env vars missing");
-      metaTemplate = String((wave === 2 ? cfg.meta_template_name_2 : cfg.meta_template_name) || "");
-      metaLang = String(cfg.meta_template_language || "pt_BR");
+      // Override explícito vindo do front (Central de Reengajamento) tem prioridade sobre o default da config
+      const overrideTpl = (bodyAudience?.template_name && String(bodyAudience.template_name).trim()) || "";
+      const overrideLang = (bodyAudience?.template_language && String(bodyAudience.template_language).trim()) || "";
+      metaTemplate = overrideTpl || String((wave === 2 ? cfg.meta_template_name_2 : cfg.meta_template_name) || "");
+      metaLang = overrideLang || String(cfg.meta_template_language || "pt_BR");
       if (!metaTemplate) throw new Error(wave === 2 ? "meta_template_name_2 não configurado" : "meta_template_name não configurado");
     }
 

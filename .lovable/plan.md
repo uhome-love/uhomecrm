@@ -1,56 +1,44 @@
-# Plano — Central de Reengajamento (auditoria + organização)
+# Plano — Seletor de Template Meta no Disparo
 
-## Problemas atuais
-1. `AuditoriaWebhookTab` faz `.limit(300)` → trava em 300 disparos.
-2. Não mostra **qual disparo** (template + audience_source + run_id) gerou cada linha.
-3. Atualiza só com `refetchInterval: 5s` (sem realtime).
-4. Coluna "Mensagem recebida" não diferencia bem **botão clicado** vs **texto digitado**.
-5. Página `CentralNutricao` mistura 4 seções empilhadas — visual pesado, sem hierarquia clara para o fluxo "selecionar lista → selecionar modelo → enviar → ver retorno".
+## Problema
+Hoje o campo "Template Meta aprovado" é um **input de texto livre**, sujeito a erro de digitação e oculto para `descartados` e `visita_amanha`. O usuário quer **selecionar de uma lista** dos templates realmente aprovados na Meta (como na Meta Business Suite), com nome correto e idioma.
 
-## Mudanças (apenas frontend + leitura)
+## Solução
 
-### 1. `AuditoriaWebhookTab.tsx` — refatorar
-- **Remover `.limit(300)`** e adotar paginação por `range()` de 100 em 100 com botão "Carregar mais" + contador "Mostrando X de Y" (total via `count: 'exact', head: true`).
-- **Realtime**: assinar canal Postgres em `reengajamento_meta_disparos` (INSERT + UPDATE) e dar `queryClient.invalidateQueries(['auditoria-meta-webhook'])` no callback. Mostrar pill "🟢 ao vivo".
-- **Nova coluna "Disparo"**: exibir `template_name` + badge colorido do `audience_source` (Descartados / Pipeline ativo / Oferta ativa / Visita amanhã / Legacy). Permitir filtrar por audience_source e por template via selects.
-- **Coluna "Mensagem recebida"** reformulada:
-  - Se `button_response` ∈ {sim,nao} → mostrar chip "Botão: SIM/NÃO".
-  - Senão se `response_text` → mostrar texto livre com ícone 💬.
-  - Senão "—".
-- **Buscar também por nome do template** no input de busca.
-- **Stats cards** ganham um a mais: "Aguardando entrega" (sent sem delivered).
+### 1. Nova edge function: `meta-templates-list`
+- `GET` que retorna `{ templates: [{ name, language, status, category, has_buttons }] }`
+- Fluxo:
+  1. Lê `WHATSAPP_ACCESS_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID` (já existem).
+  2. Resolve o WABA ID via `GET https://graph.facebook.com/v21.0/{phone_id}?fields=whatsapp_business_account` (cache em memória do isolate por 1h).
+  3. Lista templates: `GET https://graph.facebook.com/v21.0/{waba_id}/message_templates?fields=name,language,status,category,components&limit=200`, paginando.
+  4. Mantém apenas `status === "APPROVED"`.
+  5. Marca `has_buttons` se algum component tiver `type === "BUTTONS"` (importante p/ disparos com SIM/NÃO).
+- `verify_jwt = true` (uso interno autenticado).
+- CORS padrão.
 
-### 2. `CentralNutricao.tsx` — reorganizar layout
-Estrutura de 2 colunas em telas grandes, mais respiro:
+### 2. `DisparoCustomizadoCard.tsx` — trocar input por Combobox
+- Novo hook `useQuery(["meta-templates"])` chamando a edge function (5 min stale).
+- Substituir o `<Input>` por um **Combobox** (`@/components/ui/popover` + `Command`) com:
+  - Busca por nome.
+  - Badge de idioma (`pt_BR`) e indicador "🔘 com botões" quando aplicável.
+  - Opção "✏️ Digitar manualmente" no rodapé (fallback) — abre input texto.
+- **Mostrar o seletor SEMPRE que `canal === "meta"`** (inclusive descartados e visita_amanha), pré-preenchendo com o template default da `reengajamento_config` quando carregado.
+- Salvar tanto `template_name` quanto `template_language` no `buildAudience()`.
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  Header: Central de Reengajamento (subtítulo curto)         │
-├─────────────────────────────────────────────────────────────┤
-│  [Tabs grandes]  ① Novo disparo   ② Retorno (auditoria)    │
-│                  ③ Configurações                            │
-└─────────────────────────────────────────────────────────────┘
-```
+### 3. Enqueue: respeitar override explícito
+- Em `reengajamento-descartados-enqueue` e `visita-amanha-enqueue`: se `audience.template_name` vier preenchido, usar esse no lugar do default da config (e `audience.template_language` se vier; senão `pt_BR`).
+- Hoje `descartados` e `visita_amanha` ignoram `audience.template_name` — pequena mudança para aceitar override.
 
-- Trocar a pilha atual de `<section>`s por **Tabs** (`@/components/ui/tabs`) com 3 abas: "Novo disparo", "Retorno em tempo real", "Configurações".
-- Aba 1 = `DisparoCustomizadoCard` (já tem o fluxo lista → modelo → enviar).
-- Aba 2 = `AuditoriaWebhookTab` refatorado (com realtime).
-- Aba 3 = `ReengajamentoTab` + `VisitaAmanhaTab` collapsibles dentro.
-- KPI bar fixa no topo de Aba 2 com 6 cards já existentes + "Aguardando".
-- Manter `max-w-[1600px]`, padding consistente, hierarquia tipográfica (`text-2xl` no h1).
-
-### 3. Detalhes técnicos
-- Realtime: `supabase.channel('audit-meta').on('postgres_changes', { event: '*', schema: 'public', table: 'reengajamento_meta_disparos' }, () => qc.invalidateQueries(...)).subscribe()`; cleanup no `useEffect` return.
-- Habilitar realtime na tabela: **migration necessária** → `ALTER PUBLICATION supabase_realtime ADD TABLE public.reengajamento_meta_disparos;` (verificar se já não está; é a única alteração de DB).
-- Paginação: estado `page`, queryKey `['auditoria-meta-webhook', page]`, `keepPreviousData`.
-- Audience source badges: mapa local com cores semânticas (sem cores diretas — usar tokens existentes `bg-*-50 text-*-700`).
+### 4. Pré-carregar default da config no front
+- Hook adicional que lê `reengajamento_config` (campos `meta_template_name`, `meta_template_language`) e pré-seleciona quando o usuário escolhe `descartados` ou `visita_amanha`.
 
 ## Fora de escopo
-- Mudanças no `DisparoCustomizadoCard` (já refinado).
-- Mudanças no fluxo de webhook (whatsapp-webhook/evolution-webhook).
-- Novos templates, novos canais, recorrência.
+- Editor/criação de templates (continua no Meta Business Suite).
+- Sync automático para tabela local — sempre que abrir, busca ao vivo (com cache 5min no front).
+- Mudanças na auditoria de webhooks.
 
 ## Arquivos
-- `src/components/central-nutricao/AuditoriaWebhookTab.tsx` (refatorar)
-- `src/pages/CentralNutricao.tsx` (reorganizar em Tabs)
-- 1 migration: adicionar tabela à publicação `supabase_realtime` (se ainda não estiver)
+- `supabase/functions/meta-templates-list/index.ts` (novo)
+- `src/components/central-nutricao/DisparoCustomizadoCard.tsx` (combobox + lógica)
+- `supabase/functions/reengajamento-descartados-enqueue/index.ts` (override do template)
+- `supabase/functions/visita-amanha-enqueue/index.ts` (override do template)

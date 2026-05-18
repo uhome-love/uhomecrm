@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Send, Search, Target, Shield, Zap, Calendar } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
+import { Loader2, Send, Search, Target, Shield, Zap, Calendar, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
 type Canal = "meta" | "evolution";
@@ -33,6 +36,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [includeArchived, setIncludeArchived] = useState<boolean>(true);
   const [limit, setLimit] = useState<number>(100);
   const [templateName, setTemplateName] = useState<string>("");
+  const [templateLanguage, setTemplateLanguage] = useState<string>("pt_BR");
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [templateManualMode, setTemplateManualMode] = useState(false);
   const [mensagem, setMensagem] = useState<string>("");
   const [preview, setPreview] = useState<{ count: number; sample: any[]; funil?: Record<string, number> } | null>(null);
   const [previewing, setPreviewing] = useState(false);
@@ -58,6 +64,53 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     },
   });
 
+  // Templates Meta aprovados (Graph API)
+  const { data: metaTemplatesResp, isLoading: loadingTemplates, refetch: refetchTemplates, isFetching: fetchingTemplates } = useQuery({
+    queryKey: ["meta-templates-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("meta-templates-list", { body: {} });
+      if (error) throw error;
+      return data as { templates: Array<{ name: string; language: string; status: string; category: string | null; has_buttons: boolean }>; total: number };
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: canal === "meta",
+  });
+  const metaTemplates = metaTemplatesResp?.templates || [];
+
+  // Default template/language vindo da config (descartados / visita amanha)
+  const { data: cfgDefaults } = useQuery({
+    queryKey: ["reengajamento-config-defaults"],
+    queryFn: async () => {
+      const [{ data: reng }, { data: visita }] = await Promise.all([
+        supabase.from("reengajamento_config").select("meta_template_name, meta_template_name_2, meta_template_language").limit(1).maybeSingle(),
+        supabase.from("visita_amanha_config").select("meta_template_name, meta_template_language").limit(1).maybeSingle(),
+      ]);
+      return { reng, visita };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Pré-preenche o template quando muda canal/source
+  useEffect(() => {
+    if (canal !== "meta" || !cfgDefaults || templateName) return;
+    if (source === "descartados" && cfgDefaults.reng?.meta_template_name) {
+      setTemplateName(cfgDefaults.reng.meta_template_name);
+      setTemplateLanguage(cfgDefaults.reng.meta_template_language || "pt_BR");
+    } else if (source === "visita_amanha" && cfgDefaults.visita?.meta_template_name) {
+      setTemplateName(cfgDefaults.visita.meta_template_name);
+      setTemplateLanguage(cfgDefaults.visita.meta_template_language || "pt_BR");
+    }
+  }, [canal, source, cfgDefaults, templateName]);
+
+  function selectTemplate(name: string, language: string) {
+    setTemplateName(name);
+    setTemplateLanguage(language);
+    setTemplatePickerOpen(false);
+    setPreview(null);
+  }
+
+  const currentTemplateMeta = metaTemplates.find((t) => t.name === templateName && t.language === templateLanguage);
+
   function buildAudience() {
     const periodo = (from || to) ? {
       from: from ? new Date(from + "T00:00:00-03:00").toISOString() : undefined,
@@ -79,7 +132,10 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (source === "pipeline_ativo") base.stage_ids = stageIds;
     if (source === "oferta_ativa_lista") base.lista_id = listaId;
     if (source === "visita_amanha") base.data_visita = dataVisita;
-    if (canal === "meta" && templateName) base.template_name = templateName;
+    if (canal === "meta" && templateName) {
+      base.template_name = templateName;
+      base.template_language = templateLanguage;
+    }
     if (canal === "evolution" && mensagem) base.mensagem = mensagem;
     return base;
   }
@@ -115,8 +171,8 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       toast.error("Faça o preview primeiro e confirme que há leads elegíveis");
       return;
     }
-    if (canal === "meta" && !templateName && source !== "visita_amanha" && source !== "descartados") {
-      toast.error("Informe o nome do template Meta aprovado");
+    if (canal === "meta" && !templateName) {
+      toast.error("Selecione o template Meta que será usado neste disparo");
       return;
     }
     if (canal === "evolution" && !mensagem && source !== "descartados") {
@@ -339,12 +395,115 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           <Input type="number" value={limit} min={1} max={1000} onChange={(e) => setLimit(Number(e.target.value))} className="h-9" />
         </div>
 
-        {/* Template/Mensagem por canal */}
-        {canal === "meta" && source !== "descartados" && source !== "visita_amanha" && (
+        {/* Template Meta — sempre disponível quando canal=meta */}
+        {canal === "meta" && (
           <div>
-            <Label className="text-xs">Template Meta aprovado</Label>
-            <Input placeholder="ex.: reengajamento_imovel_v2" value={templateName} onChange={(e) => setTemplateName(e.target.value)} className="h-9" />
-            <p className="text-[10px] text-muted-foreground mt-1">Use o nome exato cadastrado no Meta Business Suite. Para descartados/visita amanhã, o template padrão da configuração é usado.</p>
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-xs">Template Meta aprovado</Label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTemplateManualMode((v) => !v)}
+                  className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                >
+                  <Pencil className="h-3 w-3" />
+                  {templateManualMode ? "Voltar à lista" : "Digitar manualmente"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => refetchTemplates()}
+                  disabled={fetchingTemplates}
+                  className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                >
+                  <RefreshCw className={cn("h-3 w-3", fetchingTemplates && "animate-spin")} />
+                  Atualizar
+                </button>
+              </div>
+            </div>
+
+            {templateManualMode ? (
+              <div className="grid grid-cols-[1fr_120px] gap-2 mt-1">
+                <Input
+                  placeholder="ex.: reativacao_opcoes_perfil_v2"
+                  value={templateName}
+                  onChange={(e) => { setTemplateName(e.target.value); setPreview(null); }}
+                  className="h-9"
+                />
+                <Input
+                  placeholder="pt_BR"
+                  value={templateLanguage}
+                  onChange={(e) => setTemplateLanguage(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+            ) : (
+              <Popover open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="h-9 w-full justify-between mt-1 font-normal"
+                  >
+                    {templateName ? (
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="truncate">{templateName}</span>
+                        <Badge variant="outline" className="text-[9px] shrink-0">{templateLanguage}</Badge>
+                        {currentTemplateMeta?.has_buttons && (
+                          <MousePointerClick className="h-3 w-3 text-indigo-500 shrink-0" />
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        {loadingTemplates ? "Carregando templates da Meta..." : "Selecione um template aprovado..."}
+                      </span>
+                    )}
+                    <ChevronsUpDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[420px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar template..." />
+                    <CommandList>
+                      <CommandEmpty>
+                        {loadingTemplates ? "Carregando..." : "Nenhum template aprovado encontrado."}
+                      </CommandEmpty>
+                      <CommandGroup heading={`${metaTemplates.length} templates aprovados`}>
+                        {metaTemplates.map((t) => {
+                          const selected = t.name === templateName && t.language === templateLanguage;
+                          return (
+                            <CommandItem
+                              key={`${t.name}-${t.language}`}
+                              value={`${t.name} ${t.language} ${t.category || ""}`}
+                              onSelect={() => selectTemplate(t.name, t.language)}
+                              className="flex items-center gap-2"
+                            >
+                              <Check className={cn("h-3.5 w-3.5", selected ? "opacity-100" : "opacity-0")} />
+                              <span className="flex-1 truncate">{t.name}</span>
+                              {t.has_buttons && (
+                                <Badge variant="outline" className="text-[9px] bg-indigo-50 text-indigo-700 border-indigo-200">
+                                  <MousePointerClick className="h-2.5 w-2.5 mr-0.5" /> botões
+                                </Badge>
+                              )}
+                              <Badge variant="outline" className="text-[9px]">{t.language}</Badge>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                      <CommandSeparator />
+                      <CommandGroup>
+                        <CommandItem onSelect={() => { setTemplateManualMode(true); setTemplatePickerOpen(false); }}>
+                          <Pencil className="h-3.5 w-3.5 mr-2" /> Digitar nome manualmente (avançado)
+                        </CommandItem>
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
+
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Lista vinda direto do Meta Business — apenas templates aprovados. Disparos com botões SIM/NÃO classificam respostas automaticamente.
+            </p>
           </div>
         )}
         {canal === "evolution" && source !== "descartados" && (

@@ -87,11 +87,16 @@ Deno.serve(async (req) => {
 
   let force = false;
   let dailyLimitOverride: number | null = null;
+  let overrideTemplateName = "";
+  let overrideTemplateLang = "";
   try {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
       force = !!(b as any)?.force;
       if ((b as any)?.daily_limit_override) dailyLimitOverride = Number((b as any).daily_limit_override);
+      const aud = (b as any)?.audience || {};
+      if (aud?.template_name) overrideTemplateName = String(aud.template_name).trim();
+      if (aud?.template_language) overrideTemplateLang = String(aud.template_language).trim();
     }
   } catch { /* ignore */ }
 
@@ -124,8 +129,8 @@ Deno.serve(async (req) => {
     const metaToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
     if (!metaPhoneId || !metaToken) throw new Error("Meta env vars missing");
 
-    const metaTemplate: string = String(cfg.meta_template_name || "engajamento_visitasabado");
-    const metaLang: string = String(cfg.meta_template_language || "pt_BR");
+    const metaTemplate: string = overrideTemplateName || String(cfg.meta_template_name || "engajamento_visitasabado");
+    const metaLang: string = overrideTemplateLang || String(cfg.meta_template_language || "pt_BR");
     const stagesAlvo: string[] = Array.isArray(cfg.stages_alvo) ? cfg.stages_alvo : [];
 
     // Resolve stage_ids alvo
