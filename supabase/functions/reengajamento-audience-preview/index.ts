@@ -25,6 +25,7 @@ interface Audience {
   dedup_mode?: DedupMode;
   dedup_cutoff?: string;
   dedup_lookback_days?: number;
+  cooldown_dias?: number; // NOVO: cooldown entre disparos para o mesmo lead (default 7)
   include_archived?: boolean;
   limit?: number;
 }
