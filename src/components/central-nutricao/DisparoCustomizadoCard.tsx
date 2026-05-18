@@ -100,9 +100,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         body: { audience: buildAudience() },
       });
       if (error) throw error;
-      const d = data as { error?: string; count?: number; sample?: unknown[] };
+      const d = data as { error?: string; count?: number; sample?: unknown[]; funil?: Record<string, number> };
       if (d?.error) throw new Error(d.error);
-      setPreview({ count: d.count || 0, sample: d.sample || [] });
+      setPreview({ count: d.count || 0, sample: (d.sample as any[]) || [], funil: d.funil });
     } catch (e) {
       toast.error("Erro no preview: " + (e instanceof Error ? e.message : String(e)));
     } finally {
