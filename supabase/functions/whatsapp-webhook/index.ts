@@ -51,23 +51,31 @@ async function setConversationWindow(supabase: any, leadId: string) {
 }
 
 // ── Distribute lead via roleta ──
-function isPositiveIntent(text: string): boolean {
-  if (!text) return false;
-  const t = text.trim().toLowerCase();
-  if (!t) return false;
-  // Botões/respostas curtas claras
-  if (/^(sim|s|claro|quero|quero sim|tenho interesse|interessado|interessada|pode enviar|pode mandar|aceito|👍|✅|🙏|ok|okay|bora|vamos|positivo|afirmativo|com certeza|certeza|gostaria|me interessa|sim por favor|sim, por favor|sim quero|sim pode)\b/.test(t)) return true;
-  // Frases que indicam interesse claro
-  if (/\b(quero saber|quero conhecer|tenho interesse|me interessei|gostaria de saber|gostaria de conhecer|gostaria de mais informa|pode me enviar|pode me passar|me envia|me manda|manda a|envia a|me chama)\b/.test(t)) return true;
-  return false;
-}
-
 function isNegativeIntent(text: string): boolean {
   if (!text) return false;
   const t = text.trim().toLowerCase();
   if (!t) return false;
   if (/^(n[aã]o|n|nop|nao quero|n[aã]o quero|n[aã]o tenho interesse|sem interesse|j[aá] comprei|stop|cancela|cancelar|para|parar|remover|sair|descadastrar)\b/.test(t)) return true;
-  if (/\b(n[aã]o tenho interesse|sem interesse|n[aã]o me interessa|por hora n[aã]o|por enquanto n[aã]o|n[aã]o posso|n[aã]o quero mais|j[aá] comprei|j[aá] fechei|n[aã]o sou eu|n[aã]o conhe[çc]o)\b/.test(t)) return true;
+  if (/\b(n[aã]o\s+tenho\s+interesse|sem\s+interesse|n[aã]o\s+me\s+interess|n[aã]o\s+tenho\s+mais\s+interesse|por\s+hora\s+n[aã]o|por\s+enquanto\s+n[aã]o|n[aã]o\s+posso|n[aã]o\s+quero\s+mais|j[aá]\s+comprei|j[aá]\s+fechei|n[aã]o\s+sou\s+eu|n[aã]o\s+conhe[çc]o|n[aã]o\s+vou\s+(querer|comprar)|desisti|n[aã]o\s+pretendo)\b/.test(t)) return true;
+  return false;
+}
+
+function isPositiveIntent(text: string): boolean {
+  if (!text) return false;
+  const t = text.trim().toLowerCase();
+  if (!t) return false;
+  // SHORT-CIRCUIT: se há intenção negativa explícita, nunca é positivo (cobre "não tenho interesse")
+  if (isNegativeIntent(t)) return false;
+  // Botões/respostas curtas claras
+  if (/^(sim|s|claro|quero|quero sim|tenho interesse|interessado|interessada|pode enviar|pode mandar|aceito|👍|✅|🙏|ok|okay|bora|vamos|positivo|afirmativo|com certeza|certeza|gostaria|me interessa|sim por favor|sim, por favor|sim quero|sim pode)\b/.test(t)) return true;
+  // Frases que indicam interesse claro — exigem que NÃO haja negação dos 25 chars anteriores
+  const POS_PHRASES = /\b(quero saber|quero conhecer|tenho interesse|me interessei|gostaria de saber|gostaria de conhecer|gostaria de mais informa|pode me enviar|pode me passar|me envia|me manda|manda a|envia a|me chama)\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = POS_PHRASES.exec(t)) !== null) {
+    const start = Math.max(0, m.index - 25);
+    const before = t.slice(start, m.index);
+    if (!/\b(n[aã]o|sem|nem|jamais|nunca)\b/.test(before)) return true;
+  }
   return false;
 }
 
@@ -694,11 +702,14 @@ async function handleUnknownReply(
 ) {
   const msgText = mensagemTexto || msg?.type || "mensagem";
 
-  // 1. Search pipeline_leads by normalized phone
+  // 1. Search pipeline_leads by normalized phone (últimos 8 dígitos cobre variações de DDI/DDD/9)
+  const fromDigits = (from || "").replace(/\D/g, "");
+  const last8 = fromDigits.slice(-8);
+  const last10 = fromDigits.slice(-10);
   const { data: existingLeads } = await supabase
     .from("pipeline_leads")
     .select("id, nome, corretor_id, empreendimento, reengajamento_status, tipo_descarte, stage_id")
-    .or(`telefone.eq.${from},telefone.like.%${from.slice(-10)}%`)
+    .or(`telefone.eq.${from},telefone.ilike.%${last10}%,telefone.ilike.%${last8}%`)
     .limit(1);
 
   if (existingLeads && existingLeads.length > 0) {
@@ -859,15 +870,16 @@ async function handleUnknownReply(
   }
 
   // 3. Not found anywhere → SÓ cria lead se houver intenção positiva clara.
-  // Conversas pessoais / "boa noite" / mensagens neutras são ignoradas para não poluir a roleta.
-  if (!isPositiveIntent(msgText)) {
-    console.log(`🚫 Unknown sender ${from} sem intenção positiva — não cria lead. Texto: "${msgText.slice(0, 80)}"`);
+  // GUARD reforçado: intenção negativa explícita sempre bloqueia (evita "não tenho interesse" virar lead novo).
+  if (isNegativeIntent(msgText) || !isPositiveIntent(msgText)) {
+    const negativo = isNegativeIntent(msgText);
+    console.log(`🚫 Unknown sender ${from} ${negativo ? "intenção NEGATIVA" : "sem intenção positiva"} — não cria lead. Texto: "${msgText.slice(0, 80)}"`);
     await logWhatsAppEntry(supabase, {
       telefone: from, nome_contato: contactName, mensagem_recebida: msgText,
       tipo_mensagem: "texto",
-      filtro_resultado: isNegativeIntent(msgText) ? "negado_intencao_negativa" : "ignorado_intencao_neutra",
+      filtro_resultado: negativo ? "negado_intencao_negativa" : "ignorado_intencao_neutra",
       lead_id: null, corretor_nome: null,
-      status: isNegativeIntent(msgText) ? "ignorado_resposta_negativa" : "ignorado_neutro",
+      status: negativo ? "ignorado_resposta_negativa" : "ignorado_neutro",
     });
     return;
   }
