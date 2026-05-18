@@ -293,14 +293,9 @@ export default function AuditoriaWebhookTab() {
                             <TableCell className="text-xs text-right text-muted-foreground">{run.ignorados ?? 0}</TableCell>
                             <TableCell className="text-xs">
                               {(run.motivo_parada || firstError) ? (
-                                <div className="flex items-start gap-1.5">
+                                <div className="flex items-start gap-1.5" title={run.motivo_parada || firstError || ""}>
                                   <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className="line-clamp-2 cursor-default">{run.motivo_parada || firstError}</span>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-md"><p className="text-xs whitespace-pre-wrap">{run.motivo_parada || firstError}</p></TooltipContent>
-                                  </Tooltip>
+                                  <span className="line-clamp-2">{run.motivo_parada || firstError}</span>
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
