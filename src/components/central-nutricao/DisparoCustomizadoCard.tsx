@@ -6,24 +6,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Send, Search, Target } from "lucide-react";
+import { Loader2, Send, Search, Target, Shield, Zap, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
-type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista";
+type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
+type Canal = "meta" | "evolution";
 type DedupMode = "exclude_sent" | "include_all" | "only_sent_before";
 
 export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => void }) {
+  const [canal, setCanal] = useState<Canal>("meta");
   const [source, setSource] = useState<Source>("descartados");
   const [tipoDescarte, setTipoDescarte] = useState<"reengajavel" | "definitivo" | "todos">("reengajavel");
   const [stageIds, setStageIds] = useState<string[]>([]);
   const [listaId, setListaId] = useState<string>("");
+  const [dataVisita, setDataVisita] = useState<string>(() => {
+    const t = new Date(); t.setDate(t.getDate() + 1);
+    return t.toISOString().slice(0, 10);
+  });
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [empreendimento, setEmpreendimento] = useState<string>("");
   const [dedupMode, setDedupMode] = useState<DedupMode>("exclude_sent");
   const [dedupCutoff, setDedupCutoff] = useState<string>("");
   const [limit, setLimit] = useState<number>(100);
+  const [templateName, setTemplateName] = useState<string>("");
+  const [mensagem, setMensagem] = useState<string>("");
   const [preview, setPreview] = useState<{ count: number; sample: any[] } | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [firing, setFiring] = useState(false);
@@ -53,13 +62,23 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       from: from ? new Date(from + "T00:00:00-03:00").toISOString() : undefined,
       to: to ? new Date(to + "T23:59:59-03:00").toISOString() : undefined,
     } : undefined;
-    const base: any = { source, periodo, empreendimento: empreendimento || undefined, dedup_mode: dedupMode, limit };
+    const base: Record<string, unknown> = {
+      source,
+      canal,
+      periodo,
+      empreendimento: empreendimento || undefined,
+      dedup_mode: dedupMode,
+      limit,
+    };
     if (dedupMode === "only_sent_before" && dedupCutoff) {
       base.dedup_cutoff = new Date(dedupCutoff + "T00:00:00-03:00").toISOString();
     }
     if (source === "descartados") base.tipo_descarte = tipoDescarte;
     if (source === "pipeline_ativo") base.stage_ids = stageIds;
     if (source === "oferta_ativa_lista") base.lista_id = listaId;
+    if (source === "visita_amanha") base.data_visita = dataVisita;
+    if (canal === "meta" && templateName) base.template_name = templateName;
+    if (canal === "evolution" && mensagem) base.mensagem = mensagem;
     return base;
   }
 
@@ -79,10 +98,11 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         body: { audience: buildAudience() },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      setPreview({ count: (data as any).count || 0, sample: (data as any).sample || [] });
-    } catch (e: any) {
-      toast.error("Erro no preview: " + e.message);
+      const d = data as { error?: string; count?: number; sample?: unknown[] };
+      if (d?.error) throw new Error(d.error);
+      setPreview({ count: d.count || 0, sample: d.sample || [] });
+    } catch (e) {
+      toast.error("Erro no preview: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setPreviewing(false);
     }
@@ -93,20 +113,32 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       toast.error("Faça o preview primeiro e confirme que há leads elegíveis");
       return;
     }
-    if (!confirm(`Disparar para ${preview.count} leads? Esta ação envia mensagens reais via WhatsApp.`)) return;
+    if (canal === "meta" && !templateName && source !== "visita_amanha" && source !== "descartados") {
+      toast.error("Informe o nome do template Meta aprovado");
+      return;
+    }
+    if (canal === "evolution" && !mensagem && source !== "descartados") {
+      toast.error("Escreva a mensagem que será enviada");
+      return;
+    }
+    if (!confirm(`Disparar para ${preview.count} leads via ${canal === "meta" ? "Meta" : "Evolution"}? Esta ação envia mensagens reais.`)) return;
     setFiring(true);
     try {
-      supabase.functions.invoke("reengajamento-descartados-enqueue", {
-        body: { force: true, iniciado_por: "manual_custom", audience: buildAudience() },
-      }).then(({ data, error }) => {
+      // visita_amanha delega para função dedicada (mantém lógica testada)
+      const fn = source === "visita_amanha" ? "visita-amanha-enqueue" : "reengajamento-descartados-enqueue";
+      const body = source === "visita_amanha"
+        ? { force: true, audience: buildAudience() }
+        : { force: true, iniciado_por: "manual_custom", audience: buildAudience() };
+
+      supabase.functions.invoke(fn, { body }).then(({ data, error }) => {
         if (error) toast.error("Erro: " + error.message);
-        else if ((data as any)?.reason === "no_leads") toast.info("Nenhum lead elegível");
+        else if ((data as { reason?: string })?.reason === "no_leads") toast.info("Nenhum lead elegível");
         onFired?.();
       });
       toast.success(`🚀 Disparo iniciado para ${preview.count} leads`);
       setPreview(null);
-    } catch (e: any) {
-      toast.error("Erro: " + e.message);
+    } catch (e) {
+      toast.error("Erro: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setFiring(false);
     }
@@ -136,33 +168,58 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     <Card className="border-indigo-300 bg-indigo-50/30 dark:bg-indigo-950/10">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <Target className="h-4 w-4 text-indigo-600" /> Disparo customizado por público
-          <Badge variant="outline" className="text-[10px] ml-auto">Novo</Badge>
+          <Target className="h-4 w-4 text-indigo-600" /> Novo disparo
+          <Badge variant="outline" className="text-[10px] ml-auto">Central unificada</Badge>
         </CardTitle>
         <p className="text-[11px] text-muted-foreground">
-          Escolha o público, filtre por período/empreendimento e dispare reengajamento sob demanda.
-          Usa o mesmo canal (Meta/Evolution), mensagens e regras de horário configurados acima.
+          Escolha canal, público, filtre e dispare. Tudo passa pelas regras de horário, throttle e dedup configurados abaixo.
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Público */}
+        {/* CANAL */}
+        <div>
+          <Label className="text-xs">Canal</Label>
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            <Button
+              type="button"
+              variant={canal === "meta" ? "default" : "outline"}
+              onClick={() => setCanal("meta")}
+              className="h-9 justify-start gap-2"
+              size="sm"
+            >
+              <Shield className="h-3.5 w-3.5" /> Meta (template oficial)
+            </Button>
+            <Button
+              type="button"
+              variant={canal === "evolution" ? "default" : "outline"}
+              onClick={() => setCanal("evolution")}
+              className="h-9 justify-start gap-2"
+              size="sm"
+            >
+              <Zap className="h-3.5 w-3.5" /> Evolution (free text)
+            </Button>
+          </div>
+        </div>
+
+        {/* PÚBLICO */}
         <div>
           <Label className="text-xs">Público</Label>
           <Select value={source} onValueChange={(v) => { setSource(v as Source); setPreview(null); }}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="descartados">Descartados (padrão)</SelectItem>
-              <SelectItem value="pipeline_ativo">Pipeline ativo (etapas específicas)</SelectItem>
+              <SelectItem value="descartados">Descartados</SelectItem>
+              <SelectItem value="pipeline_ativo">Pipeline ativo (etapas)</SelectItem>
               <SelectItem value="oferta_ativa_lista">Lista da Oferta Ativa</SelectItem>
+              <SelectItem value="visita_amanha">Visita amanhã (pipeline ativo)</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {/* Campos dinâmicos por source */}
+        {/* Filtros dinâmicos */}
         {source === "descartados" && (
           <div>
             <Label className="text-xs">Tipo de descarte</Label>
-            <Select value={tipoDescarte} onValueChange={(v) => setTipoDescarte(v as any)}>
+            <Select value={tipoDescarte} onValueChange={(v) => setTipoDescarte(v as "reengajavel" | "definitivo" | "todos")}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="reengajavel">Reengajáveis</SelectItem>
@@ -175,18 +232,20 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
 
         {source === "pipeline_ativo" && (
           <div>
-            <Label className="text-xs">Etapas do pipeline ({stageIds.length} selecionada{stageIds.length !== 1 ? "s" : ""})</Label>
+            <Label className="text-xs">Etapas ({stageIds.length} selecionada{stageIds.length !== 1 ? "s" : ""})</Label>
             <div className="flex flex-wrap gap-1 mt-1 p-2 border rounded-md max-h-40 overflow-y-auto bg-background">
-              {stages.filter((s: any) => !["Descarte", "Negócio Criado", "Venda"].includes(s.nome)).map((s: any) => (
-                <Badge
-                  key={s.id}
-                  variant={stageIds.includes(s.id) ? "default" : "outline"}
-                  className="cursor-pointer text-[10px]"
-                  onClick={() => toggleStage(s.id)}
-                >
-                  {s.nome}
-                </Badge>
-              ))}
+              {stages
+                .filter((s: { nome: string }) => !["Descarte", "Negócio Criado", "Venda"].includes(s.nome))
+                .map((s: { id: string; nome: string }) => (
+                  <Badge
+                    key={s.id}
+                    variant={stageIds.includes(s.id) ? "default" : "outline"}
+                    className="cursor-pointer text-[10px]"
+                    onClick={() => toggleStage(s.id)}
+                  >
+                    {s.nome}
+                  </Badge>
+                ))}
             </div>
           </div>
         )}
@@ -197,7 +256,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             <Select value={listaId} onValueChange={setListaId}>
               <SelectTrigger className="h-9"><SelectValue placeholder="Selecione…" /></SelectTrigger>
               <SelectContent>
-                {listas.map((l: any) => (
+                {listas.map((l: { id: string; nome: string; empreendimento: string | null; total_leads: number | null }) => (
                   <SelectItem key={l.id} value={l.id}>
                     {l.nome} — {l.empreendimento} ({l.total_leads || 0})
                   </SelectItem>
@@ -207,25 +266,35 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         )}
 
-        {/* Período */}
-        <div>
-          <Label className="text-xs">Período (opcional)</Label>
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9" />
+        {source === "visita_amanha" && (
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Data da visita</Label>
+              <Input type="date" value={dataVisita} onChange={(e) => setDataVisita(e.target.value)} className="h-9" />
             </div>
-            <div className="flex-1">
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9" />
+            <div className="text-[10px] text-muted-foreground self-end pb-1">
+              Convida leads ativos no pipeline para visita nesta data. Usa template com botões SIM/NÃO.
             </div>
           </div>
-          <div className="flex gap-1 mt-1">
-            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("hoje")}>Hoje</Button>
-            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("semana")}>Semana</Button>
-            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("mes")}>Mês</Button>
-            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("30d")}>30d</Button>
-            <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => { setFrom(""); setTo(""); }}>Limpar</Button>
+        )}
+
+        {/* Período (não aplicável para visita_amanha) */}
+        {source !== "visita_amanha" && (
+          <div>
+            <Label className="text-xs">Período (opcional)</Label>
+            <div className="flex gap-2 items-end">
+              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 flex-1" />
+              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 flex-1" />
+            </div>
+            <div className="flex gap-1 mt-1">
+              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("hoje")}>Hoje</Button>
+              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("semana")}>Semana</Button>
+              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("mes")}>Mês</Button>
+              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("30d")}>30d</Button>
+              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => { setFrom(""); setTo(""); }}>Limpar</Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Empreendimento */}
         <div>
@@ -235,7 +304,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
 
         {/* Dedup */}
         <div>
-          <Label className="text-xs">Já receberam disparo</Label>
+          <Label className="text-xs">Quem já recebeu disparo</Label>
           <Select value={dedupMode} onValueChange={(v) => setDedupMode(v as DedupMode)}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -255,6 +324,27 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           <Input type="number" value={limit} min={1} max={1000} onChange={(e) => setLimit(Number(e.target.value))} className="h-9" />
         </div>
 
+        {/* Template/Mensagem por canal */}
+        {canal === "meta" && source !== "descartados" && source !== "visita_amanha" && (
+          <div>
+            <Label className="text-xs">Template Meta aprovado</Label>
+            <Input placeholder="ex.: reengajamento_imovel_v2" value={templateName} onChange={(e) => setTemplateName(e.target.value)} className="h-9" />
+            <p className="text-[10px] text-muted-foreground mt-1">Use o nome exato cadastrado no Meta Business Suite. Para descartados/visita amanhã, o template padrão da configuração é usado.</p>
+          </div>
+        )}
+        {canal === "evolution" && source !== "descartados" && (
+          <div>
+            <Label className="text-xs">Mensagem (Evolution)</Label>
+            <Textarea
+              rows={3}
+              placeholder="Oi {{nome}}, tudo bem? ..."
+              value={mensagem}
+              onChange={(e) => setMensagem(e.target.value)}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">Use {"{{nome}}"} como variável. Para descartados, a configuração padrão é usada.</p>
+          </div>
+        )}
+
         {/* Preview + ação */}
         <div className="border-t pt-3 space-y-2">
           <div className="flex items-center gap-2">
@@ -273,7 +363,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             <div className="text-[11px] text-muted-foreground border rounded p-2 bg-background max-h-32 overflow-y-auto">
               <div className="font-medium mb-1">Amostra (primeiros {preview.sample.length}):</div>
               <ul className="space-y-0.5">
-                {preview.sample.map((l: any) => (
+                {preview.sample.map((l: { id: string; nome: string; telefone: string | null }) => (
                   <li key={l.id}>• {l.nome} — {l.telefone || "(sem telefone)"}</li>
                 ))}
               </ul>
