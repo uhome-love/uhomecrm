@@ -1,73 +1,81 @@
-# Roteamento de Leads Reengajados (resposta positiva no template Meta)
+## Objetivo
+Fazer uma conferência completa dos leads descartados e corrigir a central para mostrar a base real, separando claramente:
+- descartados totais
+- inativados definitivos (responderam não / não receber)
+- elegíveis para reengajamento
+- impacto de arquivamento, telefone e deduplicação
 
-## Regra confirmada
+## Diagnóstico já confirmado
+Hoje o número baixo do preview não vem de falta de leads; vem do filtro atual da função de preview:
+- a função `reengajamento-audience-preview` usa `arquivado = false` para descartados
+- no banco existem **2873** leads em Descarte
+- desses, **2825** estão `arquivado = true`
+- só **48** estão `arquivado = false`
+- com telefone, temos **2868** no total e **48** não arquivados
+- descartados reengajáveis totais: **2416**
+- descartados reengajáveis com telefone: **2412**
+- respondeu NÃO ao reengajamento: **232**
+- `tipo_descarte = definitivo`: **457**
 
-Quando o webhook detecta resposta positiva (texto ou botão "Sim") ao template Meta de reengajamento, o destino depende da **origem do disparo**:
+Ou seja: o preview atual está mostrando praticamente só o subconjunto “não arquivado”, e por isso aparece ~46/48 em vez de milhares.
 
-| Origem do disparo | Ação |
-|---|---|
-| **Descartado** (stage Descarte, reengajável) | Envia para **roleta** como `lead_reengajado` + histórico do disparo + notifica corretor sorteado |
-| **Lista Oferta Ativa** | Envia para **roleta** como `lead_reengajado` + histórico do disparo + notifica corretor sorteado |
-| **Pipeline Ativo** (lead já com corretor em estágio ativo) | **NÃO** mexe na atribuição. Apenas cria atividade na timeline + push para o corretor atual avisando do interesse no disparo |
-| **Visita Amanhã** | Igual a Pipeline Ativo (lead já está com corretor) |
+## Plano
+### 1) Criar a conferência completa dos descartados
+Adicionar uma visão/auditoria única para descartados com estes blocos:
+- total em Descarte
+- total sem inativados definitivos
+- total com telefone
+- total arquivado vs não arquivado
+- total que respondeu NÃO ao reengajamento
+- total com `tipo_descarte = definitivo`
+- total elegível final para disparo por regra atual
+- total elegível final por regra revisada
 
-## Estado atual vs. desejado
+### 2) Separar conceitos que hoje estão misturados
+Ajustar a leitura para distinguir:
+- **Arquivado**: lead oculto operacionalmente, mas não necessariamente inelegível para nutrição
+- **Inativado definitivo**: lead que respondeu não / pediu para não receber / `tipo_descarte = definitivo`
+- **Reengajável**: descartado que não está inativado definitivamente e tem telefone
 
-Hoje em `whatsapp-webhook` e `evolution-webhook`:
-- **Lead em pipeline ativo respondendo positivo** → já faz o correto: abre janela 24h, cria atividade, notifica corretor. ✅
-- **Lead descartado respondendo positivo** → cai no `handleExistingLeadReply` e só notifica o corretor antigo. **Não vai para roleta.** ❌ Precisa corrigir.
-- **Lead da Oferta Ativa respondendo positivo** (sem pipeline_lead) → já cria novo pipeline_lead e chama `distributeViroleta`. ✅
-- **Lead da Oferta Ativa respondendo positivo (já tem pipeline_lead em Descarte)** → cai em `handleExistingLeadReply` e não vai pra roleta. ❌
+### 3) Revisar a regra de elegibilidade do público “Descartados”
+Alterar a regra do preview para que “Descartados” não dependa de `arquivado = false` como filtro-base.
+Nova lógica proposta:
+- incluir descartados arquivados e não arquivados
+- excluir apenas inativados definitivos quando o objetivo for “reengajáveis”
+- manter filtros opcionais de período, empreendimento, dedup e telefone
 
-## Mudanças necessárias
+### 4) Incluir relatório explicativo dentro da Central de Reengajamento
+Na página única da central, adicionar um resumo visível com:
+- contagem bruta
+- contagem após excluir inativados
+- contagem após exigir telefone
+- contagem após dedup
+- amostra dos leads finais
 
-### 1. Detectar origem do disparo no momento da resposta
-Em `whatsapp-webhook/index.ts` (handler do `button_reply` + texto positivo casado com `reengajamento_meta_disparos`) e em `evolution-webhook/index.ts` (handler positivo): após identificar o lead, consultar:
+Assim o usuário vê exatamente onde cada redução acontece.
 
-- `reengajamento_meta_disparos.audience_source` (a coluna `audience_source` será adicionada — ver §4) ou fallback pelo `run_id` → `reengajamento_dispatch_runs.audience_source`
-- Tipo `descartados` / `oferta_ativa_lista` → **roleta**
-- Tipo `pipeline_ativo` / `visita_amanha` → **só notificação**
+### 5) Validar com consultas espelho
+Depois do ajuste, validar o resultado comparando:
+- query de auditoria
+- resultado do preview da edge function
+- número exibido no card da central
 
-### 2. Branch "vai para roleta" em lead descartado
-Novo helper `reactivateAndDistribute(lead)`:
-1. Move o lead do stage Descarte para o stage de entrada da roleta (mesma lógica usada hoje em `lead-reentry-roleta-logic`).
-2. Limpa `corretor_id` para o redistribute funcionar.
-3. Registra atividade `"🔄 Lead reengajado via [campanha] — redistribuído pela roleta"`.
-4. Grava em `pipeline_atividades` o `dispatch_run_id` + nome do template clicado (histórico do disparo).
-5. Chama `distributeViroleta(lead.id)` (já existe).
-6. Após o distribute, busca novo `corretor_id` e envia push: `"🔥 Lead reengajado recebido — respondeu SIM ao template [X]. Próximo passo: ligar nas próximas 2h."`
+Os três precisam bater.
 
-### 3. Branch "só notifica" em pipeline ativo
-Manter o fluxo atual de `handleExistingLeadReply` mas enriquecer a notificação com:
-- Nome do template/campanha que o lead clicou
-- Categoria push `lead_reengajado_ativo` (já existe `lead_reengajado`, reusar)
-- Atividade na timeline com tag `[Disparo: nome_template]`
+## Arquivos previstos
+- `supabase/functions/reengajamento-audience-preview/index.ts`
+- `src/components/central-nutricao/DisparoCustomizadoCard.tsx`
+- `src/pages/CentralNutricao.tsx`
 
-### 4. Histórico do disparo (campo `audience_source`)
-Migration nova adicionando coluna em `reengajamento_meta_disparos`:
-```sql
-ALTER TABLE reengajamento_meta_disparos
-  ADD COLUMN IF NOT EXISTS audience_source TEXT;
--- valores: 'descartados' | 'pipeline_ativo' | 'oferta_ativa_lista' | 'visita_amanha' | 'legacy'
-```
-E `reengajamento-descartados-enqueue` passa a gravar `audience_source` baseado no payload `audience.source`. Histórico já existente fica como `'legacy'` e cai por padrão na rota **roleta** (comportamento histórico de descartados).
+## Detalhes técnicos
+- manteremos a exclusão de telefone nulo
+- manteremos dedup configurável (`exclude_sent`, `include_all`, `only_sent_before`)
+- a conferência vai expor as etapas do funil de filtragem, para não parecer que os leads “sumiram”
+- não vou mexer na rota de resposta dos webhooks nesta etapa; foco é conferência e elegibilidade do público descartados
 
-### 5. Determinação "está no pipeline ativo?"
-Considera "ativo" se: `stage_id NOT IN (Descarte, Inativado, Negócio Criado)` E `corretor_id IS NOT NULL`. Senão, trata como descartado/órfão → roleta.
-
-## Fora de escopo
-
-- Não mexer no flow de NÃO (já está OK: inativa descartado, marca `sem_interesse` em OA).
-- Não mexer no `roleta-distribute` core.
-- Não criar dashboard de "leads reengajados por origem" agora (fica para Fase 2 da Central).
-
-## Migrações
-
-1 migration apenas (adicionar `audience_source`). Respeita limite de 2/dia.
-
-## Arquivos afetados
-
-- `supabase/migrations/<nova>.sql` — coluna `audience_source`
-- `supabase/functions/whatsapp-webhook/index.ts` — branch por origem
-- `supabase/functions/evolution-webhook/index.ts` — branch por origem
-- `supabase/functions/reengajamento-descartados-enqueue/index.ts` — gravar `audience_source`
+## Resultado esperado
+Ao final, a central vai mostrar algo próximo da base real de milhares de descartados reengajáveis, em vez de apenas ~46, e vai deixar explícito quantos foram cortados por:
+- inativação definitiva
+- falta de telefone
+- deduplicação
+- outros filtros manuais
