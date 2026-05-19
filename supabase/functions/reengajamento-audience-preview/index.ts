@@ -19,6 +19,7 @@ interface Audience {
   tipo_descarte?: "reengajavel" | "definitivo" | "todos";
   stage_ids?: string[];
   lista_id?: string;
+  lista_ids?: string[];
   data_visita?: string;
   periodo?: { from?: string; to?: string };
   empreendimento?: string;
@@ -32,7 +33,10 @@ interface Audience {
 
 function audienceKey(a: Audience): string {
   if (a.source === "descartados") return `descartados:${a.tipo_descarte || "reengajavel"}`;
-  if (a.source === "oferta_ativa_lista") return `oferta_ativa:${a.lista_id || "?"}`;
+  if (a.source === "oferta_ativa_lista") {
+    const ids = (a.lista_ids && a.lista_ids.length ? a.lista_ids : (a.lista_id ? [a.lista_id] : [])).slice().sort();
+    return `oferta_ativa:${ids.join(",") || "?"}`;
+  }
   if (a.source === "pipeline_ativo") return `pipeline:${(a.stage_ids || []).slice().sort().join(",")}`;
   if (a.source === "visita_amanha") return `visita_amanha:${a.data_visita || ""}`;
   return a.source;
@@ -225,15 +229,18 @@ Deno.serve(async (req) => {
     }
 
     if (audience.source === "oferta_ativa_lista") {
-      if (!audience.lista_id) {
-        return new Response(JSON.stringify({ error: "lista_id obrigatório" }), {
+      const listaIds: string[] = (audience.lista_ids && audience.lista_ids.length)
+        ? audience.lista_ids
+        : (audience.lista_id ? [audience.lista_id] : []);
+      if (listaIds.length === 0) {
+        return new Response(JSON.stringify({ error: "lista_id ou lista_ids obrigatório" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       let q = supabase
         .from("oferta_ativa_leads")
         .select("id, nome, telefone, created_at, empreendimento", { count: "exact" })
-        .eq("lista_id", audience.lista_id)
+        .in("lista_id", listaIds)
         .not("telefone", "is", null);
       if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
       if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);

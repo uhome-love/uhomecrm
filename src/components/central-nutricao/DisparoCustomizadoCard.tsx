@@ -23,7 +23,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [source, setSource] = useState<Source>("descartados");
   const [tipoDescarte, setTipoDescarte] = useState<"reengajavel" | "definitivo" | "todos">("reengajavel");
   const [stageIds, setStageIds] = useState<string[]>([]);
-  const [listaId, setListaId] = useState<string>("");
+  const [listaIds, setListaIds] = useState<string[]>([]);
   const [dataVisita, setDataVisita] = useState<string>(() => {
     const t = new Date(); t.setDate(t.getDate() + 1);
     return t.toISOString().slice(0, 10);
@@ -132,7 +132,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     }
     if (source === "descartados") base.tipo_descarte = tipoDescarte;
     if (source === "pipeline_ativo") base.stage_ids = stageIds;
-    if (source === "oferta_ativa_lista") base.lista_id = listaId;
+    if (source === "oferta_ativa_lista") base.lista_ids = listaIds;
     if (source === "visita_amanha") base.data_visita = dataVisita;
     if (canal === "meta" && templateName) {
       base.template_name = templateName;
@@ -147,8 +147,8 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       toast.error("Selecione ao menos uma etapa do pipeline");
       return;
     }
-    if (source === "oferta_ativa_lista" && !listaId) {
-      toast.error("Selecione uma lista da Oferta Ativa");
+    if (source === "oferta_ativa_lista" && listaIds.length === 0) {
+      toast.error("Selecione ao menos uma lista da Oferta Ativa");
       return;
     }
     setPreviewing(true);
@@ -325,17 +325,62 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
 
         {source === "oferta_ativa_lista" && (
           <div>
-            <Label className="text-xs">Lista</Label>
-            <Select value={listaId} onValueChange={setListaId}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Selecione…" /></SelectTrigger>
-              <SelectContent>
-                {listas.map((l: { id: string; nome: string; empreendimento: string | null; total_leads: number | null }) => (
-                  <SelectItem key={l.id} value={l.id}>
-                    {l.nome} — {l.empreendimento} ({l.total_leads || 0})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs">
+              Listas {listaIds.length > 0 && `(${listaIds.length} selecionada${listaIds.length !== 1 ? "s" : ""})`}
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" className="w-full justify-between h-9 font-normal">
+                  <span className="truncate text-left">
+                    {listaIds.length === 0
+                      ? "Selecione uma ou mais listas…"
+                      : listaIds.length === 1
+                        ? (listas.find((l: any) => l.id === listaIds[0])?.nome || "1 lista")
+                        : `${listaIds.length} listas selecionadas`}
+                  </span>
+                  <ChevronsUpDown className="h-3.5 w-3.5 opacity-50 ml-2 shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar lista…" />
+                  <CommandList>
+                    <CommandEmpty>Nenhuma lista encontrada.</CommandEmpty>
+                    <CommandGroup>
+                      {listaIds.length > 0 && (
+                        <>
+                          <CommandItem onSelect={() => { setListaIds([]); setPreview(null); }}>
+                            <span className="text-xs text-muted-foreground">Limpar seleção</span>
+                          </CommandItem>
+                          <CommandSeparator />
+                        </>
+                      )}
+                      {listas.map((l: { id: string; nome: string; empreendimento: string | null; total_leads: number | null }) => {
+                        const checked = listaIds.includes(l.id);
+                        return (
+                          <CommandItem
+                            key={l.id}
+                            value={`${l.nome} ${l.empreendimento || ""}`}
+                            onSelect={() => {
+                              setListaIds((prev) => prev.includes(l.id) ? prev.filter((x) => x !== l.id) : [...prev, l.id]);
+                              setPreview(null);
+                            }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", checked ? "opacity-100" : "opacity-0")} />
+                            <span className="truncate">{l.nome} — {l.empreendimento} ({l.total_leads || 0})</span>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            {listaIds.length > 1 && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Leads das {listaIds.length} listas serão combinados em um único disparo.
+              </p>
+            )}
           </div>
         )}
 
