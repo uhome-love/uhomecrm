@@ -10552,6 +10552,7 @@ export type Database = {
         Args: { p_segmento_id?: string }
         Returns: Json
       }
+      reengajamento_resumo_hoje: { Args: never; Returns: Json }
       rejeitar_lead: {
         Args: { p_corretor_id: string; p_lead_id: string; p_motivo?: string }
         Returns: Json
