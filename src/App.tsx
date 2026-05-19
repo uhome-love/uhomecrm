@@ -12,6 +12,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import { TabProvider } from "@/contexts/TabContext";
 import { lazy, Suspense } from "react";
+import { PageTrackingProvider } from "@/components/PageTrackingProvider";
 import { Loader2 } from "lucide-react";
 
 // Retry wrapper for lazy imports — handles stale chunk errors after deployments
@@ -61,6 +62,7 @@ const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"
 const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"));
 const TelemetriaRede = lazyRetry(() => import("./pages/admin/TelemetriaRede"));
 const IngestaoPanel = lazyRetry(() => import("./pages/admin/IngestaoPanel"));
+const UsoPaginasPanel = lazyRetry(() => import("./pages/admin/UsoPaginasPanel"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,6 +92,7 @@ const App = () => (
       <AuthProvider>
         <DateFilterProvider>
           <BrowserRouter>
+            <PageTrackingProvider>
             <Routes>
               {/* Public routes — no auth required */}
               <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
@@ -107,6 +110,7 @@ const App = () => (
               <Route path="/diagnostico-rede" element={<Suspense fallback={<PageLoader />}><DiagnosticoRede /></Suspense>} />
               <Route path="/ceo/telemetria-rede" element={<Suspense fallback={<PageLoader />}><TelemetriaRede /></Suspense>} />
               <Route path="/admin/ingestao" element={<Suspense fallback={<PageLoader />}><IngestaoPanel /></Suspense>} />
+              <Route path="/admin/uso-paginas" element={<Suspense fallback={<PageLoader />}><UsoPaginasPanel /></Suspense>} />
 
               {/* Redirects */}
               <Route path="/fechamento-day" element={<Navigate to="/placar-do-dia" replace />} />
@@ -126,6 +130,7 @@ const App = () => (
                 </ProtectedRoute>
               } />
             </Routes>
+            </PageTrackingProvider>
           </BrowserRouter>
         </DateFilterProvider>
       </AuthProvider>

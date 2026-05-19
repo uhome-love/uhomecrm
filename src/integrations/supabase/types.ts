@@ -5567,6 +5567,45 @@ export type Database = {
         }
         Relationships: []
       }
+      page_views: {
+        Row: {
+          duration_ms: number | null
+          id: string
+          referrer_route: string | null
+          role: string
+          route: string
+          route_pattern: string
+          session_id: string
+          user_id: string
+          viewed_at: string
+          viewport_width: number | null
+        }
+        Insert: {
+          duration_ms?: number | null
+          id?: string
+          referrer_route?: string | null
+          role: string
+          route: string
+          route_pattern: string
+          session_id: string
+          user_id: string
+          viewed_at?: string
+          viewport_width?: number | null
+        }
+        Update: {
+          duration_ms?: number | null
+          id?: string
+          referrer_route?: string | null
+          role?: string
+          route?: string
+          route_pattern?: string
+          session_id?: string
+          user_id?: string
+          viewed_at?: string
+          viewport_width?: number | null
+        }
+        Relationships: []
+      }
       pdn_entries: {
         Row: {
           corretor: string | null
@@ -9508,6 +9547,18 @@ export type Database = {
       }
     }
     Views: {
+      page_views_daily: {
+        Row: {
+          dia_brt: string | null
+          median_duration_ms: number | null
+          role: string | null
+          route_pattern: string | null
+          sessions: number | null
+          unique_users: number | null
+          visits: number | null
+        }
+        Relationships: []
+      }
       v_checkpoint_daily: {
         Row: {
           auth_user_id: string | null
@@ -10083,6 +10134,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      flush_page_views: { Args: { payload: Json }; Returns: undefined }
       get_bairros_disponiveis: {
         Args: { p_cidade?: string; p_cidades?: string[] }
         Returns: {
@@ -10274,6 +10326,20 @@ export type Database = {
           lead_temperatura: string
           prioridade: number
           tipo: string
+        }[]
+      }
+      get_page_views_stats: {
+        Args: { p_role?: string; p_since: string }
+        Returns: Json
+      }
+      get_page_views_table: {
+        Args: { p_role?: string; p_since: string }
+        Returns: {
+          last_viewed: string
+          median_duration_ms: number
+          route_pattern: string
+          unique_users: number
+          visits: number
         }[]
       }
       get_profile_id_for_auth: { Args: never; Returns: string }
