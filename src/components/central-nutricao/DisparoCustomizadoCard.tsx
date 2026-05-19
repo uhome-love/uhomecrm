@@ -23,7 +23,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [source, setSource] = useState<Source>("descartados");
   const [tipoDescarte, setTipoDescarte] = useState<"reengajavel" | "definitivo" | "todos">("reengajavel");
   const [stageIds, setStageIds] = useState<string[]>([]);
-  const [listaId, setListaId] = useState<string>("");
+  const [listaIds, setListaIds] = useState<string[]>([]);
   const [dataVisita, setDataVisita] = useState<string>(() => {
     const t = new Date(); t.setDate(t.getDate() + 1);
     return t.toISOString().slice(0, 10);
