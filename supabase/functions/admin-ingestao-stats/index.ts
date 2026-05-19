@@ -40,9 +40,10 @@ Deno.serve(async (req) => {
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: userData, error: userErr } = await userClient.auth.getUser(token);
-    if (userErr || !userData.user) {
-      return new Response(JSON.stringify({ error: "invalid_token" }), {
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    const userId = claimsData?.claims?.sub as string | undefined;
+    if (claimsErr || !userId) {
+      return new Response(JSON.stringify({ error: "invalid_token", detail: claimsErr?.message ?? null }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -52,7 +53,7 @@ Deno.serve(async (req) => {
     const { data: roleRow } = await admin
       .from("user_roles")
       .select("role")
-      .eq("user_id", userData.user.id)
+      .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
 
