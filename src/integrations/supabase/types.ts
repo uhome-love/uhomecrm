@@ -5567,6 +5567,45 @@ export type Database = {
         }
         Relationships: []
       }
+      page_views: {
+        Row: {
+          duration_ms: number | null
+          id: string
+          referrer_route: string | null
+          role: string
+          route: string
+          route_pattern: string
+          session_id: string
+          user_id: string
+          viewed_at: string
+          viewport_width: number | null
+        }
+        Insert: {
+          duration_ms?: number | null
+          id?: string
+          referrer_route?: string | null
+          role: string
+          route: string
+          route_pattern: string
+          session_id: string
+          user_id: string
+          viewed_at?: string
+          viewport_width?: number | null
+        }
+        Update: {
+          duration_ms?: number | null
+          id?: string
+          referrer_route?: string | null
+          role?: string
+          route?: string
+          route_pattern?: string
+          session_id?: string
+          user_id?: string
+          viewed_at?: string
+          viewport_width?: number | null
+        }
+        Relationships: []
+      }
       pdn_entries: {
         Row: {
           corretor: string | null
