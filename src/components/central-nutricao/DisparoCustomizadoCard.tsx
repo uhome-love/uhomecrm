@@ -147,8 +147,8 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       toast.error("Selecione ao menos uma etapa do pipeline");
       return;
     }
-    if (source === "oferta_ativa_lista" && !listaId) {
-      toast.error("Selecione uma lista da Oferta Ativa");
+    if (source === "oferta_ativa_lista" && listaIds.length === 0) {
+      toast.error("Selecione ao menos uma lista da Oferta Ativa");
       return;
     }
     setPreviewing(true);
