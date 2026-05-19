@@ -60,6 +60,7 @@ const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
 const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"));
 const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"));
 const TelemetriaRede = lazyRetry(() => import("./pages/admin/TelemetriaRede"));
+const IngestaoPanel = lazyRetry(() => import("./pages/admin/IngestaoPanel"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -105,6 +106,7 @@ const App = () => (
               <Route path="/oauth/google/callback" element={<Suspense fallback={<PageLoader />}><OAuthGoogleCallback /></Suspense>} />
               <Route path="/diagnostico-rede" element={<Suspense fallback={<PageLoader />}><DiagnosticoRede /></Suspense>} />
               <Route path="/ceo/telemetria-rede" element={<Suspense fallback={<PageLoader />}><TelemetriaRede /></Suspense>} />
+              <Route path="/admin/ingestao" element={<Suspense fallback={<PageLoader />}><IngestaoPanel /></Suspense>} />
 
               {/* Redirects */}
               <Route path="/fechamento-day" element={<Navigate to="/placar-do-dia" replace />} />
