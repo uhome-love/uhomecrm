@@ -19,6 +19,7 @@ interface Audience {
   tipo_descarte?: "reengajavel" | "definitivo" | "todos";
   stage_ids?: string[];
   lista_id?: string;
+  lista_ids?: string[];
   data_visita?: string;
   periodo?: { from?: string; to?: string };
   empreendimento?: string;
