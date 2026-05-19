@@ -19,11 +19,13 @@ export const PUBLIC_ROUTES: string[] = [
   "/imovel/:codigo",
 ];
 
-// Dinâmicas registradas em pageRegistry.DYNAMIC_PATTERNS + rotas extras conhecidas no App.tsx
+// Dinâmicas registradas em pageRegistry.DYNAMIC_PATTERNS + rotas extras no App.tsx
 const DYNAMIC_PATTERNS: string[] = [
   "/academia/trilha/:trilhaId",
   "/academia/aula/:aulaId",
   "/ceo/telemetria-rede",
+  "/admin/ingestao",
+  "/admin/uso-paginas",
 ];
 
 const REDIRECT_ALIASES: string[] = [
