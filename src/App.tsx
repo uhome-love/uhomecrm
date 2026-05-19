@@ -92,6 +92,7 @@ const App = () => (
       <AuthProvider>
         <DateFilterProvider>
           <BrowserRouter>
+            <PageTrackingProvider>
             <Routes>
               {/* Public routes — no auth required */}
               <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
