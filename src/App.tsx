@@ -130,6 +130,7 @@ const App = () => (
                 </ProtectedRoute>
               } />
             </Routes>
+            </PageTrackingProvider>
           </BrowserRouter>
         </DateFilterProvider>
       </AuthProvider>
