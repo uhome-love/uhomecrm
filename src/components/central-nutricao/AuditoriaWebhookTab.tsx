@@ -199,7 +199,8 @@ export default function AuditoriaWebhookTab() {
     },
     refetchInterval: 10000,
   });
-  const [showRuns, setShowRuns] = useState(true);
+  const [showRuns, setShowRuns] = useState(false);
+  const [showRespostas, setShowRespostas] = useState(false);
 
   // Resumo de HOJE (server-side, agregado) — independente da paginação
   const { data: todayStats } = useQuery({
