@@ -229,15 +229,18 @@ Deno.serve(async (req) => {
     }
 
     if (audience.source === "oferta_ativa_lista") {
-      if (!audience.lista_id) {
-        return new Response(JSON.stringify({ error: "lista_id obrigatório" }), {
+      const listaIds: string[] = (audience.lista_ids && audience.lista_ids.length)
+        ? audience.lista_ids
+        : (audience.lista_id ? [audience.lista_id] : []);
+      if (listaIds.length === 0) {
+        return new Response(JSON.stringify({ error: "lista_id ou lista_ids obrigatório" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       let q = supabase
         .from("oferta_ativa_leads")
         .select("id, nome, telefone, created_at, empreendimento", { count: "exact" })
-        .eq("lista_id", audience.lista_id)
+        .in("lista_id", listaIds)
         .not("telefone", "is", null);
       if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
       if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);
