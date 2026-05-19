@@ -456,7 +456,8 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         {/* Limite */}
         <div>
           <Label className="text-xs">Limite máximo de envios</Label>
-          <Input type="number" value={limit} min={1} max={1000} onChange={(e) => setLimit(Number(e.target.value))} className="h-9" />
+              <Input type="number" value={limit} min={1} max={10000} onChange={(e) => setLimit(Number(e.target.value))} className="h-9" />
+              <p className="text-[10px] text-muted-foreground mt-1">Máx 10.000 por disparo. Paginação automática acima de 1.000.</p>
         </div>
 
         {/* Template Meta — sempre disponível quando canal=meta */}
