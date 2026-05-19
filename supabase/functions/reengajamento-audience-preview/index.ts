@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const limit = Math.min(Math.max(Number(audience.limit || 500), 1), 2000);
+    const limit = Math.min(Math.max(Number(audience.limit || 500), 1), 10000);
     const dedupMode: DedupMode = audience.dedup_mode || "exclude_sent";
     const dedupLookbackDays = Math.max(1, Number(audience.dedup_lookback_days || 30));
     const includeArchived = audience.include_archived === true;
