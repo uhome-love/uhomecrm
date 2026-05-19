@@ -10082,6 +10082,15 @@ export type Database = {
         Args: { p_pipeline_lead_id: string; p_segmento_id?: string }
         Returns: Json
       }
+      edge_health_aggregate: {
+        Args: { p_hours?: number; p_min_calls?: number }
+        Returns: {
+          error_calls: number
+          error_rate: number
+          fn: string
+          total_calls: number
+        }[]
+      }
       escalonar_notificacoes_leads: { Args: never; Returns: number }
       expirar_aceites_roleta: { Args: never; Returns: Json }
       fetch_next_lead: {

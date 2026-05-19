@@ -277,3 +277,75 @@ export function useEventosRecentes(periodo: Periodo, paused: boolean) {
     staleTime: 25_000,
   });
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Alertas Ativos de Saúde (edge-health-alert)
+// Functions com alerta nas últimas 24h SEM recovery posterior.
+// ──────────────────────────────────────────────────────────────────
+export interface AlertaSaudeAtivo {
+  fn: string;
+  alerted_at: string;
+  error_rate: number;
+  total_calls: number;
+  error_calls: number;
+}
+
+export function useEdgeHealthAlertasAtivos(paused: boolean) {
+  return useQuery({
+    queryKey: ["ingestao", "edge-health-ativos"],
+    queryFn: async (): Promise<AlertaSaudeAtivo[]> => {
+      const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+
+      // 1. Pega todos os alerts e recoveries das últimas 24h
+      const { data: events, error } = await supabase
+        .from("ops_events")
+        .select("created_at, category, message, ctx")
+        .eq("fn", "edge-health-alert")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      // 2. Agrupa: pra cada function, pega último alert e último recovery.
+      type Ev = {
+        created_at: string;
+        category: string | null;
+        message: string;
+        ctx: Record<string, unknown> | null;
+      };
+      const lastAlert = new Map<string, Ev>();
+      const lastRecovery = new Map<string, string>();
+      for (const e of (events ?? []) as Ev[]) {
+        const ctx = e.ctx ?? {};
+        if (e.category === "alert") {
+          const fn = ctx.function_alerted as string | undefined;
+          if (fn && !lastAlert.has(fn)) lastAlert.set(fn, e);
+        } else if (
+          e.category === "business" &&
+          e.message?.startsWith("edge-health-recovered")
+        ) {
+          const fn = ctx.function_recovered as string | undefined;
+          if (fn && !lastRecovery.has(fn)) lastRecovery.set(fn, e.created_at);
+        }
+      }
+
+      // 3. Ativo = alert sem recovery posterior
+      const ativos: AlertaSaudeAtivo[] = [];
+      for (const [fn, ev] of lastAlert.entries()) {
+        const rec = lastRecovery.get(fn);
+        if (rec && rec > ev.created_at) continue;
+        const ctx = ev.ctx ?? {};
+        ativos.push({
+          fn,
+          alerted_at: ev.created_at,
+          error_rate: Number(ctx.error_rate ?? 0),
+          total_calls: Number(ctx.total_calls ?? 0),
+          error_calls: Number(ctx.error_calls ?? 0),
+        });
+      }
+      ativos.sort((a, b) => b.alerted_at.localeCompare(a.alerted_at));
+      return ativos;
+    },
+    refetchInterval: paused ? false : 5 * 60_000,
+    staleTime: 4 * 60_000,
+  });
+}

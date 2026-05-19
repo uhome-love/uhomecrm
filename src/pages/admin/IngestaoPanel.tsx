@@ -9,6 +9,7 @@ import {
   useTripwireStatus,
   useAvulsoImovelWeb,
   useEventosRecentes,
+  useEdgeHealthAlertasAtivos,
   type Periodo,
 } from "@/hooks/useIngestaoStats";
 import { useIngestaoEdgeStats } from "@/hooks/useIngestaoEdgeStats";
@@ -31,6 +32,7 @@ export default function IngestaoPanel() {
   const avulso = useAvulsoImovelWeb(periodo, paused);
   const eventos = useEventosRecentes(periodo, paused);
   const edgeStats = useIngestaoEdgeStats(periodo, paused);
+  const alertasSaude = useEdgeHealthAlertasAtivos(paused);
 
   useEffect(() => {
     if (kpis.dataUpdatedAt) setLastUpdate(new Date(kpis.dataUpdatedAt));
@@ -77,6 +79,8 @@ export default function IngestaoPanel() {
           tripwire={tripwire.data}
           edgeStats={edgeStats.data}
           avulsoCount={avulso.data}
+          alertasSaude={alertasSaude.data}
+          alertasSaudeLoading={alertasSaude.isLoading}
         />
       </div>
 
