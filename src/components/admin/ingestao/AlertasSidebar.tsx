@@ -1,15 +1,18 @@
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, AlertTriangle, XCircle, HelpCircle, Activity } from "lucide-react";
-import type { TripwireStatus } from "@/hooks/useIngestaoStats";
+import type { TripwireStatus, AlertaSaudeAtivo } from "@/hooks/useIngestaoStats";
 import type { EdgeStats } from "@/hooks/useIngestaoEdgeStats";
+import { AlertasSaudeCard } from "./AlertasSaudeCard";
 
 interface Props {
   tripwire: TripwireStatus | undefined;
   edgeStats: EdgeStats | undefined;
   avulsoCount: number | undefined;
+  alertasSaude: AlertaSaudeAtivo[] | undefined;
+  alertasSaudeLoading: boolean;
 }
 
-export function AlertasSidebar({ tripwire, edgeStats, avulsoCount }: Props) {
+export function AlertasSidebar({ tripwire, edgeStats, avulsoCount, alertasSaude, alertasSaudeLoading }: Props) {
   return (
     <div className="space-y-3">
       {/* Tripwire */}
