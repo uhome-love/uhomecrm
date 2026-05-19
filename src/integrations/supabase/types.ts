@@ -10573,6 +10573,16 @@ export type Database = {
       rpc_placar_do_dia: { Args: never; Returns: Json }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      skip_oa_lead: {
+        Args: {
+          p_corretor_id: string
+          p_lead_id: string
+          p_lista_id: string
+          p_session_id?: string
+          p_skip_minutes?: number
+        }
+        Returns: Json
+      }
       upsert_roleta_fila: {
         Args: {
           p_corretor_id: string
