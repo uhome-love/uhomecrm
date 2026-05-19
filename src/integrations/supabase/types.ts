@@ -9547,6 +9547,18 @@ export type Database = {
       }
     }
     Views: {
+      page_views_daily: {
+        Row: {
+          dia_brt: string | null
+          median_duration_ms: number | null
+          role: string | null
+          route_pattern: string | null
+          sessions: number | null
+          unique_users: number | null
+          visits: number | null
+        }
+        Relationships: []
+      }
       v_checkpoint_daily: {
         Row: {
           auth_user_id: string | null
@@ -10122,6 +10134,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      flush_page_views: { Args: { payload: Json }; Returns: undefined }
       get_bairros_disponiveis: {
         Args: { p_cidade?: string; p_cidades?: string[] }
         Returns: {
@@ -10313,6 +10326,20 @@ export type Database = {
           lead_temperatura: string
           prioridade: number
           tipo: string
+        }[]
+      }
+      get_page_views_stats: {
+        Args: { p_role?: string; p_since: string }
+        Returns: Json
+      }
+      get_page_views_table: {
+        Args: { p_role?: string; p_since: string }
+        Returns: {
+          last_viewed: string
+          median_duration_ms: number
+          route_pattern: string
+          unique_users: number
+          visits: number
         }[]
       }
       get_profile_id_for_auth: { Args: never; Returns: string }
