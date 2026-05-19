@@ -58,6 +58,15 @@ function parseResponse(raw: string | null): { text: string; type: string | null 
   }
 }
 
+function KpiCell({ label, value, color, highlight }: { label: string; value: number; color: string; highlight?: boolean }) {
+  return (
+    <div className={`text-center rounded-md px-2 py-1.5 ${highlight ? "bg-emerald-100/60 dark:bg-emerald-900/20" : ""}`}>
+      <div className="text-[10px] text-muted-foreground leading-tight">{label}</div>
+      <div className={`text-lg font-bold leading-tight ${color}`}>{value}</div>
+    </div>
+  );
+}
+
 export default function AuditoriaWebhookTab() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<string>("all");
@@ -199,7 +208,8 @@ export default function AuditoriaWebhookTab() {
     },
     refetchInterval: 10000,
   });
-  const [showRuns, setShowRuns] = useState(true);
+  const [showRuns, setShowRuns] = useState(false);
+  const [showRespostas, setShowRespostas] = useState(false);
 
   // Resumo de HOJE (server-side, agregado) — independente da paginação
   const { data: todayStats } = useQuery({
@@ -283,208 +293,221 @@ export default function AuditoriaWebhookTab() {
 
   return (
     <div className="space-y-4">
-      {/* Live indicator */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      {/* Header bar: live indicator + counters */}
+      <div className="flex items-center justify-between flex-wrap gap-3 px-1">
         <div className="flex items-center gap-2 text-xs">
           <Radio className={`h-3.5 w-3.5 ${liveActive ? "text-emerald-500 animate-pulse" : "text-muted-foreground"}`} />
           <span className={liveActive ? "text-emerald-700 font-medium" : "text-muted-foreground"}>
-            {liveActive ? "Atualizando ao vivo" : "Conectando..."}
+            {liveActive ? "Ao vivo" : "Conectando…"}
           </span>
           {isFetching && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-        </div>
-        <div className="text-xs text-muted-foreground">
-          Mostrando <b>{rows.length}</b> de <b>{total}</b> disparos
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground">
+            <b className="text-foreground">{rows.length}</b> de <b className="text-foreground">{total}</b> carregados
+          </span>
         </div>
       </div>
 
-      {/* Alerta de qualidade Meta */}
+      {/* Alerta crítico de qualidade Meta */}
       {qualityAlert && (
         <Card className="border-red-300 bg-red-50/60">
           <CardContent className="p-3 flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
             <div className="flex-1 text-xs">
               <div className="font-semibold text-red-800 text-sm">
-                ⚠️ Bloqueio de qualidade Meta detectado ({Math.round(qualityAlert.rate * 100)}% de falha nos últimos 30 min)
+                ⚠️ Bloqueio de qualidade Meta ({Math.round(qualityAlert.rate * 100)}% de falha nos últimos 30 min)
               </div>
               <div className="text-red-700 mt-1">
-                {qualityAlert.failed131049} de {qualityAlert.total} mensagens foram bloqueadas pela Meta (erro 131049 — "healthy ecosystem engagement").
+                {qualityAlert.failed131049} de {qualityAlert.total} mensagens bloqueadas pela Meta (erro 131049).
                 {qualityAlert.topTemplate && (
                   <> Template mais afetado: <b>{qualityAlert.topTemplate}</b> ({qualityAlert.topCount} falhas).</>
                 )}
               </div>
               <div className="text-red-700 mt-1.5">
-                <b>Ação recomendada:</b> pausar este template, abrir WhatsApp Manager → Templates e verificar quality rating. Disparos seguidos derrubam ainda mais o rating.
+                <b>Ação:</b> pausar o template e verificar quality rating no WhatsApp Manager.
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Resumo de hoje (server-side, não depende da paginação) */}
-      {todayStats && (
-        <Card className="border-indigo-200 bg-indigo-50/40">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-semibold text-indigo-900">📅 Resumo de hoje (BRT)</div>
-              <Badge variant="outline" className="text-[10px]">{todayStats.total} disparos</Badge>
+      {/* KPI HERO — única fonte de números (substitui Stats duplicado) */}
+      <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-white dark:from-indigo-950/20 dark:to-transparent">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm font-semibold text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
+              📅 Resumo de hoje
+              <Badge variant="outline" className="text-[10px] font-normal">BRT</Badge>
             </div>
-            <div className="grid grid-cols-3 md:grid-cols-7 gap-2 text-center">
-              <div><div className="text-[10px] text-muted-foreground">Enviados</div><div className="text-base font-bold text-neutral-700">{todayStats.sent}</div></div>
-              <div><div className="text-[10px] text-muted-foreground">Entregues</div><div className="text-base font-bold text-blue-700">{todayStats.delivered}</div></div>
-              <div><div className="text-[10px] text-muted-foreground">Lidos</div><div className="text-base font-bold text-indigo-700">{todayStats.read}</div></div>
-              <div><div className="text-[10px] text-muted-foreground">Responderam</div><div className="text-base font-bold text-emerald-700">{todayStats.responded}</div></div>
-              <div className="bg-emerald-100/60 rounded px-1"><div className="text-[10px] text-emerald-800">✅ SIM (únicos)</div><div className="text-base font-bold text-emerald-700">{todayStats.sim}</div></div>
-              <div><div className="text-[10px] text-muted-foreground">❌ NÃO (únicos)</div><div className="text-base font-bold text-red-700">{todayStats.nao}</div></div>
-              <div><div className="text-[10px] text-muted-foreground">Falhas</div><div className="text-base font-bold text-red-600">{todayStats.failed}</div></div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            <Badge variant="outline" className="text-[10px]">{todayStats?.total ?? 0} disparos hoje</Badge>
+          </div>
+          <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
+            <KpiCell label="Enviados" value={todayStats?.sent ?? stats.waiting} color="text-neutral-700" />
+            <KpiCell label="Entregues" value={todayStats?.delivered ?? 0} color="text-blue-700" />
+            <KpiCell label="Lidos" value={todayStats?.read ?? 0} color="text-indigo-700" />
+            <KpiCell label="Responderam" value={todayStats?.responded ?? stats.responded} color="text-emerald-700" />
+            <KpiCell label="✅ SIM" value={todayStats?.sim ?? stats.sim} color="text-emerald-700" highlight />
+            <KpiCell label="❌ NÃO" value={todayStats?.nao ?? stats.nao} color="text-red-700" />
+            <KpiCell label="Falhas" value={todayStats?.failed ?? stats.failed} color="text-red-600" />
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Auditoria de respostas recebidas hoje (botão + texto + remetente novo) */}
-      <RespostasRecebidasHoje />
-
-      {/* Disparos recentes (runs) — mostra TODOS os disparos, mesmo os 100% falhados */}
-
-      {recentRuns && recentRuns.length > 0 && (
-        <Collapsible open={showRuns} onOpenChange={setShowRuns}>
+      {/* Painéis colapsáveis (default fechados, abre conforme necessidade) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Respostas hoje (colapsável) */}
+        <Collapsible open={showRespostas} onOpenChange={setShowRespostas}>
           <Card>
             <CollapsibleTrigger className="w-full">
               <CardContent className="p-3 flex items-center justify-between hover:bg-muted/40 transition">
                 <div className="flex items-center gap-2">
-                  <Radio className="h-4 w-4 text-indigo-500" />
-                  <span className="text-sm font-semibold">Disparos recentes</span>
-                  <Badge variant="outline" className="text-[10px]">{recentRuns.length}</Badge>
+                  <MessageSquare className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm font-semibold">Respostas recebidas hoje</span>
                 </div>
-                <ChevronDown className={`h-4 w-4 transition ${showRuns ? "rotate-180" : ""}`} />
+                <ChevronDown className={`h-4 w-4 transition ${showRespostas ? "rotate-180" : ""}`} />
               </CardContent>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="pt-0 pb-3 px-3">
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[900px]">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[110px]">Início</TableHead>
-                        <TableHead className="w-[100px]">Status</TableHead>
-                        <TableHead className="w-[220px]">Template / Origem</TableHead>
-                        <TableHead className="w-[70px] text-right">Alvo</TableHead>
-                        <TableHead className="w-[80px] text-right text-emerald-700">Enviados</TableHead>
-                        <TableHead className="w-[70px] text-right text-red-700">Falhas</TableHead>
-                        <TableHead className="w-[80px] text-right">Ignorados</TableHead>
-                        <TableHead>Motivo / Primeiro erro</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {recentRuns.map((run: any) => {
-                        const payload = (run.audience_payload || {}) as Record<string, unknown>;
-                        const tpl = (payload.template_name as string) || "—";
-                        const firstError = (() => {
-                          const e = run.erros;
-                          if (!e) return null;
-                          if (Array.isArray(e) && e.length > 0) return String(e[0]).slice(0, 200);
-                          if (typeof e === "string") return e.slice(0, 200);
-                          try { return JSON.stringify(e).slice(0, 200); } catch { return null; }
-                        })();
-                        const statusColors: Record<string, string> = {
-                          running: "bg-blue-50 text-blue-700",
-                          completed: "bg-emerald-50 text-emerald-700",
-                          paused: "bg-amber-50 text-amber-700",
-                          failed: "bg-red-50 text-red-700",
-                        };
-                        const hasIssue = run.status !== "running" && (run.enviados ?? 0) === 0 && (run.falhas ?? 0) > 0;
-                        return (
-                          <TableRow key={run.id} className={hasIssue ? "bg-red-50/30" : ""}>
-                            <TableCell className="text-xs whitespace-nowrap">{formatBRT(run.started_at, "dd/MM HH:mm")}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={`text-[10px] ${statusColors[run.status] || "bg-neutral-100"}`}>
-                                {run.status || "—"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              <div className="font-medium truncate max-w-[220px]" title={tpl}>{tpl}</div>
-                              <div className="text-[10px] text-muted-foreground truncate max-w-[220px]">{run.audience_source || "—"}</div>
-                            </TableCell>
-                            <TableCell className="text-xs text-right">{run.total_alvo ?? 0}</TableCell>
-                            <TableCell className="text-xs text-right font-semibold text-emerald-700">{run.enviados ?? 0}</TableCell>
-                            <TableCell className="text-xs text-right font-semibold text-red-700">{run.falhas ?? 0}</TableCell>
-                            <TableCell className="text-xs text-right text-muted-foreground">{run.ignorados ?? 0}</TableCell>
-                            <TableCell className="text-xs">
-                              {(run.motivo_parada || firstError) ? (
-                                <div className="flex items-start gap-1.5" title={run.motivo_parada || firstError || ""}>
-                                  <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
-                                  <span className="line-clamp-2">{run.motivo_parada || firstError}</span>
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                <RespostasRecebidasHoje />
               </CardContent>
             </CollapsibleContent>
           </Card>
         </Collapsible>
-      )}
 
-
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
-        <Card><CardContent className="p-3"><div className="text-xs text-muted-foreground">Total</div><div className="text-xl font-bold">{stats.total}</div></CardContent></Card>
-        <Card><CardContent className="p-3"><div className="text-xs text-muted-foreground">Aguardando</div><div className="text-xl font-bold text-neutral-600">{stats.waiting}</div></CardContent></Card>
-        <Card><CardContent className="p-3"><div className="text-xs text-muted-foreground">Responderam</div><div className="text-xl font-bold text-emerald-600">{stats.responded}</div></CardContent></Card>
-        <Card><CardContent className="p-3"><div className="text-xs text-muted-foreground">✅ Sim</div><div className="text-xl font-bold text-emerald-700">{stats.sim}</div></CardContent></Card>
-        <Card><CardContent className="p-3"><div className="text-xs text-muted-foreground">❌ Não</div><div className="text-xl font-bold text-red-700">{stats.nao}</div></CardContent></Card>
-        <Card><CardContent className="p-3"><div className="text-xs text-muted-foreground">🔄 Reativados</div><div className="text-xl font-bold text-purple-700">{stats.reativados}</div></CardContent></Card>
-        <Card><CardContent className="p-3"><div className="text-xs text-muted-foreground">Falhas</div><div className="text-xl font-bold text-red-600">{stats.failed}</div></CardContent></Card>
+        {/* Disparos recentes (colapsável) */}
+        {recentRuns && recentRuns.length > 0 && (
+          <Collapsible open={showRuns} onOpenChange={setShowRuns}>
+            <Card>
+              <CollapsibleTrigger className="w-full">
+                <CardContent className="p-3 flex items-center justify-between hover:bg-muted/40 transition">
+                  <div className="flex items-center gap-2">
+                    <Radio className="h-4 w-4 text-indigo-500" />
+                    <span className="text-sm font-semibold">Disparos recentes</span>
+                    <Badge variant="outline" className="text-[10px]">{recentRuns.length}</Badge>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 transition ${showRuns ? "rotate-180" : ""}`} />
+                </CardContent>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0 pb-3 px-3">
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[900px]">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[110px]">Início</TableHead>
+                          <TableHead className="w-[100px]">Status</TableHead>
+                          <TableHead className="w-[220px]">Template / Origem</TableHead>
+                          <TableHead className="w-[70px] text-right">Alvo</TableHead>
+                          <TableHead className="w-[80px] text-right text-emerald-700">Enviados</TableHead>
+                          <TableHead className="w-[70px] text-right text-red-700">Falhas</TableHead>
+                          <TableHead className="w-[80px] text-right">Ignorados</TableHead>
+                          <TableHead>Motivo / Primeiro erro</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {recentRuns.map((run: any) => {
+                          const payload = (run.audience_payload || {}) as Record<string, unknown>;
+                          const tpl = (payload.template_name as string) || "—";
+                          const firstError = (() => {
+                            const e = run.erros;
+                            if (!e) return null;
+                            if (Array.isArray(e) && e.length > 0) return String(e[0]).slice(0, 200);
+                            if (typeof e === "string") return e.slice(0, 200);
+                            try { return JSON.stringify(e).slice(0, 200); } catch { return null; }
+                          })();
+                          const statusColors: Record<string, string> = {
+                            running: "bg-blue-50 text-blue-700",
+                            completed: "bg-emerald-50 text-emerald-700",
+                            paused: "bg-amber-50 text-amber-700",
+                            failed: "bg-red-50 text-red-700",
+                          };
+                          const hasIssue = run.status !== "running" && (run.enviados ?? 0) === 0 && (run.falhas ?? 0) > 0;
+                          return (
+                            <TableRow key={run.id} className={hasIssue ? "bg-red-50/30" : ""}>
+                              <TableCell className="text-xs whitespace-nowrap">{formatBRT(run.started_at, "dd/MM HH:mm")}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className={`text-[10px] ${statusColors[run.status] || "bg-neutral-100"}`}>
+                                  {run.status || "—"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                <div className="font-medium truncate max-w-[220px]" title={tpl}>{tpl}</div>
+                                <div className="text-[10px] text-muted-foreground truncate max-w-[220px]">{run.audience_source || "—"}</div>
+                              </TableCell>
+                              <TableCell className="text-xs text-right">{run.total_alvo ?? 0}</TableCell>
+                              <TableCell className="text-xs text-right font-semibold text-emerald-700">{run.enviados ?? 0}</TableCell>
+                              <TableCell className="text-xs text-right font-semibold text-red-700">{run.falhas ?? 0}</TableCell>
+                              <TableCell className="text-xs text-right text-muted-foreground">{run.ignorados ?? 0}</TableCell>
+                              <TableCell className="text-xs">
+                                {(run.motivo_parada || firstError) ? (
+                                  <div className="flex items-start gap-1.5" title={run.motivo_parada || firstError || ""}>
+                                    <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                    <span className="line-clamp-2">{run.motivo_parada || firstError}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col lg:flex-row gap-3 flex-wrap">
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-full lg:w-[180px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos status</SelectItem>
-            <SelectItem value="waiting">Aguardando entrega</SelectItem>
-            <SelectItem value="responded">Responderam</SelectItem>
-            <SelectItem value="sim">Classificado SIM</SelectItem>
-            <SelectItem value="nao">Classificado NÃO</SelectItem>
-            <SelectItem value="no_response">Sem resposta</SelectItem>
-            <SelectItem value="failed">Falhas</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={audienceFilter} onValueChange={setAudienceFilter}>
-          <SelectTrigger className="w-full lg:w-[180px]"><SelectValue placeholder="Origem" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas origens</SelectItem>
-            <SelectItem value="descartados">Descartados</SelectItem>
-            <SelectItem value="pipeline_ativo">Pipeline ativo</SelectItem>
-            <SelectItem value="oferta_ativa_lista">Oferta ativa</SelectItem>
-            <SelectItem value="visita_amanha">Visita amanhã</SelectItem>
-            <SelectItem value="legacy">Legacy</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={templateFilter} onValueChange={setTemplateFilter}>
-          <SelectTrigger className="w-full lg:w-[220px]"><SelectValue placeholder="Template" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos templates</SelectItem>
-            {templateOptions.map((t) => (
-              <SelectItem key={t} value={t}>{t}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          placeholder="Buscar por telefone, nome ou template..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full lg:w-[300px] flex-1"
-        />
-      </div>
+      {/* Filtros agrupados em barra única */}
+      <Card>
+        <CardContent className="p-3">
+          <div className="flex flex-col lg:flex-row gap-2 flex-wrap items-stretch">
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger className="w-full lg:w-[170px] h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos status</SelectItem>
+                <SelectItem value="waiting">Aguardando entrega</SelectItem>
+                <SelectItem value="responded">Responderam</SelectItem>
+                <SelectItem value="sim">Classificado SIM</SelectItem>
+                <SelectItem value="nao">Classificado NÃO</SelectItem>
+                <SelectItem value="no_response">Sem resposta</SelectItem>
+                <SelectItem value="failed">Falhas</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={audienceFilter} onValueChange={setAudienceFilter}>
+              <SelectTrigger className="w-full lg:w-[170px] h-9 text-xs"><SelectValue placeholder="Origem" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas origens</SelectItem>
+                <SelectItem value="descartados">Descartados</SelectItem>
+                <SelectItem value="pipeline_ativo">Pipeline ativo</SelectItem>
+                <SelectItem value="oferta_ativa_lista">Oferta ativa</SelectItem>
+                <SelectItem value="visita_amanha">Visita amanhã</SelectItem>
+                <SelectItem value="legacy">Legacy</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={templateFilter} onValueChange={setTemplateFilter}>
+              <SelectTrigger className="w-full lg:w-[200px] h-9 text-xs"><SelectValue placeholder="Template" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos templates</SelectItem>
+                {templateOptions.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Buscar por telefone, nome ou template…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full lg:flex-1 h-9 text-xs"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">

@@ -597,12 +597,14 @@ Deno.serve(async (req) => {
             continue;
           }
           consecutiveMetaQualityFails = 0;
+          // Audit log: SEMPRE registrar o disparo (independe do público)
+          await supabase.from("reengajamento_meta_disparos").insert({
+            lead_id: lead.id, run_id: runId, wamid: r.wamid, template_name: metaTemplate,
+            template_language: metaLang, phone, status: "sent", sent_at: new Date().toISOString(),
+            audience_source: audienceSourceCanonical,
+          });
+          // pipeline_leads.update só em público legado/descartados (não poluir oferta_ativa/pipeline_ativo)
           if (canTouchPipelineLead(lead)) {
-            await supabase.from("reengajamento_meta_disparos").insert({
-              lead_id: lead.id, run_id: runId, wamid: r.wamid, template_name: metaTemplate,
-              template_language: metaLang, phone, status: "sent", sent_at: new Date().toISOString(),
-              audience_source: audienceSourceCanonical,
-            });
             await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
           }
           await insertEvento({
