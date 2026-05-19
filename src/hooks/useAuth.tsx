@@ -51,6 +51,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  // Detecta JWT corrompido (bad_jwt / missing sub) chamando getUser().
+  // Quando ocorre, limpamos storage e mandamos para /auth com flag de recuperação.
+  // Isso impede o "limbo": sessão local presente mas inválida → telas vazias silenciosas.
+  const handleBrokenSession = useCallback(async () => {
+    try {
+      console.warn("[useAuth] Sessão inválida (bad_jwt/missing sub) — limpando estado local e forçando re-login.");
+      try { await (supabase.auth as any).signOut(); } catch {}
+      try { localStorage.clear(); } catch {}
+      try { sessionStorage.clear(); } catch {}
+      try {
+        const anyIDB: any = (window as any).indexedDB;
+        if (anyIDB?.databases) {
+          const dbs = await anyIDB.databases();
+          dbs?.forEach((db: any) => db?.name && anyIDB.deleteDatabase(db.name));
+        }
+      } catch {}
+    } finally {
+      const url = new URL(window.location.origin + "/auth");
+      url.searchParams.set("recovered", "1");
+      window.location.replace(url.toString());
+    }
+  }, []);
+
+  const probeSessionValid = useCallback(async () => {
+    try {
+      const { error } = await (supabase.auth as any).getUser();
+      if (!error) return;
+      const msg = String((error as any)?.message || "").toLowerCase();
+      const code = String((error as any)?.code || "").toLowerCase();
+      const broken =
+        msg.includes("invalid claim") ||
+        msg.includes("missing sub") ||
+        msg.includes("bad_jwt") ||
+        code === "bad_jwt" ||
+        (msg.includes("jwt") && !msg.includes("expired"));
+      if (broken) await handleBrokenSession();
+    } catch {
+      // erros de rede aqui não devem deslogar — só JWT inválido confirmado.
+    }
+  }, [handleBrokenSession]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -61,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (recoveredSession?.user) {
           applySession(recoveredSession);
+          void probeSessionValid();
           return;
         }
 
@@ -118,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       subscription.unsubscribe();
     };
-  }, [applySession]);
+  }, [applySession, probeSessionValid]);
 
   const signUp = useCallback(async (email: string, password: string, nome: string) => {
     const { error } = await (supabase.auth as any).signUp({
