@@ -328,11 +328,14 @@ Deno.serve(async (req) => {
         }
         leads = cand.slice(0, effectiveLimit);
       } else if (src === "oferta_ativa_lista") {
-        if (!bodyAudience.lista_id) throw new Error("audience.lista_id obrigatório");
+        const listaIds: string[] = (bodyAudience.lista_ids && bodyAudience.lista_ids.length)
+          ? bodyAudience.lista_ids.map(String)
+          : (bodyAudience.lista_id ? [String(bodyAudience.lista_id)] : []);
+        if (listaIds.length === 0) throw new Error("audience.lista_id ou lista_ids obrigatório");
         let q = supabase
           .from("oferta_ativa_leads")
           .select("id, nome, telefone")
-          .eq("lista_id", String(bodyAudience.lista_id))
+          .in("lista_id", listaIds)
           .not("telefone", "is", null);
         if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
         if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
