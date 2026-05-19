@@ -12,6 +12,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import { TabProvider } from "@/contexts/TabContext";
 import { lazy, Suspense } from "react";
+import { PageTrackingProvider } from "@/components/PageTrackingProvider";
 import { Loader2 } from "lucide-react";
 
 // Retry wrapper for lazy imports — handles stale chunk errors after deployments
