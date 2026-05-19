@@ -8,6 +8,7 @@ import DisparoCustomizadoCard from "@/components/central-nutricao/DisparoCustomi
 import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
 import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookTab";
 import VisitaAmanhaTab from "@/components/central-nutricao/VisitaAmanhaTab";
+import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
 
 export default function CentralNutricaoPage() {
   const qc = useQueryClient();
@@ -39,6 +40,8 @@ export default function CentralNutricaoPage() {
           </p>
         </div>
       </div>
+
+      <LiveDispatchBanner />
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-3 h-11">
