@@ -237,11 +237,8 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const buildBaseQ = () => {
-        let q = supabase
-          .from("oferta_ativa_leads")
-          .in("lista_id", listaIds)
-          .not("telefone", "is", null);
+      const applyFilters = (q: any) => {
+        q = q.in("lista_id", listaIds).not("telefone", "is", null);
         if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
         if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);
         if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
@@ -249,8 +246,9 @@ Deno.serve(async (req) => {
       };
 
       // Exact total count (head:true bypasses 1000-row cap)
-      const { count: totalCount, error: countErr } = await buildBaseQ()
-        .select("id", { count: "exact", head: true });
+      const { count: totalCount, error: countErr } = await applyFilters(
+        supabase.from("oferta_ativa_leads").select("id", { count: "exact", head: true })
+      );
       if (countErr) throw countErr;
 
       // Paginate via .range() in chunks of 1000 up to `limit` (PostgREST default caps at 1000/req)
@@ -258,8 +256,9 @@ Deno.serve(async (req) => {
       const collected: any[] = [];
       for (let offset = 0; offset < limit; offset += PAGE) {
         const to = Math.min(offset + PAGE, limit) - 1;
-        const { data: pageData, error: pageErr } = await buildBaseQ()
-          .select("id, nome, telefone, created_at, empreendimento")
+        const { data: pageData, error: pageErr } = await applyFilters(
+          supabase.from("oferta_ativa_leads").select("id, nome, telefone, created_at, empreendimento")
+        )
           .order("created_at", { ascending: false })
           .range(offset, to);
         if (pageErr) throw pageErr;
