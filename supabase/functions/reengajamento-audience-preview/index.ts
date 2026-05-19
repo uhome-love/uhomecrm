@@ -256,8 +256,9 @@ Deno.serve(async (req) => {
       const collected: any[] = [];
       for (let offset = 0; offset < limit; offset += PAGE) {
         const to = Math.min(offset + PAGE, limit) - 1;
-        const { data: pageData, error: pageErr } = await buildBaseQ()
-          .select("id, nome, telefone, created_at, empreendimento")
+        const { data: pageData, error: pageErr } = await applyFilters(
+          supabase.from("oferta_ativa_leads").select("id, nome, telefone, created_at, empreendimento")
+        )
           .order("created_at", { ascending: false })
           .range(offset, to);
         if (pageErr) throw pageErr;
