@@ -1148,27 +1148,24 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             onClick={async () => {
               if (lead && user) {
                 setSkipCount(prev => prev + 1);
-                try {
-                  await supabase.from("oa_events" as any).insert({
-                    event_type: "lead_skipped",
-                    user_id: user.id,
-                    lead_id: lead.id,
-                    lista_id: lista.id,
-                    session_id: sessionId,
-                    metadata: { skip_number: skipCount + 1 },
-                  });
-                } catch (e) {
-                  console.warn("[OA] Falha ao registrar evento de skip:", e);
+                // Para listas custom (pipeline-based), apenas avança a fila local — não há registro em oferta_ativa_leads
+                if (isCustom) {
+                  await fetchNext();
+                  toast("Lead pulado — próximo da fila", { duration: 1500 });
+                  return;
                 }
-                // Set proxima_tentativa_apos to push lead back in queue (avoid re-serving immediately)
-                const skipUntil = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-                await supabase.from("oferta_ativa_leads")
-                  .update({
-                    em_atendimento_por: null,
-                    em_atendimento_ate: null,
-                    proxima_tentativa_apos: skipUntil,
-                  } as any)
-                  .eq("id", lead.id);
+                const { data, error } = await supabase.rpc("skip_oa_lead", {
+                  p_lead_id: lead.id,
+                  p_corretor_id: user.id,
+                  p_lista_id: lista.id,
+                  p_skip_minutes: 30,
+                  p_session_id: sessionId ?? null,
+                });
+                if (error || !(data as any)?.ok) {
+                  console.warn("[OA] skip_oa_lead falhou:", error || data);
+                  toast.error("Não foi possível pular este lead");
+                  return;
+                }
               }
               await fetchNext();
               toast("Lead pulado — próximo da fila", { duration: 1500 });
