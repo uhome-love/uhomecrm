@@ -8,6 +8,7 @@ import DisparoCustomizadoCard from "@/components/central-nutricao/DisparoCustomi
 import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
 import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookTab";
 import VisitaAmanhaTab from "@/components/central-nutricao/VisitaAmanhaTab";
+import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
 
 export default function CentralNutricaoPage() {
   const qc = useQueryClient();
