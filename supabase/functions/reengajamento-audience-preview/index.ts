@@ -33,7 +33,10 @@ interface Audience {
 
 function audienceKey(a: Audience): string {
   if (a.source === "descartados") return `descartados:${a.tipo_descarte || "reengajavel"}`;
-  if (a.source === "oferta_ativa_lista") return `oferta_ativa:${a.lista_id || "?"}`;
+  if (a.source === "oferta_ativa_lista") {
+    const ids = (a.lista_ids && a.lista_ids.length ? a.lista_ids : (a.lista_id ? [a.lista_id] : [])).slice().sort();
+    return `oferta_ativa:${ids.join(",") || "?"}`;
+  }
   if (a.source === "pipeline_ativo") return `pipeline:${(a.stage_ids || []).slice().sort().join(",")}`;
   if (a.source === "visita_amanha") return `visita_amanha:${a.data_visita || ""}`;
   return a.source;
