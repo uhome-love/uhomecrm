@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
     ? (bodyAudience.source === "descartados"
         ? `descartados:${bodyAudience.tipo_descarte || "reengajavel"}`
         : bodyAudience.source === "oferta_ativa_lista"
-          ? `oferta_ativa:${bodyAudience.lista_id || "?"}`
+          ? `oferta_ativa:${(((bodyAudience.lista_ids && bodyAudience.lista_ids.length) ? bodyAudience.lista_ids : (bodyAudience.lista_id ? [bodyAudience.lista_id] : [])) as string[]).slice().sort().join(",") || "?"}`
           : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`)
     : "";
   // Canonical source for routing on reply (column audience_source in reengajamento_meta_disparos)
