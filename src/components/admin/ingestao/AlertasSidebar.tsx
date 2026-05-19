@@ -104,6 +104,9 @@ export function AlertasSidebar({ tripwire, edgeStats, avulsoCount, alertasSaude,
           </>
         )}
       </Card>
+
+      {/* Alertas Ativos de Saúde (edge-health-alert) */}
+      <AlertasSaudeCard ativos={alertasSaude} loading={alertasSaudeLoading} />
     </div>
   );
 }

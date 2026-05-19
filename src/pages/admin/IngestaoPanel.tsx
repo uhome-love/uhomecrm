@@ -9,6 +9,7 @@ import {
   useTripwireStatus,
   useAvulsoImovelWeb,
   useEventosRecentes,
+  useEdgeHealthAlertasAtivos,
   type Periodo,
 } from "@/hooks/useIngestaoStats";
 import { useIngestaoEdgeStats } from "@/hooks/useIngestaoEdgeStats";
