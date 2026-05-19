@@ -1,0 +1,116 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, Pause } from "lucide-react";
+import { toast } from "sonner";
+import { formatBRT } from "@/lib/brtTime";
+
+/**
+ * Banner global que aparece em qualquer aba da Central de Reengajamento
+ * sempre que houver um disparo em execução. Permite pausar imediatamente.
+ */
+export default function LiveDispatchBanner() {
+  const qc = useQueryClient();
+
+  const { data: activeRun } = useQuery({
+    queryKey: ["reengajamento-active-run"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("reengajamento_dispatch_runs" as any)
+        .select("*")
+        .eq("status", "running")
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+    refetchInterval: 2000,
+  });
+
+  const { data: cfg } = useQuery({
+    queryKey: ["reengajamento-config-banner"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("reengajamento_config" as any)
+        .select("id, paused")
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+    refetchInterval: 4000,
+  });
+
+  if (!activeRun) return null;
+
+  const isPausing = !!cfg?.paused && !!activeRun;
+  const processados =
+    (activeRun.enviados || 0) + (activeRun.falhas || 0) + (activeRun.ignorados || 0);
+  const progressPct =
+    activeRun.total_alvo > 0 ? Math.round((processados / activeRun.total_alvo) * 100) : 0;
+
+  async function pausarDisparo() {
+    if (!cfg?.id) {
+      toast.error("Configuração não encontrada");
+      return;
+    }
+    try {
+      await supabase
+        .from("reengajamento_config" as any)
+        .update({ paused: true })
+        .eq("id", cfg.id);
+      toast.success("Pausa solicitada — o disparo para após a mensagem em curso");
+      qc.invalidateQueries({ queryKey: ["reengajamento-config-banner"] });
+      qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
+    } catch (e: any) {
+      toast.error("Erro ao pausar: " + e.message);
+    }
+  }
+
+  return (
+    <Card className="border-blue-300 bg-blue-50/40 dark:bg-blue-950/20">
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+            Disparo em andamento
+            {isPausing && (
+              <Badge className="bg-amber-200 text-amber-900 hover:bg-amber-200">Pausando…</Badge>
+            )}
+          </span>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={pausarDisparo}
+            disabled={isPausing}
+            className="h-8"
+          >
+            <Pause className="h-3.5 w-3.5 mr-1" />
+            {isPausing ? "Pausando…" : "Pausar agora"}
+          </Button>
+        </div>
+
+        <div className="flex justify-between text-xs">
+          <span>
+            <strong>{processados}</strong> / {activeRun.total_alvo || 0} processados
+          </span>
+          <span className="text-muted-foreground">
+            ✉️ {activeRun.enviados || 0} · ⚠️ {activeRun.falhas || 0} · ⏭️{" "}
+            {activeRun.ignorados || 0}
+          </span>
+        </div>
+        <Progress value={progressPct} className="h-2" />
+        <p className="text-[10px] text-muted-foreground">
+          Iniciado {formatBRT(activeRun.started_at, "HH:mm:ss")}
+          {activeRun.ultimo_lead_nome && (
+            <>
+              {" · "}último: <strong>{activeRun.ultimo_lead_nome}</strong>
+            </>
+          )}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
