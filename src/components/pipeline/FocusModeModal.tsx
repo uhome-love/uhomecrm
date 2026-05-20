@@ -622,7 +622,35 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                   </div>
                 </div>
 
-                {/* Stage filter */}
+                {/* Toggle: incluir próximos 2 dias (afeta filtro "Tudo") */}
+                <button
+                  type="button"
+                  onClick={() => setIncludeUpcoming(v => !v)}
+                  className="w-full flex items-center justify-between gap-3 p-3 rounded-xl transition-all text-left"
+                  style={{
+                    background: includeUpcoming ? "rgba(73,105,255,0.10)" : "rgba(255,255,255,0.03)",
+                    border: `1.5px solid ${includeUpcoming ? "rgba(73,105,255,0.45)" : "rgba(255,255,255,0.06)"}`,
+                  }}
+                >
+                  <div className="min-w-0">
+                    <span className="text-sm font-semibold block" style={{ color: includeUpcoming ? "#fff" : "#9ca3af" }}>
+                      Incluir próximos 2 dias
+                    </span>
+                    <span className="text-[10px] leading-tight block mt-0.5 text-gray-500">
+                      No filtro "Tudo", também mostra leads com tarefa amanhã ou depois de amanhã
+                    </span>
+                  </div>
+                  <div
+                    className="shrink-0 w-10 h-6 rounded-full transition-all relative"
+                    style={{ background: includeUpcoming ? "#4969FF" : "rgba(255,255,255,0.12)" }}
+                  >
+                    <div
+                      className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                      style={{ left: includeUpcoming ? "calc(100% - 22px)" : "2px" }}
+                    />
+                  </div>
+                </button>
+
                 <div className="space-y-2">
                   <label className="text-gray-300 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
                     <Filter className="w-3.5 h-3.5" /> Filtrar por etapa
