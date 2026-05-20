@@ -228,6 +228,17 @@ export default function ReengajamentoTab() {
   }
 
   async function dispararAgora() {
+    // FIX A: pausa travada
+    if ((cfg as any)?.paused_until_release) {
+      toast.error("⛔ Central travada: " + ((cfg as any)?.paused_reason || "liberação manual via SQL admin necessária"));
+      return;
+    }
+    // FIX B: template em blacklist
+    const tpl1 = (local?.meta_template_name || "") as string;
+    if (isBlocked(tpl1)) {
+      toast.error(`⛔ Template "${tpl1}" está bloqueado: ${blockedReason(tpl1)}. Verifique no Business Manager antes de remover da blacklist.`);
+      return;
+    }
     setStarting(true);
     try {
       if (cfg?.id) {
