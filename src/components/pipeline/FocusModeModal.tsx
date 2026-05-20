@@ -160,6 +160,18 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
     filters.includeUpcoming2d = includeUpcoming;
     await reload(filters);
+
+    // Telemetria: nova sessão de foco — log opened com filtros e fila resultante.
+    focusSessionIdRef.current = newFocusSessionId();
+    advanceCountRef.current = 0;
+    logFocus("focus_mode_opened", {
+      session_id: focusSessionIdRef.current,
+      pipeline_tipo: pipelineTipo,
+      criteria: selectedCriteria,
+      stage_id: selectedStageId,
+      include_upcoming_2d: includeUpcoming,
+      queue_size: leads.length, // snapshot pré-render; ok como referência
+    });
   };
 
   useEffect(() => {
