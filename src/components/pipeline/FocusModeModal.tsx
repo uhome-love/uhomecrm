@@ -86,6 +86,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   // Telemetria: session_id correlaciona opened → advance(s) → closed da mesma jornada.
   const focusSessionIdRef = useRef<string | null>(null);
   const advanceCountRef = useRef<number>(0);
+  // Pending ctx do opened — emitido via useEffect quando reload terminar e leads.length refletir a fila real.
+  const pendingOpenedCtxRef = useRef<Record<string, unknown> | null>(null);
   const [activityNote, setActivityNote] = useState("");
   const [tab, setTab] = useState("followup");
   const [saving, setSaving] = useState(false);
@@ -159,20 +161,31 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       filters.criteria = selectedCriteria;
     }
     filters.includeUpcoming2d = includeUpcoming;
-    await reload(filters);
 
-    // Telemetria: nova sessão de foco — log opened com filtros e fila resultante.
+    // Telemetria: gera session_id ANTES do reload para preservar correlação;
+    // o evento `opened` é emitido pelo useEffect abaixo quando a fila estiver hidratada.
     focusSessionIdRef.current = newFocusSessionId();
     advanceCountRef.current = 0;
-    logFocus("focus_mode_opened", {
+    pendingOpenedCtxRef.current = {
       session_id: focusSessionIdRef.current,
       pipeline_tipo: pipelineTipo,
       criteria: selectedCriteria,
       stage_id: selectedStageId,
       include_upcoming_2d: includeUpcoming,
-      queue_size: leads.length, // snapshot pré-render; ok como referência
-    });
+    };
+
+    await reload(filters);
   };
+
+  // Emite focus_mode_opened quando reload terminar e a fila estiver populada (queue_size real).
+  useEffect(() => {
+    if (configPhase) return;
+    if (loading) return;
+    const pending = pendingOpenedCtxRef.current;
+    if (!pending) return;
+    logFocus("focus_mode_opened", { ...pending, queue_size: leads.length });
+    pendingOpenedCtxRef.current = null;
+  }, [loading, leads.length, configPhase]);
 
   useEffect(() => {
     if (!currentLead || !open || configPhase) return;
