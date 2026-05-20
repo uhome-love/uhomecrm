@@ -2,12 +2,18 @@
  * useFocusLeads — Fetches leads needing attention for Focus Mode.
  *
  * Criteria (filterable):
- *  1. No pending tasks at all (desatualizado)
- *  2. Overdue pending tasks (vence_em < today)
- *  3. Stage stalled > 5 days (stage_changed_at < now - 5d)
+ *  1. No pending tasks at all (desatualizado / sem tarefa)
+ *  2. Overdue pending tasks — espelha CardStatusLine.getLeadStatusFilter
+ *     (vence_em < hoje BRT, OU vence_em == hoje BRT && hora_vencimento < agora BRT)
+ *  3. Stage stalled — sem movimentação há FOCUS_STAGNANT_DAYS dias
  *
- * Supports filtering by stage and criteria type.
+ * Leads com negocio_id NOT NULL são excluídos do Foco de "leads"
+ * (aparecem apenas em /meus-negocios → Modo Foco de Negócios).
  */
+
+/** Dias de parada em uma etapa para o lead ser considerado "Desatualizado".
+ *  Default 14d (P50 real do pipeline = ~29d; valor antigo de 5d marcava >75% da base). */
+export const FOCUS_STAGNANT_DAYS = 14;
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
