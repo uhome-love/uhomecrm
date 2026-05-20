@@ -549,7 +549,7 @@ export default function MinhasTarefas() {
         if (insertErr) throw insertErr;
 
         // Optional stage change
-        if (novo_stage_id && leadId && novo_stage_id !== currentStageId) {
+        if (novo_stage_id && leadId) {
           const { error: stageErr } = await supabase.from("pipeline_leads").update({
             stage_id: novo_stage_id,
             stage_changed_at: now,
