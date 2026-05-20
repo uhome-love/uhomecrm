@@ -43,7 +43,6 @@ export default function LeadFocusScreen({
   const nextTask = lead.next_pending_task;
   const [phoneCopied, setPhoneCopied] = useState(false);
   const hasPhone = !!lead.phone;
-  const waUrl = hasPhone ? `https://wa.me/${toWaDigits(lead.phone!)}` : "#";
 
   const handlePhonePopoverOpen = async (open: boolean) => {
     if (!open || !lead.phone) return;
@@ -55,6 +54,14 @@ export default function LeadFocusScreen({
     } catch {
       // clipboard pode falhar em contextos não-seguros — silencioso
     }
+  };
+
+  const handleWhatsAppClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!lead.phone) return;
+    const digits = toWaDigits(lead.phone);
+    if (!digits) return;
+    window.open(`https://wa.me/${digits}`, "_blank", "noopener,noreferrer");
   };
 
   return (
