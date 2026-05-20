@@ -163,29 +163,15 @@ export default function LeadFocusScreen({
               )}
             </Popover>
 
-            {/* WhatsApp — direto wa.me em nova aba */}
+            {/* WhatsApp — onClick + window.open (wa.me universal) */}
             <Button
-              asChild={hasPhone}
+              onClick={handleWhatsAppClick}
               disabled={!hasPhone}
-              className="h-12 sm:w-[140px] flex-1 sm:flex-none gap-2 text-sm font-semibold rounded-xl border-0 disabled:opacity-40"
-              style={{
-                background: "rgba(37, 211, 102, 0.12)",
-                border: "1px solid rgba(37, 211, 102, 0.35)",
-                color: "#4ade80",
-              }}
+              className="h-12 sm:w-[140px] flex-1 sm:flex-none gap-2 text-sm font-semibold rounded-xl bg-[#25D366] text-white border-0 hover:bg-[#1da856] disabled:bg-muted disabled:text-muted-foreground"
               title={hasPhone ? "Abrir conversa no WhatsApp" : "Sem telefone cadastrado"}
             >
-              {hasPhone ? (
-                <a href={waUrl} target="_blank" rel="noopener noreferrer">
-                  <MessageCircle className="w-4 h-4" />
-                  WhatsApp
-                </a>
-              ) : (
-                <span>
-                  <MessageCircle className="w-4 h-4" />
-                  WhatsApp
-                </span>
-              )}
+              <MessageCircle className="w-4 h-4" />
+              WhatsApp
             </Button>
           </div>
         </div>
