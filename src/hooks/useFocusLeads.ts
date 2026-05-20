@@ -2,18 +2,39 @@
  * useFocusLeads — Fetches leads needing attention for Focus Mode.
  *
  * Criteria (filterable):
- *  1. No pending tasks at all (desatualizado / sem tarefa)
+ *  1. No pending tasks at all (sem tarefa)
  *  2. Overdue pending tasks — espelha CardStatusLine.getLeadStatusFilter
  *     (vence_em < hoje BRT, OU vence_em == hoje BRT && hora_vencimento < agora BRT)
- *  3. Stage stalled — sem movimentação há FOCUS_STAGNANT_DAYS dias
+ *  3. Stagnant / "Desatualizado" — sem ação (ultima_acao_at) há FOCUS_LEVELS.critical dias
+ *
+ * Régua de saúde (health) por dias sem ação (ultima_acao_at || updated_at):
+ *   ≥ 10d → critical 🔴
+ *   ≥  5d → warning  🟠
+ *   ≥  1d → attention 🟡
+ *   <  1d → ok
  *
  * Leads com negocio_id NOT NULL são excluídos do Foco de "leads"
  * (aparecem apenas em /meus-negocios → Modo Foco de Negócios).
  */
 
-/** Dias de parada em uma etapa para o lead ser considerado "Desatualizado".
- *  Default 14d (P50 real do pipeline = ~29d; valor antigo de 5d marcava >75% da base). */
-export const FOCUS_STAGNANT_DAYS = 14;
+/** Limiares (em dias sem ação) da régua de saúde do Modo Foco. */
+export const FOCUS_LEVELS = { attention: 1, warning: 5, critical: 10 } as const;
+
+export type FocusHealth = "ok" | "attention" | "warning" | "critical";
+
+function computeHealth(daysSinceContact: number): FocusHealth {
+  if (daysSinceContact >= FOCUS_LEVELS.critical) return "critical";
+  if (daysSinceContact >= FOCUS_LEVELS.warning) return "warning";
+  if (daysSinceContact >= FOCUS_LEVELS.attention) return "attention";
+  return "ok";
+}
+
+const HEALTH_EMOJI: Record<FocusHealth, string> = {
+  critical: "🔴",
+  warning: "🟠",
+  attention: "🟡",
+  ok: "🟢",
+};
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
