@@ -374,8 +374,8 @@ function CounterCard({ label, value, color, loading }: CounterCardProps) {
         <Loader2 className="w-5 h-5 animate-spin" style={{ color }} />
       ) : (
         <span
-          className="text-2xl leading-none font-bold tabular-nums"
-          style={{ color, fontFamily: "var(--font-focus-display)" }}
+          className="text-3xl leading-none font-extrabold tabular-nums tracking-tight"
+          style={{ color }}
         >
           {value}
         </span>
