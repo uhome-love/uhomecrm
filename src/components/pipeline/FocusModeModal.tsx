@@ -482,6 +482,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       toast.success(novaTarefa ? "Tarefa concluída e próxima agendada ✅" : "Tarefa concluída ✅");
       setCompletingOverdue(null);
       setTasksRefreshKey(k => k + 1);
+      setTimelineRefreshKey(k => k + 1);
+      setWorkedCount(c => c + 1);
       goToNext();
     } catch (err) {
       console.error(err);
