@@ -181,6 +181,28 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       toast.error("Escreva a mensagem que será enviada");
       return;
     }
+    // FIX B: bloquear templates em blacklist
+    if (canal === "meta" && templateName) {
+      const { data: blocked } = await supabase
+        .from("blocked_templates" as any)
+        .select("template_name, reason")
+        .eq("template_name", templateName)
+        .maybeSingle();
+      if (blocked) {
+        toast.error(`⛔ Template "${templateName}" está bloqueado: ${(blocked as any).reason}. Verifique no Business Manager antes de remover da blacklist.`);
+        return;
+      }
+    }
+    // FIX A: respeitar pausa travada
+    const { data: cfgLock } = await supabase
+      .from("reengajamento_config")
+      .select("paused_until_release, paused_reason")
+      .limit(1)
+      .maybeSingle();
+    if ((cfgLock as any)?.paused_until_release) {
+      toast.error("⛔ Central travada: " + ((cfgLock as any)?.paused_reason || "liberação manual via SQL admin necessária"));
+      return;
+    }
     if (!confirm(`Disparar para ${preview.count} leads via ${canal === "meta" ? "Meta" : "Evolution"}? Esta ação envia mensagens reais.`)) return;
     setFiring(true);
     try {
