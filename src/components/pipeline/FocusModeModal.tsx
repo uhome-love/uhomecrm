@@ -88,6 +88,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const advanceCountRef = useRef<number>(0);
   // Pending ctx do opened — emitido via useEffect quando reload terminar e leads.length refletir a fila real.
   const pendingOpenedCtxRef = useRef<Record<string, unknown> | null>(null);
+  // Rastreia transição loading true→false para garantir que o evento `opened` só é emitido
+  // após o reload realmente rodar (não no frame imediato em que configPhase muda).
+  const reloadInFlightRef = useRef<boolean>(false);
   const [activityNote, setActivityNote] = useState("");
   const [tab, setTab] = useState("followup");
   const [saving, setSaving] = useState(false);
@@ -177,15 +180,20 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     await reload(filters);
   };
 
-  // Emite focus_mode_opened quando reload terminar e a fila estiver populada (queue_size real).
+  // Emite focus_mode_opened apenas após transição loading: true → false
+  // (garante que reload realmente rodou e leads.length reflete a fila real).
   useEffect(() => {
-    if (configPhase) return;
-    if (loading) return;
+    if (loading) {
+      reloadInFlightRef.current = true;
+      return;
+    }
+    if (!reloadInFlightRef.current) return;
+    reloadInFlightRef.current = false;
     const pending = pendingOpenedCtxRef.current;
     if (!pending) return;
     logFocus("focus_mode_opened", { ...pending, queue_size: leads.length });
     pendingOpenedCtxRef.current = null;
-  }, [loading, leads.length, configPhase]);
+  }, [loading, leads.length]);
 
   useEffect(() => {
     if (!currentLead || !open || configPhase) return;
