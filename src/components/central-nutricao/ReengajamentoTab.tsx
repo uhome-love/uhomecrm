@@ -267,6 +267,10 @@ export default function ReengajamentoTab() {
   }
 
   async function dispararWave2() {
+    if ((cfg as any)?.paused_until_release) {
+      toast.error("⛔ Central travada: " + ((cfg as any)?.paused_reason || "liberação manual via SQL admin necessária"));
+      return;
+    }
     const hasMsg = !!(local?.mensagem_template_2 || (local?.mensagens_variantes_2 && local.mensagens_variantes_2.length > 0));
     const hasMeta = !!local?.meta_template_name_2;
     const isMeta = (local?.canal || cfg?.canal) === "meta";
@@ -276,6 +280,11 @@ export default function ReengajamentoTab() {
     }
     if (!isMeta && !hasMsg) {
       toast.error("Preencha a mensagem da 2ª onda antes de disparar");
+      return;
+    }
+    const tpl2 = (local?.meta_template_name_2 || "") as string;
+    if (isMeta && isBlocked(tpl2)) {
+      toast.error(`⛔ Template "${tpl2}" está bloqueado: ${blockedReason(tpl2)}. Verifique no Business Manager antes de remover da blacklist.`);
       return;
     }
     setStarting(true);
