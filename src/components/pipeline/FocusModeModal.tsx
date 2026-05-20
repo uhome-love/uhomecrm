@@ -83,6 +83,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   // Evita re-chamar Gemini quando o corretor volta ao mesmo lead (botão "anterior").
   const insightCacheRef = useRef<Map<string, { insight: string; mensagem: string; at: number }>>(new Map());
   const INSIGHT_TTL_MS = 4 * 60 * 60 * 1000; // 4h
+  // Telemetria: session_id correlaciona opened → advance(s) → closed da mesma jornada.
+  const focusSessionIdRef = useRef<string | null>(null);
+  const advanceCountRef = useRef<number>(0);
   const [activityNote, setActivityNote] = useState("");
   const [tab, setTab] = useState("followup");
   const [saving, setSaving] = useState(false);
