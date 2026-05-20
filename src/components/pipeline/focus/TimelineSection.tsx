@@ -21,11 +21,7 @@ export default function TimelineSection({ leadId, refreshKey }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
 
-  // Reload externo
-  if (refreshKey !== undefined) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    // (intentional: simple effect proxy)
-  }
+
 
   const visible = showAll ? events : events.slice(0, DEFAULT_LIMIT);
   const hasMore = events.length > DEFAULT_LIMIT && !showAll;
