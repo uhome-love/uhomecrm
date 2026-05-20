@@ -76,6 +76,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [homiInsight, setHomiInsight] = useState("");
   const [followUpText, setFollowUpText] = useState("");
   const [homiLoading, setHomiLoading] = useState(false);
+
+  // Cache de HOMI Insight por sessão: leadId → { insight, mensagem, at }
+  // Evita re-chamar Gemini quando o corretor volta ao mesmo lead (botão "anterior").
+  const insightCacheRef = useRef<Map<string, { insight: string; mensagem: string; at: number }>>(new Map());
+  const INSIGHT_TTL_MS = 4 * 60 * 60 * 1000; // 4h
   const [activityNote, setActivityNote] = useState("");
   const [tab, setTab] = useState("followup");
   const [saving, setSaving] = useState(false);
