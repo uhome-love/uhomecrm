@@ -154,52 +154,69 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     setCompletingTarefa(tarefa);
   };
 
-  const handleCompletionConfirm = async (obs: string, novaTarefa?: { tipo: string; vence_em: string; hora_vencimento: string; obs: string }) => {
+  const handleCompletionConfirm = async (
+    payload: import("./task-completion/types").CompletionPayload
+  ) => {
     if (!completingTarefa) return;
+    const { tipo_contato, resultado, descricao, nova_tarefa, novo_stage_id } = payload;
+    const userId = (await (supabase.auth as never as { getUser: () => Promise<{ data: { user: { id: string } | null } }> }).getUser()).data?.user?.id || "";
+    const now = new Date().toISOString();
+
     await onToggleTarefa(completingTarefa.id, "pendente");
 
     // Update lead
     await supabase.from("pipeline_leads").update({
-      ultima_acao_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    } as any).eq("id", leadId);
+      ultima_acao_at: now,
+      updated_at: now,
+    } as never).eq("id", leadId);
 
-    // Register in history if note provided
-    if (obs.trim()) {
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: leadId,
-        tipo: "followup",
-        titulo: obs.trim(),
-        descricao: null,
-        data: todayBRT(),
-        hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
-        prioridade: "media",
-        status: "concluida",
-        created_by: (await (supabase.auth as any).getUser()).data?.user?.id || "",
-      } as any);
+    // Activity capture (estruturada, sempre)
+    await supabase.from("pipeline_atividades").insert({
+      pipeline_lead_id: leadId,
+      tipo: tipo_contato, // Ajuste 1: tipo = canal, não o resultado
+      tipo_contato,
+      resultado,
+      titulo: `${completingTarefa.titulo} — ${resultado}`,
+      descricao: descricao ?? null,
+      data: todayBRT(),
+      hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
+      prioridade: "media",
+      status: "concluida",
+      created_by: userId,
+    } as never);
+
+    // Próxima tarefa (sempre — fluxo V2)
+    const titulo = `${TIPO_LABELS[nova_tarefa.tipo] || nova_tarefa.tipo}: ${leadNome}`;
+    await onAddTarefa({
+      tipo: nova_tarefa.tipo,
+      titulo,
+      descricao: nova_tarefa.obs || null,
+      vence_em: nova_tarefa.vence_em,
+      hora_vencimento: nova_tarefa.hora_vencimento || null,
+    } as never);
+
+    // Optional stage change
+    if (novo_stage_id && novo_stage_id !== leadStageId) {
+      const { error: stageErr } = await supabase.from("pipeline_leads").update({
+        stage_id: novo_stage_id,
+        stage_changed_at: now,
+        updated_at: now,
+      } as never).eq("id", leadId);
+      if (stageErr) {
+        toast.warning("Tarefa concluída, mas etapa não foi alterada.");
+      } else {
+        await supabase.from("pipeline_historico").insert({
+          pipeline_lead_id: leadId,
+          stage_novo_id: novo_stage_id,
+          movido_por: userId,
+          observacao: "Movido via Lead Detail (conclusão de tarefa)",
+        });
+      }
     }
 
-    // Create new task if requested
-    if (novaTarefa) {
-      const titulo = `${TIPO_LABELS[novaTarefa.tipo] || novaTarefa.tipo}: ${leadNome}`;
-      await onAddTarefa({
-        tipo: novaTarefa.tipo,
-        titulo,
-        descricao: novaTarefa.obs || null,
-        vence_em: novaTarefa.vence_em,
-        hora_vencimento: novaTarefa.hora_vencimento || null,
-      } as any);
-    }
-
-    toast.success(novaTarefa ? "Tarefa concluída e nova criada ✅" : "Tarefa concluída ✅");
+    toast.success("Tarefa concluída e próxima agendada ✅");
     setCompletingTarefa(null);
     onReload();
-
-    // Only prompt next action if no more pending tasks remain after this one
-    const remainingPending = pendentes.filter(t => t.id !== completingTarefa.id);
-    if (remainingPending.length === 0 && !novaTarefa) {
-      onNextAction?.();
-    }
   };
 
   const handleAdiarRapido = async (id: string, horas: number) => {
