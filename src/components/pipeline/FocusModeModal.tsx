@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import { logFocus, newFocusSessionId } from "@/lib/focusTelemetry";
 import FocusConfigScreen from "./focus/FocusConfigScreen";
+import LeadFocusScreen from "./focus/LeadFocusScreen";
 
 interface FocusModeModalProps {
   open: boolean;
