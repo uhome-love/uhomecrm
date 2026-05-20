@@ -138,6 +138,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       setStagesLoading(false);
     };
     loadStages();
+    // Silent counts: carrega tudo (incluindo upcoming 2d) para alimentar os badges/contadores
+    // da tela de configuração. Não passa criteria (default = "all"), não emite telemetria.
+    reloadCounts({ includeUpcoming2d: true });
   }, [open, pipelineTipo]);
 
   const handleToggleCriteria = (value: CriteriaType) => {
