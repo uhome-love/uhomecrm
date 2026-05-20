@@ -49,6 +49,22 @@ export default function ReengajamentoTab() {
     refetchInterval: 2000,
   });
 
+  // Blacklist de templates (FIX B)
+  const { data: blockedTemplates } = useQuery({
+    queryKey: ["blocked-templates"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("blocked_templates" as any)
+        .select("template_name, reason");
+      return (data as any[]) || [];
+    },
+    refetchInterval: 30000,
+  });
+  const isBlocked = (name?: string | null) =>
+    !!name && (blockedTemplates || []).some((b: any) => b.template_name === name);
+  const blockedReason = (name?: string | null) =>
+    (blockedTemplates || []).find((b: any) => b.template_name === name)?.reason as string | undefined;
+
   // Histórico das últimas 10 execuções
   const { data: runs = [] } = useQuery({
     queryKey: ["reengajamento-runs"],
