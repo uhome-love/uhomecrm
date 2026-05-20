@@ -5844,8 +5844,10 @@ export type Database = {
           pipeline_lead_id: string
           prioridade: string
           responsavel_id: string | null
+          resultado: string | null
           status: string
           tipo: string
+          tipo_contato: string | null
           titulo: string
           updated_at: string
         }
@@ -5859,8 +5861,10 @@ export type Database = {
           pipeline_lead_id: string
           prioridade?: string
           responsavel_id?: string | null
+          resultado?: string | null
           status?: string
           tipo?: string
+          tipo_contato?: string | null
           titulo: string
           updated_at?: string
         }
@@ -5874,8 +5878,10 @@ export type Database = {
           pipeline_lead_id?: string
           prioridade?: string
           responsavel_id?: string | null
+          resultado?: string | null
           status?: string
           tipo?: string
+          tipo_contato?: string | null
           titulo?: string
           updated_at?: string
         }

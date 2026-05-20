@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -92,6 +93,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const reloadInFlightRef = useRef<boolean>(false);
   const [activityNote, setActivityNote] = useState("");
   const [tab, setTab] = useState("followup");
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [direction, setDirection] = useState(1);
   const [activityRegistered, setActivityRegistered] = useState(false);
@@ -433,66 +435,118 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   }, [currentLead, corretorId, taskTitle, taskType, taskDueDate]);
 
   const handleCompleteOverdueTask = useCallback(async (
-    obs: string,
-    novaTarefa?: { tipo: string; vence_em: string; hora_vencimento: string; obs: string }
+    payload: import("./task-completion/types").CompletionPayload
   ) => {
     if (!completingOverdue || !currentLead || !corretorId) return;
     setSaving(true);
     try {
+      const now = new Date().toISOString();
+      const { tipo_contato, resultado, descricao, nova_tarefa, novo_stage_id } = payload;
+
       // 1) Mark overdue task as concluida
       await supabase.from("pipeline_tarefas").update({
         status: "concluida",
-        concluida_em: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as any).eq("id", completingOverdue.id);
+        concluida_em: now,
+        updated_at: now,
+      } as never).eq("id", completingOverdue.id);
 
       // 2) Touch lead
       await supabase.from("pipeline_leads").update({
-        ultima_acao_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as any).eq("id", currentLead.id);
+        ultima_acao_at: now,
+        updated_at: now,
+      } as never).eq("id", currentLead.id);
 
-      // 3) Register activity if observation provided
-      if (obs.trim()) {
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: currentLead.id,
-          created_by: corretorId,
-          tipo: "nota",
-          titulo: `Tarefa concluída: ${completingOverdue.titulo}`,
-          descricao: obs.trim(),
-          status: "concluida",
-          prioridade: "normal",
-        } as any);
+      // 3) Activity capture (estruturada) — sempre registra, mesmo sem descricao.
+      //    Ajuste 1: tipo = tipo_contato (NUNCA o resultado), limpa poluição naturalmente.
+      const tituloAtividade = `${completingOverdue.titulo} — ${resultado}`;
+      await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: currentLead.id,
+        created_by: corretorId,
+        tipo: tipo_contato,
+        tipo_contato,
+        resultado,
+        titulo: tituloAtividade,
+        descricao: descricao ?? null,
+        status: "concluida",
+        prioridade: "media",
+      } as never);
+
+      // 4) Create next task (sempre — fluxo V2 obrigatório)
+      const TIPO_LABELS_MAP: Record<string, string> = {
+        ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up",
+        visita: "Visita", proposta: "Proposta", email: "E-mail",
+      };
+      const novoTituloTarefa = `${TIPO_LABELS_MAP[nova_tarefa.tipo] || nova_tarefa.tipo}: ${currentLead.name}`;
+      await supabase.from("pipeline_tarefas").insert({
+        pipeline_lead_id: currentLead.id,
+        created_by: corretorId,
+        responsavel_id: corretorId,
+        titulo: novoTituloTarefa,
+        tipo: nova_tarefa.tipo,
+        descricao: nova_tarefa.obs || null,
+        vence_em: nova_tarefa.vence_em,
+        hora_vencimento: nova_tarefa.hora_vencimento || null,
+        status: "pendente",
+        prioridade: "media",
+      } as never);
+
+      // 5) Optional stage change (Ajuste 2: telemetria de falha, sem rollback)
+      let stageChanged = false;
+      if (novo_stage_id && novo_stage_id !== currentLead.stage_id) {
+        const { error: stageErr } = await supabase.from("pipeline_leads").update({
+          stage_id: novo_stage_id,
+          stage_changed_at: now,
+          updated_at: now,
+        } as never).eq("id", currentLead.id);
+
+        if (stageErr) {
+          logFocus("stage_change_failed", {
+            session_id: focusSessionIdRef.current,
+            lead_id: currentLead.id,
+            attempted_stage_id: novo_stage_id,
+            current_stage_id: currentLead.stage_id,
+            error_message: stageErr.message,
+          }, "warn");
+          toast.warning("Tarefa concluída, mas etapa não foi alterada.");
+        } else {
+          stageChanged = true;
+          await supabase.from("pipeline_historico").insert({
+            pipeline_lead_id: currentLead.id,
+            stage_novo_id: novo_stage_id,
+            movido_por: corretorId,
+            observacao: "Movido via Modo Foco (conclusão de tarefa)",
+          });
+        }
       }
 
-      // 4) Create next task if requested
-      if (novaTarefa) {
-        await supabase.from("pipeline_tarefas").insert({
-          pipeline_lead_id: currentLead.id,
-          created_by: corretorId,
-          titulo: `${novaTarefa.tipo}: ${currentLead.name}`,
-          tipo: novaTarefa.tipo,
-          descricao: novaTarefa.obs || null,
-          vence_em: novaTarefa.vence_em,
-          hora_vencimento: novaTarefa.hora_vencimento || null,
-          status: "pendente",
-          prioridade: "normal",
-        } as any);
-      }
+      // 6) Telemetria estruturada
+      logFocus("task_completion", {
+        session_id: focusSessionIdRef.current,
+        lead_id: currentLead.id,
+        tarefa_id: completingOverdue.id,
+        tipo_contato,
+        resultado,
+        has_next_task: true,
+        next_tipo: nova_tarefa.tipo,
+        stage_changed: stageChanged,
+        descricao_len: (descricao ?? "").length,
+      });
 
-      toast.success(novaTarefa ? "Tarefa concluída e próxima agendada ✅" : "Tarefa concluída ✅");
+      toast.success("Tarefa concluída e próxima agendada ✅");
       setCompletingOverdue(null);
       setTasksRefreshKey(k => k + 1);
       setTimelineRefreshKey(k => k + 1);
       setWorkedCount(c => c + 1);
-      goToNext();
+      // Invalida cache HOMI do lead para refletir nova atividade
+      queryClient.invalidateQueries({ queryKey: ["homi-insight", currentLead.id] });
+      setTimeout(() => goToNext(), 800);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao concluir tarefa.");
     } finally {
       setSaving(false);
     }
-  }, [completingOverdue, currentLead, corretorId, goToNext]);
+  }, [completingOverdue, currentLead, corretorId, goToNext, queryClient]);
 
   const handleOpenWhatsApp = useCallback(() => {
     if (!currentLead?.phone) return;
@@ -1014,6 +1068,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
           onOpenChange={(v) => { if (!v) setCompletingOverdue(null); }}
           tarefaTitulo={completingOverdue.titulo}
           leadNome={currentLead?.name}
+          leadId={currentLead?.id}
+          currentStageId={currentLead?.stage_id ?? undefined}
           onConfirm={handleCompleteOverdueTask}
         />
       )}

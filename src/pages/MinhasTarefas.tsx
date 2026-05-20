@@ -487,65 +487,95 @@ export default function MinhasTarefas() {
 
   const [savingCompletion, setSavingCompletion] = useState(false);
 
-  const handleCompletionConfirm = async (obs: string, novaTarefa?: { tipo: string; vence_em: string; hora_vencimento: string; obs: string }) => {
+  const handleCompletionConfirm = async (
+    payload: import("@/components/pipeline/task-completion/types").CompletionPayload
+  ) => {
     if (!completingTarefa || !user || savingCompletion) return;
     const id = completingTarefa.id;
     const leadId = completingTarefa.pipeline_lead_id;
+    const { tipo_contato, resultado, descricao, nova_tarefa, novo_stage_id } = payload;
     setSavingCompletion(true);
 
     try {
+      const now = new Date().toISOString();
+
       if (categoria === "negocios") {
-        const { error } = await supabase.from("negocios_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
+        const { error } = await supabase.from("negocios_tarefas")
+          .update({ status: "concluida", concluida_em: now } as never).eq("id", id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("pipeline_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
+        const { error } = await supabase.from("pipeline_tarefas")
+          .update({ status: "concluida", concluida_em: now } as never).eq("id", id);
         if (error) throw error;
-        await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any).eq("id", leadId);
+        await supabase.from("pipeline_leads")
+          .update({ ultima_acao_at: now, updated_at: now } as never).eq("id", leadId);
       }
 
-      // Register observation in history
-      if (obs.trim() && categoria === "leads") {
+      // Activity capture (apenas leads — negócios não usa pipeline_atividades)
+      if (categoria === "leads") {
         await supabase.from("pipeline_atividades").insert({
           pipeline_lead_id: leadId,
-          tipo: "followup",
-          titulo: obs.trim(),
-          descricao: null,
+          tipo: tipo_contato, // Ajuste 1: nunca o resultado
+          tipo_contato,
+          resultado,
+          titulo: `${completingTarefa.titulo} — ${resultado}`,
+          descricao: descricao ?? null,
           data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
           hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
           prioridade: "media",
           status: "concluida",
           created_by: user.id,
-        } as any);
-      }
+        } as never);
 
-      // Create new task if requested
-      if (novaTarefa && categoria === "leads") {
+        // Nova tarefa (fluxo V2 sempre cria)
         const leadNome = completingTarefa.lead_nome || "Lead";
         const TIPO_LABELS_MAP: Record<string, string> = {
-          follow_up: "Follow-up", ligar: "Ligar", whatsapp: "WhatsApp", enviar_proposta: "Enviar proposta",
-          enviar_material: "Enviar material", marcar_visita: "Marcar visita",
+          ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up",
+          visita: "Visita", proposta: "Proposta", email: "E-mail",
         };
-        const titulo = `${TIPO_LABELS_MAP[novaTarefa.tipo] || novaTarefa.tipo}: ${leadNome}`;
+        const titulo = `${TIPO_LABELS_MAP[nova_tarefa.tipo] || nova_tarefa.tipo}: ${leadNome}`;
         const { error: insertErr } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: leadId,
-          tipo: novaTarefa.tipo,
+          tipo: nova_tarefa.tipo,
           titulo,
-          descricao: novaTarefa.obs || null,
+          descricao: nova_tarefa.obs || null,
           prioridade: "media",
           status: "pendente",
           responsavel_id: user.id,
-          vence_em: novaTarefa.vence_em,
-          hora_vencimento: novaTarefa.hora_vencimento || null,
+          vence_em: nova_tarefa.vence_em,
+          hora_vencimento: nova_tarefa.hora_vencimento || null,
           created_by: user.id,
-        } as any);
+        } as never);
         if (insertErr) throw insertErr;
+
+        // Optional stage change
+        if (novo_stage_id && leadId) {
+          const { error: stageErr } = await supabase.from("pipeline_leads").update({
+            stage_id: novo_stage_id,
+            stage_changed_at: now,
+            updated_at: now,
+          } as never).eq("id", leadId);
+          if (stageErr) {
+            toast.warning("Tarefa concluída, mas etapa não foi alterada.");
+          } else {
+            await supabase.from("pipeline_historico").insert({
+              pipeline_lead_id: leadId,
+              stage_novo_id: novo_stage_id,
+              movido_por: user.id,
+              observacao: "Movido via Central de Tarefas (conclusão)",
+            });
+          }
+        }
       }
 
-      toast.success(novaTarefa ? "Tarefa concluída e nova criada ✅" : "Tarefa concluída ✅");
+      toast.success("Tarefa concluída e próxima agendada ✅");
       setCompletingTarefa(null);
       queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
       queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
+      if (leadId) {
+        queryClient.invalidateQueries({ queryKey: ["homi-insight", leadId] });
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao concluir tarefa";
       toast.error("Não foi possível concluir: " + msg);
@@ -1116,6 +1146,7 @@ export default function MinhasTarefas() {
         onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
         tarefaTitulo={completingTarefa?.titulo || ""}
         leadNome={completingTarefa?.lead_nome}
+        leadId={completingTarefa?.pipeline_lead_id}
         onConfirm={handleCompletionConfirm}
       />
     </div>
