@@ -158,6 +158,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
   useEffect(() => {
     if (!currentLead || !open || configPhase) return;
+
+    // Cache hit: hidrata insight sem chamar Gemini novamente.
+    const cached = insightCacheRef.current.get(currentLead.id);
+    if (cached && Date.now() - cached.at < INSIGHT_TTL_MS) {
+      setHomiInsight(cached.insight);
+      setFollowUpText(cached.mensagem);
+      setHomiLoading(false);
+      return;
+    }
     fetchHomiSuggestion(currentLead);
   }, [currentIndex, leads.length, open, configPhase]);
 
