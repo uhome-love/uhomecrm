@@ -685,153 +685,32 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -direction * 40 }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="flex flex-col lg:flex-row items-start justify-center gap-4 sm:gap-6 p-4 sm:p-6 max-w-5xl mx-auto w-full"
+                className="flex-1 flex flex-col min-h-0"
               >
-                {/* LEFT: Lead Info */}
-                <div className="w-full lg:w-1/2 rounded-2xl p-5 sm:p-6 space-y-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0"
-                      style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}
-                    >
-                      {currentLead.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-white font-bold text-base sm:text-lg truncate">{currentLead.name}</h3>
-                      <span className="text-gray-400 text-xs">{currentLead.stage}</span>
-                    </div>
-                  </div>
+                <LeadFocusScreen
+                  lead={currentLead}
+                  workedCount={workedCount}
+                  homiLoading={homiLoading}
+                  homiInsight={homiInsight}
+                  pendingTasks={pendingTasks}
+                  timelineRefreshKey={timelineRefreshKey}
+                  onCompleteTask={(id, titulo) => setCompletingOverdue({ id, titulo })}
+                  onCompleteNextTask={() => {
+                    const t = currentLead.next_pending_task;
+                    if (t) {
+                      setCompletingOverdue({ id: t.id, titulo: t.titulo });
+                    } else {
+                      setTab("task");
+                      setTaskTitle(`Follow-up: ${currentLead.name}`);
+                    }
+                  }}
+                  onCreateNewTask={() => {
+                    setTab("task");
+                    setTaskTitle(`Follow-up: ${currentLead.name}`);
+                  }}
+                  panelChildren={
+                    <div className="space-y-3">
 
-                  <div className="flex flex-wrap gap-1.5">
-                    {currentLead.alert_reasons.map((reason, i) => {
-                      const isOverdue = reason.includes("vencida");
-                      const canClick = isOverdue && currentLead.overdue_task_list.length > 0;
-                      const isCritical = reason.startsWith("🔴");
-                      const isWarning = reason.startsWith("🟠");
-                      const isAttention = reason.startsWith("🟡");
-                      const bg = isOverdue
-                        ? "rgba(239,68,68,0.15)"
-                        : isCritical ? "rgba(239,68,68,0.15)"
-                        : isWarning ? "rgba(249,115,22,0.15)"
-                        : isAttention ? "rgba(245,158,11,0.15)"
-                        : "rgba(148,163,184,0.15)";
-                      const fg = isOverdue
-                        ? "#f87171"
-                        : isCritical ? "#f87171"
-                        : isWarning ? "#fb923c"
-                        : isAttention ? "#fbbf24"
-                        : "#94a3b8";
-                      return (
-                        <Badge
-                          key={i}
-                          onClick={canClick ? () => {
-                            const t = currentLead.overdue_task_list[0];
-                            setCompletingOverdue({ id: t.id, titulo: t.titulo });
-                          } : undefined}
-                          className={`text-[10px] font-semibold border-0 ${canClick ? "cursor-pointer hover:brightness-125 transition" : ""}`}
-                          style={{ background: bg, color: fg }}
-                        >
-                          <AlertTriangle className="w-3 h-3 mr-1" />
-                          {reason}{canClick ? " · concluir" : ""}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-
-
-                  {currentLead.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {currentLead.tags.map((tag, i) => (
-                        <Badge key={i} variant="secondary" className="text-[10px]" style={{ background: "rgba(255,255,255,0.06)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.08)" }}>
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-1.5 text-gray-400">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>{currentLead.days_without_contact < 999 ? `${currentLead.days_without_contact}d sem contato` : "Sem contato"}</span>
-                    </div>
-                    {currentLead.origin && (
-                      <div className="text-gray-400 truncate">📍 {currentLead.origin}</div>
-                    )}
-                    {currentLead.interest && (
-                      <div className="text-gray-400 truncate">🏠 {currentLead.interest}</div>
-                    )}
-                    {currentLead.phone && (
-                      <div className="text-gray-400 truncate">📱 {currentLead.phone}</div>
-                    )}
-                  </div>
-
-                  {/* HOMI Insight */}
-                  <div className="rounded-xl p-3.5" style={{ background: "linear-gradient(135deg, rgba(79,70,229,0.1), rgba(124,58,237,0.08))", border: "1px solid rgba(79,70,229,0.2)" }}>
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                      <span className="text-indigo-300 text-xs font-semibold">HOMI Insight</span>
-                    </div>
-                    {homiLoading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
-                        <span className="text-gray-400 text-xs">Analisando histórico do lead...</span>
-                      </div>
-                    ) : (
-                      <p className="text-gray-300 text-xs leading-relaxed">{homiInsight || "Sem insight disponível."}</p>
-                    )}
-                  </div>
-
-                  {/* Tarefas pendentes do lead */}
-                  <div className="rounded-xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <ListChecks className="w-3.5 h-3.5 text-indigo-400" />
-                        <span className="text-indigo-300 text-xs font-semibold">Tarefas pendentes ({pendingTasks.length})</span>
-                      </div>
-                      <button
-                        onClick={() => { setTab("task"); setTaskTitle(`Follow-up: ${currentLead.name}`); }}
-                        className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30"
-                      >
-                        + Nova
-                      </button>
-                    </div>
-                    {pendingTasks.length === 0 ? (
-                      <p className="text-gray-500 text-xs italic">Nenhuma tarefa pendente</p>
-                    ) : (
-                      <div className="space-y-1.5 max-h-[160px] overflow-y-auto">
-                        {pendingTasks.map(t => {
-                          const todayBRT = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-                          const isOverdue = !!t.vence_em && t.vence_em < todayBRT;
-                          const isToday = t.vence_em === todayBRT;
-                          return (
-                            <div key={t.id} className="flex items-center gap-2 p-2 rounded-lg" style={{ background: isOverdue ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.04)", border: `1px solid ${isOverdue ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.06)"}` }}>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-200 truncate">{t.titulo}</p>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                  {isOverdue ? (
-                                    <Badge className="text-[9px] border-0 px-1.5 py-0" style={{ background: "rgba(239,68,68,0.2)", color: "#f87171" }}>⏰ Atrasada · {t.vence_em}{t.hora_vencimento ? ` ${t.hora_vencimento.slice(0,5)}` : ""}</Badge>
-                                  ) : (
-                                    <Badge className="text-[9px] border-0 px-1.5 py-0" style={{ background: isToday ? "rgba(245,158,11,0.2)" : "rgba(148,163,184,0.15)", color: isToday ? "#fbbf24" : "#94a3b8" }}>{isToday ? "Hoje" : t.vence_em}{t.hora_vencimento ? ` ${t.hora_vencimento.slice(0,5)}` : ""}</Badge>
-                                  )}
-                                  {t.tipo && <span className="text-[9px] text-gray-500">{t.tipo}</span>}
-                                </div>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setCompletingOverdue({ id: t.id, titulo: t.titulo })}
-                                className="h-7 px-2 text-[10px] gap-1 text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10"
-                              >
-                                <Check className="w-3 h-3" /> Concluir
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="w-full lg:w-1/2 rounded-2xl p-5 sm:p-6" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <Tabs value={tab} onValueChange={setTab} className="space-y-4">
                     <TabsList className="w-full bg-transparent border rounded-lg p-1" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
                       <TabsTrigger value="followup" className="flex-1 text-xs data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-gray-400 rounded-md">
