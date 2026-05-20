@@ -75,8 +75,11 @@ export function useFocusLeads(
     setError(null);
 
     try {
-      const today = new Date();
-      const todayStr = today.toISOString().split("T")[0];
+      // "Hoje" e "agora" em BRT (consistente com SQL `AT TIME ZONE 'America/Sao_Paulo'`)
+      const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); // "YYYY-MM-DD"
+      const nowHHMM_BRT = new Date().toLocaleTimeString("en-GB", {
+        timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit",
+      }); // "HH:MM"
 
       // 1. Get stages for name mapping — exclude descarte and convertido
       const { data: stagesData, error: stagesError } = await runQueryWithRetry<Array<{ id: string; nome: string; tipo: string | null; pipeline_tipo: string | null }>>(() =>
