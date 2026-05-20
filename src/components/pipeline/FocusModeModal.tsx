@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria, FOCUS_STAGNANT_DAYS } from "@/hooks/useFocusLeads";
+import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria, FOCUS_LEVELS } from "@/hooks/useFocusLeads";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
