@@ -758,6 +758,27 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_templates: {
+        Row: {
+          blocked_at: string
+          blocked_by: string | null
+          reason: string
+          template_name: string
+        }
+        Insert: {
+          blocked_at?: string
+          blocked_by?: string | null
+          reason: string
+          template_name: string
+        }
+        Update: {
+          blocked_at?: string
+          blocked_by?: string | null
+          reason?: string
+          template_name?: string
+        }
+        Relationships: []
+      }
       brevo_contacts: {
         Row: {
           brevo_id: string | null
@@ -7390,6 +7411,9 @@ export type Database = {
           pausa_longa_max_seconds: number
           pausa_longa_min_seconds: number
           paused: boolean
+          paused_at_brt: string | null
+          paused_reason: string | null
+          paused_until_release: boolean
           updated_at: string
           validar_numero: boolean
           wave2_min_dias_apos_wave1: number | null
@@ -7419,6 +7443,9 @@ export type Database = {
           pausa_longa_max_seconds?: number
           pausa_longa_min_seconds?: number
           paused?: boolean
+          paused_at_brt?: string | null
+          paused_reason?: string | null
+          paused_until_release?: boolean
           updated_at?: string
           validar_numero?: boolean
           wave2_min_dias_apos_wave1?: number | null
@@ -7448,6 +7475,9 @@ export type Database = {
           pausa_longa_max_seconds?: number
           pausa_longa_min_seconds?: number
           paused?: boolean
+          paused_at_brt?: string | null
+          paused_reason?: string | null
+          paused_until_release?: boolean
           updated_at?: string
           validar_numero?: boolean
           wave2_min_dias_apos_wave1?: number | null
