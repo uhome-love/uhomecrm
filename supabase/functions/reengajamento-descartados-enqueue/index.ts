@@ -3,6 +3,7 @@
 // validação de número, warmup diário, janela horária estrita.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isCampaignDispatchEnabled, pausedResponse } from "../_shared/campaign-gate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
