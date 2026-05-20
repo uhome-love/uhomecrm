@@ -93,6 +93,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const reloadInFlightRef = useRef<boolean>(false);
   const [activityNote, setActivityNote] = useState("");
   const [tab, setTab] = useState("followup");
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [direction, setDirection] = useState(1);
   const [activityRegistered, setActivityRegistered] = useState(false);
