@@ -999,7 +999,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                       "Pular sem ação →"
                     )}
                   </button>
-                </div>
+                    </div>
+                  }
+                />
               </motion.div>
             </AnimatePresence>
           ) : null}
