@@ -47,13 +47,7 @@ const QUICK_MESSAGES = [
 ];
 
 type CriteriaType = FocusCriteria;
-
-const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { value: "all", label: "Tudo que precisa de atenção", description: "Atrasados + tarefas de hoje + sem próximo passo", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
-  { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas (data ou hora BRT)", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
-  { value: "today", label: "Para hoje", description: "Tarefas com vencimento hoje, ainda não vencidas", icon: <Clock className="w-5 h-5" />, color: "#F97316" },
-  { value: "no_next_step", label: "Sem próximo passo", description: `Zero tarefa pendente. 🟡 1–4d · 🟠 5–9d · 🔴 ${FOCUS_LEVELS.critical}+d · 🔴 nunca trabalhado`, icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
-];
+// CRITERIA_OPTIONS movido para FocusConfigScreen (Sprint 1 R1).
 
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
   const { user } = useAuth();
