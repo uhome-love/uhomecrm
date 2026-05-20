@@ -595,7 +595,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                 <Filter className="w-3.5 h-3.5" /> Filtros
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400 hover:text-white hover:bg-white/5 h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={handleClose} className="text-gray-400 hover:text-white hover:bg-white/5 h-8 w-8">
               <X className="w-4 h-4" />
             </Button>
           </div>
