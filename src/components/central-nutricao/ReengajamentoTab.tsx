@@ -49,6 +49,22 @@ export default function ReengajamentoTab() {
     refetchInterval: 2000,
   });
 
+  // Blacklist de templates (FIX B)
+  const { data: blockedTemplates } = useQuery({
+    queryKey: ["blocked-templates"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("blocked_templates" as any)
+        .select("template_name, reason");
+      return (data as any[]) || [];
+    },
+    refetchInterval: 30000,
+  });
+  const isBlocked = (name?: string | null) =>
+    !!name && (blockedTemplates || []).some((b: any) => b.template_name === name);
+  const blockedReason = (name?: string | null) =>
+    (blockedTemplates || []).find((b: any) => b.template_name === name)?.reason as string | undefined;
+
   // Histórico das últimas 10 execuções
   const { data: runs = [] } = useQuery({
     queryKey: ["reengajamento-runs"],
@@ -212,6 +228,17 @@ export default function ReengajamentoTab() {
   }
 
   async function dispararAgora() {
+    // FIX A: pausa travada
+    if ((cfg as any)?.paused_until_release) {
+      toast.error("⛔ Central travada: " + ((cfg as any)?.paused_reason || "liberação manual via SQL admin necessária"));
+      return;
+    }
+    // FIX B: template em blacklist
+    const tpl1 = (local?.meta_template_name || "") as string;
+    if (isBlocked(tpl1)) {
+      toast.error(`⛔ Template "${tpl1}" está bloqueado: ${blockedReason(tpl1)}. Verifique no Business Manager antes de remover da blacklist.`);
+      return;
+    }
     setStarting(true);
     try {
       if (cfg?.id) {
@@ -240,6 +267,10 @@ export default function ReengajamentoTab() {
   }
 
   async function dispararWave2() {
+    if ((cfg as any)?.paused_until_release) {
+      toast.error("⛔ Central travada: " + ((cfg as any)?.paused_reason || "liberação manual via SQL admin necessária"));
+      return;
+    }
     const hasMsg = !!(local?.mensagem_template_2 || (local?.mensagens_variantes_2 && local.mensagens_variantes_2.length > 0));
     const hasMeta = !!local?.meta_template_name_2;
     const isMeta = (local?.canal || cfg?.canal) === "meta";
@@ -249,6 +280,11 @@ export default function ReengajamentoTab() {
     }
     if (!isMeta && !hasMsg) {
       toast.error("Preencha a mensagem da 2ª onda antes de disparar");
+      return;
+    }
+    const tpl2 = (local?.meta_template_name_2 || "") as string;
+    if (isMeta && isBlocked(tpl2)) {
+      toast.error(`⛔ Template "${tpl2}" está bloqueado: ${blockedReason(tpl2)}. Verifique no Business Manager antes de remover da blacklist.`);
       return;
     }
     setStarting(true);
@@ -931,7 +967,12 @@ export default function ReengajamentoTab() {
           </Tabs>
 
           <div className="flex gap-2 justify-end items-center pt-3 border-t">
-            {(cfg as any)?.paused && !isRunning && (
+            {(cfg as any)?.paused_until_release && (
+              <Badge className="bg-red-100 text-red-800 mr-auto" title={(cfg as any)?.paused_reason || ""}>
+                🔒 Travado — liberação manual via SQL
+              </Badge>
+            )}
+            {!(cfg as any)?.paused_until_release && (cfg as any)?.paused && !isRunning && (
               <Badge className="bg-amber-100 text-amber-800 mr-auto">⏸️ Pausado</Badge>
             )}
             {isRunning ? (
@@ -940,7 +981,13 @@ export default function ReengajamentoTab() {
                 {isPausing ? "Pausando…" : "Pausar agora"}
               </Button>
             ) : (
-              <Button variant="outline" size="sm" onClick={dispararAgora} disabled={starting}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={dispararAgora}
+                disabled={starting || !!(cfg as any)?.paused_until_release}
+                title={(cfg as any)?.paused_until_release ? ((cfg as any)?.paused_reason || "Central travada — destravar via SQL admin") : undefined}
+              >
                 {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
                 {(cfg as any)?.paused ? "Retomar disparo" : "Disparar agora"}
               </Button>
