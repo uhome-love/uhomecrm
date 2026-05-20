@@ -314,6 +314,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
       toast.success("Atividade registrada! ✅");
       setActivityRegistered(true);
+      // Invalida cache do insight: nova atividade muda o contexto que Gemini analisa.
+      insightCacheRef.current.delete(currentLead.id);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao registrar atividade.");
