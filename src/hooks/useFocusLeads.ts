@@ -2,18 +2,39 @@
  * useFocusLeads — Fetches leads needing attention for Focus Mode.
  *
  * Criteria (filterable):
- *  1. No pending tasks at all (desatualizado / sem tarefa)
+ *  1. No pending tasks at all (sem tarefa)
  *  2. Overdue pending tasks — espelha CardStatusLine.getLeadStatusFilter
  *     (vence_em < hoje BRT, OU vence_em == hoje BRT && hora_vencimento < agora BRT)
- *  3. Stage stalled — sem movimentação há FOCUS_STAGNANT_DAYS dias
+ *  3. Stagnant / "Desatualizado" — sem ação (ultima_acao_at) há FOCUS_LEVELS.critical dias
+ *
+ * Régua de saúde (health) por dias sem ação (ultima_acao_at || updated_at):
+ *   ≥ 10d → critical 🔴
+ *   ≥  5d → warning  🟠
+ *   ≥  1d → attention 🟡
+ *   <  1d → ok
  *
  * Leads com negocio_id NOT NULL são excluídos do Foco de "leads"
  * (aparecem apenas em /meus-negocios → Modo Foco de Negócios).
  */
 
-/** Dias de parada em uma etapa para o lead ser considerado "Desatualizado".
- *  Default 14d (P50 real do pipeline = ~29d; valor antigo de 5d marcava >75% da base). */
-export const FOCUS_STAGNANT_DAYS = 14;
+/** Limiares (em dias sem ação) da régua de saúde do Modo Foco. */
+export const FOCUS_LEVELS = { attention: 1, warning: 5, critical: 10 } as const;
+
+export type FocusHealth = "ok" | "attention" | "warning" | "critical";
+
+function computeHealth(daysSinceContact: number): FocusHealth {
+  if (daysSinceContact >= FOCUS_LEVELS.critical) return "critical";
+  if (daysSinceContact >= FOCUS_LEVELS.warning) return "warning";
+  if (daysSinceContact >= FOCUS_LEVELS.attention) return "attention";
+  return "ok";
+}
+
+const HEALTH_EMOJI: Record<FocusHealth, string> = {
+  critical: "🔴",
+  warning: "🟠",
+  attention: "🟡",
+  ok: "🟢",
+};
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
@@ -39,6 +60,8 @@ export interface FocusLead {
   tags: string[];
   negocio_id: string | null;
   pipeline_tipo: string;
+  /** Régua de saúde calculada a partir de days_without_contact. */
+  health: FocusHealth;
 }
 
 export type FocusCriteria = "overdue_tasks" | "no_tasks" | "stagnant" | "all";
@@ -201,10 +224,6 @@ export function useFocusLeads(
       }
 
       // 4. Build focus leads — filter for those that need attention
-      const stagnantThreshold = new Date();
-      stagnantThreshold.setDate(stagnantThreshold.getDate() - FOCUS_STAGNANT_DAYS);
-      const stagnantThresholdISO = stagnantThreshold.toISOString();
-
       const criteriaFilter = filters?.criteria || ["all"];
       const filterAll = criteriaFilter.includes("all");
 
@@ -214,14 +233,6 @@ export function useFocusLeads(
         const taskInfo = allTasks[lead.id];
         const hasOverdue = (taskInfo?.overdue ?? 0) > 0;
         const hasNoTasks = !taskInfo;
-        const stageStalled = lead.stage_changed_at < stagnantThresholdISO;
-
-        // Apply criteria filter
-        const matchesOverdue = hasOverdue && (filterAll || criteriaFilter.includes("overdue_tasks"));
-        const matchesNoTasks = hasNoTasks && (filterAll || criteriaFilter.includes("no_tasks"));
-        const matchesStagnant = stageStalled && (filterAll || criteriaFilter.includes("stagnant"));
-
-        if (!matchesOverdue && !matchesNoTasks && !matchesStagnant) continue;
 
         const lastContact = lead.ultima_acao_at || lead.updated_at;
         const daysSinceContact = lastContact
@@ -232,11 +243,24 @@ export function useFocusLeads(
           (Date.now() - new Date(lead.stage_changed_at).getTime()) / 86400000
         );
 
+        const health = computeHealth(daysSinceContact);
+        // "Desatualizado" agora é baseado em ação (ultima_acao_at), não em movimento de etapa.
+        // Régua 1/5/10 → considera stagnant quando health === 'critical' (≥10d sem ação).
+        const isStale = health === "critical";
+
+        // Apply criteria filter
+        const matchesOverdue = hasOverdue && (filterAll || criteriaFilter.includes("overdue_tasks"));
+        const matchesNoTasks = hasNoTasks && (filterAll || criteriaFilter.includes("no_tasks"));
+        const matchesStagnant = isStale && (filterAll || criteriaFilter.includes("stagnant"));
+
+        if (!matchesOverdue && !matchesNoTasks && !matchesStagnant) continue;
+
         const alertReasons: string[] = [];
         if (hasOverdue) alertReasons.push(`${taskInfo!.overdue} tarefa(s) vencida(s)`);
         if (hasNoTasks) alertReasons.push("Sem tarefas pendentes");
-        if (stageStalled) alertReasons.push(`Etapa parada há ${daysInStage} dias`);
-        if (daysSinceContact >= 3) alertReasons.push(`Sem contato há ${daysSinceContact} dias`);
+        if (health !== "ok") {
+          alertReasons.push(`${HEALTH_EMOJI[health]} Sem ação há ${daysSinceContact}d`);
+        }
 
         focusLeads.push({
           id: lead.id,
@@ -259,8 +283,10 @@ export function useFocusLeads(
           tags: (lead.tags || []).filter(Boolean),
           negocio_id: lead.negocio_id,
           pipeline_tipo: pipelineTipo,
+          health,
         });
       }
+
 
       // Sort by urgency
       focusLeads.sort((a, b) => {

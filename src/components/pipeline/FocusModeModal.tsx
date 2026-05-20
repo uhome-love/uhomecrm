@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria, FOCUS_STAGNANT_DAYS } from "@/hooks/useFocusLeads";
+import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria, FOCUS_LEVELS } from "@/hooks/useFocusLeads";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -47,10 +47,10 @@ const QUICK_MESSAGES = [
 type CriteriaType = FocusCriteria;
 
 const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { value: "all", label: "Tudo que precisa de atenção", description: "Atrasados, sem tarefa ou parados há +" + FOCUS_STAGNANT_DAYS + " dias", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
+  { value: "all", label: "Tudo que precisa de atenção", description: `Atrasados, sem tarefa ou sem ação há ${FOCUS_LEVELS.critical}+ dias`, icon: <Target className="w-5 h-5" />, color: "#4969FF" },
   { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas (data ou hora BRT)", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
   { value: "no_tasks", label: "Sem tarefas", description: "Leads sem nenhuma tarefa agendada", icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
-  { value: "stagnant", label: "Desatualizados", description: `Leads parados na mesma etapa há ${FOCUS_STAGNANT_DAYS}+ dias`, icon: <Clock className="w-5 h-5" />, color: "#F97316" },
+  { value: "stagnant", label: "Desatualizados", description: `Leads sem ação há ${FOCUS_LEVELS.critical}+ dias (régua 🟡 ${FOCUS_LEVELS.attention}d · 🟠 ${FOCUS_LEVELS.warning}d · 🔴 ${FOCUS_LEVELS.critical}d)`, icon: <Clock className="w-5 h-5" />, color: "#F97316" },
 ];
 
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
@@ -716,6 +716,21 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     {currentLead.alert_reasons.map((reason, i) => {
                       const isOverdue = reason.includes("vencida");
                       const canClick = isOverdue && currentLead.overdue_task_list.length > 0;
+                      const isCritical = reason.startsWith("🔴");
+                      const isWarning = reason.startsWith("🟠");
+                      const isAttention = reason.startsWith("🟡");
+                      const bg = isOverdue
+                        ? "rgba(239,68,68,0.15)"
+                        : isCritical ? "rgba(239,68,68,0.15)"
+                        : isWarning ? "rgba(249,115,22,0.15)"
+                        : isAttention ? "rgba(245,158,11,0.15)"
+                        : "rgba(148,163,184,0.15)";
+                      const fg = isOverdue
+                        ? "#f87171"
+                        : isCritical ? "#f87171"
+                        : isWarning ? "#fb923c"
+                        : isAttention ? "#fbbf24"
+                        : "#94a3b8";
                       return (
                         <Badge
                           key={i}
@@ -724,10 +739,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                             setCompletingOverdue({ id: t.id, titulo: t.titulo });
                           } : undefined}
                           className={`text-[10px] font-semibold border-0 ${canClick ? "cursor-pointer hover:brightness-125 transition" : ""}`}
-                          style={{
-                            background: isOverdue ? "rgba(239,68,68,0.15)" : reason.includes("parada") ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.1)",
-                            color: isOverdue ? "#f87171" : reason.includes("parada") ? "#fbbf24" : "#fb923c",
-                          }}
+                          style={{ background: bg, color: fg }}
                         >
                           <AlertTriangle className="w-3 h-3 mr-1" />
                           {reason}{canClick ? " · concluir" : ""}
@@ -735,6 +747,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                       );
                     })}
                   </div>
+
 
                   {currentLead.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
