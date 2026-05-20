@@ -755,7 +755,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                 <Button onClick={() => setConfigPhase(true)} variant="outline" className="text-gray-300 border-gray-600 hover:bg-white/5">
                   <Filter className="w-4 h-4 mr-1" /> Mudar filtros
                 </Button>
-                <Button onClick={onClose} style={{ background: "#4969FF" }}>
+                <Button onClick={handleClose} style={{ background: "#4969FF" }}>
                   Fechar
                 </Button>
               </div>
