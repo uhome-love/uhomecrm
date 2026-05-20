@@ -88,6 +88,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const advanceCountRef = useRef<number>(0);
   // Pending ctx do opened — emitido via useEffect quando reload terminar e leads.length refletir a fila real.
   const pendingOpenedCtxRef = useRef<Record<string, unknown> | null>(null);
+  // Rastreia transição loading true→false para garantir que o evento `opened` só é emitido
+  // após o reload realmente rodar (não no frame imediato em que configPhase muda).
+  const reloadInFlightRef = useRef<boolean>(false);
   const [activityNote, setActivityNote] = useState("");
   const [tab, setTab] = useState("followup");
   const [saving, setSaving] = useState(false);
