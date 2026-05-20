@@ -1146,6 +1146,7 @@ export default function MinhasTarefas() {
         onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
         tarefaTitulo={completingTarefa?.titulo || ""}
         leadNome={completingTarefa?.lead_nome}
+        leadId={completingTarefa?.pipeline_lead_id}
         onConfirm={handleCompletionConfirm}
       />
     </div>
