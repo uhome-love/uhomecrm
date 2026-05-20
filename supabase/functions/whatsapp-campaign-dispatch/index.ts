@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isCampaignDispatchEnabled, pausedResponse } from "../_shared/campaign-gate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // WABA RECOVERY — gatekeeper global de disparo de campanha
+  const gate = await isCampaignDispatchEnabled();
+  if (!gate.enabled) return pausedResponse("whatsapp-campaign-dispatch", gate, corsHeaders);
 
   try {
     const authHeader = req.headers.get("Authorization");

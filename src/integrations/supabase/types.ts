@@ -8478,6 +8478,30 @@ export type Database = {
           },
         ]
       }
+      system_flags: {
+        Row: {
+          flag_name: string
+          flag_value: boolean
+          reason: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          flag_name: string
+          flag_value?: boolean
+          reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          flag_name?: string
+          flag_value?: boolean
+          reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       tarefas: {
         Row: {
           anexo_url: string | null
@@ -9178,6 +9202,53 @@ export type Database = {
           total?: number | null
         }
         Relationships: []
+      }
+      waba_send_guards: {
+        Row: {
+          blocked_at: string
+          blocked_until: string | null
+          created_at: string
+          guard_type: string
+          id: string
+          lead_id: string | null
+          phone_e164: string | null
+          reason: string
+          source_event_id: string | null
+          template_name: string | null
+        }
+        Insert: {
+          blocked_at?: string
+          blocked_until?: string | null
+          created_at?: string
+          guard_type: string
+          id?: string
+          lead_id?: string | null
+          phone_e164?: string | null
+          reason: string
+          source_event_id?: string | null
+          template_name?: string | null
+        }
+        Update: {
+          blocked_at?: string
+          blocked_until?: string | null
+          created_at?: string
+          guard_type?: string
+          id?: string
+          lead_id?: string | null
+          phone_e164?: string | null
+          reason?: string
+          source_event_id?: string | null
+          template_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waba_send_guards_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_ai_log: {
         Row: {
@@ -10027,6 +10098,10 @@ export type Database = {
           lead_stage_id: string
           lead_telefone: string
         }[]
+      }
+      check_send_allowed: {
+        Args: { p_lead_id: string; p_phone: string; p_template: string }
+        Returns: Json
       }
       claim_email_campaign_recipients: {
         Args: { p_batch_size?: number; p_campaign_id: string }

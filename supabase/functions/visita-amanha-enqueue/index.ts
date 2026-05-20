@@ -3,6 +3,7 @@
 // Padrão clonado de reengajamento-descartados-enqueue (throttle, auto-pausa, validação Meta).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isCampaignDispatchEnabled, pausedResponse } from "../_shared/campaign-gate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -79,6 +80,11 @@ async function sendMetaTemplate(params: {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // WABA RECOVERY — gatekeeper global de disparo de campanha
+  const gate = await isCampaignDispatchEnabled();
+  if (!gate.enabled) return pausedResponse("visita-amanha-enqueue", gate, corsHeaders);
+
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

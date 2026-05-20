@@ -3,6 +3,7 @@
 // validação de número, warmup diário, janela horária estrita.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isCampaignDispatchEnabled, pausedResponse } from "../_shared/campaign-gate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -148,6 +149,11 @@ async function sendMetaTemplate(params: {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // WABA RECOVERY — gatekeeper global de disparo de campanha
+  const gate = await isCampaignDispatchEnabled();
+  if (!gate.enabled) return pausedResponse("reengajamento-descartados-enqueue", gate, corsHeaders);
+
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
