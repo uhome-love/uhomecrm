@@ -21,6 +21,7 @@ import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TaskCompletionDialog from "./TaskCompletionDialog";
+import { logFocus, newFocusSessionId } from "@/lib/focusTelemetry";
 
 interface FocusModeModalProps {
   open: boolean;
@@ -82,6 +83,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   // Evita re-chamar Gemini quando o corretor volta ao mesmo lead (botão "anterior").
   const insightCacheRef = useRef<Map<string, { insight: string; mensagem: string; at: number }>>(new Map());
   const INSIGHT_TTL_MS = 4 * 60 * 60 * 1000; // 4h
+  // Telemetria: session_id correlaciona opened → advance(s) → closed da mesma jornada.
+  const focusSessionIdRef = useRef<string | null>(null);
+  const advanceCountRef = useRef<number>(0);
   const [activityNote, setActivityNote] = useState("");
   const [tab, setTab] = useState("followup");
   const [saving, setSaving] = useState(false);
@@ -156,6 +160,18 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
     filters.includeUpcoming2d = includeUpcoming;
     await reload(filters);
+
+    // Telemetria: nova sessão de foco — log opened com filtros e fila resultante.
+    focusSessionIdRef.current = newFocusSessionId();
+    advanceCountRef.current = 0;
+    logFocus("focus_mode_opened", {
+      session_id: focusSessionIdRef.current,
+      pipeline_tipo: pipelineTipo,
+      criteria: selectedCriteria,
+      stage_id: selectedStageId,
+      include_upcoming_2d: includeUpcoming,
+      queue_size: leads.length, // snapshot pré-render; ok como referência
+    });
   };
 
   useEffect(() => {
@@ -270,16 +286,44 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     setDiscardObs("");
   }, []);
 
+  const handleClose = useCallback(() => {
+    // Telemetria: log closed só se houve uma sessão ativa (ignora abre/fecha sem startar).
+    if (focusSessionIdRef.current) {
+      logFocus("focus_mode_closed", {
+        session_id: focusSessionIdRef.current,
+        pipeline_tipo: pipelineTipo,
+        queue_size: leads.length,
+        advance_count: advanceCountRef.current,
+        last_index: currentIndex,
+        completed: currentIndex >= Math.max(0, leads.length - 1),
+      });
+      focusSessionIdRef.current = null;
+      advanceCountRef.current = 0;
+    }
+    onClose();
+  }, [onClose, pipelineTipo, leads.length, currentIndex]);
+
   const goToNext = useCallback(() => {
     if (currentIndex < leads.length - 1) {
       setDirection(1);
       setCurrentIndex(prev => prev + 1);
       resetActionState();
+      advanceCountRef.current += 1;
+      if (focusSessionIdRef.current) {
+        logFocus("focus_mode_advance", {
+          session_id: focusSessionIdRef.current,
+          pipeline_tipo: pipelineTipo,
+          from_index: currentIndex,
+          to_index: currentIndex + 1,
+          lead_id: leads[currentIndex]?.id ?? null,
+          next_lead_id: leads[currentIndex + 1]?.id ?? null,
+        });
+      }
     } else {
-      onClose();
+      handleClose();
       toast.success("Modo Foco concluído! 🎯 Todos os leads foram revisados.");
     }
-  }, [currentIndex, leads.length, onClose, resetActionState]);
+  }, [currentIndex, leads, pipelineTipo, handleClose, resetActionState]);
 
   const goToPrev = useCallback(() => {
     if (currentIndex > 0) {
@@ -502,7 +546,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent
         className="max-w-full w-full h-full m-0 rounded-none p-0 border-0 gap-0"
         style={{
@@ -551,7 +595,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                 <Filter className="w-3.5 h-3.5" /> Filtros
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400 hover:text-white hover:bg-white/5 h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={handleClose} className="text-gray-400 hover:text-white hover:bg-white/5 h-8 w-8">
               <X className="w-4 h-4" />
             </Button>
           </div>
@@ -711,7 +755,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                 <Button onClick={() => setConfigPhase(true)} variant="outline" className="text-gray-300 border-gray-600 hover:bg-white/5">
                   <Filter className="w-4 h-4 mr-1" /> Mudar filtros
                 </Button>
-                <Button onClick={onClose} style={{ background: "#4969FF" }}>
+                <Button onClick={handleClose} style={{ background: "#4969FF" }}>
                   Fechar
                 </Button>
               </div>
