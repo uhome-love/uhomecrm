@@ -1,4 +1,6 @@
 // Teste manual: envia template wave 2 para um número específico.
+import { isCampaignDispatchEnabled, pausedResponse } from "../_shared/campaign-gate.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -6,6 +8,11 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // WABA RECOVERY — gatekeeper global de disparo de campanha
+  const gate = await isCampaignDispatchEnabled();
+  if (!gate.enabled) return pausedResponse("test-reengajamento-wave2", gate, corsHeaders);
+
 
   const body = await req.json().catch(() => ({}));
   const to = String(body.to || "").replace(/\D/g, "");
