@@ -1,28 +1,32 @@
 /**
- * useFocusLeads — Modo Foco baseado na régua de 3 estados (decisão CEO 20/05/2026).
+ * useFocusLeads — Modo Foco baseado na régua de 4 estados (CEO 20/05/2026).
  *
- * Cada lead ATIVO (arquivado=false, sem negocio_id, stage não-descarte/convertido)
- * pertence a EXATAMENTE 1 dos 3 estados:
+ * Estados canônicos (cada lead ativo pertence a exatamente 1):
  *
- *   🟢 EM DIA      = pelo menos 1 tarefa pendente FUTURA (vence_em > hoje BRT,
- *                    ou vence_em = hoje BRT && hora_vencimento NULL || >= agora BRT)
- *                    → FORA do Modo Foco (nutrição planejada)
+ *   🔴 atrasado          — ≥1 tarefa pendente vencida (data/hora BRT)
+ *   🟠 para_hoje         — sem vencida + ≥1 tarefa pendente HOJE ainda não vencida
+ *                          (hora_vencimento NULL ou >= agora BRT)
+ *   🟢 em_dia (próx 2d ou futuro distante) — sem vencida, sem hoje, ≥1 futura
+ *                          FORA do Modo Foco por padrão.
+ *                          Próximos 2 dias entram em "Tudo" só com toggle ON.
+ *   🟡 sem_direcao       — zero tarefa pendente
+ *                          Subdividido por dias desde a última ação real:
+ *                            lastAction = MAX(touch_activity, tarefa.concluida_em, lead.created_at)
+ *                            < 1d → janela de cortesia (skip)
+ *                            1–4d → 🟡 attention
+ *                            5–9d → 🟠 warning
+ *                            ≥10d → 🔴 critical
+ *                            sem toque + sem tarefa concluída → "Nunca trabalhado" 🔴
  *
- *   🔴 ATRASADO    = pelo menos 1 tarefa pendente vencida
- *                    → filtro "Tarefas atrasadas"
- *
- *   🟡 SEM DIREÇÃO = zero tarefa pendente
- *                    → filtro "Sem próximo passo"
- *                    Subdividido por dias desde a última ação real:
- *                      lastAction = MAX(touch_activity, tarefa.concluida_em, lead.created_at)
- *                      <  1d → janela de cortesia (SKIP)
- *                      1–4d  → 🟡 attention
- *                      5–9d  → 🟠 warning
- *                      ≥10d  → 🔴 critical
- *                      sem toque + sem tarefa concluída → "Nunca trabalhado" 🔴
+ * Filtros UI:
+ *   "all"           → atrasado + para_hoje + sem_direcao(>=1d)
+ *                     (+ em_dia próximos 2d se filters.includeUpcoming2d)
+ *   "overdue_tasks" → só atrasado
+ *   "today"         → só para_hoje
+ *   "no_next_step"  → só sem_direcao(>=1d)
  *
  * Fonte de "toque real": pipeline_atividades.tipo ∈ TOUCH_TYPES
- *  (ultima_acao_at NÃO é mais usado — campo poluído por mudanca_etapa, criação, etc.)
+ *   (ultima_acao_at NÃO é mais usado — campo poluído por mudanca_etapa, criação, etc.)
  */
 
 export const FOCUS_LEVELS = { attention: 1, warning: 5, critical: 10 } as const;
@@ -34,11 +38,21 @@ export const TOUCH_TYPES = [
 ] as const;
 
 export type FocusHealth = "ok" | "attention" | "warning" | "critical";
-export type FocusState = "atrasado" | "sem_direcao";
+export type FocusState = "atrasado" | "para_hoje" | "em_dia_proximo" | "sem_direcao";
+export type PendingTaskBucket = "overdue" | "today" | "upcoming";
 
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
+
+export interface PendingTaskInfo {
+  id: string;
+  titulo: string;
+  vence_em: string | null;
+  hora_vencimento: string | null;
+  tipo: string | null;
+  bucket: PendingTaskBucket;
+}
 
 export interface FocusLead {
   id: string;
@@ -54,7 +68,11 @@ export interface FocusLead {
   stage_updated_at: string;
   overdue_tasks: number;
   overdue_task_list: { id: string; titulo: string; vence_em: string | null; tipo: string | null }[];
-  /** Dias desde a última ação (só relevante para sem_direcao; 0 para atrasado). */
+  /** Próxima tarefa a executar (atrasada → hoje → próxima futura). Null se sem_direcao. */
+  next_pending_task: PendingTaskInfo | null;
+  /** Todas as tarefas pendentes (vencidas + hoje + próximas 2d + futuras distantes), já ordenadas. */
+  pending_task_list: PendingTaskInfo[];
+  /** Dias desde a última ação (só relevante para sem_direcao; 0 para outros). */
   days_without_contact: number;
   days_in_stage: number;
   corretor_name: string;
@@ -62,7 +80,6 @@ export interface FocusLead {
   tags: string[];
   negocio_id: string | null;
   pipeline_tipo: string;
-  /** Estado canônico na régua de 3 estados. */
   state: FocusState;
   /** True quando o lead nunca recebeu toque nem teve tarefa concluída. */
   never_touched: boolean;
@@ -70,11 +87,13 @@ export interface FocusLead {
   health: FocusHealth;
 }
 
-export type FocusCriteria = "overdue_tasks" | "no_next_step" | "all";
+export type FocusCriteria = "overdue_tasks" | "today" | "no_next_step" | "all";
 
 export interface FocusFilters {
   stageIds?: string[];
   criteria?: FocusCriteria[];
+  /** Quando true, "Tudo" também inclui leads com tarefa pendente nos próximos 2 dias. */
+  includeUpcoming2d?: boolean;
 }
 
 interface UseFocusLeadsReturn {
@@ -86,10 +105,7 @@ interface UseFocusLeadsReturn {
 }
 
 const HEALTH_EMOJI: Record<FocusHealth, string> = {
-  critical: "🔴",
-  warning: "🟠",
-  attention: "🟡",
-  ok: "🟢",
+  critical: "🔴", warning: "🟠", attention: "🟡", ok: "🟢",
 };
 
 function healthForSemDirecao(days: number, neverTouched: boolean): FocusHealth {
@@ -98,6 +114,14 @@ function healthForSemDirecao(days: number, neverTouched: boolean): FocusHealth {
   if (days >= FOCUS_LEVELS.warning) return "warning";
   if (days >= FOCUS_LEVELS.attention) return "attention";
   return "ok";
+}
+
+/** Adiciona N dias a "YYYY-MM-DD" (sem cuidar de horário). */
+function addDaysStr(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return dt.toISOString().slice(0, 10);
 }
 
 export function useFocusLeads(
@@ -118,13 +142,13 @@ export function useFocusLeads(
     setError(null);
 
     try {
-      // "Hoje" e "agora" em BRT
       const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
       const nowHHMM_BRT = new Date().toLocaleTimeString("en-GB", {
         timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit",
       });
+      const upcomingCutoffStr = addDaysStr(todayStr, 2); // <= today+2 conta como "próximos 2d"
 
-      // 1. Stages (exclui descarte/convertido)
+      // 1. Stages
       const { data: stagesData, error: stagesError } = await runQueryWithRetry<
         Array<{ id: string; nome: string; tipo: string | null; pipeline_tipo: string | null }>
       >(() =>
@@ -146,12 +170,8 @@ export function useFocusLeads(
         stageIds = stageIds.filter((id) => filters.stageIds!.includes(id));
       }
       if (stageIds.length === 0) {
-        setLeads([]);
-        leadsCountRef.current = 0;
-        lastSuccessAtRef.current = new Date();
-        setStaleSince(null);
-        setLoading(false);
-        return;
+        setLeads([]); leadsCountRef.current = 0; lastSuccessAtRef.current = new Date();
+        setStaleSince(null); setLoading(false); return;
       }
 
       // 2. Leads ativos
@@ -164,46 +184,31 @@ export function useFocusLeads(
         .eq("arquivado", false)
         .in("stage_id", stageIds);
 
-      if (pipelineTipo === "leads") {
-        query = query.is("negocio_id", null);
-      }
+      if (pipelineTipo === "leads") query = query.is("negocio_id", null);
 
       const { data: leadsData, error: leadsError } = await runQueryWithRetry<Array<{
-        id: string;
-        nome: string;
-        telefone: string | null;
-        telefone2: string | null;
-        email: string | null;
-        stage_id: string;
-        stage_changed_at: string;
-        origem: string | null;
-        empreendimento: string | null;
-        ultima_acao_at: string | null;
-        tags: string[] | null;
-        negocio_id: string | null;
-        corretor_id: string | null;
-        updated_at: string;
-        created_at: string;
+        id: string; nome: string; telefone: string | null; telefone2: string | null; email: string | null;
+        stage_id: string; stage_changed_at: string; origem: string | null; empreendimento: string | null;
+        ultima_acao_at: string | null; tags: string[] | null; negocio_id: string | null;
+        corretor_id: string | null; updated_at: string; created_at: string;
       }>>(() => query);
       if (leadsError) throw leadsError;
       if (!leadsData || leadsData.length === 0) {
-        setLeads([]);
-        leadsCountRef.current = 0;
-        lastSuccessAtRef.current = new Date();
-        setStaleSince(null);
-        setLoading(false);
-        return;
+        setLeads([]); leadsCountRef.current = 0; lastSuccessAtRef.current = new Date();
+        setStaleSince(null); setLoading(false); return;
       }
 
       const leadIds = leadsData.map((l) => l.id);
 
-      // 3. Tarefas (pendente + concluida) por lead
-      const taskAgg: Record<string, {
-        overdue: number;
-        hasFuture: boolean;
-        overdueList: { id: string; titulo: string; vence_em: string | null; tipo: string | null }[];
+      // 3. Tarefas (pendente + concluida)
+      interface TaskAgg {
+        overdueList: PendingTaskInfo[];
+        todayList: PendingTaskInfo[];
+        upcomingList: PendingTaskInfo[];
+        futureDistantList: PendingTaskInfo[];
         lastConcluida: string | null;
-      }> = {};
+      }
+      const taskAgg: Record<string, TaskAgg> = {};
 
       const { rows: tasksData, errors: taskErrors } = await fetchInBatchesWithRetry<any>(
         leadIds,
@@ -219,7 +224,10 @@ export function useFocusLeads(
       for (const t of tasksData || []) {
         const lid = t.pipeline_lead_id as string;
         if (!taskAgg[lid]) {
-          taskAgg[lid] = { overdue: 0, hasFuture: false, overdueList: [], lastConcluida: null };
+          taskAgg[lid] = {
+            overdueList: [], todayList: [], upcomingList: [], futureDistantList: [],
+            lastConcluida: null,
+          };
         }
         const bucket = taskAgg[lid];
 
@@ -231,36 +239,52 @@ export function useFocusLeads(
           continue;
         }
 
-        // status === 'pendente'
         const venceEm = t.vence_em as string | null;
         const hora = (t.hora_vencimento as string | null)?.slice(0, 5) ?? null;
-        const isOverdue =
-          !!venceEm && (
-            venceEm < todayStr ||
-            (venceEm === todayStr && !!hora && hora < nowHHMM_BRT)
-          );
-        if (isOverdue) {
-          bucket.overdue++;
-          bucket.overdueList.push({
-            id: t.id,
-            titulo: t.titulo || "(sem título)",
-            vence_em: venceEm,
-            tipo: (t as any).tipo ?? null,
-          });
+        const info: PendingTaskInfo = {
+          id: t.id,
+          titulo: t.titulo || "(sem título)",
+          vence_em: venceEm,
+          hora_vencimento: t.hora_vencimento ?? null,
+          tipo: (t as any).tipo ?? null,
+          bucket: "upcoming", // será sobrescrito abaixo
+        };
+
+        if (!venceEm) {
+          // tarefa pendente sem data — trata como "upcoming distante" (não bloqueia, não vence)
+          info.bucket = "upcoming";
+          bucket.futureDistantList.push(info);
+          continue;
+        }
+
+        if (
+          venceEm < todayStr ||
+          (venceEm === todayStr && !!hora && hora < nowHHMM_BRT)
+        ) {
+          info.bucket = "overdue";
+          bucket.overdueList.push(info);
+        } else if (venceEm === todayStr) {
+          // hoje, ainda não vencida (hora NULL ou >= agora)
+          info.bucket = "today";
+          bucket.todayList.push(info);
+        } else if (venceEm <= upcomingCutoffStr) {
+          // amanhã ou depois de amanhã
+          info.bucket = "upcoming";
+          bucket.upcomingList.push(info);
         } else {
-          // pendente não vencida = futura (inclui hoje sem hora ou com hora futura)
-          bucket.hasFuture = true;
+          // 3+ dias no futuro
+          info.bucket = "upcoming";
+          bucket.futureDistantList.push(info);
         }
       }
       if (taskErrors.length) {
         console.warn("[useFocusLeads] Algumas consultas de tarefas falharam e foram isoladas por chunk", taskErrors);
       }
 
-      // 4. Último TOQUE real (pipeline_atividades whitelist)
+      // 4. Último toque real
       const lastTouchMap = new Map<string, string>();
       const { rows: activitiesData, errors: activityErrors } = await fetchInBatchesWithRetry<{
-        pipeline_lead_id: string;
-        created_at: string;
+        pipeline_lead_id: string; created_at: string;
       }>(
         leadIds,
         (chunk) =>
@@ -274,45 +298,65 @@ export function useFocusLeads(
       );
       for (const a of activitiesData || []) {
         const current = lastTouchMap.get(a.pipeline_lead_id);
-        if (!current || a.created_at > current) {
-          lastTouchMap.set(a.pipeline_lead_id, a.created_at);
-        }
+        if (!current || a.created_at > current) lastTouchMap.set(a.pipeline_lead_id, a.created_at);
       }
       if (activityErrors.length) {
         console.warn("[useFocusLeads] Algumas consultas de atividades falharam e foram isoladas por chunk", activityErrors);
       }
 
-      // 5. Montar FocusLeads aplicando régua de 3 estados
+      // 5. Régua de 4 estados + filtros
       const criteriaFilter = filters?.criteria || ["all"];
       const filterAll = criteriaFilter.includes("all");
       const wantOverdue = filterAll || criteriaFilter.includes("overdue_tasks");
+      const wantToday = filterAll || criteriaFilter.includes("today");
       const wantNoNextStep = filterAll || criteriaFilter.includes("no_next_step");
+      const includeUpcoming = !!filters?.includeUpcoming2d;
 
       const focusLeads: FocusLead[] = [];
 
+      // Sort helpers
+      const horaKey = (h: string | null) => (h ? h.slice(0, 5) : "99:99"); // NULL último
+      const sortByHora = (a: PendingTaskInfo, b: PendingTaskInfo) =>
+        horaKey(a.hora_vencimento).localeCompare(horaKey(b.hora_vencimento));
+      const sortByVence = (a: PendingTaskInfo, b: PendingTaskInfo) => {
+        const av = a.vence_em ?? "9999-99-99";
+        const bv = b.vence_em ?? "9999-99-99";
+        if (av !== bv) return av.localeCompare(bv);
+        return sortByHora(a, b);
+      };
+
       for (const lead of leadsData) {
         const agg = taskAgg[lead.id];
-        const overdueCount = agg?.overdue ?? 0;
-        const hasFuture = agg?.hasFuture ?? false;
+        const overdueList = agg?.overdueList ?? [];
+        const todayList = agg?.todayList ?? [];
+        const upcomingList = agg?.upcomingList ?? [];
+        const futureDistantList = agg?.futureDistantList ?? [];
+        const hasOverdue = overdueList.length > 0;
+        const hasToday = todayList.length > 0;
+        const hasUpcoming = upcomingList.length > 0;
+        const hasFutureDistant = futureDistantList.length > 0;
+        const hasAnyPending = hasOverdue || hasToday || hasUpcoming || hasFutureDistant;
+
         const lastConcluida = agg?.lastConcluida ?? null;
         const lastTouch = lastTouchMap.get(lead.id) ?? null;
 
         // Estado canônico
         let state: FocusState;
-        if (overdueCount > 0) {
-          state = "atrasado";
-        } else if (hasFuture) {
-          // 🟢 EM DIA — fora do Modo Foco
-          continue;
-        } else {
-          state = "sem_direcao";
-        }
+        if (hasOverdue) state = "atrasado";
+        else if (hasToday) state = "para_hoje";
+        else if (hasUpcoming || hasFutureDistant) state = "em_dia_proximo"; // ambos rotulados aqui
+        else state = "sem_direcao";
 
-        // Filtro do CEO/corretor
+        // Filtros
         if (state === "atrasado" && !wantOverdue) continue;
+        if (state === "para_hoje" && !wantToday) continue;
+        if (state === "em_dia_proximo") {
+          // Só entra em "Tudo" com toggle ligado, e somente se houver tarefa em próximos 2d (não futuras distantes)
+          if (!(filterAll && includeUpcoming && hasUpcoming)) continue;
+        }
         if (state === "sem_direcao" && !wantNoNextStep) continue;
 
-        // Calcular last_action e gravidade
+        // last_action / dias sem direção
         const neverTouched = !lastTouch && !lastConcluida;
         const candidates = [lastTouch, lastConcluida, lead.created_at].filter(Boolean) as string[];
         const lastActionISO = candidates.length
@@ -322,25 +366,46 @@ export function useFocusLeads(
           ? Math.floor((Date.now() - new Date(lastActionISO).getTime()) / 86400000)
           : 999;
 
-        // Janela de cortesia: sem_direcao recém-saído (dia 0) fica de fora
+        // Janela de cortesia: sem_direcao recém-saído (dia 0) sai (a menos que nunca tocado)
         if (state === "sem_direcao" && !neverTouched && daysSinceAction < 1) continue;
 
         const daysInStage = Math.floor(
           (Date.now() - new Date(lead.stage_changed_at).getTime()) / 86400000
         );
 
+        // Lista de pendentes ordenada (overdue → today → upcoming → distante)
+        overdueList.sort(sortByVence);
+        todayList.sort(sortByHora);
+        upcomingList.sort(sortByVence);
+        futureDistantList.sort(sortByVence);
+        const pendingTaskList: PendingTaskInfo[] = [
+          ...overdueList, ...todayList, ...upcomingList, ...futureDistantList,
+        ];
+        const nextPendingTask = pendingTaskList[0] ?? null;
+
+        // Health + alertReasons
         let health: FocusHealth;
         let alertReasons: string[];
         if (state === "atrasado") {
           health = "critical";
-          alertReasons = [`${overdueCount} tarefa(s) vencida(s)`];
+          alertReasons = [`${overdueList.length} tarefa(s) vencida(s)`];
+        } else if (state === "para_hoje") {
+          health = "warning";
+          const earliest = todayList[0];
+          const horaTxt = earliest?.hora_vencimento ? ` às ${horaKey(earliest.hora_vencimento)}` : "";
+          alertReasons = [`🟠 ${todayList.length} tarefa(s) hoje${horaTxt}`];
+        } else if (state === "em_dia_proximo") {
+          health = "ok";
+          const earliest = upcomingList[0];
+          alertReasons = earliest?.vence_em
+            ? [`🟢 Próxima tarefa em ${earliest.vence_em}`]
+            : [`🟢 Tarefa agendada`];
         } else {
+          // sem_direcao
           health = healthForSemDirecao(daysSinceAction, neverTouched);
-          if (neverTouched) {
-            alertReasons = [`${HEALTH_EMOJI.critical} Nunca trabalhado`];
-          } else {
-            alertReasons = [`${HEALTH_EMOJI[health]} Sem direção há ${daysSinceAction}d`];
-          }
+          alertReasons = neverTouched
+            ? [`${HEALTH_EMOJI.critical} Nunca trabalhado`]
+            : [`${HEALTH_EMOJI[health]} Sem direção há ${daysSinceAction}d`];
         }
 
         focusLeads.push({
@@ -355,8 +420,12 @@ export function useFocusLeads(
           interest: lead.empreendimento,
           last_contact_at: lastTouch ?? lastConcluida ?? null,
           stage_updated_at: lead.stage_changed_at,
-          overdue_tasks: overdueCount,
-          overdue_task_list: agg?.overdueList ?? [],
+          overdue_tasks: overdueList.length,
+          overdue_task_list: overdueList.map((t) => ({
+            id: t.id, titulo: t.titulo, vence_em: t.vence_em, tipo: t.tipo,
+          })),
+          next_pending_task: nextPendingTask,
+          pending_task_list: pendingTaskList,
           days_without_contact: state === "sem_direcao" ? daysSinceAction : 0,
           days_in_stage: daysInStage,
           corretor_name: "",
@@ -371,21 +440,28 @@ export function useFocusLeads(
       }
 
       // Ordenação:
-      // 1) Atrasados antes de sem_direcao (mais urgente operacionalmente)
-      // 2) Dentro de atrasado: mais tarefas vencidas primeiro
-      // 3) Dentro de sem_direcao: nunca tocados → mais dias → menos dias
-      const stateRank: Record<FocusState, number> = { atrasado: 0, sem_direcao: 1 };
+      // 1) atrasado (vencidas DESC)
+      // 2) para_hoje (hora ASC, NULL último)
+      // 3) em_dia_proximo (vence_em ASC)
+      // 4) sem_direcao (nunca → 10+d → 5–9d → 1–4d)
+      const stateRank: Record<FocusState, number> = {
+        atrasado: 0, para_hoje: 1, em_dia_proximo: 2, sem_direcao: 3,
+      };
       focusLeads.sort((a, b) => {
-        if (stateRank[a.state] !== stateRank[b.state]) {
-          return stateRank[a.state] - stateRank[b.state];
+        if (stateRank[a.state] !== stateRank[b.state]) return stateRank[a.state] - stateRank[b.state];
+        if (a.state === "atrasado") return b.overdue_tasks - a.overdue_tasks;
+        if (a.state === "para_hoje") {
+          const ah = horaKey(a.next_pending_task?.hora_vencimento ?? null);
+          const bh = horaKey(b.next_pending_task?.hora_vencimento ?? null);
+          return ah.localeCompare(bh);
         }
-        if (a.state === "atrasado") {
-          return b.overdue_tasks - a.overdue_tasks;
+        if (a.state === "em_dia_proximo") {
+          const av = a.next_pending_task?.vence_em ?? "9999-99-99";
+          const bv = b.next_pending_task?.vence_em ?? "9999-99-99";
+          return av.localeCompare(bv);
         }
         // sem_direcao
-        if (a.never_touched !== b.never_touched) {
-          return a.never_touched ? -1 : 1;
-        }
+        if (a.never_touched !== b.never_touched) return a.never_touched ? -1 : 1;
         return b.days_without_contact - a.days_without_contact;
       });
 

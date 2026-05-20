@@ -47,9 +47,10 @@ const QUICK_MESSAGES = [
 type CriteriaType = FocusCriteria;
 
 const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { value: "all", label: "Tudo que precisa de atenção", description: "Leads atrasados + leads sem próximo passo definido", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
+  { value: "all", label: "Tudo que precisa de atenção", description: "Atrasados + tarefas de hoje + sem próximo passo", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
   { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas (data ou hora BRT)", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
-  { value: "no_next_step", label: "Sem próximo passo", description: `Zero tarefa pendente. Régua: 🟡 1–4d · 🟠 5–9d · 🔴 ${FOCUS_LEVELS.critical}+d · 🔴 nunca trabalhado`, icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
+  { value: "today", label: "Para hoje", description: "Tarefas com vencimento hoje, ainda não vencidas", icon: <Clock className="w-5 h-5" />, color: "#F97316" },
+  { value: "no_next_step", label: "Sem próximo passo", description: `Zero tarefa pendente. 🟡 1–4d · 🟠 5–9d · 🔴 ${FOCUS_LEVELS.critical}+d · 🔴 nunca trabalhado`, icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
 ];
 
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
@@ -60,6 +61,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   // Config screen state
   const [configPhase, setConfigPhase] = useState(true);
   const [selectedCriteria, setSelectedCriteria] = useState<CriteriaType[]>(["all"]);
+  const [includeUpcoming, setIncludeUpcoming] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string>("all");
   const [stages, setStages] = useState<{ id: string; nome: string; tipo: string }[]>([]);
   const [stagesLoading, setStagesLoading] = useState(false);
@@ -152,6 +154,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     if (!selectedCriteria.includes("all")) {
       filters.criteria = selectedCriteria;
     }
+    filters.includeUpcoming2d = includeUpcoming;
     await reload(filters);
   };
 
@@ -619,7 +622,35 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                   </div>
                 </div>
 
-                {/* Stage filter */}
+                {/* Toggle: incluir próximos 2 dias (afeta filtro "Tudo") */}
+                <button
+                  type="button"
+                  onClick={() => setIncludeUpcoming(v => !v)}
+                  className="w-full flex items-center justify-between gap-3 p-3 rounded-xl transition-all text-left"
+                  style={{
+                    background: includeUpcoming ? "rgba(73,105,255,0.10)" : "rgba(255,255,255,0.03)",
+                    border: `1.5px solid ${includeUpcoming ? "rgba(73,105,255,0.45)" : "rgba(255,255,255,0.06)"}`,
+                  }}
+                >
+                  <div className="min-w-0">
+                    <span className="text-sm font-semibold block" style={{ color: includeUpcoming ? "#fff" : "#9ca3af" }}>
+                      Incluir próximos 2 dias
+                    </span>
+                    <span className="text-[10px] leading-tight block mt-0.5 text-gray-500">
+                      No filtro "Tudo", também mostra leads com tarefa amanhã ou depois de amanhã
+                    </span>
+                  </div>
+                  <div
+                    className="shrink-0 w-10 h-6 rounded-full transition-all relative"
+                    style={{ background: includeUpcoming ? "#4969FF" : "rgba(255,255,255,0.12)" }}
+                  >
+                    <div
+                      className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                      style={{ left: includeUpcoming ? "calc(100% - 22px)" : "2px" }}
+                    />
+                  </div>
+                </button>
+
                 <div className="space-y-2">
                   <label className="text-gray-300 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
                     <Filter className="w-3.5 h-3.5" /> Filtrar por etapa
@@ -902,31 +933,44 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                         </Button>
                       </div>
 
-                      {currentLead.overdue_task_list.length > 0 ? (
-                        <Button
-                          onClick={() => {
-                            const t = currentLead.overdue_task_list[0];
-                            setCompletingOverdue({ id: t.id, titulo: t.titulo });
-                          }}
-                          variant="outline"
-                          className="w-full gap-2 text-xs h-9 border-red-500/30 bg-red-500/5 text-red-300 hover:bg-red-500/15 hover:text-red-200"
-                        >
-                          <CalendarClock className="w-3.5 h-3.5" />
-                          Concluir tarefa vencida{currentLead.overdue_task_list.length > 1 ? ` (${currentLead.overdue_task_list.length})` : ""} e agendar próxima
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => {
-                            setTab("task");
-                            setTaskTitle(`Follow-up: ${currentLead.name}`);
-                          }}
-                          variant="outline"
-                          className="w-full gap-2 text-xs h-9 border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/15 hover:text-amber-200"
-                        >
-                          <CalendarClock className="w-3.5 h-3.5" />
-                          Sem tarefas pendentes · Agendar próxima
-                        </Button>
-                      )}
+                      {(() => {
+                        const next = currentLead.next_pending_task;
+                        if (!next) {
+                          return (
+                            <Button
+                              onClick={() => {
+                                setTab("task");
+                                setTaskTitle(`Follow-up: ${currentLead.name}`);
+                              }}
+                              variant="outline"
+                              className="w-full gap-2 text-xs h-9 border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/15 hover:text-amber-200"
+                            >
+                              <CalendarClock className="w-3.5 h-3.5" />
+                              Sem tarefas pendentes · Agendar próxima
+                            </Button>
+                          );
+                        }
+                        const colorByBucket = {
+                          overdue: "border-red-500/30 bg-red-500/5 text-red-300 hover:bg-red-500/15 hover:text-red-200",
+                          today: "border-orange-500/30 bg-orange-500/5 text-orange-300 hover:bg-orange-500/15 hover:text-orange-200",
+                          upcoming: "border-indigo-500/30 bg-indigo-500/5 text-indigo-300 hover:bg-indigo-500/15 hover:text-indigo-200",
+                        } as const;
+                        const labelByBucket = {
+                          overdue: `Concluir tarefa vencida${currentLead.overdue_task_list.length > 1 ? ` (${currentLead.overdue_task_list.length})` : ""} e agendar próxima`,
+                          today: `Concluir tarefa de hoje${currentLead.pending_task_list.filter(t => t.bucket === "today").length > 1 ? ` (${currentLead.pending_task_list.filter(t => t.bucket === "today").length})` : ""} e agendar próxima`,
+                          upcoming: `Concluir tarefa agendada e criar próxima`,
+                        } as const;
+                        return (
+                          <Button
+                            onClick={() => setCompletingOverdue({ id: next.id, titulo: next.titulo })}
+                            variant="outline"
+                            className={`w-full gap-2 text-xs h-9 ${colorByBucket[next.bucket]}`}
+                          >
+                            <CalendarClock className="w-3.5 h-3.5" />
+                            {labelByBucket[next.bucket]}
+                          </Button>
+                        );
+                      })()}
                     </TabsContent>
 
                     {/* TAB: Ligar */}
