@@ -110,6 +110,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     setSelectedCriteria(["all"]);
     setSelectedStageId("all");
     setCurrentIndex(0);
+    // Limpa cache de insight quando o modal abre (sessão nova).
+    insightCacheRef.current.clear();
 
     const loadStages = async () => {
       setStagesLoading(true);
