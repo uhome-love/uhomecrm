@@ -47,10 +47,10 @@ const QUICK_MESSAGES = [
 type CriteriaType = FocusCriteria;
 
 const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { value: "all", label: "Tudo que precisa de atenção", description: "Atrasados, sem tarefa ou parados há +" + FOCUS_STAGNANT_DAYS + " dias", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
+  { value: "all", label: "Tudo que precisa de atenção", description: `Atrasados, sem tarefa ou sem ação há ${FOCUS_LEVELS.critical}+ dias`, icon: <Target className="w-5 h-5" />, color: "#4969FF" },
   { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas (data ou hora BRT)", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
   { value: "no_tasks", label: "Sem tarefas", description: "Leads sem nenhuma tarefa agendada", icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
-  { value: "stagnant", label: "Desatualizados", description: `Leads parados na mesma etapa há ${FOCUS_STAGNANT_DAYS}+ dias`, icon: <Clock className="w-5 h-5" />, color: "#F97316" },
+  { value: "stagnant", label: "Desatualizados", description: `Leads sem ação há ${FOCUS_LEVELS.critical}+ dias (régua 🟡 ${FOCUS_LEVELS.attention}d · 🟠 ${FOCUS_LEVELS.warning}d · 🔴 ${FOCUS_LEVELS.critical}d)`, icon: <Clock className="w-5 h-5" />, color: "#F97316" },
 ];
 
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
