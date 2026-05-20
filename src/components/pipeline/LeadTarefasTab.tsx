@@ -43,6 +43,8 @@ interface Props {
   leadNome: string;
   leadTelefone?: string | null;
   leadEmail?: string | null;
+  /** Opcional — habilita o seletor "mover etapa" no dialog de conclusão. */
+  leadStageId?: string | null;
   tarefas: PipelineTarefa[];
   onAddTarefa: (data: Partial<PipelineTarefa>) => Promise<void | boolean>;
   onToggleTarefa: (id: string, status: string) => Promise<void>;
@@ -51,7 +53,7 @@ interface Props {
   onNextAction?: () => void;
 }
 
-export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEmail, tarefas, onAddTarefa, onToggleTarefa, onDeleteTarefa, onReload, onNextAction }: Props) {
+export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEmail, leadStageId, tarefas, onAddTarefa, onToggleTarefa, onDeleteTarefa, onReload, onNextAction }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [tipo, setTipo] = useState("follow_up");
   const [customTipo, setCustomTipo] = useState("");
