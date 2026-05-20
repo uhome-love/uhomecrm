@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTimelineEvents } from "./useTimelineEvents";
 import TimelineEventItem from "./TimelineEventItem";
 import { Loader2, History, ChevronDown } from "lucide-react";
@@ -14,6 +14,12 @@ const DEFAULT_LIMIT = 15;
 export default function TimelineSection({ leadId, refreshKey }: Props) {
   const { events, loading, reload } = useTimelineEvents(leadId);
   const [showAll, setShowAll] = useState(false);
+
+  // Reload externo via refreshKey
+  useEffect(() => {
+    if (refreshKey !== undefined && refreshKey > 0) reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
 
   // Reload externo
   if (refreshKey !== undefined) {
