@@ -285,7 +285,7 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 cursor-pointer text-xs" onClick={(e) => { e.stopPropagation(); if (!negocio.pipeline_lead_id) { toast.error("Negócio sem lead vinculado — não é possível registrar parceria"); return; } setPartnerOpen(true); }}><Handshake className="h-3.5 w-3.5" /> Parceria</DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer text-xs" onSelect={(e) => { e.preventDefault(); if (!negocio.pipeline_lead_id) { toast.error("Negócio sem lead vinculado — não é possível registrar parceria"); return; } setTimeout(() => setPartnerOpen(true), 0); }}><Handshake className="h-3.5 w-3.5" /> Parceria</DropdownMenuItem>
               <DropdownMenuItem className="gap-2 cursor-pointer text-xs"><Repeat2 className="h-3.5 w-3.5" /> Repassar negócio</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="gap-2 cursor-pointer text-xs text-red-500" onClick={() => setQuedaPopup(true)}><XCircle className="h-3.5 w-3.5" /> Caiu negócio</DropdownMenuItem>
