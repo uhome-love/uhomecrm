@@ -1,101 +1,61 @@
+
+# Fix: botão "Parceria" no pipeline de Negócios
+
 ## Causa raiz
 
-O botão **Pular** em `src/components/oferta-ativa/DialingModeWithScript.tsx` (handler na linha ~1148) faz um `UPDATE` direto na tabela `oferta_ativa_leads` zerando `em_atendimento_por`/`em_atendimento_ate` e colocando `proxima_tentativa_apos = agora + 30min`.
+No card de negócio, o item de menu "Parceria" (e também "Repassar negócio") **é renderizado sem `onClick`** — só mostra o ícone, nada acontece ao clicar. O mesmo bug existe em **dois lugares**, porque o card foi duplicado:
 
-Porém a policy de UPDATE da tabela é:
+- `src/components/negocios/NegocioCard.tsx:286`
+- `src/pages/MeusNegocios.tsx:403` (cópia inline do mesmo card)
 
-```
-corretor_id = auth.uid() OR has_role(auth.uid(),'admin')
-```
+No pipeline de Leads o botão funciona porque `PipelineCard.tsx` instancia o `PartnershipDialog` corretamente — basta replicar esse padrão nos dois cards de Negócios.
 
-Para leads da fila (Casa Tua), `corretor_id` é NULL (ainda não atribuído). A corretora **não é admin** → o UPDATE bate em **0 linhas**, sem erro (RLS apenas não casa, PostgREST devolve 204). 
+## Mudança (apenas Parceria — escopo do pedido)
 
-Em seguida o frontend chama `fetch_next_lead` (RPC `SECURITY DEFINER`). Como o UPDATE não passou, o lead permanece com:
-- `em_atendimento_por = id da própria corretora` (do reserve anterior)
-- `proxima_tentativa_apos` inalterado
+Em cada um dos dois arquivos:
 
-A RPC permite servir o lead novamente se `em_atendimento_por = p_corretor_id`, e pela ordenação (menor `tentativas_count` + maior idle), **o mesmo lead volta**.
+1. Importar `PartnershipDialog` de `@/components/pipeline/PartnershipDialog`.
+2. Adicionar estado local `const [partnerOpen, setPartnerOpen] = useState(false);`.
+3. Trocar o `<DropdownMenuItem>` de Parceria por uma versão com handler:
+   ```tsx
+   <DropdownMenuItem
+     className="gap-2 cursor-pointer text-xs"
+     onClick={(e) => {
+       e.stopPropagation();
+       if (!negocio.pipeline_lead_id) {
+         toast.error("Negócio sem lead vinculado — não é possível registrar parceria");
+         return;
+       }
+       setPartnerOpen(true);
+     }}
+   >
+     <Handshake className="h-3.5 w-3.5" /> Parceria
+   </DropdownMenuItem>
+   ```
+4. Renderizar o dialog dentro do card (próximo aos outros popups já existentes):
+   ```tsx
+   {partnerOpen && negocio.pipeline_lead_id && (
+     <PartnershipDialog
+       open={partnerOpen}
+       onOpenChange={setPartnerOpen}
+       leadId={negocio.pipeline_lead_id}
+       leadNome={negocio.nome_cliente}
+       corretorPrincipalId={null}
+     />
+   )}
+   ```
 
-Evidência: `oa_events.lead_skipped` da Andressa Madril não aparece para hoje (último foi 15/05). Ou seja, o INSERT em `oa_events` também falha por RLS — confirma que o handler inteiro está sem permissão.
+`corretorPrincipalId={null}` faz o dialog usar `user.id` (auth) do usuário logado como principal — mesmo contrato já validado no fluxo da Roleta/Leads. `pipeline_parcerias` é insertado com divisão fixa 50/50 e dispara o `useCreateParceria`, que invalida `parceriaKeys.map()` — o badge "Parceria 50%" aparece automaticamente no card.
 
-## Correção proposta
+## Não está no escopo
 
-### 1) Nova função SQL `skip_oa_lead` (SECURITY DEFINER)
+- **"Repassar negócio"** (mesmo bug, sem handler) — só corrigir se o usuário pedir.
+- Refator para deduplicar `NegocioCard.tsx` ↔ card inline em `MeusNegocios.tsx` — fica como dívida; agora é só destravar o clique.
+- Mexer no `PartnershipDialog`, em `useParcerias` ou na RLS de `pipeline_parcerias`.
 
-Substituir o UPDATE direto e o INSERT em `oa_events` por uma única RPC que roda com privilégio elevado:
+## Validação após build
 
-```sql
-CREATE OR REPLACE FUNCTION public.skip_oa_lead(
-  p_lead_id uuid,
-  p_corretor_id uuid,
-  p_lista_id uuid,
-  p_skip_minutes integer DEFAULT 30,
-  p_session_id text DEFAULT NULL
-) RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
-AS $$
-DECLARE
-  v_lead oferta_ativa_leads%ROWTYPE;
-  v_skip_until timestamptz := now() + (p_skip_minutes || ' minutes')::interval;
-BEGIN
-  SELECT * INTO v_lead FROM oferta_ativa_leads WHERE id = p_lead_id FOR UPDATE;
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('ok', false, 'reason', 'lead_not_found');
-  END IF;
-
-  -- só permite skip se o lead está reservado por este corretor (ou sem dono)
-  IF v_lead.em_atendimento_por IS NOT NULL
-     AND v_lead.em_atendimento_por <> p_corretor_id
-     AND NOT has_role(p_corretor_id, 'admin') THEN
-    RETURN jsonb_build_object('ok', false, 'reason', 'not_locked_by_user');
-  END IF;
-
-  UPDATE oferta_ativa_leads
-  SET em_atendimento_por = NULL,
-      em_atendimento_ate = NULL,
-      proxima_tentativa_apos = v_skip_until
-  WHERE id = p_lead_id;
-
-  INSERT INTO oa_events (event_type, user_id, lead_id, lista_id, session_id, metadata)
-  VALUES ('lead_skipped', p_corretor_id, p_lead_id, p_lista_id, p_session_id,
-          jsonb_build_object('skip_until', v_skip_until, 'skip_minutes', p_skip_minutes));
-
-  RETURN jsonb_build_object('ok', true, 'skip_until', v_skip_until);
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.skip_oa_lead(uuid,uuid,uuid,integer,text) TO authenticated;
-```
-
-### 2) Frontend — trocar o handler para usar a RPC
-
-Em `src/components/oferta-ativa/DialingModeWithScript.tsx` (botão Pular, ~linha 1148), substituir o bloco `insert oa_events` + `update oferta_ativa_leads` por uma única chamada:
-
-```ts
-const { data, error } = await supabase.rpc("skip_oa_lead", {
-  p_lead_id: lead.id,
-  p_corretor_id: user.id,
-  p_lista_id: lista.id,
-  p_skip_minutes: 30,
-  p_session_id: sessionId ?? null,
-});
-if (error || !(data as any)?.ok) {
-  console.warn("[OA] skip_oa_lead falhou:", error || data);
-  toast.error("Não foi possível pular este lead");
-  return;
-}
-await fetchNext();
-```
-
-Manter `setSkipCount(prev => prev + 1)` antes e o toast de sucesso depois.
-
-### 3) Validação
-
-- Testar com a Andressa: clicar Pular em Casa Tua → deve aparecer **outro** lead.
-- Conferir `oa_events` para `event_type='lead_skipped'` com `user_id` dela.
-- Conferir que `oferta_ativa_leads.proxima_tentativa_apos` ficou ~30min no futuro no lead pulado.
-
-## Fora de escopo
-
-- Não mexe em RLS direto (mantém policy atual). A RPC `SECURITY DEFINER` resolve sem ampliar a permissão genérica.
-- Não altera `fetch_next_lead` nem o fluxo de Campanha (que tem a mesma RPC funcionando — só o caminho do Pular estava errado).
+1. Abrir `/pipeline-negocios`, clicar `⋮` em um negócio com `pipeline_lead_id` → "Parceria" abre o dialog.
+2. Selecionar parceiro → toast "Parceria registrada com sucesso!".
+3. Badge de parceria aparece no card sem refresh manual.
+4. Em um negócio sem `pipeline_lead_id` (caso raro) → toast de erro, sem crash.

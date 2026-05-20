@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { TrendingUp, Clock, Phone, MessageSquare, Zap, MoreVertical, ArrowRight, Handshake, Repeat2, XCircle, X, Plus, AlertTriangle } from "lucide-react";
+import PartnershipDialog from "@/components/pipeline/PartnershipDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -74,6 +75,7 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
   const [contTipo, setContTipo] = useState("digital");
   const [editingTask, setEditingTask] = useState(false);
   const [taskText, setTaskText] = useState("");
+  const [partnerOpen, setPartnerOpen] = useState(false);
   const whatsappUrl = negocio.telefone ? `https://wa.me/${negocio.telefone.replace(/\D/g, "")}` : null;
 
   const handleLigarRegistro = async () => {
@@ -283,7 +285,7 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 cursor-pointer text-xs"><Handshake className="h-3.5 w-3.5" /> Parceria</DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer text-xs" onClick={(e) => { e.stopPropagation(); if (!negocio.pipeline_lead_id) { toast.error("Negócio sem lead vinculado — não é possível registrar parceria"); return; } setPartnerOpen(true); }}><Handshake className="h-3.5 w-3.5" /> Parceria</DropdownMenuItem>
               <DropdownMenuItem className="gap-2 cursor-pointer text-xs"><Repeat2 className="h-3.5 w-3.5" /> Repassar negócio</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="gap-2 cursor-pointer text-xs text-red-500" onClick={() => setQuedaPopup(true)}><XCircle className="h-3.5 w-3.5" /> Caiu negócio</DropdownMenuItem>
