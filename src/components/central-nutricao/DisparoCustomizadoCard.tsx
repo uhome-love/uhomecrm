@@ -195,7 +195,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     }
     // FIX A: respeitar pausa travada
     const { data: cfgLock } = await supabase
-      .from("reengajamento_config")
+      .from("reengajamento_config" as any)
       .select("paused_until_release, paused_reason")
       .limit(1)
       .maybeSingle();
