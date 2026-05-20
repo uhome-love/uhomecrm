@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import { logFocus, newFocusSessionId } from "@/lib/focusTelemetry";
+import FocusConfigScreen from "./focus/FocusConfigScreen";
 
 interface FocusModeModalProps {
   open: boolean;
