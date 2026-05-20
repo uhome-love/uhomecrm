@@ -933,31 +933,44 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                         </Button>
                       </div>
 
-                      {currentLead.overdue_task_list.length > 0 ? (
-                        <Button
-                          onClick={() => {
-                            const t = currentLead.overdue_task_list[0];
-                            setCompletingOverdue({ id: t.id, titulo: t.titulo });
-                          }}
-                          variant="outline"
-                          className="w-full gap-2 text-xs h-9 border-red-500/30 bg-red-500/5 text-red-300 hover:bg-red-500/15 hover:text-red-200"
-                        >
-                          <CalendarClock className="w-3.5 h-3.5" />
-                          Concluir tarefa vencida{currentLead.overdue_task_list.length > 1 ? ` (${currentLead.overdue_task_list.length})` : ""} e agendar próxima
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => {
-                            setTab("task");
-                            setTaskTitle(`Follow-up: ${currentLead.name}`);
-                          }}
-                          variant="outline"
-                          className="w-full gap-2 text-xs h-9 border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/15 hover:text-amber-200"
-                        >
-                          <CalendarClock className="w-3.5 h-3.5" />
-                          Sem tarefas pendentes · Agendar próxima
-                        </Button>
-                      )}
+                      {(() => {
+                        const next = currentLead.next_pending_task;
+                        if (!next) {
+                          return (
+                            <Button
+                              onClick={() => {
+                                setTab("task");
+                                setTaskTitle(`Follow-up: ${currentLead.name}`);
+                              }}
+                              variant="outline"
+                              className="w-full gap-2 text-xs h-9 border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/15 hover:text-amber-200"
+                            >
+                              <CalendarClock className="w-3.5 h-3.5" />
+                              Sem tarefas pendentes · Agendar próxima
+                            </Button>
+                          );
+                        }
+                        const colorByBucket = {
+                          overdue: "border-red-500/30 bg-red-500/5 text-red-300 hover:bg-red-500/15 hover:text-red-200",
+                          today: "border-orange-500/30 bg-orange-500/5 text-orange-300 hover:bg-orange-500/15 hover:text-orange-200",
+                          upcoming: "border-indigo-500/30 bg-indigo-500/5 text-indigo-300 hover:bg-indigo-500/15 hover:text-indigo-200",
+                        } as const;
+                        const labelByBucket = {
+                          overdue: `Concluir tarefa vencida${currentLead.overdue_task_list.length > 1 ? ` (${currentLead.overdue_task_list.length})` : ""} e agendar próxima`,
+                          today: `Concluir tarefa de hoje${currentLead.pending_task_list.filter(t => t.bucket === "today").length > 1 ? ` (${currentLead.pending_task_list.filter(t => t.bucket === "today").length})` : ""} e agendar próxima`,
+                          upcoming: `Concluir tarefa agendada e criar próxima`,
+                        } as const;
+                        return (
+                          <Button
+                            onClick={() => setCompletingOverdue({ id: next.id, titulo: next.titulo })}
+                            variant="outline"
+                            className={`w-full gap-2 text-xs h-9 ${colorByBucket[next.bucket]}`}
+                          >
+                            <CalendarClock className="w-3.5 h-3.5" />
+                            {labelByBucket[next.bucket]}
+                          </Button>
+                        );
+                      })()}
                     </TabsContent>
 
                     {/* TAB: Ligar */}
