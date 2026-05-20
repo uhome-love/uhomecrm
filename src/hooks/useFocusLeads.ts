@@ -60,6 +60,8 @@ export interface FocusLead {
   tags: string[];
   negocio_id: string | null;
   pipeline_tipo: string;
+  /** Régua de saúde calculada a partir de days_without_contact. */
+  health: FocusHealth;
 }
 
 export type FocusCriteria = "overdue_tasks" | "no_tasks" | "stagnant" | "all";
