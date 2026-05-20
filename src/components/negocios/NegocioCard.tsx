@@ -375,6 +375,16 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
           <DialogFooter><Button size="sm" onClick={handleContratoSubmit} className="text-xs gap-1">📝 Enviar e mover para Contrato Gerado</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {partnerOpen && negocio.pipeline_lead_id && (
+        <PartnershipDialog
+          open={partnerOpen}
+          onOpenChange={setPartnerOpen}
+          leadId={negocio.pipeline_lead_id}
+          leadNome={negocio.nome_cliente}
+          corretorPrincipalId={null}
+        />
+      )}
     </>
   );
 }
