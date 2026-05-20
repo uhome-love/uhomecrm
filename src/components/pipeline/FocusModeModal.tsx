@@ -286,16 +286,44 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     setDiscardObs("");
   }, []);
 
+  const handleClose = useCallback(() => {
+    // Telemetria: log closed só se houve uma sessão ativa (ignora abre/fecha sem startar).
+    if (focusSessionIdRef.current) {
+      logFocus("focus_mode_closed", {
+        session_id: focusSessionIdRef.current,
+        pipeline_tipo: pipelineTipo,
+        queue_size: leads.length,
+        advance_count: advanceCountRef.current,
+        last_index: currentIndex,
+        completed: currentIndex >= Math.max(0, leads.length - 1),
+      });
+      focusSessionIdRef.current = null;
+      advanceCountRef.current = 0;
+    }
+    onClose();
+  }, [onClose, pipelineTipo, leads.length, currentIndex]);
+
   const goToNext = useCallback(() => {
     if (currentIndex < leads.length - 1) {
       setDirection(1);
       setCurrentIndex(prev => prev + 1);
       resetActionState();
+      advanceCountRef.current += 1;
+      if (focusSessionIdRef.current) {
+        logFocus("focus_mode_advance", {
+          session_id: focusSessionIdRef.current,
+          pipeline_tipo: pipelineTipo,
+          from_index: currentIndex,
+          to_index: currentIndex + 1,
+          lead_id: leads[currentIndex]?.id ?? null,
+          next_lead_id: leads[currentIndex + 1]?.id ?? null,
+        });
+      }
     } else {
-      onClose();
+      handleClose();
       toast.success("Modo Foco concluído! 🎯 Todos os leads foram revisados.");
     }
-  }, [currentIndex, leads.length, onClose, resetActionState]);
+  }, [currentIndex, leads, pipelineTipo, handleClose, resetActionState]);
 
   const goToPrev = useCallback(() => {
     if (currentIndex > 0) {
