@@ -150,6 +150,12 @@
     --gradient-purple:   linear-gradient(135deg, hsl(var(--purple-500)), hsl(var(--purple-700)));
     --gradient-card-shine: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 60%);
     --gradient-homi:     linear-gradient(135deg, hsl(187 100% 42%), hsl(200 100% 38%));
+    --gradient-focus:    linear-gradient(135deg, hsl(228 100% 64%), hsl(258 90% 66%));
+    --gradient-focus-soft: linear-gradient(135deg, hsl(228 100% 64% / 0.12), hsl(258 90% 66% / 0.08));
+
+    /* ── Focus Mode typography ── */
+    --font-focus-display: 'Fraunces', 'Plus Jakarta Sans', serif;
+    --font-focus-mono:    'JetBrains Mono', 'DM Mono', monospace;
 
     /* ── Transitions ── */
     --transition-fast:   100ms cubic-bezier(0.4,0,0.2,1);

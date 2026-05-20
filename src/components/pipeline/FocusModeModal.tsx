@@ -9,19 +9,20 @@ import {
   Zap, X, Phone, MessageCircle, Plus, ChevronLeft,
   Loader2, AlertTriangle, Clock, Send,
   ExternalLink, Sparkles, Copy, Check, ChevronRight,
-  Filter, ListChecks, CalendarClock, Inbox, Target,
+  Filter, ListChecks, CalendarClock,
   ArrowRightCircle, Trash2, Ban
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria, FOCUS_LEVELS } from "@/hooks/useFocusLeads";
+import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria } from "@/hooks/useFocusLeads";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import { logFocus, newFocusSessionId } from "@/lib/focusTelemetry";
+import FocusConfigScreen from "./focus/FocusConfigScreen";
 
 interface FocusModeModalProps {
   open: boolean;
@@ -46,18 +47,15 @@ const QUICK_MESSAGES = [
 ];
 
 type CriteriaType = FocusCriteria;
-
-const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { value: "all", label: "Tudo que precisa de atenção", description: "Atrasados + tarefas de hoje + sem próximo passo", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
-  { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas (data ou hora BRT)", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
-  { value: "today", label: "Para hoje", description: "Tarefas com vencimento hoje, ainda não vencidas", icon: <Clock className="w-5 h-5" />, color: "#F97316" },
-  { value: "no_next_step", label: "Sem próximo passo", description: `Zero tarefa pendente. 🟡 1–4d · 🟠 5–9d · 🔴 ${FOCUS_LEVELS.critical}+d · 🔴 nunca trabalhado`, icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
-];
+// CRITERIA_OPTIONS movido para FocusConfigScreen (Sprint 1 R1).
 
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
   const { user } = useAuth();
   const corretorId = user?.id ?? null;
   const { leads, loading, reload, staleSince } = useFocusLeads(corretorId, pipelineTipo);
+  // Silent counts: separa instância para alimentar contadores da tela de config
+  // sem interferir na fila ativa nem disparar telemetria.
+  const { leads: countsLeads, loading: countsLoading, reload: reloadCounts } = useFocusLeads(corretorId, pipelineTipo);
 
   // Config screen state
   const [configPhase, setConfigPhase] = useState(true);
@@ -134,6 +132,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       setStagesLoading(false);
     };
     loadStages();
+    // Silent counts: carrega tudo (incluindo upcoming 2d) para alimentar os badges/contadores
+    // da tela de configuração. Não passa criteria (default = "all"), não emite telemetria.
+    reloadCounts({ includeUpcoming2d: true });
   }, [open, pipelineTipo]);
 
   const handleToggleCriteria = (value: CriteriaType) => {
@@ -627,137 +628,20 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
         {/* BODY */}
         <div className="flex-1 overflow-y-auto flex flex-col">
           {configPhase ? (
-            /* ═══ CONFIG SCREEN ═══ */
-            <div className="flex flex-col items-center justify-start pt-8 sm:pt-12 min-h-full px-4 py-4">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="w-full max-w-lg space-y-6"
-              >
-                {/* Title */}
-                <div className="text-center space-y-2">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto" style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}>
-                    <Zap className="w-7 h-7 text-white" />
-                  </div>
-                  <h2 className="text-white font-bold text-xl">Configurar Modo Foco</h2>
-                  <p className="text-gray-400 text-sm">Personalize o que você quer trabalhar agora</p>
-                </div>
-
-                {/* Criteria selection */}
-                <div className="space-y-2">
-                  <label className="text-gray-300 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                    <ListChecks className="w-3.5 h-3.5" /> O que quer focar?
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {CRITERIA_OPTIONS.map((opt) => {
-                      const isSelected = selectedCriteria.includes(opt.value);
-                      return (
-                        <button
-                          key={opt.value}
-                          onClick={() => handleToggleCriteria(opt.value)}
-                          className="flex items-start gap-3 p-3 rounded-xl text-left transition-all"
-                          style={{
-                            background: isSelected ? `${opt.color}15` : "rgba(255,255,255,0.03)",
-                            border: `1.5px solid ${isSelected ? `${opt.color}50` : "rgba(255,255,255,0.06)"}`,
-                          }}
-                        >
-                          <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                            style={{ background: isSelected ? `${opt.color}20` : "rgba(255,255,255,0.05)", color: isSelected ? opt.color : "#6b7280" }}
-                          >
-                            {opt.icon}
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-sm font-semibold block" style={{ color: isSelected ? "#fff" : "#9ca3af" }}>
-                              {opt.label}
-                            </span>
-                            <span className="text-[10px] leading-tight block mt-0.5" style={{ color: isSelected ? "#94a3b8" : "#6b7280" }}>
-                              {opt.description}
-                            </span>
-                          </div>
-                          {isSelected && (
-                            <div className="ml-auto shrink-0">
-                              <Check className="w-4 h-4" style={{ color: opt.color }} />
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Toggle: incluir próximos 2 dias (afeta filtro "Tudo") */}
-                <button
-                  type="button"
-                  onClick={() => setIncludeUpcoming(v => !v)}
-                  className="w-full flex items-center justify-between gap-3 p-3 rounded-xl transition-all text-left"
-                  style={{
-                    background: includeUpcoming ? "rgba(73,105,255,0.10)" : "rgba(255,255,255,0.03)",
-                    border: `1.5px solid ${includeUpcoming ? "rgba(73,105,255,0.45)" : "rgba(255,255,255,0.06)"}`,
-                  }}
-                >
-                  <div className="min-w-0">
-                    <span className="text-sm font-semibold block" style={{ color: includeUpcoming ? "#fff" : "#9ca3af" }}>
-                      Incluir próximos 2 dias
-                    </span>
-                    <span className="text-[10px] leading-tight block mt-0.5 text-gray-500">
-                      No filtro "Tudo", também mostra leads com tarefa amanhã ou depois de amanhã
-                    </span>
-                  </div>
-                  <div
-                    className="shrink-0 w-10 h-6 rounded-full transition-all relative"
-                    style={{ background: includeUpcoming ? "#4969FF" : "rgba(255,255,255,0.12)" }}
-                  >
-                    <div
-                      className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
-                      style={{ left: includeUpcoming ? "calc(100% - 22px)" : "2px" }}
-                    />
-                  </div>
-                </button>
-
-                <div className="space-y-2">
-                  <label className="text-gray-300 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                    <Filter className="w-3.5 h-3.5" /> Filtrar por etapa
-                  </label>
-                  <Select value={selectedStageId} onValueChange={setSelectedStageId}>
-                    <SelectTrigger
-                      className="h-10 text-sm border-0 rounded-xl"
-                      style={{ background: "rgba(255,255,255,0.06)", color: "#e2e8f0", borderColor: "rgba(255,255,255,0.1)" }}
-                    >
-                      <SelectValue placeholder="Todas as etapas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as etapas</SelectItem>
-                      {stages.map(s => (
-                        <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {pipelineTipo === "leads" && (
-                    <p className="text-[10px] text-gray-500 mt-1">
-                      Negócios em andamento aparecem em <span className="text-gray-300">Meus Negócios → Modo Foco</span>.
-                    </p>
-                  )}
-                </div>
-
-                {/* Start button */}
-                <Button
-                  onClick={handleStartFocus}
-                  disabled={stagesLoading}
-                  className="w-full h-12 text-sm font-bold gap-2 rounded-xl"
-                  style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)", color: "#fff" }}
-                >
-                  {stagesLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4" /> Iniciar Modo Foco
-                    </>
-                  )}
-                </Button>
-              </motion.div>
-            </div>
+            <FocusConfigScreen
+              allLeads={countsLeads}
+              countsLoading={countsLoading}
+              stages={stages}
+              stagesLoading={stagesLoading}
+              selectedCriteria={selectedCriteria}
+              includeUpcoming={includeUpcoming}
+              selectedStageId={selectedStageId}
+              pipelineTipo={pipelineTipo}
+              onToggleCriteria={handleToggleCriteria}
+              onToggleIncludeUpcoming={() => setIncludeUpcoming((v) => !v)}
+              onSelectStage={setSelectedStageId}
+              onStart={handleStartFocus}
+            />
           ) : loading ? (
             <div className="flex flex-col items-center justify-center h-full gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
