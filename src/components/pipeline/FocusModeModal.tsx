@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria } from "@/hooks/useFocusLeads";
+import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria, FOCUS_STAGNANT_DAYS } from "@/hooks/useFocusLeads";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -47,10 +47,10 @@ const QUICK_MESSAGES = [
 type CriteriaType = FocusCriteria;
 
 const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { value: "all", label: "Todos", description: "Todos os leads que precisam de atenção", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
-  { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
+  { value: "all", label: "Tudo que precisa de atenção", description: "Atrasados, sem tarefa ou parados há +" + FOCUS_STAGNANT_DAYS + " dias", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
+  { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas (data ou hora BRT)", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
   { value: "no_tasks", label: "Sem tarefas", description: "Leads sem nenhuma tarefa agendada", icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
-  { value: "stagnant", label: "Desatualizados", description: "Leads parados na mesma etapa há 5+ dias", icon: <Clock className="w-5 h-5" />, color: "#F97316" },
+  { value: "stagnant", label: "Desatualizados", description: `Leads parados na mesma etapa há ${FOCUS_STAGNANT_DAYS}+ dias`, icon: <Clock className="w-5 h-5" />, color: "#F97316" },
 ];
 
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
@@ -76,6 +76,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [homiInsight, setHomiInsight] = useState("");
   const [followUpText, setFollowUpText] = useState("");
   const [homiLoading, setHomiLoading] = useState(false);
+
+  // Cache de HOMI Insight por sessão: leadId → { insight, mensagem, at }
+  // Evita re-chamar Gemini quando o corretor volta ao mesmo lead (botão "anterior").
+  const insightCacheRef = useRef<Map<string, { insight: string; mensagem: string; at: number }>>(new Map());
+  const INSIGHT_TTL_MS = 4 * 60 * 60 * 1000; // 4h
   const [activityNote, setActivityNote] = useState("");
   const [tab, setTab] = useState("followup");
   const [saving, setSaving] = useState(false);
@@ -105,6 +110,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     setSelectedCriteria(["all"]);
     setSelectedStageId("all");
     setCurrentIndex(0);
+    // Limpa cache de insight quando o modal abre (sessão nova).
+    insightCacheRef.current.clear();
 
     const loadStages = async () => {
       setStagesLoading(true);
@@ -151,6 +158,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
   useEffect(() => {
     if (!currentLead || !open || configPhase) return;
+
+    // Cache hit: hidrata insight sem chamar Gemini novamente.
+    const cached = insightCacheRef.current.get(currentLead.id);
+    if (cached && Date.now() - cached.at < INSIGHT_TTL_MS) {
+      setHomiInsight(cached.insight);
+      setFollowUpText(cached.mensagem);
+      setHomiLoading(false);
+      return;
+    }
     fetchHomiSuggestion(currentLead);
   }, [currentIndex, leads.length, open, configPhase]);
 
@@ -221,8 +237,12 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       });
 
       if (error) throw error;
-      setHomiInsight(data?.insight || "");
-      setFollowUpText(data?.mensagem || "");
+      const insight = data?.insight || "";
+      const mensagem = data?.mensagem || "";
+      setHomiInsight(insight);
+      setFollowUpText(mensagem);
+      // Memoriza para evitar nova chamada ao voltar/avançar para o mesmo lead na sessão.
+      insightCacheRef.current.set(lead.id, { insight, mensagem, at: Date.now() });
     } catch (err) {
       console.error("[FocusMode] HOMI error:", err);
       setFollowUpText("");
@@ -294,6 +314,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
       toast.success("Atividade registrada! ✅");
       setActivityRegistered(true);
+      // Invalida cache do insight: nova atividade muda o contexto que Gemini analisa.
+      insightCacheRef.current.delete(currentLead.id);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao registrar atividade.");
@@ -617,6 +639,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                       ))}
                     </SelectContent>
                   </Select>
+                  {pipelineTipo === "leads" && (
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      Negócios em andamento aparecem em <span className="text-gray-300">Meus Negócios → Modo Foco</span>.
+                    </p>
+                  )}
                 </div>
 
                 {/* Start button */}

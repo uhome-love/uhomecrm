@@ -2,12 +2,18 @@
  * useFocusLeads — Fetches leads needing attention for Focus Mode.
  *
  * Criteria (filterable):
- *  1. No pending tasks at all (desatualizado)
- *  2. Overdue pending tasks (vence_em < today)
- *  3. Stage stalled > 5 days (stage_changed_at < now - 5d)
+ *  1. No pending tasks at all (desatualizado / sem tarefa)
+ *  2. Overdue pending tasks — espelha CardStatusLine.getLeadStatusFilter
+ *     (vence_em < hoje BRT, OU vence_em == hoje BRT && hora_vencimento < agora BRT)
+ *  3. Stage stalled — sem movimentação há FOCUS_STAGNANT_DAYS dias
  *
- * Supports filtering by stage and criteria type.
+ * Leads com negocio_id NOT NULL são excluídos do Foco de "leads"
+ * (aparecem apenas em /meus-negocios → Modo Foco de Negócios).
  */
+
+/** Dias de parada em uma etapa para o lead ser considerado "Desatualizado".
+ *  Default 14d (P50 real do pipeline = ~29d; valor antigo de 5d marcava >75% da base). */
+export const FOCUS_STAGNANT_DAYS = 14;
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
@@ -69,8 +75,11 @@ export function useFocusLeads(
     setError(null);
 
     try {
-      const today = new Date();
-      const todayStr = today.toISOString().split("T")[0];
+      // "Hoje" e "agora" em BRT (consistente com SQL `AT TIME ZONE 'America/Sao_Paulo'`)
+      const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); // "YYYY-MM-DD"
+      const nowHHMM_BRT = new Date().toLocaleTimeString("en-GB", {
+        timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit",
+      }); // "HH:MM"
 
       // 1. Get stages for name mapping — exclude descarte and convertido
       const { data: stagesData, error: stagesError } = await runQueryWithRetry<Array<{ id: string; nome: string; tipo: string | null; pipeline_tipo: string | null }>>(() =>
@@ -113,6 +122,8 @@ export function useFocusLeads(
         .in("stage_id", stageIds);
 
       if (pipelineTipo === "leads") {
+        // Leads que já viraram negócio aparecem só em /meus-negocios → Modo Foco (Negócios).
+        // Mantemos exclusão para não duplicar (~2 leads na base hoje).
         query = query.is("negocio_id", null);
       }
 
@@ -151,7 +162,7 @@ export function useFocusLeads(
         (chunk) =>
           supabase
             .from("pipeline_tarefas")
-            .select("id, pipeline_lead_id, titulo, tipo, vence_em, status")
+            .select("id, pipeline_lead_id, titulo, tipo, vence_em, hora_vencimento, status")
             .in("pipeline_lead_id", chunk)
             .eq("status", "pendente"),
         { chunkSize: 50, minChunkSize: 10 }
@@ -161,12 +172,23 @@ export function useFocusLeads(
         if (!allTasks[t.pipeline_lead_id]) {
           allTasks[t.pipeline_lead_id] = { overdue: 0, hasFuture: false, overdueList: [] };
         }
-        if (t.vence_em && t.vence_em < todayStr) {
+        // Espelha CardStatusLine.getLeadStatusFilter:
+        //   vence_em < hoje (BRT) → atrasada
+        //   vence_em == hoje (BRT) && hora_vencimento < agora BRT → atrasada
+        const venceEm = t.vence_em as string | null;
+        const hora = (t.hora_vencimento as string | null)?.slice(0, 5) ?? null;
+        const isOverdue =
+          !!venceEm && (
+            venceEm < todayStr ||
+            (venceEm === todayStr && !!hora && hora < nowHHMM_BRT)
+          );
+
+        if (isOverdue) {
           allTasks[t.pipeline_lead_id].overdue++;
           allTasks[t.pipeline_lead_id].overdueList.push({
             id: t.id,
             titulo: t.titulo || "(sem título)",
-            vence_em: t.vence_em,
+            vence_em: venceEm,
             tipo: (t as any).tipo ?? null,
           });
         } else {
@@ -179,9 +201,9 @@ export function useFocusLeads(
       }
 
       // 4. Build focus leads — filter for those that need attention
-      const fiveDaysAgo = new Date();
-      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-      const fiveDaysAgoStr = fiveDaysAgo.toISOString();
+      const stagnantThreshold = new Date();
+      stagnantThreshold.setDate(stagnantThreshold.getDate() - FOCUS_STAGNANT_DAYS);
+      const stagnantThresholdISO = stagnantThreshold.toISOString();
 
       const criteriaFilter = filters?.criteria || ["all"];
       const filterAll = criteriaFilter.includes("all");
@@ -192,7 +214,7 @@ export function useFocusLeads(
         const taskInfo = allTasks[lead.id];
         const hasOverdue = (taskInfo?.overdue ?? 0) > 0;
         const hasNoTasks = !taskInfo;
-        const stageStalled = lead.stage_changed_at < fiveDaysAgoStr;
+        const stageStalled = lead.stage_changed_at < stagnantThresholdISO;
 
         // Apply criteria filter
         const matchesOverdue = hasOverdue && (filterAll || criteriaFilter.includes("overdue_tasks"));
