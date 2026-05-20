@@ -639,6 +639,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                       ))}
                     </SelectContent>
                   </Select>
+                  {pipelineTipo === "leads" && (
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      Negócios em andamento aparecem em <span className="text-gray-300">Meus Negócios → Modo Foco</span>.
+                    </p>
+                  )}
                 </div>
 
                 {/* Start button */}
