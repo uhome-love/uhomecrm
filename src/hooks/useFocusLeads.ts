@@ -5,28 +5,46 @@
  *  1. No pending tasks at all (sem tarefa)
  *  2. Overdue pending tasks — espelha CardStatusLine.getLeadStatusFilter
  *     (vence_em < hoje BRT, OU vence_em == hoje BRT && hora_vencimento < agora BRT)
- *  3. Stagnant / "Desatualizado" — sem ação (ultima_acao_at) há FOCUS_LEVELS.critical dias
+ *  3. Stagnant / "Desatualizado" — sem TOQUE real (pipeline_atividades.tipo ∈ TOUCH_TYPES)
+ *     há FOCUS_LEVELS.critical dias
  *
- * Régua de saúde (health) por dias sem ação (ultima_acao_at || updated_at):
+ * Régua de saúde (health) por dias sem TOQUE REAL do corretor:
+ *  - Fonte: MAX(pipeline_atividades.created_at) WHERE tipo IN TOUCH_TYPES
+ *  - NÃO usa mais ultima_acao_at (poluído por mudanca_etapa, criação, eventos do site, etc.)
  *   ≥ 10d → critical 🔴
  *   ≥  5d → warning  🟠
  *   ≥  1d → attention 🟡
  *   <  1d → ok
+ *  - Lead sem atividade alguma → Infinity → critical 🔴
  *
  * Leads com negocio_id NOT NULL são excluídos do Foco de "leads"
  * (aparecem apenas em /meus-negocios → Modo Foco de Negócios).
  */
 
-/** Limiares (em dias sem ação) da régua de saúde do Modo Foco. */
+/** Limiares (em dias sem toque) da régua de saúde do Modo Foco. */
 export const FOCUS_LEVELS = { attention: 1, warning: 5, critical: 10 } as const;
+
+/**
+ * Whitelist de tipos de pipeline_atividades que contam como TOQUE REAL do corretor.
+ * Exclui: entrada, nurturing_sequencia, descarte, mudanca_etapa, sistema (eventos automáticos).
+ */
+export const TOUCH_TYPES = [
+  "followup", "whatsapp", "ligacao", "tarefa", "contato",
+  "nao_atendeu", "mensagem", "nota", "proposta", "reuniao", "visita",
+] as const;
 
 export type FocusHealth = "ok" | "attention" | "warning" | "critical";
 
-function computeHealth(daysSinceContact: number): FocusHealth {
-  if (daysSinceContact >= FOCUS_LEVELS.critical) return "critical";
-  if (daysSinceContact >= FOCUS_LEVELS.warning) return "warning";
-  if (daysSinceContact >= FOCUS_LEVELS.attention) return "attention";
+function computeHealth(daysSinceTouch: number): FocusHealth {
+  if (daysSinceTouch >= FOCUS_LEVELS.critical) return "critical";
+  if (daysSinceTouch >= FOCUS_LEVELS.warning) return "warning";
+  if (daysSinceTouch >= FOCUS_LEVELS.attention) return "attention";
   return "ok";
+}
+
+function getDaysSinceTouch(lastTouchISO: string | undefined): number {
+  if (!lastTouchISO) return Infinity;
+  return Math.floor((Date.now() - new Date(lastTouchISO).getTime()) / 86400000);
 }
 
 const HEALTH_EMOJI: Record<FocusHealth, string> = {
