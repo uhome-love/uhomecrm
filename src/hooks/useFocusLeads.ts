@@ -122,6 +122,8 @@ export function useFocusLeads(
         .in("stage_id", stageIds);
 
       if (pipelineTipo === "leads") {
+        // Leads que já viraram negócio aparecem só em /meus-negocios → Modo Foco (Negócios).
+        // Mantemos exclusão para não duplicar (~2 leads na base hoje).
         query = query.is("negocio_id", null);
       }
 
