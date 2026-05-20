@@ -237,8 +237,12 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       });
 
       if (error) throw error;
-      setHomiInsight(data?.insight || "");
-      setFollowUpText(data?.mensagem || "");
+      const insight = data?.insight || "";
+      const mensagem = data?.mensagem || "";
+      setHomiInsight(insight);
+      setFollowUpText(mensagem);
+      // Memoriza para evitar nova chamada ao voltar/avançar para o mesmo lead na sessão.
+      insightCacheRef.current.set(lead.id, { insight, mensagem, at: Date.now() });
     } catch (err) {
       console.error("[FocusMode] HOMI error:", err);
       setFollowUpText("");
