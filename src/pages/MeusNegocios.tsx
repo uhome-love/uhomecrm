@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, RefreshCw, Briefcase, X, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight, TrendingUp, Clock, MessageCircle, Plus, Phone, MessageSquare, Zap, MoreVertical, ArrowRight, Handshake, Repeat2, XCircle, AlertTriangle } from "lucide-react";
+import PartnershipDialog from "@/components/pipeline/PartnershipDialog";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -100,6 +101,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
   // Inline task editing
   const [editingTask, setEditingTask] = useState(false);
   const [taskText, setTaskText] = useState("");
+  const [partnerOpen, setPartnerOpen] = useState(false);
   const whatsappUrl = negocio.telefone ? `https://wa.me/${negocio.telefone.replace(/\D/g, "")}` : null;
 
   const handleLigarRegistro = async () => {
@@ -400,7 +402,17 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 cursor-pointer text-xs">
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!negocio.pipeline_lead_id) {
+                    toast.error("Negócio sem lead vinculado — não é possível registrar parceria");
+                    return;
+                  }
+                  setPartnerOpen(true);
+                }}
+              >
                 <Handshake className="h-3.5 w-3.5" /> Parceria
               </DropdownMenuItem>
               <DropdownMenuItem className="gap-2 cursor-pointer text-xs">
@@ -548,6 +560,16 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {partnerOpen && negocio.pipeline_lead_id && (
+        <PartnershipDialog
+          open={partnerOpen}
+          onOpenChange={setPartnerOpen}
+          leadId={negocio.pipeline_lead_id}
+          leadNome={negocio.nome_cliente}
+          corretorPrincipalId={null}
+        />
+      )}
     </>
   );
 }
