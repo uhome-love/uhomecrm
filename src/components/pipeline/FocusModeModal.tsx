@@ -546,7 +546,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent
         className="max-w-full w-full h-full m-0 rounded-none p-0 border-0 gap-0"
         style={{
