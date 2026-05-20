@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria } from "@/hooks/useFocusLeads";
+import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria, FOCUS_STAGNANT_DAYS } from "@/hooks/useFocusLeads";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -47,10 +47,10 @@ const QUICK_MESSAGES = [
 type CriteriaType = FocusCriteria;
 
 const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { value: "all", label: "Todos", description: "Todos os leads que precisam de atenção", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
-  { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
+  { value: "all", label: "Tudo que precisa de atenção", description: "Atrasados, sem tarefa ou parados há +" + FOCUS_STAGNANT_DAYS + " dias", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
+  { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas (data ou hora BRT)", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
   { value: "no_tasks", label: "Sem tarefas", description: "Leads sem nenhuma tarefa agendada", icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
-  { value: "stagnant", label: "Desatualizados", description: "Leads parados na mesma etapa há 5+ dias", icon: <Clock className="w-5 h-5" />, color: "#F97316" },
+  { value: "stagnant", label: "Desatualizados", description: `Leads parados na mesma etapa há ${FOCUS_STAGNANT_DAYS}+ dias`, icon: <Clock className="w-5 h-5" />, color: "#F97316" },
 ];
 
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
