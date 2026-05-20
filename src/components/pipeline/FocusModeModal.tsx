@@ -21,6 +21,7 @@ import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TaskCompletionDialog from "./TaskCompletionDialog";
+import { logFocus, newFocusSessionId } from "@/lib/focusTelemetry";
 
 interface FocusModeModalProps {
   open: boolean;
