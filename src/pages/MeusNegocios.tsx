@@ -404,13 +404,13 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="gap-2 cursor-pointer text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
+                onSelect={(e) => {
+                  e.preventDefault();
                   if (!negocio.pipeline_lead_id) {
                     toast.error("Negócio sem lead vinculado — não é possível registrar parceria");
                     return;
                   }
-                  setPartnerOpen(true);
+                  setTimeout(() => setPartnerOpen(true), 0);
                 }}
               >
                 <Handshake className="h-3.5 w-3.5" /> Parceria
