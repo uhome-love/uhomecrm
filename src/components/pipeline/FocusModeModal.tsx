@@ -109,6 +109,10 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   // All pending tasks for current lead (overdue + future)
   const [pendingTasks, setPendingTasks] = useState<Array<{ id: string; titulo: string; tipo: string | null; vence_em: string | null; hora_vencimento: string | null }>>([]);
   const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
+  // Sprint 1 R2: contador de leads/tarefas trabalhados nesta sessão (visível no topo do LeadFocusScreen).
+  const [workedCount, setWorkedCount] = useState(0);
+  // Bump após qualquer ação registrada para refrescar TimelineSection sem refetch global.
+  const [timelineRefreshKey, setTimelineRefreshKey] = useState(0);
 
   const currentLead = leads[currentIndex] ?? null;
 
