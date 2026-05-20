@@ -162,7 +162,7 @@ export function useFocusLeads(
         (chunk) =>
           supabase
             .from("pipeline_tarefas")
-            .select("id, pipeline_lead_id, titulo, tipo, vence_em, status")
+            .select("id, pipeline_lead_id, titulo, tipo, vence_em, hora_vencimento, status")
             .in("pipeline_lead_id", chunk)
             .eq("status", "pendente"),
         { chunkSize: 50, minChunkSize: 10 }
@@ -172,12 +172,23 @@ export function useFocusLeads(
         if (!allTasks[t.pipeline_lead_id]) {
           allTasks[t.pipeline_lead_id] = { overdue: 0, hasFuture: false, overdueList: [] };
         }
-        if (t.vence_em && t.vence_em < todayStr) {
+        // Espelha CardStatusLine.getLeadStatusFilter:
+        //   vence_em < hoje (BRT) → atrasada
+        //   vence_em == hoje (BRT) && hora_vencimento < agora BRT → atrasada
+        const venceEm = t.vence_em as string | null;
+        const hora = (t.hora_vencimento as string | null)?.slice(0, 5) ?? null;
+        const isOverdue =
+          !!venceEm && (
+            venceEm < todayStr ||
+            (venceEm === todayStr && !!hora && hora < nowHHMM_BRT)
+          );
+
+        if (isOverdue) {
           allTasks[t.pipeline_lead_id].overdue++;
           allTasks[t.pipeline_lead_id].overdueList.push({
             id: t.id,
             titulo: t.titulo || "(sem título)",
-            vence_em: t.vence_em,
+            vence_em: venceEm,
             tipo: (t as any).tipo ?? null,
           });
         } else {
