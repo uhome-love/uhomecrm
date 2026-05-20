@@ -423,6 +423,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       setTaskCreated(true);
       setTaskTitle("");
       setTasksRefreshKey(k => k + 1);
+      setTimelineRefreshKey(k => k + 1);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao criar tarefa.");
