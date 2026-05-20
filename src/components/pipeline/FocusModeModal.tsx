@@ -59,6 +59,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const { user } = useAuth();
   const corretorId = user?.id ?? null;
   const { leads, loading, reload, staleSince } = useFocusLeads(corretorId, pipelineTipo);
+  // Silent counts: separa instância para alimentar contadores da tela de config
+  // sem interferir na fila ativa nem disparar telemetria.
+  const { leads: countsLeads, loading: countsLoading, reload: reloadCounts } = useFocusLeads(corretorId, pipelineTipo);
 
   // Config screen state
   const [configPhase, setConfigPhase] = useState(true);
