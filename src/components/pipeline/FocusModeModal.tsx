@@ -86,6 +86,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   // Telemetria: session_id correlaciona opened → advance(s) → closed da mesma jornada.
   const focusSessionIdRef = useRef<string | null>(null);
   const advanceCountRef = useRef<number>(0);
+  // Pending ctx do opened — emitido via useEffect quando reload terminar e leads.length refletir a fila real.
+  const pendingOpenedCtxRef = useRef<Record<string, unknown> | null>(null);
   const [activityNote, setActivityNote] = useState("");
   const [tab, setTab] = useState("followup");
   const [saving, setSaving] = useState(false);
