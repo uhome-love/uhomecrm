@@ -967,7 +967,12 @@ export default function ReengajamentoTab() {
           </Tabs>
 
           <div className="flex gap-2 justify-end items-center pt-3 border-t">
-            {(cfg as any)?.paused && !isRunning && (
+            {(cfg as any)?.paused_until_release && (
+              <Badge className="bg-red-100 text-red-800 mr-auto" title={(cfg as any)?.paused_reason || ""}>
+                🔒 Travado — liberação manual via SQL
+              </Badge>
+            )}
+            {!(cfg as any)?.paused_until_release && (cfg as any)?.paused && !isRunning && (
               <Badge className="bg-amber-100 text-amber-800 mr-auto">⏸️ Pausado</Badge>
             )}
             {isRunning ? (
@@ -976,7 +981,13 @@ export default function ReengajamentoTab() {
                 {isPausing ? "Pausando…" : "Pausar agora"}
               </Button>
             ) : (
-              <Button variant="outline" size="sm" onClick={dispararAgora} disabled={starting}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={dispararAgora}
+                disabled={starting || !!(cfg as any)?.paused_until_release}
+                title={(cfg as any)?.paused_until_release ? ((cfg as any)?.paused_reason || "Central travada — destravar via SQL admin") : undefined}
+              >
                 {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
                 {(cfg as any)?.paused ? "Retomar disparo" : "Disparar agora"}
               </Button>
