@@ -160,6 +160,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const handleStartFocus = async () => {
     setConfigPhase(false);
     setCurrentIndex(0);
+    setWorkedCount(0);
     resetActionState();
 
     const filters: FocusFilters = {};
