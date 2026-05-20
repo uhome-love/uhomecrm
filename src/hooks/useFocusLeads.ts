@@ -201,9 +201,9 @@ export function useFocusLeads(
       }
 
       // 4. Build focus leads — filter for those that need attention
-      const fiveDaysAgo = new Date();
-      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-      const fiveDaysAgoStr = fiveDaysAgo.toISOString();
+      const stagnantThreshold = new Date();
+      stagnantThreshold.setDate(stagnantThreshold.getDate() - FOCUS_STAGNANT_DAYS);
+      const stagnantThresholdISO = stagnantThreshold.toISOString();
 
       const criteriaFilter = filters?.criteria || ["all"];
       const filterAll = criteriaFilter.includes("all");
@@ -214,7 +214,7 @@ export function useFocusLeads(
         const taskInfo = allTasks[lead.id];
         const hasOverdue = (taskInfo?.overdue ?? 0) > 0;
         const hasNoTasks = !taskInfo;
-        const stageStalled = lead.stage_changed_at < fiveDaysAgoStr;
+        const stageStalled = lead.stage_changed_at < stagnantThresholdISO;
 
         // Apply criteria filter
         const matchesOverdue = hasOverdue && (filterAll || criteriaFilter.includes("overdue_tasks"));
