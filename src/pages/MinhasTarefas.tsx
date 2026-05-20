@@ -493,7 +493,6 @@ export default function MinhasTarefas() {
     if (!completingTarefa || !user || savingCompletion) return;
     const id = completingTarefa.id;
     const leadId = completingTarefa.pipeline_lead_id;
-    const currentStageId = completingTarefa.stage_id ?? null;
     const { tipo_contato, resultado, descricao, nova_tarefa, novo_stage_id } = payload;
     setSavingCompletion(true);
 
