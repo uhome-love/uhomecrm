@@ -241,6 +241,34 @@ export function useFocusLeads(
         console.warn("[useFocusLeads] Algumas consultas de tarefas falharam e foram isoladas por chunk", taskErrors);
       }
 
+      // 3.5 Get last REAL touch per lead from pipeline_atividades (whitelist TOUCH_TYPES).
+      // Substitui ultima_acao_at como fonte da régua de saúde — campo estava poluído
+      // por mudanca_etapa, criação de lead, eventos do site, skip de fila, etc.
+      const lastTouchMap = new Map<string, string>();
+      const { rows: activitiesData, errors: activityErrors } = await fetchInBatchesWithRetry<{
+        pipeline_lead_id: string;
+        created_at: string;
+      }>(
+        leadIds,
+        (chunk) =>
+          supabase
+            .from("pipeline_atividades")
+            .select("pipeline_lead_id, created_at")
+            .in("pipeline_lead_id", chunk)
+            .in("tipo", TOUCH_TYPES as unknown as string[])
+            .order("created_at", { ascending: false }),
+        { chunkSize: 50, minChunkSize: 10 }
+      );
+      for (const a of activitiesData || []) {
+        const current = lastTouchMap.get(a.pipeline_lead_id);
+        if (!current || a.created_at > current) {
+          lastTouchMap.set(a.pipeline_lead_id, a.created_at);
+        }
+      }
+      if (activityErrors.length) {
+        console.warn("[useFocusLeads] Algumas consultas de atividades falharam e foram isoladas por chunk", activityErrors);
+      }
+
       // 4. Build focus leads — filter for those that need attention
       const criteriaFilter = filters?.criteria || ["all"];
       const filterAll = criteriaFilter.includes("all");
@@ -252,18 +280,19 @@ export function useFocusLeads(
         const hasOverdue = (taskInfo?.overdue ?? 0) > 0;
         const hasNoTasks = !taskInfo;
 
-        const lastContact = lead.ultima_acao_at || lead.updated_at;
-        const daysSinceContact = lastContact
-          ? Math.floor((Date.now() - new Date(lastContact).getTime()) / 86400000)
-          : 999;
+        // Régua de saúde: dias desde o último TOQUE REAL (whitelist TOUCH_TYPES).
+        // Sem atividade alguma → Infinity → critical 🔴 (comportamento correto).
+        const lastTouch = lastTouchMap.get(lead.id);
+        const daysSinceTouch = getDaysSinceTouch(lastTouch);
+        // Exposto para a UI: usar Infinity como 999 só para evitar quebrar formatadores.
+        const daysSinceContact = Number.isFinite(daysSinceTouch) ? daysSinceTouch : 999;
 
         const daysInStage = Math.floor(
           (Date.now() - new Date(lead.stage_changed_at).getTime()) / 86400000
         );
 
-        const health = computeHealth(daysSinceContact);
-        // "Desatualizado" agora é baseado em ação (ultima_acao_at), não em movimento de etapa.
-        // Régua 1/5/10 → considera stagnant quando health === 'critical' (≥10d sem ação).
+        const health = computeHealth(daysSinceTouch);
+        // "Desatualizado" = sem toque real há ≥10d (critical).
         const isStale = health === "critical";
 
         // Apply criteria filter
@@ -277,7 +306,10 @@ export function useFocusLeads(
         if (hasOverdue) alertReasons.push(`${taskInfo!.overdue} tarefa(s) vencida(s)`);
         if (hasNoTasks) alertReasons.push("Sem tarefas pendentes");
         if (health !== "ok") {
-          alertReasons.push(`${HEALTH_EMOJI[health]} Sem ação há ${daysSinceContact}d`);
+          const label = lastTouch
+            ? `Sem toque há ${daysSinceContact}d`
+            : `Sem toque registrado`;
+          alertReasons.push(`${HEALTH_EMOJI[health]} ${label}`);
         }
 
         focusLeads.push({
@@ -290,7 +322,8 @@ export function useFocusLeads(
           stage_id: lead.stage_id,
           origin: lead.origem,
           interest: lead.empreendimento,
-          last_contact_at: lastContact,
+          // last_contact_at agora reflete o último TOQUE real (não ultima_acao_at).
+          last_contact_at: lastTouch ?? null,
           stage_updated_at: lead.stage_changed_at,
           overdue_tasks: taskInfo?.overdue ?? 0,
           overdue_task_list: taskInfo?.overdueList ?? [],
