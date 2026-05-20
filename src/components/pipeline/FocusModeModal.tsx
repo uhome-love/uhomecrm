@@ -47,9 +47,10 @@ const QUICK_MESSAGES = [
 type CriteriaType = FocusCriteria;
 
 const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { value: "all", label: "Tudo que precisa de atenção", description: "Leads atrasados + leads sem próximo passo definido", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
+  { value: "all", label: "Tudo que precisa de atenção", description: "Atrasados + tarefas de hoje + sem próximo passo", icon: <Target className="w-5 h-5" />, color: "#4969FF" },
   { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas (data ou hora BRT)", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
-  { value: "no_next_step", label: "Sem próximo passo", description: `Zero tarefa pendente. Régua: 🟡 1–4d · 🟠 5–9d · 🔴 ${FOCUS_LEVELS.critical}+d · 🔴 nunca trabalhado`, icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
+  { value: "today", label: "Para hoje", description: "Tarefas com vencimento hoje, ainda não vencidas", icon: <Clock className="w-5 h-5" />, color: "#F97316" },
+  { value: "no_next_step", label: "Sem próximo passo", description: `Zero tarefa pendente. 🟡 1–4d · 🟠 5–9d · 🔴 ${FOCUS_LEVELS.critical}+d · 🔴 nunca trabalhado`, icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
 ];
 
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
@@ -60,6 +61,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   // Config screen state
   const [configPhase, setConfigPhase] = useState(true);
   const [selectedCriteria, setSelectedCriteria] = useState<CriteriaType[]>(["all"]);
+  const [includeUpcoming, setIncludeUpcoming] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string>("all");
   const [stages, setStages] = useState<{ id: string; nome: string; tipo: string }[]>([]);
   const [stagesLoading, setStagesLoading] = useState(false);
@@ -152,6 +154,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     if (!selectedCriteria.includes("all")) {
       filters.criteria = selectedCriteria;
     }
+    filters.includeUpcoming2d = includeUpcoming;
     await reload(filters);
   };
 
