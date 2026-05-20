@@ -1,58 +1,41 @@
 /**
- * useFocusLeads — Fetches leads needing attention for Focus Mode.
+ * useFocusLeads — Modo Foco baseado na régua de 3 estados (decisão CEO 20/05/2026).
  *
- * Criteria (filterable):
- *  1. No pending tasks at all (sem tarefa)
- *  2. Overdue pending tasks — espelha CardStatusLine.getLeadStatusFilter
- *     (vence_em < hoje BRT, OU vence_em == hoje BRT && hora_vencimento < agora BRT)
- *  3. Stagnant / "Desatualizado" — sem TOQUE real (pipeline_atividades.tipo ∈ TOUCH_TYPES)
- *     há FOCUS_LEVELS.critical dias
+ * Cada lead ATIVO (arquivado=false, sem negocio_id, stage não-descarte/convertido)
+ * pertence a EXATAMENTE 1 dos 3 estados:
  *
- * Régua de saúde (health) por dias sem TOQUE REAL do corretor:
- *  - Fonte: MAX(pipeline_atividades.created_at) WHERE tipo IN TOUCH_TYPES
- *  - NÃO usa mais ultima_acao_at (poluído por mudanca_etapa, criação, eventos do site, etc.)
- *   ≥ 10d → critical 🔴
- *   ≥  5d → warning  🟠
- *   ≥  1d → attention 🟡
- *   <  1d → ok
- *  - Lead sem atividade alguma → Infinity → critical 🔴
+ *   🟢 EM DIA      = pelo menos 1 tarefa pendente FUTURA (vence_em > hoje BRT,
+ *                    ou vence_em = hoje BRT && hora_vencimento NULL || >= agora BRT)
+ *                    → FORA do Modo Foco (nutrição planejada)
  *
- * Leads com negocio_id NOT NULL são excluídos do Foco de "leads"
- * (aparecem apenas em /meus-negocios → Modo Foco de Negócios).
+ *   🔴 ATRASADO    = pelo menos 1 tarefa pendente vencida
+ *                    → filtro "Tarefas atrasadas"
+ *
+ *   🟡 SEM DIREÇÃO = zero tarefa pendente
+ *                    → filtro "Sem próximo passo"
+ *                    Subdividido por dias desde a última ação real:
+ *                      lastAction = MAX(touch_activity, tarefa.concluida_em, lead.created_at)
+ *                      <  1d → janela de cortesia (SKIP)
+ *                      1–4d  → 🟡 attention
+ *                      5–9d  → 🟠 warning
+ *                      ≥10d  → 🔴 critical
+ *                      sem toque + sem tarefa concluída → "Nunca trabalhado" 🔴
+ *
+ * Fonte de "toque real": pipeline_atividades.tipo ∈ TOUCH_TYPES
+ *  (ultima_acao_at NÃO é mais usado — campo poluído por mudanca_etapa, criação, etc.)
  */
 
-/** Limiares (em dias sem toque) da régua de saúde do Modo Foco. */
 export const FOCUS_LEVELS = { attention: 1, warning: 5, critical: 10 } as const;
 
-/**
- * Whitelist de tipos de pipeline_atividades que contam como TOQUE REAL do corretor.
- * Exclui: entrada, nurturing_sequencia, descarte, mudanca_etapa, sistema (eventos automáticos).
- */
+/** Whitelist de tipos de pipeline_atividades que contam como TOQUE REAL do corretor. */
 export const TOUCH_TYPES = [
   "followup", "whatsapp", "ligacao", "tarefa", "contato",
   "nao_atendeu", "mensagem", "nota", "proposta", "reuniao", "visita",
 ] as const;
 
 export type FocusHealth = "ok" | "attention" | "warning" | "critical";
+export type FocusState = "atrasado" | "sem_direcao";
 
-function computeHealth(daysSinceTouch: number): FocusHealth {
-  if (daysSinceTouch >= FOCUS_LEVELS.critical) return "critical";
-  if (daysSinceTouch >= FOCUS_LEVELS.warning) return "warning";
-  if (daysSinceTouch >= FOCUS_LEVELS.attention) return "attention";
-  return "ok";
-}
-
-function getDaysSinceTouch(lastTouchISO: string | undefined): number {
-  if (!lastTouchISO) return Infinity;
-  return Math.floor((Date.now() - new Date(lastTouchISO).getTime()) / 86400000);
-}
-
-const HEALTH_EMOJI: Record<FocusHealth, string> = {
-  critical: "🔴",
-  warning: "🟠",
-  attention: "🟡",
-  ok: "🟢",
-};
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
@@ -71,6 +54,7 @@ export interface FocusLead {
   stage_updated_at: string;
   overdue_tasks: number;
   overdue_task_list: { id: string; titulo: string; vence_em: string | null; tipo: string | null }[];
+  /** Dias desde a última ação (só relevante para sem_direcao; 0 para atrasado). */
   days_without_contact: number;
   days_in_stage: number;
   corretor_name: string;
@@ -78,11 +62,15 @@ export interface FocusLead {
   tags: string[];
   negocio_id: string | null;
   pipeline_tipo: string;
-  /** Régua de saúde calculada a partir de days_without_contact. */
+  /** Estado canônico na régua de 3 estados. */
+  state: FocusState;
+  /** True quando o lead nunca recebeu toque nem teve tarefa concluída. */
+  never_touched: boolean;
+  /** Régua de saúde visual. */
   health: FocusHealth;
 }
 
-export type FocusCriteria = "overdue_tasks" | "no_tasks" | "stagnant" | "all";
+export type FocusCriteria = "overdue_tasks" | "no_next_step" | "all";
 
 export interface FocusFilters {
   stageIds?: string[];
@@ -97,6 +85,21 @@ interface UseFocusLeadsReturn {
   reload: (filters?: FocusFilters) => Promise<void>;
 }
 
+const HEALTH_EMOJI: Record<FocusHealth, string> = {
+  critical: "🔴",
+  warning: "🟠",
+  attention: "🟡",
+  ok: "🟢",
+};
+
+function healthForSemDirecao(days: number, neverTouched: boolean): FocusHealth {
+  if (neverTouched) return "critical";
+  if (days >= FOCUS_LEVELS.critical) return "critical";
+  if (days >= FOCUS_LEVELS.warning) return "warning";
+  if (days >= FOCUS_LEVELS.attention) return "attention";
+  return "ok";
+}
+
 export function useFocusLeads(
   corretorAuthId: string | null,
   pipelineTipo: "leads" | "negocios" = "leads"
@@ -106,7 +109,6 @@ export function useFocusLeads(
   const [error, setError] = useState<string | null>(null);
   const [staleSince, setStaleSince] = useState<Date | null>(null);
 
-  // Refs para decisões dentro do reload sem re-criar callback
   const lastSuccessAtRef = useRef<Date | null>(null);
   const leadsCountRef = useRef<number>(0);
 
@@ -116,14 +118,16 @@ export function useFocusLeads(
     setError(null);
 
     try {
-      // "Hoje" e "agora" em BRT (consistente com SQL `AT TIME ZONE 'America/Sao_Paulo'`)
-      const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); // "YYYY-MM-DD"
+      // "Hoje" e "agora" em BRT
+      const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
       const nowHHMM_BRT = new Date().toLocaleTimeString("en-GB", {
         timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit",
-      }); // "HH:MM"
+      });
 
-      // 1. Get stages for name mapping — exclude descarte and convertido
-      const { data: stagesData, error: stagesError } = await runQueryWithRetry<Array<{ id: string; nome: string; tipo: string | null; pipeline_tipo: string | null }>>(() =>
+      // 1. Stages (exclui descarte/convertido)
+      const { data: stagesData, error: stagesError } = await runQueryWithRetry<
+        Array<{ id: string; nome: string; tipo: string | null; pipeline_tipo: string | null }>
+      >(() =>
         supabase
           .from("pipeline_stages")
           .select("id, nome, tipo, pipeline_tipo")
@@ -134,17 +138,13 @@ export function useFocusLeads(
       const stageMap: Record<string, string> = {};
       let stageIds: string[] = [];
       for (const s of stagesData || []) {
-        // Exclude descarte and convertido stages from Focus Mode
         if ((s as any).tipo === "descarte" || (s as any).tipo === "convertido") continue;
         stageMap[s.id] = s.nome;
         stageIds.push(s.id);
       }
-
-      // Apply stage filter
       if (filters?.stageIds && filters.stageIds.length > 0) {
-        stageIds = stageIds.filter(id => filters.stageIds!.includes(id));
+        stageIds = stageIds.filter((id) => filters.stageIds!.includes(id));
       }
-
       if (stageIds.length === 0) {
         setLeads([]);
         leadsCountRef.current = 0;
@@ -154,17 +154,17 @@ export function useFocusLeads(
         return;
       }
 
-      // 2. Get leads in active stages
+      // 2. Leads ativos
       let query = supabase
         .from("pipeline_leads")
-        .select("id, nome, telefone, telefone2, email, stage_id, stage_changed_at, origem, empreendimento, ultima_acao_at, tags, negocio_id, corretor_id, updated_at")
+        .select(
+          "id, nome, telefone, telefone2, email, stage_id, stage_changed_at, origem, empreendimento, ultima_acao_at, tags, negocio_id, corretor_id, updated_at, created_at"
+        )
         .eq("corretor_id", corretorAuthId)
         .eq("arquivado", false)
         .in("stage_id", stageIds);
 
       if (pipelineTipo === "leads") {
-        // Leads que já viraram negócio aparecem só em /meus-negocios → Modo Foco (Negócios).
-        // Mantemos exclusão para não duplicar (~2 leads na base hoje).
         query = query.is("negocio_id", null);
       }
 
@@ -183,6 +183,7 @@ export function useFocusLeads(
         negocio_id: string | null;
         corretor_id: string | null;
         updated_at: string;
+        created_at: string;
       }>>(() => query);
       if (leadsError) throw leadsError;
       if (!leadsData || leadsData.length === 0) {
@@ -194,28 +195,43 @@ export function useFocusLeads(
         return;
       }
 
-      // 3. Get all pending tasks for these leads
-      const leadIds = leadsData.map(l => l.id);
-      const allTasks: Record<string, { overdue: number; hasFuture: boolean; overdueList: { id: string; titulo: string; vence_em: string | null; tipo: string | null }[] }> = {};
+      const leadIds = leadsData.map((l) => l.id);
+
+      // 3. Tarefas (pendente + concluida) por lead
+      const taskAgg: Record<string, {
+        overdue: number;
+        hasFuture: boolean;
+        overdueList: { id: string; titulo: string; vence_em: string | null; tipo: string | null }[];
+        lastConcluida: string | null;
+      }> = {};
 
       const { rows: tasksData, errors: taskErrors } = await fetchInBatchesWithRetry<any>(
         leadIds,
         (chunk) =>
           supabase
             .from("pipeline_tarefas")
-            .select("id, pipeline_lead_id, titulo, tipo, vence_em, hora_vencimento, status")
+            .select("id, pipeline_lead_id, titulo, tipo, vence_em, hora_vencimento, status, concluida_em")
             .in("pipeline_lead_id", chunk)
-            .eq("status", "pendente"),
+            .in("status", ["pendente", "concluida"]),
         { chunkSize: 50, minChunkSize: 10 }
       );
 
       for (const t of tasksData || []) {
-        if (!allTasks[t.pipeline_lead_id]) {
-          allTasks[t.pipeline_lead_id] = { overdue: 0, hasFuture: false, overdueList: [] };
+        const lid = t.pipeline_lead_id as string;
+        if (!taskAgg[lid]) {
+          taskAgg[lid] = { overdue: 0, hasFuture: false, overdueList: [], lastConcluida: null };
         }
-        // Espelha CardStatusLine.getLeadStatusFilter:
-        //   vence_em < hoje (BRT) → atrasada
-        //   vence_em == hoje (BRT) && hora_vencimento < agora BRT → atrasada
+        const bucket = taskAgg[lid];
+
+        if (t.status === "concluida") {
+          const c = (t.concluida_em as string | null) ?? null;
+          if (c && (!bucket.lastConcluida || c > bucket.lastConcluida)) {
+            bucket.lastConcluida = c;
+          }
+          continue;
+        }
+
+        // status === 'pendente'
         const venceEm = t.vence_em as string | null;
         const hora = (t.hora_vencimento as string | null)?.slice(0, 5) ?? null;
         const isOverdue =
@@ -223,27 +239,24 @@ export function useFocusLeads(
             venceEm < todayStr ||
             (venceEm === todayStr && !!hora && hora < nowHHMM_BRT)
           );
-
         if (isOverdue) {
-          allTasks[t.pipeline_lead_id].overdue++;
-          allTasks[t.pipeline_lead_id].overdueList.push({
+          bucket.overdue++;
+          bucket.overdueList.push({
             id: t.id,
             titulo: t.titulo || "(sem título)",
             vence_em: venceEm,
             tipo: (t as any).tipo ?? null,
           });
         } else {
-          allTasks[t.pipeline_lead_id].hasFuture = true;
+          // pendente não vencida = futura (inclui hoje sem hora ou com hora futura)
+          bucket.hasFuture = true;
         }
       }
-
       if (taskErrors.length) {
         console.warn("[useFocusLeads] Algumas consultas de tarefas falharam e foram isoladas por chunk", taskErrors);
       }
 
-      // 3.5 Get last REAL touch per lead from pipeline_atividades (whitelist TOUCH_TYPES).
-      // Substitui ultima_acao_at como fonte da régua de saúde — campo estava poluído
-      // por mudanca_etapa, criação de lead, eventos do site, skip de fila, etc.
+      // 4. Último TOQUE real (pipeline_atividades whitelist)
       const lastTouchMap = new Map<string, string>();
       const { rows: activitiesData, errors: activityErrors } = await fetchInBatchesWithRetry<{
         pipeline_lead_id: string;
@@ -269,47 +282,65 @@ export function useFocusLeads(
         console.warn("[useFocusLeads] Algumas consultas de atividades falharam e foram isoladas por chunk", activityErrors);
       }
 
-      // 4. Build focus leads — filter for those that need attention
+      // 5. Montar FocusLeads aplicando régua de 3 estados
       const criteriaFilter = filters?.criteria || ["all"];
       const filterAll = criteriaFilter.includes("all");
+      const wantOverdue = filterAll || criteriaFilter.includes("overdue_tasks");
+      const wantNoNextStep = filterAll || criteriaFilter.includes("no_next_step");
 
       const focusLeads: FocusLead[] = [];
 
       for (const lead of leadsData) {
-        const taskInfo = allTasks[lead.id];
-        const hasOverdue = (taskInfo?.overdue ?? 0) > 0;
-        const hasNoTasks = !taskInfo;
+        const agg = taskAgg[lead.id];
+        const overdueCount = agg?.overdue ?? 0;
+        const hasFuture = agg?.hasFuture ?? false;
+        const lastConcluida = agg?.lastConcluida ?? null;
+        const lastTouch = lastTouchMap.get(lead.id) ?? null;
 
-        // Régua de saúde: dias desde o último TOQUE REAL (whitelist TOUCH_TYPES).
-        // Sem atividade alguma → Infinity → critical 🔴 (comportamento correto).
-        const lastTouch = lastTouchMap.get(lead.id);
-        const daysSinceTouch = getDaysSinceTouch(lastTouch);
-        // Exposto para a UI: usar Infinity como 999 só para evitar quebrar formatadores.
-        const daysSinceContact = Number.isFinite(daysSinceTouch) ? daysSinceTouch : 999;
+        // Estado canônico
+        let state: FocusState;
+        if (overdueCount > 0) {
+          state = "atrasado";
+        } else if (hasFuture) {
+          // 🟢 EM DIA — fora do Modo Foco
+          continue;
+        } else {
+          state = "sem_direcao";
+        }
+
+        // Filtro do CEO/corretor
+        if (state === "atrasado" && !wantOverdue) continue;
+        if (state === "sem_direcao" && !wantNoNextStep) continue;
+
+        // Calcular last_action e gravidade
+        const neverTouched = !lastTouch && !lastConcluida;
+        const candidates = [lastTouch, lastConcluida, lead.created_at].filter(Boolean) as string[];
+        const lastActionISO = candidates.length
+          ? candidates.reduce((a, b) => (a > b ? a : b))
+          : lead.created_at;
+        const daysSinceAction = lastActionISO
+          ? Math.floor((Date.now() - new Date(lastActionISO).getTime()) / 86400000)
+          : 999;
+
+        // Janela de cortesia: sem_direcao recém-saído (dia 0) fica de fora
+        if (state === "sem_direcao" && !neverTouched && daysSinceAction < 1) continue;
 
         const daysInStage = Math.floor(
           (Date.now() - new Date(lead.stage_changed_at).getTime()) / 86400000
         );
 
-        const health = computeHealth(daysSinceTouch);
-        // "Desatualizado" = sem toque real há ≥10d (critical).
-        const isStale = health === "critical";
-
-        // Apply criteria filter
-        const matchesOverdue = hasOverdue && (filterAll || criteriaFilter.includes("overdue_tasks"));
-        const matchesNoTasks = hasNoTasks && (filterAll || criteriaFilter.includes("no_tasks"));
-        const matchesStagnant = isStale && (filterAll || criteriaFilter.includes("stagnant"));
-
-        if (!matchesOverdue && !matchesNoTasks && !matchesStagnant) continue;
-
-        const alertReasons: string[] = [];
-        if (hasOverdue) alertReasons.push(`${taskInfo!.overdue} tarefa(s) vencida(s)`);
-        if (hasNoTasks) alertReasons.push("Sem tarefas pendentes");
-        if (health !== "ok") {
-          const label = lastTouch
-            ? `Sem toque há ${daysSinceContact}d`
-            : `Sem toque registrado`;
-          alertReasons.push(`${HEALTH_EMOJI[health]} ${label}`);
+        let health: FocusHealth;
+        let alertReasons: string[];
+        if (state === "atrasado") {
+          health = "critical";
+          alertReasons = [`${overdueCount} tarefa(s) vencida(s)`];
+        } else {
+          health = healthForSemDirecao(daysSinceAction, neverTouched);
+          if (neverTouched) {
+            alertReasons = [`${HEALTH_EMOJI.critical} Nunca trabalhado`];
+          } else {
+            alertReasons = [`${HEALTH_EMOJI[health]} Sem direção há ${daysSinceAction}d`];
+          }
         }
 
         focusLeads.push({
@@ -322,27 +353,38 @@ export function useFocusLeads(
           stage_id: lead.stage_id,
           origin: lead.origem,
           interest: lead.empreendimento,
-          // last_contact_at agora reflete o último TOQUE real (não ultima_acao_at).
-          last_contact_at: lastTouch ?? null,
+          last_contact_at: lastTouch ?? lastConcluida ?? null,
           stage_updated_at: lead.stage_changed_at,
-          overdue_tasks: taskInfo?.overdue ?? 0,
-          overdue_task_list: taskInfo?.overdueList ?? [],
-          days_without_contact: daysSinceContact,
+          overdue_tasks: overdueCount,
+          overdue_task_list: agg?.overdueList ?? [],
+          days_without_contact: state === "sem_direcao" ? daysSinceAction : 0,
           days_in_stage: daysInStage,
           corretor_name: "",
           alert_reasons: alertReasons,
           tags: (lead.tags || []).filter(Boolean),
           negocio_id: lead.negocio_id,
           pipeline_tipo: pipelineTipo,
+          state,
+          never_touched: neverTouched,
           health,
         });
       }
 
-
-      // Sort by urgency
+      // Ordenação:
+      // 1) Atrasados antes de sem_direcao (mais urgente operacionalmente)
+      // 2) Dentro de atrasado: mais tarefas vencidas primeiro
+      // 3) Dentro de sem_direcao: nunca tocados → mais dias → menos dias
+      const stateRank: Record<FocusState, number> = { atrasado: 0, sem_direcao: 1 };
       focusLeads.sort((a, b) => {
-        if (b.alert_reasons.length !== a.alert_reasons.length) {
-          return b.alert_reasons.length - a.alert_reasons.length;
+        if (stateRank[a.state] !== stateRank[b.state]) {
+          return stateRank[a.state] - stateRank[b.state];
+        }
+        if (a.state === "atrasado") {
+          return b.overdue_tasks - a.overdue_tasks;
+        }
+        // sem_direcao
+        if (a.never_touched !== b.never_touched) {
+          return a.never_touched ? -1 : 1;
         }
         return b.days_without_contact - a.days_without_contact;
       });
@@ -353,7 +395,6 @@ export function useFocusLeads(
       setStaleSince(null);
     } catch (err: any) {
       console.error("[useFocusLeads] error:", err);
-      // Preservar snapshot: se já há cache em tela, marcar stale e NÃO zerar leads
       if (leadsCountRef.current > 0 && lastSuccessAtRef.current) {
         setStaleSince(lastSuccessAtRef.current);
       } else {
