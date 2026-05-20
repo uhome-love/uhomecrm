@@ -533,6 +533,8 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
         onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
         tarefaTitulo={completingTarefa?.titulo || ""}
         leadNome={leadNome}
+        leadId={leadId}
+        currentStageId={leadStageId ?? undefined}
         onConfirm={handleCompletionConfirm}
       />
     </div>
