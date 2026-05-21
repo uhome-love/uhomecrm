@@ -157,7 +157,23 @@ Deno.serve(async (req: Request) => {
       }).eq("id", respIns.id);
       await supabase.from("pipeline_leads").update({
         reengajamento_status: "respondido_sim",
+        reativado_por_nutricao: true,
+        reativado_em: new Date().toISOString(),
       }).eq("id", evento.lead_id);
+
+      // Marca como "Novo Interesse" no painel CEO
+      try {
+        await supabase.from("campaign_clicks").insert({
+          telefone: from,
+          nome: evento.nome || null,
+          origem: "campanha_atrio",
+          canal: "whatsapp",
+          campanha: "atrio_disparo",
+          pipeline_lead_id: evento.lead_id,
+          lead_action: "updated",
+          status: "respondido_sim",
+        });
+      } catch (e) { console.error("campaign_clicks insert err:", e); }
 
 
       // Atividade no lead (não move stage — apenas log)
@@ -211,7 +227,22 @@ Deno.serve(async (req: Request) => {
     }).eq("id", respIns.id);
     await supabase.from("pipeline_leads").update({
       reengajamento_status: "respondido_livre",
+      reativado_por_nutricao: true,
+      reativado_em: new Date().toISOString(),
     }).eq("id", evento.lead_id);
+
+    try {
+      await supabase.from("campaign_clicks").insert({
+        telefone: from,
+        nome: evento.nome || null,
+        origem: "campanha_atrio",
+        canal: "whatsapp",
+        campanha: "atrio_disparo",
+        pipeline_lead_id: evento.lead_id,
+        lead_action: "updated",
+        status: "respondido_livre",
+      });
+    } catch (e) { console.error("campaign_clicks insert err:", e); }
 
     await supabase.from("pipeline_atividades").insert({
       pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
