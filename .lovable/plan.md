@@ -1,46 +1,114 @@
-
 ## Diagnóstico
 
-O Lote 2 do disparo Átrio criou **998 `pipeline_leads`** hoje (todos `arquivado=true`, `origem=oferta_ativa`, `motivo_descarte=oferta_ativa_atrio_lote2`). Eles entram no filtro `isOfertaAtiva(origem)` do `useCeoDashboard.ts` e por isso o card **Reaproveitados (OA)** mostra **1014** (16 reais + 998 do disparo).
+Os 4 reengajados de Átrio de hoje existem no backend e foram processados:
+- Laura Heck de Oliveira
+- Marcello
+- Janaina Beck
+- Andréa
 
-O comportamento correto que você definiu:
-- Fonte do disparo = `oferta_ativa_leads` (telefone + nome) — **não toca em `pipeline_leads`**
-- Lead só vira `pipeline_lead` (e vai para roleta como reengajamento) **quando responde** ao template
-- Lote 1 (já enviado) permanece intacto
+Todos estão com:
+- etapa = `Novo Lead`
+- `arquivado = false`
+- corretor atribuído
+- fluxo de roleta executado
 
-## Mudanças
+A causa real de “aparecem só 2 / não aparecem os 4” não é banco nem permissão.
 
-### 1. Migration (DDL + cleanup)
-- `ALTER TABLE campanha_atrio_audiencia ALTER COLUMN lead_id DROP NOT NULL`
-- `ALTER TABLE campanha_atrio_eventos ALTER COLUMN lead_id DROP NOT NULL`
-- Apagar audiência do lote 2 (`DELETE FROM campanha_atrio_audiencia WHERE lote=2`) — nenhuma onda do lote 2 começou
-- Apagar os 998 `pipeline_leads` do lote 2 (e dependências FK: `pipeline_atividades`, `campanha_atrio_eventos`, `campanha_atrio_respostas`, `campaign_clicks` se existirem) via `WHERE motivo_descarte='oferta_ativa_atrio_lote2'`
-- Resetar `total_alvo=0` nas ondas 4/5/6
+### Causa principal
+O frontend do pipeline esconde leads se `motivo_descarte` começar com `Inativado:` ou `Descarte:`.
+Hoje 3 dos 4 reengajados ainda carregam esse valor antigo, mesmo já tendo voltado para `Novo Lead`:
+- Laura: `Inativado: Não quer mais contato`
+- Marcello: `Inativado: Cliente disse que está procurando somente em passo fundo.`
+- Andréa: `Descarte: Sem interesse`
 
-### 2. `campanha-atrio-preparar-lote2`
-- Remover toda a criação de `pipeline_leads`
-- Manter: dedup por telefone, exclusão de telefones em **stage ativo** do pipeline, exclusão de quem já está em qualquer audiência Átrio (lote 1 ou 2)
-- Inserir audiência só com `telefone_normalizado`, `nome`, `empreendimento_origem`, `onda`, `lote`, `ordem`, `status='pending'`, `lead_id=NULL`
+A Janaina aparece porque está sem `motivo_descarte`.
 
-### 3. `campanha-atrio-iniciar-onda`
-- Identificar linhas da audiência por `(onda, telefone_normalizado)` (lead_id pode ser NULL)
-- Inserir evento mesmo sem `lead_id`
-- **Pular** os updates em `pipeline_leads` (reengajamento_status) e o insert em `pipeline_atividades` quando `lead_id` for NULL
-- Lote 1 (com `lead_id` preenchido) continua marcando o lead
+### Achados adicionais
+- Houve respostas duplicadas em alguns leads do Átrio:
+  - Marcello: 3 respostas
+  - Andréa: 2 respostas
+- Em Andréa houve notificação/distribuição duplicada para dois corretores antes do estado final consolidar.
+- O histórico de atividade do Átrio não está padronizado em todos os casos.
 
-### 4. `campanha-atrio-processar-resposta`
-Quando o evento for de lote 2 (sem `lead_id`):
-- **Criar `pipeline_lead`** no momento da resposta: `origem='campanha_atrio'`, `empreendimento='Átrio - ABF'`, `stage_id=Sem Contato`, `arquivado=false`, `aceite_status='pendente'`, `reativado_por_nutricao=true`, `reativado_em=now()`, com `telefone`/`nome` vindos do evento
-- Vincular `campanha_atrio_eventos.lead_id` e `campanha_atrio_respostas.lead_id` ao recém-criado
-- Seguir o fluxo atual: distribuir via roleta (S5 Produto Foco), `campaign_clicks`, `pipeline_atividades`
+## Plano de correção
 
-Quando lote 1 (com `lead_id`): fluxo atual sem mudanças.
+### 1) Corrigir a regra de visibilidade do pipeline
+Ajustar `usePipeline` para não esconder lead ativo só porque sobrou um `motivo_descarte` legado.
 
-### 5. Frontend
-Nenhuma alteração necessária. Com os 998 leads apagados, o card **Reaproveitados (OA)** volta a refletir só OA real, e o card **Reengajamento** passará a refletir apenas leads que efetivamente responderam ao disparo.
+Regra nova:
+- esconder apenas se o lead estiver realmente arquivado
+- ou se a etapa atual for de descarte
+- não esconder só por texto antigo em `motivo_descarte`
 
-## Resultado
-- Dashboard limpo (998 inflados removidos hoje)
-- Disparo Átrio (lote 2 em diante) usa OA como fonte sem poluir o pipeline
-- Pipeline só ganha um lead novo quando há reengajamento real → entra na roleta com origem `campanha_atrio`
-- Lote 1 não é afetado
+Resultado esperado:
+- Laura, Marcello e Andréa voltam a aparecer imediatamente no pipeline
+- a UI passa a refletir o estado atual real do lead
+
+### 2) Corrigir o backend do reengajamento/roleta
+Ao redistribuir lead reengajado via Átrio/roleta, limpar o estado antigo de descarte.
+
+Ajustes:
+- limpar `motivo_descarte`
+- garantir `arquivado = false`
+- manter `stage_id = Novo Lead`
+- manter o vínculo com corretor e aceite corretamente
+
+Ponto ideal para centralizar:
+- `distribute-lead` como saneamento global de entrada pela roleta
+- complementar `campanha-atrio-processar-resposta` para o caso específico do Átrio
+
+Resultado esperado:
+- novos reengajamentos não somem mais depois de distribuídos
+- o estado persistido fica coerente com o que a UI espera
+
+### 3) Endurecer idempotência do fluxo Átrio
+Evitar duplicidade quando o mesmo lead responde mais de uma vez em sequência curta.
+
+Ajustes:
+- bloquear segunda redistribuição do mesmo lead em janela curta após resposta já processada
+- deduplicar por lead + resposta recente, não só por `wamid`
+- impedir segunda notificação/segunda distribuição quando o primeiro processamento já concluiu
+
+Resultado esperado:
+- sem dupla distribuição
+- sem dupla notificação para corretores
+- sem corrida em respostas como Marcello/Andréa
+
+### 4) Padronizar histórico do lead
+Garantir registro único e legível no histórico para reengajamento Átrio.
+
+Registrar sempre:
+- origem = disparo Átrio
+- tipo de resposta
+- se foi para roleta
+- corretor final atribuído
+- se houve reaproveitamento de lead descartado/inativado
+
+Também farei backfill pontual dos casos de hoje que ficaram inconsistentes.
+
+### 5) Backfill dos 4 leads de hoje
+Aplicar correção nos registros já afetados:
+- limpar `motivo_descarte` residual dos 3 leads ocultos
+- completar atividade histórica faltante/inconsistente
+- validar visualmente que os 4 aparecem no pipeline
+
+## Validação final
+
+Vou validar estes pontos após a implementação:
+- os 4 reengajados aparecem no pipeline como `Novo Lead`
+- Laura fica visível no pipeline do Eliézer e também na visão CEO
+- Janaina, Marcello e Andréa aparecem normalmente
+- histórico mostra a origem Átrio de forma consistente
+- não há nova duplicidade de distribuição em respostas repetidas
+
+## Detalhes técnicos
+
+Arquivos mais prováveis da correção:
+- `src/hooks/usePipeline.ts`
+- `supabase/functions/distribute-lead/index.ts`
+- `supabase/functions/campanha-atrio-processar-resposta/index.ts`
+
+Dados já confirmados:
+- o backend está saudável
+- a consulta do pipeline retorna dados
+- o problema é de regra de ocultação + limpeza incompleta do estado antigo de descarte
