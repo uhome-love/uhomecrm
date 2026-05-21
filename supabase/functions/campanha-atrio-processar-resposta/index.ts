@@ -139,6 +139,23 @@ Deno.serve(async (req: Request) => {
     // 3) Classificar
     const { tipo, conteudo } = classify(message);
 
+    // 3b) Idempotência por lead: se já houve resposta SIM/livre processada
+    // com sucesso pelo mesmo lead nas últimas 4h, NÃO redistribuímos de novo
+    // (evita dupla notificação/dupla atribuição em respostas em sequência).
+    let suppressRedistribuicao = false;
+    if (tipo === "sim" || tipo === "texto_livre") {
+      const since = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+      const { data: jaProcessada } = await supabase
+        .from("campanha_atrio_respostas")
+        .select("id")
+        .eq("lead_id", evento.lead_id)
+        .eq("enviado_para_roleta", true)
+        .gte("recebido_em", since)
+        .limit(1)
+        .maybeSingle();
+      if (jaProcessada) suppressRedistribuicao = true;
+    }
+
     // 4) Inserir resposta
     const { data: respIns, error: respErr } = await supabase
       .from("campanha_atrio_respostas").insert({
