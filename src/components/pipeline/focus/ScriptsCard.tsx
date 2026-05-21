@@ -107,7 +107,7 @@ export default function ScriptsCard({
                   "text-xs px-3 py-1.5 rounded-lg border transition-colors gap-1 inline-flex items-center",
                   selectedScriptId === script.id
                     ? "bg-primary/20 border-primary/50 text-foreground font-medium"
-                    : "bg-background/30 border-white/10 text-foreground/70 hover:bg-background/50 hover:text-foreground"
+                    : "bg-background/40 border-border/60 text-foreground/85 hover:bg-background/60 hover:text-foreground"
                 )}
               >
                 <span>{script.emoji}</span>
@@ -121,11 +121,8 @@ export default function ScriptsCard({
               <Textarea
                 value={scriptText}
                 onChange={(e) => setScriptText(e.target.value)}
-                className="min-h-[120px] text-sm resize-y border-0"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  color: "#e2e8f0",
-                }}
+                className="min-h-[120px] text-sm resize-y text-foreground bg-background/60 border border-border/50 placeholder:text-muted-foreground/60"
+
                 placeholder="O script aparece aqui — você pode editar antes de copiar"
               />
               <Button
