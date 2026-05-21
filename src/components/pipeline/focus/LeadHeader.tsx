@@ -8,6 +8,8 @@ interface Props {
 }
 
 export default function LeadHeader({ lead, onAlertClick }: Props) {
+  // Regra de contraste (Modo Foco): texto principal = text-foreground;
+  // secundário ≥ text-foreground/70. Evitar text-gray-400/500 sobre dark bg.
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
@@ -18,10 +20,10 @@ export default function LeadHeader({ lead, onAlertClick }: Props) {
           {lead.name.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-white font-bold text-base sm:text-lg truncate" style={{ fontFamily: "var(--font-focus-display, inherit)" }}>
+          <h3 className="text-foreground font-bold text-base sm:text-lg truncate" style={{ fontFamily: "var(--font-focus-display, inherit)" }}>
             {lead.name}
           </h3>
-          <span className="text-gray-400 text-xs">{lead.stage}</span>
+          <span className="text-foreground/75 text-xs">{lead.stage}</span>
         </div>
       </div>
 
