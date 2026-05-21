@@ -143,7 +143,8 @@ Deno.serve(async (req: Request) => {
     }
 
     if (tipo === "sim") {
-      // Roleta — todos corretores ativos, sem segmento
+      // Recategoriza para Átrio + libera vínculo antigo → roleta vai para S5 (Produto Foco)
+      await recategorizarParaAtrio(evento.lead_id);
       await liberarVinculoSeDescarte(evento.lead_id);
       const traceId = `atrio_${respIns.id}`;
       const dist = await distributeLeadDirect(SUPABASE_URL, SERVICE_KEY, evento.lead_id, traceId, console as any);
