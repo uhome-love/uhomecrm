@@ -165,23 +165,19 @@ Deno.serve(async (req: Request) => {
       (oa || []).forEach((r:any) => r.telefone_normalizado && oaHits.add(r.telefone_normalizado));
     }
 
-    // 4) filtragem
+    // 4) filtragem — único critério: NÃO estar em pipeline ativo
     const seenTelefones = new Set<string>();
     const elegiveis: any[] = [];
     const motivos: Record<string, number> = {
-      atividade_60d: 0, pipeline_ativo: 0, sem_elegibilidade: 0, telefone_duplicado: 0,
+      pipeline_ativo: 0, telefone_duplicado: 0,
     };
     for (const c of candidatos) {
-      if (atividadeRecente.has(c.id)) { motivos.atividade_60d++; continue; }
       if (c.stage_id && activeStageIds.has(c.stage_id)) { motivos.pipeline_ativo++; continue; }
-      const stageOk = c.stage_id && eligibleStageIds.has(c.stage_id);
-      const oaOk = oaHits.has(c.telefone_normalizado);
-      const descarteOk = !!c.motivo_descarte;
-      if (!stageOk && !oaOk && !descarteOk) { motivos.sem_elegibilidade++; continue; }
       if (seenTelefones.has(c.telefone_normalizado)) { motivos.telefone_duplicado++; continue; }
       seenTelefones.add(c.telefone_normalizado);
       elegiveis.push(c);
     }
+
 
     // 5) ordenar
     elegiveis.sort((a, b) => {
