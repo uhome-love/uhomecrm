@@ -18,6 +18,8 @@ interface Props {
 }
 
 export default function PendingTasksCard({ tasks, onComplete, onCreateNew }: Props) {
+  // Regra de contraste (Modo Foco): texto principal = text-foreground;
+  // secundário ≥ text-foreground/70; hints (vazio) podem usar /60.
   return (
     <div className="rounded-xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
       <div className="flex items-center justify-between mb-2">
