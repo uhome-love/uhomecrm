@@ -65,10 +65,11 @@ Deno.serve(async (req: Request) => {
   const { data: ctrl } = await supabase.from("campanha_atrio_controle").select("*").eq("onda", onda).maybeSingle();
   if (!ctrl) return errorResponse("onda não encontrada", 404);
   if (ctrl.status !== "aguardando") return errorResponse(`onda ${onda} está ${ctrl.status}, não pode iniciar`, 409);
+  const force = body?.force === true;
   if (onda > 1) {
     const { data: prev } = await supabase.from("campanha_atrio_controle").select("*").eq("onda", onda - 1).maybeSingle();
     if (prev?.status !== "concluida") return errorResponse(`onda ${onda - 1} ainda não concluída`, 409);
-    if (prev?.concluida_em) {
+    if (prev?.concluida_em && !force) {
       const diff = Date.now() - new Date(prev.concluida_em).getTime();
       if (diff < 20 * 60 * 1000) return errorResponse(`aguarde 20min após conclusão da onda anterior (faltam ${Math.ceil((20*60*1000 - diff)/60000)}min)`, 409);
     }
