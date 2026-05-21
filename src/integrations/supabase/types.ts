@@ -910,6 +910,180 @@ export type Database = {
           },
         ]
       }
+      campanha_atrio_audiencia: {
+        Row: {
+          created_at: string
+          empreendimento_origem: string | null
+          lead_id: string
+          nome: string | null
+          onda: number
+          ordem: number
+          status: string
+          telefone_normalizado: string
+        }
+        Insert: {
+          created_at?: string
+          empreendimento_origem?: string | null
+          lead_id: string
+          nome?: string | null
+          onda: number
+          ordem: number
+          status?: string
+          telefone_normalizado: string
+        }
+        Update: {
+          created_at?: string
+          empreendimento_origem?: string | null
+          lead_id?: string
+          nome?: string | null
+          onda?: number
+          ordem?: number
+          status?: string
+          telefone_normalizado?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanha_atrio_audiencia_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campanha_atrio_controle: {
+        Row: {
+          concluida_em: string | null
+          iniciada_em: string | null
+          motivo_pausa: string | null
+          onda: number
+          pausada_em: string | null
+          status: string
+          total_alvo: number
+          total_enviado: number
+          total_erros: number
+        }
+        Insert: {
+          concluida_em?: string | null
+          iniciada_em?: string | null
+          motivo_pausa?: string | null
+          onda: number
+          pausada_em?: string | null
+          status?: string
+          total_alvo: number
+          total_enviado?: number
+          total_erros?: number
+        }
+        Update: {
+          concluida_em?: string | null
+          iniciada_em?: string | null
+          motivo_pausa?: string | null
+          onda?: number
+          pausada_em?: string | null
+          status?: string
+          total_alvo?: number
+          total_enviado?: number
+          total_erros?: number
+        }
+        Relationships: []
+      }
+      campanha_atrio_eventos: {
+        Row: {
+          codigo_erro_meta: string | null
+          detalhe_erro: string | null
+          empreendimento_origem: string | null
+          enviado_em: string
+          id: string
+          lead_id: string
+          mensagem_id_meta: string | null
+          nome: string | null
+          onda: number
+          status_envio: string
+          telefone: string
+        }
+        Insert: {
+          codigo_erro_meta?: string | null
+          detalhe_erro?: string | null
+          empreendimento_origem?: string | null
+          enviado_em?: string
+          id?: string
+          lead_id: string
+          mensagem_id_meta?: string | null
+          nome?: string | null
+          onda: number
+          status_envio: string
+          telefone: string
+        }
+        Update: {
+          codigo_erro_meta?: string | null
+          detalhe_erro?: string | null
+          empreendimento_origem?: string | null
+          enviado_em?: string
+          id?: string
+          lead_id?: string
+          mensagem_id_meta?: string | null
+          nome?: string | null
+          onda?: number
+          status_envio?: string
+          telefone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanha_atrio_eventos_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campanha_atrio_respostas: {
+        Row: {
+          conteudo_resposta: string | null
+          corretor_designado_id: string | null
+          enviado_para_roleta: boolean
+          id: string
+          lead_id: string
+          motivo_falha_roleta: string | null
+          recebido_em: string
+          telefone: string
+          tipo_resposta: string
+          wamid_origem: string | null
+        }
+        Insert: {
+          conteudo_resposta?: string | null
+          corretor_designado_id?: string | null
+          enviado_para_roleta?: boolean
+          id?: string
+          lead_id: string
+          motivo_falha_roleta?: string | null
+          recebido_em?: string
+          telefone: string
+          tipo_resposta: string
+          wamid_origem?: string | null
+        }
+        Update: {
+          conteudo_resposta?: string | null
+          corretor_designado_id?: string | null
+          enviado_para_roleta?: boolean
+          id?: string
+          lead_id?: string
+          motivo_falha_roleta?: string | null
+          recebido_em?: string
+          telefone?: string
+          tipo_resposta?: string
+          wamid_origem?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanha_atrio_respostas_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ceo_metas_mensais: {
         Row: {
           created_at: string
