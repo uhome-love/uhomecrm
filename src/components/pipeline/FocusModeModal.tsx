@@ -62,7 +62,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [discardObs, setDiscardObs] = useState("");
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [homiInsight, setHomiInsight] = useState("");
+  const [homiInsight, setHomiInsight] = useState<string | null>(null);
   const [homiLoading, setHomiLoading] = useState(false);
 
   // Cache de HOMI Insight por sessão: leadId → { insight, mensagem, at }
@@ -182,15 +182,17 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   useEffect(() => {
     if (!currentLead || !open || configPhase) return;
 
-    // Cache hit: hidrata insight sem chamar Gemini novamente.
+    // Cache hit (TTL 4h) → hidrata insight direto, sem chamar Gemini.
     const cached = insightCacheRef.current.get(currentLead.id);
     if (cached && Date.now() - cached.at < INSIGHT_TTL_MS) {
       setHomiInsight(cached.insight);
-
       setHomiLoading(false);
       return;
     }
-    fetchHomiSuggestion(currentLead);
+
+    // Cache miss → estado vazio. Geração agora é on-demand (botão no card).
+    setHomiInsight(null);
+    setHomiLoading(false);
   }, [currentIndex, leads.length, open, configPhase]);
 
   // Fetch pending tasks for current lead
@@ -215,7 +217,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
   const fetchHomiSuggestion = useCallback(async (lead: FocusLead) => {
     setHomiLoading(true);
-    setHomiInsight("");
+    setHomiInsight(null);
 
 
     try {
@@ -273,6 +275,16 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       setHomiLoading(false);
     }
   }, []);
+
+  const handleGenerateInsight = useCallback(() => {
+    if (currentLead) fetchHomiSuggestion(currentLead);
+  }, [currentLead, fetchHomiSuggestion]);
+
+  const handleRegenerateInsight = useCallback(() => {
+    if (!currentLead) return;
+    insightCacheRef.current.delete(currentLead.id);
+    fetchHomiSuggestion(currentLead);
+  }, [currentLead, fetchHomiSuggestion]);
 
   const resetActionState = useCallback(() => {
     setShowAdvanceStage(false);
@@ -634,6 +646,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                   workedCount={workedCount}
                   homiLoading={homiLoading}
                   homiInsight={homiInsight}
+                  onGenerateInsight={handleGenerateInsight}
+                  onRegenerateInsight={handleRegenerateInsight}
                   pendingTasks={pendingTasks}
                   timelineRefreshKey={timelineRefreshKey}
                   onCompleteTask={(id, titulo) => setCompletingOverdue({ id, titulo })}
