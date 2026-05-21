@@ -276,6 +276,16 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, []);
 
+  const handleGenerateInsight = useCallback(() => {
+    if (currentLead) fetchHomiSuggestion(currentLead);
+  }, [currentLead, fetchHomiSuggestion]);
+
+  const handleRegenerateInsight = useCallback(() => {
+    if (!currentLead) return;
+    insightCacheRef.current.delete(currentLead.id);
+    fetchHomiSuggestion(currentLead);
+  }, [currentLead, fetchHomiSuggestion]);
+
   const resetActionState = useCallback(() => {
     setShowAdvanceStage(false);
     setAdvanceStageId("");
