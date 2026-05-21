@@ -180,8 +180,10 @@ Deno.serve(async (req: Request) => {
     }
 
     // texto livre → vai para roleta também (sinaliza interesse manual)
+    await liberarVinculoSeDescarte(evento.lead_id);
     const traceId = `atrio_tl_${respIns.id}`;
     const dist = await distributeLeadDirect(SUPABASE_URL, SERVICE_KEY, evento.lead_id, traceId, console as any);
+
     const sucesso = !!dist?.success;
     await supabase.from("campanha_atrio_respostas").update({
       enviado_para_roleta: sucesso,
