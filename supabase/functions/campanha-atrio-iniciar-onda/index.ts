@@ -11,7 +11,7 @@ const IMAGE_URL = `${SUPABASE_URL}/storage/v1/object/public/campaign-images/atri
 const PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID")!;
 const ACCESS_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VOLUME_GUARD = 500;
+const VOLUME_GUARD = 700;
 const CADENCIA_MS = 5000;
 const MAX_BATCH_PER_RUN = 20;
 const CONTROL_SYNC_EVERY = 10;
@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
   let body: any = {};
   try { body = await req.json(); } catch {}
   const onda = Number(body?.onda);
-  if (![1,2,3].includes(onda)) return errorResponse("onda inválida (1, 2 ou 3)", 400);
+  if (!(onda >= 1 && onda <= 9)) return errorResponse("onda inválida (1-9)", 400);
   const continuation = body?.continuation === true || auth.isInternal;
 
   // 1) Kill switch global
@@ -111,9 +111,18 @@ Deno.serve(async (req: Request) => {
     return errorResponse(`onda ${onda} está ${ctrl.status}, não pode iniciar`, 409);
   }
   const force = body?.force === true || continuation;
-  if (onda > 1) {
-    const { data: prev } = await supabase.from("campanha_atrio_controle").select("*").eq("onda", onda - 1).maybeSingle();
-    if (prev?.status !== "concluida") return errorResponse(`onda ${onda - 1} ainda não concluída`, 409);
+  // Predecessor check: encontra a onda anterior DENTRO DO MESMO LOTE
+  const loteAtual = ctrl.lote || 1;
+  const { data: prevOndas } = await supabase
+    .from("campanha_atrio_controle")
+    .select("onda, status, concluida_em")
+    .eq("lote", loteAtual)
+    .lt("onda", onda)
+    .order("onda", { ascending: false })
+    .limit(1);
+  const prev = prevOndas?.[0];
+  if (prev) {
+    if (prev.status !== "concluida") return errorResponse(`onda ${prev.onda} (mesmo lote) ainda não concluída`, 409);
     if (prev?.concluida_em && !force) {
       const diff = Date.now() - new Date(prev.concluida_em).getTime();
       if (diff < 20 * 60 * 1000) return errorResponse(`aguarde 20min após conclusão da onda anterior (faltam ${Math.ceil((20*60*1000 - diff)/60000)}min)`, 409);
