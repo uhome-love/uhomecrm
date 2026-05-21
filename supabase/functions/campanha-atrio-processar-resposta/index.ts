@@ -106,10 +106,31 @@ Deno.serve(async (req: Request) => {
 
     const hoje = new Date().toISOString().slice(0,10);
 
+    // Helper: se o lead está arquivado/Descarte, limpa vínculo antigo
+    // para a roleta poder redistribuir (corretor anterior já não tem mais o lead).
+    async function liberarVinculoSeDescarte(leadId: string) {
+      const { data: pl } = await supabase
+        .from("pipeline_leads")
+        .select("arquivado, stage_id, corretor_id, pipeline_stages!inner(nome)")
+        .eq("id", leadId).maybeSingle();
+      const stageNome = (pl as any)?.pipeline_stages?.nome || "";
+      const ehDescarteOuArquivado = pl?.arquivado === true || /descarte/i.test(stageNome);
+      if (ehDescarteOuArquivado && pl?.corretor_id) {
+        await supabase.from("pipeline_leads").update({
+          corretor_id: null,
+          aceite_status: null,
+          arquivado: false,
+        }).eq("id", leadId);
+        console.log(`🔓 Lead ${leadId} liberado (estava em ${stageNome}, arquivado=${pl?.arquivado})`);
+      }
+    }
+
     if (tipo === "sim") {
       // Roleta — todos corretores ativos, sem segmento
+      await liberarVinculoSeDescarte(evento.lead_id);
       const traceId = `atrio_${respIns.id}`;
       const dist = await distributeLeadDirect(SUPABASE_URL, SERVICE_KEY, evento.lead_id, traceId, console as any);
+
       const sucesso = !!dist?.success;
       await supabase.from("campanha_atrio_respostas").update({
         enviado_para_roleta: sucesso,
