@@ -77,13 +77,13 @@ export default function LeadHeader({ lead, onAlertClick }: Props) {
       )}
 
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="flex items-center gap-1.5 text-gray-400">
+        <div className="flex items-center gap-1.5 text-foreground/75">
           <Clock className="w-3.5 h-3.5" />
           <span>{lead.days_without_contact < 999 ? `${lead.days_without_contact}d sem contato` : "Sem contato"}</span>
         </div>
-        {lead.origin && <div className="text-gray-400 truncate">📍 {lead.origin}</div>}
-        {lead.interest && <div className="text-gray-400 truncate">🏠 {lead.interest}</div>}
-        {lead.phone && <div className="text-gray-400 truncate">📱 {lead.phone}</div>}
+        {lead.origin && <div className="text-foreground/75 truncate">📍 {lead.origin}</div>}
+        {lead.interest && <div className="text-foreground/75 truncate">🏠 {lead.interest}</div>}
+        {lead.phone && <div className="text-foreground/75 truncate">📱 {lead.phone}</div>}
       </div>
     </div>
   );
