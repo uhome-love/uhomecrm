@@ -217,7 +217,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
   const fetchHomiSuggestion = useCallback(async (lead: FocusLead) => {
     setHomiLoading(true);
-    setHomiInsight("");
+    setHomiInsight(null);
 
 
     try {
