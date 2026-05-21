@@ -113,7 +113,10 @@ export function useAtrioActions() {
     onSuccess: invalidate,
   });
   const iniciarOnda = useMutation({
-    mutationFn: (onda: number) => invokeFn("campanha-atrio-iniciar-onda", { onda }),
+    mutationFn: (args: number | { onda: number; force?: boolean }) => {
+      const payload = typeof args === "number" ? { onda: args } : args;
+      return invokeFn("campanha-atrio-iniciar-onda", payload);
+    },
     onSuccess: invalidate,
   });
   const pararTudo = useMutation({
