@@ -468,30 +468,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     "Sem condição financeira", "Perfil incompatível", "Lead duplicado", "Número inválido", "Outro",
   ];
 
-  const handleAdvanceStage = useCallback(async () => {
-    if (!currentLead || !corretorId || !advanceStageId) return;
-    setSaving(true);
-    try {
-      await supabase.from("pipeline_leads").update({
-        stage_id: advanceStageId,
-        stage_changed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as any).eq("id", currentLead.id);
-      await supabase.from("pipeline_historico").insert({
-        pipeline_lead_id: currentLead.id,
-        stage_novo_id: advanceStageId,
-        movido_por: corretorId,
-        observacao: "Avançado via Modo Foco",
-      });
-      toast.success("Etapa avançada ✅");
-      goToNext();
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao avançar etapa.");
-    } finally {
-      setSaving(false);
-    }
-  }, [currentLead, corretorId, advanceStageId, goToNext]);
+  // handleAdvanceStage removido em R3.7 — fluxo de mudança de etapa migrou
+  // 100% para TaskCompletionDialog (Tela 2 oferece seletor de stage no fluxo de conclusão).
 
   const handleDiscardLead = useCallback(async () => {
     if (!currentLead || !corretorId || !discardReason) return;
