@@ -74,6 +74,22 @@ export default function CampanhaAtrio() {
   const ondaCurso = ondas.find(o => o.status === "em_curso");
   const ondaAtual = ondaCurso ? `Onda ${ondaCurso.onda}` : "—";
 
+  const getCooldownInfo = (onda: number) => {
+    if (onda <= 1) return null;
+
+    const anterior = ondas.find((item) => item.onda === onda - 1);
+    if (!anterior?.concluida_em) return null;
+
+    const diff = Date.now() - new Date(anterior.concluida_em).getTime();
+    const restanteMs = 20 * 60 * 1000 - diff;
+
+    if (restanteMs <= 0) return null;
+
+    return {
+      restanteMin: Math.ceil(restanteMs / 60000),
+    };
+  };
+
   const handleParar = () => {
     if (!confirm("Tem certeza? Vai desligar a flag e pausar tudo.")) return;
     pararTudo.mutate(undefined, {
@@ -95,7 +111,17 @@ export default function CampanhaAtrio() {
   };
   const handleIniciar = (onda: number) => {
     if (!confirm(`Iniciar Onda ${onda}? Disparo controlado começa em segundos.`)) return;
-    iniciarOnda.mutate({ onda }, {
+
+    const cooldown = getCooldownInfo(onda);
+    const payload = cooldown
+      ? confirm(`aguarde 20min após conclusão da onda anterior (faltam ${cooldown.restanteMin}min)\n\nForçar disparo agora (pular cooldown)?`)
+        ? { onda, force: true }
+        : null
+      : { onda };
+
+    if (!payload) return;
+
+    iniciarOnda.mutate(payload, {
       onSuccess: (d: any) => toast.success(`Onda ${onda} iniciada (${d?.total_a_processar} leads).`),
       onError: (e: any) => {
         const msg = String(e?.message || "");
