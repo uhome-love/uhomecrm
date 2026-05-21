@@ -1,0 +1,1 @@
+UPDATE public.pipeline_leads SET corretor_id = NULL, aceite_status = 'pendente', arquivado = false, reengajamento_status = 'respondido_sim' WHERE id = '8730bc7f-208b-46cd-bd16-77d14116e994';
