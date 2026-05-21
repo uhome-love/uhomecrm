@@ -95,9 +95,19 @@ export default function CampanhaAtrio() {
   };
   const handleIniciar = (onda: number) => {
     if (!confirm(`Iniciar Onda ${onda}? Disparo controlado começa em segundos.`)) return;
-    iniciarOnda.mutate(onda, {
+    iniciarOnda.mutate({ onda }, {
       onSuccess: (d: any) => toast.success(`Onda ${onda} iniciada (${d?.total_a_processar} leads).`),
-      onError: (e: any) => toast.error(`Erro: ${e?.message}`),
+      onError: (e: any) => {
+        const msg = String(e?.message || "");
+        if (msg.includes("aguarde 20min") && confirm(`${msg}\n\nForçar disparo agora (pular cooldown)?`)) {
+          iniciarOnda.mutate({ onda, force: true }, {
+            onSuccess: (d: any) => toast.success(`Onda ${onda} iniciada forçada (${d?.total_a_processar} leads).`),
+            onError: (e2: any) => toast.error(`Erro: ${e2?.message}`),
+          });
+        } else {
+          toast.error(`Erro: ${msg}`);
+        }
+      },
     });
   };
 
