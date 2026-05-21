@@ -182,15 +182,17 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   useEffect(() => {
     if (!currentLead || !open || configPhase) return;
 
-    // Cache hit: hidrata insight sem chamar Gemini novamente.
+    // Cache hit (TTL 4h) → hidrata insight direto, sem chamar Gemini.
     const cached = insightCacheRef.current.get(currentLead.id);
     if (cached && Date.now() - cached.at < INSIGHT_TTL_MS) {
       setHomiInsight(cached.insight);
-
       setHomiLoading(false);
       return;
     }
-    fetchHomiSuggestion(currentLead);
+
+    // Cache miss → estado vazio. Geração agora é on-demand (botão no card).
+    setHomiInsight(null);
+    setHomiLoading(false);
   }, [currentIndex, leads.length, open, configPhase]);
 
   // Fetch pending tasks for current lead
