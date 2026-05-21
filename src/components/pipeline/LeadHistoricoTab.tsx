@@ -16,7 +16,7 @@ import {
 import {
   Plus, Pin, PinOff, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
-  Building2, Share2, Search as SearchIcon, Trash2
+  Building2, Share2, Search as SearchIcon, Trash2, Megaphone
 } from "lucide-react";
 import { formatDateSafe, parseDateTimeSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
@@ -59,7 +59,7 @@ interface Props {
   onNextAction?: () => void;
 }
 
-const ATIVIDADE_TIPOS: Record<string, { label: string; icon: any }> = {
+const ATIVIDADE_TIPOS: Record<string, { label: string; icon: any; color?: string }> = {
   ligacao: { label: "📞 Ligação", icon: PhoneCall },
   whatsapp: { label: "💬 WhatsApp", icon: MessageSquare },
   followup: { label: "📨 Follow-up", icon: Send },
@@ -71,6 +71,9 @@ const ATIVIDADE_TIPOS: Record<string, { label: string; icon: any }> = {
   email: { label: "✉️ Email", icon: Send },
   nao_atendeu: { label: "❌ Não atendeu", icon: PhoneCall },
   entrada: { label: "🟢 Lead entrou", icon: Plus },
+  campanha_atrio: { label: "📣 Reengajamento Átrio", icon: Megaphone, color: "bg-violet-100 text-violet-700" },
+  contato: { label: "☎️ Contato", icon: PhoneCall },
+  mensagem: { label: "💬 Mensagem", icon: MessageSquare },
 };
 
 interface TimelineItem {
@@ -147,13 +150,13 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
     const isEntrada = a.tipo === "entrada";
     const desc = isEntrada && a.descricao
       ? a.descricao
-      : `${a.titulo} • ${a.status === "concluida" ? "✅" : "⏳"}`;
+      : (a.descricao || `${a.titulo} • ${a.status === "concluida" ? "✅" : "⏳"}`);
     items.push({
-      title: isEntrada ? (a.titulo || info?.label || "Lead entrou") : (info?.label || a.titulo),
+      title: isEntrada ? (a.titulo || info?.label || "Lead entrou") : (info?.label ? `${info.label} — ${a.titulo}` : a.titulo),
       description: desc,
       date: a.created_at,
       icon: info?.icon || PhoneCall,
-      color: isEntrada ? "bg-emerald-100 text-emerald-600" : (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"),
+      color: info?.color || (isEntrada ? "bg-emerald-100 text-emerald-600" : (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600")),
       sourceType: "atividade",
       sourceId: a.id,
     });
