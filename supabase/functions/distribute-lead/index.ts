@@ -195,14 +195,27 @@ async function distributeViaRPC(
     return { success: false, reason: "missing_corretor_id" };
   }
 
+  // Resolve "Novo Lead" stage (ordem=0) — toda entrada via roleta volta pra essa coluna
+  const { data: novoLeadStage } = await supabase
+    .from("pipeline_stages")
+    .select("id")
+    .eq("ativo", true)
+    .order("ordem", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const novoLeadStageId = novoLeadStage?.id || null;
+
+  const updatePayload: Record<string, any> = {
+    corretor_id: normalizedCorretorId,
+    aceite_status: "aguardando_aceite",
+    distribuido_em: notifiedAt.toISOString(),
+    aceite_expira_em: expireAt.toISOString(),
+  };
+  if (novoLeadStageId) updatePayload.stage_id = novoLeadStageId;
+
   const { data: updatedRows, error: normalizeLeadError } = await supabase
     .from("pipeline_leads")
-    .update({
-      corretor_id: normalizedCorretorId,
-      aceite_status: "aguardando_aceite",
-      distribuido_em: notifiedAt.toISOString(),
-      aceite_expira_em: expireAt.toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", leadId)
     .in("aceite_status", ["pendente", "aguardando_aceite", "pendente_aceite", "pendente_distribuicao"])
     .select("id");
