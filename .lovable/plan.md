@@ -1,78 +1,70 @@
-## Mudança 4 FINAL — Remover Tabs + Adicionar ScriptsCard
+## Status
 
-### Verificações prévias (concluídas)
+**Fix 3 já está executado** (confirmado nesta rodada e nas anteriores). Estado atual do Modo Foco:
 
-**1. Campo do empreendimento:** `lead.interest` (já populado a partir de `pipeline_leads.empreendimento` em `useFocusLeads.ts:420`). Vou usar `lead.interest` direto, com fallback "nosso empreendimento" no `buildScriptText`.
+- Painel esquerdo: só **"Descartar Lead"** (compacto, vermelho) — Avançar Etapa foi removido em R3.7 (fluxo migrou para TaskCompletionDialog Tela 2). Avançar próximo lead foi consolidado no top strip.
+- Top strip linha 2: **Concluir tarefa** (CTA gradient) · **Ligar** (popover) · **WhatsApp** (verde) · **Próximo →** (discreto, `bg-white/10 border-white/20`).
+- Cenário (a) confirmado, não (b). Não há lógica por lead que esconda Avançar Etapa — ele simplesmente não existe mais.
 
-**2. "Negócio Criado" no Modo Foco:** já está excluído. Query confirmou que existe um único stage `tipo='convertido'` (nome = "Negócio Criado") e `useFocusLeads.ts` já filtra:
-```ts
-if ((s as any).tipo === "descarte" || (s as any).tipo === "convertido") continue;
+Logo, **passos 1-3 do roteiro já estão prontos**. Resta apenas o item 3 ADICIONAL (loading polido).
+
+---
+
+## Plano — Loading Skeleton
+
+### Arquivos
+
+1. **Novo:** `src/components/pipeline/focus/FocusLoadingSkeleton.tsx`
+2. **Editar:** `src/components/pipeline/FocusModeModal.tsx` (linhas 584-588)
+
+### `FocusLoadingSkeleton.tsx`
+
+Componente sem props que reproduz o layout real do `LeadFocusScreen` em skeletons pulsantes:
+
+- **Top strip** (rounded-2xl com mesmo gradient sutil indigo/violet):
+  - bloco "Trabalhados" (avatar redondo + 2 linhas)
+  - divider
+  - bloco "Próxima ação" (label + linha de título)
+  - linha 2: 4 retângulos de altura `h-12` (CTA largo + 3 botões fixos) simulando Concluir / Ligar / WhatsApp / Próximo
+- **Grid 3/7** abaixo:
+  - **Coluna esquerda (lg:col-span-3):** card único `rounded-2xl` com 4 sub-blocos pulsantes empilhados (LeadHeader, HomiInsight, PendingTasks, Scripts)
+  - **Coluna direita (lg:col-span-7):** card `rounded-2xl` com header (título + subtítulo) + 5-6 linhas de "evento" (avatar circular + 2 linhas de texto), respeitando contraste do escopo `dark`
+- Usa `animate-pulse` do Tailwind, cores `bg-white/5` / `bg-white/10` para casar com fundo dark do modal
+- Mesmas dimensões/spacing do conteúdo real → zero "jump" quando dados chegam
+- Tokens semânticos (sem hex direto), comentário no topo registrando regra de contraste do Modo Foco
+
+### Edit em `FocusModeModal.tsx` (linhas 584-588)
+
+Trocar:
+```tsx
+) : loading ? (
+  <div className="flex flex-col items-center justify-center h-full gap-3">
+    <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
+    <span className="text-gray-400 text-sm">Buscando leads que precisam de atenção...</span>
+  </div>
 ```
-Nada a fazer no hook.
 
-**3. `handleCopyPhone`:** usado APENAS dentro do bloco Tabs (linhas 878 e 887), ambas dentro da TabsContent "call". O Popover Ligar do top strip (R3.5) tem sua própria implementação inline em `LeadFocusScreen.tsx`. Logo, `handleCopyPhone` pode ser removido com segurança.
+Por:
+```tsx
+) : loading ? (
+  <FocusLoadingSkeleton />
+```
 
-### Imports / estados / handlers órfãos a remover de `FocusModeModal.tsx`
+Header (linhas ~540-570: contador "Modo Foco N/M" + progress bar) **fica como está** — já renderiza antes do bloco condicional, então aparece imediatamente. ✅ Atende item C.
 
-**Imports:**
-- `Tabs, TabsList, TabsTrigger, TabsContent` (linha 8) — só usados no bloco
-- `Textarea` — só usado em followup/call (confirmar não há outro uso)
-- `Input` — só no bloco task (confirmar)
-- `Send, MessageCircle, Copy` — verificar; `Copy` e `Check` podem permanecer se outros lugares usam
-
-**Constantes:** `QUICK_MESSAGES` (linha 44)
-
-**Estados:** `tab/setTab`, `followUpText/setFollowUpText`, `activityNote/setActivityNote`, `taskTitle/setTaskTitle`, `taskType/setTaskType`, `taskDueDate/setTaskDueDate`, `phoneCopied/setPhoneCopied`, `activityRegistered/setActivityRegistered`, `taskCreated/setTaskCreated`
-
-**Handlers:** `handleRegisterActivity`, `handleCreateTask`, `handleOpenWhatsApp`, `handleCopyPhone`
-
-**Reset (linha 304):** remover `setTab("followup")` e demais resets relacionados.
-
-**Linha 1045-1050:** condicional usando `activityRegistered || taskCreated` para estilo do botão "Avançar próximo lead" — vou trocar por `false` (mantém o estilo "neutro") ou simplificar para sempre usar o estilo do gradient se nextLead existir. Preserva botão visualmente.
-
-### Diff resumido por arquivo
-
-**`src/components/pipeline/FocusModeModal.tsx`**
-- Remover bloco Tabs completo (linhas ~765-959, ~195 linhas)
-- Remover imports/estados/handlers órfãos listados acima
-- Ajustar linha 1045-1050 (condição com `activityRegistered || taskCreated`)
-- Resultado: arquivo encolhe ~250 linhas
-
-**`src/components/pipeline/focus/scriptsByStage.ts`** (NOVO)
-- Tipos `ScriptId`, `ScriptOption`
-- `SCRIPTS_BY_STAGE` mapa stage→scripts (6 stages × 3-4 scripts)
-- `DEFAULT_SCRIPTS` fallback
-- `SCRIPT_TEMPLATES` (20 templates com `{nome}/{empreendimento}/{corretor}`)
-- `getScriptsForStage()`, `buildScriptText()`
-
-**`src/components/pipeline/focus/ScriptsCard.tsx`** (NOVO)
-- Chips filtrados por `leadStage`
-- Textarea editável após seleção
-- Botão único "Copiar texto" com toast
-- Header colapsável (ChevronDown/Up)
-- Reset ao mudar de lead (via `useEffect` em `leadName`)
-- Tokens semânticos (sem hex)
-
-**`src/components/pipeline/focus/LeadContextPanel.tsx`**
-- Adicionar `<ScriptsCard leadName={lead.name} leadEmpreendimento={lead.interest ?? undefined} leadStage={lead.stage} />` entre `PendingTasksCard` e `{children}`
+Texto "Preparando sua sessão de foco..." (item B) entra como subtítulo discreto **opcional** no topo do skeleton (`text-xs text-foreground/60`), ou removido — opto por incluir uma única vez acima do top strip skeleton para manter contexto sem ruído.
 
 ### Preservado intacto
 
-- TaskCompletionDialog R3-V2, useTimelineEvents, useFocusLeads (régua 4 estados)
-- Telemetria, cache HOMI, BRT
-- Top strip (CTA + Ligar Popover + WhatsApp verde)
-- Sticky layout R3.6, timeline truncada
-- Stage advance inline, Discard inline, botões Avançar Etapa / Descartar / Avançar próximo lead
+- `useFocusLeads`, telemetria `focus_mode_opened`, cache HOMI, BRT, escopo `dark` do `DialogContent`, todos os 4 fixes cirúrgicos de contraste, fluxo Descartar inline, TaskCompletionDialog.
 
-### Ordem de execução
+### Validação
 
-1. Criar `scriptsByStage.ts` (templates completos)
-2. Criar `ScriptsCard.tsx`
-3. Integrar em `LeadContextPanel.tsx`
-4. Remover bloco Tabs de `FocusModeModal.tsx` + limpar órfãos
-5. Build check + reporte com diff
+- Abrir Modo Foco → confirmar skeleton aparece imediatamente com mesma estrutura do conteúdo final
+- Confirmar transição suave (sem flash branco/jump de layout)
+- Screenshot do skeleton + screenshot do estado carregado para comparação
 
 ### Estimativa
-~1h30 (templates já especificados no prompt).
+~30-40 min (componente novo enxuto + 1 edit pontual).
 
-Aguardando aprovação.
+Aguardando OK para executar.

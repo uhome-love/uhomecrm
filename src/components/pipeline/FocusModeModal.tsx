@@ -23,6 +23,7 @@ import TaskCompletionDialog from "./TaskCompletionDialog";
 import { logFocus, newFocusSessionId } from "@/lib/focusTelemetry";
 import FocusConfigScreen from "./focus/FocusConfigScreen";
 import LeadFocusScreen from "./focus/LeadFocusScreen";
+import FocusLoadingSkeleton from "./focus/FocusLoadingSkeleton";
 
 interface FocusModeModalProps {
   open: boolean;
@@ -582,10 +583,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
               onStart={handleStartFocus}
             />
           ) : loading ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
-              <span className="text-gray-400 text-sm">Buscando leads que precisam de atenção...</span>
-            </div>
+            <FocusLoadingSkeleton />
           ) : leads.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "rgba(34,197,94,0.1)" }}>
