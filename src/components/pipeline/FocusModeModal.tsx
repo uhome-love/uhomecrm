@@ -2,23 +2,21 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Zap, X, Phone, MessageCircle, Plus, ChevronLeft,
-  Loader2, AlertTriangle, Clock, Send,
-  ExternalLink, Sparkles, Copy, Check, ChevronRight,
-  Filter, ListChecks, CalendarClock,
+  Zap, X, ChevronLeft,
+  Loader2, ChevronRight,
+  Filter,
   ArrowRightCircle, Trash2, Ban
 } from "lucide-react";
+
+
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria } from "@/hooks/useFocusLeads";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
-import { format, addDays } from "date-fns";
+// date-fns removido — format/addDays não são mais usados após Mudança 4.
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TaskCompletionDialog from "./TaskCompletionDialog";
@@ -32,21 +30,10 @@ interface FocusModeModalProps {
   pipelineTipo?: "leads" | "negocios";
 }
 
-const TASK_TYPES = [
-  { value: "ligar", label: "📞 Ligação" },
-  { value: "whatsapp", label: "💬 WhatsApp" },
-  { value: "marcar_visita", label: "🏠 Visita" },
-  { value: "enviar_material", label: "📧 Enviar material" },
-  { value: "follow_up", label: "📋 Follow-up" },
-  { value: "outro", label: "📌 Outro" },
-];
+// TASK_TYPES e QUICK_MESSAGES removidos (Sprint 1 Mudança 4) — fluxo de criação
+// de tarefa migrou para TaskCompletionDialog (R3-V2) e scripts agora vivem
+// em ScriptsCard (focus/scriptsByStage.ts).
 
-const QUICK_MESSAGES = [
-  { label: "Primeiro contato", text: (name: string, interest: string) => `Olá ${name}! Tudo bem? Aqui é da Uhome Imóveis. Vi que você se interessou pelo ${interest || "nosso empreendimento"}. Posso te ajudar com mais informações?` },
-  { label: "Retomar contato", text: (name: string, interest: string) => `Oi ${name}! Faz um tempinho que conversamos sobre o ${interest || "imóvel"}. Surgiu alguma novidade? Estou à disposição para te ajudar!` },
-  { label: "Agendar visita", text: (name: string, interest: string) => `${name}, que tal conhecer pessoalmente o ${interest || "empreendimento"}? Posso agendar uma visita no melhor horário pra você. Qual dia seria bom?` },
-  { label: "Condições especiais", text: (name: string, interest: string) => `Oi ${name}! Temos condições especiais para o ${interest || "empreendimento"} essa semana. Quer que eu te mande os detalhes? 😊` },
-];
 
 type CriteriaType = FocusCriteria;
 // CRITERIA_OPTIONS movido para FocusConfigScreen (Sprint 1 R1).
@@ -76,34 +63,22 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [homiInsight, setHomiInsight] = useState("");
-  const [followUpText, setFollowUpText] = useState("");
   const [homiLoading, setHomiLoading] = useState(false);
 
   // Cache de HOMI Insight por sessão: leadId → { insight, mensagem, at }
-  // Evita re-chamar Gemini quando o corretor volta ao mesmo lead (botão "anterior").
+  // (mensagem fica no cache para futura reutilização, mas não é mais renderizada
+  // — bloco Tabs/Follow Up removido em Sprint 1 Mudança 4.)
   const insightCacheRef = useRef<Map<string, { insight: string; mensagem: string; at: number }>>(new Map());
   const INSIGHT_TTL_MS = 4 * 60 * 60 * 1000; // 4h
   // Telemetria: session_id correlaciona opened → advance(s) → closed da mesma jornada.
   const focusSessionIdRef = useRef<string | null>(null);
   const advanceCountRef = useRef<number>(0);
-  // Pending ctx do opened — emitido via useEffect quando reload terminar e leads.length refletir a fila real.
   const pendingOpenedCtxRef = useRef<Record<string, unknown> | null>(null);
-  // Rastreia transição loading true→false para garantir que o evento `opened` só é emitido
-  // após o reload realmente rodar (não no frame imediato em que configPhase muda).
   const reloadInFlightRef = useRef<boolean>(false);
-  const [activityNote, setActivityNote] = useState("");
-  const [tab, setTab] = useState("followup");
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [direction, setDirection] = useState(1);
-  const [activityRegistered, setActivityRegistered] = useState(false);
-  const [phoneCopied, setPhoneCopied] = useState(false);
 
-  // Task creation state
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskType, setTaskType] = useState("ligar");
-  const [taskDueDate, setTaskDueDate] = useState(format(addDays(new Date(), 1), "yyyy-MM-dd"));
-  const [taskCreated, setTaskCreated] = useState(false);
 
   // Overdue task completion dialog
   const [completingOverdue, setCompletingOverdue] = useState<{ id: string; titulo: string } | null>(null);
@@ -211,7 +186,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     const cached = insightCacheRef.current.get(currentLead.id);
     if (cached && Date.now() - cached.at < INSIGHT_TTL_MS) {
       setHomiInsight(cached.insight);
-      setFollowUpText(cached.mensagem);
+
       setHomiLoading(false);
       return;
     }
@@ -241,7 +216,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const fetchHomiSuggestion = useCallback(async (lead: FocusLead) => {
     setHomiLoading(true);
     setHomiInsight("");
-    setFollowUpText("");
+
 
     try {
       const [{ data: atividades }, { data: tarefas }] = await Promise.all([
@@ -288,33 +263,25 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       const insight = data?.insight || "";
       const mensagem = data?.mensagem || "";
       setHomiInsight(insight);
-      setFollowUpText(mensagem);
       // Memoriza para evitar nova chamada ao voltar/avançar para o mesmo lead na sessão.
       insightCacheRef.current.set(lead.id, { insight, mensagem, at: Date.now() });
     } catch (err) {
       console.error("[FocusMode] HOMI error:", err);
-      setFollowUpText("");
       setHomiInsight("Não foi possível gerar sugestão agora.");
+
     } finally {
       setHomiLoading(false);
     }
   }, []);
 
   const resetActionState = useCallback(() => {
-    setTab("followup");
-    setActivityNote("");
-    setTaskTitle("");
-    setTaskType("ligar");
-    setTaskDueDate(format(addDays(new Date(), 1), "yyyy-MM-dd"));
-    setActivityRegistered(false);
-    setTaskCreated(false);
-    setPhoneCopied(false);
     setShowAdvanceStage(false);
     setAdvanceStageId("");
     setShowDiscard(false);
     setDiscardReason("");
     setDiscardObs("");
   }, []);
+
 
   const handleClose = useCallback(() => {
     // Telemetria: log closed só se houve uma sessão ativa (ignora abre/fecha sem startar).
@@ -363,76 +330,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, [currentIndex, resetActionState]);
 
-  const handleRegisterActivity = useCallback(async (type: "ligacao" | "mensagem" | "nota") => {
-    if (!currentLead || !corretorId) return;
-    const note = type === "mensagem" ? followUpText : activityNote;
-    if (!note.trim()) {
-      toast.error("Preencha a anotação antes de registrar.");
-      return;
-    }
+  // handleRegisterActivity / handleCreateTask / handleOpenWhatsApp / handleCopyPhone
+  // removidos em Sprint 1 Mudança 4 — fluxo migrou para top strip + TaskCompletionDialog + ScriptsCard.
 
-    setSaving(true);
-    try {
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: currentLead.id,
-        created_by: corretorId,
-        tipo: type,
-        titulo: type === "ligacao" ? "Ligação registrada" : type === "mensagem" ? "Follow-up enviado" : "Anotação",
-        descricao: note,
-        status: "concluida",
-        prioridade: "normal",
-      });
-
-      await supabase
-        .from("pipeline_leads")
-        .update({ ultima_acao_at: new Date().toISOString() })
-        .eq("id", currentLead.id);
-
-      toast.success("Atividade registrada! ✅");
-      setActivityRegistered(true);
-      setWorkedCount((c) => c + 1);
-      setTimelineRefreshKey((k) => k + 1);
-      // Invalida cache do insight: nova atividade muda o contexto que Gemini analisa.
-      insightCacheRef.current.delete(currentLead.id);
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao registrar atividade.");
-    } finally {
-      setSaving(false);
-    }
-  }, [currentLead, corretorId, followUpText, activityNote]);
-
-  const handleCreateTask = useCallback(async () => {
-    if (!currentLead || !corretorId) return;
-    if (!taskTitle.trim()) {
-      toast.error("Preencha o título da tarefa.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await supabase.from("pipeline_tarefas").insert({
-        pipeline_lead_id: currentLead.id,
-        created_by: corretorId,
-        titulo: taskTitle,
-        tipo: taskType,
-        vence_em: taskDueDate,
-        status: "pendente",
-        prioridade: "normal",
-      });
-
-      toast.success("Tarefa criada! ✅");
-      setTaskCreated(true);
-      setTaskTitle("");
-      setTasksRefreshKey(k => k + 1);
-      setTimelineRefreshKey(k => k + 1);
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao criar tarefa.");
-    } finally {
-      setSaving(false);
-    }
-  }, [currentLead, corretorId, taskTitle, taskType, taskDueDate]);
 
   const handleCompleteOverdueTask = useCallback(async (
     payload: import("./task-completion/types").CompletionPayload
@@ -443,12 +343,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       const now = new Date().toISOString();
       const { tipo_contato, resultado, descricao, nova_tarefa, novo_stage_id } = payload;
 
-      // 1) Mark overdue task as concluida
-      await supabase.from("pipeline_tarefas").update({
-        status: "concluida",
-        concluida_em: now,
-        updated_at: now,
-      } as never).eq("id", completingOverdue.id);
+      // 1) Mark overdue task as concluida — pula quando id sintético ('no-task' = lead sem tarefa pendente)
+      if (completingOverdue.id !== "no-task") {
+        await supabase.from("pipeline_tarefas").update({
+          status: "concluida",
+          concluida_em: now,
+          updated_at: now,
+        } as never).eq("id", completingOverdue.id);
+      }
+
 
       // 2) Touch lead
       await supabase.from("pipeline_leads").update({
@@ -548,24 +451,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, [completingOverdue, currentLead, corretorId, goToNext, queryClient]);
 
-  const handleOpenWhatsApp = useCallback(() => {
-    if (!currentLead?.phone) return;
-    const phone = currentLead.phone.replace(/\D/g, "");
-    const fullPhone = phone.length <= 11 ? `55${phone}` : phone;
-    const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(followUpText)}`;
-    window.open(url, "_blank");
-  }, [currentLead, followUpText]);
+  // handleOpenWhatsApp e handleCopyPhone removidos — top strip do LeadFocusScreen
+  // já tem implementações inline (window.open wa.me + Popover copia telefone).
 
-  const handleCopyPhone = useCallback(async (phone: string) => {
-    try {
-      await navigator.clipboard.writeText(phone);
-      setPhoneCopied(true);
-      toast.success("Telefone copiado!");
-      setTimeout(() => setPhoneCopied(false), 3000);
-    } catch {
-      toast.error("Erro ao copiar.");
-    }
-  }, []);
 
   const DISCARD_REASONS = [
     "Sem interesse", "Não atende / não responde", "Comprou com concorrente",
@@ -754,209 +642,18 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     if (t) {
                       setCompletingOverdue({ id: t.id, titulo: t.titulo });
                     } else {
-                      setTab("task");
-                      setTaskTitle(`Follow-up: ${currentLead.name}`);
+                      // Sem tarefa pendente — abre TaskCompletionDialog com ID sintético.
+                      // handleCompleteOverdueTask trata 'no-task' pulando o UPDATE de pipeline_tarefas.
+                      setCompletingOverdue({ id: "no-task", titulo: "Registrar contato e agendar próximo passo" });
                     }
                   }}
                   onCreateNewTask={() => {
-                    setTab("task");
-                    setTaskTitle(`Follow-up: ${currentLead.name}`);
+                    setCompletingOverdue({ id: "no-task", titulo: "Registrar contato e agendar próximo passo" });
                   }}
+
                   panelChildren={
                     <div className="space-y-3">
 
-                  <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-                    <TabsList className="w-full bg-transparent border rounded-lg p-1" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
-                      <TabsTrigger value="followup" className="flex-1 text-xs data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-gray-400 rounded-md">
-                        💬 Follow Up
-                      </TabsTrigger>
-                      <TabsTrigger value="call" className="flex-1 text-xs data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-gray-400 rounded-md">
-                        📞 Ligar
-                      </TabsTrigger>
-                      <TabsTrigger value="task" className="flex-1 text-xs data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-gray-400 rounded-md">
-                        + Tarefa
-                      </TabsTrigger>
-                    </TabsList>
-
-                    {/* TAB: Follow Up */}
-                    <TabsContent value="followup" className="space-y-3 mt-0">
-                      <div className="flex flex-wrap gap-1.5">
-                        {QUICK_MESSAGES.map((msg, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setFollowUpText(msg.text(currentLead.name.split(" ")[0], currentLead.interest || ""))}
-                            className="text-[10px] px-2.5 py-1 rounded-full transition-colors"
-                            style={{
-                              background: "rgba(79,70,229,0.15)",
-                              color: "#a5b4fc",
-                              border: "1px solid rgba(79,70,229,0.25)",
-                            }}
-                          >
-                            {msg.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <Textarea
-                        value={followUpText}
-                        onChange={(e) => setFollowUpText(e.target.value)}
-                        placeholder={homiLoading ? "Gerando sugestão..." : "Mensagem de follow-up..."}
-                        className="min-h-[100px] text-sm border-0 resize-none"
-                        style={{ background: "rgba(255,255,255,0.05)", color: "#e2e8f0" }}
-                        disabled={homiLoading}
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleOpenWhatsApp}
-                          disabled={!followUpText.trim() || !currentLead.phone}
-                          className="flex-1 gap-2 text-xs h-9"
-                          style={{ background: "#25D366", color: "#fff" }}
-                        >
-                          <Send className="w-3.5 h-3.5" /> WhatsApp
-                          <ExternalLink className="w-3 h-3 opacity-50" />
-                        </Button>
-                        <Button
-                          onClick={() => handleRegisterActivity("mensagem")}
-                          disabled={saving || !followUpText.trim() || activityRegistered}
-                          className="flex-1 gap-2 text-xs h-9"
-                          style={{ background: activityRegistered ? "#22c55e" : "#4969FF" }}
-                        >
-                          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : activityRegistered ? <Check className="w-3.5 h-3.5" /> : <MessageCircle className="w-3.5 h-3.5" />}
-                          {activityRegistered ? "Registrado ✓" : "Registrar"}
-                        </Button>
-                      </div>
-
-                      {(() => {
-                        const next = currentLead.next_pending_task;
-                        if (!next) {
-                          return (
-                            <Button
-                              onClick={() => {
-                                setTab("task");
-                                setTaskTitle(`Follow-up: ${currentLead.name}`);
-                              }}
-                              variant="outline"
-                              className="w-full gap-2 text-xs h-9 border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/15 hover:text-amber-200"
-                            >
-                              <CalendarClock className="w-3.5 h-3.5" />
-                              Sem tarefas pendentes · Agendar próxima
-                            </Button>
-                          );
-                        }
-                        const colorByBucket = {
-                          overdue: "border-red-500/30 bg-red-500/5 text-red-300 hover:bg-red-500/15 hover:text-red-200",
-                          today: "border-orange-500/30 bg-orange-500/5 text-orange-300 hover:bg-orange-500/15 hover:text-orange-200",
-                          upcoming: "border-indigo-500/30 bg-indigo-500/5 text-indigo-300 hover:bg-indigo-500/15 hover:text-indigo-200",
-                        } as const;
-                        const labelByBucket = {
-                          overdue: `Concluir tarefa vencida${currentLead.overdue_task_list.length > 1 ? ` (${currentLead.overdue_task_list.length})` : ""} e agendar próxima`,
-                          today: `Concluir tarefa de hoje${currentLead.pending_task_list.filter(t => t.bucket === "today").length > 1 ? ` (${currentLead.pending_task_list.filter(t => t.bucket === "today").length})` : ""} e agendar próxima`,
-                          upcoming: `Concluir tarefa agendada e criar próxima`,
-                        } as const;
-                        return (
-                          <Button
-                            onClick={() => setCompletingOverdue({ id: next.id, titulo: next.titulo })}
-                            variant="outline"
-                            className={`w-full gap-2 text-xs h-9 ${colorByBucket[next.bucket]}`}
-                          >
-                            <CalendarClock className="w-3.5 h-3.5" />
-                            {labelByBucket[next.bucket]}
-                          </Button>
-                        );
-                      })()}
-                    </TabsContent>
-
-                    {/* TAB: Ligar */}
-                    <TabsContent value="call" className="space-y-3 mt-0">
-                      {currentLead.phone ? (
-                        <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.05)" }}>
-                          <div className="text-center space-y-1">
-                            <Phone className="w-6 h-6 mx-auto text-indigo-400" />
-                            <p className="text-gray-400 text-[10px]">Ligue do seu celular</p>
-                          </div>
-                          <button
-                            onClick={() => handleCopyPhone(currentLead.phone!)}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg transition-colors"
-                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
-                          >
-                            <span className="text-white font-bold text-lg tracking-wider">{currentLead.phone}</span>
-                            {phoneCopied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-gray-400" />}
-                          </button>
-                          {currentLead.phone2 && (
-                            <button
-                              onClick={() => handleCopyPhone(currentLead.phone2!)}
-                              className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm"
-                              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-                            >
-                              <span className="text-gray-400">{currentLead.phone2}</span>
-                              <Copy className="w-3 h-3 text-gray-500" />
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-gray-400 text-sm text-center py-4">Telefone não cadastrado</p>
-                      )}
-
-                      <Textarea
-                        value={activityNote}
-                        onChange={(e) => setActivityNote(e.target.value)}
-                        placeholder="Anotação da ligação..."
-                        className="min-h-[70px] text-sm border-0 resize-none"
-                        style={{ background: "rgba(255,255,255,0.05)", color: "#e2e8f0" }}
-                      />
-                      <Button
-                        onClick={() => handleRegisterActivity("ligacao")}
-                        disabled={saving || !activityNote.trim() || activityRegistered}
-                        className="w-full gap-2 text-xs h-9"
-                        style={{ background: activityRegistered ? "#22c55e" : "#4969FF" }}
-                      >
-                        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : activityRegistered ? <Check className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
-                        {activityRegistered ? "Ligação registrada ✓" : "Registrar ligação"}
-                      </Button>
-                    </TabsContent>
-
-                    {/* TAB: Criar Tarefa */}
-                    <TabsContent value="task" className="space-y-3 mt-0">
-                      {taskCreated && (
-                        <div className="flex items-center gap-2 text-xs rounded-lg py-2 px-3" style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80" }}>
-                          <Check className="w-3.5 h-3.5" /> Tarefa criada com sucesso! Pode criar outra ou avançar.
-                        </div>
-                      )}
-                      <Input
-                        value={taskTitle}
-                        onChange={(e) => setTaskTitle(e.target.value)}
-                        placeholder="Título da tarefa..."
-                        className="text-sm border-0 h-9"
-                        style={{ background: "rgba(255,255,255,0.05)", color: "#e2e8f0" }}
-                      />
-                      <Select value={taskType} onValueChange={setTaskType}>
-                        <SelectTrigger className="text-sm border-0 h-9" style={{ background: "rgba(255,255,255,0.05)", color: "#e2e8f0" }}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TASK_TYPES.map(t => (
-                            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="date"
-                        value={taskDueDate}
-                        onChange={(e) => setTaskDueDate(e.target.value)}
-                        className="text-sm border-0 h-9"
-                        style={{ background: "rgba(255,255,255,0.05)", color: "#e2e8f0" }}
-                      />
-                      <Button
-                        onClick={handleCreateTask}
-                        disabled={saving || !taskTitle.trim()}
-                        className="w-full gap-2 text-xs h-9"
-                        style={{ background: "#4969FF" }}
-                      >
-                        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                        Criar tarefa
-                      </Button>
-                    </TabsContent>
-                  </Tabs>
 
                   {/* Stage advance inline */}
                   {showAdvanceStage && (
@@ -1037,22 +734,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     </div>
                   )}
 
-                  {/* Advance to next lead button */}
+                  {/* Avançar para próximo lead — sempre destacado (Sprint 1 Mudança 4) */}
                   <button
                     onClick={goToNext}
-                    className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-lg transition-colors"
-                    style={{
-                      background: (activityRegistered || taskCreated) ? "linear-gradient(135deg, #4969FF, #7C3AED)" : "transparent",
-                      color: (activityRegistered || taskCreated) ? "#fff" : "#6b7280",
-                      fontWeight: (activityRegistered || taskCreated) ? 600 : 400,
-                    }}
+                    className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-lg transition-colors font-semibold text-white"
+                    style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}
                   >
-                    {(activityRegistered || taskCreated) ? (
-                      <>Avançar para próximo lead <ChevronRight className="w-3.5 h-3.5" /></>
-                    ) : (
-                      "Pular sem ação →"
-                    )}
+                    Avançar para próximo lead <ChevronRight className="w-3.5 h-3.5" />
                   </button>
+
                     </div>
                   }
                 />
