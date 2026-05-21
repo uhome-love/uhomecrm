@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import LeadHeader from "./LeadHeader";
 import HomiInsightCard from "./HomiInsightCard";
 import PendingTasksCard from "./PendingTasksCard";
+import ScriptsCard from "./ScriptsCard";
 import type { FocusLead } from "@/hooks/useFocusLeads";
 
 interface Task {
@@ -19,7 +20,7 @@ interface Props {
   pendingTasks: Task[];
   onCompleteTask: (taskId: string, titulo: string) => void;
   onCreateNewTask: () => void;
-  /** Slot para os tabs/ações (Follow-up, Ligar, Tarefa, Avançar, Descartar). */
+  /** Slot para ações finais (Avançar Etapa, Descartar, Avançar próximo lead). */
   children?: ReactNode;
 }
 
@@ -35,6 +36,11 @@ export default function LeadContextPanel({
       <LeadHeader lead={lead} onAlertClick={onCompleteTask} />
       <HomiInsightCard loading={homiLoading} insight={homiInsight} />
       <PendingTasksCard tasks={pendingTasks} onComplete={onCompleteTask} onCreateNew={onCreateNewTask} />
+      <ScriptsCard
+        leadName={lead.name}
+        leadEmpreendimento={lead.interest ?? undefined}
+        leadStage={lead.stage}
+      />
       {children}
     </div>
   );
