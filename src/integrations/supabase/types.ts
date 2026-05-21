@@ -914,7 +914,8 @@ export type Database = {
         Row: {
           created_at: string
           empreendimento_origem: string | null
-          lead_id: string
+          id: string
+          lead_id: string | null
           lote: number
           nome: string | null
           onda: number
@@ -925,7 +926,8 @@ export type Database = {
         Insert: {
           created_at?: string
           empreendimento_origem?: string | null
-          lead_id: string
+          id?: string
+          lead_id?: string | null
           lote?: number
           nome?: string | null
           onda: number
@@ -936,7 +938,8 @@ export type Database = {
         Update: {
           created_at?: string
           empreendimento_origem?: string | null
-          lead_id?: string
+          id?: string
+          lead_id?: string | null
           lote?: number
           nome?: string | null
           onda?: number
@@ -948,7 +951,7 @@ export type Database = {
           {
             foreignKeyName: "campanha_atrio_audiencia_lead_id_fkey"
             columns: ["lead_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
@@ -1000,7 +1003,7 @@ export type Database = {
           empreendimento_origem: string | null
           enviado_em: string
           id: string
-          lead_id: string
+          lead_id: string | null
           mensagem_id_meta: string | null
           nome: string | null
           onda: number
@@ -1013,7 +1016,7 @@ export type Database = {
           empreendimento_origem?: string | null
           enviado_em?: string
           id?: string
-          lead_id: string
+          lead_id?: string | null
           mensagem_id_meta?: string | null
           nome?: string | null
           onda: number
@@ -1026,7 +1029,7 @@ export type Database = {
           empreendimento_origem?: string | null
           enviado_em?: string
           id?: string
-          lead_id?: string
+          lead_id?: string | null
           mensagem_id_meta?: string | null
           nome?: string | null
           onda?: number
