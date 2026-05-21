@@ -99,7 +99,34 @@ export function useAtrioAudienciaCount() {
 
 async function invokeFn(name: string, body: any = {}) {
   const { data, error } = await supabase.functions.invoke(name, { body });
-  if (error) throw error;
+
+  if (error) {
+    const response = (error as { context?: Response }).context;
+
+    if (response instanceof Response) {
+      let message = error.message;
+
+      try {
+        const cloned = response.clone();
+        const contentType = cloned.headers.get("content-type") || "";
+
+        if (contentType.includes("application/json")) {
+          const json = await cloned.json();
+          message = json?.error || json?.message || message;
+        } else {
+          const text = await cloned.text();
+          if (text) message = text;
+        }
+      } catch {
+        // mantém mensagem original do SDK
+      }
+
+      throw new Error(message);
+    }
+
+    throw error;
+  }
+
   return data;
 }
 
