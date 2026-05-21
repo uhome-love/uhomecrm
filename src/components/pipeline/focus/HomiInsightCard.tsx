@@ -100,7 +100,7 @@ export default function HomiInsightCard({ insight, loading, onGenerate, onRegene
   return (
     <div className="rounded-xl p-3.5 space-y-2" style={wrapperStyle}>
       {Header}
-      <p className="text-foreground/90 text-xs leading-relaxed">{insight}</p>
+      <p className="text-foreground text-xs leading-relaxed">{insight}</p>
       <button
         type="button"
         onClick={() => setConfirmingRegenerate(true)}
