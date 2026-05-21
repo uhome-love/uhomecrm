@@ -20,6 +20,7 @@ export default function PendingLeadsPanel() {
         .from("pipeline_leads")
         .select("id, nome, telefone, empreendimento, origem, prioridade_lead, created_at, observacoes, reativado_por_nutricao")
         .eq("aceite_status", "pendente_distribuicao")
+        .eq("arquivado", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
