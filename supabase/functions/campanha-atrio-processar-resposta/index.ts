@@ -129,8 +129,22 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Recategoriza o lead para "Átrio - ABF" antes da roleta.
+    // Assim distribuir_lead_atomico casa com roleta_campanhas → S5 - Produto Foco.
+    async function recategorizarParaAtrio(leadId: string) {
+      const { error } = await supabase.from("pipeline_leads").update({
+        empreendimento: "Átrio - ABF",
+      }).eq("id", leadId);
+      if (error) {
+        console.error(`❌ Falha ao recategorizar lead ${leadId} para Átrio:`, error);
+      } else {
+        console.log(`🏷️ Lead ${leadId} recategorizado para Átrio - ABF`);
+      }
+    }
+
     if (tipo === "sim") {
-      // Roleta — todos corretores ativos, sem segmento
+      // Recategoriza para Átrio + libera vínculo antigo → roleta vai para S5 (Produto Foco)
+      await recategorizarParaAtrio(evento.lead_id);
       await liberarVinculoSeDescarte(evento.lead_id);
       const traceId = `atrio_${respIns.id}`;
       const dist = await distributeLeadDirect(SUPABASE_URL, SERVICE_KEY, evento.lead_id, traceId, console as any);
@@ -183,7 +197,8 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ ok: true, tipo });
     }
 
-    // texto livre → vai para roleta também (sinaliza interesse manual)
+    // texto livre → recategoriza + roleta (S5 Produto Foco)
+    await recategorizarParaAtrio(evento.lead_id);
     await liberarVinculoSeDescarte(evento.lead_id);
     const traceId = `atrio_tl_${respIns.id}`;
     const dist = await distributeLeadDirect(SUPABASE_URL, SERVICE_KEY, evento.lead_id, traceId, console as any);
