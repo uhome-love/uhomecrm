@@ -52,7 +52,7 @@ export default function PendingTasksCard({ tasks, onComplete, onCreateNew }: Pro
                 }}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-200 truncate">{t.titulo}</p>
+                  <p className="text-xs text-foreground truncate">{t.titulo}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     {isOverdue ? (
                       <Badge className="text-[9px] border-0 px-1.5 py-0" style={{ background: "rgba(239,68,68,0.2)", color: "#f87171" }}>
