@@ -121,9 +121,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const shouldHideLeadFromPipeline = useCallback((lead: Partial<PipelineLead> | null | undefined) => {
     if (!lead) return false;
 
-    const motivo = (lead.motivo_descarte || "").trim().toLowerCase();
-    if (motivo.startsWith("inativado:") || motivo.startsWith("descarte:")) return true;
-
+    // Esconder APENAS se o lead estiver realmente em etapa de descarte.
+    // NÃO esconder por texto antigo em motivo_descarte — leads reengajados
+    // (ex: Átrio) voltam para "Novo Lead" mas mantêm o motivo histórico,
+    // e isso fazia eles sumirem do pipeline mesmo já reativos.
     if (lead.stage_id && discardStageIds.has(lead.stage_id)) return true;
 
     return false;

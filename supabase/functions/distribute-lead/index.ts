@@ -210,6 +210,11 @@ async function distributeViaRPC(
     aceite_status: "aguardando_aceite",
     distribuido_em: notifiedAt.toISOString(),
     aceite_expira_em: expireAt.toISOString(),
+    // Saneamento: lead reengajado/redistribuído NÃO pode entrar com flag
+    // antiga de descarte/inativado. Sem isso, a UI escondia o lead mesmo
+    // já estando em Novo Lead.
+    motivo_descarte: null,
+    arquivado: false,
   };
   if (novoLeadStageId) updatePayload.stage_id = novoLeadStageId;
 
