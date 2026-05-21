@@ -115,7 +115,7 @@ Deno.serve(async (req: Request) => {
       const { data: controle } = await supabase
         .from("campanha_atrio_controle")
         .select("onda, status");
-      const started = (controle || []).some((c:any) => c.status && c.status !== "pending");
+      const started = (controle || []).some((c:any) => !["pending","aguardando"].includes(c.status));
       if (started) return errorResponse("Não posso regenerar: alguma onda já iniciou.", 409);
       const { error: delErr } = await supabase.from("campanha_atrio_audiencia").delete().neq("lead_id", "00000000-0000-0000-0000-000000000000");
       if (delErr) throw delErr;
