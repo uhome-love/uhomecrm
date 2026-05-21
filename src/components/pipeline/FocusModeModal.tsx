@@ -639,14 +639,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     if (t) {
                       setCompletingOverdue({ id: t.id, titulo: t.titulo });
                     } else {
-                      setTab("task");
-                      setTaskTitle(`Follow-up: ${currentLead.name}`);
+                      // Sem tarefa pendente — abre TaskCompletionDialog com ID sintético.
+                      // handleCompleteOverdueTask trata 'no-task' pulando o UPDATE de pipeline_tarefas.
+                      setCompletingOverdue({ id: "no-task", titulo: "Registrar contato e agendar próximo passo" });
                     }
                   }}
                   onCreateNewTask={() => {
-                    setTab("task");
-                    setTaskTitle(`Follow-up: ${currentLead.name}`);
+                    setCompletingOverdue({ id: "no-task", titulo: "Registrar contato e agendar próximo passo" });
                   }}
+
                   panelChildren={
                     <div className="space-y-3">
 
@@ -730,22 +731,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     </div>
                   )}
 
-                  {/* Advance to next lead button */}
+                  {/* Avançar para próximo lead — sempre destacado (Sprint 1 Mudança 4) */}
                   <button
                     onClick={goToNext}
-                    className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-lg transition-colors"
-                    style={{
-                      background: (activityRegistered || taskCreated) ? "linear-gradient(135deg, #4969FF, #7C3AED)" : "transparent",
-                      color: (activityRegistered || taskCreated) ? "#fff" : "#6b7280",
-                      fontWeight: (activityRegistered || taskCreated) ? 600 : 400,
-                    }}
+                    className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-lg transition-colors font-semibold text-white"
+                    style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}
                   >
-                    {(activityRegistered || taskCreated) ? (
-                      <>Avançar para próximo lead <ChevronRight className="w-3.5 h-3.5" /></>
-                    ) : (
-                      "Pular sem ação →"
-                    )}
+                    Avançar para próximo lead <ChevronRight className="w-3.5 h-3.5" />
                   </button>
+
                     </div>
                   }
                 />
