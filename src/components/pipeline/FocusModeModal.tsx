@@ -330,76 +330,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, [currentIndex, resetActionState]);
 
-  const handleRegisterActivity = useCallback(async (type: "ligacao" | "mensagem" | "nota") => {
-    if (!currentLead || !corretorId) return;
-    const note = type === "mensagem" ? followUpText : activityNote;
-    if (!note.trim()) {
-      toast.error("Preencha a anotação antes de registrar.");
-      return;
-    }
+  // handleRegisterActivity / handleCreateTask / handleOpenWhatsApp / handleCopyPhone
+  // removidos em Sprint 1 Mudança 4 — fluxo migrou para top strip + TaskCompletionDialog + ScriptsCard.
 
-    setSaving(true);
-    try {
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: currentLead.id,
-        created_by: corretorId,
-        tipo: type,
-        titulo: type === "ligacao" ? "Ligação registrada" : type === "mensagem" ? "Follow-up enviado" : "Anotação",
-        descricao: note,
-        status: "concluida",
-        prioridade: "normal",
-      });
-
-      await supabase
-        .from("pipeline_leads")
-        .update({ ultima_acao_at: new Date().toISOString() })
-        .eq("id", currentLead.id);
-
-      toast.success("Atividade registrada! ✅");
-      setActivityRegistered(true);
-      setWorkedCount((c) => c + 1);
-      setTimelineRefreshKey((k) => k + 1);
-      // Invalida cache do insight: nova atividade muda o contexto que Gemini analisa.
-      insightCacheRef.current.delete(currentLead.id);
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao registrar atividade.");
-    } finally {
-      setSaving(false);
-    }
-  }, [currentLead, corretorId, followUpText, activityNote]);
-
-  const handleCreateTask = useCallback(async () => {
-    if (!currentLead || !corretorId) return;
-    if (!taskTitle.trim()) {
-      toast.error("Preencha o título da tarefa.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await supabase.from("pipeline_tarefas").insert({
-        pipeline_lead_id: currentLead.id,
-        created_by: corretorId,
-        titulo: taskTitle,
-        tipo: taskType,
-        vence_em: taskDueDate,
-        status: "pendente",
-        prioridade: "normal",
-      });
-
-      toast.success("Tarefa criada! ✅");
-      setTaskCreated(true);
-      setTaskTitle("");
-      setTasksRefreshKey(k => k + 1);
-      setTimelineRefreshKey(k => k + 1);
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao criar tarefa.");
-    } finally {
-      setSaving(false);
-    }
-  }, [currentLead, corretorId, taskTitle, taskType, taskDueDate]);
 
   const handleCompleteOverdueTask = useCallback(async (
     payload: import("./task-completion/types").CompletionPayload
@@ -515,24 +448,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, [completingOverdue, currentLead, corretorId, goToNext, queryClient]);
 
-  const handleOpenWhatsApp = useCallback(() => {
-    if (!currentLead?.phone) return;
-    const phone = currentLead.phone.replace(/\D/g, "");
-    const fullPhone = phone.length <= 11 ? `55${phone}` : phone;
-    const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(followUpText)}`;
-    window.open(url, "_blank");
-  }, [currentLead, followUpText]);
+  // handleOpenWhatsApp e handleCopyPhone removidos — top strip do LeadFocusScreen
+  // já tem implementações inline (window.open wa.me + Popover copia telefone).
 
-  const handleCopyPhone = useCallback(async (phone: string) => {
-    try {
-      await navigator.clipboard.writeText(phone);
-      setPhoneCopied(true);
-      toast.success("Telefone copiado!");
-      setTimeout(() => setPhoneCopied(false), 3000);
-    } catch {
-      toast.error("Erro ao copiar.");
-    }
-  }, []);
 
   const DISCARD_REASONS = [
     "Sem interesse", "Não atende / não responde", "Comprou com concorrente",
