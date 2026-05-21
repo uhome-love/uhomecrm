@@ -30,21 +30,10 @@ interface FocusModeModalProps {
   pipelineTipo?: "leads" | "negocios";
 }
 
-const TASK_TYPES = [
-  { value: "ligar", label: "📞 Ligação" },
-  { value: "whatsapp", label: "💬 WhatsApp" },
-  { value: "marcar_visita", label: "🏠 Visita" },
-  { value: "enviar_material", label: "📧 Enviar material" },
-  { value: "follow_up", label: "📋 Follow-up" },
-  { value: "outro", label: "📌 Outro" },
-];
+// TASK_TYPES e QUICK_MESSAGES removidos (Sprint 1 Mudança 4) — fluxo de criação
+// de tarefa migrou para TaskCompletionDialog (R3-V2) e scripts agora vivem
+// em ScriptsCard (focus/scriptsByStage.ts).
 
-const QUICK_MESSAGES = [
-  { label: "Primeiro contato", text: (name: string, interest: string) => `Olá ${name}! Tudo bem? Aqui é da Uhome Imóveis. Vi que você se interessou pelo ${interest || "nosso empreendimento"}. Posso te ajudar com mais informações?` },
-  { label: "Retomar contato", text: (name: string, interest: string) => `Oi ${name}! Faz um tempinho que conversamos sobre o ${interest || "imóvel"}. Surgiu alguma novidade? Estou à disposição para te ajudar!` },
-  { label: "Agendar visita", text: (name: string, interest: string) => `${name}, que tal conhecer pessoalmente o ${interest || "empreendimento"}? Posso agendar uma visita no melhor horário pra você. Qual dia seria bom?` },
-  { label: "Condições especiais", text: (name: string, interest: string) => `Oi ${name}! Temos condições especiais para o ${interest || "empreendimento"} essa semana. Quer que eu te mande os detalhes? 😊` },
-];
 
 type CriteriaType = FocusCriteria;
 // CRITERIA_OPTIONS movido para FocusConfigScreen (Sprint 1 R1).
@@ -74,34 +63,22 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [homiInsight, setHomiInsight] = useState("");
-  const [followUpText, setFollowUpText] = useState("");
   const [homiLoading, setHomiLoading] = useState(false);
 
   // Cache de HOMI Insight por sessão: leadId → { insight, mensagem, at }
-  // Evita re-chamar Gemini quando o corretor volta ao mesmo lead (botão "anterior").
+  // (mensagem fica no cache para futura reutilização, mas não é mais renderizada
+  // — bloco Tabs/Follow Up removido em Sprint 1 Mudança 4.)
   const insightCacheRef = useRef<Map<string, { insight: string; mensagem: string; at: number }>>(new Map());
   const INSIGHT_TTL_MS = 4 * 60 * 60 * 1000; // 4h
   // Telemetria: session_id correlaciona opened → advance(s) → closed da mesma jornada.
   const focusSessionIdRef = useRef<string | null>(null);
   const advanceCountRef = useRef<number>(0);
-  // Pending ctx do opened — emitido via useEffect quando reload terminar e leads.length refletir a fila real.
   const pendingOpenedCtxRef = useRef<Record<string, unknown> | null>(null);
-  // Rastreia transição loading true→false para garantir que o evento `opened` só é emitido
-  // após o reload realmente rodar (não no frame imediato em que configPhase muda).
   const reloadInFlightRef = useRef<boolean>(false);
-  const [activityNote, setActivityNote] = useState("");
-  const [tab, setTab] = useState("followup");
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [direction, setDirection] = useState(1);
-  const [activityRegistered, setActivityRegistered] = useState(false);
-  const [phoneCopied, setPhoneCopied] = useState(false);
 
-  // Task creation state
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskType, setTaskType] = useState("ligar");
-  const [taskDueDate, setTaskDueDate] = useState(format(addDays(new Date(), 1), "yyyy-MM-dd"));
-  const [taskCreated, setTaskCreated] = useState(false);
 
   // Overdue task completion dialog
   const [completingOverdue, setCompletingOverdue] = useState<{ id: string; titulo: string } | null>(null);
