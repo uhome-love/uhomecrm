@@ -151,9 +151,9 @@ Deno.serve(async (req: Request) => {
 
   // Resposta imediata + processamento em background
   const bgRun = async () => {
-    let enviados = 0, erros = 0, processados = 0;
+    let enviados = ctrl.total_enviado || 0, erros = ctrl.total_erros || 0, processados = 0;
     const hoje = new Date().toISOString().slice(0,10);
-    for (const lead of audiencia) {
+    for (const lead of lote) {
       // Re-checa kill switch a cada iteração
       const { data: f } = await supabase.from("system_flags").select("flag_value").eq("flag_name","campanha_atrio_enabled").maybeSingle();
       if (!f?.flag_value) {
@@ -225,16 +225,32 @@ Deno.serve(async (req: Request) => {
       }
 
       // Update contadores a cada 10
-      if (processados % 10 === 0) {
-        await supabase.from("campanha_atrio_controle").update({
-          total_enviado: enviados, total_erros: erros,
-        }).eq("onda", onda);
+      if (processados % CONTROL_SYNC_EVERY === 0) {
+        const synced = await syncControleTotals(supabase, onda);
+        enviados = synced.enviados;
+        erros = synced.erros;
       }
 
       await sleep(CADENCIA_MS);
     }
 
-    // Concluído
+    const synced = await syncControleTotals(supabase, onda);
+    enviados = synced.enviados;
+    erros = synced.erros;
+
+    if (synced.pendentes > 0) {
+      console.log(`🔁 Onda ${onda} continuará em novo lote: ${synced.pendentes} pendentes`);
+      await fetch(`${SUPABASE_URL}/functions/v1/campanha-atrio-iniciar-onda`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ onda, continuation: true, force: true }),
+      });
+      return;
+    }
+
     await supabase.from("campanha_atrio_controle").update({
       status: "concluida", concluida_em: new Date().toISOString(),
       total_enviado: enviados, total_erros: erros,
@@ -247,5 +263,5 @@ Deno.serve(async (req: Request) => {
   const waitUntil = (globalThis as any).EdgeRuntime?.waitUntil;
   if (typeof waitUntil === "function") waitUntil(bgRun()); else bgRun();
 
-  return jsonResponse({ ok: true, onda, total_a_processar: audiencia.length, message: "Onda iniciada em background." });
+  return jsonResponse({ ok: true, onda, total_a_processar: lote.length, pendentes_restantes: Math.max(audiencia.length - lote.length, 0), message: continuation ? "Onda retomada em background." : "Onda iniciada em background." });
 });
