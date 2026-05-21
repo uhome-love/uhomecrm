@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
     if (wamid) {
       const { data } = await supabase
         .from("campanha_atrio_eventos")
-        .select("id, lead_id, telefone, nome, onda")
+        .select("id, lead_id, telefone, nome, onda, empreendimento_origem")
         .eq("mensagem_id_meta", wamid).maybeSingle();
       if (data) evento = data;
     }
@@ -74,7 +74,7 @@ Deno.serve(async (req: Request) => {
         const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data } = await supabase
           .from("campanha_atrio_eventos")
-          .select("id, lead_id, telefone, nome, onda")
+          .select("id, lead_id, telefone, nome, onda, empreendimento_origem")
           .eq("status_envio", "sucesso").gte("enviado_em", cutoff)
           .ilike("telefone", `%${last8}`)
           .order("enviado_em", { ascending: false }).limit(1).maybeSingle();
@@ -84,6 +84,50 @@ Deno.serve(async (req: Request) => {
     if (!evento) {
       return jsonResponse({ ok: false, reason: "no_event_match" }, 200);
     }
+
+    // 1b) Lote 2+: se o disparo não tinha pipeline_lead, criar agora.
+    //     Reaproveita lead já existente com o mesmo telefone (qualquer estado).
+    if (!evento.lead_id) {
+      const { data: existente } = await supabase
+        .from("pipeline_leads")
+        .select("id")
+        .eq("telefone_normalizado", evento.telefone)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let novoLeadId: string | null = existente?.id || null;
+      if (!novoLeadId) {
+        const { data: stage } = await supabase
+          .from("pipeline_stages").select("id").eq("nome", "Sem Contato").maybeSingle();
+        const stageId = stage?.id || null;
+        const { data: ins, error: insErr } = await supabase
+          .from("pipeline_leads")
+          .insert({
+            nome: evento.nome || "Cliente",
+            telefone: evento.telefone,
+            telefone_normalizado: evento.telefone,
+            empreendimento: evento.empreendimento_origem || "Átrio - ABF",
+            stage_id: stageId,
+            origem: "campanha_atrio",
+            arquivado: false,
+            aceite_status: "pendente",
+            reativado_por_nutricao: true,
+            reativado_em: new Date().toISOString(),
+          })
+          .select("id").single();
+        if (insErr) {
+          console.error("erro criando pipeline_lead da resposta Átrio", insErr);
+          throw insErr;
+        }
+        novoLeadId = ins.id;
+      }
+
+      evento.lead_id = novoLeadId;
+      // Vincula o evento ao lead recém-criado/reaproveitado
+      await supabase.from("campanha_atrio_eventos").update({ lead_id: novoLeadId }).eq("id", evento.id);
+    }
+
 
     // 2) Dedup por wamid_origem
     if (wamid) {

@@ -1,70 +1,46 @@
-## Status
 
-**Fix 3 já está executado** (confirmado nesta rodada e nas anteriores). Estado atual do Modo Foco:
+## Diagnóstico
 
-- Painel esquerdo: só **"Descartar Lead"** (compacto, vermelho) — Avançar Etapa foi removido em R3.7 (fluxo migrou para TaskCompletionDialog Tela 2). Avançar próximo lead foi consolidado no top strip.
-- Top strip linha 2: **Concluir tarefa** (CTA gradient) · **Ligar** (popover) · **WhatsApp** (verde) · **Próximo →** (discreto, `bg-white/10 border-white/20`).
-- Cenário (a) confirmado, não (b). Não há lógica por lead que esconda Avançar Etapa — ele simplesmente não existe mais.
+O Lote 2 do disparo Átrio criou **998 `pipeline_leads`** hoje (todos `arquivado=true`, `origem=oferta_ativa`, `motivo_descarte=oferta_ativa_atrio_lote2`). Eles entram no filtro `isOfertaAtiva(origem)` do `useCeoDashboard.ts` e por isso o card **Reaproveitados (OA)** mostra **1014** (16 reais + 998 do disparo).
 
-Logo, **passos 1-3 do roteiro já estão prontos**. Resta apenas o item 3 ADICIONAL (loading polido).
+O comportamento correto que você definiu:
+- Fonte do disparo = `oferta_ativa_leads` (telefone + nome) — **não toca em `pipeline_leads`**
+- Lead só vira `pipeline_lead` (e vai para roleta como reengajamento) **quando responde** ao template
+- Lote 1 (já enviado) permanece intacto
 
----
+## Mudanças
 
-## Plano — Loading Skeleton
+### 1. Migration (DDL + cleanup)
+- `ALTER TABLE campanha_atrio_audiencia ALTER COLUMN lead_id DROP NOT NULL`
+- `ALTER TABLE campanha_atrio_eventos ALTER COLUMN lead_id DROP NOT NULL`
+- Apagar audiência do lote 2 (`DELETE FROM campanha_atrio_audiencia WHERE lote=2`) — nenhuma onda do lote 2 começou
+- Apagar os 998 `pipeline_leads` do lote 2 (e dependências FK: `pipeline_atividades`, `campanha_atrio_eventos`, `campanha_atrio_respostas`, `campaign_clicks` se existirem) via `WHERE motivo_descarte='oferta_ativa_atrio_lote2'`
+- Resetar `total_alvo=0` nas ondas 4/5/6
 
-### Arquivos
+### 2. `campanha-atrio-preparar-lote2`
+- Remover toda a criação de `pipeline_leads`
+- Manter: dedup por telefone, exclusão de telefones em **stage ativo** do pipeline, exclusão de quem já está em qualquer audiência Átrio (lote 1 ou 2)
+- Inserir audiência só com `telefone_normalizado`, `nome`, `empreendimento_origem`, `onda`, `lote`, `ordem`, `status='pending'`, `lead_id=NULL`
 
-1. **Novo:** `src/components/pipeline/focus/FocusLoadingSkeleton.tsx`
-2. **Editar:** `src/components/pipeline/FocusModeModal.tsx` (linhas 584-588)
+### 3. `campanha-atrio-iniciar-onda`
+- Identificar linhas da audiência por `(onda, telefone_normalizado)` (lead_id pode ser NULL)
+- Inserir evento mesmo sem `lead_id`
+- **Pular** os updates em `pipeline_leads` (reengajamento_status) e o insert em `pipeline_atividades` quando `lead_id` for NULL
+- Lote 1 (com `lead_id` preenchido) continua marcando o lead
 
-### `FocusLoadingSkeleton.tsx`
+### 4. `campanha-atrio-processar-resposta`
+Quando o evento for de lote 2 (sem `lead_id`):
+- **Criar `pipeline_lead`** no momento da resposta: `origem='campanha_atrio'`, `empreendimento='Átrio - ABF'`, `stage_id=Sem Contato`, `arquivado=false`, `aceite_status='pendente'`, `reativado_por_nutricao=true`, `reativado_em=now()`, com `telefone`/`nome` vindos do evento
+- Vincular `campanha_atrio_eventos.lead_id` e `campanha_atrio_respostas.lead_id` ao recém-criado
+- Seguir o fluxo atual: distribuir via roleta (S5 Produto Foco), `campaign_clicks`, `pipeline_atividades`
 
-Componente sem props que reproduz o layout real do `LeadFocusScreen` em skeletons pulsantes:
+Quando lote 1 (com `lead_id`): fluxo atual sem mudanças.
 
-- **Top strip** (rounded-2xl com mesmo gradient sutil indigo/violet):
-  - bloco "Trabalhados" (avatar redondo + 2 linhas)
-  - divider
-  - bloco "Próxima ação" (label + linha de título)
-  - linha 2: 4 retângulos de altura `h-12` (CTA largo + 3 botões fixos) simulando Concluir / Ligar / WhatsApp / Próximo
-- **Grid 3/7** abaixo:
-  - **Coluna esquerda (lg:col-span-3):** card único `rounded-2xl` com 4 sub-blocos pulsantes empilhados (LeadHeader, HomiInsight, PendingTasks, Scripts)
-  - **Coluna direita (lg:col-span-7):** card `rounded-2xl` com header (título + subtítulo) + 5-6 linhas de "evento" (avatar circular + 2 linhas de texto), respeitando contraste do escopo `dark`
-- Usa `animate-pulse` do Tailwind, cores `bg-white/5` / `bg-white/10` para casar com fundo dark do modal
-- Mesmas dimensões/spacing do conteúdo real → zero "jump" quando dados chegam
-- Tokens semânticos (sem hex direto), comentário no topo registrando regra de contraste do Modo Foco
+### 5. Frontend
+Nenhuma alteração necessária. Com os 998 leads apagados, o card **Reaproveitados (OA)** volta a refletir só OA real, e o card **Reengajamento** passará a refletir apenas leads que efetivamente responderam ao disparo.
 
-### Edit em `FocusModeModal.tsx` (linhas 584-588)
-
-Trocar:
-```tsx
-) : loading ? (
-  <div className="flex flex-col items-center justify-center h-full gap-3">
-    <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
-    <span className="text-gray-400 text-sm">Buscando leads que precisam de atenção...</span>
-  </div>
-```
-
-Por:
-```tsx
-) : loading ? (
-  <FocusLoadingSkeleton />
-```
-
-Header (linhas ~540-570: contador "Modo Foco N/M" + progress bar) **fica como está** — já renderiza antes do bloco condicional, então aparece imediatamente. ✅ Atende item C.
-
-Texto "Preparando sua sessão de foco..." (item B) entra como subtítulo discreto **opcional** no topo do skeleton (`text-xs text-foreground/60`), ou removido — opto por incluir uma única vez acima do top strip skeleton para manter contexto sem ruído.
-
-### Preservado intacto
-
-- `useFocusLeads`, telemetria `focus_mode_opened`, cache HOMI, BRT, escopo `dark` do `DialogContent`, todos os 4 fixes cirúrgicos de contraste, fluxo Descartar inline, TaskCompletionDialog.
-
-### Validação
-
-- Abrir Modo Foco → confirmar skeleton aparece imediatamente com mesma estrutura do conteúdo final
-- Confirmar transição suave (sem flash branco/jump de layout)
-- Screenshot do skeleton + screenshot do estado carregado para comparação
-
-### Estimativa
-~30-40 min (componente novo enxuto + 1 edit pontual).
-
-Aguardando OK para executar.
+## Resultado
+- Dashboard limpo (998 inflados removidos hoje)
+- Disparo Átrio (lote 2 em diante) usa OA como fonte sem poluir o pipeline
+- Pipeline só ganha um lead novo quando há reengajamento real → entra na roleta com origem `campanha_atrio`
+- Lote 1 não é afetado

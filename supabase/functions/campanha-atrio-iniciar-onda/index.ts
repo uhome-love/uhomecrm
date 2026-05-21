@@ -132,11 +132,11 @@ Deno.serve(async (req: Request) => {
   // 3) Guard de volume
   if ((ctrl.total_alvo || 0) > VOLUME_GUARD) return errorResponse(`volume ${ctrl.total_alvo} > ${VOLUME_GUARD}`, 400);
 
-  // 4) Buscar audiência pending
+  // 4) Buscar audiência pending (filtra pelo lote da onda — chave composta)
   const { data: audiencia, error: audErr } = await supabase
     .from("campanha_atrio_audiencia")
-    .select("lead_id, nome, telefone_normalizado, empreendimento_origem, ordem")
-    .eq("onda", onda).eq("status", "pending").order("ordem");
+    .select("lead_id, nome, telefone_normalizado, empreendimento_origem, ordem, lote")
+    .eq("onda", onda).eq("lote", loteAtual).eq("status", "pending").order("ordem");
   if (audErr) return errorResponse(audErr.message, 500);
   if (!audiencia || audiencia.length === 0) {
     const synced = await syncControleTotals(supabase, onda);
@@ -185,18 +185,25 @@ Deno.serve(async (req: Request) => {
           onda, empreendimento_origem: lead.empreendimento_origem,
           status_envio: "sucesso", mensagem_id_meta: res.wamid,
         });
-        await supabase.from("campanha_atrio_audiencia").update({ status: "sent" }).eq("lead_id", lead.lead_id);
-        // Marca lead como reengajado pela campanha Átrio
-        await supabase.from("pipeline_leads").update({
-          reengajamento_status: "enviado",
-          reengajamento_enviado_at: new Date().toISOString(),
-        }).eq("id", lead.lead_id);
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: lead.lead_id, tipo: "campanha_atrio",
-          titulo: `Disparo Átrio — Onda ${onda}`,
-          descricao: `Template ${TEMPLATE_NAME} enviado. Lead marcado como reengajado (campanha_atrio).`,
-          data: hoje, status: "concluida",
-        });
+        // Update audiência pela chave composta (lead_id pode ser NULL no Lote 2+)
+        await supabase.from("campanha_atrio_audiencia")
+          .update({ status: "sent" })
+          .eq("lote", lead.lote).eq("onda", onda).eq("telefone_normalizado", lead.telefone_normalizado);
+
+        // Só toca em pipeline_leads se o lead já existe (Lote 1).
+        // No Lote 2+ o pipeline_lead nasce só quando o cliente responde.
+        if (lead.lead_id) {
+          await supabase.from("pipeline_leads").update({
+            reengajamento_status: "enviado",
+            reengajamento_enviado_at: new Date().toISOString(),
+          }).eq("id", lead.lead_id);
+          await supabase.from("pipeline_atividades").insert({
+            pipeline_lead_id: lead.lead_id, tipo: "campanha_atrio",
+            titulo: `Disparo Átrio — Onda ${onda}`,
+            descricao: `Template ${TEMPLATE_NAME} enviado. Lead marcado como reengajado (campanha_atrio).`,
+            data: hoje, status: "concluida",
+          });
+        }
 
       } else {
         erros++;
@@ -205,7 +212,9 @@ Deno.serve(async (req: Request) => {
           onda, empreendimento_origem: lead.empreendimento_origem,
           status_envio: "erro", codigo_erro_meta: res.code, detalhe_erro: res.detail?.slice(0, 500),
         });
-        await supabase.from("campanha_atrio_audiencia").update({ status: "failed" }).eq("lead_id", lead.lead_id);
+        await supabase.from("campanha_atrio_audiencia")
+          .update({ status: "failed" })
+          .eq("lote", lead.lote).eq("onda", onda).eq("telefone_normalizado", lead.telefone_normalizado);
 
         // Códigos fatais Meta → pausa imediata
         if (["132016","131056","131057"].includes(res.code || "")) {
