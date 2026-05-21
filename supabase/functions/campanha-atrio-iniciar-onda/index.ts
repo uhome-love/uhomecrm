@@ -132,11 +132,11 @@ Deno.serve(async (req: Request) => {
   // 3) Guard de volume
   if ((ctrl.total_alvo || 0) > VOLUME_GUARD) return errorResponse(`volume ${ctrl.total_alvo} > ${VOLUME_GUARD}`, 400);
 
-  // 4) Buscar audiência pending
+  // 4) Buscar audiência pending (filtra pelo lote da onda — chave composta)
   const { data: audiencia, error: audErr } = await supabase
     .from("campanha_atrio_audiencia")
-    .select("lead_id, nome, telefone_normalizado, empreendimento_origem, ordem")
-    .eq("onda", onda).eq("status", "pending").order("ordem");
+    .select("lead_id, nome, telefone_normalizado, empreendimento_origem, ordem, lote")
+    .eq("onda", onda).eq("lote", loteAtual).eq("status", "pending").order("ordem");
   if (audErr) return errorResponse(audErr.message, 500);
   if (!audiencia || audiencia.length === 0) {
     const synced = await syncControleTotals(supabase, onda);
