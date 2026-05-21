@@ -187,6 +187,8 @@ export default function LeadFocusScreen({
             lead={lead}
             homiLoading={homiLoading}
             homiInsight={homiInsight}
+            onGenerateInsight={onGenerateInsight}
+            onRegenerateInsight={onRegenerateInsight}
             pendingTasks={pendingTasks}
             onCompleteTask={onCompleteTask}
             onCreateNewTask={onCreateNewTask}
