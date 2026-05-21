@@ -915,6 +915,7 @@ export type Database = {
           created_at: string
           empreendimento_origem: string | null
           lead_id: string
+          lote: number
           nome: string | null
           onda: number
           ordem: number
@@ -925,6 +926,7 @@ export type Database = {
           created_at?: string
           empreendimento_origem?: string | null
           lead_id: string
+          lote?: number
           nome?: string | null
           onda: number
           ordem: number
@@ -935,6 +937,7 @@ export type Database = {
           created_at?: string
           empreendimento_origem?: string | null
           lead_id?: string
+          lote?: number
           nome?: string | null
           onda?: number
           ordem?: number
@@ -955,6 +958,7 @@ export type Database = {
         Row: {
           concluida_em: string | null
           iniciada_em: string | null
+          lote: number
           motivo_pausa: string | null
           onda: number
           pausada_em: string | null
@@ -966,6 +970,7 @@ export type Database = {
         Insert: {
           concluida_em?: string | null
           iniciada_em?: string | null
+          lote?: number
           motivo_pausa?: string | null
           onda: number
           pausada_em?: string | null
@@ -977,6 +982,7 @@ export type Database = {
         Update: {
           concluida_em?: string | null
           iniciada_em?: string | null
+          lote?: number
           motivo_pausa?: string | null
           onda?: number
           pausada_em?: string | null
