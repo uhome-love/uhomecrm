@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFocusLeads, type FocusLead, type FocusFilters, type FocusCriteria } from "@/hooks/useFocusLeads";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
-import { format, addDays } from "date-fns";
+// date-fns removido — format/addDays não são mais usados após Mudança 4.
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TaskCompletionDialog from "./TaskCompletionDialog";
