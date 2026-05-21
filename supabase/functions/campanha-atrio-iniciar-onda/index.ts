@@ -105,7 +105,9 @@ Deno.serve(async (req: Request) => {
         return;
       }
 
-      const res = await sendTemplate(lead.telefone_normalizado, lead.nome || "");
+      // Sanitização defensiva: remove " | Profissão" caso tenha escapado
+      const nomeLimpo = (lead.nome || "").split("|")[0].split("/")[0].split(" - ")[0].trim().slice(0, 60);
+      const res = await sendTemplate(lead.telefone_normalizado, nomeLimpo);
       processados++;
 
       if (res.ok) {
