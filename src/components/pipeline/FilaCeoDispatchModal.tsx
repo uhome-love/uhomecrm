@@ -131,6 +131,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
           .select("id, nome, empreendimento, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
           .is("corretor_id", null)
           .eq("aceite_status", "pendente_distribuicao")
+          .eq("arquivado", false)
           .order("created_at", { ascending: true })
           .limit(2000),
         supabase
