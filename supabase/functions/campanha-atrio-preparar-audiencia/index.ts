@@ -154,8 +154,8 @@ Deno.serve(async (req: Request) => {
     // 2) atividade recente
     const idsBatch = candidatos.map(c => c.id);
     const atividadeRecente = new Set<string>();
-    for (let i = 0; i < idsBatch.length; i += 500) {
-      const slice = idsBatch.slice(i, i + 500);
+    for (let i = 0; i < idsBatch.length; i += 100) {
+      const slice = idsBatch.slice(i, i + 100);
       const { data: ativs, error } = await supabase
         .from("pipeline_atividades")
         .select("pipeline_lead_id")
