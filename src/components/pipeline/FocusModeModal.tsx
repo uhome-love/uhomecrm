@@ -343,12 +343,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       const now = new Date().toISOString();
       const { tipo_contato, resultado, descricao, nova_tarefa, novo_stage_id } = payload;
 
-      // 1) Mark overdue task as concluida
-      await supabase.from("pipeline_tarefas").update({
-        status: "concluida",
-        concluida_em: now,
-        updated_at: now,
-      } as never).eq("id", completingOverdue.id);
+      // 1) Mark overdue task as concluida — pula quando id sintético ('no-task' = lead sem tarefa pendente)
+      if (completingOverdue.id !== "no-task") {
+        await supabase.from("pipeline_tarefas").update({
+          status: "concluida",
+          concluida_em: now,
+          updated_at: now,
+        } as never).eq("id", completingOverdue.id);
+      }
+
 
       // 2) Touch lead
       await supabase.from("pipeline_leads").update({
