@@ -10,8 +10,11 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const IMAGE_URL = `${SUPABASE_URL}/storage/v1/object/public/campaign-images/atrio/atrio_disparo_2026_05.jpg`;
 const PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID")!;
 const ACCESS_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN")!;
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VOLUME_GUARD = 500;
 const CADENCIA_MS = 5000;
+const MAX_BATCH_PER_RUN = 20;
+const CONTROL_SYNC_EVERY = 10;
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -41,20 +44,58 @@ async function sendTemplate(phone: string, nome: string) {
   return { ok: true, wamid: json?.messages?.[0]?.id || null };
 }
 
+async function authenticateRequest(req: Request) {
+  const authHeader = req.headers.get("Authorization") || "";
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+
+  if (bearerToken && bearerToken === SERVICE_ROLE_KEY) {
+    return { userId: null as string | null, isInternal: true, error: null as Response | null };
+  }
+
+  const auth = await requireAuth(req);
+  if (auth.error) {
+    return { userId: null as string | null, isInternal: false, error: auth.error };
+  }
+
+  return { userId: auth.userId, isInternal: false, error: null as Response | null };
+}
+
+async function syncControleTotals(supabase: ReturnType<typeof createClient>, onda: number) {
+  const [sentRes, failedRes, pendingRes] = await Promise.all([
+    supabase.from("campanha_atrio_audiencia").select("lead_id", { count: "exact", head: true }).eq("onda", onda).eq("status", "sent"),
+    supabase.from("campanha_atrio_audiencia").select("lead_id", { count: "exact", head: true }).eq("onda", onda).eq("status", "failed"),
+    supabase.from("campanha_atrio_audiencia").select("lead_id", { count: "exact", head: true }).eq("onda", onda).eq("status", "pending"),
+  ]);
+
+  const enviados = sentRes.count || 0;
+  const erros = failedRes.count || 0;
+  const pendentes = pendingRes.count || 0;
+
+  await supabase.from("campanha_atrio_controle").update({
+    total_enviado: enviados,
+    total_erros: erros,
+  }).eq("onda", onda);
+
+  return { enviados, erros, pendentes };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return handleCors();
 
-  const auth = await requireAuth(req);
+  const auth = await authenticateRequest(req);
   if (auth.error) return auth.error;
 
-  const supabase = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: auth.userId, _role: "admin" });
-  if (!isAdmin) return errorResponse("forbidden", 403);
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  if (!auth.isInternal) {
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: auth.userId, _role: "admin" });
+    if (!isAdmin) return errorResponse("forbidden", 403);
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch {}
   const onda = Number(body?.onda);
   if (![1,2,3].includes(onda)) return errorResponse("onda inválida (1, 2 ou 3)", 400);
+  const continuation = body?.continuation === true || auth.isInternal;
 
   // 1) Kill switch global
   const { data: flag } = await supabase
@@ -64,8 +105,12 @@ Deno.serve(async (req: Request) => {
   // 2) Validações de estado
   const { data: ctrl } = await supabase.from("campanha_atrio_controle").select("*").eq("onda", onda).maybeSingle();
   if (!ctrl) return errorResponse("onda não encontrada", 404);
-  if (ctrl.status !== "aguardando") return errorResponse(`onda ${onda} está ${ctrl.status}, não pode iniciar`, 409);
-  const force = body?.force === true;
+  const canStartFresh = ctrl.status === "aguardando";
+  const canContinueCurrentRun = continuation && ctrl.status === "em_curso";
+  if (!canStartFresh && !canContinueCurrentRun) {
+    return errorResponse(`onda ${onda} está ${ctrl.status}, não pode iniciar`, 409);
+  }
+  const force = body?.force === true || continuation;
   if (onda > 1) {
     const { data: prev } = await supabase.from("campanha_atrio_controle").select("*").eq("onda", onda - 1).maybeSingle();
     if (prev?.status !== "concluida") return errorResponse(`onda ${onda - 1} ainda não concluída`, 409);
@@ -84,18 +129,31 @@ Deno.serve(async (req: Request) => {
     .select("lead_id, nome, telefone_normalizado, empreendimento_origem, ordem")
     .eq("onda", onda).eq("status", "pending").order("ordem");
   if (audErr) return errorResponse(audErr.message, 500);
-  if (!audiencia || audiencia.length === 0) return errorResponse("nenhum lead pending nesta onda", 400);
+  if (!audiencia || audiencia.length === 0) {
+    const synced = await syncControleTotals(supabase, onda);
+    if (synced.pendentes === 0) {
+      await supabase.from("campanha_atrio_controle").update({
+        status: "concluida",
+        concluida_em: ctrl.concluida_em || new Date().toISOString(),
+        total_enviado: synced.enviados,
+        total_erros: synced.erros,
+      }).eq("onda", onda);
+      return jsonResponse({ ok: true, onda, total_a_processar: 0, message: "Onda já finalizada." });
+    }
+    return errorResponse("nenhum lead pending nesta onda", 400);
+  }
+  const lote = audiencia.slice(0, MAX_BATCH_PER_RUN);
 
   // 5) Marcar onda em curso
   await supabase.from("campanha_atrio_controle").update({
-    status: "em_curso", iniciada_em: new Date().toISOString(), pausada_em: null, motivo_pausa: null,
+    status: "em_curso", iniciada_em: ctrl.iniciada_em || new Date().toISOString(), pausada_em: null, motivo_pausa: null,
   }).eq("onda", onda);
 
   // Resposta imediata + processamento em background
   const bgRun = async () => {
-    let enviados = 0, erros = 0, processados = 0;
+    let enviados = ctrl.total_enviado || 0, erros = ctrl.total_erros || 0, processados = 0;
     const hoje = new Date().toISOString().slice(0,10);
-    for (const lead of audiencia) {
+    for (const lead of lote) {
       // Re-checa kill switch a cada iteração
       const { data: f } = await supabase.from("system_flags").select("flag_value").eq("flag_name","campanha_atrio_enabled").maybeSingle();
       if (!f?.flag_value) {
@@ -167,16 +225,32 @@ Deno.serve(async (req: Request) => {
       }
 
       // Update contadores a cada 10
-      if (processados % 10 === 0) {
-        await supabase.from("campanha_atrio_controle").update({
-          total_enviado: enviados, total_erros: erros,
-        }).eq("onda", onda);
+      if (processados % CONTROL_SYNC_EVERY === 0) {
+        const synced = await syncControleTotals(supabase, onda);
+        enviados = synced.enviados;
+        erros = synced.erros;
       }
 
       await sleep(CADENCIA_MS);
     }
 
-    // Concluído
+    const synced = await syncControleTotals(supabase, onda);
+    enviados = synced.enviados;
+    erros = synced.erros;
+
+    if (synced.pendentes > 0) {
+      console.log(`🔁 Onda ${onda} continuará em novo lote: ${synced.pendentes} pendentes`);
+      await fetch(`${SUPABASE_URL}/functions/v1/campanha-atrio-iniciar-onda`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ onda, continuation: true, force: true }),
+      });
+      return;
+    }
+
     await supabase.from("campanha_atrio_controle").update({
       status: "concluida", concluida_em: new Date().toISOString(),
       total_enviado: enviados, total_erros: erros,
@@ -189,5 +263,5 @@ Deno.serve(async (req: Request) => {
   const waitUntil = (globalThis as any).EdgeRuntime?.waitUntil;
   if (typeof waitUntil === "function") waitUntil(bgRun()); else bgRun();
 
-  return jsonResponse({ ok: true, onda, total_a_processar: audiencia.length, message: "Onda iniciada em background." });
+  return jsonResponse({ ok: true, onda, total_a_processar: lote.length, pendentes_restantes: Math.max(audiencia.length - lote.length, 0), message: continuation ? "Onda retomada em background." : "Onda iniciada em background." });
 });
