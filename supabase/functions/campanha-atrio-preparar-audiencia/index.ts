@@ -151,21 +151,9 @@ Deno.serve(async (req: Request) => {
       offset += pageSize;
     }
 
-    // 2) atividade recente
-    const idsBatch = candidatos.map(c => c.id);
-    const atividadeRecente = new Set<string>();
-    for (let i = 0; i < idsBatch.length; i += 100) {
-      const slice = idsBatch.slice(i, i + 100);
-      const { data: ativs, error } = await supabase
-        .from("pipeline_atividades")
-        .select("pipeline_lead_id")
-        .in("pipeline_lead_id", slice)
-        .gte("created_at", cutoffAtividade60d);
-      if (error) throw error;
-      (ativs || []).forEach((a:any) => atividadeRecente.add(a.pipeline_lead_id));
-    }
+    // (filtro de atividade removido — basta não estar em pipeline ativo)
 
-    // 3) OA hits por telefone
+
     const telefones = Array.from(new Set(candidatos.map(c => c.telefone_normalizado)));
     const oaHits = new Set<string>();
     for (let i = 0; i < telefones.length; i += 200) {
@@ -177,23 +165,19 @@ Deno.serve(async (req: Request) => {
       (oa || []).forEach((r:any) => r.telefone_normalizado && oaHits.add(r.telefone_normalizado));
     }
 
-    // 4) filtragem
+    // 4) filtragem — único critério: NÃO estar em pipeline ativo
     const seenTelefones = new Set<string>();
     const elegiveis: any[] = [];
     const motivos: Record<string, number> = {
-      atividade_60d: 0, pipeline_ativo: 0, sem_elegibilidade: 0, telefone_duplicado: 0,
+      pipeline_ativo: 0, telefone_duplicado: 0,
     };
     for (const c of candidatos) {
-      if (atividadeRecente.has(c.id)) { motivos.atividade_60d++; continue; }
       if (c.stage_id && activeStageIds.has(c.stage_id)) { motivos.pipeline_ativo++; continue; }
-      const stageOk = c.stage_id && eligibleStageIds.has(c.stage_id);
-      const oaOk = oaHits.has(c.telefone_normalizado);
-      const descarteOk = !!c.motivo_descarte;
-      if (!stageOk && !oaOk && !descarteOk) { motivos.sem_elegibilidade++; continue; }
       if (seenTelefones.has(c.telefone_normalizado)) { motivos.telefone_duplicado++; continue; }
       seenTelefones.add(c.telefone_normalizado);
       elegiveis.push(c);
     }
+
 
     // 5) ordenar
     elegiveis.sort((a, b) => {
