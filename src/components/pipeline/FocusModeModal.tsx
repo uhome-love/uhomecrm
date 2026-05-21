@@ -285,8 +285,6 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   }, [currentLead, fetchHomiSuggestion]);
 
   const resetActionState = useCallback(() => {
-    setShowAdvanceStage(false);
-    setAdvanceStageId("");
     setShowDiscard(false);
     setDiscardReason("");
     setDiscardObs("");
