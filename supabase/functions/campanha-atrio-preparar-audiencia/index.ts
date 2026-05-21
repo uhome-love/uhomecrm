@@ -151,21 +151,9 @@ Deno.serve(async (req: Request) => {
       offset += pageSize;
     }
 
-    // 2) atividade recente
-    const idsBatch = candidatos.map(c => c.id);
-    const atividadeRecente = new Set<string>();
-    for (let i = 0; i < idsBatch.length; i += 100) {
-      const slice = idsBatch.slice(i, i + 100);
-      const { data: ativs, error } = await supabase
-        .from("pipeline_atividades")
-        .select("pipeline_lead_id")
-        .in("pipeline_lead_id", slice)
-        .gte("created_at", cutoffAtividade60d);
-      if (error) throw error;
-      (ativs || []).forEach((a:any) => atividadeRecente.add(a.pipeline_lead_id));
-    }
+    // (filtro de atividade removido — basta não estar em pipeline ativo)
 
-    // 3) OA hits por telefone
+
     const telefones = Array.from(new Set(candidatos.map(c => c.telefone_normalizado)));
     const oaHits = new Set<string>();
     for (let i = 0; i < telefones.length; i += 200) {
