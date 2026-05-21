@@ -118,12 +118,18 @@ Deno.serve(async (req: Request) => {
           status_envio: "sucesso", mensagem_id_meta: res.wamid,
         });
         await supabase.from("campanha_atrio_audiencia").update({ status: "sent" }).eq("lead_id", lead.lead_id);
+        // Marca lead como reengajado pela campanha Átrio
+        await supabase.from("pipeline_leads").update({
+          reengajamento_status: "enviado",
+          reengajamento_enviado_at: new Date().toISOString(),
+        }).eq("id", lead.lead_id);
         await supabase.from("pipeline_atividades").insert({
           pipeline_lead_id: lead.lead_id, tipo: "campanha_atrio",
           titulo: `Disparo Átrio — Onda ${onda}`,
-          descricao: `Template ${TEMPLATE_NAME} enviado.`,
+          descricao: `Template ${TEMPLATE_NAME} enviado. Lead marcado como reengajado (campanha_atrio).`,
           data: hoje, status: "concluida",
         });
+
       } else {
         erros++;
         await supabase.from("campanha_atrio_eventos").insert({
