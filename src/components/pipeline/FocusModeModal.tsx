@@ -509,7 +509,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent
-        className="max-w-full w-full h-full m-0 rounded-none p-0 border-0 gap-0"
+        className="dark max-w-full w-full h-full m-0 rounded-none p-0 border-0 gap-0"
         style={{
           background: "linear-gradient(180deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)",
           fontFamily: "'Plus Jakarta Sans', sans-serif",
