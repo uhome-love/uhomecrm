@@ -116,11 +116,15 @@ Deno.serve(async (req: Request) => {
       const stageNome = (pl as any)?.pipeline_stages?.nome || "";
       const ehDescarteOuArquivado = pl?.arquivado === true || /descarte/i.test(stageNome);
       if (ehDescarteOuArquivado && pl?.corretor_id) {
-        await supabase.from("pipeline_leads").update({
+        const { error: updErr } = await supabase.from("pipeline_leads").update({
           corretor_id: null,
           aceite_status: 'pendente',
           arquivado: false,
         }).eq("id", leadId);
+        if (updErr) {
+          console.error(`❌ Falha ao liberar lead ${leadId}:`, updErr);
+          throw new Error(`liberar_vinculo_falhou: ${updErr.message}`);
+        }
         console.log(`🔓 Lead ${leadId} liberado (estava em ${stageNome}, arquivado=${pl?.arquivado})`);
       }
     }
