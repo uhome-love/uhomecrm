@@ -129,6 +129,19 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Recategoriza o lead para "Átrio - ABF" antes da roleta.
+    // Assim distribuir_lead_atomico casa com roleta_campanhas → S5 - Produto Foco.
+    async function recategorizarParaAtrio(leadId: string) {
+      const { error } = await supabase.from("pipeline_leads").update({
+        empreendimento: "Átrio - ABF",
+      }).eq("id", leadId);
+      if (error) {
+        console.error(`❌ Falha ao recategorizar lead ${leadId} para Átrio:`, error);
+      } else {
+        console.log(`🏷️ Lead ${leadId} recategorizado para Átrio - ABF`);
+      }
+    }
+
     if (tipo === "sim") {
       // Roleta — todos corretores ativos, sem segmento
       await liberarVinculoSeDescarte(evento.lead_id);
