@@ -42,7 +42,7 @@ function toWaDigits(phone: string): string {
 export default function LeadFocusScreen({
   lead, workedCount, homiLoading, homiInsight, onGenerateInsight, onRegenerateInsight,
   pendingTasks, timelineRefreshKey,
-  onCompleteTask, onCompleteNextTask, onCreateNewTask, panelChildren,
+  onCompleteTask, onCompleteNextTask, onCreateNewTask, onAdvanceNextLead, panelChildren,
 }: Props) {
   const nextTask = lead.next_pending_task;
   const [phoneCopied, setPhoneCopied] = useState(false);
