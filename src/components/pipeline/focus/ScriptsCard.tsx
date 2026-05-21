@@ -77,21 +77,23 @@ export default function ScriptsCard({
         border: "1px solid rgba(255,255,255,0.08)",
       }}
     >
+      {/* Regra de contraste (Modo Foco): texto principal = text-foreground;
+          secundário ≥ text-foreground/70; hints podem usar /60 ou muted. */}
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full flex items-center justify-between text-sm font-semibold text-foreground/90"
+        className="w-full flex items-center justify-between text-sm font-semibold text-foreground"
       >
         <span className="flex items-center gap-2">
           <span>💬 Scripts</span>
-          <span className="text-xs font-normal text-muted-foreground">
+          <span className="text-xs font-normal text-foreground/75">
             ({availableScripts.length} para {leadStage})
           </span>
         </span>
         {collapsed ? (
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          <ChevronDown className="w-4 h-4 text-foreground/70" />
         ) : (
-          <ChevronUp className="w-4 h-4 text-muted-foreground" />
+          <ChevronUp className="w-4 h-4 text-foreground/70" />
         )}
       </button>
 
@@ -144,7 +146,7 @@ export default function ScriptsCard({
               </Button>
             </>
           ) : (
-            <p className="text-xs text-muted-foreground italic">
+            <p className="text-xs text-foreground/60 italic">
               Selecione um script acima para gerar o texto
             </p>
           )}
