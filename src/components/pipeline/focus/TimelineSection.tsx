@@ -26,6 +26,8 @@ export default function TimelineSection({ leadId, refreshKey }: Props) {
   const visible = showAll ? events : events.slice(0, DEFAULT_LIMIT);
   const hasMore = events.length > DEFAULT_LIMIT && !showAll;
 
+  // Regra de contraste (Modo Foco): texto principal = text-foreground;
+  // secundário ≥ text-foreground/70; hints/loading podem usar /60.
   return (
     <div
       className="rounded-2xl p-5 sm:p-6 h-full flex flex-col"
@@ -40,12 +42,12 @@ export default function TimelineSection({ leadId, refreshKey }: Props) {
             <History className="w-3.5 h-3.5 text-indigo-300" />
           </div>
           <div>
-            <h3 className="text-white font-semibold text-sm">Linha do tempo</h3>
-            <p className="text-[11px] text-gray-500">Tudo que aconteceu com este lead</p>
+            <h3 className="text-foreground font-semibold text-sm">Linha do tempo</h3>
+            <p className="text-[11px] text-foreground/65">Tudo que aconteceu com este lead</p>
           </div>
         </div>
         {!loading && (
-          <span className="text-[10px] text-gray-500" style={{ fontFamily: "var(--font-focus-mono, monospace)" }}>
+          <span className="text-[10px] text-foreground/70" style={{ fontFamily: "var(--font-focus-mono, monospace)" }}>
             {events.length} {events.length === 1 ? "evento" : "eventos"}
           </span>
         )}
