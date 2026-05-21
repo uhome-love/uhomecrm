@@ -289,6 +289,19 @@ Deno.serve(async (req: Request) => {
     }
 
     // texto livre → recategoriza + roleta (S5 Produto Foco)
+    if (suppressRedistribuicao) {
+      await supabase.from("campanha_atrio_respostas").update({
+        enviado_para_roleta: false,
+        motivo_falha_roleta: "idempotencia_lead_ja_distribuido_4h",
+      }).eq("id", respIns.id);
+      await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
+        titulo: "Resposta livre ignorada — Disparo Átrio",
+        descricao: `Lead respondeu novamente "${conteudo?.slice(0,80)}" mas já havia sido distribuído via roleta nas últimas 4h. Sem nova distribuição.`,
+        data: hoje, status: "concluida",
+      });
+      return jsonResponse({ ok: true, tipo, deduped: true });
+    }
     await recategorizarParaAtrio(evento.lead_id);
     await liberarVinculoSeDescarte(evento.lead_id);
     const traceId = `atrio_tl_${respIns.id}`;
