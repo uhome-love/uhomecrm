@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Zap, Trophy, Phone, MessageCircle, Copy, Check } from "lucide-react";
+import { Zap, Trophy, Phone, MessageCircle, Copy, Check, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import TimelineSection from "./TimelineSection";
 import LeadContextPanel from "./LeadContextPanel";
@@ -27,6 +27,7 @@ interface Props {
   onCompleteTask: (taskId: string, titulo: string) => void;
   onCompleteNextTask: () => void;
   onCreateNewTask: () => void;
+  onAdvanceNextLead: () => void;
   /** Slot do painel esquerdo: ações pós-painel (Descartar). */
   panelChildren?: ReactNode;
 }
@@ -41,7 +42,7 @@ function toWaDigits(phone: string): string {
 export default function LeadFocusScreen({
   lead, workedCount, homiLoading, homiInsight, onGenerateInsight, onRegenerateInsight,
   pendingTasks, timelineRefreshKey,
-  onCompleteTask, onCompleteNextTask, onCreateNewTask, panelChildren,
+  onCompleteTask, onCompleteNextTask, onCreateNewTask, onAdvanceNextLead, panelChildren,
 }: Props) {
   const nextTask = lead.next_pending_task;
   const [phoneCopied, setPhoneCopied] = useState(false);
@@ -175,6 +176,17 @@ export default function LeadFocusScreen({
             >
               <MessageCircle className="w-4 h-4" />
               WhatsApp
+            </Button>
+
+            {/* Próximo lead — pular sem registrar ação */}
+            <Button
+              onClick={onAdvanceNextLead}
+              variant="outline"
+              className="h-12 sm:w-[130px] flex-1 sm:flex-none gap-1.5 text-sm font-semibold rounded-xl border border-white/15 bg-white/5 text-foreground/80 hover:bg-white/10 hover:text-white"
+              title="Pular para o próximo lead sem registrar ação"
+            >
+              Próximo
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
         </div>

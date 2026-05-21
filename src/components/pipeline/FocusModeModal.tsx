@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Zap, X, ChevronLeft,
-  Loader2, ChevronRight,
+  Loader2,
   Filter,
-  ArrowRightCircle, Trash2, Ban
+  Trash2, Ban
 } from "lucide-react";
 
 
@@ -54,9 +54,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [stages, setStages] = useState<{ id: string; nome: string; tipo: string }[]>([]);
   const [stagesLoading, setStagesLoading] = useState(false);
 
-  // Stage advance / discard state
-  const [showAdvanceStage, setShowAdvanceStage] = useState(false);
-  const [advanceStageId, setAdvanceStageId] = useState("");
+  // Discard inline state (Avançar Etapa removido em R3.7 — fluxo agora pelo TaskCompletionDialog Tela 2)
   const [showDiscard, setShowDiscard] = useState(false);
   const [discardReason, setDiscardReason] = useState("");
   const [discardObs, setDiscardObs] = useState("");
@@ -287,8 +285,6 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   }, [currentLead, fetchHomiSuggestion]);
 
   const resetActionState = useCallback(() => {
-    setShowAdvanceStage(false);
-    setAdvanceStageId("");
     setShowDiscard(false);
     setDiscardReason("");
     setDiscardObs("");
@@ -472,30 +468,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     "Sem condição financeira", "Perfil incompatível", "Lead duplicado", "Número inválido", "Outro",
   ];
 
-  const handleAdvanceStage = useCallback(async () => {
-    if (!currentLead || !corretorId || !advanceStageId) return;
-    setSaving(true);
-    try {
-      await supabase.from("pipeline_leads").update({
-        stage_id: advanceStageId,
-        stage_changed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as any).eq("id", currentLead.id);
-      await supabase.from("pipeline_historico").insert({
-        pipeline_lead_id: currentLead.id,
-        stage_novo_id: advanceStageId,
-        movido_por: corretorId,
-        observacao: "Avançado via Modo Foco",
-      });
-      toast.success("Etapa avançada ✅");
-      goToNext();
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao avançar etapa.");
-    } finally {
-      setSaving(false);
-    }
-  }, [currentLead, corretorId, advanceStageId, goToNext]);
+  // handleAdvanceStage removido em R3.7 — fluxo de mudança de etapa migrou
+  // 100% para TaskCompletionDialog (Tela 2 oferece seletor de stage no fluxo de conclusão).
 
   const handleDiscardLead = useCallback(async () => {
     if (!currentLead || !corretorId || !discardReason) return;
@@ -664,38 +638,12 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                   onCreateNewTask={() => {
                     setCompletingOverdue({ id: "no-task", titulo: "Registrar contato e agendar próximo passo" });
                   }}
+                  onAdvanceNextLead={goToNext}
 
                   panelChildren={
                     <div className="space-y-3">
-
-
-                  {/* Stage advance inline */}
-                  {showAdvanceStage && (
-                    <div className="mt-3 rounded-xl p-3 space-y-2" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                      <p className="text-xs font-semibold text-emerald-400">Avançar para qual etapa?</p>
-                      <Select value={advanceStageId} onValueChange={setAdvanceStageId}>
-                        <SelectTrigger className="h-8 text-xs border-0" style={{ background: "rgba(255,255,255,0.06)", color: "#e2e8f0" }}>
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {stages.filter(s => s.id !== currentLead?.stage_id && s.tipo !== "descarte").map(s => (
-                            <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex gap-2">
-                        <Button size="sm" className="flex-1 h-8 text-xs gap-1" style={{ background: "#10b981" }} disabled={!advanceStageId || saving} onClick={handleAdvanceStage}>
-                          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowRightCircle className="w-3 h-3" />} Confirmar
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-8 text-xs text-gray-400 hover:text-white hover:bg-white/5" onClick={() => setShowAdvanceStage(false)}>
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Discard inline */}
-                  {showDiscard && (
+                  {/* Discard inline (Avançar Etapa removido em R3.7 — fluxo migrou para TaskCompletionDialog Tela 2) */}
+                  {showDiscard ? (
                     <div className="mt-3 rounded-xl p-3 space-y-2" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
                       <p className="text-xs font-semibold text-red-400">Motivo do descarte</p>
                       <Select value={discardReason} onValueChange={setDiscardReason}>
@@ -726,37 +674,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                         </Button>
                       </div>
                     </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowDiscard(true)}
+                      className="w-full mt-3 flex items-center justify-center gap-1.5 text-[11px] py-2 rounded-lg transition-colors"
+                      style={{ background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Descartar Lead
+                    </button>
                   )}
-
-                  {/* Action buttons row */}
-                  {!showAdvanceStage && !showDiscard && (
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={() => { setShowAdvanceStage(true); setShowDiscard(false); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 text-[11px] py-2 rounded-lg transition-colors"
-                        style={{ background: "rgba(16,185,129,0.1)", color: "#34d399", border: "1px solid rgba(16,185,129,0.2)" }}
-                      >
-                        <ArrowRightCircle className="w-3.5 h-3.5" /> Avançar Etapa
-                      </button>
-                      <button
-                        onClick={() => { setShowDiscard(true); setShowAdvanceStage(false); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 text-[11px] py-2 rounded-lg transition-colors"
-                        style={{ background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Descartar Lead
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Avançar para próximo lead — sempre destacado (Sprint 1 Mudança 4) */}
-                  <button
-                    onClick={goToNext}
-                    className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-lg transition-colors font-semibold text-white"
-                    style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}
-                  >
-                    Avançar para próximo lead <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-
                     </div>
                   }
                 />
