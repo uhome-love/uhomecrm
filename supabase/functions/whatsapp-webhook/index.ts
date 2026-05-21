@@ -297,6 +297,46 @@ Deno.serve(async (req) => {
             const buttonId = msg?.interactive?.button_reply?.id || msg?.button?.payload || null;
             const buttonTitle = msg?.interactive?.button_reply?.title || msg?.button?.text || "";
 
+            // ── Campanha Átrio: verifica se wamid ou telefone bate com evento Átrio recente ──
+            try {
+              let atrioMatch: any = null;
+              if (repliedToWamid) {
+                const { data } = await supabase
+                  .from("campanha_atrio_eventos")
+                  .select("id, lead_id")
+                  .eq("mensagem_id_meta", repliedToWamid)
+                  .maybeSingle();
+                if (data) atrioMatch = data;
+              }
+              if (!atrioMatch) {
+                const last8 = (from || "").replace(/\D/g, "").slice(-8);
+                if (last8.length === 8) {
+                  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+                  const { data } = await supabase
+                    .from("campanha_atrio_eventos")
+                    .select("id, lead_id, enviado_em")
+                    .eq("status_envio", "sucesso")
+                    .gte("enviado_em", cutoff)
+                    .ilike("telefone", `%${last8}`)
+                    .order("enviado_em", { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                  if (data) atrioMatch = data;
+                }
+              }
+              if (atrioMatch) {
+                console.log(`🏛️ Átrio match: forwarding to processar-resposta (lead=${atrioMatch.lead_id})`);
+                await fetch(`${supabaseUrl}/functions/v1/campanha-atrio-processar-resposta`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+                  body: JSON.stringify({ wamid: repliedToWamid, from, message: msg }),
+                });
+                continue;
+              }
+            } catch (e) {
+              console.error("Átrio branch error", e);
+            }
+
             // ── Visita Amanhã: detecta resposta ao template visita_amanha_v1 ──
             // Match por wamid (preferido) OU por telefone (últimos 8 dígitos, últimas 48h) — alguns clientes
             // não enviam context.id em button_reply, e o "from" do WhatsApp pode vir sem o "9" do celular.
