@@ -144,6 +144,7 @@ Deno.serve(async (req: Request) => {
       origem: "oferta_ativa",
       motivo_descarte: "oferta_ativa_atrio_lote2",
       arquivado: true,
+      aceite_status: "descartado", // não entra na Fila CEO / roleta
     }));
 
     let criados = 0;

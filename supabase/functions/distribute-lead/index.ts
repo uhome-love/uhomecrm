@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
           .from("pipeline_leads")
           .select("id")
           .eq("aceite_status", "pendente_distribuicao")
+          .eq("arquivado", false)
           .is("corretor_id", null)
           .order("created_at", { ascending: true });
 
