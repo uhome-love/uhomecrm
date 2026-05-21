@@ -19,13 +19,15 @@ interface Props {
   lead: FocusLead;
   workedCount: number;
   homiLoading: boolean;
-  homiInsight: string;
+  homiInsight: string | null;
+  onGenerateInsight: () => void;
+  onRegenerateInsight: () => void;
   pendingTasks: Task[];
   timelineRefreshKey?: number;
   onCompleteTask: (taskId: string, titulo: string) => void;
   onCompleteNextTask: () => void;
   onCreateNewTask: () => void;
-  /** Slot do painel esquerdo: ações pós-painel (Avançar/Descartar/Próximo). */
+  /** Slot do painel esquerdo: ações pós-painel (Descartar). */
   panelChildren?: ReactNode;
 }
 
