@@ -1,32 +1,59 @@
-## Conferência do fluxo (estado real no banco agora)
+## Lote 2 — preparação das ondas 4, 5 e 6
 
-Os 4 leads do disparo Átrio passaram pelo fluxo completo:
+**Tamanhos:** onda 4 = 100 · onda 5 = 300 · onda 6 = 500 · total = 900
 
-| Lead | Stage | Tipo | Arquivado | Aceite | motivo_descarte | Corretor |
-|---|---|---|---|---|---|---|
-| Laura Heck | Novo Lead | novo_lead | false | aceito | null | Eliézer Clós |
-| Janaina Beck | Novo Lead | novo_lead | false | aceito | null | Rafaela Sandin |
-| Marcello | Novo Lead | novo_lead | false | aceito | null | Rafaela Sandin |
-| Andréa | Novo Lead | novo_lead | false | aceito | null | William Brizola |
+### Mapeamento dos nomes que você enviou → nomes exatos no banco
 
-Cada etapa do fluxo verificada:
-1. **Reengajamento (campanha-atrio-processar-resposta)**: respostas registradas em `campanha_atrio_respostas` com `enviado_para_roleta=true`.
-2. **Recategorização + liberação**: `empreendimento` setado para `Átrio - ABF`, vínculo antigo limpo quando estava em Descarte.
-3. **Roleta (distribute-lead)**: `distribuir_lead_atomico` rodou, `corretor_id` populado, `aceite_status=aguardando_aceite`, `stage_id=Novo Lead`, `motivo_descarte=null`, `arquivado=false` (saneamento aplicado).
-4. **Aceite do corretor**: todos os 4 com `aceite_status=aceito` e `distribuido_em` registrado.
-5. **Pipeline (usePipeline.ts)**: `shouldHideLeadFromPipeline` agora esconde apenas se `stage_id ∈ discardStageIds`. Como os 4 estão em `novo_lead`, aparecem normalmente para o corretor atribuído e para o CEO.
+Os nomes precisam bater literal com `oferta_ativa_leads.empreendimento`. Mapeamento + tratamento:
 
-**Conclusão: o fluxo está funcionando ponta-a-ponta.** Hard reload (Ctrl+Shift+R) no pipeline mostra os 4 leads.
+| Ordem | Você escreveu | Nome no banco | Únicos |
+|---|---|---|---|
+| 1 | vista nova carlos gomes | `Vista Nova Carlos Gomes` | 243 |
+| 2 | vista menino deus | `Vista Menino Deus` | 230 |
+| 3 | vista praia de belas | `Vista Praia de Belas` | 229 |
+| 4 | caiz | `Caiz` **+** `Caiz React` (vou incluir os dois, depois desduplica por telefone) | 181 + 218 |
+| 5 | demetrio abf | `Demétrio ABF` (com acento) | 200 |
+| 6 | ~~caiz (duplicado)~~ | já incluído acima | — |
+| 7 | go home desing | `Go Home Design` (corrigido) | 179 |
+| 8 | go bom fim | `Go Bom Fim` | 166 |
+| 9 | go moinhos | `Go Moinhos` | 162 |
+| 10 | castro700 | `Castro700` | 133 |
+| 11 | ora | `Ora Studios do Cais` | 101 |
+| 12 | connect jw | `Connect JW` | 100 |
+| 13 | go cidade baixa | `Go Cidade Baixa` | 51 |
+| 14 | alfa | `Alfa` | 72 |
 
----
+**Pool bruto disponível:** ~2.265 telefones únicos (antes de filtros). Folga grande para 900.
 
-## Observação (não-bloqueante)
+### Ordem final a enviar para `campanha-atrio-preparar-lote2`
 
-Andréa (`cf4e6822`) recebeu duas respostas em sequência com 24s de diferença (22:55:48 `sim` → corretor X; 22:56:12 `texto_livre` → corretor William). A idempotência de 4h **não disparou** porque o `UPDATE enviado_para_roleta=true` da primeira resposta ainda não havia sido commitado quando a segunda chegou (race condition em respostas <30s).
+```
+Vista Nova Carlos Gomes → Vista Menino Deus → Vista Praia de Belas →
+Caiz → Caiz React → Demétrio ABF → Go Home Design → Go Bom Fim →
+Go Moinhos → Castro700 → Ora Studios do Cais → Connect JW →
+Go Cidade Baixa → Alfa
+```
 
-Resultado prático: corretor inicial perdeu o lead para William. Não é crítico (lead foi aceito), mas pode confundir o corretor original.
+### Execução (sem mandar para pipeline)
 
-### Ajuste opcional (se você quiser eliminar o race)
-Mudar a checagem de idempotência em `campanha-atrio-processar-resposta` para consultar diretamente `pipeline_leads.distribuido_em >= now()-4h AND aceite_status IN ('aguardando_aceite','aceito')` **antes** de chamar `distributeLeadDirect`, em vez de depender do flag `enviado_para_roleta` da tabela de respostas (que tem latência de atualização).
+1. **Reset onda 4** de `concluida` (falso positivo) para `aguardando` em `campanha_atrio_controle`.
+2. Chamar `campanha-atrio-preparar-lote2` com `force=true`, a lista de empreendimentos acima, `cap=900` e `ondas=[{4,100},{5,300},{6,500}]`.
+3. A função:
+   - Lê de `oferta_ativa_leads` por empreendimento na ordem.
+   - **Desduplica telefone** (mesmo telefone só entra 1× no lote 2).
+   - **Bloqueia** telefone em pipeline ATIVO (Novo Lead, Boas-vindas, Visita, etc.).
+   - **Bloqueia** telefone já no lote 1 (ondas 1-3).
+   - Insere em `campanha_atrio_audiencia` com `lote=2`, `lead_id=NULL`, `status=pending`.
+   - Atualiza `total_alvo` dos controles 4/5/6.
+4. **Não cria pipeline_lead, não notifica corretor, não envia para roleta.** O pipeline_lead nasce só quando o lead responder `Sim`/texto livre ao disparo (e aí sim cai na roleta, fluxo já validado).
+5. **Validação pós-execução**: rodar SELECTs para mostrar contagem por onda, por empreendimento, e confirmar 0 sobreposições com lote 1 e 0 telefones em pipeline ativo.
 
-Sem nenhum outro ajuste, o fluxo está correto e os 4 leads estão visíveis no pipeline.
+### Resultado esperado
+
+| onda | total_alvo | status |
+|---|---|---|
+| 4 | 100 | aguardando |
+| 5 | 300 | aguardando |
+| 6 | 500 | aguardando |
+
+Pronto para você acionar o disparo manualmente quando quiser. Aprova?
