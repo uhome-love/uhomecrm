@@ -118,7 +118,7 @@ Deno.serve(async (req: Request) => {
       if (ehDescarteOuArquivado && pl?.corretor_id) {
         await supabase.from("pipeline_leads").update({
           corretor_id: null,
-          aceite_status: null,
+          aceite_status: 'pendente',
           arquivado: false,
         }).eq("id", leadId);
         console.log(`🔓 Lead ${leadId} liberado (estava em ${stageNome}, arquivado=${pl?.arquivado})`);
