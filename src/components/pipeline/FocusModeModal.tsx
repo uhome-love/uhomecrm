@@ -2,17 +2,16 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Zap, X, Phone, MessageCircle, Plus, ChevronLeft,
-  Loader2, AlertTriangle, Clock, Send,
-  ExternalLink, Sparkles, Copy, Check, ChevronRight,
-  Filter, ListChecks, CalendarClock,
+  Zap, X, ChevronLeft,
+  Loader2, AlertTriangle, Clock,
+  Sparkles, ChevronRight,
+  Filter, ListChecks,
   ArrowRightCircle, Trash2, Ban
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
