@@ -168,8 +168,8 @@ Deno.serve(async (req: Request) => {
     // 3) OA hits por telefone
     const telefones = Array.from(new Set(candidatos.map(c => c.telefone_normalizado)));
     const oaHits = new Set<string>();
-    for (let i = 0; i < telefones.length; i += 500) {
-      const slice = telefones.slice(i, i + 500);
+    for (let i = 0; i < telefones.length; i += 200) {
+      const slice = telefones.slice(i, i + 200);
       const { data: oa } = await supabase
         .from("oferta_ativa_leads")
         .select("telefone_normalizado")
