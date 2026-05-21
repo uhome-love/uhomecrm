@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Zap, Trophy, Phone, MessageCircle, Copy, Check } from "lucide-react";
+import { Zap, Trophy, Phone, MessageCircle, Copy, Check, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import TimelineSection from "./TimelineSection";
 import LeadContextPanel from "./LeadContextPanel";
