@@ -139,21 +139,27 @@ Deno.serve(async (req: Request) => {
     // 3) Classificar
     const { tipo, conteudo } = classify(message);
 
-    // 3b) Idempotência por lead: se já houve resposta SIM/livre processada
-    // com sucesso pelo mesmo lead nas últimas 4h, NÃO redistribuímos de novo
-    // (evita dupla notificação/dupla atribuição em respostas em sequência).
+    // 3b) Idempotência por lead: se o lead já foi distribuído nas últimas 4h
+    // (estado em pipeline_leads), NÃO redistribuímos de novo.
+    // Consultamos pipeline_leads diretamente em vez do flag enviado_para_roleta
+    // da tabela de respostas — esse flag é atualizado DEPOIS da distribuição
+    // e cria race condition em respostas <30s (a 2ª resposta lê o flag ainda
+    // como false e dispara nova distribuição, trocando o corretor).
     let suppressRedistribuicao = false;
     if (tipo === "sim" || tipo === "texto_livre") {
       const since = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
-      const { data: jaProcessada } = await supabase
-        .from("campanha_atrio_respostas")
-        .select("id")
-        .eq("lead_id", evento.lead_id)
-        .eq("enviado_para_roleta", true)
-        .gte("recebido_em", since)
-        .limit(1)
+      const { data: leadAtual } = await supabase
+        .from("pipeline_leads")
+        .select("distribuido_em, aceite_status")
+        .eq("id", evento.lead_id)
         .maybeSingle();
-      if (jaProcessada) suppressRedistribuicao = true;
+      if (
+        leadAtual?.distribuido_em &&
+        leadAtual.distribuido_em >= since &&
+        ["aguardando_aceite", "aceito"].includes(leadAtual.aceite_status || "")
+      ) {
+        suppressRedistribuicao = true;
+      }
     }
 
     // 4) Inserir resposta
