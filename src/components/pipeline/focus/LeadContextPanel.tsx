@@ -16,17 +16,19 @@ interface Task {
 interface Props {
   lead: FocusLead;
   homiLoading: boolean;
-  homiInsight: string;
+  homiInsight: string | null;
+  onGenerateInsight: () => void;
+  onRegenerateInsight: () => void;
   pendingTasks: Task[];
   onCompleteTask: (taskId: string, titulo: string) => void;
   onCreateNewTask: () => void;
-  /** Slot para ações finais (Avançar Etapa, Descartar, Avançar próximo lead). */
+  /** Slot para ações finais (Descartar, etc). */
   children?: ReactNode;
 }
 
 export default function LeadContextPanel({
-  lead, homiLoading, homiInsight, pendingTasks,
-  onCompleteTask, onCreateNewTask, children,
+  lead, homiLoading, homiInsight, onGenerateInsight, onRegenerateInsight,
+  pendingTasks, onCompleteTask, onCreateNewTask, children,
 }: Props) {
   return (
     <div
@@ -34,7 +36,12 @@ export default function LeadContextPanel({
       style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
     >
       <LeadHeader lead={lead} onAlertClick={onCompleteTask} />
-      <HomiInsightCard loading={homiLoading} insight={homiInsight} />
+      <HomiInsightCard
+        loading={homiLoading}
+        insight={homiInsight}
+        onGenerate={onGenerateInsight}
+        onRegenerate={onRegenerateInsight}
+      />
       <PendingTasksCard tasks={pendingTasks} onComplete={onCompleteTask} onCreateNew={onCreateNewTask} />
       <ScriptsCard
         leadName={lead.name}
