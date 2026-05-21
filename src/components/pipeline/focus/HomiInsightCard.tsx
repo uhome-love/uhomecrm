@@ -67,7 +67,7 @@ export default function HomiInsightCard({ insight, loading, onGenerate, onRegene
     return (
       <div className="rounded-xl p-3.5 space-y-2" style={wrapperStyle}>
         {Header}
-        <p className="text-foreground text-xs leading-relaxed">
+        <p className="text-xs text-foreground/85 leading-relaxed">
           Gerar novo insight? Vai substituir o atual.
         </p>
         <div className="flex gap-2">
@@ -100,11 +100,11 @@ export default function HomiInsightCard({ insight, loading, onGenerate, onRegene
   return (
     <div className="rounded-xl p-3.5 space-y-2" style={wrapperStyle}>
       {Header}
-      <p className="text-foreground text-xs leading-relaxed">{insight}</p>
+      <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{insight}</p>
       <button
         type="button"
         onClick={() => setConfirmingRegenerate(true)}
-        className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+        className="text-[11px] text-foreground/70 hover:text-foreground flex items-center gap-1 transition-colors"
       >
         <RefreshCw className="w-3 h-3" />
         Regenerar

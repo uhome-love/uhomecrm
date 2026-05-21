@@ -182,7 +182,7 @@ export default function LeadFocusScreen({
             <Button
               onClick={onAdvanceNextLead}
               variant="outline"
-              className="h-12 sm:w-[130px] flex-1 sm:flex-none gap-1.5 text-sm font-semibold rounded-xl border border-white/15 bg-white/5 text-foreground/80 hover:bg-white/10 hover:text-white"
+              className="h-12 sm:w-[130px] flex-1 sm:flex-none gap-1.5 text-sm font-semibold rounded-xl border border-white/20 bg-white/10 text-foreground hover:bg-white/20 hover:text-white"
               title="Pular para o próximo lead sem registrar ação"
             >
               Próximo

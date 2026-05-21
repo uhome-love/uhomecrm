@@ -18,8 +18,6 @@ interface Props {
 }
 
 export default function PendingTasksCard({ tasks, onComplete, onCreateNew }: Props) {
-  // Regra de contraste (Modo Foco): texto principal = text-foreground;
-  // secundário ≥ text-foreground/70; hints (vazio) podem usar /60.
   return (
     <div className="rounded-xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
       <div className="flex items-center justify-between mb-2">
@@ -35,7 +33,7 @@ export default function PendingTasksCard({ tasks, onComplete, onCreateNew }: Pro
         </button>
       </div>
       {tasks.length === 0 ? (
-        <p className="text-foreground/60 text-xs italic">Nenhuma tarefa pendente</p>
+        <p className="text-gray-500 text-xs italic">Nenhuma tarefa pendente</p>
       ) : (
         <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
           {tasks.map((t) => {
@@ -52,7 +50,7 @@ export default function PendingTasksCard({ tasks, onComplete, onCreateNew }: Pro
                 }}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-foreground truncate">{t.titulo}</p>
+                  <p className="text-xs text-gray-200 truncate">{t.titulo}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     {isOverdue ? (
                       <Badge className="text-[9px] border-0 px-1.5 py-0" style={{ background: "rgba(239,68,68,0.2)", color: "#f87171" }}>
@@ -69,7 +67,7 @@ export default function PendingTasksCard({ tasks, onComplete, onCreateNew }: Pro
                         {isToday ? "Hoje" : t.vence_em}{t.hora_vencimento ? ` ${t.hora_vencimento.slice(0, 5)}` : ""}
                       </Badge>
                     )}
-                    {t.tipo && <span className="text-[9px] text-foreground/65">{t.tipo}</span>}
+                    {t.tipo && <span className="text-[9px] text-gray-500">{t.tipo}</span>}
                   </div>
                 </div>
                 <Button
