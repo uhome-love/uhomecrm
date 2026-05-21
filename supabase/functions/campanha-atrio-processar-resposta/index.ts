@@ -116,6 +116,10 @@ Deno.serve(async (req: Request) => {
         corretor_designado_id: dist?.corretor_id || null,
         motivo_falha_roleta: sucesso ? null : (dist?.reason || dist?.error || "falha_distribuicao"),
       }).eq("id", respIns.id);
+      await supabase.from("pipeline_leads").update({
+        reengajamento_status: "respondido_sim",
+      }).eq("id", evento.lead_id);
+
 
       // Atividade no lead (não move stage — apenas log)
       await supabase.from("pipeline_atividades").insert({
