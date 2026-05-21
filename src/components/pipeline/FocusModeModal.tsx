@@ -3,14 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Zap, X, ChevronLeft,
-  Loader2, AlertTriangle, Clock,
-  Sparkles, ChevronRight,
-  Filter, ListChecks,
+  Loader2, ChevronRight,
+  Filter,
   ArrowRightCircle, Trash2, Ban
 } from "lucide-react";
+
 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
