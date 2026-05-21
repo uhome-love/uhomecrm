@@ -186,7 +186,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     const cached = insightCacheRef.current.get(currentLead.id);
     if (cached && Date.now() - cached.at < INSIGHT_TTL_MS) {
       setHomiInsight(cached.insight);
-      setFollowUpText(cached.mensagem);
+
       setHomiLoading(false);
       return;
     }
@@ -216,7 +216,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const fetchHomiSuggestion = useCallback(async (lead: FocusLead) => {
     setHomiLoading(true);
     setHomiInsight("");
-    setFollowUpText("");
+
 
     try {
       const [{ data: atividades }, { data: tarefas }] = await Promise.all([
@@ -263,33 +263,25 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       const insight = data?.insight || "";
       const mensagem = data?.mensagem || "";
       setHomiInsight(insight);
-      setFollowUpText(mensagem);
       // Memoriza para evitar nova chamada ao voltar/avançar para o mesmo lead na sessão.
       insightCacheRef.current.set(lead.id, { insight, mensagem, at: Date.now() });
     } catch (err) {
       console.error("[FocusMode] HOMI error:", err);
-      setFollowUpText("");
       setHomiInsight("Não foi possível gerar sugestão agora.");
+
     } finally {
       setHomiLoading(false);
     }
   }, []);
 
   const resetActionState = useCallback(() => {
-    setTab("followup");
-    setActivityNote("");
-    setTaskTitle("");
-    setTaskType("ligar");
-    setTaskDueDate(format(addDays(new Date(), 1), "yyyy-MM-dd"));
-    setActivityRegistered(false);
-    setTaskCreated(false);
-    setPhoneCopied(false);
     setShowAdvanceStage(false);
     setAdvanceStageId("");
     setShowDiscard(false);
     setDiscardReason("");
     setDiscardObs("");
   }, []);
+
 
   const handleClose = useCallback(() => {
     // Telemetria: log closed só se houve uma sessão ativa (ignora abre/fecha sem startar).
