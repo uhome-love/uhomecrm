@@ -54,9 +54,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [stages, setStages] = useState<{ id: string; nome: string; tipo: string }[]>([]);
   const [stagesLoading, setStagesLoading] = useState(false);
 
-  // Stage advance / discard state
-  const [showAdvanceStage, setShowAdvanceStage] = useState(false);
-  const [advanceStageId, setAdvanceStageId] = useState("");
+  // Discard inline state (Avançar Etapa removido em R3.7 — fluxo agora pelo TaskCompletionDialog Tela 2)
   const [showDiscard, setShowDiscard] = useState(false);
   const [discardReason, setDiscardReason] = useState("");
   const [discardObs, setDiscardObs] = useState("");
