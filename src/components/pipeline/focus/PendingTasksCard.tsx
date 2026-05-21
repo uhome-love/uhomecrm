@@ -69,7 +69,7 @@ export default function PendingTasksCard({ tasks, onComplete, onCreateNew }: Pro
                         {isToday ? "Hoje" : t.vence_em}{t.hora_vencimento ? ` ${t.hora_vencimento.slice(0, 5)}` : ""}
                       </Badge>
                     )}
-                    {t.tipo && <span className="text-[9px] text-gray-500">{t.tipo}</span>}
+                    {t.tipo && <span className="text-[9px] text-foreground/65">{t.tipo}</span>}
                   </div>
                 </div>
                 <Button
