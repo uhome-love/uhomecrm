@@ -27,6 +27,7 @@ interface Props {
   onCompleteTask: (taskId: string, titulo: string) => void;
   onCompleteNextTask: () => void;
   onCreateNewTask: () => void;
+  onAdvanceNextLead: () => void;
   /** Slot do painel esquerdo: ações pós-painel (Descartar). */
   panelChildren?: ReactNode;
 }
