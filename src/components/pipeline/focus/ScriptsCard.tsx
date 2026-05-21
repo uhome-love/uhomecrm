@@ -146,7 +146,7 @@ export default function ScriptsCard({
               </Button>
             </>
           ) : (
-            <p className="text-xs text-muted-foreground italic">
+            <p className="text-xs text-foreground/60 italic">
               Selecione um script acima para gerar o texto
             </p>
           )}
