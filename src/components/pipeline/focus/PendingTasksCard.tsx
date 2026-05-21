@@ -35,7 +35,7 @@ export default function PendingTasksCard({ tasks, onComplete, onCreateNew }: Pro
         </button>
       </div>
       {tasks.length === 0 ? (
-        <p className="text-gray-500 text-xs italic">Nenhuma tarefa pendente</p>
+        <p className="text-foreground/60 text-xs italic">Nenhuma tarefa pendente</p>
       ) : (
         <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
           {tasks.map((t) => {
