@@ -62,7 +62,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [discardObs, setDiscardObs] = useState("");
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [homiInsight, setHomiInsight] = useState("");
+  const [homiInsight, setHomiInsight] = useState<string | null>(null);
   const [homiLoading, setHomiLoading] = useState(false);
 
   // Cache de HOMI Insight por sessão: leadId → { insight, mensagem, at }
