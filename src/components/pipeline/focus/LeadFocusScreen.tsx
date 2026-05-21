@@ -177,6 +177,17 @@ export default function LeadFocusScreen({
               <MessageCircle className="w-4 h-4" />
               WhatsApp
             </Button>
+
+            {/* Próximo lead — pular sem registrar ação */}
+            <Button
+              onClick={onAdvanceNextLead}
+              variant="outline"
+              className="h-12 sm:w-[130px] flex-1 sm:flex-none gap-1.5 text-sm font-semibold rounded-xl border border-white/15 bg-white/5 text-foreground/80 hover:bg-white/10 hover:text-white"
+              title="Pular para o próximo lead sem registrar ação"
+            >
+              Próximo
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>
