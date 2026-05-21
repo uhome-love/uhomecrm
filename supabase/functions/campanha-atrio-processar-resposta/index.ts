@@ -116,6 +116,10 @@ Deno.serve(async (req: Request) => {
         corretor_designado_id: dist?.corretor_id || null,
         motivo_falha_roleta: sucesso ? null : (dist?.reason || dist?.error || "falha_distribuicao"),
       }).eq("id", respIns.id);
+      await supabase.from("pipeline_leads").update({
+        reengajamento_status: "respondido_sim",
+      }).eq("id", evento.lead_id);
+
 
       // Atividade no lead (não move stage — apenas log)
       await supabase.from("pipeline_atividades").insert({
@@ -137,12 +141,16 @@ Deno.serve(async (req: Request) => {
     }
 
     if (tipo === "nao") {
+      await supabase.from("pipeline_leads").update({
+        reengajamento_status: "respondido_nao",
+      }).eq("id", evento.lead_id);
       await supabase.from("pipeline_atividades").insert({
         pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
         titulo: "Resposta NÃO — Disparo Átrio",
         descricao: `Lead respondeu "Não tenho interesse" (Átrio).`,
         data: hoje, status: "concluida",
       });
+
       try {
         await supabase.rpc("add_lead_tag", { p_lead_id: evento.lead_id, p_tag: "desinteresse_atrio_2026_05_21" });
       } catch {}
@@ -159,6 +167,10 @@ Deno.serve(async (req: Request) => {
       corretor_designado_id: dist?.corretor_id || null,
       motivo_falha_roleta: sucesso ? null : (dist?.reason || dist?.error || "falha_distribuicao"),
     }).eq("id", respIns.id);
+    await supabase.from("pipeline_leads").update({
+      reengajamento_status: "respondido_livre",
+    }).eq("id", evento.lead_id);
+
     await supabase.from("pipeline_atividades").insert({
       pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
       titulo: "Resposta livre — Disparo Átrio",
