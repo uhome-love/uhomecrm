@@ -440,16 +440,30 @@ export default function MinhasTarefas() {
     return m;
   }, [ownedLeadsFull]);
 
-  const isLeadElegivel = (leadId: string | null | undefined) => {
+  // Filtro unificado: tarefa só é elegível se o lead NÃO está arquivado,
+  // NÃO está em stage de descarte e NÃO virou negócio.
+  // Usa primeiro o estado embarcado na tarefa (lead_arquivado/lead_stage_tipo/lead_negocio_id),
+  // e em fallback o ownedLeadsMap (para parcerias/leads ativos).
+  const isLeadElegivel = (t: TarefaComLead) => {
+    const leadId = t.pipeline_lead_id;
     if (!leadId) return true; // tarefas sem lead (negócios) seguem normais
+    const embarcado: any = t as any;
+    if (embarcado.lead_arquivado === true) return false;
+    if (embarcado.lead_stage_tipo === "descarte") return false;
+    if (embarcado.lead_negocio_id) return false;
     const l = ownedLeadsMap.get(leadId);
-    if (!l) return true;
-    if (l.stage_tipo === "descarte") return false;
-    if (l.negocio_id) return false;
+    if (l) {
+      if (l.stage_tipo === "descarte") return false;
+      if (l.negocio_id) return false;
+    }
     return true;
   };
 
-  const pendentes = useMemo(() => activeTarefas.filter(t => t.status === "pendente"), [activeTarefas]);
+  const pendentes = useMemo(
+    () => activeTarefas.filter(t => t.status === "pendente" && (categoria !== "leads" || isLeadElegivel(t))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeTarefas, categoria, ownedLeadsMap]
+  );
   const concluidas = useMemo(() => activeTarefas.filter(t => t.status === "concluida").slice(0, 20), [activeTarefas]);
 
   const ownedLeadStatusMap = useMemo(() => {
@@ -467,7 +481,7 @@ export default function MinhasTarefas() {
       return pendentes.filter(t => t.vence_em && isBefore(parseDateBRT(t.vence_em), todayStart));
     }
     return pendentes.filter(t => {
-      if (!isLeadElegivel(t.pipeline_lead_id)) return false;
+      if (!isLeadElegivel(t)) return false;
       return ownedLeadStatusMap.get(t.pipeline_lead_id) === "tarefa_atrasada";
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
