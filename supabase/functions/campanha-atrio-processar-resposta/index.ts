@@ -173,6 +173,37 @@ Deno.serve(async (req: Request) => {
 
     const hoje = new Date().toISOString().slice(0,10);
 
+    // Helper: insere pipeline_atividades garantindo created_by (NOT NULL).
+    // Resolve um corretor "atual" do lead se nenhum for passado.
+    async function inserirAtividade(
+      titulo: string,
+      descricao: string,
+      corretorPreferido: string | null,
+    ) {
+      let createdBy = corretorPreferido;
+      if (!createdBy) {
+        const { data: pl } = await supabase
+          .from("pipeline_leads").select("corretor_id").eq("id", evento.lead_id).maybeSingle();
+        createdBy = pl?.corretor_id || null;
+      }
+      if (!createdBy) {
+        console.warn("inserirAtividade: sem corretor — atividade não gravada", titulo);
+        return;
+      }
+      const { error } = await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: evento.lead_id,
+        tipo: "campanha_atrio",
+        titulo,
+        descricao,
+        data: hoje,
+        status: "concluida",
+        created_by: createdBy,
+        responsavel_id: createdBy,
+      });
+      if (error) console.error("pipeline_atividades insert err:", error);
+    }
+
+
     // Helper: se o lead está arquivado/Descarte, limpa vínculo antigo
     // para a roleta poder redistribuir (corretor anterior já não tem mais o lead).
     // Retorna estado anterior para permitir gravar pipeline_historico depois.
