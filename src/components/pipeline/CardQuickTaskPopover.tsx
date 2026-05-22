@@ -24,9 +24,25 @@ interface CardQuickTaskPopoverProps {
   leadId: string;
   leadNome: string;
   corretorId?: string;
+  /** Tipo pré-selecionado (default: "follow_up") */
+  defaultType?: string;
+  /** Hora pré-preenchida HH:mm (default: "10:00") */
+  defaultTime?: string;
+  /** "button" (default — botão do action bar) ou "badge" (pill amarela complementar) */
+  triggerVariant?: "button" | "badge";
+  /** Texto do trigger quando variant="badge" (default "➕ Criar primeira tarefa") */
+  triggerLabel?: string;
 }
 
-export default function CardQuickTaskPopover({ leadId, leadNome, corretorId }: CardQuickTaskPopoverProps) {
+export default function CardQuickTaskPopover({
+  leadId,
+  leadNome,
+  corretorId,
+  defaultType = "follow_up",
+  defaultTime = "10:00",
+  triggerVariant = "button",
+  triggerLabel = "➕ Criar primeira tarefa",
+}: CardQuickTaskPopoverProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState("follow_up");
