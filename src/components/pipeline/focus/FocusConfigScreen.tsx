@@ -150,17 +150,24 @@ export default function FocusConfigScreen({
   const counts = countByState(allLeads);
   const semDirecao = counts.sem_direcao;
 
+  const totalLeads = allLeads.length;
+  const isEvery = selectedCriteria.includes("every");
+
   // Badge per critério
   const badgeFor = (v: FocusCriteria): number => {
+    if (v === "every") return totalLeads;
     if (v === "all") return counts.atrasado + counts.para_hoje + counts.sem_direcao + (includeUpcoming ? counts.em_dia_proximo : 0);
     if (v === "overdue_tasks") return counts.atrasado;
     if (v === "today") return counts.para_hoje;
     return semDirecao;
   };
 
-  const totalSelected = selectedCriteria.includes("all")
-    ? badgeFor("all")
-    : selectedCriteria.reduce((sum, c) => sum + badgeFor(c), 0);
+  const totalSelected = isEvery
+    ? totalLeads
+    : selectedCriteria.includes("all")
+      ? badgeFor("all")
+      : selectedCriteria.reduce((sum, c) => sum + badgeFor(c), 0);
+
 
   return (
     <div className="flex flex-col items-center justify-start pt-6 sm:pt-10 min-h-full px-4 py-4">
