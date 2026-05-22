@@ -94,11 +94,7 @@ export default function TaskCompletionDialog({
       }}
     >
       <DialogContent
-        className="max-w-[560px] p-0 gap-0 border-0 overflow-hidden"
-        style={{
-          background: "linear-gradient(180deg, #0E1428 0%, #0A0E1A 100%)",
-          color: "#fff",
-        }}
+        className="max-w-[560px] p-0 gap-0 overflow-hidden bg-card border-border text-foreground"
       >
         <CompletionProgress
           step={step}
