@@ -269,6 +269,14 @@ export default function CorretorDashboard() {
           </Button>
         </div>
       </motion.div>
+
+      {/* Modo Foco aberto via card "Leads Sem Tarefa" — critério no_next_step */}
+      <FocusModeModal
+        open={focusOpen}
+        onClose={() => setFocusOpen(false)}
+        pipelineTipo="leads"
+        initialCriteria={["no_next_step"]}
+      />
     </div>
   );
 }
