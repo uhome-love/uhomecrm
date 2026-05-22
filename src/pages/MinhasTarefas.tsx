@@ -871,12 +871,25 @@ export default function MinhasTarefas() {
 
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap">
-        {tabs.map(tab => (
-          <Button key={tab.key} variant={activeTab === tab.key ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
-            {tab.label}
-            <Badge variant="secondary" className="ml-1 text-xs">{tab.count}</Badge>
-          </Button>
-        ))}
+        {tabs.map(tab => {
+          const btn = (
+            <Button key={tab.key} variant={activeTab === tab.key ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
+              {tab.label}
+              <Badge variant="secondary" className="ml-1 text-xs">{tab.count}</Badge>
+            </Button>
+          );
+          if (tab.key === "desatualizados") {
+            return (
+              <Tooltip key={tab.key}>
+                <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-xs">
+                  Leads ativos sem nenhuma próxima tarefa agendada. Adicione uma tarefa para retomar a direção do contato.
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+          return btn;
+        })}
       </div>
 
       {/* Task list */}
