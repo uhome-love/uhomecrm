@@ -12,6 +12,9 @@ const ACCESS_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN")!;
 const FOLLOW_SIM = "Perfeito! Em instantes um especialista entra em contato para te apresentar o Átrio Boutique Haus. 🙏";
 const FOLLOW_NAO = "Entendido. Obrigado pelo retorno! Se mudar de ideia, estamos por aqui.";
 
+// SUB-FIX 4 — Guardrail de stage avançada (helper isolado em ./guard.ts)
+import { checkLeadIntocavel } from "./guard.ts";
+
 async function sendText(to: string, text: string) {
   try {
     await fetch(`https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages`, {
@@ -104,6 +107,42 @@ Deno.serve(async (req: Request) => {
 
 
   try {
+    // 0) GUARDRAIL — Sub-fix 4 (22/05/2026, aprovacao b1d4a221)
+    // Bloqueia respostas Átrio para leads em estado "intocável" ANTES de
+    // qualquer side-effect (criação, dedup canônica, classificação, roleta).
+    // Dormente em runtime enquanto a pausa global acima estiver ativa; passa
+    // a executar automaticamente quando a pausa for removida.
+    const guard = await checkLeadIntocavel(supabase, from);
+    const guardLead = guard.lead;
+    if (guard.skip && guardLead) {
+      const motivoTag = `advanced_stage_or_archived:${guard.motivo}`;
+      console.log("⛔ SKIP", {
+        motivo: motivoTag,
+        telefone: from,
+        lead_existente_id: guardLead.id,
+        stage_atual_nome: guardLead.stage_nome,
+      });
+      try {
+        await supabase.from("campanha_atrio_respostas").insert({
+          lead_id: guardLead.id,
+          telefone: from,
+          tipo_resposta: "texto_livre",
+          conteudo_resposta: JSON.stringify({
+            wamid,
+            motivo: motivoTag,
+            stage: guardLead.stage_nome,
+            nome: guardLead.nome,
+          }).slice(0, 1000),
+          wamid_origem: wamid || null,
+          enviado_para_roleta: false,
+          motivo_falha_roleta: "SKIP_LEAD_AVANCADO",
+        });
+      } catch (e) {
+        console.error("audit SKIP insert err", e);
+      }
+      return jsonResponse({ ok: true, skipped: true, reason: motivoTag });
+    }
+
     // 1) Localizar evento: por context wamid OU por telefone (últimos 8 dígitos, 24h)
     let evento: any = null;
     if (wamid) {
