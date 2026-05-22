@@ -101,7 +101,14 @@ export default function CentralNutricaoPage() {
           </Card>
         </TabsContent>
 
-        {/* Aba 3: Configurações */}
+        {/* Aba 3: Campanhas em ondas (Átrio) */}
+        <TabsContent value="ondas" className="mt-0 space-y-4">
+          <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <CampanhaOndasTab />
+          </Suspense>
+        </TabsContent>
+
+        {/* Aba 4: Configurações */}
         <TabsContent value="config" className="mt-0 space-y-4">
           <Card>
             <CardHeader className="pb-3">
