@@ -291,12 +291,12 @@ Deno.serve(async (req: Request) => {
           enviado_para_roleta: false,
           motivo_falha_roleta: "idempotencia_lead_ja_distribuido_4h",
         }).eq("id", respIns.id);
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
-          titulo: "Resposta SIM ignorada — Disparo Átrio",
-          descricao: `Lead respondeu novamente "${conteudo?.slice(0,80)}" mas já havia sido distribuído via roleta nas últimas 4h. Sem nova distribuição.`,
-          data: hoje, status: "concluida",
-        });
+        await inserirAtividade(
+          "Resposta SIM ignorada — Disparo Átrio",
+          `Lead respondeu novamente "${conteudo?.slice(0,80)}" mas já havia sido distribuído via roleta nas últimas 4h. Sem nova distribuição.`,
+          null,
+        );
+
         await sendText(from, FOLLOW_SIM);
         return jsonResponse({ ok: true, tipo, deduped: true });
       }
