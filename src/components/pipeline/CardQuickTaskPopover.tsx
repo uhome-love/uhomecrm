@@ -105,16 +105,16 @@ export default function CardQuickTaskPopover({
       setOpen(false);
       setObs("");
       setObsError(false);
-      setType("follow_up");
+      setType(defaultType);
       setDateMode("hoje");
       setCustomDate(undefined);
-      setTime("10:00");
+      setTime(defaultTime);
     } catch (err: any) {
       toast.error("Erro ao criar tarefa: " + (err.message || ""));
     } finally {
       setSaving(false);
     }
-  }, [user, obs, dateMode, customDate, time, type, leadId, leadNome]);
+  }, [user, obs, dateMode, customDate, time, type, leadId, leadNome, defaultType, defaultTime]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
