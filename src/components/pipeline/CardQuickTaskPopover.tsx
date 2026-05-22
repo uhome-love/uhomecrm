@@ -119,20 +119,30 @@ export default function CardQuickTaskPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          title="Criar tarefa rápida"
-          onClick={(e) => { e.stopPropagation(); setOpen(true); }}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-            padding: "8px 4px", cursor: "pointer",
-            background: "transparent", border: "none",
-            fontSize: 11, fontWeight: 600, color: "#64748b",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            transition: "background 0.15s ease",
-            flex: 1, minWidth: 0, width: "100%", minHeight: 36,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--muted))"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+        {triggerVariant === "badge" ? (
+          <button
+            type="button"
+            title={triggerLabel}
+            onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+            className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20 cursor-pointer transition-colors"
+          >
+            {triggerLabel}
+          </button>
+        ) : (
+          <button
+            title="Criar tarefa rápida"
+            onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              padding: "8px 4px", cursor: "pointer",
+              background: "transparent", border: "none",
+              fontSize: 11, fontWeight: 600, color: "#64748b",
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              transition: "background 0.15s ease",
+              flex: 1, minWidth: 0, width: "100%", minHeight: 36,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--muted))"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
           <ClipboardList style={{ width: 12, height: 12 }} />
           <span>Tarefa</span>
