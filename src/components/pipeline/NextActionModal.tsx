@@ -105,11 +105,14 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
         toast.success("Lead avançado ✅");
       } else if (selected === "descartar") {
         if (!motivoDescarte) { toast.error("Selecione o motivo"); setSaving(false); return; }
-        const motivoTexto = motivoDescarte === "Outro"
-          ? `Descarte: ${obsDescarte.trim() || "Outro motivo"}`
-          : `Descarte: ${motivoDescarte}`;
+        const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+        const labelRaw = motivoDescarte === "Outro"
+          ? (obsDescarte.trim() || "Outro motivo")
+          : motivoDescarte;
+        const motivoTexto = buildMotivoDescarte("reengajavel", labelRaw);
         await supabase.from("pipeline_leads").update({
           motivo_descarte: motivoTexto,
+          tipo_descarte: "reengajavel",
           updated_at: new Date().toISOString(),
         } as any).eq("id", leadId);
         if (descarteStage) {

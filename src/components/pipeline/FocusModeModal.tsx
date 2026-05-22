@@ -357,9 +357,13 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     setSaving(true);
     try {
       const now = new Date().toISOString();
-      const { tipo_contato, resultado, descricao, nova_tarefa, novo_stage_id } = payload;
+      const {
+        tipo_contato, resultado, descricao,
+        outcome, nova_tarefa, novo_stage_id,
+        reason_label, reason_code,
+      } = payload;
 
-      // 1) Mark overdue task as concluida — pula quando id sintético ('no-task' = lead sem tarefa pendente)
+      // 1) Mark overdue task as concluida — pula quando id sintético
       if (completingOverdue.id !== "no-task") {
         await supabase.from("pipeline_tarefas").update({
           status: "concluida",
@@ -368,15 +372,13 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
         } as never).eq("id", completingOverdue.id);
       }
 
-
       // 2) Touch lead
       await supabase.from("pipeline_leads").update({
         ultima_acao_at: now,
         updated_at: now,
       } as never).eq("id", currentLead.id);
 
-      // 3) Activity capture (estruturada) — sempre registra, mesmo sem descricao.
-      //    Ajuste 1: tipo = tipo_contato (NUNCA o resultado), limpa poluição naturalmente.
+      // 3) Activity capture (sempre)
       const tituloAtividade = `${completingOverdue.titulo} — ${resultado}`;
       await supabase.from("pipeline_atividades").insert({
         pipeline_lead_id: currentLead.id,
@@ -390,32 +392,35 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
         prioridade: "media",
       } as never);
 
-      // 4) Create next task (sempre — fluxo V2 obrigatório)
-      const TIPO_LABELS_MAP: Record<string, string> = {
-        ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up",
-        visita: "Visita", proposta: "Proposta", email: "E-mail",
-      };
-      // R4.x Bug 2B — título com sufixo de data para distinguir da concluída
-      const [yPt, mPt, dPt] = (nova_tarefa.vence_em || "").split("-");
-      const dateSuffix = yPt && mPt && dPt ? ` · ${dPt}/${mPt}` : "";
-      const novoTituloTarefa = `${TIPO_LABELS_MAP[nova_tarefa.tipo] || nova_tarefa.tipo}: ${currentLead.name}${dateSuffix}`;
-      await supabase.from("pipeline_tarefas").insert({
-        pipeline_lead_id: currentLead.id,
-        created_by: corretorId,
-        responsavel_id: corretorId,
-        titulo: novoTituloTarefa,
-        tipo: nova_tarefa.tipo,
-        // R4.x Bug 1 — Step 2 obs sobrescreve; senão herda resumo do Step 1
-        descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
-        vence_em: nova_tarefa.vence_em,
-        hora_vencimento: nova_tarefa.hora_vencimento || null,
-        status: "pendente",
-        prioridade: "media",
-      } as never);
-
-      // 5) Optional stage change (Ajuste 2: telemetria de falha, sem rollback)
+      let toastMsg = "Tarefa concluída ✅";
       let stageChanged = false;
-      if (novo_stage_id && novo_stage_id !== currentLead.stage_id) {
+
+      // 4) outcome=agendar → cria próxima
+      if (outcome === "agendar" && nova_tarefa) {
+        const TIPO_LABELS_MAP: Record<string, string> = {
+          ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up",
+          visita: "Visita", proposta: "Proposta", email: "E-mail",
+        };
+        const [yPt, mPt, dPt] = (nova_tarefa.vence_em || "").split("-");
+        const dateSuffix = yPt && mPt && dPt ? ` · ${dPt}/${mPt}` : "";
+        const novoTituloTarefa = `${TIPO_LABELS_MAP[nova_tarefa.tipo] || nova_tarefa.tipo}: ${currentLead.name}${dateSuffix}`;
+        await supabase.from("pipeline_tarefas").insert({
+          pipeline_lead_id: currentLead.id,
+          created_by: corretorId,
+          responsavel_id: corretorId,
+          titulo: novoTituloTarefa,
+          tipo: nova_tarefa.tipo,
+          descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
+          vence_em: nova_tarefa.vence_em,
+          hora_vencimento: nova_tarefa.hora_vencimento || null,
+          status: "pendente",
+          prioridade: "media",
+        } as never);
+        toastMsg = "Tarefa concluída e próxima agendada ✅";
+      }
+
+      // 5) outcome=agendar|concluir + stage opcional
+      if ((outcome === "agendar" || outcome === "concluir") && novo_stage_id && novo_stage_id !== currentLead.stage_id) {
         const { error: stageErr } = await supabase.from("pipeline_leads").update({
           stage_id: novo_stage_id,
           stage_changed_at: now,
@@ -442,27 +447,77 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
         }
       }
 
-      // 6) Telemetria estruturada
+      // 6) outcome=descartar → move pra Descarte
+      if (outcome === "descartar") {
+        const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+        const motivo = buildMotivoDescarte("reengajavel", reason_label || "Sem motivo informado");
+        const descarteStage = stages.find(s => s.tipo === "descarte");
+        if (!descarteStage) {
+          toast.error("Etapa de Descarte não encontrada.");
+        } else {
+          const { error } = await supabase.from("pipeline_leads").update({
+            stage_id: descarteStage.id,
+            stage_changed_at: now,
+            updated_at: now,
+            motivo_descarte: motivo,
+            tipo_descarte: "reengajavel",
+            arquivado: false,
+          } as never).eq("id", currentLead.id);
+          if (!error) {
+            await supabase.from("pipeline_historico").insert({
+              pipeline_lead_id: currentLead.id,
+              stage_anterior_id: currentLead.stage_id,
+              stage_novo_id: descarteStage.id,
+              movido_por: corretorId,
+              observacao: motivo,
+            } as never);
+            stageChanged = true;
+            toastMsg = "Lead descartado ✅";
+          } else {
+            toast.error("Não foi possível descartar: " + error.message);
+          }
+        }
+      }
+
+      // 7) outcome=inativar → arquiva
+      if (outcome === "inativar") {
+        const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+        const motivo = buildMotivoDescarte("definitivo", reason_label || "Sem motivo informado");
+        const { error } = await supabase.from("pipeline_leads").update({
+          motivo_descarte: motivo,
+          tipo_descarte: "definitivo",
+          arquivado: true,
+          ultima_acao_at: now,
+          updated_at: now,
+        } as never).eq("id", currentLead.id);
+        if (!error) {
+          toastMsg = "Lead inativado ✅";
+        } else {
+          toast.error("Não foi possível inativar: " + error.message);
+        }
+      }
+
+      // 8) Telemetria
       logFocus("task_completion", {
         session_id: focusSessionIdRef.current,
         lead_id: currentLead.id,
         tarefa_id: completingOverdue.id,
         tipo_contato,
         resultado,
-        has_next_task: true,
-        next_tipo: nova_tarefa.tipo,
+        outcome,
+        reason_code,
+        has_next_task: outcome === "agendar",
+        next_tipo: nova_tarefa?.tipo,
         stage_changed: stageChanged,
         descricao_len: (descricao ?? "").length,
       });
 
-      toast.success("Tarefa concluída e próxima agendada ✅");
+      toast.success(toastMsg);
       setCompletingOverdue(null);
       setTasksRefreshKey(k => k + 1);
       setTimelineRefreshKey(k => k + 1);
       setWorkedCount(c => c + 1);
-      // Invalida cache HOMI do lead para refletir nova atividade
       queryClient.invalidateQueries({ queryKey: ["homi-insight", currentLead.id] });
-      // R4.x Bug 2A — invalidação cross-context para Central/Agenda
       queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
       queryClient.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
@@ -473,7 +528,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     } finally {
       setSaving(false);
     }
-  }, [completingOverdue, currentLead, corretorId, goToNext, queryClient]);
+  }, [completingOverdue, currentLead, corretorId, goToNext, queryClient, stages]);
 
   // handleOpenWhatsApp e handleCopyPhone removidos — top strip do LeadFocusScreen
   // já tem implementações inline (window.open wa.me + Popover copia telefone).
@@ -491,15 +546,19 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     if (!currentLead || !corretorId || !discardReason) return;
     const descarteStage = stages.find(s => s.tipo === "descarte");
     if (!descarteStage) { toast.error("Estágio de descarte não encontrado."); return; }
-    const motivoTexto = discardReason === "Outro"
-      ? `Descarte: ${discardObs.trim() || "Outro motivo"}`
-      : `Descarte: ${discardReason}`;
+    const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+    const labelRaw = discardReason === "Outro"
+      ? (discardObs.trim() || "Outro motivo")
+      : discardReason;
+    const motivoTexto = buildMotivoDescarte("reengajavel", labelRaw);
     setSaving(true);
     try {
       await supabase.from("pipeline_leads").update({
         stage_id: descarteStage.id,
         stage_changed_at: new Date().toISOString(),
         motivo_descarte: motivoTexto,
+        tipo_descarte: "reengajavel",
+        arquivado: false,
         updated_at: new Date().toISOString(),
       } as any).eq("id", currentLead.id);
       await supabase.from("pipeline_historico").insert({

@@ -203,9 +203,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     if (!tipoDescarte) { toast.error("Selecione o tipo de descarte"); return; }
     setInativando(true);
     try {
-      const motivoTexto = inativarMotivo === "outro"
-        ? `Inativado: ${inativarObs.trim() || "Outro motivo"}`
-        : `Inativado: ${inativarMotivo}`;
+      const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+      const labelRaw = inativarMotivo === "outro"
+        ? (inativarObs.trim() || "Outro motivo")
+        : inativarMotivo;
+      const motivoTexto = buildMotivoDescarte(
+        tipoDescarte === "definitivo" ? "definitivo" : "reengajavel",
+        labelRaw,
+      );
 
       if (tipoDescarte === "definitivo") {
         // Definitivo: arquiva o lead (some da carteira). Update direto, sem depender de onUpdate.

@@ -1285,6 +1285,7 @@ export default function MinhasTarefas() {
         tarefaTitulo={completingTarefa?.titulo || ""}
         leadNome={completingTarefa?.lead_nome}
         leadId={completingTarefa?.pipeline_lead_id}
+        context={categoria === "negocios" ? "negocio" : "lead"}
         onConfirm={handleCompletionConfirm}
       />
     </div>
