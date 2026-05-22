@@ -1,21 +1,67 @@
-## Correções de leads
 
-Stage Descarte = `1dd66c25-3848-4053-9f66-82e902989b4d`.
+# Plano: auditoria completa de reengajamento da Campanha Átrio
 
-### Ações (UPDATE direto em `pipeline_leads`)
+## Contexto
 
-| # | Lead | ID | Ação |
-|---|---|---|---|
-| 1 | Karla Mazzotti | `4d5bb139-ee52-4ca0-ab9b-1186d112bccd` | Descarte reengajavel — stage=Descarte, `arquivado=true`, `tipo_descarte='reengajavel'`, `motivo_descarte='Descarte: desistiu \| Empreendimento: Connect JW'` (mantém) |
-| 2 | Rodrigo Xavier (recente, Casa Tua) | `b50025e3-c595-445c-b51b-6b832869f766` | Descarte reengajavel — stage=Descarte, `arquivado=true`, `tipo_descarte='reengajavel'`, mantém `motivo_descarte` atual |
-| 3 | Mirdes | `974059a4-03e7-467f-a061-762df6378daf` | Descarte **definitivo** — stage=Descarte, `arquivado=true`, `tipo_descarte='definitivo'`, `motivo_descarte='Respondeu negativamente ao reengajamento'` |
-| 4 | Eliza (#1 Novo Lead) | `4fa3a6a3-971f-49cf-93fa-f65ceab9511c` | Descarte reengajavel — stage=Descarte, `arquivado=true`, `tipo_descarte='reengajavel'`, `motivo_descarte='Lead duplicado / sem interesse'` |
-| 5 | Marcio Zang #1 (Sem Contato, já arquivado definitivo) | `497efb1a-d8e1-4817-a50f-49454d5301ae` | Reclassificar para reengajavel — `tipo_descarte='reengajavel'` (mantém arquivado e motivo "é corretor"), stage=Descarte |
-| 6 | Marcio Zang #2 (Novo Lead, reaparecido) | `d0541518-7bc5-4587-b51c-1ef59277b764` | Descarte reengajavel — stage=Descarte, `arquivado=true`, `tipo_descarte='reengajavel'`, `motivo_descarte='Corretor buscando para cliente'` |
+Quando um lead em **Descarte/arquivado** responde "Sim" (ou texto livre) ao disparo Átrio, a função `campanha-atrio-processar-resposta` reativa o lead e o envia à roleta. Hoje ela faz isso de forma "silenciosa":
 
-Todos recebem `updated_at = now()`. Em todos com troca de stage, inserir registro em `pipeline_historico` (stage_anterior → Descarte, observação "Descarte manual via correção de bug de reengajamento").
+- `liberarVinculoSeDescarte()` limpa `corretor_id`, `arquivado`, `aceite_status` — **mas não limpa `motivo_descarte` nem `tipo_descarte`**.
+- A distribuição via roleta move o `stage_id` de Descarte → Novo Lead — **sem inserir linha em `pipeline_historico`**.
+- A `pipeline_atividades` é inserida (existe), mas não há rastro visível na timeline de histórico de estágio do lead.
 
-### Não incluído neste plano
-- Investigação do bug raiz (criação/reativação via WhatsApp não limpa `arquivado`/`motivo_descarte`) — fica para sessão separada conforme combinado.
+Resultado: o lead reaparece no pipeline do corretor sem nenhuma explicação no histórico (caso Andréa).
 
-Confirma para executar?
+## Mudanças no edge function `campanha-atrio-processar-resposta`
+
+### 1. Expandir `liberarVinculoSeDescarte()`
+Quando o lead estiver em Descarte ou arquivado, antes da distribuição:
+
+- Capturar `stage_id` e `corretor_id` atuais (para o histórico).
+- Atualizar `pipeline_leads` com:
+  - `corretor_id = null`
+  - `aceite_status = 'pendente'`
+  - `arquivado = false`
+  - `motivo_descarte = null`
+  - `tipo_descarte = null`
+  - `data_descarte = null` (se existir a coluna — verificar)
+- Inserir entrada em `pipeline_historico`:
+  - `pipeline_lead_id`, `stage_anterior_id` = stage atual (Descarte), `stage_novo_id` = Descarte (mesmo — apenas marca a saída), `corretor_id_anterior`, `tipo = 'reativacao_campanha'`, `observacao = 'Lead reativado por resposta na Campanha Átrio (onda X): "<conteudo>"'`.
+- Retornar booleano `foiReativado` para o caller saber se precisa gravar histórico extra de mudança de stage.
+
+### 2. Gravar histórico da mudança de stage pós-roleta
+Após `distributeLeadDirect` retornar sucesso:
+
+- Buscar `stage_id` novo do lead (a roleta já moveu).
+- Se `foiReativado === true` e `stage_id` mudou em relação ao capturado em (1), inserir nova linha em `pipeline_historico`:
+  - `stage_anterior_id` = Descarte, `stage_novo_id` = stage novo (Novo Lead / Sem Contato), `corretor_id_novo` = `dist.corretor_id`, `tipo = 'distribuicao_roleta'`, `observacao = 'Distribuído via roleta após resposta SIM na Campanha Átrio'`.
+
+### 3. Garantir `pipeline_atividades` mesmo em falha de roleta
+Hoje a atividade é gravada com a descrição apropriada para sucesso/falha — manter. Adicionar campo `metadata` (jsonb) com:
+```json
+{ "wamid": "...", "resposta": "Sim, pode enviar", "onda": 3, "corretor_id": "..." }
+```
+para auditoria futura.
+
+### 4. Aplicar a mesma lógica ao branch "texto_livre"
+O bloco de texto livre (linhas 297–347) tem o mesmo problema. Replicar exatamente o tratamento de histórico + limpeza de campos.
+
+### 5. Branch "nao" — também precisa de histórico?
+Não move stage nem distribui. Só atualiza `reengajamento_status` e grava atividade. **Sem mudança aqui** (não há transição a registrar).
+
+## Verificações antes de implementar
+
+- Confirmar colunas em `pipeline_historico` (nomes exatos: `stage_anterior_id`/`stage_novo_id` vs `stage_anterior`/`stage_novo`, existe `corretor_id_anterior`/`corretor_id_novo`?).
+- Confirmar se `pipeline_leads` tem `data_descarte`.
+- Confirmar se `pipeline_atividades` tem coluna `metadata` jsonb (se não, omitir).
+- Reler `distributeLeadDirect` para entender se ela já grava `pipeline_historico` (se sim, evitar duplicação).
+
+## Backfill manual
+
+Após deploy, gravar manualmente em `pipeline_historico` + `pipeline_atividades` o evento da **Andréa (`cf4e6822-fa0b-4e8b-a990-dc4d31f4aff7`)**:
+- Histórico: Descarte → Novo Lead em 21/05 22:55, tipo `reativacao_campanha`, observação citando a resposta "Sim, pode enviar" + pergunta sobre metragem.
+- Atividade: "Resposta SIM — Disparo Átrio (Onda 3)" com timestamp correto e corretor William Brizola.
+
+## Fora de escopo
+
+- Não tocar em `distributeLeadDirect` nem em outras campanhas (cron de nutrição, etc.). Foco exclusivo em `campanha-atrio-processar-resposta`.
+- Não mudar a regra de idempotência de 4h (`suppressRedistribuicao`).
