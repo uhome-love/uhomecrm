@@ -175,24 +175,69 @@ Deno.serve(async (req: Request) => {
 
     // Helper: se o lead está arquivado/Descarte, limpa vínculo antigo
     // para a roleta poder redistribuir (corretor anterior já não tem mais o lead).
-    async function liberarVinculoSeDescarte(leadId: string) {
+    // Retorna estado anterior para permitir gravar pipeline_historico depois.
+    async function liberarVinculoSeDescarte(
+      leadId: string,
+      contextoResposta: string,
+    ): Promise<{ reativado: boolean; stageAnteriorId: string | null; corretorAnteriorId: string | null }> {
       const { data: pl } = await supabase
         .from("pipeline_leads")
         .select("arquivado, stage_id, corretor_id, pipeline_stages!inner(nome)")
         .eq("id", leadId).maybeSingle();
       const stageNome = (pl as any)?.pipeline_stages?.nome || "";
       const ehDescarteOuArquivado = pl?.arquivado === true || /descarte/i.test(stageNome);
-      if (ehDescarteOuArquivado && pl?.corretor_id) {
-        const { error: updErr } = await supabase.from("pipeline_leads").update({
-          corretor_id: null,
-          aceite_status: 'pendente',
-          arquivado: false,
-        }).eq("id", leadId);
-        if (updErr) {
-          console.error(`❌ Falha ao liberar lead ${leadId}:`, updErr);
-          throw new Error(`liberar_vinculo_falhou: ${updErr.message}`);
-        }
-        console.log(`🔓 Lead ${leadId} liberado (estava em ${stageNome}, arquivado=${pl?.arquivado})`);
+      if (!ehDescarteOuArquivado) {
+        return { reativado: false, stageAnteriorId: pl?.stage_id || null, corretorAnteriorId: pl?.corretor_id || null };
+      }
+      const { error: updErr } = await supabase.from("pipeline_leads").update({
+        corretor_id: null,
+        aceite_status: 'pendente',
+        arquivado: false,
+        motivo_descarte: null,
+        tipo_descarte: null,
+      }).eq("id", leadId);
+      if (updErr) {
+        console.error(`❌ Falha ao liberar lead ${leadId}:`, updErr);
+        throw new Error(`liberar_vinculo_falhou: ${updErr.message}`);
+      }
+      console.log(`🔓 Lead ${leadId} liberado (estava em ${stageNome}, arquivado=${pl?.arquivado})`);
+
+      // Histórico: marca a saída do Descarte por reativação de campanha.
+      try {
+        await supabase.from("pipeline_historico").insert({
+          pipeline_lead_id: leadId,
+          stage_anterior_id: pl?.stage_id || null,
+          stage_novo_id: pl?.stage_id || null,
+          observacao: `Reativado por resposta na Campanha Átrio: "${contextoResposta.slice(0, 200)}"`,
+        });
+      } catch (e) {
+        console.error("pipeline_historico (reativacao) insert err:", e);
+      }
+
+      return { reativado: true, stageAnteriorId: pl?.stage_id || null, corretorAnteriorId: pl?.corretor_id || null };
+    }
+
+    // Após distribuição via roleta, se o stage realmente mudou, grava transição no histórico.
+    async function gravarHistoricoPosRoleta(
+      leadId: string,
+      stageAnteriorId: string | null,
+      novoCorretorId: string | null,
+      observacao: string,
+    ) {
+      try {
+        const { data: pl } = await supabase
+          .from("pipeline_leads").select("stage_id").eq("id", leadId).maybeSingle();
+        const novoStageId = pl?.stage_id || null;
+        if (!novoStageId || novoStageId === stageAnteriorId) return;
+        await supabase.from("pipeline_historico").insert({
+          pipeline_lead_id: leadId,
+          stage_anterior_id: stageAnteriorId,
+          stage_novo_id: novoStageId,
+          movido_por: novoCorretorId,
+          observacao,
+        });
+      } catch (e) {
+        console.error("pipeline_historico (pos-roleta) insert err:", e);
       }
     }
 
