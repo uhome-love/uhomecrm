@@ -82,6 +82,27 @@ Deno.serve(async (req: Request) => {
   const { wamid, from, message } = body || {};
   if (!from || !message) return errorResponse("from e message são obrigatórios", 400);
 
+  // ⏸️ PAUSADO PARA AUDITORIA — incidente 22/05/2026 (duplicação Junior Greski +
+  // reativação sem consentimento). Apenas LOG da resposta crua é mantido;
+  // nenhum side-effect em pipeline_leads / roleta / campaign_clicks até liberação.
+  // Para reativar: remover este bloco após análise + correção do fluxo.
+  try {
+    await supabase.from("campanha_atrio_respostas").insert({
+      lead_id: null,
+      telefone: from,
+      tipo_resposta: "texto_livre",
+      conteudo_resposta: JSON.stringify({ wamid, message }).slice(0, 1000),
+      wamid_origem: wamid || null,
+      enviado_para_roleta: false,
+      motivo_falha_roleta: "PAUSADO_AUDITORIA_2026_05_22",
+    });
+  } catch (e) {
+    console.error("audit log insert err", e);
+  }
+  console.log("⏸️ PAUSADO PARA AUDITORIA — não criar lead", { wamid, from });
+  return jsonResponse({ ok: true, paused: true, reason: "audit_2026_05_22" });
+
+
   try {
     // 1) Localizar evento: por context wamid OU por telefone (últimos 8 dígitos, 24h)
     let evento: any = null;
