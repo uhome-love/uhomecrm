@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { RefreshCw, Send, Activity, Settings, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
+import { RefreshCw, Send, Activity, Settings, Calendar, ChevronDown, ChevronUp, Radio, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,9 +11,29 @@ import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookT
 import VisitaAmanhaTab from "@/components/central-nutricao/VisitaAmanhaTab";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
 
+const CampanhaOndasTab = lazy(() => import("@/components/central-nutricao/CampanhaOndasTab"));
+
 export default function CentralNutricaoPage() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState("disparo");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "disparo";
+  const [tab, setTab] = useState(initialTab);
+
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t && t !== tab) setTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const handleTabChange = (v: string) => {
+    setTab(v);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (v === "disparo") next.delete("tab");
+      else next.set("tab", v);
+      return next;
+    }, { replace: true });
+  };
   const [showVisitaLegacy, setShowVisitaLegacy] = useState(false);
 
   const onFired = () => {
