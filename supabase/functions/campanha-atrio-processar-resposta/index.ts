@@ -173,26 +173,102 @@ Deno.serve(async (req: Request) => {
 
     const hoje = new Date().toISOString().slice(0,10);
 
+    // Helper: insere pipeline_atividades garantindo created_by (NOT NULL).
+    // Resolve um corretor "atual" do lead se nenhum for passado.
+    async function inserirAtividade(
+      titulo: string,
+      descricao: string,
+      corretorPreferido: string | null,
+    ) {
+      let createdBy = corretorPreferido;
+      if (!createdBy) {
+        const { data: pl } = await supabase
+          .from("pipeline_leads").select("corretor_id").eq("id", evento.lead_id).maybeSingle();
+        createdBy = pl?.corretor_id || null;
+      }
+      if (!createdBy) {
+        console.warn("inserirAtividade: sem corretor — atividade não gravada", titulo);
+        return;
+      }
+      const { error } = await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: evento.lead_id,
+        tipo: "campanha_atrio",
+        titulo,
+        descricao,
+        data: hoje,
+        status: "concluida",
+        created_by: createdBy,
+        responsavel_id: createdBy,
+      });
+      if (error) console.error("pipeline_atividades insert err:", error);
+    }
+
+
     // Helper: se o lead está arquivado/Descarte, limpa vínculo antigo
     // para a roleta poder redistribuir (corretor anterior já não tem mais o lead).
-    async function liberarVinculoSeDescarte(leadId: string) {
+    // Retorna estado anterior para permitir gravar pipeline_historico depois.
+    async function liberarVinculoSeDescarte(
+      leadId: string,
+      contextoResposta: string,
+    ): Promise<{ reativado: boolean; stageAnteriorId: string | null; corretorAnteriorId: string | null }> {
       const { data: pl } = await supabase
         .from("pipeline_leads")
         .select("arquivado, stage_id, corretor_id, pipeline_stages!inner(nome)")
         .eq("id", leadId).maybeSingle();
       const stageNome = (pl as any)?.pipeline_stages?.nome || "";
       const ehDescarteOuArquivado = pl?.arquivado === true || /descarte/i.test(stageNome);
-      if (ehDescarteOuArquivado && pl?.corretor_id) {
-        const { error: updErr } = await supabase.from("pipeline_leads").update({
-          corretor_id: null,
-          aceite_status: 'pendente',
-          arquivado: false,
-        }).eq("id", leadId);
-        if (updErr) {
-          console.error(`❌ Falha ao liberar lead ${leadId}:`, updErr);
-          throw new Error(`liberar_vinculo_falhou: ${updErr.message}`);
-        }
-        console.log(`🔓 Lead ${leadId} liberado (estava em ${stageNome}, arquivado=${pl?.arquivado})`);
+      if (!ehDescarteOuArquivado) {
+        return { reativado: false, stageAnteriorId: pl?.stage_id || null, corretorAnteriorId: pl?.corretor_id || null };
+      }
+      const { error: updErr } = await supabase.from("pipeline_leads").update({
+        corretor_id: null,
+        aceite_status: 'pendente',
+        arquivado: false,
+        motivo_descarte: null,
+        tipo_descarte: null,
+      }).eq("id", leadId);
+      if (updErr) {
+        console.error(`❌ Falha ao liberar lead ${leadId}:`, updErr);
+        throw new Error(`liberar_vinculo_falhou: ${updErr.message}`);
+      }
+      console.log(`🔓 Lead ${leadId} liberado (estava em ${stageNome}, arquivado=${pl?.arquivado})`);
+
+      // Histórico: marca a saída do Descarte por reativação de campanha.
+      try {
+        await supabase.from("pipeline_historico").insert({
+          pipeline_lead_id: leadId,
+          stage_anterior_id: pl?.stage_id || null,
+          stage_novo_id: pl?.stage_id || null,
+          observacao: `Reativado por resposta na Campanha Átrio: "${contextoResposta.slice(0, 200)}"`,
+        });
+      } catch (e) {
+        console.error("pipeline_historico (reativacao) insert err:", e);
+      }
+
+      return { reativado: true, stageAnteriorId: pl?.stage_id || null, corretorAnteriorId: pl?.corretor_id || null };
+    }
+
+    // Após distribuição via roleta, se o stage realmente mudou, grava transição no histórico.
+    async function gravarHistoricoPosRoleta(
+      leadId: string,
+      stageAnteriorId: string | null,
+      novoCorretorId: string | null,
+      observacao: string,
+    ) {
+      try {
+        const { data: pl } = await supabase
+          .from("pipeline_leads").select("stage_id").eq("id", leadId).maybeSingle();
+        const novoStageId = pl?.stage_id || null;
+        if (!novoStageId || novoStageId === stageAnteriorId) return;
+        await supabase.from("pipeline_historico").insert({
+          pipeline_lead_id: leadId,
+          stage_anterior_id: stageAnteriorId,
+          stage_novo_id: novoStageId,
+          movido_por: novoCorretorId,
+          observacao,
+        });
+      } catch (e) {
+        console.error("pipeline_historico (pos-roleta) insert err:", e);
       }
     }
 
@@ -215,18 +291,18 @@ Deno.serve(async (req: Request) => {
           enviado_para_roleta: false,
           motivo_falha_roleta: "idempotencia_lead_ja_distribuido_4h",
         }).eq("id", respIns.id);
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
-          titulo: "Resposta SIM ignorada — Disparo Átrio",
-          descricao: `Lead respondeu novamente "${conteudo?.slice(0,80)}" mas já havia sido distribuído via roleta nas últimas 4h. Sem nova distribuição.`,
-          data: hoje, status: "concluida",
-        });
+        await inserirAtividade(
+          "Resposta SIM ignorada — Disparo Átrio",
+          `Lead respondeu novamente "${conteudo?.slice(0,80)}" mas já havia sido distribuído via roleta nas últimas 4h. Sem nova distribuição.`,
+          null,
+        );
+
         await sendText(from, FOLLOW_SIM);
         return jsonResponse({ ok: true, tipo, deduped: true });
       }
       // Recategoriza para Átrio + libera vínculo antigo → roleta vai para S5 (Produto Foco)
       await recategorizarParaAtrio(evento.lead_id);
-      await liberarVinculoSeDescarte(evento.lead_id);
+      const liberacao = await liberarVinculoSeDescarte(evento.lead_id, conteudo || "Sim");
       const traceId = `atrio_${respIns.id}`;
       const dist = await distributeLeadDirect(SUPABASE_URL, SERVICE_KEY, evento.lead_id, traceId, console as any);
 
@@ -241,6 +317,17 @@ Deno.serve(async (req: Request) => {
         reativado_por_nutricao: true,
         reativado_em: new Date().toISOString(),
       }).eq("id", evento.lead_id);
+
+      // Histórico da transição pós-roleta (se houve reativação e o stage mudou)
+      if (sucesso && liberacao.reativado) {
+        await gravarHistoricoPosRoleta(
+          evento.lead_id,
+          liberacao.stageAnteriorId,
+          dist?.corretor_id || null,
+          `Distribuído via roleta após resposta SIM na Campanha Átrio: "${(conteudo || "").slice(0, 120)}"`,
+        );
+      }
+
 
       // Marca como "Novo Interesse" no painel CEO
       try {
@@ -258,14 +345,14 @@ Deno.serve(async (req: Request) => {
 
 
       // Atividade no lead (não move stage — apenas log)
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
-        titulo: "Resposta SIM — Disparo Átrio",
-        descricao: sucesso
+      await inserirAtividade(
+        "Resposta SIM — Disparo Átrio",
+        sucesso
           ? `Lead respondeu "Sim, pode enviar" (Átrio). Distribuído para corretor via roleta.`
           : `Lead respondeu SIM (Átrio). Falha na roleta: ${dist?.reason || dist?.error}`,
-        data: hoje, status: "concluida",
-      });
+        dist?.corretor_id || liberacao.corretorAnteriorId || null,
+      );
+
 
       // Tag
       try {
@@ -280,12 +367,12 @@ Deno.serve(async (req: Request) => {
       await supabase.from("pipeline_leads").update({
         reengajamento_status: "respondido_nao",
       }).eq("id", evento.lead_id);
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
-        titulo: "Resposta NÃO — Disparo Átrio",
-        descricao: `Lead respondeu "Não tenho interesse" (Átrio).`,
-        data: hoje, status: "concluida",
-      });
+      await inserirAtividade(
+        "Resposta NÃO — Disparo Átrio",
+        `Lead respondeu "Não tenho interesse" (Átrio).`,
+        null,
+      );
+
 
       try {
         await supabase.rpc("add_lead_tag", { p_lead_id: evento.lead_id, p_tag: "desinteresse_atrio_2026_05_21" });
@@ -300,16 +387,16 @@ Deno.serve(async (req: Request) => {
         enviado_para_roleta: false,
         motivo_falha_roleta: "idempotencia_lead_ja_distribuido_4h",
       }).eq("id", respIns.id);
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
-        titulo: "Resposta livre ignorada — Disparo Átrio",
-        descricao: `Lead respondeu novamente "${conteudo?.slice(0,80)}" mas já havia sido distribuído via roleta nas últimas 4h. Sem nova distribuição.`,
-        data: hoje, status: "concluida",
-      });
+      await inserirAtividade(
+        "Resposta livre ignorada — Disparo Átrio",
+        `Lead respondeu novamente "${conteudo?.slice(0,80)}" mas já havia sido distribuído via roleta nas últimas 4h. Sem nova distribuição.`,
+        null,
+      );
+
       return jsonResponse({ ok: true, tipo, deduped: true });
     }
     await recategorizarParaAtrio(evento.lead_id);
-    await liberarVinculoSeDescarte(evento.lead_id);
+    const liberacaoTL = await liberarVinculoSeDescarte(evento.lead_id, conteudo || "(texto livre)");
     const traceId = `atrio_tl_${respIns.id}`;
     const dist = await distributeLeadDirect(SUPABASE_URL, SERVICE_KEY, evento.lead_id, traceId, console as any);
 
@@ -325,6 +412,16 @@ Deno.serve(async (req: Request) => {
       reativado_em: new Date().toISOString(),
     }).eq("id", evento.lead_id);
 
+    if (sucesso && liberacaoTL.reativado) {
+      await gravarHistoricoPosRoleta(
+        evento.lead_id,
+        liberacaoTL.stageAnteriorId,
+        dist?.corretor_id || null,
+        `Distribuído via roleta após resposta livre na Campanha Átrio: "${(conteudo || "").slice(0, 120)}"`,
+      );
+    }
+
+
     try {
       await supabase.from("campaign_clicks").insert({
         telefone: from,
@@ -338,12 +435,12 @@ Deno.serve(async (req: Request) => {
       });
     } catch (e) { console.error("campaign_clicks insert err:", e); }
 
-    await supabase.from("pipeline_atividades").insert({
-      pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
-      titulo: "Resposta livre — Disparo Átrio",
-      descricao: `Lead respondeu texto livre (Átrio): "${conteudo?.slice(0,200)}". ${sucesso ? "Enviado para roleta." : "Falha roleta: " + (dist?.reason || dist?.error)}`,
-      data: hoje, status: "concluida",
-    });
+    await inserirAtividade(
+      "Resposta livre — Disparo Átrio",
+      `Lead respondeu texto livre (Átrio): "${conteudo?.slice(0,200)}". ${sucesso ? "Enviado para roleta." : "Falha roleta: " + (dist?.reason || dist?.error)}`,
+      dist?.corretor_id || liberacaoTL.corretorAnteriorId || null,
+    );
+
     return jsonResponse({ ok: true, tipo, distribuido: sucesso });
   } catch (e) {
     console.error("processar-resposta error", e);
