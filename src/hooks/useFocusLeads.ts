@@ -314,11 +314,13 @@ export function useFocusLeads(
 
       // 5. Régua de 4 estados + filtros
       const criteriaFilter = filters?.criteria || ["all"];
-      const filterAll = criteriaFilter.includes("all");
-      const wantOverdue = filterAll || criteriaFilter.includes("overdue_tasks");
-      const wantToday = filterAll || criteriaFilter.includes("today");
-      const wantNoNextStep = filterAll || criteriaFilter.includes("no_next_step");
+      const filterEvery = criteriaFilter.includes("every");
+      const filterAll = !filterEvery && criteriaFilter.includes("all");
+      const wantOverdue = filterEvery || filterAll || criteriaFilter.includes("overdue_tasks");
+      const wantToday = filterEvery || filterAll || criteriaFilter.includes("today");
+      const wantNoNextStep = filterEvery || filterAll || criteriaFilter.includes("no_next_step");
       const includeUpcoming = !!filters?.includeUpcoming2d;
+
 
       const focusLeads: FocusLead[] = [];
 
