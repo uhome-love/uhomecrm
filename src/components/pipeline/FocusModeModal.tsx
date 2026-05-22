@@ -462,6 +462,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       setWorkedCount(c => c + 1);
       // Invalida cache HOMI do lead para refletir nova atividade
       queryClient.invalidateQueries({ queryKey: ["homi-insight", currentLead.id] });
+      // R4.x Bug 2A — invalidação cross-context para Central/Agenda
+      queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
+      queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
       setTimeout(() => goToNext(), 800);
     } catch (err) {
       console.error(err);
