@@ -288,7 +288,7 @@ export default function AppLayout() {
             <PushPromptBanner />
             <TabBar />
             
-            <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative bg-[#f0f0f5] dark:bg-[#0e1525]">
+            <main className="flex-1 overflow-hidden min-w-0 min-h-0 relative bg-[#f0f0f5] dark:bg-background">
               {tabs.map(tab => {
                 const Comp = PAGE_COMPONENTS[tab.componentKey];
                 if (!Comp) return null;
