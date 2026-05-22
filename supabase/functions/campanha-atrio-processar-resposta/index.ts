@@ -23,7 +23,6 @@ async function sendText(to: string, text: string) {
 }
 
 function classify(message: any): { tipo: "sim"|"nao"|"texto_livre", conteudo: string } {
-  // 1) interactive.button_reply: title (preferido) OU id
   const br = message?.interactive?.button_reply;
   const btn = message?.button;
   let payload = "";
@@ -39,13 +38,38 @@ function classify(message: any): { tipo: "sim"|"nao"|"texto_livre", conteudo: st
   if (norm === "sim, pode enviar" || norm === "sim pode enviar" || /^sim\b/.test(norm)) {
     return { tipo: "sim", conteudo: payload };
   }
-  // NÃO
+  // NÃO explícito
   if (
-    norm === "não tenho interesse" || norm === "nao tenho interesse" ||
-    /^n[aã]o\b/.test(norm)
+    /^n[aã]o\b/.test(norm) ||
+    /\bn[aã]o tenho interesse\b/.test(norm) ||
+    /\bsem interesse\b/.test(norm) ||
+    /\bn[aã]o quero\b/.test(norm) ||
+    /\bpara de (me )?(mandar|enviar)\b/.test(norm) ||
+    /\bn[aã]o me (mande|envie|manda|envia)\b/.test(norm)
   ) {
     return { tipo: "nao", conteudo: payload };
   }
+
+  // Despedidas/agradecimentos curtos → tratar como NÃO (não dispara roleta).
+  // Aplica quando msg ≤ 30 chars e todos os tokens são neutros.
+  const NEUTRAS = new Set([
+    "obrigado","obrigada","obg","obgda","obgdo","obrigadu","obgado","obgada",
+    "ok","okay","okk","kk","blz","beleza","valeu","vlw","valew",
+    "entendi","entendido","ciente","certo","claro",
+    "legal","tranquilo","tranquila","tmj","show",
+    "boa","noite","noitee","dia","tarde",
+    "bom","boas","tchau","até","ate","mais","abraço","abraco","abs","abç",
+    "de","nada","por","favor","obrigadissimo",
+  ]);
+  const limpo = norm.replace(/[.!?,;:()"'`~^]+/g, " ").replace(/\s+/g, " ").trim();
+  if (limpo.length > 0 && limpo.length <= 30) {
+    const tokens = limpo.split(" ").filter(Boolean);
+    const todosNeutros = tokens.every(t => NEUTRAS.has(t));
+    if (todosNeutros) {
+      return { tipo: "nao", conteudo: payload };
+    }
+  }
+
   return { tipo: "texto_livre", conteudo: payload };
 }
 
