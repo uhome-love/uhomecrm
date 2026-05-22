@@ -45,12 +45,12 @@ export default function CardQuickTaskPopover({
 }: CardQuickTaskPopoverProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState("follow_up");
+  const [type, setType] = useState(defaultType);
   const [obs, setObs] = useState("");
   const [obsError, setObsError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [customDate, setCustomDate] = useState<Date>();
-  const [time, setTime] = useState("10:00");
+  const [time, setTime] = useState(defaultTime);
   const [dateMode, setDateMode] = useState<"hoje" | "amanha" | "custom">("hoje");
 
   const handleCreate = useCallback(async () => {
