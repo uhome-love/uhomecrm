@@ -520,6 +520,23 @@ const PipelineCard = memo(function PipelineCard({
         <CardStatusLine status={status} stageChangedAt={lead.stage_changed_at} />
       </div>
 
+      {/* Badge "Criar primeira tarefa" — complementar ao action bar.
+          Aparece quando o card está 🟡 (Desatualizado, sem tarefa pendente)
+          e o stage não é descarte/convertido. NÃO substitui o botão "Tarefa". */}
+      {status.indicator === "🟡" && stage?.tipo !== "descarte" && stage?.tipo !== "convertido" && (
+        <div data-no-card-click onClick={(e) => e.stopPropagation()} className="px-3 pb-2">
+          <CardQuickTaskPopover
+            leadId={lead.id}
+            leadNome={lead.nome}
+            corretorId={lead.corretor_id}
+            triggerVariant="badge"
+            triggerLabel="➕ Criar primeira tarefa"
+            defaultType="ligar"
+            defaultTime={plus2hRounded()}
+          />
+        </div>
+      )}
+
 
       {/* Negócio Criado stage — show deal info + regression */}
       {stage?.tipo === "convertido" && (
