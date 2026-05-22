@@ -87,7 +87,14 @@ export interface FocusLead {
   health: FocusHealth;
 }
 
-export type FocusCriteria = "overdue_tasks" | "today" | "no_next_step" | "all";
+/**
+ * Critérios do Modo Foco:
+ * - "overdue_tasks" / "today" / "no_next_step" — buckets individuais da régua de saúde
+ * - "all"   — "Tudo que precisa de atenção" (default; união dos 3 buckets acima)
+ * - "every" — "Todos" (R4.1): universo completo de leads ativos do corretor,
+ *             ordenados pela régua. Ignora filtros de bucket e janela de cortesia.
+ */
+export type FocusCriteria = "overdue_tasks" | "today" | "no_next_step" | "all" | "every";
 
 export interface FocusFilters {
   stageIds?: string[];
@@ -95,6 +102,7 @@ export interface FocusFilters {
   /** Quando true, "Tudo" também inclui leads com tarefa pendente nos próximos 2 dias. */
   includeUpcoming2d?: boolean;
 }
+
 
 interface UseFocusLeadsReturn {
   leads: FocusLead[];
