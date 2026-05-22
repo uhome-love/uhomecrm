@@ -534,47 +534,84 @@ export default function MinhasTarefas() {
     if (!completingTarefa || !user || savingCompletion) return;
     const id = completingTarefa.id;
     const leadId = completingTarefa.pipeline_lead_id;
-    const { tipo_contato, resultado, descricao, nova_tarefa, novo_stage_id } = payload;
+    const {
+      tipo_contato, resultado, descricao,
+      outcome, nova_tarefa, novo_stage_id,
+      reason_label, reason_code,
+    } = payload;
     setSavingCompletion(true);
 
     try {
       const now = new Date().toISOString();
 
+      // ── NEGÓCIOS: fluxo legado preservado integralmente ─────────────
       if (categoria === "negocios") {
         const { error } = await supabase.from("negocios_tarefas")
           .update({ status: "concluida", concluida_em: now } as never).eq("id", id);
         if (error) throw error;
-      } else {
-        const { error } = await supabase.from("pipeline_tarefas")
-          .update({ status: "concluida", concluida_em: now } as never).eq("id", id);
-        if (error) throw error;
-        await supabase.from("pipeline_leads")
-          .update({ ultima_acao_at: now, updated_at: now } as never).eq("id", leadId);
+
+        // Cria próxima (negócios só aceita outcome='agendar' via prop context='negocio')
+        if (outcome === "agendar" && nova_tarefa) {
+          const negocioNome = completingTarefa.lead_nome || "Negócio";
+          const TIPO_LABELS_NEG: Record<string, string> = {
+            ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up",
+            visita: "Visita", proposta: "Proposta", email: "E-mail",
+          };
+          const [yPt, mPt, dPt] = (nova_tarefa.vence_em || "").split("-");
+          const dateSuffix = yPt && mPt && dPt ? ` · ${dPt}/${mPt}` : "";
+          const titulo = `${TIPO_LABELS_NEG[nova_tarefa.tipo] || nova_tarefa.tipo}: ${negocioNome}${dateSuffix}`;
+          await supabase.from("negocios_tarefas").insert({
+            negocio_id: (completingTarefa as any).negocio_id,
+            tipo: nova_tarefa.tipo,
+            titulo,
+            descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
+            prioridade: "media",
+            status: "pendente",
+            responsavel_id: user.id,
+            vence_em: nova_tarefa.vence_em,
+            hora_vencimento: nova_tarefa.hora_vencimento || null,
+            created_by: user.id,
+          } as any);
+        }
+
+        toast.success("Tarefa concluída ✅");
+        setCompletingTarefa(null);
+        queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
+        return;
       }
 
-      // Activity capture (apenas leads — negócios não usa pipeline_atividades)
-      if (categoria === "leads") {
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: leadId,
-          tipo: tipo_contato, // Ajuste 1: nunca o resultado
-          tipo_contato,
-          resultado,
-          titulo: `${completingTarefa.titulo} — ${resultado}`,
-          descricao: descricao ?? null,
-          data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-          hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
-          prioridade: "media",
-          status: "concluida",
-          created_by: user.id,
-        } as never);
+      // ── LEADS: fluxo com switch de outcomes ─────────────────────────
+      const { error: toggleErr } = await supabase.from("pipeline_tarefas")
+        .update({ status: "concluida", concluida_em: now } as never).eq("id", id);
+      if (toggleErr) throw toggleErr;
 
-        // Nova tarefa (fluxo V2 sempre cria)
+      await supabase.from("pipeline_leads")
+        .update({ ultima_acao_at: now, updated_at: now } as never).eq("id", leadId);
+
+      // Activity capture (sempre)
+      await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: leadId,
+        tipo: tipo_contato,
+        tipo_contato,
+        resultado,
+        titulo: `${completingTarefa.titulo} — ${resultado}`,
+        descricao: descricao ?? null,
+        data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+        hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
+        prioridade: "media",
+        status: "concluida",
+        created_by: user.id,
+      } as never);
+
+      let toastMsg = "Tarefa concluída ✅";
+
+      // outcome=agendar → cria próxima
+      if (outcome === "agendar" && nova_tarefa) {
         const leadNome = completingTarefa.lead_nome || "Lead";
         const TIPO_LABELS_MAP: Record<string, string> = {
           ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up",
           visita: "Visita", proposta: "Proposta", email: "E-mail",
         };
-        // R4.x Bug 2B — título com sufixo de data para distinguir da concluída
         const [yPt, mPt, dPt] = (nova_tarefa.vence_em || "").split("-");
         const dateSuffix = yPt && mPt && dPt ? ` · ${dPt}/${mPt}` : "";
         const titulo = `${TIPO_LABELS_MAP[nova_tarefa.tipo] || nova_tarefa.tipo}: ${leadNome}${dateSuffix}`;
@@ -582,7 +619,6 @@ export default function MinhasTarefas() {
           pipeline_lead_id: leadId,
           tipo: nova_tarefa.tipo,
           titulo,
-          // R4.x Bug 1 — Step 2 obs sobrescreve; senão herda resumo do Step 1
           descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
           prioridade: "media",
           status: "pendente",
@@ -592,28 +628,84 @@ export default function MinhasTarefas() {
           created_by: user.id,
         } as never);
         if (insertErr) throw insertErr;
+        toastMsg = "Tarefa concluída e próxima agendada ✅";
+      }
 
-        // Optional stage change
-        if (novo_stage_id && leadId) {
-          const { error: stageErr } = await supabase.from("pipeline_leads").update({
-            stage_id: novo_stage_id,
+      // outcome=agendar|concluir + stage opcional
+      if ((outcome === "agendar" || outcome === "concluir") && novo_stage_id && leadId) {
+        const { error: stageErr } = await supabase.from("pipeline_leads").update({
+          stage_id: novo_stage_id,
+          stage_changed_at: now,
+          updated_at: now,
+        } as never).eq("id", leadId);
+        if (stageErr) {
+          toast.warning("Tarefa concluída, mas etapa não foi alterada.");
+        } else {
+          await supabase.from("pipeline_historico").insert({
+            pipeline_lead_id: leadId,
+            stage_novo_id: novo_stage_id,
+            movido_por: user.id,
+            observacao: "Movido via Central de Tarefas (conclusão)",
+          });
+        }
+      }
+
+      // outcome=descartar → move pra Descarte
+      if (outcome === "descartar" && leadId) {
+        const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+        const motivo = buildMotivoDescarte("reengajavel", reason_label || "Sem motivo informado");
+        const { data: descarteStage } = await supabase
+          .from("pipeline_stages")
+          .select("id")
+          .eq("pipeline_tipo", "leads")
+          .eq("tipo", "descarte")
+          .limit(1)
+          .maybeSingle();
+        if (!descarteStage) {
+          toast.error("Etapa de Descarte não encontrada.");
+        } else {
+          const { error } = await supabase.from("pipeline_leads").update({
+            stage_id: descarteStage.id,
             stage_changed_at: now,
             updated_at: now,
+            motivo_descarte: motivo,
+            tipo_descarte: "reengajavel",
+            arquivado: false,
           } as never).eq("id", leadId);
-          if (stageErr) {
-            toast.warning("Tarefa concluída, mas etapa não foi alterada.");
+          if (error) {
+            toast.error("Não foi possível descartar: " + error.message);
           } else {
             await supabase.from("pipeline_historico").insert({
               pipeline_lead_id: leadId,
-              stage_novo_id: novo_stage_id,
+              stage_novo_id: descarteStage.id,
               movido_por: user.id,
-              observacao: "Movido via Central de Tarefas (conclusão)",
-            });
+              observacao: motivo,
+            } as never);
+            toastMsg = "Lead descartado ✅";
           }
         }
       }
 
-      toast.success("Tarefa concluída e próxima agendada ✅");
+      // outcome=inativar → arquiva
+      if (outcome === "inativar" && leadId) {
+        const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+        const motivo = buildMotivoDescarte("definitivo", reason_label || "Sem motivo informado");
+        const { error } = await supabase.from("pipeline_leads").update({
+          motivo_descarte: motivo,
+          tipo_descarte: "definitivo",
+          arquivado: true,
+          ultima_acao_at: now,
+          updated_at: now,
+        } as never).eq("id", leadId);
+        if (error) {
+          toast.error("Não foi possível inativar: " + error.message);
+        } else {
+          toastMsg = "Lead inativado ✅";
+        }
+      }
+
+      console.info("[task_completed]", { lead_id: leadId, tarefa_id: id, outcome, reason_code, categoria });
+      toast.success(toastMsg);
       setCompletingTarefa(null);
       queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
       queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
