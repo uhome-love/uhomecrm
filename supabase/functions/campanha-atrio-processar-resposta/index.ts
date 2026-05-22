@@ -271,7 +271,7 @@ Deno.serve(async (req: Request) => {
       }
       // Recategoriza para Átrio + libera vínculo antigo → roleta vai para S5 (Produto Foco)
       await recategorizarParaAtrio(evento.lead_id);
-      await liberarVinculoSeDescarte(evento.lead_id);
+      const liberacao = await liberarVinculoSeDescarte(evento.lead_id, conteudo || "Sim");
       const traceId = `atrio_${respIns.id}`;
       const dist = await distributeLeadDirect(SUPABASE_URL, SERVICE_KEY, evento.lead_id, traceId, console as any);
 
@@ -286,6 +286,17 @@ Deno.serve(async (req: Request) => {
         reativado_por_nutricao: true,
         reativado_em: new Date().toISOString(),
       }).eq("id", evento.lead_id);
+
+      // Histórico da transição pós-roleta (se houve reativação e o stage mudou)
+      if (sucesso && liberacao.reativado) {
+        await gravarHistoricoPosRoleta(
+          evento.lead_id,
+          liberacao.stageAnteriorId,
+          dist?.corretor_id || null,
+          `Distribuído via roleta após resposta SIM na Campanha Átrio: "${(conteudo || "").slice(0, 120)}"`,
+        );
+      }
+
 
       // Marca como "Novo Interesse" no painel CEO
       try {
