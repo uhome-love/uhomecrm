@@ -1,10 +1,12 @@
 /**
- * Sprint 1 R3-V2 — Tela 1: "O que aconteceu?"
+ * Sprint 1 R4.2 — Tela 1: "O que aconteceu?"
  * Campos obrigatórios: tipo_contato + resultado. descricao opcional.
+ * Adapta ao tema dark/light via tokens semânticos.
  */
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   TIPO_CONTATO_OPTIONS,
   RESULTADO_OPTIONS,
@@ -23,29 +25,31 @@ interface Props {
   onNext: () => void;
 }
 
+type Tone = "positive" | "neutral" | "warning" | "negative";
+
 const TONE_STYLES: Record<
-  "positive" | "neutral" | "warning" | "negative",
-  { bg: string; border: string; text: string }
+  Tone,
+  { base: string; selected: string; icon: string }
 > = {
   positive: {
-    bg: "rgba(34,197,94,0.16)",
-    border: "rgba(34,197,94,0.55)",
-    text: "#86efac",
+    base: "bg-success-500/10 border-success-500/30 text-foreground hover:bg-success-500/15",
+    selected: "bg-success-500/15 border-success-500 text-foreground ring-2 ring-success-500/30",
+    icon: "text-success-700 dark:text-success-500",
   },
   warning: {
-    bg: "rgba(234,179,8,0.16)",
-    border: "rgba(234,179,8,0.55)",
-    text: "#fde68a",
+    base: "bg-warning-500/10 border-warning-500/30 text-foreground hover:bg-warning-500/15",
+    selected: "bg-warning-500/15 border-warning-500 text-foreground ring-2 ring-warning-500/30",
+    icon: "text-warning-700 dark:text-warning-500",
   },
   negative: {
-    bg: "rgba(239,68,68,0.16)",
-    border: "rgba(239,68,68,0.55)",
-    text: "#fca5a5",
+    base: "bg-destructive/10 border-destructive/30 text-foreground hover:bg-destructive/15",
+    selected: "bg-destructive/15 border-destructive text-foreground ring-2 ring-destructive/30",
+    icon: "text-destructive",
   },
   neutral: {
-    bg: "rgba(148,163,184,0.12)",
-    border: "rgba(148,163,184,0.4)",
-    text: "#cbd5e1",
+    base: "bg-muted border-border text-muted-foreground hover:bg-muted/70",
+    selected: "bg-muted border-foreground/30 text-foreground ring-2 ring-foreground/10",
+    icon: "text-muted-foreground",
   },
 };
 
@@ -65,8 +69,8 @@ export function CompletionStep1({
     <div className="p-5 space-y-5">
       {/* Canal de contato */}
       <div>
-        <label className="text-[11px] uppercase tracking-wide font-semibold text-indigo-300 mb-2 flex items-center gap-1.5">
-          Canal de contato <span className="text-red-400">*</span>
+        <label className="text-[11px] uppercase tracking-wide font-semibold text-primary mb-2 flex items-center gap-1.5">
+          Canal de contato <span className="text-destructive">*</span>
         </label>
         <div className="grid grid-cols-2 gap-2">
           {TIPO_CONTATO_OPTIONS.map(({ value, label, Icon }) => {
@@ -75,20 +79,19 @@ export function CompletionStep1({
               <button
                 key={value}
                 onClick={() => onChangeTipo(value)}
-                className="px-3 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                className={cn(
+                  "px-3 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border",
+                  active
+                    ? "border-transparent text-white"
+                    : "bg-background border-border text-foreground hover:bg-muted",
+                )}
                 style={
                   active
                     ? {
                         background:
                           "var(--gradient-focus, linear-gradient(135deg, #4969FF, #7C3AED))",
-                        color: "#fff",
-                        border: "1px solid transparent",
                       }
-                    : {
-                        background: "rgba(255,255,255,0.04)",
-                        color: "#cbd5e1",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                      }
+                    : undefined
                 }
               >
                 <Icon className="w-4 h-4" />
@@ -101,33 +104,23 @@ export function CompletionStep1({
 
       {/* Resultado */}
       <div>
-        <label className="text-[11px] uppercase tracking-wide font-semibold text-indigo-300 mb-2 flex items-center gap-1.5">
-          Resultado <span className="text-red-400">*</span>
+        <label className="text-[11px] uppercase tracking-wide font-semibold text-primary mb-2 flex items-center gap-1.5">
+          Resultado <span className="text-destructive">*</span>
         </label>
         <div className="flex flex-wrap gap-1.5">
           {RESULTADO_OPTIONS.map(({ value, label, Icon, tone }) => {
             const active = resultado === value;
-            const t = TONE_STYLES[tone];
+            const t = TONE_STYLES[tone as Tone];
             return (
               <button
                 key={value}
                 onClick={() => onChangeResultado(value)}
-                className="px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5"
-                style={
-                  active
-                    ? {
-                        background: t.bg,
-                        color: t.text,
-                        border: `1px solid ${t.border}`,
-                      }
-                    : {
-                        background: "rgba(255,255,255,0.04)",
-                        color: "#94a3b8",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                      }
-                }
+                className={cn(
+                  "px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 border",
+                  active ? t.selected : t.base,
+                )}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className={cn("w-3.5 h-3.5", t.icon)} />
                 {label}
               </button>
             );
@@ -137,31 +130,28 @@ export function CompletionStep1({
 
       {/* Resumo (opcional) */}
       <div>
-        <label className="text-[11px] uppercase tracking-wide font-semibold text-indigo-300 mb-1.5 flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3" /> Resumo <span className="text-gray-500 normal-case font-normal">(opcional)</span>
+        <label className="text-[11px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1.5">
+          <Sparkles className="w-3 h-3" /> Resumo{" "}
+          <span className="text-muted-foreground normal-case font-normal">(opcional)</span>
         </label>
         <Textarea
           placeholder="Ex: Cliente pediu para ligar amanhã às 14h, demonstrou interesse no apto 301..."
           value={descricao}
           onChange={(e) => onChangeDescricao(e.target.value)}
           rows={3}
-          className="resize-none text-sm bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-indigo-500/40"
+          className="resize-none text-sm bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/20"
         />
       </div>
 
       {/* Footer */}
       <div className="flex gap-2 justify-between pt-1">
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
-        >
+        <Button variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
         <Button
           onClick={onNext}
           disabled={!canAdvance}
-          className="gap-2 border-0 text-white disabled:opacity-40"
+          className="gap-2 border-0 text-white disabled:opacity-40 shadow-lg shadow-primary/25"
           style={{
             background:
               "var(--gradient-focus, linear-gradient(135deg, #4969FF, #7C3AED))",
