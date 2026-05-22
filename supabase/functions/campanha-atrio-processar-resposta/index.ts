@@ -185,6 +185,41 @@ Deno.serve(async (req: Request) => {
 
 
   try {
+    // 0) GUARDRAIL — Sub-fix 4 (22/05/2026, aprovacao b1d4a221)
+    // Bloqueia respostas Átrio para leads em estado "intocável" ANTES de
+    // qualquer side-effect (criação, dedup canônica, classificação, roleta).
+    // Dormente em runtime enquanto a pausa global acima estiver ativa; passa
+    // a executar automaticamente quando a pausa for removida.
+    const guard = await checkLeadIntocavel(supabase, from);
+    if (guard.skip && guard.lead) {
+      const motivoTag = `advanced_stage_or_archived:${guard.motivo}`;
+      console.log("⛔ SKIP", {
+        motivo: motivoTag,
+        telefone: from,
+        lead_existente_id: guard.lead.id,
+        stage_atual_nome: guard.lead.stage_nome,
+      });
+      try {
+        await supabase.from("campanha_atrio_respostas").insert({
+          lead_id: guard.lead.id,
+          telefone: from,
+          tipo_resposta: "texto_livre",
+          conteudo_resposta: JSON.stringify({
+            wamid,
+            motivo: motivoTag,
+            stage: guard.lead.stage_nome,
+            nome: guard.lead.nome,
+          }).slice(0, 1000),
+          wamid_origem: wamid || null,
+          enviado_para_roleta: false,
+          motivo_falha_roleta: "SKIP_LEAD_AVANCADO",
+        });
+      } catch (e) {
+        console.error("audit SKIP insert err", e);
+      }
+      return jsonResponse({ ok: true, skipped: true, reason: motivoTag });
+    }
+
     // 1) Localizar evento: por context wamid OU por telefone (últimos 8 dígitos, 24h)
     let evento: any = null;
     if (wamid) {
