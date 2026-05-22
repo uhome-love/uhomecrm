@@ -119,6 +119,7 @@ export default function TaskCompletionDialog({
             novoStageId={novoStageId}
             leadId={leadId}
             currentStageId={currentStageId}
+            step1Descricao={descricao}
             onChangeNovaTarefa={(patch) =>
               setNovaTarefa((prev) => ({ ...prev, ...patch }))
             }
