@@ -45,7 +45,7 @@ interface FocusModeModalProps {
 type CriteriaType = FocusCriteria;
 // CRITERIA_OPTIONS movido para FocusConfigScreen (Sprint 1 R1).
 
-export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
+export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", initialCriteria }: FocusModeModalProps) {
   const { user } = useAuth();
   const corretorId = user?.id ?? null;
   const { leads, loading, reload, staleSince } = useFocusLeads(corretorId, pipelineTipo);
