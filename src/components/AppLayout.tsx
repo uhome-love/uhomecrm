@@ -143,7 +143,7 @@ export default function AppLayout() {
   return (
     <SidebarProvider defaultOpen>
       <HomiProvider>
-        <div className="flex h-screen overflow-hidden w-full bg-[#f0f0f5] dark:bg-[#0e1525]">
+        <div className="flex h-screen overflow-hidden w-full bg-[#f0f0f5] dark:bg-background">
           <Sidebar
               role={sidebarRole}
               userName={nome || user?.email?.split("@")[0] || "Usuário"}
