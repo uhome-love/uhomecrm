@@ -320,30 +320,47 @@ export default function MinhasTarefas() {
         }
       }
 
-      // Deduplicar por id e enriquecer com dados do lead
+      // Deduplicar por id e enriquecer com dados do lead (incl. arquivado/stage_tipo/negocio_id
+      // para que tarefas órfãs de leads descartados/arquivados/convertidos não vazem nas listas).
       const uniqueRows = [...new Map(rows.map(r => [r.id, r])).values()];
       const leadIds = [...new Set(uniqueRows.map(r => r.pipeline_lead_id).filter(Boolean))];
       if (leadIds.length > 0) {
-        // Chunk também aqui para evitar URL gigante
         const CHUNK = 100;
         const leadMap = new Map<string, any>();
+        const stageIdsSet = new Set<string>();
         for (let i = 0; i < leadIds.length; i += CHUNK) {
           const slice = leadIds.slice(i, i + CHUNK);
           const { data: leads, error: leadsErr } = await runQueryWithRetry(() =>
             supabase
               .from("pipeline_leads")
-              .select("id, nome, telefone, empreendimento")
+              .select("id, nome, telefone, empreendimento, arquivado, stage_id, negocio_id")
               .in("id", slice)
           );
           if (leadsErr) {
             console.warn("[MinhasTarefas] Falha ao enriquecer tarefas com dados de lead", leadsErr);
             continue;
           }
-          (leads as any[] || []).forEach((l: any) => leadMap.set(l.id, l));
+          (leads as any[] || []).forEach((l: any) => {
+            leadMap.set(l.id, l);
+            if (l.stage_id) stageIdsSet.add(l.stage_id);
+          });
+        }
+        const stageTipoMap = new Map<string, string>();
+        if (stageIdsSet.size > 0) {
+          const { data: stages } = await supabase
+            .from("pipeline_stages").select("id, tipo").in("id", [...stageIdsSet]);
+          (stages || []).forEach((s: any) => stageTipoMap.set(s.id, s.tipo));
         }
         uniqueRows.forEach(r => {
           const lead = leadMap.get(r.pipeline_lead_id);
-          if (lead) { r.lead_nome = lead.nome; r.lead_telefone = lead.telefone; r.lead_empreendimento = lead.empreendimento; }
+          if (lead) {
+            r.lead_nome = lead.nome;
+            r.lead_telefone = lead.telefone;
+            r.lead_empreendimento = lead.empreendimento;
+            r.lead_arquivado = lead.arquivado;
+            r.lead_negocio_id = lead.negocio_id;
+            r.lead_stage_tipo = lead.stage_id ? stageTipoMap.get(lead.stage_id) || null : null;
+          }
         });
       }
       uniqueRows.sort((a, b) => {
