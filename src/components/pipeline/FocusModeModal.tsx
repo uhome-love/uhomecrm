@@ -113,17 +113,23 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       setStagesLoading(false);
     };
     loadStages();
-    // Silent counts: carrega tudo (incluindo upcoming 2d) para alimentar os badges/contadores
-    // da tela de configuração. Não passa criteria (default = "all"), não emite telemetria.
-    reloadCounts({ includeUpcoming2d: true });
+    // Silent counts: carrega TODOS os leads (criteria=["every"]) para alimentar
+    // os 4 contadores + badge do critério "Todos". Buckets continuam corretos
+    // porque cada lead vem com `state` calculado. Não emite telemetria.
+    reloadCounts({ criteria: ["every"], includeUpcoming2d: true });
   }, [open, pipelineTipo]);
 
   const handleToggleCriteria = (value: CriteriaType) => {
+    // "every" e "all" são exclusivos entre si e em relação aos buckets individuais.
+    if (value === "every") {
+      setSelectedCriteria(["every"] as CriteriaType[]);
+      return;
+    }
     if (value === "all") {
       setSelectedCriteria(["all"] as CriteriaType[]);
       return;
     }
-    let next: CriteriaType[] = selectedCriteria.filter(c => c !== "all");
+    let next: CriteriaType[] = selectedCriteria.filter(c => c !== "all" && c !== "every");
     if (next.includes(value)) {
       next = next.filter(c => c !== value);
     } else {
@@ -132,6 +138,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     if (next.length === 0) next = ["all"] as CriteriaType[];
     setSelectedCriteria(next);
   };
+
 
   const handleStartFocus = async () => {
     setConfigPhase(false);

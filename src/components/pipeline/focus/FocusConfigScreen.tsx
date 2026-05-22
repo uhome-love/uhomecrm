@@ -15,7 +15,7 @@
  * Lógica é responsabilidade do parent — este é puro presentational.
  */
 import { motion } from "framer-motion";
-import { Loader2, Zap, Filter, ListChecks, CalendarClock, Clock, Inbox, Target, Check } from "lucide-react";
+import { Loader2, Zap, Filter, ListChecks, CalendarClock, Clock, Inbox, Target, Check, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -93,6 +93,19 @@ const CRITERIA_OPTIONS: CriteriaOption[] = [
   },
 ];
 
+// R4.1 — "Todos": filosofia diferente (ignora régua, mostra universo completo).
+// Renderizado separado para sinalizar visualmente que é uma opção paralela.
+const EVERY_OPTION: CriteriaOption = {
+  value: "every",
+  label: "Todos",
+  description: "Todos os leads ativos, ordenados pela régua de saúde",
+  icon: <Users className="w-4 h-4" />,
+  accent: "hsl(var(--primary))",
+  bgVar: "hsl(var(--primary) / 0.08)",
+  borderVar: "hsl(var(--primary) / 0.35)",
+};
+
+
 function getGreeting(): string {
   const hour = parseInt(
     new Date().toLocaleTimeString("en-GB", {
@@ -137,17 +150,24 @@ export default function FocusConfigScreen({
   const counts = countByState(allLeads);
   const semDirecao = counts.sem_direcao;
 
+  const totalLeads = allLeads.length;
+  const isEvery = selectedCriteria.includes("every");
+
   // Badge per critério
   const badgeFor = (v: FocusCriteria): number => {
+    if (v === "every") return totalLeads;
     if (v === "all") return counts.atrasado + counts.para_hoje + counts.sem_direcao + (includeUpcoming ? counts.em_dia_proximo : 0);
     if (v === "overdue_tasks") return counts.atrasado;
     if (v === "today") return counts.para_hoje;
     return semDirecao;
   };
 
-  const totalSelected = selectedCriteria.includes("all")
-    ? badgeFor("all")
-    : selectedCriteria.reduce((sum, c) => sum + badgeFor(c), 0);
+  const totalSelected = isEvery
+    ? totalLeads
+    : selectedCriteria.includes("all")
+      ? badgeFor("all")
+      : selectedCriteria.reduce((sum, c) => sum + badgeFor(c), 0);
+
 
   return (
     <div className="flex flex-col items-center justify-start pt-6 sm:pt-10 min-h-full px-4 py-4">
@@ -174,8 +194,8 @@ export default function FocusConfigScreen({
           <p className="text-slate-400 text-sm">No que você quer focar agora?</p>
         </div>
 
-        {/* 3 Counters topo */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* 4 Counters topo (R4.1: +Todos) */}
+        <div className="grid grid-cols-4 gap-2">
           <CounterCard
             label="Atrasadas"
             value={counts.atrasado}
@@ -194,7 +214,14 @@ export default function FocusConfigScreen({
             color="hsl(38 92% 50%)"
             loading={countsLoading}
           />
+          <CounterCard
+            label="Todos"
+            value={totalLeads}
+            color="hsl(var(--primary))"
+            loading={countsLoading}
+          />
         </div>
+
 
         {/* Criteria 2x2 */}
         <div className="space-y-2">
@@ -259,39 +286,102 @@ export default function FocusConfigScreen({
               );
             })}
           </div>
+
+          {/* R4.1 — "Todos": filosofia paralela, separado por divider sutil */}
+          <div className="mt-3 pt-3 border-t border-white/[0.05]">
+            {(() => {
+              const opt = EVERY_OPTION;
+              const isSelected = isEvery;
+              const badge = badgeFor(opt.value);
+              return (
+                <button
+                  onClick={() => onToggleCriteria(opt.value)}
+                  className="w-full group flex items-start gap-3 p-3 rounded-xl text-left transition-all hover:brightness-125"
+                  style={{
+                    background: isSelected ? opt.bgVar : "hsl(0 0% 100% / 0.03)",
+                    border: `1.5px solid ${isSelected ? opt.borderVar : "hsl(0 0% 100% / 0.06)"}`,
+                  }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors"
+                    style={{
+                      background: isSelected ? `${opt.accent.replace(")", " / 0.18)")}` : "hsl(0 0% 100% / 0.05)",
+                      color: isSelected ? opt.accent : "hsl(var(--neutral-500))",
+                    }}
+                  >
+                    {opt.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="text-sm font-semibold"
+                        style={{ color: isSelected ? "#fff" : "hsl(var(--neutral-400))" }}
+                      >
+                        {opt.label}
+                      </span>
+                      {!countsLoading && badge > 0 && (
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded-md font-bold shrink-0"
+                          style={{
+                            background: isSelected ? `${opt.accent.replace(")", " / 0.25)")}` : "hsl(0 0% 100% / 0.08)",
+                            color: isSelected ? opt.accent : "hsl(var(--neutral-400))",
+                            fontFamily: "var(--font-focus-mono)",
+                          }}
+                        >
+                          {badge}
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className="text-[10.5px] leading-tight block mt-1"
+                      style={{ color: isSelected ? "hsl(var(--neutral-400))" : "hsl(var(--neutral-500))" }}
+                    >
+                      {opt.description}
+                    </span>
+                  </div>
+                  {isSelected && (
+                    <Check className="w-4 h-4 shrink-0 mt-1" style={{ color: opt.accent }} />
+                  )}
+                </button>
+              );
+            })()}
+          </div>
         </div>
 
-        {/* Toggle próx 2d */}
-        <button
-          type="button"
-          onClick={onToggleIncludeUpcoming}
-          className="w-full flex items-center justify-between gap-3 p-3 rounded-xl transition-all text-left"
-          style={{
-            background: includeUpcoming ? "var(--gradient-focus-soft)" : "hsl(0 0% 100% / 0.03)",
-            border: `1.5px solid ${includeUpcoming ? "hsl(var(--primary-500) / 0.45)" : "hsl(0 0% 100% / 0.06)"}`,
-          }}
-        >
-          <div className="min-w-0">
-            <span
-              className="text-sm font-semibold block"
-              style={{ color: includeUpcoming ? "#fff" : "hsl(var(--neutral-400))" }}
-            >
-              Incluir próximos 2 dias
-            </span>
-            <span className="text-[10.5px] leading-tight block mt-0.5" style={{ color: "hsl(var(--neutral-500))" }}>
-              No filtro "Tudo", inclui leads com tarefa amanhã ou depois de amanhã
-            </span>
-          </div>
-          <div
-            className="shrink-0 w-10 h-6 rounded-full transition-all relative"
-            style={{ background: includeUpcoming ? "var(--gradient-focus)" : "hsl(0 0% 100% / 0.12)" }}
+        {/* Toggle próx 2d — oculto quando "Todos" ativo (R4.1) */}
+        {!isEvery && (
+          <button
+            type="button"
+            onClick={onToggleIncludeUpcoming}
+            className="w-full flex items-center justify-between gap-3 p-3 rounded-xl transition-all text-left"
+            style={{
+              background: includeUpcoming ? "var(--gradient-focus-soft)" : "hsl(0 0% 100% / 0.03)",
+              border: `1.5px solid ${includeUpcoming ? "hsl(var(--primary-500) / 0.45)" : "hsl(0 0% 100% / 0.06)"}`,
+            }}
           >
+            <div className="min-w-0">
+              <span
+                className="text-sm font-semibold block"
+                style={{ color: includeUpcoming ? "#fff" : "hsl(var(--neutral-400))" }}
+              >
+                Incluir próximos 2 dias
+              </span>
+              <span className="text-[10.5px] leading-tight block mt-0.5" style={{ color: "hsl(var(--neutral-500))" }}>
+                No filtro "Tudo", inclui leads com tarefa amanhã ou depois de amanhã
+              </span>
+            </div>
             <div
-              className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow"
-              style={{ left: includeUpcoming ? "calc(100% - 22px)" : "2px" }}
-            />
-          </div>
-        </button>
+              className="shrink-0 w-10 h-6 rounded-full transition-all relative"
+              style={{ background: includeUpcoming ? "var(--gradient-focus)" : "hsl(0 0% 100% / 0.12)" }}
+            >
+              <div
+                className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow"
+                style={{ left: includeUpcoming ? "calc(100% - 22px)" : "2px" }}
+              />
+            </div>
+          </button>
+        )}
+
 
         {/* Stage filter */}
         <div className="space-y-2">
