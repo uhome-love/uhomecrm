@@ -164,6 +164,13 @@ export default function CorretorDashboard() {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 3.5. CARD "LEADS SEM TAREFA" — convite visual ao Modo Foco         */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {leadsSemTarefa > 0 && (
+        <LeadsSemTarefaCard count={leadsSemTarefa} onOpenFoco={() => setFocusOpen(true)} />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 5. BOTÕES DE AÇÃO                                                 */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}>
