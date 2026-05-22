@@ -162,22 +162,26 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     payload: import("./task-completion/types").CompletionPayload
   ) => {
     if (!completingTarefa) return;
-    const { tipo_contato, resultado, descricao, nova_tarefa, novo_stage_id } = payload;
+    const {
+      tipo_contato, resultado, descricao,
+      outcome, nova_tarefa, novo_stage_id,
+      reason_label, reason_code,
+    } = payload;
     const userId = (await (supabase.auth as never as { getUser: () => Promise<{ data: { user: { id: string } | null } }> }).getUser()).data?.user?.id || "";
     const now = new Date().toISOString();
 
     await onToggleTarefa(completingTarefa.id, "pendente");
 
-    // Update lead
+    // Touch lead
     await supabase.from("pipeline_leads").update({
       ultima_acao_at: now,
       updated_at: now,
     } as never).eq("id", leadId);
 
-    // Activity capture (estruturada, sempre)
+    // Activity capture (sempre — em todos os outcomes)
     await supabase.from("pipeline_atividades").insert({
       pipeline_lead_id: leadId,
-      tipo: tipo_contato, // Ajuste 1: tipo = canal, não o resultado
+      tipo: tipo_contato,
       tipo_contato,
       resultado,
       titulo: `${completingTarefa.titulo} — ${resultado}`,
@@ -189,22 +193,25 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
       created_by: userId,
     } as never);
 
-    // Próxima tarefa (sempre — fluxo V2)
-    // R4.x — título com sufixo de data para distinguir visualmente da tarefa concluída
-    const [yPt, mPt, dPt] = (nova_tarefa.vence_em || "").split("-");
-    const dateSuffix = yPt && mPt && dPt ? ` · ${dPt}/${mPt}` : "";
-    const titulo = `${TIPO_LABELS[nova_tarefa.tipo] || nova_tarefa.tipo}: ${leadNome}${dateSuffix}`;
-    await onAddTarefa({
-      tipo: nova_tarefa.tipo,
-      titulo,
-      // R4.x Bug 1 — Step 2 obs sobrescreve; senão herda resumo do Step 1
-      descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
-      vence_em: nova_tarefa.vence_em,
-      hora_vencimento: nova_tarefa.hora_vencimento || null,
-    } as never);
+    // Switch por outcome
+    let toastMsg = "Tarefa concluída ✅";
 
-    // Optional stage change
-    if (novo_stage_id && novo_stage_id !== leadStageId) {
+    if (outcome === "agendar" && nova_tarefa) {
+      const [yPt, mPt, dPt] = (nova_tarefa.vence_em || "").split("-");
+      const dateSuffix = yPt && mPt && dPt ? ` · ${dPt}/${mPt}` : "";
+      const titulo = `${TIPO_LABELS[nova_tarefa.tipo] || nova_tarefa.tipo}: ${leadNome}${dateSuffix}`;
+      await onAddTarefa({
+        tipo: nova_tarefa.tipo,
+        titulo,
+        descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
+        vence_em: nova_tarefa.vence_em,
+        hora_vencimento: nova_tarefa.hora_vencimento || null,
+      } as never);
+      toastMsg = "Tarefa concluída e próxima agendada ✅";
+    }
+
+    // Optional stage change (agendar | concluir)
+    if ((outcome === "agendar" || outcome === "concluir") && novo_stage_id && novo_stage_id !== leadStageId) {
       const { error: stageErr } = await supabase.from("pipeline_leads").update({
         stage_id: novo_stage_id,
         stage_changed_at: now,
@@ -222,10 +229,65 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
       }
     }
 
-    toast.success("Tarefa concluída e próxima agendada ✅");
+    // Descartar (reengajável): move para Descarte + UPDATE atômico
+    if (outcome === "descartar") {
+      const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+      const motivo = buildMotivoDescarte("reengajavel", reason_label || "Sem motivo informado");
+      const { data: descarteStage } = await supabase
+        .from("pipeline_stages")
+        .select("id")
+        .eq("pipeline_tipo", "leads")
+        .eq("tipo", "descarte")
+        .limit(1)
+        .maybeSingle();
+      if (!descarteStage) {
+        toast.error("Etapa de Descarte não encontrada.");
+      } else {
+        const { error } = await supabase.from("pipeline_leads").update({
+          stage_id: descarteStage.id,
+          stage_changed_at: now,
+          updated_at: now,
+          motivo_descarte: motivo,
+          tipo_descarte: "reengajavel",
+          arquivado: false,
+        } as never).eq("id", leadId);
+        if (error) {
+          toast.error("Não foi possível descartar: " + error.message);
+        } else {
+          await supabase.from("pipeline_historico").insert({
+            pipeline_lead_id: leadId,
+            stage_anterior_id: leadStageId ?? null,
+            stage_novo_id: descarteStage.id,
+            movido_por: userId,
+            observacao: motivo,
+          } as never);
+          toastMsg = "Lead descartado ✅";
+        }
+      }
+    }
+
+    // Inativar (definitivo): arquiva, stage permanece
+    if (outcome === "inativar") {
+      const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+      const motivo = buildMotivoDescarte("definitivo", reason_label || "Sem motivo informado");
+      const { error } = await supabase.from("pipeline_leads").update({
+        motivo_descarte: motivo,
+        tipo_descarte: "definitivo",
+        arquivado: true,
+        ultima_acao_at: now,
+        updated_at: now,
+      } as never).eq("id", leadId);
+      if (error) {
+        toast.error("Não foi possível inativar: " + error.message);
+      } else {
+        toastMsg = "Lead inativado ✅";
+      }
+    }
+
+    console.info("[task_completed]", { lead_id: leadId, tarefa_id: completingTarefa.id, outcome, reason_code });
+    toast.success(toastMsg);
     setCompletingTarefa(null);
     onReload();
-    // R4.x Bug 2A — invalidação cross-context para Central/Agenda/HOMI refletirem
     queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
     queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
     queryClient.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
