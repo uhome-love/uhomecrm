@@ -56,21 +56,24 @@ export default function CentralNutricaoPage() {
             <h1 className="text-2xl font-bold tracking-tight">Central de Reengajamento</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Selecione a lista, o modelo da mensagem e dispare via Meta ou Evolution. Acompanhe o retorno
-            em tempo real em uma única página.
+            Disparos avulsos e campanhas em ondas. Selecione a lista, o modelo e dispare via Meta ou Evolution.
+            Acompanhe o retorno em tempo real em uma única página.
           </p>
         </div>
       </div>
 
       <LiveDispatchBanner />
 
-      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-3 h-11">
+      <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
+        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-2 md:grid-cols-4 h-auto md:h-11">
           <TabsTrigger value="disparo" className="gap-2 text-sm">
             <Send className="h-4 w-4" /> Novo disparo
           </TabsTrigger>
           <TabsTrigger value="retorno" className="gap-2 text-sm">
             <Activity className="h-4 w-4" /> Retorno ao vivo
+          </TabsTrigger>
+          <TabsTrigger value="ondas" className="gap-2 text-sm">
+            <Radio className="h-4 w-4" /> Campanhas em ondas
           </TabsTrigger>
           <TabsTrigger value="config" className="gap-2 text-sm">
             <Settings className="h-4 w-4" /> Configurações
