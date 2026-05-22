@@ -93,6 +93,19 @@ const CRITERIA_OPTIONS: CriteriaOption[] = [
   },
 ];
 
+// R4.1 — "Todos": filosofia diferente (ignora régua, mostra universo completo).
+// Renderizado separado para sinalizar visualmente que é uma opção paralela.
+const EVERY_OPTION: CriteriaOption = {
+  value: "every",
+  label: "Todos",
+  description: "Todos os leads ativos, ordenados pela régua de saúde",
+  icon: <Users className="w-4 h-4" />,
+  accent: "hsl(var(--primary))",
+  bgVar: "hsl(var(--primary) / 0.08)",
+  borderVar: "hsl(var(--primary) / 0.35)",
+};
+
+
 function getGreeting(): string {
   const hour = parseInt(
     new Date().toLocaleTimeString("en-GB", {
