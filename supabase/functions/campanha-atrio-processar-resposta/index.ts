@@ -345,14 +345,14 @@ Deno.serve(async (req: Request) => {
 
 
       // Atividade no lead (não move stage — apenas log)
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
-        titulo: "Resposta SIM — Disparo Átrio",
-        descricao: sucesso
+      await inserirAtividade(
+        "Resposta SIM — Disparo Átrio",
+        sucesso
           ? `Lead respondeu "Sim, pode enviar" (Átrio). Distribuído para corretor via roleta.`
           : `Lead respondeu SIM (Átrio). Falha na roleta: ${dist?.reason || dist?.error}`,
-        data: hoje, status: "concluida",
-      });
+        dist?.corretor_id || liberacao.corretorAnteriorId || null,
+      );
+
 
       // Tag
       try {
