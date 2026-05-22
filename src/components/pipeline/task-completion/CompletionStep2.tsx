@@ -29,6 +29,8 @@ interface Props {
   novoStageId?: string;
   leadId?: string;
   currentStageId?: string;
+  /** Resumo digitado no Step 1 — usado como placeholder e fallback de descrição da nova tarefa. */
+  step1Descricao?: string;
   onChangeNovaTarefa: (patch: Partial<NovaTarefaPayload>) => void;
   onChangeNovoStage: (v: string | undefined) => void;
   onBack: () => void;
@@ -43,6 +45,7 @@ export function CompletionStep2({
   novoStageId,
   leadId,
   currentStageId,
+  step1Descricao,
   onChangeNovaTarefa,
   onChangeNovoStage,
   onBack,
@@ -170,20 +173,25 @@ export function CompletionStep2({
         </div>
       )}
 
-      {/* Obs próxima (opcional) */}
+      {/* Obs próxima (opcional — herda resumo do Step 1 se vazio) */}
       <div>
         <label className="text-[11px] uppercase tracking-wide font-semibold text-primary mb-1.5">
           Detalhes da próxima ação{" "}
           <span className="text-muted-foreground normal-case font-normal">(opcional)</span>
         </label>
         <Textarea
-          placeholder="Ex: Apresentar simulação do apto 301..."
+          placeholder={
+            step1Descricao?.trim()
+              ? `Herdar do Step 1: "${step1Descricao.trim().slice(0, 80)}${step1Descricao.trim().length > 80 ? "..." : ""}" (ou digite para sobrescrever)`
+              : "Ex: Apresentar simulação do apto 301..."
+          }
           value={novaTarefa.obs ?? ""}
           onChange={(e) => onChangeNovaTarefa({ obs: e.target.value })}
           rows={2}
           className="resize-none text-xs bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/20"
         />
       </div>
+
 
       {/* Footer */}
       <div className="flex gap-2 justify-between pt-1">

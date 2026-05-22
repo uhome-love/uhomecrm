@@ -395,14 +395,18 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
         ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up",
         visita: "Visita", proposta: "Proposta", email: "E-mail",
       };
-      const novoTituloTarefa = `${TIPO_LABELS_MAP[nova_tarefa.tipo] || nova_tarefa.tipo}: ${currentLead.name}`;
+      // R4.x Bug 2B — título com sufixo de data para distinguir da concluída
+      const [yPt, mPt, dPt] = (nova_tarefa.vence_em || "").split("-");
+      const dateSuffix = yPt && mPt && dPt ? ` · ${dPt}/${mPt}` : "";
+      const novoTituloTarefa = `${TIPO_LABELS_MAP[nova_tarefa.tipo] || nova_tarefa.tipo}: ${currentLead.name}${dateSuffix}`;
       await supabase.from("pipeline_tarefas").insert({
         pipeline_lead_id: currentLead.id,
         created_by: corretorId,
         responsavel_id: corretorId,
         titulo: novoTituloTarefa,
         tipo: nova_tarefa.tipo,
-        descricao: nova_tarefa.obs || null,
+        // R4.x Bug 1 — Step 2 obs sobrescreve; senão herda resumo do Step 1
+        descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
         vence_em: nova_tarefa.vence_em,
         hora_vencimento: nova_tarefa.hora_vencimento || null,
         status: "pendente",
@@ -458,6 +462,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       setWorkedCount(c => c + 1);
       // Invalida cache HOMI do lead para refletir nova atividade
       queryClient.invalidateQueries({ queryKey: ["homi-insight", currentLead.id] });
+      // R4.x Bug 2A — invalidação cross-context para Central/Agenda
+      queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
+      queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
       setTimeout(() => goToNext(), 800);
     } catch (err) {
       console.error(err);

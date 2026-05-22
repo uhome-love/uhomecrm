@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -78,6 +79,9 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
 
   // Completion prompt — now uses TaskCompletionDialog
   const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
+
+  const queryClient = useQueryClient();
+
 
   const today = startOfDay(new Date());
   const pendentes = tarefas.filter(t => t.status === "pendente");
@@ -186,11 +190,15 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     } as never);
 
     // Próxima tarefa (sempre — fluxo V2)
-    const titulo = `${TIPO_LABELS[nova_tarefa.tipo] || nova_tarefa.tipo}: ${leadNome}`;
+    // R4.x — título com sufixo de data para distinguir visualmente da tarefa concluída
+    const [yPt, mPt, dPt] = (nova_tarefa.vence_em || "").split("-");
+    const dateSuffix = yPt && mPt && dPt ? ` · ${dPt}/${mPt}` : "";
+    const titulo = `${TIPO_LABELS[nova_tarefa.tipo] || nova_tarefa.tipo}: ${leadNome}${dateSuffix}`;
     await onAddTarefa({
       tipo: nova_tarefa.tipo,
       titulo,
-      descricao: nova_tarefa.obs || null,
+      // R4.x Bug 1 — Step 2 obs sobrescreve; senão herda resumo do Step 1
+      descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
       vence_em: nova_tarefa.vence_em,
       hora_vencimento: nova_tarefa.hora_vencimento || null,
     } as never);
@@ -217,7 +225,12 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     toast.success("Tarefa concluída e próxima agendada ✅");
     setCompletingTarefa(null);
     onReload();
+    // R4.x Bug 2A — invalidação cross-context para Central/Agenda/HOMI refletirem
+    queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
+    queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
+    queryClient.invalidateQueries({ queryKey: ["homi-insight", leadId] });
   };
+
 
   const handleAdiarRapido = async (id: string, horas: number) => {
     const novaData = addHours(new Date(), horas);

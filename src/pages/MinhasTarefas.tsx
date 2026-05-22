@@ -564,12 +564,16 @@ export default function MinhasTarefas() {
           ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up",
           visita: "Visita", proposta: "Proposta", email: "E-mail",
         };
-        const titulo = `${TIPO_LABELS_MAP[nova_tarefa.tipo] || nova_tarefa.tipo}: ${leadNome}`;
+        // R4.x Bug 2B — título com sufixo de data para distinguir da concluída
+        const [yPt, mPt, dPt] = (nova_tarefa.vence_em || "").split("-");
+        const dateSuffix = yPt && mPt && dPt ? ` · ${dPt}/${mPt}` : "";
+        const titulo = `${TIPO_LABELS_MAP[nova_tarefa.tipo] || nova_tarefa.tipo}: ${leadNome}${dateSuffix}`;
         const { error: insertErr } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: leadId,
           tipo: nova_tarefa.tipo,
           titulo,
-          descricao: nova_tarefa.obs || null,
+          // R4.x Bug 1 — Step 2 obs sobrescreve; senão herda resumo do Step 1
+          descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
           prioridade: "media",
           status: "pendente",
           responsavel_id: user.id,
