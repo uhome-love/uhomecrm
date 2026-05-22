@@ -101,8 +101,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
   // Load stages for the config screen
   useEffect(() => {
     if (!open) return;
-    setConfigPhase(true);
-    setSelectedCriteria(["all"]);
+    const hasInitial = !!initialCriteria && initialCriteria.length > 0;
+    setConfigPhase(!hasInitial);
+    setSelectedCriteria(hasInitial ? initialCriteria! : ["all"]);
     setSelectedStageId("all");
     setCurrentIndex(0);
     // Limpa cache de insight quando o modal abre (sessão nova).
@@ -123,6 +124,23 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
     // os 4 contadores + badge do critério "Todos". Buckets continuam corretos
     // porque cada lead vem com `state` calculado. Não emite telemetria.
     reloadCounts({ criteria: ["every"], includeUpcoming2d: true });
+
+    // Quando recebido initialCriteria, abrir direto na fila com aquele filtro
+    // (replicando a lógica de handleStartFocus sem tela de config).
+    if (hasInitial) {
+      setWorkedCount(0);
+      focusSessionIdRef.current = newFocusSessionId();
+      advanceCountRef.current = 0;
+      pendingOpenedCtxRef.current = {
+        session_id: focusSessionIdRef.current,
+        pipeline_tipo: pipelineTipo,
+        criteria: initialCriteria,
+        stage_id: "all",
+        include_upcoming_2d: false,
+        source: "external_card",
+      };
+      reload({ criteria: initialCriteria!, includeUpcoming2d: false });
+    }
   }, [open, pipelineTipo]);
 
   const handleToggleCriteria = (value: CriteriaType) => {
