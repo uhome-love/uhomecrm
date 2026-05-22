@@ -379,8 +379,9 @@ export default function FocusConfigScreen({
                 style={{ left: includeUpcoming ? "calc(100% - 22px)" : "2px" }}
               />
             </div>
+          </button>
+        )}
 
-        </button>
 
         {/* Stage filter */}
         <div className="space-y-2">
