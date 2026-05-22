@@ -591,6 +591,42 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log_atrio_22_05_2026: {
+        Row: {
+          aprovacao_id: string
+          created_at: string
+          estado_antes: Json | null
+          estado_depois: Json | null
+          executado_por: string
+          id: string
+          lead_id: string | null
+          operacao: string
+          telefone_normalizado: string | null
+        }
+        Insert: {
+          aprovacao_id: string
+          created_at?: string
+          estado_antes?: Json | null
+          estado_depois?: Json | null
+          executado_por?: string
+          id?: string
+          lead_id?: string | null
+          operacao: string
+          telefone_normalizado?: string | null
+        }
+        Update: {
+          aprovacao_id?: string
+          created_at?: string
+          estado_antes?: Json | null
+          estado_depois?: Json | null
+          executado_por?: string
+          id?: string
+          lead_id?: string | null
+          operacao?: string
+          telefone_normalizado?: string | null
+        }
+        Relationships: []
+      }
       auth_telemetry: {
         Row: {
           build_hash: string | null
@@ -1092,6 +1128,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      campanha_atrio_supressao: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          motivo: string
+          nome_associado: string | null
+          telefone_normalizado: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          motivo: string
+          nome_associado?: string | null
+          telefone_normalizado: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          motivo?: string
+          nome_associado?: string | null
+          telefone_normalizado?: string
+        }
+        Relationships: []
       }
       ceo_metas_mensais: {
         Row: {
