@@ -365,7 +365,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ ok: true, tipo, deduped: true });
     }
     await recategorizarParaAtrio(evento.lead_id);
-    await liberarVinculoSeDescarte(evento.lead_id);
+    const liberacaoTL = await liberarVinculoSeDescarte(evento.lead_id, conteudo || "(texto livre)");
     const traceId = `atrio_tl_${respIns.id}`;
     const dist = await distributeLeadDirect(SUPABASE_URL, SERVICE_KEY, evento.lead_id, traceId, console as any);
 
@@ -380,6 +380,16 @@ Deno.serve(async (req: Request) => {
       reativado_por_nutricao: true,
       reativado_em: new Date().toISOString(),
     }).eq("id", evento.lead_id);
+
+    if (sucesso && liberacaoTL.reativado) {
+      await gravarHistoricoPosRoleta(
+        evento.lead_id,
+        liberacaoTL.stageAnteriorId,
+        dist?.corretor_id || null,
+        `Distribuído via roleta após resposta livre na Campanha Átrio: "${(conteudo || "").slice(0, 120)}"`,
+      );
+    }
+
 
     try {
       await supabase.from("campaign_clicks").insert({
