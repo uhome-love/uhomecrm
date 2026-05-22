@@ -1,59 +1,62 @@
-## Lote 2 — preparação das ondas 4, 5 e 6
+# Fase 1 — Unificar Campanha Átrio dentro da Central de Reengajamento
 
-**Tamanhos:** onda 4 = 100 · onda 5 = 300 · onda 6 = 500 · total = 900
+## Objetivo
 
-### Mapeamento dos nomes que você enviou → nomes exatos no banco
+Trazer a tela completa da Campanha Átrio para dentro da Central de Reengajamento como uma 4ª aba ("Campanhas em ondas"), sem mexer no backend nem na lógica de disparo. Mudança puramente de frontend — segura de rodar com o Lote 2 em andamento.
 
-Os nomes precisam bater literal com `oferta_ativa_leads.empreendimento`. Mapeamento + tratamento:
+## O que o usuário vai ver
 
-| Ordem | Você escreveu | Nome no banco | Únicos |
-|---|---|---|---|
-| 1 | vista nova carlos gomes | `Vista Nova Carlos Gomes` | 243 |
-| 2 | vista menino deus | `Vista Menino Deus` | 230 |
-| 3 | vista praia de belas | `Vista Praia de Belas` | 229 |
-| 4 | caiz | `Caiz` **+** `Caiz React` (vou incluir os dois, depois desduplica por telefone) | 181 + 218 |
-| 5 | demetrio abf | `Demétrio ABF` (com acento) | 200 |
-| 6 | ~~caiz (duplicado)~~ | já incluído acima | — |
-| 7 | go home desing | `Go Home Design` (corrigido) | 179 |
-| 8 | go bom fim | `Go Bom Fim` | 166 |
-| 9 | go moinhos | `Go Moinhos` | 162 |
-| 10 | castro700 | `Castro700` | 133 |
-| 11 | ora | `Ora Studios do Cais` | 101 |
-| 12 | connect jw | `Connect JW` | 100 |
-| 13 | go cidade baixa | `Go Cidade Baixa` | 51 |
-| 14 | alfa | `Alfa` | 72 |
+Hoje: 2 páginas separadas (`/central-nutricao` para disparos avulsos e `/admin/campanha-atrio` para ondas).
 
-**Pool bruto disponível:** ~2.265 telefones únicos (antes de filtros). Folga grande para 900.
+Depois: 1 página (`/central-nutricao`) com 4 abas:
 
-### Ordem final a enviar para `campanha-atrio-preparar-lote2`
-
-```
-Vista Nova Carlos Gomes → Vista Menino Deus → Vista Praia de Belas →
-Caiz → Caiz React → Demétrio ABF → Go Home Design → Go Bom Fim →
-Go Moinhos → Castro700 → Ora Studios do Cais → Connect JW →
-Go Cidade Baixa → Alfa
+```text
+[ Novo disparo ] [ Retorno ao vivo ] [ Campanhas em ondas ] [ Configurações ]
 ```
 
-### Execução (sem mandar para pipeline)
+- O `LiveDispatchBanner` no topo continua mostrando qualquer disparo em curso (avulso ou onda Átrio).
+- O kill switch da Átrio fica visível dentro da nova aba.
+- A auditoria de webhooks Meta (aba "Retorno ao vivo") já mostra as respostas da Átrio — sem mudança.
+- `/admin/campanha-atrio` continua funcionando como atalho/redirect para `/central-nutricao?tab=ondas` (preserva qualquer link salvo).
 
-1. **Reset onda 4** de `concluida` (falso positivo) para `aguardando` em `campanha_atrio_controle`.
-2. Chamar `campanha-atrio-preparar-lote2` com `force=true`, a lista de empreendimentos acima, `cap=900` e `ondas=[{4,100},{5,300},{6,500}]`.
-3. A função:
-   - Lê de `oferta_ativa_leads` por empreendimento na ordem.
-   - **Desduplica telefone** (mesmo telefone só entra 1× no lote 2).
-   - **Bloqueia** telefone em pipeline ATIVO (Novo Lead, Boas-vindas, Visita, etc.).
-   - **Bloqueia** telefone já no lote 1 (ondas 1-3).
-   - Insere em `campanha_atrio_audiencia` com `lote=2`, `lead_id=NULL`, `status=pending`.
-   - Atualiza `total_alvo` dos controles 4/5/6.
-4. **Não cria pipeline_lead, não notifica corretor, não envia para roleta.** O pipeline_lead nasce só quando o lead responder `Sim`/texto livre ao disparo (e aí sim cai na roleta, fluxo já validado).
-5. **Validação pós-execução**: rodar SELECTs para mostrar contagem por onda, por empreendimento, e confirmar 0 sobreposições com lote 1 e 0 telefones em pipeline ativo.
+## O que NÃO muda nesta fase
 
-### Resultado esperado
+- Nenhuma migration.
+- Nenhuma edge function (`campanha-atrio-iniciar-onda`, `campanha-atrio-disparar-onda`, `campanha-atrio-processar-resposta` ficam idênticas).
+- Lógica de cooldown 20min, ondas 4/5/6 em curso, anti-spam, rate-limit — tudo intocado.
+- Lote 2 rodando agora continua rodando normalmente.
 
-| onda | total_alvo | status |
-|---|---|---|
-| 4 | 100 | aguardando |
-| 5 | 300 | aguardando |
-| 6 | 500 | aguardando |
+## Mudanças técnicas
 
-Pronto para você acionar o disparo manualmente quando quiser. Aprova?
+1. **`src/pages/CentralNutricao.tsx`**
+   - Adicionar 4ª `TabsTrigger` "Campanhas em ondas" (ícone `Layers` ou `Radio`).
+   - Adicionar `TabsContent value="ondas"` carregando lazy o conteúdo da Átrio.
+   - Suportar `?tab=ondas` na URL para deep-link.
+
+2. **Novo `src/components/central-nutricao/CampanhaOndasTab.tsx`**
+   - Extrair o corpo de `src/pages/admin/CampanhaAtrio.tsx` (CardStatus, grid de ondas, respostas, preview de audiência) num componente reutilizável.
+   - Remover o `container mx-auto p-6 max-w-6xl` externo — a Central já provê layout.
+   - Manter todos os hooks `useCampanhaAtrio*` como estão.
+
+3. **`src/pages/admin/CampanhaAtrio.tsx`**
+   - Reduzir a um redirect: `<Navigate to="/central-nutricao?tab=ondas" replace />`.
+   - Mantém a rota registrada para não quebrar links externos / favoritos.
+
+4. **Sidebar / navegação (se houver entrada de "Campanha Átrio")**
+   - Verificar `src/config/pageRegistry.ts` e componentes de sidebar; redirecionar o link para `/central-nutricao?tab=ondas` ou removê-lo (Central já é o ponto de entrada).
+
+5. **Header da Central**
+   - Pequeno ajuste de copy: subtítulo passa a mencionar "disparos avulsos e campanhas em ondas".
+
+## Validação
+
+- Abrir `/central-nutricao` → ver 4 abas, clicar em "Campanhas em ondas" → ver status do Lote 2 com ondas 4/5/6 (4 em curso, 5/6 aguardando).
+- Verificar que o kill switch responde, que botão "Iniciar Onda" segue habilitado pelas mesmas regras (cooldown, flag, audiência).
+- Abrir `/admin/campanha-atrio` → redireciona para a nova aba.
+- `LiveDispatchBanner` continua aparecendo no topo enquanto Onda 4 envia.
+
+## Próximas fases (não fazem parte desta entrega)
+
+- **Fase 2**: 1 migration adicionando `campaign_type`, `wave_number`, `lote` em `reengajamento_dispatch_runs` para histórico unificado.
+- **Fase 3**: opção "Campanha em ondas (Átrio)" como source no wizard de disparo avulso.
+- **Fase 4** (longo prazo): unificar backend num único engine de disparo com suporte nativo a ondas.

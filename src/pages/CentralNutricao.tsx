@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { RefreshCw, Send, Activity, Settings, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
+import { RefreshCw, Send, Activity, Settings, Calendar, ChevronDown, ChevronUp, Radio, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,9 +11,29 @@ import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookT
 import VisitaAmanhaTab from "@/components/central-nutricao/VisitaAmanhaTab";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
 
+const CampanhaOndasTab = lazy(() => import("@/components/central-nutricao/CampanhaOndasTab"));
+
 export default function CentralNutricaoPage() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState("disparo");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "disparo";
+  const [tab, setTab] = useState(initialTab);
+
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t && t !== tab) setTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const handleTabChange = (v: string) => {
+    setTab(v);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (v === "disparo") next.delete("tab");
+      else next.set("tab", v);
+      return next;
+    }, { replace: true });
+  };
   const [showVisitaLegacy, setShowVisitaLegacy] = useState(false);
 
   const onFired = () => {
@@ -35,21 +56,24 @@ export default function CentralNutricaoPage() {
             <h1 className="text-2xl font-bold tracking-tight">Central de Reengajamento</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Selecione a lista, o modelo da mensagem e dispare via Meta ou Evolution. Acompanhe o retorno
-            em tempo real em uma única página.
+            Disparos avulsos e campanhas em ondas. Selecione a lista, o modelo e dispare via Meta ou Evolution.
+            Acompanhe o retorno em tempo real em uma única página.
           </p>
         </div>
       </div>
 
       <LiveDispatchBanner />
 
-      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-3 h-11">
+      <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
+        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-2 md:grid-cols-4 h-auto md:h-11">
           <TabsTrigger value="disparo" className="gap-2 text-sm">
             <Send className="h-4 w-4" /> Novo disparo
           </TabsTrigger>
           <TabsTrigger value="retorno" className="gap-2 text-sm">
             <Activity className="h-4 w-4" /> Retorno ao vivo
+          </TabsTrigger>
+          <TabsTrigger value="ondas" className="gap-2 text-sm">
+            <Radio className="h-4 w-4" /> Campanhas em ondas
           </TabsTrigger>
           <TabsTrigger value="config" className="gap-2 text-sm">
             <Settings className="h-4 w-4" /> Configurações
@@ -77,7 +101,14 @@ export default function CentralNutricaoPage() {
           </Card>
         </TabsContent>
 
-        {/* Aba 3: Configurações */}
+        {/* Aba 3: Campanhas em ondas (Átrio) */}
+        <TabsContent value="ondas" className="mt-0 space-y-4">
+          <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <CampanhaOndasTab />
+          </Suspense>
+        </TabsContent>
+
+        {/* Aba 4: Configurações */}
         <TabsContent value="config" className="mt-0 space-y-4">
           <Card>
             <CardHeader className="pb-3">
