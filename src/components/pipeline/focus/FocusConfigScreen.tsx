@@ -15,7 +15,7 @@
  * Lógica é responsabilidade do parent — este é puro presentational.
  */
 import { motion } from "framer-motion";
-import { Loader2, Zap, Filter, ListChecks, CalendarClock, Clock, Inbox, Target, Check } from "lucide-react";
+import { Loader2, Zap, Filter, ListChecks, CalendarClock, Clock, Inbox, Target, Check, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthUser } from "@/hooks/useAuthUser";
