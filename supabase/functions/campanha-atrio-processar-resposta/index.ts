@@ -14,6 +14,8 @@ const FOLLOW_NAO = "Entendido. Obrigado pelo retorno! Se mudar de ideia, estamos
 
 // SUB-FIX 4 — Guardrail de stage avançada (helper isolado em ./guard.ts)
 import { checkLeadIntocavel } from "./guard.ts";
+// SUB-FIX 1 — Dedup canônica (Opção A+) — helper isolado em ./dedup.ts
+import { findExistingLead, registrarDedupHit, normalizarTelefone } from "./dedup.ts";
 
 async function sendText(to: string, text: string) {
   try {
@@ -169,47 +171,60 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ ok: false, reason: "no_event_match" }, 200);
     }
 
-    // 1b) Lote 2+: se o disparo não tinha pipeline_lead, criar agora.
-    //     Reaproveita lead já existente com o mesmo telefone (qualquer estado).
+    // 1b) Lote 2+: se o disparo não tinha pipeline_lead, dedup canônica primeiro.
+    //     SUB-FIX 1 (Opção A+ aprovada 22/05/2026): substitui eq(telefone_normalizado)
+    //     por findExistingLead em 3 camadas (canônico → last-8 → nome+DDD).
     if (!evento.lead_id) {
-      const { data: existente } = await supabase
-        .from("pipeline_leads")
-        .select("id")
-        .eq("telefone_normalizado", evento.telefone)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      let novoLeadId: string | null = existente?.id || null;
-      if (!novoLeadId) {
-        const { data: stage } = await supabase
-          .from("pipeline_stages").select("id").eq("nome", "Sem Contato").maybeSingle();
-        const stageId = stage?.id || null;
-        const { data: ins, error: insErr } = await supabase
-          .from("pipeline_leads")
-          .insert({
-            nome: evento.nome || "Cliente",
-            telefone: evento.telefone,
-            telefone_normalizado: evento.telefone,
-            empreendimento: evento.empreendimento_origem || "Átrio - ABF",
-            stage_id: stageId,
-            origem: "campanha_atrio",
-            arquivado: false,
-            aceite_status: "pendente",
-            reativado_por_nutricao: true,
-            reativado_em: new Date().toISOString(),
-          })
-          .select("id").single();
-        if (insErr) {
-          console.error("erro criando pipeline_lead da resposta Átrio", insErr);
-          throw insErr;
-        }
-        novoLeadId = ins.id;
+      const match = await findExistingLead(supabase, from, evento.nome);
+      if (match.lead && match.camada) {
+        const persist = await registrarDedupHit(
+          supabase,
+          { lead: match.lead, camada: match.camada },
+          { from, wamid },
+        );
+        console.log("🔄 DEDUP", {
+          motivo: `SKIP_DEDUP_CAMADA_${match.camada}`,
+          telefone: from,
+          lead_existente_id: match.lead.id,
+          camada_match: match.camada,
+          observacao_anexada: persist.observacao_anexada,
+          resposta_registrada: persist.resposta_registrada,
+        });
+        return jsonResponse({
+          ok: true,
+          deduped: true,
+          lead_id: match.lead.id,
+          camada: match.camada,
+        });
       }
 
-      evento.lead_id = novoLeadId;
-      // Vincula o evento ao lead recém-criado/reaproveitado
-      await supabase.from("campanha_atrio_eventos").update({ lead_id: novoLeadId }).eq("id", evento.id);
+      // Sem match → criar novo lead (canônico no telefone_normalizado)
+      const telefoneCanonico = normalizarTelefone(evento.telefone) || evento.telefone;
+      const { data: stage } = await supabase
+        .from("pipeline_stages").select("id").eq("nome", "Sem Contato").maybeSingle();
+      const stageId = stage?.id || null;
+      const { data: ins, error: insErr } = await supabase
+        .from("pipeline_leads")
+        .insert({
+          nome: evento.nome || "Cliente",
+          telefone: evento.telefone,
+          telefone_normalizado: telefoneCanonico,
+          empreendimento: evento.empreendimento_origem || "Átrio - ABF",
+          stage_id: stageId,
+          origem: "campanha_atrio",
+          arquivado: false,
+          aceite_status: "pendente",
+          reativado_por_nutricao: true,
+          reativado_em: new Date().toISOString(),
+        })
+        .select("id").single();
+      if (insErr) {
+        console.error("erro criando pipeline_lead da resposta Átrio", insErr);
+        throw insErr;
+      }
+      evento.lead_id = ins.id;
+      // Vincula o evento ao lead recém-criado
+      await supabase.from("campanha_atrio_eventos").update({ lead_id: ins.id }).eq("id", evento.id);
     }
 
 
