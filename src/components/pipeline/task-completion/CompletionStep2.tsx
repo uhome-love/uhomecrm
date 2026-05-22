@@ -29,6 +29,8 @@ interface Props {
   novoStageId?: string;
   leadId?: string;
   currentStageId?: string;
+  /** Resumo digitado no Step 1 — usado como placeholder e fallback de descrição da nova tarefa. */
+  step1Descricao?: string;
   onChangeNovaTarefa: (patch: Partial<NovaTarefaPayload>) => void;
   onChangeNovoStage: (v: string | undefined) => void;
   onBack: () => void;
