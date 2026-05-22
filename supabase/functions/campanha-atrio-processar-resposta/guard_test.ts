@@ -3,7 +3,7 @@
 // As linhas de pipeline_leads usadas como fixture vêm de leituras reais ao DB
 // em 22/05/2026 (validadas via supabase--read_query antes da execução).
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { checkLeadIntocavel, STAGES_INTOCAVEIS } from "./index.ts";
+import { checkLeadIntocavel, STAGES_INTOCAVEIS } from "./guard.ts";
 
 // IDs de stage canônicos (snapshot do schema 22/05/2026)
 const STAGE_NEGOCIO_CRIADO = "a8a1a867-5b0c-414e-9532-8873c4ca5a0f";
