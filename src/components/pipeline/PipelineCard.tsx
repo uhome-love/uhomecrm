@@ -19,7 +19,17 @@ import LeadFlagBadges from "./LeadFlagBadges";
 // Extracted sub-components
 import CardStatusLine, { getCardStatus } from "./CardStatusLine";
 import CardActionBar from "./CardActionBar";
+import CardQuickTaskPopover from "./CardQuickTaskPopover";
 import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
+
+/** Hora atual + 2h, arredondada para :00 ou :30 (formato HH:mm). */
+function plus2hRounded(): string {
+  const d = new Date();
+  d.setHours(d.getHours() + 2);
+  if (d.getMinutes() < 30) d.setMinutes(30, 0, 0);
+  else { d.setHours(d.getHours() + 1); d.setMinutes(0, 0, 0); }
+  return d.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+}
 
 function formatPhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
