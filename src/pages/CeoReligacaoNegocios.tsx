@@ -276,7 +276,7 @@ export default function CeoReligacaoNegocios() {
     );
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
+    <div className="bg-[#f0f0f5] dark:bg-background p-6 -m-6 min-h-full space-y-4">
       <PageHeader
         title="Religação de Negócios"
         subtitle="Onda 0 · Reconectar negócios órfãos aos leads que os originaram"
