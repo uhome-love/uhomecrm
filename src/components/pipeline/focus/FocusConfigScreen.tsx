@@ -194,8 +194,8 @@ export default function FocusConfigScreen({
           <p className="text-slate-400 text-sm">No que você quer focar agora?</p>
         </div>
 
-        {/* 3 Counters topo */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* 4 Counters topo (R4.1: +Todos) */}
+        <div className="grid grid-cols-4 gap-2">
           <CounterCard
             label="Atrasadas"
             value={counts.atrasado}
@@ -214,7 +214,14 @@ export default function FocusConfigScreen({
             color="hsl(38 92% 50%)"
             loading={countsLoading}
           />
+          <CounterCard
+            label="Todos"
+            value={totalLeads}
+            color="hsl(var(--primary))"
+            loading={countsLoading}
+          />
         </div>
+
 
         {/* Criteria 2x2 */}
         <div className="space-y-2">
