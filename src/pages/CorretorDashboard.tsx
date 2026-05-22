@@ -74,8 +74,9 @@ export default function CorretorDashboard() {
   const { progress, goals, saveGoals } = useCorretorProgress();
   const motivation = useDailyMotivation();
   const { missoes, missaoGeral, ranking, rankingLoading, userId } = useMissoesLeads();
-  const { followUps, followUpsLoading, visitasHoje, visitasLoading, funil, funilLoading, totalLeads, evolucao, evolucaoLoading } = useCorretorHomeData();
+  const { followUps, followUpsLoading, visitasHoje, visitasLoading, funil, funilLoading, totalLeads, evolucao, evolucaoLoading, leadsSemTarefa } = useCorretorHomeData();
   const { newlyUnlocked, dismissCelebration, unlocked } = useConquistas();
+  const [focusOpen, setFocusOpen] = useState(false);
 
   // Date
   const dataFormatada = new Date().toLocaleDateString("pt-BR", {
