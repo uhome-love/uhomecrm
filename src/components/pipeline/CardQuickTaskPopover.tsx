@@ -143,10 +143,11 @@ export default function CardQuickTaskPopover({
             }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--muted))"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-        >
-          <ClipboardList style={{ width: 12, height: 12 }} />
-          <span>Tarefa</span>
-        </button>
+          >
+            <ClipboardList style={{ width: 12, height: 12 }} />
+            <span>Tarefa</span>
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent side="top" align="start" className="w-72 p-2.5 space-y-2" onClick={(e) => e.stopPropagation()}>
         <p className="text-[10px] font-bold text-foreground">➕ Tarefa rápida para {leadNome?.split(" ")[0]}</p>
