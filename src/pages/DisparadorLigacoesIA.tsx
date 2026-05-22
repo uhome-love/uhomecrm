@@ -494,7 +494,7 @@ export default function DisparadorLigacoesIA() {
   }
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full max-w-5xl mx-auto space-y-6">
+    <div className="bg-[#f0f0f5] dark:bg-background p-6 -m-6 min-h-full max-w-5xl mx-auto space-y-6">
       <PageHeader
         title="Disparador de ligações IA"
         subtitle="Twilio + ElevenLabs · Discagem sequencial automática"
