@@ -470,7 +470,7 @@ export default function MinhasTarefas() {
         .filter(t => t.status === "concluida")
         .slice()
         .sort((a, b) =>
-          (b.concluida_em ?? b.updated_at ?? "").localeCompare(a.concluida_em ?? a.updated_at ?? "")
+          (b.concluida_em ?? "").localeCompare(a.concluida_em ?? "")
         )
         .slice(0, 20),
     [activeTarefas]
