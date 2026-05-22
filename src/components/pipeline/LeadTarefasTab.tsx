@@ -80,6 +80,9 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   // Completion prompt — now uses TaskCompletionDialog
   const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
 
+  const queryClient = useQueryClient();
+
+
   const today = startOfDay(new Date());
   const pendentes = tarefas.filter(t => t.status === "pendente");
   const concluidas = tarefas.filter(t => t.status === "concluida");
