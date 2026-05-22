@@ -320,30 +320,47 @@ export default function MinhasTarefas() {
         }
       }
 
-      // Deduplicar por id e enriquecer com dados do lead
+      // Deduplicar por id e enriquecer com dados do lead (incl. arquivado/stage_tipo/negocio_id
+      // para que tarefas órfãs de leads descartados/arquivados/convertidos não vazem nas listas).
       const uniqueRows = [...new Map(rows.map(r => [r.id, r])).values()];
       const leadIds = [...new Set(uniqueRows.map(r => r.pipeline_lead_id).filter(Boolean))];
       if (leadIds.length > 0) {
-        // Chunk também aqui para evitar URL gigante
         const CHUNK = 100;
         const leadMap = new Map<string, any>();
+        const stageIdsSet = new Set<string>();
         for (let i = 0; i < leadIds.length; i += CHUNK) {
           const slice = leadIds.slice(i, i + CHUNK);
           const { data: leads, error: leadsErr } = await runQueryWithRetry(() =>
             supabase
               .from("pipeline_leads")
-              .select("id, nome, telefone, empreendimento")
+              .select("id, nome, telefone, empreendimento, arquivado, stage_id, negocio_id")
               .in("id", slice)
           );
           if (leadsErr) {
             console.warn("[MinhasTarefas] Falha ao enriquecer tarefas com dados de lead", leadsErr);
             continue;
           }
-          (leads as any[] || []).forEach((l: any) => leadMap.set(l.id, l));
+          (leads as any[] || []).forEach((l: any) => {
+            leadMap.set(l.id, l);
+            if (l.stage_id) stageIdsSet.add(l.stage_id);
+          });
+        }
+        const stageTipoMap = new Map<string, string>();
+        if (stageIdsSet.size > 0) {
+          const { data: stages } = await supabase
+            .from("pipeline_stages").select("id, tipo").in("id", [...stageIdsSet]);
+          (stages || []).forEach((s: any) => stageTipoMap.set(s.id, s.tipo));
         }
         uniqueRows.forEach(r => {
           const lead = leadMap.get(r.pipeline_lead_id);
-          if (lead) { r.lead_nome = lead.nome; r.lead_telefone = lead.telefone; r.lead_empreendimento = lead.empreendimento; }
+          if (lead) {
+            r.lead_nome = lead.nome;
+            r.lead_telefone = lead.telefone;
+            r.lead_empreendimento = lead.empreendimento;
+            r.lead_arquivado = lead.arquivado;
+            r.lead_negocio_id = lead.negocio_id;
+            r.lead_stage_tipo = lead.stage_id ? stageTipoMap.get(lead.stage_id) || null : null;
+          }
         });
       }
       uniqueRows.sort((a, b) => {
@@ -423,16 +440,30 @@ export default function MinhasTarefas() {
     return m;
   }, [ownedLeadsFull]);
 
-  const isLeadElegivel = (leadId: string | null | undefined) => {
+  // Filtro unificado: tarefa só é elegível se o lead NÃO está arquivado,
+  // NÃO está em stage de descarte e NÃO virou negócio.
+  // Usa primeiro o estado embarcado na tarefa (lead_arquivado/lead_stage_tipo/lead_negocio_id),
+  // e em fallback o ownedLeadsMap (para parcerias/leads ativos).
+  const isLeadElegivel = (t: TarefaComLead) => {
+    const leadId = t.pipeline_lead_id;
     if (!leadId) return true; // tarefas sem lead (negócios) seguem normais
+    const embarcado: any = t as any;
+    if (embarcado.lead_arquivado === true) return false;
+    if (embarcado.lead_stage_tipo === "descarte") return false;
+    if (embarcado.lead_negocio_id) return false;
     const l = ownedLeadsMap.get(leadId);
-    if (!l) return true;
-    if (l.stage_tipo === "descarte") return false;
-    if (l.negocio_id) return false;
+    if (l) {
+      if (l.stage_tipo === "descarte") return false;
+      if (l.negocio_id) return false;
+    }
     return true;
   };
 
-  const pendentes = useMemo(() => activeTarefas.filter(t => t.status === "pendente"), [activeTarefas]);
+  const pendentes = useMemo(
+    () => activeTarefas.filter(t => t.status === "pendente" && (categoria !== "leads" || isLeadElegivel(t))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeTarefas, categoria, ownedLeadsMap]
+  );
   const concluidas = useMemo(() => activeTarefas.filter(t => t.status === "concluida").slice(0, 20), [activeTarefas]);
 
   const ownedLeadStatusMap = useMemo(() => {
@@ -450,7 +481,7 @@ export default function MinhasTarefas() {
       return pendentes.filter(t => t.vence_em && isBefore(parseDateBRT(t.vence_em), todayStart));
     }
     return pendentes.filter(t => {
-      if (!isLeadElegivel(t.pipeline_lead_id)) return false;
+      if (!isLeadElegivel(t)) return false;
       return ownedLeadStatusMap.get(t.pipeline_lead_id) === "tarefa_atrasada";
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

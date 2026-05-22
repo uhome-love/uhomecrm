@@ -1,67 +1,59 @@
+## Problema
 
-# Plano: auditoria completa de reengajamento da Campanha Átrio
+A corretora Andressa (e outras) está vendo na Central de Tarefas tarefas pendentes de leads que **já foram descartados ou arquivados**. Ela não consegue concluí-las em lote, então ficam poluindo o painel.
 
-## Contexto
+Auditoria no banco confirma o tamanho do problema:
 
-Quando um lead em **Descarte/arquivado** responde "Sim" (ou texto livre) ao disparo Átrio, a função `campanha-atrio-processar-resposta` reativa o lead e o envia à roleta. Hoje ela faz isso de forma "silenciosa":
+- **543** tarefas pendentes em leads `arquivado=true`
+- **538** tarefas pendentes em leads em stage do tipo `descarte`
+- **20** tarefas pendentes em leads que já viraram negócio
+- Total geral pendentes: 3.047
 
-- `liberarVinculoSeDescarte()` limpa `corretor_id`, `arquivado`, `aceite_status` — **mas não limpa `motivo_descarte` nem `tipo_descarte`**.
-- A distribuição via roleta move o `stage_id` de Descarte → Novo Lead — **sem inserir linha em `pipeline_historico`**.
-- A `pipeline_atividades` é inserida (existe), mas não há rastro visível na timeline de histórico de estágio do lead.
+Hoje a regra `isLeadElegivel` em `MinhasTarefas.tsx` só funciona para leads que estão no `ownedLeadsMap`. Esse map é montado a partir de `pipeline_leads` com `arquivado=false`, então tarefas de leads **arquivados** caem no fallback `if (!l) return true` e continuam aparecendo. Além disso, as listas "Todas / Hoje / Amanhã / Semana" nem chamam esse filtro — só "Atrasadas" chama.
 
-Resultado: o lead reaparece no pipeline do corretor sem nenhuma explicação no histórico (caso Andréa).
+E, no fluxo de descarte/arquivamento/criação de negócio, nada cancela as tarefas pendentes daquele lead — por isso o lixo acumula.
 
-## Mudanças no edge function `campanha-atrio-processar-resposta`
+## Solução em 3 frentes
 
-### 1. Expandir `liberarVinculoSeDescarte()`
-Quando o lead estiver em Descarte ou arquivado, antes da distribuição:
+### 1. Limpeza pontual (one-off via migração de dados)
 
-- Capturar `stage_id` e `corretor_id` atuais (para o histórico).
-- Atualizar `pipeline_leads` com:
-  - `corretor_id = null`
-  - `aceite_status = 'pendente'`
-  - `arquivado = false`
-  - `motivo_descarte = null`
-  - `tipo_descarte = null`
-  - `data_descarte = null` (se existir a coluna — verificar)
-- Inserir entrada em `pipeline_historico`:
-  - `pipeline_lead_id`, `stage_anterior_id` = stage atual (Descarte), `stage_novo_id` = Descarte (mesmo — apenas marca a saída), `corretor_id_anterior`, `tipo = 'reativacao_campanha'`, `observacao = 'Lead reativado por resposta na Campanha Átrio (onda X): "<conteudo>"'`.
-- Retornar booleano `foiReativado` para o caller saber se precisa gravar histórico extra de mudança de stage.
+Cancelar agora as 1.101 tarefas pendentes órfãs:
 
-### 2. Gravar histórico da mudança de stage pós-roleta
-Após `distributeLeadDirect` retornar sucesso:
+- `pipeline_tarefas.status = 'cancelada'` + `concluida_em = now()` quando:
+  - lead com `arquivado = true`, **ou**
+  - lead em stage `tipo = 'descarte'`, **ou**
+  - lead com `negocio_id IS NOT NULL`
 
-- Buscar `stage_id` novo do lead (a roleta já moveu).
-- Se `foiReativado === true` e `stage_id` mudou em relação ao capturado em (1), inserir nova linha em `pipeline_historico`:
-  - `stage_anterior_id` = Descarte, `stage_novo_id` = stage novo (Novo Lead / Sem Contato), `corretor_id_novo` = `dist.corretor_id`, `tipo = 'distribuicao_roleta'`, `observacao = 'Distribuído via roleta após resposta SIM na Campanha Átrio'`.
+### 2. Trigger automático no banco (evita reincidência)
 
-### 3. Garantir `pipeline_atividades` mesmo em falha de roleta
-Hoje a atividade é gravada com a descrição apropriada para sucesso/falha — manter. Adicionar campo `metadata` (jsonb) com:
-```json
-{ "wamid": "...", "resposta": "Sim, pode enviar", "onda": 3, "corretor_id": "..." }
-```
-para auditoria futura.
+Criar trigger em `pipeline_leads` (AFTER UPDATE) que cancela tarefas pendentes do lead quando:
+- `arquivado` muda para `true`, **ou**
+- `stage_id` muda para uma stage do tipo `descarte`, **ou**
+- `negocio_id` passa de NULL para algo
 
-### 4. Aplicar a mesma lógica ao branch "texto_livre"
-O bloco de texto livre (linhas 297–347) tem o mesmo problema. Replicar exatamente o tratamento de histórico + limpeza de campos.
+A tarefa cancelada vai com `descricao` apensada de "[Auto-cancelada: lead descartado/arquivado/virou negócio]" para o histórico ficar claro.
 
-### 5. Branch "nao" — também precisa de histórico?
-Não move stage nem distribui. Só atualiza `reengajamento_status` e grava atividade. **Sem mudança aqui** (não há transição a registrar).
+### 3. Defesa em profundidade no frontend (`src/pages/MinhasTarefas.tsx`)
 
-## Verificações antes de implementar
+Para tarefas que sobrarem por alguma janela de race condition:
 
-- Confirmar colunas em `pipeline_historico` (nomes exatos: `stage_anterior_id`/`stage_novo_id` vs `stage_anterior`/`stage_novo`, existe `corretor_id_anterior`/`corretor_id_novo`?).
-- Confirmar se `pipeline_leads` tem `data_descarte`.
-- Confirmar se `pipeline_atividades` tem coluna `metadata` jsonb (se não, omitir).
-- Reler `distributeLeadDirect` para entender se ela já grava `pipeline_historico` (se sim, evitar duplicação).
+- Enriquecer cada `pipeline_tarefas` carregada com `arquivado`, `stage_tipo`, `negocio_id` do lead (uma query a mais, paginada).
+- Aplicar o filtro `isLeadElegivel` em **todas** as listas (`pendentes`, `hoje`, `amanha`, `semana`, `atrasadasTarefas`), não só em "Atrasadas".
+- Manter "Concluídas" como está (histórico precisa mostrar tudo).
 
-## Backfill manual
+## Resultado esperado
 
-Após deploy, gravar manualmente em `pipeline_historico` + `pipeline_atividades` o evento da **Andréa (`cf4e6822-fa0b-4e8b-a990-dc4d31f4aff7`)**:
-- Histórico: Descarte → Novo Lead em 21/05 22:55, tipo `reativacao_campanha`, observação citando a resposta "Sim, pode enviar" + pergunta sobre metragem.
-- Atividade: "Resposta SIM — Disparo Átrio (Onda 3)" com timestamp correto e corretor William Brizola.
+- Andressa abre a Central de Tarefas e os cards 23/05 dos leads já descartados desaparecem imediatamente após a limpeza.
+- Daqui pra frente, descartar/arquivar/converter um lead já cancela as tarefas pendentes dele automaticamente — sem precisar concluir uma a uma.
+- Painel volta a refletir só trabalho real pendente.
+
+## Arquivos / objetos envolvidos
+
+- Migração SQL nova: trigger `trg_cancel_tasks_on_lead_close` + função `cancel_pipeline_tasks_on_lead_close()`.
+- Insert de limpeza (via tool `insert`, não migração): UPDATE em massa em `pipeline_tarefas`.
+- `src/pages/MinhasTarefas.tsx`: enriquecimento das tarefas com dados do lead + aplicação do filtro em todas as listas.
 
 ## Fora de escopo
 
-- Não tocar em `distributeLeadDirect` nem em outras campanhas (cron de nutrição, etc.). Foco exclusivo em `campanha-atrio-processar-resposta`.
-- Não mudar a regra de idempotência de 4h (`suppressRedistribuicao`).
+- Não vou mexer no fluxo de criação de tarefa, em outras telas (Pipeline, Foco, Agenda), nem em `negocios_tarefas` — só a Central de Tarefas e o trigger no `pipeline_leads`.
+- Não vou alterar regra de quem é "lead elegível" no resto do sistema.
