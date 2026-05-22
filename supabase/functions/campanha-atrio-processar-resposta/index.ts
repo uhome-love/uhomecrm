@@ -435,12 +435,12 @@ Deno.serve(async (req: Request) => {
       });
     } catch (e) { console.error("campaign_clicks insert err:", e); }
 
-    await supabase.from("pipeline_atividades").insert({
-      pipeline_lead_id: evento.lead_id, tipo: "campanha_atrio",
-      titulo: "Resposta livre — Disparo Átrio",
-      descricao: `Lead respondeu texto livre (Átrio): "${conteudo?.slice(0,200)}". ${sucesso ? "Enviado para roleta." : "Falha roleta: " + (dist?.reason || dist?.error)}`,
-      data: hoje, status: "concluida",
-    });
+    await inserirAtividade(
+      "Resposta livre — Disparo Átrio",
+      `Lead respondeu texto livre (Átrio): "${conteudo?.slice(0,200)}". ${sucesso ? "Enviado para roleta." : "Falha roleta: " + (dist?.reason || dist?.error)}`,
+      dist?.corretor_id || liberacaoTL.corretorAnteriorId || null,
+    );
+
     return jsonResponse({ ok: true, tipo, distribuido: sucesso });
   } catch (e) {
     console.error("processar-resposta error", e);
