@@ -228,6 +228,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     // R4.x Bug 2A — invalidação cross-context para Central/Agenda/HOMI refletirem
     queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
     queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
+    queryClient.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
     queryClient.invalidateQueries({ queryKey: ["homi-insight", leadId] });
   };
 

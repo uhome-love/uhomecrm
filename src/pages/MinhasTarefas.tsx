@@ -464,7 +464,17 @@ export default function MinhasTarefas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeTarefas, categoria, ownedLeadsMap]
   );
-  const concluidas = useMemo(() => activeTarefas.filter(t => t.status === "concluida").slice(0, 20), [activeTarefas]);
+  const concluidas = useMemo(
+    () =>
+      activeTarefas
+        .filter(t => t.status === "concluida")
+        .slice()
+        .sort((a, b) =>
+          (b.concluida_em ?? b.updated_at ?? "").localeCompare(a.concluida_em ?? a.updated_at ?? "")
+        )
+        .slice(0, 20),
+    [activeTarefas]
+  );
 
   const ownedLeadStatusMap = useMemo(() => {
     const map = new Map<string, LeadClientStatus>();
@@ -608,6 +618,7 @@ export default function MinhasTarefas() {
       queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
       queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
+      queryClient.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
       if (leadId) {
         queryClient.invalidateQueries({ queryKey: ["homi-insight", leadId] });
       }

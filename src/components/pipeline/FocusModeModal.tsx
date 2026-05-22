@@ -465,6 +465,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       // R4.x Bug 2A — invalidação cross-context para Central/Agenda
       queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
+      queryClient.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
       setTimeout(() => goToNext(), 800);
     } catch (err) {
       console.error(err);
