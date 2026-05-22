@@ -45,6 +45,7 @@ export function CompletionStep2({
   novoStageId,
   leadId,
   currentStageId,
+  step1Descricao,
   onChangeNovaTarefa,
   onChangeNovoStage,
   onBack,
