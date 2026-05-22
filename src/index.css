@@ -143,7 +143,7 @@
     --gradient-brand:    linear-gradient(135deg, hsl(var(--primary-500)), hsl(var(--primary-700)));
     --gradient-brand-soft: linear-gradient(135deg, hsl(var(--primary-50)), hsl(var(--primary-100)));
     --gradient-hero:     linear-gradient(135deg, hsl(var(--neutral-900)), hsl(var(--primary-900)));
-    --gradient-sidebar:  linear-gradient(180deg, hsl(225 50% 4%), hsl(225 50% 7%));
+    --gradient-sidebar:  linear-gradient(180deg, hsl(240 50% 5%), hsl(240 45% 8%));
     --gradient-success:  linear-gradient(135deg, hsl(var(--success-500)), hsl(var(--success-700)));
     --gradient-danger:   linear-gradient(135deg, hsl(var(--danger-500)), hsl(var(--danger-700)));
     --gradient-warning:  linear-gradient(135deg, hsl(var(--warning-500)), hsl(var(--warning-700)));
@@ -208,44 +208,49 @@
     --pipeline-empty-icon-bg: 239 84% 67%;
   }
 
-  /* Dark mode (mantido mas nao usado por padrao) */
+  /* Dark mode — paleta indigo-violeta inspirada no Modo Foco (#0F0F23 / #1A1A2E / #16213E)
+     hue 240° + tint frio. Identidade contínua entre CRM e Modo Foco. */
   .dark {
-    --background:          225 50% 5%;      /* #0A0E1A deep slate */
+    --background:          240 45% 10%;     /* #0F0F23 — topo do gradient Modo Foco */
     --foreground:          210 40% 96%;
-    --card:                225 40% 9%;      /* #12162A */
+    --card:                240 35% 13%;     /* #16162B — lift sutil sobre bg */
     --card-foreground:     210 40% 96%;
-    --popover:             225 40% 9%;
+    --popover:             240 35% 15%;     /* #1A1A30 */
     --popover-foreground:  210 40% 96%;
     --primary:             var(--primary-500);
     --primary-foreground:  0 0% 100%;
-    --secondary:           225 30% 14%;
-    --secondary-foreground: 215 20% 75%;
-    --muted:               225 30% 12%;
-    --muted-foreground:    215 20% 55%;
-    --accent:              225 30% 14%;
+    --secondary:           240 28% 17%;     /* #1F1F37 */
+    --secondary-foreground: 215 20% 78%;
+    --muted:               240 28% 14%;     /* #1A1A2E — meio Modo Foco */
+    --muted-foreground:    230 18% 62%;     /* #8C92AD tint indigo */
+    --accent:              240 35% 18%;     /* #23234A — tint indigo perceptível */
     --accent-foreground:   210 40% 96%;
     --destructive:         0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border:              225 25% 15%;
-    --input:               225 25% 15%;
+    --border:              240 25% 20%;     /* #26263F tint frio */
+    --input:               240 25% 20%;
     --ring:                var(--primary-400);
-    --sidebar-background:  225 50% 4%;      /* #080B15 */
-    --sidebar-border:      225 30% 10%;
+    --sidebar-background:  240 50% 7%;      /* #0B0B1B */
+    --sidebar-foreground:  230 18% 70%;
+    --sidebar-accent:      240 35% 14%;     /* #181830 */
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border:      240 30% 12%;     /* #16162A */
 
-    /* Pipeline Dark Mode Tokens */
-    --pipeline-card-bg: 225 40% 11%;
-    --pipeline-card-border: 225 25% 18%;
+    /* Pipeline Dark Mode Tokens — alinhados ao novo hue 240 */
+    --pipeline-card-bg: 240 35% 13%;        /* #16162B */
+    --pipeline-card-border: 240 25% 22%;    /* #2B2B47 */
     --pipeline-card-border-hover: 228 100% 70%;
     --pipeline-text-primary: 210 40% 96%;
-    --pipeline-text-secondary: 215 20% 65%;
-    --pipeline-text-muted: 215 20% 55%;
-    --pipeline-column-bg: 225 40% 9%;
-    --pipeline-column-border: 225 25% 16%;
-    --pipeline-tab-bg: 225 30% 12%;
-    --pipeline-tab-active-bg: 225 35% 15%;
-    --pipeline-progress-track: 225 25% 16%;
+    --pipeline-text-secondary: 230 18% 70%;
+    --pipeline-text-muted: 230 18% 62%;
+    --pipeline-column-bg: 240 40% 11%;      /* #121226 */
+    --pipeline-column-border: 240 25% 18%;
+    --pipeline-tab-bg: 240 40% 10%;         /* #101023 */
+    --pipeline-tab-active-bg: 240 32% 17%;  /* #1F1F38 */
+    --pipeline-progress-track: 240 25% 20%;
     --pipeline-empty-icon-bg: 228 100% 64%;
   }
+
 }
 
 @layer base {
