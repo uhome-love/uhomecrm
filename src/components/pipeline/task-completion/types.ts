@@ -1,8 +1,15 @@
 /**
- * Sprint 1 R3-V2 — Captura estruturada de conclusão de tarefa
- * Enums alinhados com CHECK constraints em pipeline_atividades:
- *   - tipo_contato: 4 canais reais
- *   - resultado: 5 outcomes
+ * Sprint 1 R3-V2 + Refactor Nível 2 (2026-05-22) — Captura estruturada de conclusão de tarefa
+ *
+ * Step 1 (inalterado): tipo_contato + resultado + descricao opcional.
+ * Step 2 (refactor Nível 2): seletor de OUTCOME em 2 grupos × 2 opções.
+ *
+ *   ROTINA NORMAL                ENCERRAR LEAD
+ *     ⦿ agendar  (default)         ○ descartar (reengajável)
+ *     ○ concluir                   ○ inativar  (definitivo)
+ *
+ * Negócios mantêm fluxo legado: TaskCompletionDialog recebe prop `context='negocio'`
+ * e renderiza Step 2 sem o grupo "Encerrar lead" (apenas Agendar é permitido).
  */
 
 import { addDays, format } from "date-fns";
@@ -25,6 +32,10 @@ export type TipoProximaTarefa =
   | "proposta"
   | "email";
 
+export type OutcomeChoice = "agendar" | "concluir" | "descartar" | "inativar";
+
+export type CompletionContext = "lead" | "negocio";
+
 export interface NovaTarefaPayload {
   tipo: TipoProximaTarefa;
   vence_em: string; // YYYY-MM-DD (BRT)
@@ -33,14 +44,27 @@ export interface NovaTarefaPayload {
 }
 
 export interface CompletionPayload {
+  // Step 1
   tipo_contato: TipoContato;
   resultado: Resultado;
   descricao?: string;
-  nova_tarefa: NovaTarefaPayload;
+
+  // Step 2 — outcome dirige o que persiste
+  outcome: OutcomeChoice;
+
+  // novo_stage_id ainda é opcional para 'agendar' e 'concluir' (UI permite mover stage)
   novo_stage_id?: string;
+
+  // Apenas para outcome='agendar'
+  nova_tarefa?: NovaTarefaPayload;
+
+  // Apenas para outcome em ['descartar', 'inativar']
+  reason_code?: string;
+  reason_label?: string; // label efetivamente gravado em motivo_descarte
+  reason_custom_text?: string; // preenchido quando reason_code === 'outro'
 }
 
-/* ─────────── Labels e mapas para UI ─────────── */
+/* ─────────── Labels e mapas para UI (Step 1) ─────────── */
 
 import {
   Phone,
@@ -72,7 +96,6 @@ export const RESULTADO_OPTIONS: ReadonlyArray<{
   value: Resultado;
   label: string;
   Icon: LucideIcon;
-  /** semantic tone (drives color) */
   tone: "positive" | "neutral" | "warning" | "negative";
 }> = [
   { value: "atendeu", label: "Atendeu", Icon: CheckCircle2, tone: "positive" },
@@ -93,6 +116,30 @@ export const PROXIMA_TAREFA_OPTIONS: ReadonlyArray<{
   { value: "visita", label: "Visita", Icon: Home },
   { value: "proposta", label: "Proposta", Icon: FileText },
   { value: "email", label: "E-mail", Icon: Mail },
+];
+
+/* ─────────── Motivos canônicos (aprovados pelo CEO 2026-05-22) ─────────── */
+
+export interface OutcomeReason {
+  readonly code: string;
+  readonly label: string;
+}
+
+export const DESCARTE_REASONS: ReadonlyArray<OutcomeReason> = [
+  { code: "nao_atende", label: "Não atende / não responde" },
+  { code: "sem_interesse_momento", label: "Sem interesse no momento" },
+  { code: "sem_condicao_financeira", label: "Sem condição financeira" },
+  { code: "imovel_nao_atende", label: "Imóvel não atende necessidade" },
+  { code: "desistiu_compra", label: "Desistiu da compra" },
+  { code: "outro", label: "Outro (especificar)" },
+];
+
+export const INATIVAR_REASONS: ReadonlyArray<OutcomeReason> = [
+  { code: "nao_quer_contato", label: "Não quer mais contato" },
+  { code: "contato_invalido", label: "Contato errado / Número inválido" },
+  { code: "lgpd", label: "Solicitou retirada (LGPD)" },
+  { code: "lead_antigo", label: "Lead antigo sem retorno" },
+  { code: "outro", label: "Outro (especificar)" },
 ];
 
 /* ─────────── Quick dates ─────────── */
