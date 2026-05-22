@@ -286,38 +286,100 @@ export default function FocusConfigScreen({
               );
             })}
           </div>
+
+          {/* R4.1 — "Todos": filosofia paralela, separado por divider sutil */}
+          <div className="mt-3 pt-3 border-t border-white/[0.05]">
+            {(() => {
+              const opt = EVERY_OPTION;
+              const isSelected = isEvery;
+              const badge = badgeFor(opt.value);
+              return (
+                <button
+                  onClick={() => onToggleCriteria(opt.value)}
+                  className="w-full group flex items-start gap-3 p-3 rounded-xl text-left transition-all hover:brightness-125"
+                  style={{
+                    background: isSelected ? opt.bgVar : "hsl(0 0% 100% / 0.03)",
+                    border: `1.5px solid ${isSelected ? opt.borderVar : "hsl(0 0% 100% / 0.06)"}`,
+                  }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors"
+                    style={{
+                      background: isSelected ? `${opt.accent.replace(")", " / 0.18)")}` : "hsl(0 0% 100% / 0.05)",
+                      color: isSelected ? opt.accent : "hsl(var(--neutral-500))",
+                    }}
+                  >
+                    {opt.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="text-sm font-semibold"
+                        style={{ color: isSelected ? "#fff" : "hsl(var(--neutral-400))" }}
+                      >
+                        {opt.label}
+                      </span>
+                      {!countsLoading && badge > 0 && (
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded-md font-bold shrink-0"
+                          style={{
+                            background: isSelected ? `${opt.accent.replace(")", " / 0.25)")}` : "hsl(0 0% 100% / 0.08)",
+                            color: isSelected ? opt.accent : "hsl(var(--neutral-400))",
+                            fontFamily: "var(--font-focus-mono)",
+                          }}
+                        >
+                          {badge}
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className="text-[10.5px] leading-tight block mt-1"
+                      style={{ color: isSelected ? "hsl(var(--neutral-400))" : "hsl(var(--neutral-500))" }}
+                    >
+                      {opt.description}
+                    </span>
+                  </div>
+                  {isSelected && (
+                    <Check className="w-4 h-4 shrink-0 mt-1" style={{ color: opt.accent }} />
+                  )}
+                </button>
+              );
+            })()}
+          </div>
         </div>
 
-        {/* Toggle próx 2d */}
-        <button
-          type="button"
-          onClick={onToggleIncludeUpcoming}
-          className="w-full flex items-center justify-between gap-3 p-3 rounded-xl transition-all text-left"
-          style={{
-            background: includeUpcoming ? "var(--gradient-focus-soft)" : "hsl(0 0% 100% / 0.03)",
-            border: `1.5px solid ${includeUpcoming ? "hsl(var(--primary-500) / 0.45)" : "hsl(0 0% 100% / 0.06)"}`,
-          }}
-        >
-          <div className="min-w-0">
-            <span
-              className="text-sm font-semibold block"
-              style={{ color: includeUpcoming ? "#fff" : "hsl(var(--neutral-400))" }}
-            >
-              Incluir próximos 2 dias
-            </span>
-            <span className="text-[10.5px] leading-tight block mt-0.5" style={{ color: "hsl(var(--neutral-500))" }}>
-              No filtro "Tudo", inclui leads com tarefa amanhã ou depois de amanhã
-            </span>
-          </div>
-          <div
-            className="shrink-0 w-10 h-6 rounded-full transition-all relative"
-            style={{ background: includeUpcoming ? "var(--gradient-focus)" : "hsl(0 0% 100% / 0.12)" }}
+        {/* Toggle próx 2d — oculto quando "Todos" ativo (R4.1) */}
+        {!isEvery && (
+          <button
+            type="button"
+            onClick={onToggleIncludeUpcoming}
+            className="w-full flex items-center justify-between gap-3 p-3 rounded-xl transition-all text-left"
+            style={{
+              background: includeUpcoming ? "var(--gradient-focus-soft)" : "hsl(0 0% 100% / 0.03)",
+              border: `1.5px solid ${includeUpcoming ? "hsl(var(--primary-500) / 0.45)" : "hsl(0 0% 100% / 0.06)"}`,
+            }}
           >
+            <div className="min-w-0">
+              <span
+                className="text-sm font-semibold block"
+                style={{ color: includeUpcoming ? "#fff" : "hsl(var(--neutral-400))" }}
+              >
+                Incluir próximos 2 dias
+              </span>
+              <span className="text-[10.5px] leading-tight block mt-0.5" style={{ color: "hsl(var(--neutral-500))" }}>
+                No filtro "Tudo", inclui leads com tarefa amanhã ou depois de amanhã
+              </span>
+            </div>
             <div
-              className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow"
-              style={{ left: includeUpcoming ? "calc(100% - 22px)" : "2px" }}
-            />
-          </div>
+              className="shrink-0 w-10 h-6 rounded-full transition-all relative"
+              style={{ background: includeUpcoming ? "var(--gradient-focus)" : "hsl(0 0% 100% / 0.12)" }}
+            >
+              <div
+                className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow"
+                style={{ left: includeUpcoming ? "calc(100% - 22px)" : "2px" }}
+              />
+            </div>
+
         </button>
 
         {/* Stage filter */}
