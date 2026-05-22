@@ -357,14 +357,16 @@ export function useFocusLeads(
         else if (hasUpcoming || hasFutureDistant) state = "em_dia_proximo"; // ambos rotulados aqui
         else state = "sem_direcao";
 
-        // Filtros
-        if (state === "atrasado" && !wantOverdue) continue;
-        if (state === "para_hoje" && !wantToday) continue;
-        if (state === "em_dia_proximo") {
-          // Só entra em "Tudo" com toggle ligado, e somente se houver tarefa em próximos 2d (não futuras distantes)
-          if (!(filterAll && includeUpcoming && hasUpcoming)) continue;
+        // Filtros (em "every", nenhum bucket é descartado)
+        if (!filterEvery) {
+          if (state === "atrasado" && !wantOverdue) continue;
+          if (state === "para_hoje" && !wantToday) continue;
+          if (state === "em_dia_proximo") {
+            // Só entra em "Tudo" com toggle ligado, e somente se houver tarefa em próximos 2d (não futuras distantes)
+            if (!(filterAll && includeUpcoming && hasUpcoming)) continue;
+          }
+          if (state === "sem_direcao" && !wantNoNextStep) continue;
         }
-        if (state === "sem_direcao" && !wantNoNextStep) continue;
 
         // last_action / dias sem direção
         const neverTouched = !lastTouch && !lastConcluida;
@@ -376,8 +378,10 @@ export function useFocusLeads(
           ? Math.floor((Date.now() - new Date(lastActionISO).getTime()) / 86400000)
           : 999;
 
-        // Janela de cortesia: sem_direcao recém-saído (dia 0) sai (a menos que nunca tocado)
-        if (state === "sem_direcao" && !neverTouched && daysSinceAction < 1) continue;
+        // Janela de cortesia: sem_direcao recém-saído (dia 0) sai (a menos que nunca tocado).
+        // Não aplica em "every" — universo completo não deve filtrar nada.
+        if (!filterEvery && state === "sem_direcao" && !neverTouched && daysSinceAction < 1) continue;
+
 
         const daysInStage = Math.floor(
           (Date.now() - new Date(lead.stage_changed_at).getTime()) / 86400000
