@@ -113,24 +113,25 @@ Deno.serve(async (req: Request) => {
     // Dormente em runtime enquanto a pausa global acima estiver ativa; passa
     // a executar automaticamente quando a pausa for removida.
     const guard = await checkLeadIntocavel(supabase, from);
-    if (guard.skip && guard.lead) {
+    const guardLead = guard.lead;
+    if (guard.skip && guardLead) {
       const motivoTag = `advanced_stage_or_archived:${guard.motivo}`;
       console.log("⛔ SKIP", {
         motivo: motivoTag,
         telefone: from,
-        lead_existente_id: guard.lead.id,
-        stage_atual_nome: guard.lead.stage_nome,
+        lead_existente_id: guardLead.id,
+        stage_atual_nome: guardLead.stage_nome,
       });
       try {
         await supabase.from("campanha_atrio_respostas").insert({
-          lead_id: guard.lead.id,
+          lead_id: guardLead.id,
           telefone: from,
           tipo_resposta: "texto_livre",
           conteudo_resposta: JSON.stringify({
             wamid,
             motivo: motivoTag,
-            stage: guard.lead.stage_nome,
-            nome: guard.lead.nome,
+            stage: guardLead.stage_nome,
+            nome: guardLead.nome,
           }).slice(0, 1000),
           wamid_origem: wamid || null,
           enviado_para_roleta: false,
