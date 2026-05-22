@@ -24,17 +24,33 @@ interface CardQuickTaskPopoverProps {
   leadId: string;
   leadNome: string;
   corretorId?: string;
+  /** Tipo pré-selecionado (default: "follow_up") */
+  defaultType?: string;
+  /** Hora pré-preenchida HH:mm (default: "10:00") */
+  defaultTime?: string;
+  /** "button" (default — botão do action bar) ou "badge" (pill amarela complementar) */
+  triggerVariant?: "button" | "badge";
+  /** Texto do trigger quando variant="badge" (default "➕ Criar primeira tarefa") */
+  triggerLabel?: string;
 }
 
-export default function CardQuickTaskPopover({ leadId, leadNome, corretorId }: CardQuickTaskPopoverProps) {
+export default function CardQuickTaskPopover({
+  leadId,
+  leadNome,
+  corretorId,
+  defaultType = "follow_up",
+  defaultTime = "10:00",
+  triggerVariant = "button",
+  triggerLabel = "➕ Criar primeira tarefa",
+}: CardQuickTaskPopoverProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState("follow_up");
+  const [type, setType] = useState(defaultType);
   const [obs, setObs] = useState("");
   const [obsError, setObsError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [customDate, setCustomDate] = useState<Date>();
-  const [time, setTime] = useState("10:00");
+  const [time, setTime] = useState(defaultTime);
   const [dateMode, setDateMode] = useState<"hoje" | "amanha" | "custom">("hoje");
 
   const handleCreate = useCallback(async () => {
@@ -89,38 +105,49 @@ export default function CardQuickTaskPopover({ leadId, leadNome, corretorId }: C
       setOpen(false);
       setObs("");
       setObsError(false);
-      setType("follow_up");
+      setType(defaultType);
       setDateMode("hoje");
       setCustomDate(undefined);
-      setTime("10:00");
+      setTime(defaultTime);
     } catch (err: any) {
       toast.error("Erro ao criar tarefa: " + (err.message || ""));
     } finally {
       setSaving(false);
     }
-  }, [user, obs, dateMode, customDate, time, type, leadId, leadNome]);
+  }, [user, obs, dateMode, customDate, time, type, leadId, leadNome, defaultType, defaultTime]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          title="Criar tarefa rápida"
-          onClick={(e) => { e.stopPropagation(); setOpen(true); }}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-            padding: "8px 4px", cursor: "pointer",
-            background: "transparent", border: "none",
-            fontSize: 11, fontWeight: 600, color: "#64748b",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            transition: "background 0.15s ease",
-            flex: 1, minWidth: 0, width: "100%", minHeight: 36,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--muted))"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-        >
-          <ClipboardList style={{ width: 12, height: 12 }} />
-          <span>Tarefa</span>
-        </button>
+        {triggerVariant === "badge" ? (
+          <button
+            type="button"
+            title={triggerLabel}
+            onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+            className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20 cursor-pointer transition-colors"
+          >
+            {triggerLabel}
+          </button>
+        ) : (
+          <button
+            title="Criar tarefa rápida"
+            onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              padding: "8px 4px", cursor: "pointer",
+              background: "transparent", border: "none",
+              fontSize: 11, fontWeight: 600, color: "#64748b",
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              transition: "background 0.15s ease",
+              flex: 1, minWidth: 0, width: "100%", minHeight: 36,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--muted))"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <ClipboardList style={{ width: 12, height: 12 }} />
+            <span>Tarefa</span>
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent side="top" align="start" className="w-72 p-2.5 space-y-2" onClick={(e) => e.stopPropagation()}>
         <p className="text-[10px] font-bold text-foreground">➕ Tarefa rápida para {leadNome?.split(" ")[0]}</p>

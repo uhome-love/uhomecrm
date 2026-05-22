@@ -29,6 +29,12 @@ interface FocusModeModalProps {
   open: boolean;
   onClose: () => void;
   pipelineTipo?: "leads" | "negocios";
+  /**
+   * Pré-seleciona critérios e pula direto para a fila (sem tela de config).
+   * Usado quando um card externo abre FocusMode com filtro específico
+   * (ex.: "Leads Sem Tarefa" → ["no_next_step"]).
+   */
+  initialCriteria?: FocusCriteria[];
 }
 
 // TASK_TYPES e QUICK_MESSAGES removidos (Sprint 1 Mudança 4) — fluxo de criação
@@ -39,7 +45,7 @@ interface FocusModeModalProps {
 type CriteriaType = FocusCriteria;
 // CRITERIA_OPTIONS movido para FocusConfigScreen (Sprint 1 R1).
 
-export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
+export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", initialCriteria }: FocusModeModalProps) {
   const { user } = useAuth();
   const corretorId = user?.id ?? null;
   const { leads, loading, reload, staleSince } = useFocusLeads(corretorId, pipelineTipo);
@@ -95,8 +101,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   // Load stages for the config screen
   useEffect(() => {
     if (!open) return;
-    setConfigPhase(true);
-    setSelectedCriteria(["all"]);
+    const hasInitial = !!initialCriteria && initialCriteria.length > 0;
+    setConfigPhase(!hasInitial);
+    setSelectedCriteria(hasInitial ? initialCriteria! : ["all"]);
     setSelectedStageId("all");
     setCurrentIndex(0);
     // Limpa cache de insight quando o modal abre (sessão nova).
@@ -117,6 +124,23 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     // os 4 contadores + badge do critério "Todos". Buckets continuam corretos
     // porque cada lead vem com `state` calculado. Não emite telemetria.
     reloadCounts({ criteria: ["every"], includeUpcoming2d: true });
+
+    // Quando recebido initialCriteria, abrir direto na fila com aquele filtro
+    // (replicando a lógica de handleStartFocus sem tela de config).
+    if (hasInitial) {
+      setWorkedCount(0);
+      focusSessionIdRef.current = newFocusSessionId();
+      advanceCountRef.current = 0;
+      pendingOpenedCtxRef.current = {
+        session_id: focusSessionIdRef.current,
+        pipeline_tipo: pipelineTipo,
+        criteria: initialCriteria,
+        stage_id: "all",
+        include_upcoming_2d: false,
+        source: "external_card",
+      };
+      reload({ criteria: initialCriteria!, includeUpcoming2d: false });
+    }
   }, [open, pipelineTipo]);
 
   const handleToggleCriteria = (value: CriteriaType) => {

@@ -35,6 +35,8 @@ import EvolucaoSemanal from "@/components/corretor/EvolucaoSemanal";
 import LevelProgressBar from "@/components/corretor/LevelProgressBar";
 import CelebrationOverlay from "@/components/corretor/CelebrationOverlay";
 import OnboardingWidget from "@/components/corretor/OnboardingWidget";
+import LeadsSemTarefaCard from "@/components/corretor/LeadsSemTarefaCard";
+import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
 import { ACHIEVEMENTS } from "@/lib/gamification";
 
@@ -72,8 +74,9 @@ export default function CorretorDashboard() {
   const { progress, goals, saveGoals } = useCorretorProgress();
   const motivation = useDailyMotivation();
   const { missoes, missaoGeral, ranking, rankingLoading, userId } = useMissoesLeads();
-  const { followUps, followUpsLoading, visitasHoje, visitasLoading, funil, funilLoading, totalLeads, evolucao, evolucaoLoading } = useCorretorHomeData();
+  const { followUps, followUpsLoading, visitasHoje, visitasLoading, funil, funilLoading, totalLeads, evolucao, evolucaoLoading, leadsSemTarefa } = useCorretorHomeData();
   const { newlyUnlocked, dismissCelebration, unlocked } = useConquistas();
+  const [focusOpen, setFocusOpen] = useState(false);
 
   // Date
   const dataFormatada = new Date().toLocaleDateString("pt-BR", {
@@ -159,6 +162,13 @@ export default function CorretorDashboard() {
           />
         </KpiGrid>
       </motion.div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 3.5. CARD "LEADS SEM TAREFA" — convite visual ao Modo Foco         */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {leadsSemTarefa > 0 && (
+        <LeadsSemTarefaCard count={leadsSemTarefa} onOpenFoco={() => setFocusOpen(true)} />
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 5. BOTÕES DE AÇÃO                                                 */}
@@ -259,6 +269,14 @@ export default function CorretorDashboard() {
           </Button>
         </div>
       </motion.div>
+
+      {/* Modo Foco aberto via card "Leads Sem Tarefa" — critério no_next_step */}
+      <FocusModeModal
+        open={focusOpen}
+        onClose={() => setFocusOpen(false)}
+        pipelineTipo="leads"
+        initialCriteria={["no_next_step"]}
+      />
     </div>
   );
 }

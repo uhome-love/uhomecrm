@@ -198,6 +198,45 @@ export function useCorretorHomeData() {
     .filter(f => !["Descarte", "Negócio Criado"].includes(f.stage_nome))
     .reduce((sum, f) => sum + f.count, 0);
 
+  // Leads ativos SEM nenhuma tarefa pendente (foco de "Sem Direção")
+  const { data: leadsSemTarefa = 0, isLoading: leadsSemTarefaLoading } = useQuery({
+    queryKey: ["corretor-leads-sem-tarefa", user?.id],
+    queryFn: async () => {
+      // 1) ids de leads ativos do corretor, excluindo stages descarte/convertido
+      const { data: stages } = await supabase
+        .from("pipeline_stages")
+        .select("id, tipo")
+        .eq("ativo", true);
+      const excludedStageIds = new Set((stages || [])
+        .filter(s => s.tipo === "descarte" || s.tipo === "convertido")
+        .map(s => s.id));
+
+      const { data: leads } = await supabase
+        .from("pipeline_leads")
+        .select("id, stage_id")
+        .eq("corretor_id", user!.id)
+        .eq("arquivado", false);
+
+      const ativosIds = (leads || [])
+        .filter(l => !excludedStageIds.has(l.stage_id))
+        .map(l => l.id);
+
+      if (ativosIds.length === 0) return 0;
+
+      // 2) ids com tarefa pendente
+      const { data: comTarefa } = await supabase
+        .from("pipeline_tarefas")
+        .select("pipeline_lead_id")
+        .eq("status", "pendente")
+        .in("pipeline_lead_id", ativosIds);
+
+      const comTarefaSet = new Set((comTarefa || []).map(t => t.pipeline_lead_id));
+      return ativosIds.length - comTarefaSet.size;
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
   return {
     followUps,
     followUpsLoading,
@@ -208,5 +247,7 @@ export function useCorretorHomeData() {
     totalLeads,
     evolucao,
     evolucaoLoading,
+    leadsSemTarefa,
+    leadsSemTarefaLoading,
   };
 }
