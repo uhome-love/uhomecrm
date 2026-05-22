@@ -35,6 +35,8 @@ import EvolucaoSemanal from "@/components/corretor/EvolucaoSemanal";
 import LevelProgressBar from "@/components/corretor/LevelProgressBar";
 import CelebrationOverlay from "@/components/corretor/CelebrationOverlay";
 import OnboardingWidget from "@/components/corretor/OnboardingWidget";
+import LeadsSemTarefaCard from "@/components/corretor/LeadsSemTarefaCard";
+import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
 import { ACHIEVEMENTS } from "@/lib/gamification";
 
