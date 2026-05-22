@@ -29,6 +29,12 @@ interface FocusModeModalProps {
   open: boolean;
   onClose: () => void;
   pipelineTipo?: "leads" | "negocios";
+  /**
+   * Pré-seleciona critérios e pula direto para a fila (sem tela de config).
+   * Usado quando um card externo abre FocusMode com filtro específico
+   * (ex.: "Leads Sem Tarefa" → ["no_next_step"]).
+   */
+  initialCriteria?: FocusCriteria[];
 }
 
 // TASK_TYPES e QUICK_MESSAGES removidos (Sprint 1 Mudança 4) — fluxo de criação
