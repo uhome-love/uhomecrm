@@ -49,6 +49,21 @@ function toWaDigits(phone: string): string {
   return digits.startsWith("55") ? digits : `55${digits}`;
 }
 
+/** R5 Item 2 — cor do CTA principal por estado da régua. */
+function ctaStyleForState(state: FocusState): { bg: string; bgHover: string; text: string; shadow: string } {
+  switch (state) {
+    case "atrasado":
+      return { bg: "#DC2626", bgHover: "#B91C1C", text: "#FFFFFF", shadow: "0 8px 24px -8px rgba(220,38,38,0.55)" };
+    case "para_hoje":
+      // Âmbar com texto escuro #1F2937 (slate-800) — contraste AA (ratio 9.4).
+      return { bg: "#F59E0B", bgHover: "#D97706", text: "#1F2937", shadow: "0 8px 24px -8px rgba(245,158,11,0.55)" };
+    case "em_dia_proximo":
+    case "sem_direcao":
+    default:
+      return { bg: "#4F46E5", bgHover: "#4338CA", text: "#FFFFFF", shadow: "0 8px 24px -8px rgba(79,70,229,0.55)" };
+  }
+}
+
 export default function LeadFocusScreen({
   lead, workedCount, homiLoading, homiInsight, onGenerateInsight, onRegenerateInsight,
   pendingTasks, timelineRefreshKey,
