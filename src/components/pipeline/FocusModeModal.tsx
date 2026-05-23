@@ -707,11 +707,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
           )}
 
           <div className="flex items-center gap-2">
-            {!configPhase && currentIndex > 0 && (
-              <Button variant="ghost" size="icon" onClick={goToPrev} className="text-gray-400 hover:text-white hover:bg-white/5 h-8 w-8">
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-            )}
+            {/* R5 Item 4 — ChevronLeft inline removido; navegação migrou para FocusFooter (princípio 45 — não duplicar caminhos). */}
             {!configPhase && (
               <Button
                 variant="ghost"
