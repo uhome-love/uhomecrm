@@ -13,11 +13,13 @@ interface Task {
 
 interface Props {
   tasks: Task[];
+  /** R5 Item 5 — quando true, exibe skeleton no lugar da lista (refetch ao trocar de lead). */
+  loading?: boolean;
   onComplete: (taskId: string, titulo: string) => void;
   onCreateNew: () => void;
 }
 
-export default function PendingTasksCard({ tasks, onComplete, onCreateNew }: Props) {
+export default function PendingTasksCard({ tasks, loading, onComplete, onCreateNew }: Props) {
   return (
     <div className="rounded-xl p-3.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
       <div className="flex items-center justify-between mb-2">
