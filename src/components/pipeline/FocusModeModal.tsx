@@ -721,24 +721,16 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
             />
           ) : loading ? (
             <FocusLoadingSkeleton />
-          ) : leads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "rgba(34,197,94,0.1)" }}>
-                <Zap className="w-8 h-8 text-green-400" />
-              </div>
-              <span className="text-white font-semibold text-lg">Tudo em dia! 🎉</span>
-              <span className="text-gray-400 text-sm text-center max-w-xs">
-                Nenhum lead encontrado com esses filtros. Tente outros critérios ou continue com o bom trabalho!
-              </span>
-              <div className="flex gap-2 mt-4">
-                <Button onClick={() => setConfigPhase(true)} variant="outline" className="text-gray-300 border-gray-600 hover:bg-white/5">
-                  <Filter className="w-4 h-4 mr-1" /> Mudar filtros
-                </Button>
-                <Button onClick={handleClose} style={{ background: "#4969FF" }}>
-                  Fechar
-                </Button>
-              </div>
-            </div>
+          ) : showEmpty || leads.length === 0 ? (
+            <FocusEmptyState
+              corretorAuthId={corretorId}
+              sessionId={focusSessionIdRef.current}
+              workedCount={workedCount}
+              onOpenSuggestion={handleOpenSuggestion}
+              onBackToConfig={handleBackToConfig}
+              onClose={handleClose}
+            />
+
           ) : currentLead ? (
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
