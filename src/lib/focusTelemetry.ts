@@ -21,7 +21,10 @@ export type FocusEvent =
   | "focus_mode_advance"
   | "focus_mode_closed"
   | "task_completion"
-  | "stage_change_failed";
+  | "stage_change_failed"
+  | "focus_empty_state_shown"
+  | "focus_suggestion_clicked";
+
 
 type LogLevel = "info" | "warn" | "error";
 
