@@ -26,6 +26,9 @@ import FocusConfigScreen from "./focus/FocusConfigScreen";
 import LeadFocusScreen from "./focus/LeadFocusScreen";
 import FocusLoadingSkeleton from "./focus/FocusLoadingSkeleton";
 import FocusEmptyState from "./focus/FocusEmptyState";
+import FocusFooter from "./focus/FocusFooter";
+import FocusFirstTimeTip from "./focus/FocusFirstTimeTip";
+import { useFocusKeyboardShortcuts } from "@/hooks/useFocusKeyboardShortcuts";
 
 
 interface FocusModeModalProps {
