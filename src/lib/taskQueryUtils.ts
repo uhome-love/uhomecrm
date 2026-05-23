@@ -1,3 +1,35 @@
+import type { QueryClient } from "@tanstack/react-query";
+
+/**
+ * Fonte única de verdade para invalidação de cache de tarefas.
+ *
+ * Use SEMPRE este helper após qualquer mutação em `pipeline_tarefas`
+ * ou `negocios_tarefas` (UPDATE status="concluida", INSERT nova tarefa,
+ * UPDATE vence_em, etc.). Garante que Central de Tarefas, Agenda Widget
+ * e dependentes (owned-lead-task-map, homi-insight) reflitam o estado novo.
+ *
+ * As 5 queryKeys que renderizam o badge "Atrasada/Pendente" recebem
+ * `refetchType: 'all'` para forçar refetch mesmo de observers inativos —
+ * sem isso o React Query devolve cache stale enquanto refetcha em background
+ * e o usuário vê badge ATRASADA falso por alguns segundos (bug R4.5.1 Issue B).
+ *
+ * `owned-lead-task-map` e `homi-insight` usam o default (só refetcha observers
+ * ativos) porque já são re-derivados via cascata do `minhas-tarefas` refetch
+ * e o tráfego extra não compensa.
+ */
+export function invalidateTaskQueries(qc: QueryClient, leadId?: string | null) {
+  const critical = { refetchType: "all" as const };
+  qc.invalidateQueries({ queryKey: ["minhas-tarefas"] }, critical);
+  qc.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] }, critical);
+  qc.invalidateQueries({ queryKey: ["agenda-widget"] }, critical);
+  qc.invalidateQueries({ queryKey: ["agenda-widget-leads"] }, critical);
+  qc.invalidateQueries({ queryKey: ["agenda-widget-negocios"] }, critical);
+  qc.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
+  if (leadId) {
+    qc.invalidateQueries({ queryKey: ["homi-insight", leadId] });
+  }
+}
+
 // Retry com TETO (3 tentativas), parada imediata em erros de auth (401/403/JWT)
 // e backoff exponencial com jitter — proteção contra amplificação durante
 // rede instável OU sessão quebrada (não reentra em /token quando JWT já está bad).
