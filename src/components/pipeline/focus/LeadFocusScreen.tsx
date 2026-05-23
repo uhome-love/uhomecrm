@@ -33,6 +33,8 @@ interface Props {
   onGenerateInsight: () => void;
   onRegenerateInsight: () => void;
   pendingTasks: Task[];
+  /** R5 Item 5 — loading dos pending tasks. */
+  pendingTasksLoading?: boolean;
   timelineRefreshKey?: number;
   onCompleteTask: (taskId: string, titulo: string) => void;
   onCompleteNextTask: () => void;
