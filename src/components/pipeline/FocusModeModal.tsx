@@ -96,8 +96,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
   const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
   // Sprint 1 R2: contador de leads/tarefas trabalhados nesta sessão (visível no topo do LeadFocusScreen).
   const [workedCount, setWorkedCount] = useState(0);
+  // R4 — força exibir FocusEmptyState (após concluir último lead da sessão).
+  const [showEmpty, setShowEmpty] = useState(false);
   // Bump após qualquer ação registrada para refrescar TimelineSection sem refetch global.
   const [timelineRefreshKey, setTimelineRefreshKey] = useState(0);
+
 
   const currentLead = leads[currentIndex] ?? null;
 
