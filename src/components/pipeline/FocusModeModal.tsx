@@ -425,6 +425,21 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
     }
   }, [currentIndex, resetActionState]);
 
+  // R5 Item 1 — atalhos ← / → / ESC. Compartilha onPrev/onNext com o FocusFooter (princípio 40).
+  useFocusKeyboardShortcuts({
+    onPrev: goToPrev,
+    onNext: goToNext,
+    onExit: () => handleClose(),
+    sessionId: focusSessionIdRef.current,
+    enabled:
+      open &&
+      !configPhase &&
+      !showEmpty &&
+      !completingOverdue &&
+      !showDiscard,
+    onArrowFirstUse: () => setArrowUsedSignal((n) => n + 1),
+  });
+
   // handleRegisterActivity / handleCreateTask / handleOpenWhatsApp / handleCopyPhone
   // removidos em Sprint 1 Mudança 4 — fluxo migrou para top strip + TaskCompletionDialog + ScriptsCard.
 
