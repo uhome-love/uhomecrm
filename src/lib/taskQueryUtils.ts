@@ -19,11 +19,11 @@ import type { QueryClient } from "@tanstack/react-query";
  */
 export function invalidateTaskQueries(qc: QueryClient, leadId?: string | null) {
   const critical = { refetchType: "all" as const };
-  qc.invalidateQueries({ queryKey: ["minhas-tarefas"] }, critical);
-  qc.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] }, critical);
-  qc.invalidateQueries({ queryKey: ["agenda-widget"] }, critical);
-  qc.invalidateQueries({ queryKey: ["agenda-widget-leads"] }, critical);
-  qc.invalidateQueries({ queryKey: ["agenda-widget-negocios"] }, critical);
+  qc.invalidateQueries({ queryKey: ["minhas-tarefas"], ...critical });
+  qc.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"], ...critical });
+  qc.invalidateQueries({ queryKey: ["agenda-widget"], ...critical });
+  qc.invalidateQueries({ queryKey: ["agenda-widget-leads"], ...critical });
+  qc.invalidateQueries({ queryKey: ["agenda-widget-negocios"], ...critical });
   qc.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
   if (leadId) {
     qc.invalidateQueries({ queryKey: ["homi-insight", leadId] });
