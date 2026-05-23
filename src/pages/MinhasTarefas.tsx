@@ -470,9 +470,16 @@ export default function MinhasTarefas() {
       activeTarefas
         .filter(t => t.status === "concluida")
         .slice()
-        .sort((a, b) =>
-          (b.concluida_em ?? "").localeCompare(a.concluida_em ?? "")
-        )
+        .sort((a, b) => {
+          const aKey = a.concluida_em || "";
+          const bKey = b.concluida_em || "";
+          if (aKey && bKey) return bKey.localeCompare(aKey);
+          if (aKey && !bKey) return -1;
+          if (!aKey && bKey) return 1;
+          const aFb = (a as any).updated_at || a.created_at || "";
+          const bFb = (b as any).updated_at || b.created_at || "";
+          return bFb.localeCompare(aFb);
+        })
         .slice(0, 20),
     [activeTarefas]
   );
