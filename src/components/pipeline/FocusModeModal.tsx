@@ -174,6 +174,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
     setConfigPhase(false);
     setCurrentIndex(0);
     setWorkedCount(0);
+    setShowEmpty(false);
     resetActionState();
 
     const filters: FocusFilters = {};
@@ -199,6 +200,41 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
 
     await reload(filters);
   };
+
+  /** R4 — Reabre Modo Foco filtrado pelos leadIds da categoria clicada no empty state. */
+  const handleOpenSuggestion = useCallback(
+    async (
+      category: "visita_sem_followup" | "vence_2d" | "sem_tarefa",
+      leadIds: string[]
+    ) => {
+      setShowEmpty(false);
+      setCurrentIndex(0);
+      setWorkedCount(0);
+      resetActionState();
+
+      focusSessionIdRef.current = newFocusSessionId();
+      advanceCountRef.current = 0;
+      pendingOpenedCtxRef.current = {
+        session_id: focusSessionIdRef.current,
+        pipeline_tipo: pipelineTipo,
+        criteria: ["every"],
+        stage_id: "all",
+        include_upcoming_2d: false,
+        source: "suggestion_card",
+        suggestion_category: category,
+        lead_count: leadIds.length,
+      };
+
+      await reload({ criteria: ["every"], leadIds });
+    },
+    [pipelineTipo, reload, resetActionState]
+  );
+
+  const handleBackToConfig = useCallback(() => {
+    setShowEmpty(false);
+    setConfigPhase(true);
+  }, []);
+
 
   // Emite focus_mode_opened apenas após transição loading: true → false
   // (garante que reload realmente rodou e leads.length reflete a fila real).
