@@ -96,7 +96,10 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
 
   // All pending tasks for current lead (overdue + future)
   const [pendingTasks, setPendingTasks] = useState<Array<{ id: string; titulo: string; tipo: string | null; vence_em: string | null; hora_vencimento: string | null }>>([]);
+  const [pendingTasksLoading, setPendingTasksLoading] = useState(false);
   const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
+  // R5 Item 3 — bump quando seta de teclado é usada, para o tooltip dismissar com reason='shortcut_used'.
+  const [arrowUsedSignal, setArrowUsedSignal] = useState(0);
   // Sprint 1 R2: contador de leads/tarefas trabalhados nesta sessão (visível no topo do LeadFocusScreen).
   const [workedCount, setWorkedCount] = useState(0);
   // R4 — força exibir FocusEmptyState (após concluir último lead da sessão).
