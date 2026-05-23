@@ -25,6 +25,10 @@ export function invalidateTaskQueries(qc: QueryClient, leadId?: string | null) {
   qc.invalidateQueries({ queryKey: ["agenda-widget-leads"], ...critical });
   qc.invalidateQueries({ queryKey: ["agenda-widget-negocios"], ...critical });
   qc.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
+  // Banner "Leads sem tarefa" no CorretorDashboard — staleTime 60s mascarava
+  // criação/conclusão recente de tarefa. Sem refetchType:'all' porque só o
+  // dashboard renderiza esse contador (única observer ativo).
+  qc.invalidateQueries({ queryKey: ["corretor-leads-sem-tarefa"] });
   if (leadId) {
     qc.invalidateQueries({ queryKey: ["homi-insight", leadId] });
   }

@@ -167,7 +167,7 @@ export default function CorretorDashboard() {
       {/* 3.5. CARD "LEADS SEM TAREFA" — convite visual ao Modo Foco         */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {leadsSemTarefa > 0 && (
-        <LeadsSemTarefaCard count={leadsSemTarefa} onOpenFoco={() => setFocusOpen(true)} />
+        <LeadsSemTarefaCard count={leadsSemTarefa} onOpenFoco={() => setFocusOpen(true)} onOpenCentral={() => navigate("/tarefas?tab=desatualizados")} />
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}

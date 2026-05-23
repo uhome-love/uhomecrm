@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/components/pipeline/CardStatusLine";
 import { lazy, Suspense } from "react";
@@ -103,8 +103,15 @@ export default function MinhasTarefas() {
   const { profileId } = useAuthUser();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [categoria, setCategoria] = useState<"leads" | "negocios">("leads");
-  const [activeTab, setActiveTab] = useState<TabFilter>("todas");
+  const [searchParams] = useSearchParams();
+  const initialTab = (() => {
+    const t = searchParams.get("tab");
+    const valid: TabFilter[] = ["todas", "hoje", "amanha", "semana", "atrasadas", "desatualizados", "concluidas"];
+    return (valid as string[]).includes(t || "") ? (t as TabFilter) : "todas";
+  })();
+  // "desatualizados" só existe para leads; força categoria correta.
+  const [categoria, setCategoria] = useState<"leads" | "negocios">(initialTab === "desatualizados" ? "leads" : "leads");
+  const [activeTab, setActiveTab] = useState<TabFilter>(initialTab);
   const [adiarId, setAdiarId] = useState<string | null>(null);
   const [adiarData, setAdiarData] = useState("");
   const [adiarHora, setAdiarHora] = useState("");
