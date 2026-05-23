@@ -715,13 +715,7 @@ export default function MinhasTarefas() {
       console.info("[task_completed]", { lead_id: leadId, tarefa_id: id, outcome, reason_code, categoria });
       toast.success(toastMsg);
       setCompletingTarefa(null);
-      queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
-      queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
-      queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
-      queryClient.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
-      if (leadId) {
-        queryClient.invalidateQueries({ queryKey: ["homi-insight", leadId] });
-      }
+      invalidateTaskQueries(queryClient, leadId);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao concluir tarefa";
       toast.error("Não foi possível concluir: " + msg);

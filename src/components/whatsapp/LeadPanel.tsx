@@ -192,6 +192,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
       }).eq("id", taskId);
       setTasks(prev => prev.filter(t => t.id !== taskId));
       toast.success("✅ Tarefa concluída!");
+      invalidateTaskQueries(queryClient, localLead?.id ?? null);
     } catch (err: any) {
       toast.error("Erro: " + (err.message || ""));
     }

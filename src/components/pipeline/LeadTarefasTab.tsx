@@ -288,10 +288,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     toast.success(toastMsg);
     setCompletingTarefa(null);
     onReload();
-    queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
-    queryClient.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
-    queryClient.invalidateQueries({ queryKey: ["homi-insight", leadId] });
+    invalidateTaskQueries(queryClient, leadId);
   };
 
 

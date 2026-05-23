@@ -541,10 +541,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
       setTasksRefreshKey(k => k + 1);
       setTimelineRefreshKey(k => k + 1);
       setWorkedCount(c => c + 1);
-      queryClient.invalidateQueries({ queryKey: ["homi-insight", currentLead.id] });
-      queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
-      queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
-      queryClient.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
+      invalidateTaskQueries(queryClient, currentLead.id);
       setTimeout(() => goToNext(), 800);
     } catch (err) {
       console.error(err);
