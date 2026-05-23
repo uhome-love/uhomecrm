@@ -68,7 +68,7 @@ function ctaStyleForState(state: FocusState): { bg: string; bgHover: string; tex
 
 export default function LeadFocusScreen({
   lead, workedCount, homiLoading, homiInsight, onGenerateInsight, onRegenerateInsight,
-  pendingTasks, timelineRefreshKey,
+  pendingTasks, pendingTasksLoading, timelineRefreshKey,
   onCompleteTask, onCompleteNextTask, onCreateNewTask, onAdvanceNextLead, panelChildren,
 }: Props) {
   const nextTask = lead.next_pending_task;
