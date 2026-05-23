@@ -25,7 +25,9 @@ export default function PendingTasksCard({ tasks, loading, onComplete, onCreateN
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <ListChecks className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="text-indigo-300 text-xs font-semibold">Tarefas pendentes ({tasks.length})</span>
+          <span className="text-indigo-300 text-xs font-semibold">
+            Tarefas pendentes {loading ? "" : `(${tasks.length})`}
+          </span>
         </div>
         <button
           onClick={onCreateNew}
@@ -34,7 +36,17 @@ export default function PendingTasksCard({ tasks, loading, onComplete, onCreateN
           + Nova
         </button>
       </div>
-      {tasks.length === 0 ? (
+      {loading ? (
+        <div className="space-y-1.5">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-12 rounded-lg animate-pulse"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+            />
+          ))}
+        </div>
+      ) : tasks.length === 0 ? (
         <p className="text-gray-500 text-xs italic">Nenhuma tarefa pendente</p>
       ) : (
         <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
