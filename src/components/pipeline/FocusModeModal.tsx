@@ -5,7 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Zap, X, ChevronLeft,
+  Zap, X,
   Loader2,
   Filter,
   Trash2, Ban
