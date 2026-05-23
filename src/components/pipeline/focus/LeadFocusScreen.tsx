@@ -1,3 +1,13 @@
+/**
+ * LeadFocusScreen — tela ativa do Modo Foco.
+ *
+ * R5 Item 2: CTA principal "Concluir tarefa" muda de cor pela régua de saúde do lead.
+ *   - atrasado        → vermelho #DC2626, texto branco
+ *   - para_hoje       → âmbar #F59E0B, texto ESCURO (#1F2937) por contraste AA
+ *   - em_dia_proximo  → indigo #4F46E5, texto branco (default)
+ *   - sem_direcao     → indigo #4F46E5, texto branco
+ * Hover escurece 1 stop sem trocar de cor. Sem gradient (reservado para HOMI).
+ */
 import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -5,7 +15,7 @@ import { Zap, Trophy, Phone, MessageCircle, Copy, Check, ChevronRight } from "lu
 import { toast } from "sonner";
 import TimelineSection from "./TimelineSection";
 import LeadContextPanel from "./LeadContextPanel";
-import type { FocusLead } from "@/hooks/useFocusLeads";
+import type { FocusLead, FocusState } from "@/hooks/useFocusLeads";
 
 interface Task {
   id: string;
