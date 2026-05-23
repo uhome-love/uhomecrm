@@ -23,7 +23,10 @@ export type FocusEvent =
   | "task_completion"
   | "stage_change_failed"
   | "focus_empty_state_shown"
-  | "focus_suggestion_clicked";
+  | "focus_suggestion_clicked"
+  | "focus_keyboard_shortcut"
+  | "focus_tip_shown"
+  | "focus_tip_dismissed";
 
 
 type LogLevel = "info" | "warn" | "error";
