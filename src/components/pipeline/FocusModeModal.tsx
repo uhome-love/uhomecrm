@@ -774,6 +774,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
                   onGenerateInsight={handleGenerateInsight}
                   onRegenerateInsight={handleRegenerateInsight}
                   pendingTasks={pendingTasks}
+                  pendingTasksLoading={pendingTasksLoading}
                   timelineRefreshKey={timelineRefreshKey}
                   onCompleteTask={(id, titulo) => setCompletingOverdue({ id, titulo })}
                   onCompleteNextTask={() => {
