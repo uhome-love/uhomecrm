@@ -101,7 +101,10 @@ export interface FocusFilters {
   criteria?: FocusCriteria[];
   /** Quando true, "Tudo" também inclui leads com tarefa pendente nos próximos 2 dias. */
   includeUpcoming2d?: boolean;
+  /** R4 — restringe a fila a este conjunto de leads (usado pelo FocusEmptyState). */
+  leadIds?: string[];
 }
+
 
 
 interface UseFocusLeadsReturn {
