@@ -137,19 +137,27 @@ export default function LeadFocusScreen({
 
         {/* Linha 2 — 3 botões */}
         <div className="flex flex-col sm:flex-row gap-2">
-          {/* CTA principal */}
-          <Button
-            onClick={nextTask ? onCompleteNextTask : onCreateNewTask}
-            className="flex-1 h-12 gap-2 text-sm font-semibold rounded-xl text-white border-0 shadow-lg hover:brightness-110"
-            style={{
-              background: "var(--gradient-focus, linear-gradient(135deg, #4969FF, #7C3AED))",
-              boxShadow: "0 8px 24px -8px hsl(var(--primary-500) / 0.55)",
-            }}
-          >
-            <Zap className="w-4 h-4" />
-            Concluir tarefa e registrar
-            <span className="ml-1">→</span>
-          </Button>
+          {/* CTA principal — cor por estado da régua (R5 Item 2) */}
+          {(() => {
+            const cta = ctaStyleForState(lead.state);
+            return (
+              <Button
+                onClick={nextTask ? onCompleteNextTask : onCreateNewTask}
+                className="flex-1 h-12 gap-2 text-sm font-semibold rounded-xl border-0 shadow-lg transition-colors"
+                style={{
+                  background: cta.bg,
+                  color: cta.text,
+                  boxShadow: cta.shadow,
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = cta.bgHover; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = cta.bg; }}
+              >
+                <Zap className="w-4 h-4" />
+                Concluir tarefa e registrar
+                <span className="ml-1">→</span>
+              </Button>
+            );
+          })()}
 
           {/* Ligar — Popover revelando telefone + copy automático */}
           <div className="flex gap-2 sm:contents">
