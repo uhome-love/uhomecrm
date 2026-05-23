@@ -1,3 +1,13 @@
+/**
+ * LeadFocusScreen — tela ativa do Modo Foco.
+ *
+ * R5 Item 2: CTA principal "Concluir tarefa" muda de cor pela régua de saúde do lead.
+ *   - atrasado        → vermelho #DC2626, texto branco
+ *   - para_hoje       → âmbar #F59E0B, texto ESCURO (#1F2937) por contraste AA
+ *   - em_dia_proximo  → indigo #4F46E5, texto branco (default)
+ *   - sem_direcao     → indigo #4F46E5, texto branco
+ * Hover escurece 1 stop sem trocar de cor. Sem gradient (reservado para HOMI).
+ */
 import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -5,7 +15,7 @@ import { Zap, Trophy, Phone, MessageCircle, Copy, Check, ChevronRight } from "lu
 import { toast } from "sonner";
 import TimelineSection from "./TimelineSection";
 import LeadContextPanel from "./LeadContextPanel";
-import type { FocusLead } from "@/hooks/useFocusLeads";
+import type { FocusLead, FocusState } from "@/hooks/useFocusLeads";
 
 interface Task {
   id: string;
@@ -23,6 +33,8 @@ interface Props {
   onGenerateInsight: () => void;
   onRegenerateInsight: () => void;
   pendingTasks: Task[];
+  /** R5 Item 5 — loading dos pending tasks. */
+  pendingTasksLoading?: boolean;
   timelineRefreshKey?: number;
   onCompleteTask: (taskId: string, titulo: string) => void;
   onCompleteNextTask: () => void;
@@ -39,9 +51,24 @@ function toWaDigits(phone: string): string {
   return digits.startsWith("55") ? digits : `55${digits}`;
 }
 
+/** R5 Item 2 — cor do CTA principal por estado da régua. */
+function ctaStyleForState(state: FocusState): { bg: string; bgHover: string; text: string; shadow: string } {
+  switch (state) {
+    case "atrasado":
+      return { bg: "#DC2626", bgHover: "#B91C1C", text: "#FFFFFF", shadow: "0 8px 24px -8px rgba(220,38,38,0.55)" };
+    case "para_hoje":
+      // Âmbar com texto escuro #1F2937 (slate-800) — contraste AA (ratio 9.4).
+      return { bg: "#F59E0B", bgHover: "#D97706", text: "#1F2937", shadow: "0 8px 24px -8px rgba(245,158,11,0.55)" };
+    case "em_dia_proximo":
+    case "sem_direcao":
+    default:
+      return { bg: "#4F46E5", bgHover: "#4338CA", text: "#FFFFFF", shadow: "0 8px 24px -8px rgba(79,70,229,0.55)" };
+  }
+}
+
 export default function LeadFocusScreen({
   lead, workedCount, homiLoading, homiInsight, onGenerateInsight, onRegenerateInsight,
-  pendingTasks, timelineRefreshKey,
+  pendingTasks, pendingTasksLoading, timelineRefreshKey,
   onCompleteTask, onCompleteNextTask, onCreateNewTask, onAdvanceNextLead, panelChildren,
 }: Props) {
   const nextTask = lead.next_pending_task;
@@ -112,19 +139,27 @@ export default function LeadFocusScreen({
 
         {/* Linha 2 — 3 botões */}
         <div className="flex flex-col sm:flex-row gap-2">
-          {/* CTA principal */}
-          <Button
-            onClick={nextTask ? onCompleteNextTask : onCreateNewTask}
-            className="flex-1 h-12 gap-2 text-sm font-semibold rounded-xl text-white border-0 shadow-lg hover:brightness-110"
-            style={{
-              background: "var(--gradient-focus, linear-gradient(135deg, #4969FF, #7C3AED))",
-              boxShadow: "0 8px 24px -8px hsl(var(--primary-500) / 0.55)",
-            }}
-          >
-            <Zap className="w-4 h-4" />
-            Concluir tarefa e registrar
-            <span className="ml-1">→</span>
-          </Button>
+          {/* CTA principal — cor por estado da régua (R5 Item 2) */}
+          {(() => {
+            const cta = ctaStyleForState(lead.state);
+            return (
+              <Button
+                onClick={nextTask ? onCompleteNextTask : onCreateNewTask}
+                className="flex-1 h-12 gap-2 text-sm font-semibold rounded-xl border-0 shadow-lg transition-colors"
+                style={{
+                  background: cta.bg,
+                  color: cta.text,
+                  boxShadow: cta.shadow,
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = cta.bgHover; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = cta.bg; }}
+              >
+                <Zap className="w-4 h-4" />
+                Concluir tarefa e registrar
+                <span className="ml-1">→</span>
+              </Button>
+            );
+          })()}
 
           {/* Ligar — Popover revelando telefone + copy automático */}
           <div className="flex gap-2 sm:contents">
@@ -202,6 +237,7 @@ export default function LeadFocusScreen({
             onGenerateInsight={onGenerateInsight}
             onRegenerateInsight={onRegenerateInsight}
             pendingTasks={pendingTasks}
+            pendingTasksLoading={pendingTasksLoading}
             onCompleteTask={onCompleteTask}
             onCreateNewTask={onCreateNewTask}
           >

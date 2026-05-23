@@ -5,7 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Zap, X, ChevronLeft,
+  Zap, X,
   Loader2,
   Filter,
   Trash2, Ban
@@ -26,6 +26,9 @@ import FocusConfigScreen from "./focus/FocusConfigScreen";
 import LeadFocusScreen from "./focus/LeadFocusScreen";
 import FocusLoadingSkeleton from "./focus/FocusLoadingSkeleton";
 import FocusEmptyState from "./focus/FocusEmptyState";
+import FocusFooter from "./focus/FocusFooter";
+import FocusFirstTimeTip from "./focus/FocusFirstTimeTip";
+import { useFocusKeyboardShortcuts } from "@/hooks/useFocusKeyboardShortcuts";
 
 
 interface FocusModeModalProps {
@@ -93,7 +96,10 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
 
   // All pending tasks for current lead (overdue + future)
   const [pendingTasks, setPendingTasks] = useState<Array<{ id: string; titulo: string; tipo: string | null; vence_em: string | null; hora_vencimento: string | null }>>([]);
+  const [pendingTasksLoading, setPendingTasksLoading] = useState(false);
   const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
+  // R5 Item 3 — bump quando seta de teclado é usada, para o tooltip dismissar com reason='shortcut_used'.
+  const [arrowUsedSignal, setArrowUsedSignal] = useState(0);
   // Sprint 1 R2: contador de leads/tarefas trabalhados nesta sessão (visível no topo do LeadFocusScreen).
   const [workedCount, setWorkedCount] = useState(0);
   // R4 — força exibir FocusEmptyState (após concluir último lead da sessão).
@@ -271,9 +277,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
   useEffect(() => {
     if (!currentLead?.id || !open || configPhase) {
       setPendingTasks([]);
+      setPendingTasksLoading(false);
       return;
     }
     let cancelled = false;
+    setPendingTasksLoading(true);
     (async () => {
       const { data } = await supabase
         .from("pipeline_tarefas")
@@ -282,7 +290,10 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
         .eq("status", "pendente")
         .order("vence_em", { ascending: true })
         .limit(20);
-      if (!cancelled) setPendingTasks((data || []) as any);
+      if (!cancelled) {
+        setPendingTasks((data || []) as any);
+        setPendingTasksLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [currentLead?.id, open, configPhase, tasksRefreshKey]);
@@ -413,6 +424,21 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
       resetActionState();
     }
   }, [currentIndex, resetActionState]);
+
+  // R5 Item 1 — atalhos ← / → / ESC. Compartilha onPrev/onNext com o FocusFooter (princípio 40).
+  useFocusKeyboardShortcuts({
+    onPrev: goToPrev,
+    onNext: goToNext,
+    onExit: () => handleClose(),
+    sessionId: focusSessionIdRef.current,
+    enabled:
+      open &&
+      !configPhase &&
+      !showEmpty &&
+      !completingOverdue &&
+      !showDiscard,
+    onArrowFirstUse: () => setArrowUsedSignal((n) => n + 1),
+  });
 
   // handleRegisterActivity / handleCreateTask / handleOpenWhatsApp / handleCopyPhone
   // removidos em Sprint 1 Mudança 4 — fluxo migrou para top strip + TaskCompletionDialog + ScriptsCard.
@@ -681,11 +707,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
           )}
 
           <div className="flex items-center gap-2">
-            {!configPhase && currentIndex > 0 && (
-              <Button variant="ghost" size="icon" onClick={goToPrev} className="text-gray-400 hover:text-white hover:bg-white/5 h-8 w-8">
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-            )}
+            {/* R5 Item 4 — ChevronLeft inline removido; navegação migrou para FocusFooter (princípio 45 — não duplicar caminhos). */}
             {!configPhase && (
               <Button
                 variant="ghost"
@@ -752,6 +774,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
                   onGenerateInsight={handleGenerateInsight}
                   onRegenerateInsight={handleRegenerateInsight}
                   pendingTasks={pendingTasks}
+                  pendingTasksLoading={pendingTasksLoading}
                   timelineRefreshKey={timelineRefreshKey}
                   onCompleteTask={(id, titulo) => setCompletingOverdue({ id, titulo })}
                   onCompleteNextTask={() => {
@@ -818,7 +841,26 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
               </motion.div>
             </AnimatePresence>
           ) : null}
+
+          {/* R5 Item 4 — Footer fixo (sticky) com Anterior / posição / Próximo.
+              Compartilha handlers com useFocusKeyboardShortcuts (← / →). */}
+          {!configPhase && !loading && !showEmpty && leads.length > 0 && currentLead && (
+            <FocusFooter
+              currentIndex={currentIndex}
+              total={leads.length}
+              onPrev={goToPrev}
+              onNext={goToNext}
+            />
+          )}
         </div>
+
+        {/* R5 Item 3 — Dica primeira vez do dia: ensina as setas (canto inferior direito). */}
+        {!configPhase && !loading && !showEmpty && currentLead && !completingOverdue && (
+          <FocusFirstTimeTip
+            sessionId={focusSessionIdRef.current}
+            arrowUsedSignal={arrowUsedSignal}
+          />
+        )}
       </DialogContent>
 
       {completingOverdue && (
