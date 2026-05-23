@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -167,9 +168,7 @@ export default function MinhaAgendaWidget() {
       await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any).eq("id", t.pipeline_lead_id);
     }
     toast.success("Tarefa concluída ✅");
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget-leads"] });
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget-negocios"] });
-    queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
+    invalidateTaskQueries(queryClient, t._source === "lead" ? t.pipeline_lead_id : null);
   };
 
   const handleAdiarRapido = async (id: string, horas: number, source: "lead" | "negocio") => {

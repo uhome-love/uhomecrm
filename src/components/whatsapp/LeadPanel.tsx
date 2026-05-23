@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -91,6 +93,7 @@ function getActivityIcon(tipo: string) {
 }
 
 export default function LeadPanel({ lead, leadId, profileId, messages = [], onOpenFullModal, isReadOnly = false }: LeadPanelProps) {
+  const queryClient = useQueryClient();
   const [stages, setStages] = useState<StageInfo[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -192,6 +195,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
       }).eq("id", taskId);
       setTasks(prev => prev.filter(t => t.id !== taskId));
       toast.success("✅ Tarefa concluída!");
+      invalidateTaskQueries(queryClient, localLead?.id ?? null);
     } catch (err: any) {
       toast.error("Erro: " + (err.message || ""));
     }

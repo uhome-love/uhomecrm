@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { PipelineTarefa } from "@/hooks/usePipelineLeadData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TaskCompletionDialog from "./TaskCompletionDialog";
+import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 
 const TIPO_BUTTONS = [
   { value: "ligar", label: "Ligar", emoji: "📞" },
@@ -288,10 +289,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     toast.success(toastMsg);
     setCompletingTarefa(null);
     onReload();
-    queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
-    queryClient.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
-    queryClient.invalidateQueries({ queryKey: ["homi-insight", leadId] });
+    invalidateTaskQueries(queryClient, leadId);
   };
 
 
