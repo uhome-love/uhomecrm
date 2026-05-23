@@ -25,6 +25,8 @@ import { logFocus, newFocusSessionId } from "@/lib/focusTelemetry";
 import FocusConfigScreen from "./focus/FocusConfigScreen";
 import LeadFocusScreen from "./focus/LeadFocusScreen";
 import FocusLoadingSkeleton from "./focus/FocusLoadingSkeleton";
+import FocusEmptyState from "./focus/FocusEmptyState";
+
 
 interface FocusModeModalProps {
   open: boolean;
