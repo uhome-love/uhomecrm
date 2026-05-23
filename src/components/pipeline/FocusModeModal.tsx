@@ -363,10 +363,12 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
         });
       }
     } else {
-      handleClose();
-      toast.success("Modo Foco concluído! 🎯 Todos os leads foram revisados.");
+      // R4 — em vez de fechar, exibe FocusEmptyState rico.
+      setShowEmpty(true);
+      resetActionState();
     }
-  }, [currentIndex, leads, pipelineTipo, handleClose, resetActionState]);
+  }, [currentIndex, leads, pipelineTipo, resetActionState]);
+
 
   const goToPrev = useCallback(() => {
     if (currentIndex > 0) {
