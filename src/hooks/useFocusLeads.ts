@@ -101,7 +101,10 @@ export interface FocusFilters {
   criteria?: FocusCriteria[];
   /** Quando true, "Tudo" também inclui leads com tarefa pendente nos próximos 2 dias. */
   includeUpcoming2d?: boolean;
+  /** R4 — restringe a fila a este conjunto de leads (usado pelo FocusEmptyState). */
+  leadIds?: string[];
 }
+
 
 
 interface UseFocusLeadsReturn {
@@ -193,6 +196,10 @@ export function useFocusLeads(
         .in("stage_id", stageIds);
 
       if (pipelineTipo === "leads") query = query.is("negocio_id", null);
+      if (filters?.leadIds && filters.leadIds.length > 0) {
+        query = query.in("id", filters.leadIds);
+      }
+
 
       const { data: leadsData, error: leadsError } = await runQueryWithRetry<Array<{
         id: string; nome: string; telefone: string | null; telefone2: string | null; email: string | null;

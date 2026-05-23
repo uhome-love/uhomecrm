@@ -25,6 +25,8 @@ import { logFocus, newFocusSessionId } from "@/lib/focusTelemetry";
 import FocusConfigScreen from "./focus/FocusConfigScreen";
 import LeadFocusScreen from "./focus/LeadFocusScreen";
 import FocusLoadingSkeleton from "./focus/FocusLoadingSkeleton";
+import FocusEmptyState from "./focus/FocusEmptyState";
+
 
 interface FocusModeModalProps {
   open: boolean;
@@ -94,8 +96,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
   const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
   // Sprint 1 R2: contador de leads/tarefas trabalhados nesta sessão (visível no topo do LeadFocusScreen).
   const [workedCount, setWorkedCount] = useState(0);
+  // R4 — força exibir FocusEmptyState (após concluir último lead da sessão).
+  const [showEmpty, setShowEmpty] = useState(false);
   // Bump após qualquer ação registrada para refrescar TimelineSection sem refetch global.
   const [timelineRefreshKey, setTimelineRefreshKey] = useState(0);
+
 
   const currentLead = leads[currentIndex] ?? null;
 
@@ -107,6 +112,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
     setSelectedCriteria(hasInitial ? initialCriteria! : ["all"]);
     setSelectedStageId("all");
     setCurrentIndex(0);
+    setShowEmpty(false);
+
     // Limpa cache de insight quando o modal abre (sessão nova).
     insightCacheRef.current.clear();
 
@@ -169,6 +176,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
     setConfigPhase(false);
     setCurrentIndex(0);
     setWorkedCount(0);
+    setShowEmpty(false);
     resetActionState();
 
     const filters: FocusFilters = {};
@@ -194,6 +202,39 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
 
     await reload(filters);
   };
+
+  /** R4 — Reabre Modo Foco filtrado pelos leadIds da categoria clicada no empty state. */
+  const handleOpenSuggestion = async (
+    category: "visita_sem_followup" | "vence_2d" | "sem_tarefa",
+    leadIds: string[]
+  ) => {
+    setShowEmpty(false);
+    setCurrentIndex(0);
+    setWorkedCount(0);
+    resetActionState();
+
+    focusSessionIdRef.current = newFocusSessionId();
+    advanceCountRef.current = 0;
+    pendingOpenedCtxRef.current = {
+      session_id: focusSessionIdRef.current,
+      pipeline_tipo: pipelineTipo,
+      criteria: ["every"],
+      stage_id: "all",
+      include_upcoming_2d: false,
+      source: "suggestion_card",
+      suggestion_category: category,
+      lead_count: leadIds.length,
+    };
+
+    await reload({ criteria: ["every"], leadIds });
+  };
+
+  const handleBackToConfig = () => {
+    setShowEmpty(false);
+    setConfigPhase(true);
+  };
+
+
 
   // Emite focus_mode_opened apenas após transição loading: true → false
   // (garante que reload realmente rodou e leads.length reflete a fila real).
@@ -358,10 +399,12 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
         });
       }
     } else {
-      handleClose();
-      toast.success("Modo Foco concluído! 🎯 Todos os leads foram revisados.");
+      // R4 — em vez de fechar, exibe FocusEmptyState rico.
+      setShowEmpty(true);
+      resetActionState();
     }
-  }, [currentIndex, leads, pipelineTipo, handleClose, resetActionState]);
+  }, [currentIndex, leads, pipelineTipo, resetActionState]);
+
 
   const goToPrev = useCallback(() => {
     if (currentIndex > 0) {
@@ -680,24 +723,16 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
             />
           ) : loading ? (
             <FocusLoadingSkeleton />
-          ) : leads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "rgba(34,197,94,0.1)" }}>
-                <Zap className="w-8 h-8 text-green-400" />
-              </div>
-              <span className="text-white font-semibold text-lg">Tudo em dia! 🎉</span>
-              <span className="text-gray-400 text-sm text-center max-w-xs">
-                Nenhum lead encontrado com esses filtros. Tente outros critérios ou continue com o bom trabalho!
-              </span>
-              <div className="flex gap-2 mt-4">
-                <Button onClick={() => setConfigPhase(true)} variant="outline" className="text-gray-300 border-gray-600 hover:bg-white/5">
-                  <Filter className="w-4 h-4 mr-1" /> Mudar filtros
-                </Button>
-                <Button onClick={handleClose} style={{ background: "#4969FF" }}>
-                  Fechar
-                </Button>
-              </div>
-            </div>
+          ) : showEmpty || leads.length === 0 ? (
+            <FocusEmptyState
+              corretorAuthId={corretorId}
+              sessionId={focusSessionIdRef.current}
+              workedCount={workedCount}
+              onOpenSuggestion={handleOpenSuggestion}
+              onBackToConfig={handleBackToConfig}
+              onClose={handleClose}
+            />
+
           ) : currentLead ? (
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
