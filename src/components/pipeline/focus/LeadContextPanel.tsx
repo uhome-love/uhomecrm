@@ -20,6 +20,8 @@ interface Props {
   onGenerateInsight: () => void;
   onRegenerateInsight: () => void;
   pendingTasks: Task[];
+  /** R5 Item 5 — loading dos pending tasks (fetch dispara ao trocar de lead). */
+  pendingTasksLoading?: boolean;
   onCompleteTask: (taskId: string, titulo: string) => void;
   onCreateNewTask: () => void;
   /** Slot para ações finais (Descartar, etc). */
@@ -28,7 +30,7 @@ interface Props {
 
 export default function LeadContextPanel({
   lead, homiLoading, homiInsight, onGenerateInsight, onRegenerateInsight,
-  pendingTasks, onCompleteTask, onCreateNewTask, children,
+  pendingTasks, pendingTasksLoading, onCompleteTask, onCreateNewTask, children,
 }: Props) {
   return (
     <div
@@ -42,7 +44,7 @@ export default function LeadContextPanel({
         onGenerate={onGenerateInsight}
         onRegenerate={onRegenerateInsight}
       />
-      <PendingTasksCard tasks={pendingTasks} onComplete={onCompleteTask} onCreateNew={onCreateNewTask} />
+      <PendingTasksCard tasks={pendingTasks} loading={pendingTasksLoading} onComplete={onCompleteTask} onCreateNew={onCreateNewTask} />
       <ScriptsCard
         leadName={lead.name}
         leadEmpreendimento={lead.interest ?? undefined}
