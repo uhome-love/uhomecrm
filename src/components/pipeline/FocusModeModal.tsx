@@ -277,9 +277,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
   useEffect(() => {
     if (!currentLead?.id || !open || configPhase) {
       setPendingTasks([]);
+      setPendingTasksLoading(false);
       return;
     }
     let cancelled = false;
+    setPendingTasksLoading(true);
     (async () => {
       const { data } = await supabase
         .from("pipeline_tarefas")
@@ -288,7 +290,10 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
         .eq("status", "pendente")
         .order("vence_em", { ascending: true })
         .limit(20);
-      if (!cancelled) setPendingTasks((data || []) as any);
+      if (!cancelled) {
+        setPendingTasks((data || []) as any);
+        setPendingTasksLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [currentLead?.id, open, configPhase, tasksRefreshKey]);
