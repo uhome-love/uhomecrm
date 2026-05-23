@@ -103,8 +103,15 @@ export default function MinhasTarefas() {
   const { profileId } = useAuthUser();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [categoria, setCategoria] = useState<"leads" | "negocios">("leads");
-  const [activeTab, setActiveTab] = useState<TabFilter>("todas");
+  const [searchParams] = useSearchParams();
+  const initialTab = (() => {
+    const t = searchParams.get("tab");
+    const valid: TabFilter[] = ["todas", "hoje", "amanha", "semana", "atrasadas", "desatualizados", "concluidas"];
+    return (valid as string[]).includes(t || "") ? (t as TabFilter) : "todas";
+  })();
+  // "desatualizados" só existe para leads; força categoria correta.
+  const [categoria, setCategoria] = useState<"leads" | "negocios">(initialTab === "desatualizados" ? "leads" : "leads");
+  const [activeTab, setActiveTab] = useState<TabFilter>(initialTab);
   const [adiarId, setAdiarId] = useState<string | null>(null);
   const [adiarData, setAdiarData] = useState("");
   const [adiarHora, setAdiarHora] = useState("");
