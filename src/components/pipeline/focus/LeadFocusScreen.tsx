@@ -237,6 +237,7 @@ export default function LeadFocusScreen({
             onGenerateInsight={onGenerateInsight}
             onRegenerateInsight={onRegenerateInsight}
             pendingTasks={pendingTasks}
+            pendingTasksLoading={pendingTasksLoading}
             onCompleteTask={onCompleteTask}
             onCreateNewTask={onCreateNewTask}
           >
