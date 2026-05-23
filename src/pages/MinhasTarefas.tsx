@@ -972,8 +972,16 @@ export default function MinhasTarefas() {
                       {isOverdue && <Badge variant="destructive" className="text-[10px]">ATRASADA</Badge>}
                       <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {tarefa.vence_em ? format(parseDateBRT(tarefa.vence_em), "dd/MM", { locale: ptBR }) : "Sem data"}
-                        {tarefa.hora_vencimento && ` ${tarefa.hora_vencimento.slice(0, 5)}`}
+                        {isConcluida ? (
+                          tarefa.concluida_em
+                            ? `Concluída ${format(new Date(tarefa.concluida_em), "dd/MM HH:mm", { locale: ptBR })}`
+                            : "Concluída"
+                        ) : (
+                          <>
+                            {tarefa.vence_em ? format(parseDateBRT(tarefa.vence_em), "dd/MM", { locale: ptBR }) : "Sem data"}
+                            {tarefa.hora_vencimento && ` ${tarefa.hora_vencimento.slice(0, 5)}`}
+                          </>
+                        )}
                       </span>
                       <Badge variant="outline" className="text-xs">
                         {TIPO_EMOJI[tarefa.tipo] || "📋"} {TIPO_LABELS[tarefa.tipo] || tarefa.tipo}
