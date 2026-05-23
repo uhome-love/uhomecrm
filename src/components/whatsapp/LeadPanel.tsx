@@ -93,6 +93,7 @@ function getActivityIcon(tipo: string) {
 }
 
 export default function LeadPanel({ lead, leadId, profileId, messages = [], onOpenFullModal, isReadOnly = false }: LeadPanelProps) {
+  const queryClient = useQueryClient();
   const [stages, setStages] = useState<StageInfo[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
