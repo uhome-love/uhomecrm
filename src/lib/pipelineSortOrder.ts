@@ -20,7 +20,18 @@ export type SortableTarefa = {
 export type SortableLead = {
   id: string;
   created_at: string;
+  nome?: string | null;
+  valor_estimado?: number | null;
+  temperatura?: string | null;
 };
+
+export type PipelineSortOrder =
+  | "atividade"
+  | "mais_recente"
+  | "mais_antigo"
+  | "nome"
+  | "valor"
+  | "temperatura";
 
 type Bucket = 0 | 1 | 2 | 3; // atrasada=0, hoje=1, futura=2, sem=3
 
