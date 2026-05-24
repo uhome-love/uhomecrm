@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,6 +112,15 @@ export default function MinhasTarefas() {
   // "desatualizados" só existe para leads; força categoria correta.
   const [categoria, setCategoria] = useState<"leads" | "negocios">(initialTab === "desatualizados" ? "leads" : "leads");
   const [activeTab, setActiveTab] = useState<TabFilter>(initialTab);
+  // Sync com URL quando navegação muda ?tab= sem remontar (TabProvider Chrome-style)
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    const valid: TabFilter[] = ["todas", "hoje", "amanha", "semana", "atrasadas", "desatualizados", "concluidas"];
+    if (t && (valid as string[]).includes(t) && t !== activeTab) {
+      setActiveTab(t as TabFilter);
+      if (t === "desatualizados") setCategoria("leads");
+    }
+  }, [searchParams]);
   const [adiarId, setAdiarId] = useState<string | null>(null);
   const [adiarData, setAdiarData] = useState("");
   const [adiarHora, setAdiarHora] = useState("");
