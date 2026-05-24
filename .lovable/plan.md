@@ -1,76 +1,63 @@
-## Root cause confirmado
+# Plano — Fechamento Pipeline v2
 
-**Bug 1 — Central de Tarefas não muda de aba**
-`MinhasTarefas.tsx` (linhas 106–114) **lê `?tab=` corretamente no mount** via `useState(initialTab)`. Mas o app usa `TabProvider` (Chrome-style tabs, `src/contexts/TabContext.tsx` em `App.tsx`), então quando o usuário já tem `/minhas-tarefas` aberta e clica num KPI do Dashboard com `?tab=hoje`, o componente **não remonta** — `useState` só roda na primeira montagem e a URL muda mas o state fica em "todas". Mesma armadilha para qualquer tab persistente.
+Última sprint. Header polish + Drawer wide v3 (split 2 colunas).
 
-**Bug 2 — Agenda não filtra "Realizadas"**
-Dois problemas combinados:
-1. `ConquistasKpis.tsx` linha ~31 navega para `/agenda-visitas` **sem query param**.
-2. `AgendaVisitas.tsx` (linha 332) lê `searchParams.get("status")` no mount, mas tem **a mesma falha** do Bug 1 (sem useEffect de sync com URL).
+## Decisões abertas resolvidas
 
-O nome do param correto na Agenda é **`?status=realizadas`** (plural, confirmado na linha 389 do filtro `kpiFilter === "realizadas"`).
+1. **Anotar persistência:** reusa pipeline já existente. `LeadHistoricoTab` já tem `onAddAnotacao(conteudo)` plumado em `PipelineLeadDetail.tsx:723`. Vai pra tabela `pipeline_anotacoes` (separada de `pipeline_atividades`). O novo `DrawerAnotarDialog` apenas chama essa mesma função.
+2. **Empreendimento métricas:** já temos `lead.tentativas_contato`, dias na etapa via `pipeline_atividades` (movimentações) e último contato via `lead.ultima_atualizacao` / atividades. Render condicional — esconde coluna que não tiver dado.
+3. **Timeline:** reusar `src/components/pipeline/focus/TimelineEventItem.tsx` + `TimelineSection.tsx` + hook `useTimelineEvents`. Não duplicar.
 
-## Decisões abertas — respostas
+## Fase 1 — Header polish (PipelineHeader.tsx)
 
-| Pergunta | Resposta |
-|---|---|
-| Bug 2 root cause | **Ambos**: ConquistasKpis não passa param + AgendaVisitas não re-sincroniza |
-| Nome do param na Agenda | **`?status=realizadas`** (já existente, plural) |
-| Sincronizar URL ao trocar aba manualmente | **Não** neste fix (escopo cirúrgico). Já existe `setSearchParams` parcial na Agenda. Fica pra ajuste futuro. |
+- Linha 1: ícone+título · pílulas (PipelineFiltroBadges inline) · spacer · ações (campanhas, filtros, busca, ordenar, foco, novo lead)
+- Linha 2: só tabs Kanban/Inteligência
+- Linha 3 condicional: chip de filtro ativo (só renderiza se `filtroAtivo !== "todos"`)
+- Responsivo: `flex-wrap` permite pílulas caírem em < 1200px
 
-## Fix proposto
+## Fase 2 — Drawer largura
 
-### 1. `src/pages/MinhasTarefas.tsx`
-Adicionar `useEffect` logo após os `useState` (após linha 114) que escuta mudanças em `searchParams` e re-aplica:
+`PipelineLeadDetail.tsx` SheetContent: `sm:w-[70vw] sm:max-w-[2000px]`. Remove o teto 1100px.
 
-```ts
-useEffect(() => {
-  const t = searchParams.get("tab");
-  const valid: TabFilter[] = ["todas","hoje","amanha","semana","atrasadas","desatualizados","concluidas"];
-  if (t && (valid as string[]).includes(t) && t !== activeTab) {
-    setActiveTab(t as TabFilter);
-    if (t === "desatualizados") setCategoria("leads");
-  }
-}, [searchParams]);
-```
+## Fase 3 — Split 2 colunas (estrutural)
 
-Não tocar em mais nada do arquivo. `initialTab` continua funcionando para o caso de mount fresh.
+Criar pasta `src/components/pipeline/drawer/`:
 
-### 2. `src/pages/AgendaVisitas.tsx`
-Adicionar `useEffect` análogo após os `useState` (~linha 345):
+- **`DrawerLeadInfo.tsx`** (col esquerda 36%, bg `#fafafa`)
+  - Header lead (nome 22px + 2 pílulas status)
+  - Contato (telefone + email)
+  - Caixa "Próxima Ação" (gradient indigo/purple, border indigo/18)
+  - `<DrawerActionGrid />`
+  - Botão "··· Mais ações" (Sheet/DropdownMenu com: Agendar visita, Repassar, Parceria, Descartar, Inativar)
+  - `<DrawerEmpreendimento />`
+  - Observações colapsável (Collapsible existente)
 
-```ts
-useEffect(() => {
-  const s = searchParams.get("status");
-  if (s !== kpiFilter) setKpiFilter(s);
-}, [searchParams]);
-```
+- **`DrawerTimeline.tsx`** (col direita 64%, bg white)
+  - Tabs Histórico/Tarefas/Visitas (extrai do PipelineLeadDetail atual)
+  - Reusa `TimelineSection` + `TimelineEventItem` do modo foco
+  - Remove botão "+ Registrar Atividade" da Histórico
 
-Não mexer no resto. A escrita de URL via `setSearchParams` já existe e continua.
+- **Refator `PipelineLeadDetail.tsx`** (942 → ~250)
+  - Mantém: queries (`usePipelineLeadData`), mutations, handlers
+  - Layout: `<Sheet><SheetContent class="flex"><DrawerLeadInfo .../><DrawerTimeline .../></SheetContent></Sheet>`
+  - Passa tudo via props; sem duplicar lógica
 
-### 3. `src/components/corretor/ConquistasKpis.tsx`
-Trocar a navegação do card "Visitas realizadas":
-- antes: `navigate("/agenda-visitas")`
-- depois: `navigate("/agenda-visitas?status=realizadas")`
+## Fase 4 — Componentes internos
 
-E enriquecer a telemetria com `destination: 'agenda', status: 'realizadas'`. Card "Vendas" continua igual (página dedicada).
+- **`DrawerActionGrid.tsx`**: grid 2x2 (Ligar / WhatsApp / Scripts / Anotar). Prop `nextAction` define qual vira primário (indigo p/ ligar, verde p/ whatsapp). Telemetria `drawer_action_clicked` já existe — só preservar.
+- **`DrawerEmpreendimento.tsx`**: card com 3 métricas em linha, esconde coluna nula
+- Caixa "Próxima Ação" integrada no DrawerLeadInfo
 
-## Arquivos tocados
-- `src/pages/MinhasTarefas.tsx` — +1 useEffect
-- `src/pages/AgendaVisitas.tsx` — +1 useEffect
-- `src/components/corretor/ConquistasKpis.tsx` — 1 string + telemetria
+## Fase 5 — Anotar + cleanup
 
-## NÃO tocar
-- `CarteiraKpis.tsx` (já passa `?tab=` correto e agora funciona graças ao useEffect de MinhasTarefas)
-- Hooks, layout do Dashboard, Sprint 1, FocusModeModal
+- **`DrawerAnotarDialog.tsx`**: Dialog simples (textarea + Salvar/Cancelar). Click no botão "Anotar" do grid abre. Chama `onAddAnotacao` existente. Dispara `drawer_anotar_saved`.
+- Remove botão "+ Registrar Atividade" antigo de `LeadHistoricoTab.tsx` (toda observação livre vai pelo Anotar).
+- Validação final: ESC fecha, telemetria viva, build limpo.
 
-## Critérios de aceite
-- [ ] KPI "Para hoje" → Central abre na aba **Hoje** mesmo se a página já estava aberta em outra aba
-- [ ] KPI "Atrasados" → aba **Atrasadas** ativa
-- [ ] KPI "Sem tarefa" → aba **Desatualizados** ativa (categoria força "leads")
-- [ ] KPI "Visitas realizadas" → Agenda com filtro **Realizadas** ativo (URL = `?status=realizadas`)
-- [ ] Trocar aba manualmente na Central continua funcionando (sem regressão)
-- [ ] Filtros KPI internos da Agenda continuam funcionando
-- [ ] Build limpo, sem warnings novos
+## Guardrails
 
-Aguardando GO para Agent.
+NÃO tocar: Sprint 1, Dashboard v3, `useCorretorKpisCarteira`, `useTarefasHoje`, `usePipeline` core, DnD, virtualização, cache, webhooks Evolution, ConfiguracoesWhatsApp.
+
+## Ordem de execução
+
+Fases sequenciais com pausa pra validação visual após Fase 1, Fase 3 e Fase 4 conforme spec do usuário. Confirme aprovação para começar pela Fase 1.
