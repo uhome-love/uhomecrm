@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect, memo } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
-import PipelineCard from "./PipelineCard";
+import CardMinimal from "./CardMinimal";
 import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, AlignLeft, Trash2, Loader2 } from "lucide-react";
@@ -184,22 +184,14 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
               </div>
             )}
             <PipelineCardHover lead={lead} onOpenLead={() => !selectionMode && onSelectLead(lead)}>
-              <PipelineCard
+              <CardMinimal
                 lead={lead}
                 stage={stage}
-                stages={stages}
-                segmentos={segmentos}
                 corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
-                corretorAvatar={lead.corretor_id ? corretorAvatars?.[lead.corretor_id] : undefined}
-                gerenteNome={lead.gerente_id ? corretorNomes[lead.gerente_id] : undefined}
                 parceiroNome={parcerias[lead.id]}
+                proximaTarefa={tarefasMap[lead.id] || null}
                 onDragStart={() => !selectionMode && handleDragStart(lead.id)}
                 onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
-                onMoveLead={selectionMode ? undefined : onMoveLead}
-                onTransferred={onTransferred}
-                stageIndexMap={stageIndexMap}
-                proximaTarefa={tarefasMap[lead.id] || null}
-                hasUnreadWhatsApp={whatsappUnreadSet.has(lead.id)}
               />
             </PipelineCardHover>
           </div>
