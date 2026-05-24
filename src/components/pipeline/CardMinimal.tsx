@@ -189,10 +189,29 @@ const CardMinimal = memo(function CardMinimal({
         </button>
       </div>
 
+      {/* Telefone */}
+      {telefoneFmt && (
+        <div className="mt-1 text-[12px] text-foreground/80 truncate">
+          {telefoneFmt}
+        </div>
+      )}
+
+      {/* Divisor sutil */}
+      <div className="mt-2 border-t border-border/40" />
+
       {/* Próxima ação */}
-      <div className={`mt-1.5 text-[11px] font-medium truncate ${NEXT_ACTION_TONE[status]}`}>
+      <div className={`mt-2 text-[11px] font-medium truncate ${NEXT_ACTION_TONE[status]}`}>
         {nextActionLabel}
       </div>
+
+      {/* Pílula dias na etapa */}
+      {diasLabel && (
+        <div className="mt-1.5">
+          <span className="inline-block text-[10px] font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-md">
+            {diasLabel}
+          </span>
+        </div>
+      )}
 
       {/* Rodapé: corretor / parceria — só aparece quando houver dado */}
       {(corretorNome || parceiroNome) && (
