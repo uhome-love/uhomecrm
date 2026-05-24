@@ -76,23 +76,34 @@ export function useCorretorKpisCarteira() {
         .eq("status", "pendente")
         .in("pipeline_lead_id", ativos);
 
-      const minVencePorLead = new Map<string, number>();
+      // Comparação de data em string YYYY-MM-DD no fuso BRT — evita o pitfall
+      // de `new Date("YYYY-MM-DD").getTime()` que parseia como 00:00 UTC e
+      // colocava tarefas de amanhã BRT no bucket "para_hoje" entre 21h-23h59 UTC.
+      const hojeStr = todayBRT();
+      type LeadState = "atrasado" | "hoje" | "futuro";
+      const PRIORITY: Record<LeadState, number> = { atrasado: 0, hoje: 1, futuro: 2 };
+      const stateByLead = new Map<string, LeadState>();
+
       for (const t of tarefas || []) {
         const id = (t as any).pipeline_lead_id as string;
-        const v = new Date((t as any).vence_em as string).getTime();
-        const prev = minVencePorLead.get(id);
-        if (prev === undefined || v < prev) minVencePorLead.set(id, v);
+        const venceRaw = (t as any).vence_em as string | null;
+        if (!venceRaw) continue;
+        const venceDia = ymdBRT(venceRaw);
+        const novo: LeadState =
+          venceDia < hojeStr ? "atrasado" :
+          venceDia === hojeStr ? "hoje" : "futuro";
+        const atual = stateByLead.get(id);
+        if (atual === undefined || PRIORITY[novo] < PRIORITY[atual]) {
+          stateByLead.set(id, novo);
+        }
       }
-
-      const now = Date.now();
-      const fimDia = endOfDayBRT().getTime();
 
       let sem_tarefa = 0, atrasado = 0, para_hoje = 0, em_dia = 0;
       for (const id of ativos) {
-        const v = minVencePorLead.get(id);
-        if (v === undefined) sem_tarefa++;
-        else if (v < now) atrasado++;
-        else if (v <= fimDia) para_hoje++;
+        const s = stateByLead.get(id);
+        if (!s) sem_tarefa++;
+        else if (s === "atrasado") atrasado++;
+        else if (s === "hoje") para_hoje++;
         else em_dia++;
       }
 
