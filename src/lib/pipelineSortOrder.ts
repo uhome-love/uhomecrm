@@ -20,7 +20,18 @@ export type SortableTarefa = {
 export type SortableLead = {
   id: string;
   created_at: string;
+  nome?: string | null;
+  valor_estimado?: number | null;
+  temperatura?: string | null;
 };
+
+export type PipelineSortOrder =
+  | "atividade"
+  | "mais_recente"
+  | "mais_antigo"
+  | "nome"
+  | "valor"
+  | "temperatura";
 
 type Bucket = 0 | 1 | 2 | 3; // atrasada=0, hoje=1, futura=2, sem=3
 
@@ -66,4 +77,44 @@ export function sortLeadsByActivity<T extends SortableLead>(
   });
 
   return decorated.map((d) => d.lead);
+}
+
+const TEMPERATURA_WEIGHT: Record<string, number> = {
+  quente: 4, morno: 3, frio: 2, gelado: 1,
+};
+
+/**
+ * Despachador genérico — aplica a ordenação escolhida pelo usuário.
+ * `atividade` (default) preserva o comportamento Activity-Based.
+ */
+export function sortLeads<T extends SortableLead>(
+  leads: T[],
+  order: PipelineSortOrder,
+  tarefasMap: Record<string, SortableTarefa>
+): T[] {
+  switch (order) {
+    case "mais_recente":
+      return [...leads].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    case "mais_antigo":
+      return [...leads].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    case "nome":
+      return [...leads].sort((a, b) =>
+        (a.nome ?? "").localeCompare(b.nome ?? "", "pt-BR", { sensitivity: "base" })
+      );
+    case "valor":
+      return [...leads].sort((a, b) => (b.valor_estimado ?? 0) - (a.valor_estimado ?? 0));
+    case "temperatura":
+      return [...leads].sort(
+        (a, b) =>
+          (TEMPERATURA_WEIGHT[b.temperatura ?? ""] ?? 0) -
+          (TEMPERATURA_WEIGHT[a.temperatura ?? ""] ?? 0)
+      );
+    case "atividade":
+    default:
+      return sortLeadsByActivity(leads, tarefasMap);
+  }
 }

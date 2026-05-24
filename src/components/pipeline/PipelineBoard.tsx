@@ -13,7 +13,7 @@ import { formatBRLCompact } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import PipelineStageTransitionPopup, { needsTransitionPopup, type TransitionResult } from "./PipelineStageTransitionPopup";
-import { sortLeadsByActivity } from "@/lib/pipelineSortOrder";
+import { sortLeads, type PipelineSortOrder } from "@/lib/pipelineSortOrder";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 interface PipelineBoardProps {
@@ -29,6 +29,7 @@ interface PipelineBoardProps {
   selectionMode?: boolean;
   selectedLeads?: Set<string>;
   onToggleSelect?: (leadId: string) => void;
+  sortOrder?: PipelineSortOrder;
 }
 
 const COLUMN_WIDTH_DESKTOP = 268;
@@ -214,7 +215,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   );
 });
 
-export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect }: PipelineBoardProps) {
+export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade" }: PipelineBoardProps) {
   const { isGestor, isAdmin } = useUserRole();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
@@ -343,14 +344,14 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       const arr = map.get(lead.stage_id);
       if (arr) arr.push(lead);
     }
-    // Activity-Based sort: tarefa atrasada → hoje → futura → sem tarefa.
-    // Fallback gracioso: se tarefasMap ainda não carregou, todos caem no bucket "sem
-    // tarefa" e a ordem fica created_at DESC — mesma UX do legado.
+    // Ordenação despachada pelo dropdown (default: Activity-Based).
+    // Fallback gracioso: se tarefasMap ainda não carregou e order=atividade,
+    // todos caem em "sem tarefa" e ficam created_at DESC — mesma UX do legado.
     for (const [stageId, arr] of map) {
-      map.set(stageId, sortLeadsByActivity(arr, tarefasMap));
+      map.set(stageId, sortLeads(arr, sortOrder, tarefasMap));
     }
     return map;
-  }, [visibleStages, leads, tarefasMap]);
+  }, [visibleStages, leads, tarefasMap, sortOrder]);
 
   const stageIndexMap = useMemo(() => {
     const m = new Map<string, number>();

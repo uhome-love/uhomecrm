@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { LoadingState, ErrorState } from "@/components/ui/screen-states";
 import { usePipeline } from "@/hooks/usePipeline";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
+import { loadSortOrder, type SortOrder } from "@/components/pipeline/PipelineSortDropdown";
 import PipelineMobileView from "@/components/pipeline/PipelineMobileView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
@@ -71,6 +72,7 @@ export default function PipelineKanban() {
   const { data: parcerias = {} } = useParceriasMap();
   const { data: partnerLeadsByCorretor = {} } = usePartnerLeadsByCorretor();
   const [activeTab, setActiveTab] = useState("kanban");
+  const [sortOrder, setSortOrder] = useState<SortOrder>(loadSortOrder);
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
@@ -424,6 +426,8 @@ export default function PipelineKanban() {
         mobileSearchOpen={mobileSearchOpen}
         setMobileSearchOpen={setMobileSearchOpen}
         mobileSearchRef={mobileSearchRef}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
       />
 
 
@@ -548,6 +552,7 @@ export default function PipelineKanban() {
                   selectionMode={selectionMode}
                   selectedLeads={selectedLeads}
                   onToggleSelect={toggleLeadSelection}
+                  sortOrder={sortOrder}
                 />
               ) : activeTab === "inteligencia" ? (
                 intelView === "funil" ? (

@@ -14,6 +14,8 @@ import { Brain, BarChart3, Radar, LayoutGrid, Plus, RefreshCw, Search, X, Zap, C
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PipelineAdvancedFilters, { type PipelineFilters } from "@/components/pipeline/PipelineAdvancedFilters";
 import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
+import { PipelineSortDropdown } from "@/components/pipeline/PipelineSortDropdown";
+import type { PipelineSortOrder } from "@/lib/pipelineSortOrder";
 import type { LeadClientStatus } from "@/components/pipeline/CardStatusLine";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 
@@ -84,6 +86,10 @@ export interface PipelineHeaderProps {
   mobileSearchOpen: boolean;
   setMobileSearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
   mobileSearchRef: React.RefObject<HTMLInputElement>;
+
+  // Sort
+  sortOrder: PipelineSortOrder;
+  setSortOrder: (v: PipelineSortOrder) => void;
 }
 
 export default function PipelineHeader(props: PipelineHeaderProps) {
@@ -102,6 +108,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     filaCeoFilter, setFilaCeoFilter, openDispatch,
     selectionMode, setSelectionMode, clearSelection,
     mobileSearchOpen, setMobileSearchOpen, mobileSearchRef,
+    sortOrder, setSortOrder,
   } = props;
 
   return (
@@ -614,6 +621,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           )}
 
           <div className="flex-1" />
+
+          <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
 
           <div className="shrink-0">
             <PipelineFiltroBadges
