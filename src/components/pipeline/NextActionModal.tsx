@@ -49,6 +49,7 @@ interface Props {
 
 export default function NextActionModal({ open, onOpenChange, leadId, leadNome, stages, currentStageId, onMove, onReload }: Props) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selected, setSelected] = useState<OptionType>("tarefa");
   const [saving, setSaving] = useState(false);
 
