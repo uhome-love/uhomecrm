@@ -165,7 +165,18 @@ const CardMinimal = memo(function CardMinimal({
     [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento, stage?.tipo]
   );
 
-  const nextActionLabel = useMemo(
+  const actionType = useMemo(
+    () => parseTaskActionType(proximaTarefa?.tipo),
+    [proximaTarefa?.tipo]
+  );
+
+  const actionWhen = useMemo(
+    () => formatTaskWhen(proximaTarefa ?? null),
+    [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
+  );
+
+  // fallback acessível: usado como title e leitura por SR
+  const fullActionLabel = useMemo(
     () => formatNextAction(proximaTarefa ?? null),
     [proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
@@ -185,6 +196,9 @@ const CardMinimal = memo(function CardMinimal({
 
   const menuEnabled = !!(stages && onMoveLead);
   const [isDragging, setIsDragging] = useState(false);
+
+  const isAtrasada = status === "atrasada";
+  const showActionLine = stage?.tipo !== "convertido" && stage?.tipo !== "descarte";
 
   return (
     <div
@@ -214,7 +228,7 @@ const CardMinimal = memo(function CardMinimal({
       {/* Header: nome + 3-dot */}
       <div className="flex items-start gap-2 min-w-0">
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-semibold text-foreground truncate leading-tight">
+          <div className="text-[13.5px] font-semibold text-foreground tracking-tight leading-tight truncate">
             {lead.nome || "Sem nome"}
           </div>
           {empreendimento && (
@@ -234,27 +248,45 @@ const CardMinimal = memo(function CardMinimal({
         )}
       </div>
 
-      {/* Telefone */}
+      {/* Telefone com ícone discreto */}
       {telefoneFmt && (
-        <div className="mt-1 text-[12px] text-foreground/80 truncate">
-          {telefoneFmt}
+        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-foreground/80 min-w-0">
+          <Phone className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+          <span className="truncate">{telefoneFmt}</span>
         </div>
       )}
 
-      {/* Divisor sutil */}
-      <div className="mt-2 border-t border-border/40" />
+      {showActionLine && (
+        <>
+          {/* Divisor sutil */}
+          <div className="mt-2 border-t border-border/40" />
 
-      {/* Próxima ação + dias-na-etapa (compactado em 1 linha) */}
-      <div className="mt-2 flex justify-between items-center gap-2">
-        <span className={`flex-1 min-w-0 truncate text-[11px] font-medium ${NEXT_ACTION_TONE[status]}`}>
-          {nextActionLabel}
-        </span>
-        {diasLabel && (
-          <span className="shrink-0 text-[10px] max-[479px]:text-[9px] font-medium text-muted-foreground">
-            {diasLabel}
-          </span>
-        )}
-      </div>
+          {/* Linha de ação: pílula + quando + dias-na-etapa */}
+          <div
+            className="mt-2 flex items-center gap-1.5 min-w-0"
+            title={fullActionLabel}
+          >
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium shrink-0 ${ACTION_PILL_CLASS[actionType]}`}
+            >
+              <span aria-hidden>{ACTION_ICON[actionType]}</span>
+              {ACTION_LABEL[actionType]}
+            </span>
+            <span
+              className={`flex-1 min-w-0 truncate text-[11.5px] ${
+                isAtrasada ? "text-red-600 font-semibold" : "text-muted-foreground"
+              }`}
+            >
+              {actionWhen}
+            </span>
+            {diasLabel && (
+              <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+                {diasLabel}
+              </span>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Rodapé: corretor / parceria — só aparece quando houver dado */}
       {(corretorNome || parceiroNome) && (
