@@ -225,13 +225,17 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   const [descricao, setDescricao] = useState("");
   const [followUp, setFollowUp] = useState<"none" | "amanha" | "custom">("none");
   const [followUpDate, setFollowUpDate] = useState("");
-  const [newNota, setNewNota] = useState("");
+  const [novoHistoricoOpen, setNovoHistoricoOpen] = useState(false);
+  const [novaNota, setNovaNota] = useState("");
+  const [savingNota, setSavingNota] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TimelineItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const { data: imovelEvents } = useLeadImoveisEvents(leadId);
 
   const timeline = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes);
+  const totalEventos = timeline.length;
+  const totalNotas = anotacoes?.length ?? 0;
 
   const handleSave = async () => {
     const titulo = descricao.trim() || (ATIVIDADE_TIPOS[tipo]?.label || tipo);
