@@ -381,7 +381,7 @@ export function usePipeline(
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin, shouldHideLeadFromPipeline]);
+  }, [userId, isGestor, isAdmin, shouldHideLeadFromPipeline, scopeKey]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
