@@ -40,7 +40,7 @@ import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type 
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
 import PipelineHeader from "@/components/pipeline/PipelineHeader";
-import ModoTimePlaceholder from "@/components/pipeline/ModoTimePlaceholder";
+import ModoTimeView from "@/components/pipeline/modo-time/ModoTimeView";
 import EquipesViewPlaceholder from "@/components/pipeline/EquipesViewPlaceholder";
 import { GERENTES_REAIS } from "@/components/pipeline/header/PipelineGestorSelect";
 
@@ -668,7 +668,17 @@ export default function PipelineKanban() {
                   />
                 )
               ) : activeTab === "time" ? (
-                <ModoTimePlaceholder />
+                authUser?.id ? (
+                  <ModoTimeView
+                    gestorId={authUser.id}
+                    ownLeadsCount={(pipeline.leads || []).filter((l) => l.corretor_id === authUser.id).length}
+                    onSelectCorretor={(corretorId) => {
+                      setCorretorFilter(corretorId);
+                      setActiveTab("kanban");
+                    }}
+                  />
+                ) : null
+
               ) : activeTab === "equipes" ? (
                 <EquipesViewPlaceholder />
               ) : null}
