@@ -142,10 +142,18 @@ function daysInStage(stageChangedAt: string | null | undefined): number | null {
   return Math.floor((Date.now() - t) / 86400000);
 }
 
+function getInitials(nome: string): string {
+  if (!nome) return "??";
+  const parts = nome.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 const CardMinimal = memo(function CardMinimal({
   lead,
   stage,
   corretorNome,
+  corretorAvatarUrl,
   parceiroNome,
   proximaTarefa,
   onClick,
