@@ -52,3 +52,45 @@ export function dayKeyBRT(iso: string | Date | null | undefined): string {
   const t = toBRTDateOnly(d);
   return `${t.y}-${String(t.m + 1).padStart(2, "0")}-${String(t.day).padStart(2, "0")}`;
 }
+
+// ─────────────────────────────────────────────────────────────────
+// Tipo de ação (próxima tarefa) — usado no CardMinimal Nível 2
+// ─────────────────────────────────────────────────────────────────
+
+export type TaskActionType = "call" | "msg" | "followup" | "visit" | "outro";
+
+/** Mapeia o enum `tipo` da tabela pipeline_tarefas para categoria visual. */
+export function parseTaskActionType(tipo: string | null | undefined): TaskActionType {
+  if (!tipo) return "outro";
+  const t = tipo.toLowerCase();
+  if (t === "ligacao" || t === "ligar" || t.includes("ligaç")) return "call";
+  if (t === "whatsapp" || t.includes("mensagem")) return "msg";
+  if (t === "visita") return "visit";
+  if (t === "followup" || t === "follow_up" || t.includes("follow")) return "followup";
+  return "outro";
+}
+
+export const ACTION_ICON: Record<TaskActionType, string> = {
+  call: "📞",
+  msg: "💬",
+  followup: "📨",
+  visit: "🏠",
+  outro: "📝",
+};
+
+export const ACTION_LABEL: Record<TaskActionType, string> = {
+  call: "Ligação",
+  msg: "WhatsApp",
+  followup: "Follow-up",
+  visit: "Visita",
+  outro: "Tarefa",
+};
+
+export const ACTION_PILL_CLASS: Record<TaskActionType, string> = {
+  call: "bg-red-100 text-red-700",
+  msg: "bg-indigo-100 text-indigo-700",
+  followup: "bg-purple-100 text-purple-700",
+  visit: "bg-emerald-100 text-emerald-700",
+  outro: "bg-zinc-100 text-zinc-600",
+};
+
