@@ -1,45 +1,43 @@
-## Alinhar "Mais ações" do drawer com menu ··· do card
+## Causa raiz
+O variant `right` do shadcn `Sheet` (sheet.tsx:41) aplica:
+```
+inset-y-0 right-0 h-full w-3/4 border-l ... sm:max-w-sm
+```
+O uso atual em `PipelineLeadDetail.tsx:554` é:
+```
+w-full sm:w-[70vw] sm:max-w-[2000px] p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]
+```
+Combinando os dois:
+- `w-3/4` do variant é sobrescrito por `w-full` (ok em < 640px).
+- A partir de `sm:` (≥ 640px) entra `sm:w-[70vw]` e o `sm:max-w-sm` herdado do variant briga com `sm:max-w-[2000px]`. Em viewports entre 640 e 767px o drawer aparece como "ilha" (~384px / 70vw), apesar do `useIsMobile()` considerar isso mobile (breakpoint 768px).
+- Faltam também `inset-y-0` e `h-full` explícitos no className para garantir altura total quando o usuário sobrescreve.
 
-### Investigação
+## Fix proposto (1 linha, 1 arquivo)
+`src/components/pipeline/PipelineLeadDetail.tsx:554`
 
-1. **Componente:** `CardOverflowMenu` (default export, `src/components/pipeline/CardOverflowMenu.tsx`). Já implementa as 7 ações + dialogs internos (`CardScheduleVisitDialog`, `PartnershipDialog`, `PipelineTransferDialog`, `DiscardLeadDialog`).
-2. **Localização do botão "Mais ações":** `src/components/pipeline/PipelineLeadDetail.tsx`, linhas 466-491 (não em `DrawerLeadInfo`). Hoje tem 4 itens próprios: Buscar imóveis, Parceria, Inativar, Apagar (CEO).
-3. **Tabs:** `activeTab`/`setActiveTab` já existe; aba "tarefas" + estado `showNovaTarefa` já controlam abertura do form de nova tarefa.
+De:
+```
+className="w-full sm:w-[70vw] sm:max-w-[2000px] p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]"
+```
+Para:
+```
+className="inset-y-0 right-0 h-full w-full max-w-none md:w-[70vw] md:max-w-[2000px] p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]"
+```
 
-### Decisão "Criar tarefa" no drawer
+Mudanças:
+1. `sm:` → `md:` em width/max-width — alinha com `useIsMobile` (768px).
+2. `max-w-none` explícito — neutraliza o `sm:max-w-sm` herdado do variant na faixa 640–767px.
+3. `inset-y-0 right-0 h-full` explícitos — garante posicionamento e altura total no mobile mesmo se a precedência de classes do variant for alterada no futuro.
 
-Opção (a): foca aba "Tarefas" **e** dispara `setShowNovaTarefa(true)` para abrir direto o form de nova tarefa (mais útil que só focar a aba). Coerente com o atalho de teclado `t` que já faz isso (linha 293).
+## Não tocar
+- `src/components/ui/sheet.tsx` (componente compartilhado).
+- Lógica de tabs, `headerNode`/`bodyNode`, `useIsMobile`.
+- Layout desktop (≥ 768px continua 2 colunas + 70vw).
+- Fixes anteriores (header fixo, scrollTop, `line-clamp-2` do empreendimento).
 
-### Mudanças
+## Validação
+- iPhone (~390px): drawer 100% largura/altura, 4 tabs (Info ativa).
+- Tablet portrait (~700px): 100% largura (antes: ilha).
+- Desktop ≥ 768px: 70vw, 2 colunas, 3 tabs.
 
-**`CardOverflowMenu.tsx`**
-- Nova prop opcional `trigger?: React.ReactNode` — quando passada, substitui o botão `MoreVertical` default; envolvida em `<DropdownMenuTrigger asChild>` igual.
-- Nova prop opcional `onCreateTask?: () => void` — quando passada, é chamada no clique de "Criar tarefa" em vez de `onOpenDetail()`. Card continua sem passar (default = abre drawer).
-- Telemetria preservada (mesmo `pipeline_card_menu_action`).
-
-**`PipelineLeadDetail.tsx`**
-- Remove o bloco `<DropdownMenu>` (linhas 467-491) inteiro.
-- Substitui por `<CardOverflowMenu lead={lead} stages={stages} onMoveLead={…} onOpenDetail={() => {}} onTransferred={…} onCreateTask={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }} trigger={<button className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg border border-border bg-card hover:bg-muted/40 text-[11px] text-muted-foreground transition-colors"><MoreHorizontal className="h-3.5 w-3.5" /> Mais ações</button>} />`.
-- Remove imports não usados: `DropdownMenu`/`DropdownMenuTrigger`/`DropdownMenuContent`/`DropdownMenuItem`/`DropdownMenuSeparator`, `Search`, `Ban` (se nada mais usar), e o handler `Buscar imóveis` (navigate inline já some).
-- "Apagar (CEO)" estava só nesse menu — vou **preservar** como item extra no drawer (não está no spec mas é guard-rail admin). Solução: renderizar logo após o `CardOverflowMenu` como um `DropdownMenu` mínimo separado, OU adicionar inline depois. Para minimizar mudança e manter a regra "card === drawer", vou mover "Apagar (CEO)" para fora do menu, como botão pequeno destrutivo abaixo (visível só para admins). Reportar pra confirmação? Não — manter como ícone pequeno discreto ao lado de "Mais ações", já que é função admin rara.
-
-  *Simplificação:* manter como `DropdownMenu` mínimo separado **só quando `isAdmin && onDelete`**, ao lado do "Mais ações". Não polui no caso comum.
-
-**`CardMinimal.tsx`**
-- Sem mudança — continua passando só os props originais (sem `trigger`, sem `onCreateTask`).
-
-### NÃO toca
-
-- Dialogs (DiscardLeadDialog etc.), telemetria, queries, lógica de moveLead, Sprint 1, Dashboard v3.
-- `Buscar imóveis` página/rota — só remove o atalho do drawer.
-
-### Aceite
-
-- "Mais ações" abre menu com 7 itens iguais ao card.
-- "Criar tarefa" foca aba Tarefas e abre form de nova tarefa.
-- "Buscar imóveis" sumiu do drawer.
-- Botão admin "Apagar (CEO)" preservado para isAdmin.
-- Card visual inalterado.
-- Build limpo.
-
-Aguardando GO.
+Risco: muito baixo. Apenas classes utilitárias, sem refactor.
