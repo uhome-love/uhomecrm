@@ -120,8 +120,10 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
   // Load stages for the config screen
   useEffect(() => {
     if (!open) return;
+    const isTimeMode = modo === "time";
     const hasInitial = !!initialCriteria && initialCriteria.length > 0;
-    setConfigPhase(!hasInitial);
+    // Modo Time pula a tela de config (4 critérios fixos, sem toggle).
+    setConfigPhase(!hasInitial && !isTimeMode);
     setSelectedCriteria(hasInitial ? initialCriteria! : ["all"]);
     setSelectedStageId("all");
     setCurrentIndex(0);
@@ -141,6 +143,22 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
       setStagesLoading(false);
     };
     loadStages();
+
+    if (isTimeMode) {
+      // Time mode: hook ignora criteria — basta chamar reload sem filtros.
+      setWorkedCount(0);
+      focusSessionIdRef.current = newFocusSessionId();
+      advanceCountRef.current = 0;
+      pendingOpenedCtxRef.current = {
+        session_id: focusSessionIdRef.current,
+        pipeline_tipo: pipelineTipo,
+        modo: "time",
+        source: "modo_time_gestor",
+      };
+      reload();
+      return;
+    }
+
     // Silent counts: carrega TODOS os leads (criteria=["every"]) para alimentar
     // os 4 contadores + badge do critério "Todos". Buckets continuam corretos
     // porque cada lead vem com `state` calculado. Não emite telemetria.
@@ -162,7 +180,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
       };
       reload({ criteria: initialCriteria!, includeUpcoming2d: false });
     }
-  }, [open, pipelineTipo]);
+  }, [open, pipelineTipo, modo]);
+
 
   const handleToggleCriteria = (value: CriteriaType) => {
     // "every" e "all" são exclusivos entre si e em relação aos buckets individuais.
