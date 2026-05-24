@@ -228,7 +228,7 @@ const CardMinimal = memo(function CardMinimal({
         "px-3 py-2.5 pl-4 shadow-sm hover:shadow-md transition-all",
         "hover:border-border hover:-translate-y-px",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
-        SIDEBAR_BY_STATUS[status],
+        stage?.tipo === "novo_lead" ? "before:bg-[#4F46E5]" : SIDEBAR_BY_STATUS[status],
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >
