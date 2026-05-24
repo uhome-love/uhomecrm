@@ -17,6 +17,7 @@
 import { useSearchParams } from "react-router-dom";
 import { useCorretorKpisCarteira } from "@/hooks/useCorretorKpisCarteira";
 import { useNegociosCount } from "@/hooks/useNegociosCount";
+import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 export type PipelineFiltroKey = "em_dia" | "sem_tarefa" | "atrasado" | "negocios";
 
@@ -58,6 +59,10 @@ export default function PipelineFiltroBadges({ active, onChange }: PipelineFiltr
 
   const handleClick = (key: PipelineFiltroKey) => {
     const next = active === key ? null : key;
+    trackPipelineEvent("pipeline_filtro_clicked", {
+      filtro: next ?? "clear",
+      previous: active ?? null,
+    });
     // URL como fonte de verdade — useEffect em PipelineKanban re-sincroniza state.
     if (next) searchParams.set("filtro", next);
     else searchParams.delete("filtro");

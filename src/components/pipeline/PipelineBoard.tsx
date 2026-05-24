@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import PipelineStageTransitionPopup, { needsTransitionPopup, type TransitionResult } from "./PipelineStageTransitionPopup";
 import { sortLeadsByActivity } from "@/lib/pipelineSortOrder";
+import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 interface PipelineBoardProps {
   stages: PipelineStage[];
@@ -450,6 +451,13 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   const completeTransition = useCallback((lid: string, stageId: string, observacao?: string) => {
     const lead = leads.find(l => l.id === lid);
     const targetStage = stages.find(s => s.id === stageId);
+    trackPipelineEvent("pipeline_stage_changed", {
+      lead_id: lid,
+      corretor_id: lead?.corretor_id ?? null,
+      from_stage: lead?.stage_id,
+      to_stage: stageId,
+      to_stage_tipo: targetStage?.tipo,
+    });
     onMoveLead(lid, stageId, observacao);
 
     // Flash animation

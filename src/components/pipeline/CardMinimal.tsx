@@ -22,6 +22,7 @@ import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT } from "@/lib/brtTime";
 import { Handshake } from "lucide-react";
 import CardOverflowMenu from "./CardOverflowMenu";
+import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 export interface CardMinimalProximaTarefa {
   tipo: string | null;
@@ -166,7 +167,16 @@ const CardMinimal = memo(function CardMinimal({
       draggable
       onDragStart={() => { setIsDragging(true); onDragStart(); }}
       onDragEnd={() => setIsDragging(false)}
-      onClick={onClick}
+      onClick={() => {
+        trackPipelineEvent("pipeline_card_clicked", {
+          lead_id: lead.id,
+          stage_id: lead.stage_id,
+          corretor_id: lead.corretor_id,
+          stage: stage?.tipo ?? stage?.nome,
+          status,
+        });
+        onClick();
+      }}
       data-dragging={isDragging || undefined}
       className={[
         "group relative cursor-pointer rounded-xl bg-card border border-border/60",

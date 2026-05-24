@@ -11,6 +11,7 @@ import type { PipelineLead } from "@/hooks/usePipeline";
 import { NEGOCIOS_FASES } from "@/hooks/useNegocios";
 import { formatBRLCompact } from "@/lib/utils";
 import { Handshake } from "lucide-react";
+import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 export interface NegocioCardData {
   id: string;
@@ -47,7 +48,16 @@ const NegocioCard = memo(function NegocioCard({
       draggable
       onDragStart={() => { setIsDragging(true); onDragStart(); }}
       onDragEnd={() => setIsDragging(false)}
-      onClick={onClick}
+      onClick={() => {
+        trackPipelineEvent("pipeline_card_clicked", {
+          lead_id: lead.id,
+          stage_id: lead.stage_id,
+          corretor_id: lead.corretor_id,
+          stage: "convertido",
+          status: negocio?.fase ?? "aguardando",
+        });
+        onClick();
+      }}
       data-dragging={isDragging || undefined}
       className={[
         "group relative cursor-pointer rounded-xl border px-3 py-2.5 pl-4 shadow-sm transition-all",
