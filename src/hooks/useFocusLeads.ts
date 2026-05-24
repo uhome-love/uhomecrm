@@ -135,9 +135,12 @@ function addDaysStr(dateStr: string, days: number): string {
   return dt.toISOString().slice(0, 10);
 }
 
+export type FocusMode = "leads" | "time";
+
 export function useFocusLeads(
   corretorAuthId: string | null,
-  pipelineTipo: "leads" | "negocios" = "leads"
+  pipelineTipo: "leads" | "negocios" = "leads",
+  modo: FocusMode = "leads"
 ): UseFocusLeadsReturn {
   const [leads, setLeads] = useState<FocusLead[]>([]);
   const [loading, setLoading] = useState(false);
@@ -151,6 +154,30 @@ export function useFocusLeads(
     if (!corretorAuthId) return;
     setLoading(true);
     setError(null);
+
+    if (modo === "time") {
+      try {
+        await reloadTimeMode({
+          gestorId: corretorAuthId,
+          filters,
+          setLeads,
+          setStaleSince,
+          lastSuccessAtRef,
+          leadsCountRef,
+        });
+      } catch (err: any) {
+        console.error("[useFocusLeads/time] error:", err);
+        if (leadsCountRef.current > 0 && lastSuccessAtRef.current) {
+          setStaleSince(lastSuccessAtRef.current);
+        } else {
+          setError(err.message || "Erro ao buscar leads do time");
+        }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
 
     try {
       const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
