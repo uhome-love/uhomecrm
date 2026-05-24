@@ -16,7 +16,7 @@
 //   • Linha 4 (opcional): telefone + parceiro/corretor
 // ─────────────────────────────────────────────────────────────────
 
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT } from "@/lib/brtTime";
