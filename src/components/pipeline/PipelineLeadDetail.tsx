@@ -552,7 +552,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         <DrawerTimeline>
         {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <div className="shrink-0 px-5 pt-2 pb-1 flex items-center gap-2 border-b border-border/50">
+          <div className="shrink-0 px-5 pt-4 pb-1 flex items-center gap-2 border-b border-border/50">
             <TabsList className="bg-muted/50 h-8 flex-1">
               <TabsTrigger value="historico" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
                 📝 Histórico
