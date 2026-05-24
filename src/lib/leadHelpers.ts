@@ -94,6 +94,14 @@ export const ACTION_PILL_CLASS: Record<TaskActionType, string> = {
   outro: "bg-zinc-100 text-zinc-600",
 };
 
+export const ACTION_ICON_COLOR: Record<TaskActionType, string> = {
+  call: "text-red-600",
+  msg: "text-indigo-600",
+  followup: "text-purple-700",
+  visit: "text-emerald-600",
+  outro: "text-zinc-500",
+};
+
 // ─────────────────────────────────────────────────────────────────
 // Substatus compacto do CardMinimal — lê pipeline_leads.flag_status
 // Estrutura por stage.tipo mapeada em LeadFlagBadges.tsx (fonte da verdade).

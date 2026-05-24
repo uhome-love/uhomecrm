@@ -27,7 +27,7 @@ import {
   parseTaskActionType,
   ACTION_ICON,
   ACTION_LABEL,
-  ACTION_PILL_CLASS,
+  ACTION_ICON_COLOR,
   getLeadSubstatusBadge,
 } from "@/lib/leadHelpers";
 
@@ -267,22 +267,29 @@ const CardMinimal = memo(function CardMinimal({
           {/* Divisor sutil */}
           <div className="mt-2 border-t border-border/40" />
 
-          {/* Linha de ação: pílula + quando + dias-na-etapa */}
+          {/* Linha de ação: ícone colorido + tipo (bold) + quando + dias-na-etapa */}
           <div
             className="mt-2 flex items-center gap-1.5 min-w-0"
             title={fullActionLabel}
           >
             <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium shrink-0 ${ACTION_PILL_CLASS[actionType]}`}
+              aria-hidden
+              className={`shrink-0 text-[12px] leading-none ${ACTION_ICON_COLOR[actionType]}`}
             >
-              <span aria-hidden>{ACTION_ICON[actionType]}</span>
-              {ACTION_LABEL[actionType]}
+              {ACTION_ICON[actionType]}
             </span>
             <span
               className={`flex-1 min-w-0 truncate text-[11.5px] ${
-                isAtrasada ? "text-red-600 font-semibold" : "text-muted-foreground"
+                isAtrasada ? "text-red-600" : "text-muted-foreground"
               }`}
             >
+              <strong
+                className={`font-semibold ${
+                  isAtrasada ? "text-red-600" : "text-foreground"
+                }`}
+              >
+                {ACTION_LABEL[actionType]}
+              </strong>{" "}
               {actionWhen}
             </span>
             {diasLabel && (
