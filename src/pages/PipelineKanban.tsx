@@ -66,7 +66,8 @@ type ClientStatusFilter = "todos" | LeadClientStatus;
 export default function PipelineKanban() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const pipeline = usePipeline();
+  // pipeline scope é resolvido logo após o state de gestorFilter (linhas ~142).
+  // Inicializa pipeline sem escopo extra; useMemo abaixo recalcula quando muda.
   const { isGestor, isAdmin, isCorretor, loading: roleLoading, roles } = useUserRole();
   const { user: authUser, loading: authLoading } = useAuth();
   // Bug-fix Bug 3: useUserRole retorna loading=false enquanto useAuth ainda
