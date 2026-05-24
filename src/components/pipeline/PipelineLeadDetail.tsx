@@ -42,6 +42,8 @@ import OpportunityVisitasTab from "./OpportunityVisitasTab";
 import OpportunityPropostasTab from "./OpportunityPropostasTab";
 import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
+import DrawerTasksTab from "./drawer/DrawerTasksTab";
+import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 
 import NextActionModal from "./NextActionModal";
@@ -580,31 +582,15 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               - WhatsApp passa a abrir SEMPRE em /whatsapp via WhatsAppFocusFlow, não como tab embarcada. */}
 
           <ScrollArea className="flex-1 min-h-0">
-            {/* ===== TAB: TAREFAS ===== */}
+            {/* ===== TAB: TAREFAS (v4 editorial) ===== */}
             <TabsContent value="tarefas" className="mt-0">
-              <LeadTarefasTab
-                leadId={lead.id}
-                leadNome={lead.nome}
-                leadTelefone={lead.telefone}
-                leadEmail={lead.email}
+              <DrawerTasksTab
                 tarefas={leadData.tarefas}
-                onAddTarefa={leadData.addTarefa}
                 onToggleTarefa={leadData.toggleTarefa}
                 onDeleteTarefa={leadData.deleteTarefa}
                 onReload={leadData.reload}
-                onNextAction={() => setNextActionOpen(true)}
+                onNovaTarefa={() => setNextActionOpen(true)}
               />
-              {currentStage && (
-                <Collapsible className="px-6 pb-6">
-                  <CollapsibleTrigger className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full group">
-                    <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
-                    🤖 Sequências sugeridas
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3">
-                    <LeadSequenceSuggestion leadId={lead.id} leadNome={lead.nome} stageType={currentStage.tipo} empreendimento={lead.empreendimento} onTasksCreated={leadData.reload} />
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
             </TabsContent>
 
             {/* ===== TAB: HISTÓRICO ===== */}
@@ -634,18 +620,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               />
             </TabsContent>
 
-            {/* ===== TAB: VISITAS ===== */}
-            <TabsContent value="visitas" className="px-6 pb-8 space-y-4 mt-0">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4" /> Visitas do Lead
-                </h4>
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setScheduleVisitOpen(true)}>
-                  <Calendar className="h-3 w-3" /> + Agendar Visita
-                </Button>
-              </div>
-              <OpportunityVisitasTab pipelineLeadId={lead.id} />
+            {/* ===== TAB: VISITAS (v4 editorial) ===== */}
+            <TabsContent value="visitas" className="mt-0">
+              <DrawerVisitsTab
+                pipelineLeadId={lead.id}
+                onAgendarVisita={() => setScheduleVisitOpen(true)}
+              />
             </TabsContent>
+
 
             {/* Tabs radar/whatsapp removidas (Pipeline v2 Fase 4) */}
           </ScrollArea>
