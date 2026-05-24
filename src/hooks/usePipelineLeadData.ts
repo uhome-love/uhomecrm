@@ -58,6 +58,7 @@ export interface PipelineHistorico {
 
 export function usePipelineLeadData(leadId: string | null) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [atividades, setAtividades] = useState<PipelineAtividade[]>([]);
   const [anotacoes, setAnotacoes] = useState<PipelineAnotacao[]>([]);
   const [tarefas, setTarefas] = useState<PipelineTarefa[]>([]);
