@@ -26,6 +26,14 @@ interface PipelineFiltroBadgesProps {
   active: PipelineFiltroKey | null;
   /** Callback ao trocar filtro (clique numa pílula). */
   onChange: (filtro: PipelineFiltroKey | null) => void;
+  /**
+   * Contagens já calculadas client-side a partir dos leads em escopo
+   * (preFilteredLeads do PipelineKanban). Quando informado, ignora os
+   * hooks legados `useCorretorKpisCarteira`/`useNegociosCount` — esses
+   * filtram por `corretor_id = user.id` e davam 0 para gestor/CEO.
+   * Quando ausente, mantém o comportamento antigo (compat corretor).
+   */
+  counts?: { em_dia: number; sem_tarefa: number; atrasado: number; negocios: number };
 }
 
 interface BadgeDef {
@@ -44,12 +52,14 @@ const BADGES: BadgeDef[] = [
   { key: "negocios",   label: "negócios",   color: "#1D4ED8", dotColor: "#3B82F6", bgActive: "rgba(59,130,246,0.12)", bgIdle: "transparent" },
 ];
 
-export default function PipelineFiltroBadges({ active, onChange }: PipelineFiltroBadgesProps) {
+export default function PipelineFiltroBadges({ active, onChange, counts: countsProp }: PipelineFiltroBadgesProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  // Hooks corretor-only: só são consultados quando `countsProp` não é passado
+  // (fallback para a visão do corretor durante o rollout do fix Bug 1).
   const { data: carteira } = useCorretorKpisCarteira();
   const { data: negocios = 0 } = useNegociosCount();
 
-  const counts: Record<PipelineFiltroKey, number> = {
+  const counts: Record<PipelineFiltroKey, number> = countsProp ?? {
     // "Em dia" agrega em_dia + para_hoje — leads saudáveis (não atrasados, não sem tarefa).
     em_dia: (carteira?.em_dia ?? 0) + (carteira?.para_hoje ?? 0),
     sem_tarefa: carteira?.sem_tarefa ?? 0,

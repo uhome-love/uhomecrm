@@ -98,6 +98,10 @@ export interface PipelineHeaderProps {
   // Fase 1 — Filtro de gestor exclusivo do CEO
   gestorFilter?: string;
   setGestorFilter?: (v: string) => void;
+
+  // Bug-fix Pílulas: contagens calculadas client-side em PipelineKanban
+  // a partir dos leads em escopo (corretor/gestor/CEO com ou sem filtro).
+  pillCounts?: { em_dia: number; sem_tarefa: number; atrasado: number; negocios: number };
 }
 
 export default function PipelineHeader(props: PipelineHeaderProps) {
@@ -118,6 +122,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     mobileSearchOpen, setMobileSearchOpen, mobileSearchRef,
     sortOrder, setSortOrder,
     gestorFilter = "todos", setGestorFilter,
+    pillCounts,
   } = props;
 
   // Tabs por role (Fase 1):
@@ -228,6 +233,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         {/* Line 2 mobile: pílulas unificadas Dashboard↔Pipeline */}
         <div className="flex items-center gap-2 px-3 pb-2 border-b border-slate-200 dark:border-gray-700 overflow-x-auto">
           <PipelineFiltroBadges
+            counts={pillCounts}
             active={
               negociosFilter ? "negocios"
               : clientStatusFilter === "em_dia" ? "em_dia"
@@ -343,6 +349,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         {/* Tablet line 2: pílulas unificadas + fila ceo */}
         <div className="flex items-center gap-2 overflow-x-auto h-9 px-4">
           <PipelineFiltroBadges
+            counts={pillCounts}
             active={
               negociosFilter ? "negocios"
               : clientStatusFilter === "em_dia" ? "em_dia"
@@ -618,6 +625,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           {/* Pílulas Em dia/Sem tarefa/Atrasado/Negócios — alinhadas à direita da linha de tabs */}
           <div className="shrink-0">
             <PipelineFiltroBadges
+              counts={pillCounts}
               active={
                 negociosFilter ? "negocios"
                 : clientStatusFilter === "em_dia" ? "em_dia"
