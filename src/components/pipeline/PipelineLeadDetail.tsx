@@ -760,6 +760,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             {/* Tabs radar/whatsapp removidas (Pipeline v2 Fase 4) */}
           </ScrollArea>
         </Tabs>
+        </DrawerTimeline>
+        </div>
+
 
         {/* ════════════ HOMI SIDE PANEL ════════════ */}
         {homiOpen && (
