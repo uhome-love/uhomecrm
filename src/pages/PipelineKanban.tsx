@@ -67,7 +67,7 @@ export default function PipelineKanban() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const pipeline = usePipeline();
-  const { isGestor, isAdmin, isCorretor } = useUserRole();
+  const { isGestor, isAdmin, isCorretor, loading: roleLoading } = useUserRole();
   const { user: authUser } = useAuth();
   const isMobile = useIsMobile();
   const [addOpen, setAddOpen] = useState(false);
@@ -76,6 +76,9 @@ export default function PipelineKanban() {
   const { data: parcerias = {} } = useParceriasMap();
   const { data: partnerLeadsByCorretor = {} } = usePartnerLeadsByCorretor();
   // Tab default por role + persistência em localStorage (Fase 1 refactor visões)
+  // Bug-fix: aguardar useUserRole resolver antes de inicializar/persistir
+  // (sem isso, a primeira render usa roleKey="corretor" e persiste "kanban"
+  //  na chave do admin/gestor — eternamente sobrescrevendo o default).
   const roleKey: "admin" | "gestor" | "corretor" = isAdmin ? "admin" : isGestor ? "gestor" : "corretor";
   const tabStorageKey = `uhome:pipeline-mode:${roleKey}`;
   const defaultTabForRole = isAdmin ? "equipes" : isGestor ? "time" : "kanban";
@@ -84,20 +87,41 @@ export default function PipelineKanban() {
     : isGestor
     ? ["time", "kanban", "inteligencia"]
     : ["kanban", "inteligencia"];
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    if (typeof window === "undefined") return defaultTabForRole;
-    try {
-      const saved = window.localStorage.getItem(tabStorageKey);
-      if (saved && allowedTabsForRole.includes(saved)) return saved;
-    } catch { /* ignore */ }
-    return defaultTabForRole;
-  });
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+
+  // Inicialização única após role resolver — com one-shot migration v2.
   useEffect(() => {
+    if (roleLoading) return;
+    if (activeTab !== null) return;
+    try {
+      const MIGRATION_KEY = "uhome:pipeline-mode:migrated-v2";
+      const alreadyMigrated = window.localStorage.getItem(MIGRATION_KEY);
+      if (!alreadyMigrated && (isAdmin || isGestor)) {
+        // Limpa valor poluído pelo bug pré-fix (provavelmente "kanban")
+        window.localStorage.removeItem(tabStorageKey);
+        window.localStorage.setItem(MIGRATION_KEY, "true");
+        setActiveTab(defaultTabForRole);
+        return;
+      }
+      const saved = window.localStorage.getItem(tabStorageKey);
+      if (saved && allowedTabsForRole.includes(saved)) setActiveTab(saved);
+      else setActiveTab(defaultTabForRole);
+    } catch {
+      setActiveTab(defaultTabForRole);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleLoading, tabStorageKey, defaultTabForRole, isAdmin, isGestor]);
+
+  useEffect(() => {
+    if (roleLoading || activeTab === null) return;
     try { window.localStorage.setItem(tabStorageKey, activeTab); } catch { /* ignore */ }
-  }, [activeTab, tabStorageKey]);
+  }, [activeTab, tabStorageKey, roleLoading]);
+
   // Se a role mudou (login/logout) e o tab salvo não pertence ao role atual, força default.
   useEffect(() => {
-    if (!allowedTabsForRole.includes(activeTab)) setActiveTab(defaultTabForRole);
+    if (activeTab !== null && !allowedTabsForRole.includes(activeTab)) {
+      setActiveTab(defaultTabForRole);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roleKey]);
   const [sortOrder, setSortOrder] = useState<SortOrder>(loadSortOrder);
