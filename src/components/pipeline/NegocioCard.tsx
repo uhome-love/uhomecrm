@@ -40,12 +40,15 @@ const NegocioCard = memo(function NegocioCard({
   const faseInfo = NEGOCIOS_FASES.find((f) => f.key === negocio?.fase);
   const faseLabel = faseInfo?.label ?? "Aguardando";
   const vgv = negocio?.vgv_final ?? negocio?.vgv_estimado ?? 0;
+  const [isDragging, setIsDragging] = useState(false);
 
   return (
     <div
       draggable
-      onDragStart={onDragStart}
+      onDragStart={() => { setIsDragging(true); onDragStart(); }}
+      onDragEnd={() => setIsDragging(false)}
       onClick={onClick}
+      data-dragging={isDragging || undefined}
       className={[
         "group relative cursor-pointer rounded-xl border px-3 py-2.5 pl-4 shadow-sm transition-all",
         "hover:shadow-md hover:-translate-y-px",
@@ -54,6 +57,7 @@ const NegocioCard = memo(function NegocioCard({
         // sidebar roxo 4px
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
         "before:bg-violet-500",
+        isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >
       {/* Linha 1: nome + badge */}
