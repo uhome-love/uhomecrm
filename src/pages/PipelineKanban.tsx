@@ -477,6 +477,8 @@ export default function PipelineKanban() {
         mobileSearchRef={mobileSearchRef}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
+        gestorFilter={gestorFilter}
+        setGestorFilter={setGestorFilter}
       />
 
 
