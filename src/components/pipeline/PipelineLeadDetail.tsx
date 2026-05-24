@@ -529,23 +529,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </p>
         )}
 
-        {/* ════════════ STAGE COACH ════════════ */}
-        <StageCoachBar
-          stageTipo={(currentStage as any)?.tipo}
-          leadNome={lead.nome}
-          empreendimento={lead.empreendimento}
-          diasSemContato={daysSinceCreation}
-          tentativasLigacao={callAttempts}
-          telefone={lead.telefone}
-          onAddTarefa={leadData.addTarefa}
-          onOpenHomi={(prompt?: string) => {
-            setHomiOpen(true);
-            setHomiInitialPrompt(prompt);
-          }}
-          origem={lead.origem}
-          nextTask={nextTask}
-          noContactAlert={noContactAlert}
-        />
+        {/* StageCoachBar removido — informação redundante com pílulas do header, caixa PRÓXIMA AÇÃO e caixa Empreendimento */}
 
         {/* ════════════ FLAG CONTROLS ════════════ */}
         <LeadFlagControls
