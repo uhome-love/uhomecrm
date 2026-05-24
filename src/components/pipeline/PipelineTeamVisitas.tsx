@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { format, isToday, isTomorrow, addDays, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarDays, ChevronDown, ChevronRight, Clock, User, Building2, Loader2 } from "lucide-react";
