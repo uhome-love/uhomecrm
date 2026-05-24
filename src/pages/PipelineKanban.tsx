@@ -40,6 +40,9 @@ import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type 
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
 import PipelineHeader from "@/components/pipeline/PipelineHeader";
+import ModoTimePlaceholder from "@/components/pipeline/ModoTimePlaceholder";
+import EquipesViewPlaceholder from "@/components/pipeline/EquipesViewPlaceholder";
+import { GERENTES_REAIS } from "@/components/pipeline/header/PipelineGestorSelect";
 
 // Campaign tag definitions
 const CAMPAIGN_TAGS = [
@@ -72,7 +75,31 @@ export default function PipelineKanban() {
   const [filters, setFilters] = useState<PipelineFilters>({ ...EMPTY_FILTERS });
   const { data: parcerias = {} } = useParceriasMap();
   const { data: partnerLeadsByCorretor = {} } = usePartnerLeadsByCorretor();
-  const [activeTab, setActiveTab] = useState("kanban");
+  // Tab default por role + persistência em localStorage (Fase 1 refactor visões)
+  const roleKey: "admin" | "gestor" | "corretor" = isAdmin ? "admin" : isGestor ? "gestor" : "corretor";
+  const tabStorageKey = `uhome:pipeline-mode:${roleKey}`;
+  const defaultTabForRole = isAdmin ? "equipes" : isGestor ? "time" : "kanban";
+  const allowedTabsForRole: string[] = isAdmin
+    ? ["equipes", "kanban", "inteligencia"]
+    : isGestor
+    ? ["time", "kanban", "inteligencia"]
+    : ["kanban", "inteligencia"];
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window === "undefined") return defaultTabForRole;
+    try {
+      const saved = window.localStorage.getItem(tabStorageKey);
+      if (saved && allowedTabsForRole.includes(saved)) return saved;
+    } catch { /* ignore */ }
+    return defaultTabForRole;
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem(tabStorageKey, activeTab); } catch { /* ignore */ }
+  }, [activeTab, tabStorageKey]);
+  // Se a role mudou (login/logout) e o tab salvo não pertence ao role atual, força default.
+  useEffect(() => {
+    if (!allowedTabsForRole.includes(activeTab)) setActiveTab(defaultTabForRole);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleKey]);
   const [sortOrder, setSortOrder] = useState<SortOrder>(loadSortOrder);
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
@@ -81,6 +108,23 @@ export default function PipelineKanban() {
   const [negociosFilter, setNegociosFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Filtro CEO por gestor (Fase 1) — restringe leads aos corretores daquele gestor.
+  const [gestorFilter, setGestorFilter] = useState<string>("todos");
+  const { data: gestorTeamUserIds } = useQuery({
+    queryKey: ["pipeline-gestor-team", gestorFilter],
+    queryFn: async () => {
+      if (!isAdmin || gestorFilter === "todos") return null;
+      const { data } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", gestorFilter)
+        .eq("status", "ativo");
+      return new Set((data || []).map((r: any) => r.user_id).filter(Boolean) as string[]);
+    },
+    enabled: isAdmin && gestorFilter !== "todos",
+    staleTime: 5 * 60 * 1000,
+  });
   
   // Bulk selection state
   const [selectionMode, setSelectionMode] = useState(false);
@@ -213,6 +257,10 @@ export default function PipelineKanban() {
     if (filaCeoFilter) {
       result = result.filter(l => !l.corretor_id);
     }
+    // Fase 1: filtro CEO por gestor — restringe ao time do gestor selecionado.
+    if (isAdmin && gestorFilter !== "todos" && gestorTeamUserIds) {
+      result = result.filter(l => l.corretor_id && gestorTeamUserIds.has(l.corretor_id));
+    }
     if (corretorFilter && corretorFilter !== "all") {
       if (corretorFilter === "sem_corretor") {
         result = result.filter(l => !l.corretor_id);
@@ -227,7 +275,7 @@ export default function PipelineKanban() {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isAdmin, gestorFilter, gestorTeamUserIds]);
 
   const filteredLeads = useMemo(() => {
     const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
@@ -429,6 +477,8 @@ export default function PipelineKanban() {
         mobileSearchRef={mobileSearchRef}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
+        gestorFilter={gestorFilter}
+        setGestorFilter={setGestorFilter}
       />
 
 
@@ -570,6 +620,10 @@ export default function PipelineKanban() {
                     onSelectLead={setSelectedLead}
                   />
                 )
+              ) : activeTab === "time" ? (
+                <ModoTimePlaceholder />
+              ) : activeTab === "equipes" ? (
+                <EquipesViewPlaceholder />
               ) : null}
             </Suspense>
             </ErrorBoundary>

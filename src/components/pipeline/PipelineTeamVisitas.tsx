@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { format, isToday, isTomorrow, addDays, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarDays, ChevronDown, ChevronRight, Clock, User, Building2, Loader2 } from "lucide-react";
@@ -38,34 +39,50 @@ function getDayLabel(dateStr: string): string {
 
 export default function PipelineTeamVisitas() {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [expanded, setExpanded] = useState(false);
 
   const dateFrom = format(startOfDay(new Date()), "yyyy-MM-dd");
   const dateTo = format(addDays(new Date(), 7), "yyyy-MM-dd");
 
   const { data: visitas = [], isLoading } = useQuery({
-    queryKey: ["pipeline-team-visitas", user?.id, dateFrom, dateTo],
+    queryKey: ["pipeline-team-visitas", user?.id, dateFrom, dateTo, isAdmin ? "admin" : "gestor"],
     queryFn: async () => {
-      // Get team members managed by this gerente
-      const { data: team } = await supabase
-        .from("team_members")
-        .select("user_id")
-        .eq("gerente_id", user!.id)
-        .eq("status", "ativo");
+      // Para o gestor: só corretores do time direto (gerente_id = user.id).
+      // Para o CEO/Admin (Fase 1 bug fix): escritório inteiro (todos os corretores ativos),
+      // limitado a 10 visitas próximas para não poluir a UI.
+      let corretorScopeIds: string[] = [];
+      if (isAdmin) {
+        const { data: members } = await supabase
+          .from("team_members")
+          .select("user_id")
+          .eq("status", "ativo");
+        corretorScopeIds = [...new Set((members || []).map(m => m.user_id).filter(Boolean) as string[])];
+      } else {
+        const { data: team } = await supabase
+          .from("team_members")
+          .select("user_id")
+          .eq("gerente_id", user!.id)
+          .eq("status", "ativo");
+        corretorScopeIds = (team || []).map(t => t.user_id).filter(Boolean) as string[];
+      }
 
-      const teamUserIds = (team || []).map(t => t.user_id).filter(Boolean) as string[];
-      if (teamUserIds.length === 0) return [];
+      if (corretorScopeIds.length === 0) return [];
 
-      const { data, error } = await supabase
+      let q = supabase
         .from("visitas")
         .select("id, corretor_id, nome_cliente, empreendimento, data_visita, hora_visita, status")
-        .in("corretor_id", teamUserIds)
+        .in("corretor_id", corretorScopeIds)
         .gte("data_visita", dateFrom)
         .lte("data_visita", dateTo)
         .not("status", "in", '("cancelada","no_show")')
         .order("data_visita", { ascending: true })
         .order("hora_visita", { ascending: true });
 
+      // CEO: limitar a 10 mais próximas para evitar lista quilométrica do escritório.
+      if (isAdmin) q = q.limit(10);
+
+      const { data, error } = await q;
       if (error) throw error;
 
       // Resolve corretor names via profiles join (visitas table has no corretor_nome column)

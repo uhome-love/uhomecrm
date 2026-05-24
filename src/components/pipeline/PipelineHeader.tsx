@@ -10,15 +10,19 @@
 // Mantém todos os classNames, estados e callbacks idênticos ao original.
 // ─────────────────────────────────────────────────────────────────
 import React from "react";
-import { Brain, BarChart3, Radar, LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Brain, BarChart3, Radar, LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square, Users, Building2 } from "lucide-react";
+// Select primitives no longer used here — corretor/gestor selects extraídos.
 import PipelineAdvancedFilters, { type PipelineFilters } from "@/components/pipeline/PipelineAdvancedFilters";
 import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
 import { PipelineSortDropdown } from "@/components/pipeline/PipelineSortDropdown";
 import type { PipelineSortOrder } from "@/lib/pipelineSortOrder";
 import type { LeadClientStatus } from "@/components/pipeline/CardStatusLine";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
+import PipelineCorretorSelect from "@/components/pipeline/header/PipelineCorretorSelect";
+import PipelineGestorSelect from "@/components/pipeline/header/PipelineGestorSelect";
+import PipelineScopeBadge from "@/components/pipeline/header/PipelineScopeBadge";
 
+export type PipelineTabMode = "kanban" | "inteligencia" | "time" | "equipes";
 export type ClientStatusFilter = "todos" | LeadClientStatus;
 
 export interface CampaignTag {
@@ -90,6 +94,10 @@ export interface PipelineHeaderProps {
   // Sort
   sortOrder: PipelineSortOrder;
   setSortOrder: (v: PipelineSortOrder) => void;
+
+  // Fase 1 — Filtro de gestor exclusivo do CEO
+  gestorFilter?: string;
+  setGestorFilter?: (v: string) => void;
 }
 
 export default function PipelineHeader(props: PipelineHeaderProps) {
@@ -109,7 +117,30 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     selectionMode, setSelectionMode, clearSelection,
     mobileSearchOpen, setMobileSearchOpen, mobileSearchRef,
     sortOrder, setSortOrder,
+    gestorFilter = "todos", setGestorFilter,
   } = props;
+
+  // Tabs por role (Fase 1):
+  //  • Corretor: Kanban | Inteligência
+  //  • Gestor:   Modo Time | Kanban | Inteligência
+  //  • CEO:      Equipes   | Kanban | Inteligência
+  const roleTabs: Array<{ key: string; icon: React.ReactNode; label: string }> = isAdmin
+    ? [
+        { key: "equipes", icon: <Building2 size={12} strokeWidth={1.5} />, label: "Equipes" },
+        { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
+        { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
+      ]
+    : isGestor
+    ? [
+        { key: "time", icon: <Users size={12} strokeWidth={1.5} />, label: "Modo Time" },
+        { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
+        { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
+      ]
+    : [
+        { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
+        { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
+      ];
+
 
   return (
     <div className="shrink-0 bg-[#f7f7fb] dark:bg-[#141e30] border-b border-[#e8e8f0] dark:border-white/[0.07] sticky top-0 z-40">
@@ -125,24 +156,16 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <div className="flex-1" />
 
           {(isAdmin || isGestor) && (
-            <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-              <SelectTrigger
-                className={`h-7 text-[10px] w-[100px] shrink-0 rounded-[7px] text-[10px] font-semibold ${
-                  corretorFilter !== "all"
-                    ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
-                    : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
-                }`}
-              >
-                <SelectValue placeholder="Corretor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
-                {corretorOptions.map(([id, nome]) => (
-                  <SelectItem key={id} value={id}>{nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <PipelineCorretorSelect
+              value={corretorFilter}
+              onChange={setCorretorFilter}
+              options={corretorOptions}
+              isAdmin={isAdmin}
+              variant="mobile"
+            />
+          )}
+          {isAdmin && setGestorFilter && (
+            <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="compact" />
           )}
 
           <PipelineAdvancedFilters
@@ -252,10 +275,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <div className="flex-1" />
 
           <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-[7px] p-0.5">
-            {[
-              { key: "kanban", icon: <LayoutGrid className="h-3 w-3" />, label: "Kanban" },
-              { key: "inteligencia", icon: <Brain className="h-3 w-3" />, label: "Intel" },
-            ].map(tab => (
+            {roleTabs.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
@@ -273,24 +293,16 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
 
           {(isAdmin || isGestor) && (
-            <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-              <SelectTrigger
-                className={`h-7 text-[10px] w-[110px] shrink-0 rounded-[7px] font-semibold ${
-                  corretorFilter !== "all"
-                    ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
-                    : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
-                }`}
-              >
-                <SelectValue placeholder="Corretores" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
-                {corretorOptions.map(([id, nome]) => (
-                  <SelectItem key={id} value={id}>{nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <PipelineCorretorSelect
+              value={corretorFilter}
+              onChange={setCorretorFilter}
+              options={corretorOptions}
+              isAdmin={isAdmin}
+              variant="tablet"
+            />
+          )}
+          {isAdmin && setGestorFilter && (
+            <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="compact" />
           )}
 
           <PipelineAdvancedFilters
@@ -423,6 +435,12 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               Pipeline
             </span>
             <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeadsCount} leads</span>
+            <PipelineScopeBadge
+              isAdmin={isAdmin}
+              isGestor={isGestor}
+              filteredCount={filteredLeadsCount}
+              gestorFilter={gestorFilter}
+            />
           </div>
 
           {/* Pílulas movidas para linha 2 (ver abaixo) */}
@@ -432,24 +450,16 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           <div className="flex items-center gap-1.5 min-w-0">
             {(isAdmin || isGestor) && (
-              <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-                <SelectTrigger
-                  className={`h-[32px] text-[12px] max-w-[170px] min-w-[120px] shrink rounded-lg font-medium truncate ${
-                    corretorFilter !== "all"
-                      ? "border-[#4969FF] bg-[#4969FF]/5 dark:bg-[#4969FF]/10 text-[#4969FF]"
-                      : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
-                  }`}
-                >
-                  <SelectValue placeholder="Todos os corretores" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os corretores</SelectItem>
-                  {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
-                  {corretorOptions.map(([id, nome]) => (
-                    <SelectItem key={id} value={id}>{nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PipelineCorretorSelect
+                value={corretorFilter}
+                onChange={setCorretorFilter}
+                options={corretorOptions}
+                isAdmin={isAdmin}
+                variant="desktop"
+              />
+            )}
+            {isAdmin && setGestorFilter && (
+              <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="desktop" />
             )}
 
             {/* Dropdown "Todas as campanhas" removido — filtro disponível em Filtros Avançados */}
@@ -511,10 +521,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
         {/* Line 2 — Tabs + Intel toggle + ações admin */}
         <div className="flex items-center overflow-x-auto h-9 px-6 gap-1">
-          {[
-            { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
-            { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
-          ].map(tab => (
+          {roleTabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
