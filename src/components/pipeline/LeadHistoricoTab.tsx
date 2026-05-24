@@ -307,105 +307,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
 
   return (
     <div className="px-6 pb-8 space-y-5 mt-0">
-      {/* Header */}
+      {/* Header (botão "Registrar Atividade" removido em Drawer Wide v3 — anotação livre vai pelo botão "Anotar" do grid 2x2) */}
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-bold text-foreground">📝 Histórico</h4>
-        <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4" /> Registrar Atividade
-        </Button>
       </div>
 
-      {/* Register form — inline */}
-      {showForm && (
-        <div className="border border-primary/30 rounded-xl p-4 space-y-3 bg-primary/5">
-          <p className="text-xs font-semibold text-foreground">➕ Registrar Atividade</p>
-
-          {/* Tipo buttons */}
-          <div>
-            <label className="text-xs text-muted-foreground font-medium">O que foi feito:</label>
-            <div className="flex flex-wrap gap-1.5 mt-1">
-              {ATIVIDADE_BUTTONS.map(t => (
-                <button
-                  key={t.value}
-                  onClick={() => setTipo(t.value)}
-                  className={`text-xs px-2.5 py-1.5 rounded-md border transition-colors ${
-                    tipo === t.value
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background border-border hover:border-primary/50"
-                  }`}
-                >
-                  {t.emoji} {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Resultado */}
-          <div>
-            <label className="text-xs text-muted-foreground font-medium">Resultado:</label>
-            <div className="flex gap-1.5 mt-1">
-              {RESULTADO_OPTIONS.map(r => (
-                <button
-                  key={r.value}
-                  onClick={() => setResultado(r.value)}
-                  className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
-                    resultado === r.value
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background border-border hover:border-primary/50"
-                  }`}
-                >
-                  {r.emoji} {r.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="text-xs text-muted-foreground font-medium">O que aconteceu:</label>
-            <Textarea className="mt-1 text-sm" placeholder="Ex: Cliente atendeu, pediu proposta por email" value={descricao} onChange={e => setDescricao(e.target.value)} rows={2} />
-          </div>
-
-          {/* Follow-up */}
-          <div>
-            <label className="text-xs text-muted-foreground font-medium">Agendar follow-up?</label>
-            <div className="flex items-center gap-1.5 mt-1">
-              <button
-                onClick={() => setFollowUp(followUp === "amanha" ? "none" : "amanha")}
-                className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
-                  followUp === "amanha" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:border-primary/50"
-                }`}
-              >
-                Sim → Amanhã
-              </button>
-              <button
-                onClick={() => setFollowUp(followUp === "custom" ? "none" : "custom")}
-                className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
-                  followUp === "custom" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:border-primary/50"
-                }`}
-              >
-                Sim → Escolher data
-              </button>
-              <button
-                onClick={() => setFollowUp("none")}
-                className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
-                  followUp === "none" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:border-primary/50"
-                }`}
-              >
-                Não
-              </button>
-            </div>
-            {followUp === "custom" && (
-              <Input type="date" className="h-8 text-xs mt-2 w-40" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)} />
-            )}
-          </div>
-
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button size="sm" className="h-8 text-xs" onClick={handleSave}>💾 Salvar</Button>
-          </div>
-        </div>
-      )}
 
       {/* Timeline */}
       <div className="relative">
