@@ -1,69 +1,51 @@
 import { Button } from "@/components/ui/button";
-import { Phone, MessageSquare, FileText, Zap, StickyNote } from "lucide-react";
+import { Phone, MessageSquare, FileText, StickyNote } from "lucide-react";
 import { ReactNode } from "react";
 
-interface Action {
-  key: "ligar" | "whatsapp" | "scripts" | "registrar" | "anotar";
-  label: string;
-  icon: typeof Phone;
-  onClick: () => void;
-  variant?: "primary" | "default" | "whatsapp";
-  disabled?: boolean;
-  wrap?: (node: ReactNode) => ReactNode;
-}
+export type DrawerActionKey = "ligar" | "whatsapp" | "scripts" | "anotar";
 
 interface Props {
   hasPhone: boolean;
   onLigar: () => void;
   onWhatsapp: () => void;
   onScripts: () => void;
-  onRegistrar: () => void;
   onAnotar: () => void;
-  registrarWrapper?: (node: ReactNode) => ReactNode;
-  primary?: Action["key"];
+  /** Botão que ganha destaque primário (cor cheia) — geralmente derivado da próxima ação. */
+  primary?: DrawerActionKey;
 }
 
 /**
- * Grid 2x2 de ações principais do drawer (Pipeline v2 Fase 4).
- * - Hierarquia: ação primária recebe destaque visual baseado em `primary`
- * - Ações inacessíveis (ex: telefone vazio) ficam disabled
+ * Grid 2x2 limpo de ações principais do drawer (Pipeline v2 Fix Drawer Wide v3).
+ * 4 botões fixos: Ligar / WhatsApp / Scripts / Anotar.
+ * Hierarquia contextual: o botão correspondente à próxima ação vira primário (cor cheia).
  */
 export default function DrawerActionGrid({
-  hasPhone, onLigar, onWhatsapp, onScripts, onRegistrar, onAnotar, registrarWrapper, primary,
+  hasPhone, onLigar, onWhatsapp, onScripts, onAnotar, primary,
 }: Props) {
-  const items: Action[] = [
-    { key: "ligar", label: "Ligar", icon: Phone, onClick: onLigar, disabled: !hasPhone },
-    { key: "whatsapp", label: "WhatsApp", icon: MessageSquare, onClick: onWhatsapp, variant: "whatsapp", disabled: !hasPhone },
-    { key: "scripts", label: "Scripts", icon: FileText, onClick: onScripts },
-    { key: "registrar", label: "Registrar", icon: Zap, onClick: onRegistrar, wrap: registrarWrapper },
-    { key: "anotar", label: "Anotar", icon: StickyNote, onClick: onAnotar },
+  const items: { key: DrawerActionKey; label: string; icon: typeof Phone; onClick: () => void; disabled?: boolean; primaryColor: string }[] = [
+    { key: "ligar", label: "Ligar", icon: Phone, onClick: onLigar, disabled: !hasPhone, primaryColor: "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:text-white" },
+    { key: "whatsapp", label: "WhatsApp", icon: MessageSquare, onClick: onWhatsapp, disabled: !hasPhone, primaryColor: "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 hover:text-white" },
+    { key: "scripts", label: "Scripts", icon: FileText, onClick: onScripts, primaryColor: "bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:text-primary-foreground" },
+    { key: "anotar", label: "Anotar", icon: StickyNote, onClick: onAnotar, primaryColor: "bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:text-primary-foreground" },
   ];
 
   return (
     <div className="grid grid-cols-2 gap-1.5">
       {items.map((a) => {
-        const isPrimary = primary === a.key;
-        const variantClass =
-          a.variant === "whatsapp"
-            ? "border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950"
-            : "";
-        const primaryClass = isPrimary
-          ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:text-primary-foreground shadow-sm"
-          : "";
-        const btn = (
+        const isPrimary = primary === a.key && !a.disabled;
+        return (
           <Button
             key={a.key}
             variant="outline"
             size="sm"
             disabled={a.disabled}
             onClick={a.onClick}
-            className={`h-10 text-xs gap-1.5 rounded-lg justify-start px-3 ${variantClass} ${primaryClass}`}
+            className={`h-10 text-xs gap-1.5 rounded-lg justify-start px-3 ${isPrimary ? `${a.primaryColor} shadow-sm` : ""}`}
           >
             <a.icon className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{a.label}</span>
           </Button>
         );
-        return a.wrap ? <div key={a.key}>{a.wrap(btn)}</div> : btn;
       })}
     </div>
   );

@@ -32,6 +32,7 @@ import DrawerTimeline from "./drawer/DrawerTimeline";
 import DrawerActionGrid from "./drawer/DrawerActionGrid";
 import DrawerEmpreendimento from "./drawer/DrawerEmpreendimento";
 import DrawerAnotarDialog from "./drawer/DrawerAnotarDialog";
+import DrawerProximaAcao, { parseNextActionType } from "./drawer/DrawerProximaAcao";
 import PartnershipDialog from "./PartnershipDialog";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
 import HomiLeadAssistant from "./HomiLeadAssistant";
@@ -41,7 +42,7 @@ import OpportunityPropostasTab from "./OpportunityPropostasTab";
 import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
-import QuickActionMenu from "./QuickActionMenu";
+
 import NextActionModal from "./NextActionModal";
 import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
@@ -509,26 +510,26 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             )}
           </div>
 
-          {/* Row 3: Action grid 2x2 + overflow menu */}
+          {/* Row 3a: Caixa PRÓXIMA AÇÃO (gradient destacado) */}
+          <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} />
+
+          {/* Row 3b: Action grid 2x2 + overflow menu */}
           <div className="flex items-start gap-1.5">
             <div className="flex-1 min-w-0">
               <DrawerActionGrid
                 hasPhone={!!lead.telefone}
-                primary={nextTask ? undefined : (lead.telefone ? "ligar" : "anotar")}
+                primary={(() => {
+                  const tipo = parseNextActionType(nextTask, lead.proxima_acao);
+                  if (tipo === "ligar" || tipo === "whatsapp") return tipo;
+                  return undefined;
+                })()}
                 onLigar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
                 onWhatsapp={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
                 onScripts={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "scripts" }); setComunicacaoOpen(true); }}
-                onRegistrar={() => { /* wrapped abaixo via QuickActionMenu */ }}
                 onAnotar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
-                registrarWrapper={(node) => (
-                  <QuickActionMenu leadId={lead.id} leadNome={lead.nome} corretorId={lead.corretor_id} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
-                    <div onClick={() => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar" })}>
-                      {node}
-                    </div>
-                  </QuickActionMenu>
-                )}
               />
             </div>
+
 
             {/* More menu */}
             <DropdownMenu onOpenChange={(open) => { if (open) trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "more_menu" }); }}>
@@ -566,62 +567,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           />
 
 
-          {/* Row 4: Context line — empreendimento + formulário + status + tags */}
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-            {(lead.empreendimento || lead.plataforma) && (
-              <span className="flex items-center gap-1">
-                <Building2 className="h-3 w-3" />
-                <span className="font-semibold text-foreground/80">{originLine}</span>
-              </span>
-            )}
-            {lead.formulario && (
-              <>
-                <span className="text-muted-foreground/40">|</span>
-                <span className="truncate max-w-[220px]">{lead.formulario}</span>
-              </>
-            )}
-            {callAttempts > 0 && (
-              <>
-                <span className="text-muted-foreground/40">|</span>
-                <Badge variant={callAttempts >= 4 ? "destructive" : "secondary"} className="text-[9px] h-4 px-1">
-                  📞 {callAttempts}/4
-                </Badge>
-              </>
-            )}
-            {jetimobCode && (
-              <>
-                <span className="text-muted-foreground/40">|</span>
-                <span className="text-muted-foreground/60">
-                  <Tag className="h-2.5 w-2.5 inline" /> {jetimobCode}
-                </span>
-              </>
-            )}
-            <span className="text-muted-foreground/40">|</span>
-            {noContactAlert ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span className={`font-semibold ${noContactAlert === "critical" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
-                  {noContactAlert === "critical" ? "🔴" : "🟡"} Sem contato
-                </span>
-                <button
-                  onClick={() => setActiveTab("historico")}
-                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                >
-                  Resolver →
-                </button>
-              </span>
-            ) : overdueTasks > 0 ? (
-              <span className="font-semibold text-red-600 dark:text-red-400">
-                🔴 {overdueTasks} tarefa{overdueTasks > 1 ? "s" : ""} atrasada{overdueTasks > 1 ? "s" : ""}
-              </span>
-            ) : nextTask ? (
-              <span className="font-semibold text-primary">
-                ✅ Próx: {nextTask.titulo || nextTask.descricao}
-                {nextTask.vence_em && <span className="font-normal ml-1">· {formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "" })}</span>}
-              </span>
-            ) : (
-              <span className="font-semibold text-amber-600 dark:text-amber-400">⚠️ Sem próxima ação</span>
-            )}
-          </div>
 
           {/* Row 5: Observações / Dados do anúncio (ImovelWeb, etc.) */}
           {lead.observacoes && (
