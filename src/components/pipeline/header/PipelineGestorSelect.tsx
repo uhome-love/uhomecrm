@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export const GERENTES_REAIS = [
   { id: "7882d73e-ff5c-4b23-9b08-2adeadcd1800", nome: "Gabrielle Rodrigues", apelido: "Gabrielle" },
   { id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", nome: "Bruno Schuler", apelido: "Bruno" },
-  { id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", nome: "Gabriel Bergamo", apelido: "Gabriel" },
+  { id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", nome: "Gabriel Vieira", apelido: "Gabriel" },
 ] as const;
 
 export type GestorFilterValue = "todos" | (typeof GERENTES_REAIS)[number]["id"];
