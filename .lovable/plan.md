@@ -1,55 +1,35 @@
-# Drawer Wide v4 — Abas Tarefas e Visitas (editorial)
+## Refino Visual CardMinimal — Nível 2
 
-Reformulação visual das abas Tarefas e Visitas do drawer, mantendo a linguagem editorial da aba Histórico (v4). Sem mexer em queries, hooks, telemetria, Sprint 1 ou Dashboard v3. Sequências sugeridas HOMI/Lia ficam para fase futura (removidas da aba por ora).
+### Resposta às decisões abertas
 
-## Arquivos novos
+1. **Mapping de tipo:** o card já recebe `proximaTarefa.tipo` como **enum** (`ligacao | whatsapp | email | visita | reuniao | followup | outro`) via `usePipeline`. Não precisa parsear free-text de `lead.proxima_acao` — vou mapear o enum direto, mais robusto. `parseActionType` recebe `tipo: string | null` e retorna `'call' | 'msg' | 'followup' | 'visit' | 'outro'`.
+2. **Coluna empreendimento:** é `lead.empreendimento` (string, já deduplicada via `deduplicateEmp`). Mantenho.
+3. **Truncate:** sim, `truncate` no empreendimento. Pílula sempre visível, texto-quando trunca.
 
-1. **`src/lib/taskGrouping.ts`** (~60 linhas)
-   - `groupTasksByDeadline(tarefas)` → buckets `atrasadas | hoje | amanha | semana | proximas`
-   - `formatTaskDeadline(vence_em)` → "Vencida há X dias" / "Hoje · HH:MM" / "Amanhã · HH:MM" / "Sexta · 27 Mai · HH:MM" / "27 Mai · HH:MM"
-   - Usa `parseDateBRT` / `formatBRT` existentes (regra global BRT)
+### Arquivos
 
-2. **`src/lib/visitGrouping.ts`** (~30 linhas)
-   - `groupVisitsByStatus(visitas)` → `{ agendadas, realizadas }` (futuro vs passado em BRT)
+- **`src/lib/leadHelpers.ts`** — adicionar:
+  - `parseTaskActionType(tipo)` → categoria
+  - constantes `ACTION_ICON`, `ACTION_LABEL`, `ACTION_PILL_CLASS` (com versão atrasada: fundo `bg-red-100 text-red-700` para call quando atrasada já é vermelha; demais ganham `ring-1 ring-red-200` se atrasada)
+  - `formatTaskWhen(tarefa)` → só a parte temporal ("agora", "hoje 14:30", "amanhã", "em 3 dias", "28/05", "definir")
 
-3. **`src/components/pipeline/drawer/DrawerTasksTab.tsx`** (~260 linhas)
-   - Header "Tarefas" + subtítulo dinâmico (X atrasada · Y hoje · Z próximas) + botão indigo "+ Nova tarefa"
-   - 5 grupos com header uppercase colorido + count chip; grupos vazios omitidos
-   - Card por tarefa com:
-     - ícone 32px em círculo (cor por tipo: call=red, msg=indigo, followup=purple, visit=emerald, outro=zinc)
-     - bg + borda lateral 3px (vermelho/âmbar/branco neutro)
-     - prazo + badge tipo + título + descrição opcional
-     - ações inline: Feito (primário) / Adiar / Editar / 🗑
-   - Empty state com ícone, copy e CTA "+ Criar tarefa"
-   - Reusa props existentes (`onToggleTarefa`, `onDeleteTarefa`, `onAddTarefa`)
-   - Edit abre `EditTaskDialog` existente (se não existir, abre o NewTaskDialog em modo edição via state)
+- **`src/components/pipeline/CardMinimal.tsx`** — re-render:
+  - Linha nome: `text-[13.5px] font-semibold tracking-tight` + menu `···` sempre visível (`text-zinc-400 hover:text-zinc-600`, sem `opacity-0 group-hover`).
+  - Empreendimento: `text-[11px] text-muted-foreground truncate`.
+  - Telefone: `flex items-center gap-1.5` com ícone `📞` 10px cinza claro + número 11px.
+  - Divisor: `border-t border-border/40`.
+  - Linha de ação: pílula colorida (ícone + label) + texto-quando truncado + `Nd` à direita. Atrasada → texto bold vermelho; pílula `call` permanece vermelha (combina com status).
+  - Borda lateral 4px preservada (sem mudanças em `SIDEBAR_BY_STATUS`).
+  - Rodapé corretor/parceria preservado.
 
-4. **`src/components/pipeline/drawer/DrawerVisitsTab.tsx`** (~250 linhas)
-   - Header "Visitas" + subtítulo dinâmico (X agendada · Y realizadas) + botão "+ Agendar visita"
-   - 2 grupos: Agendadas (futuras) / Realizadas (passadas)
-   - Card com caixa de data 56px (gradient verde futuro / cinza passado), hora, badge status (Confirmada/Pendente/Realizada/Cancelada), empreendimento, endereço com 📍
-   - Ações contextuais: futuras (Ver mapa / Confirmar / Reagendar / Editar) vs passadas (Ver observações / Status interesse)
-   - Empty state com ícone 📍, copy persuasivo e CTA "+ Agendar primeira visita"
-   - Reusa hook de visitas já consumido por `OpportunityVisitasTab`
+### Não toca
 
-## Arquivos editados
+- `CardOverflowMenu` (apenas a classe do trigger se necessário — vou inspecionar para garantir que o `···` fique sempre visível; provavelmente o componente já controla isso e basta passar `className` ou ajustar lá um wrapper).
+- DnD, lógica de status, `resolveStatus`, `formatNextAction` (continua disponível mas o card passa a usar a versão decomposta).
+- `NegocioCard`, Sprint 1, Dashboard v3, `usePipeline`.
 
-5. **`src/components/pipeline/PipelineLeadDetail.tsx`**
-   - Substituir `<TabsContent value="tarefas">` para usar `DrawerTasksTab` (remover bloco de Sequências sugeridas dessa aba — fica para fase futura)
-   - Substituir `<TabsContent value="visitas">` para usar `DrawerVisitsTab` (remover header inline e `OpportunityVisitasTab`)
-   - Conectar callbacks: `onNovaTarefa`, `onAgendarVisita` → handlers já existentes (`setNextActionOpen`, `setScheduleVisitOpen`)
-   - Sem mudanças em queries, hooks ou outras tabs
+### Risco
 
-## Não mexer
+- Altura sobe de ~85px para ~95px conforme spec — virtualização (`react-window` no Kanban) usa estimativa; vou checar se há `itemSize` fixo. Se sim, ajusto.
 
-- Aba Histórico (já v4 OK)
-- Coluna esquerda do drawer
-- `LeadTarefasTab.tsx` e `OpportunityVisitasTab.tsx` legados (ficam no projeto caso outras telas usem; só não são mais renderizados pelo drawer)
-- Hooks `useLeadData`, queries Supabase
-- Sprint 1, Dashboard v3, telemetria
-
-## Decisões (recomendações do brief, aplicadas)
-
-- Tarefas muito vencidas mantêm borda vermelha
-- Edit em **modal** (reusa `EditTaskDialog` se existir; senão usa NewTaskDialog hidratado)
-- Sequências HOMI/Lia removidas das abas no v4; voltam em fase futura
+Aguardando GO.

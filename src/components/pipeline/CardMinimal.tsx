@@ -19,10 +19,16 @@
 import { memo, useMemo, useState } from "react";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
-import { todayBRT } from "@/lib/brtTime";
-import { Handshake } from "lucide-react";
+import { todayBRT, formatBRT } from "@/lib/brtTime";
+import { Handshake, Phone } from "lucide-react";
 import CardOverflowMenu from "./CardOverflowMenu";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
+import {
+  parseTaskActionType,
+  ACTION_ICON,
+  ACTION_LABEL,
+  ACTION_PILL_CLASS,
+} from "@/lib/leadHelpers";
 
 export interface CardMinimalProximaTarefa {
   tipo: string | null;
@@ -84,14 +90,6 @@ const SIDEBAR_BY_STATUS: Record<StatusKey, string> = {
   descarte: "before:bg-zinc-400 dark:before:bg-zinc-600",
 };
 
-const NEXT_ACTION_TONE: Record<StatusKey, string> = {
-  atrasada: "text-red-600 dark:text-red-400",
-  hoje: "text-amber-600 dark:text-amber-400",
-  futura: "text-emerald-600 dark:text-emerald-400",
-  sem: "text-muted-foreground",
-  convertido: "text-primary",
-  descarte: "text-muted-foreground",
-};
 
 function deduplicateEmp(raw: string): string {
   if (!raw) return "";
@@ -115,6 +113,24 @@ function formatPhoneBR(raw: string | null | undefined): string {
   if (local.length === 11) return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
   if (local.length === 10) return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
   return raw;
+}
+
+/** Só a parte temporal: "agora", "hoje 14:30", "amanhã", "em 3 dias", "28/05". */
+function formatTaskWhen(tarefa: CardMinimalProximaTarefa | null | undefined): string {
+  if (!tarefa?.vence_em) return "definir";
+  const hoje = todayBRT();
+  if (tarefa.vence_em < hoje) return "agora";
+  if (tarefa.vence_em === hoje) {
+    return tarefa.hora_vencimento ? `hoje ${tarefa.hora_vencimento.slice(0, 5)}` : "hoje";
+  }
+  const [yh, mh, dh] = hoje.split("-").map(Number);
+  const [yv, mv, dv] = tarefa.vence_em.split("-").map(Number);
+  const diffDays = Math.round(
+    (Date.UTC(yv, mv - 1, dv) - Date.UTC(yh, mh - 1, dh)) / 86400000
+  );
+  if (diffDays === 1) return "amanhã";
+  if (diffDays > 0 && diffDays <= 6) return `em ${diffDays} dias`;
+  return formatBRT(`${tarefa.vence_em}T12:00:00-03:00`, "dd/MM");
 }
 
 function daysInStage(stageChangedAt: string | null | undefined): number | null {
@@ -141,7 +157,18 @@ const CardMinimal = memo(function CardMinimal({
     [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento, stage?.tipo]
   );
 
-  const nextActionLabel = useMemo(
+  const actionType = useMemo(
+    () => parseTaskActionType(proximaTarefa?.tipo),
+    [proximaTarefa?.tipo]
+  );
+
+  const actionWhen = useMemo(
+    () => formatTaskWhen(proximaTarefa ?? null),
+    [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
+  );
+
+  // fallback acessível: usado como title e leitura por SR
+  const fullActionLabel = useMemo(
     () => formatNextAction(proximaTarefa ?? null),
     [proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
@@ -161,6 +188,9 @@ const CardMinimal = memo(function CardMinimal({
 
   const menuEnabled = !!(stages && onMoveLead);
   const [isDragging, setIsDragging] = useState(false);
+
+  const isAtrasada = status === "atrasada";
+  const showActionLine = stage?.tipo !== "convertido" && stage?.tipo !== "descarte";
 
   return (
     <div
@@ -190,7 +220,7 @@ const CardMinimal = memo(function CardMinimal({
       {/* Header: nome + 3-dot */}
       <div className="flex items-start gap-2 min-w-0">
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-semibold text-foreground truncate leading-tight">
+          <div className="text-[13.5px] font-semibold text-foreground tracking-tight leading-tight truncate">
             {lead.nome || "Sem nome"}
           </div>
           {empreendimento && (
@@ -210,27 +240,45 @@ const CardMinimal = memo(function CardMinimal({
         )}
       </div>
 
-      {/* Telefone */}
+      {/* Telefone com ícone discreto */}
       {telefoneFmt && (
-        <div className="mt-1 text-[12px] text-foreground/80 truncate">
-          {telefoneFmt}
+        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-foreground/80 min-w-0">
+          <Phone className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+          <span className="truncate">{telefoneFmt}</span>
         </div>
       )}
 
-      {/* Divisor sutil */}
-      <div className="mt-2 border-t border-border/40" />
+      {showActionLine && (
+        <>
+          {/* Divisor sutil */}
+          <div className="mt-2 border-t border-border/40" />
 
-      {/* Próxima ação + dias-na-etapa (compactado em 1 linha) */}
-      <div className="mt-2 flex justify-between items-center gap-2">
-        <span className={`flex-1 min-w-0 truncate text-[11px] font-medium ${NEXT_ACTION_TONE[status]}`}>
-          {nextActionLabel}
-        </span>
-        {diasLabel && (
-          <span className="shrink-0 text-[10px] max-[479px]:text-[9px] font-medium text-muted-foreground">
-            {diasLabel}
-          </span>
-        )}
-      </div>
+          {/* Linha de ação: pílula + quando + dias-na-etapa */}
+          <div
+            className="mt-2 flex items-center gap-1.5 min-w-0"
+            title={fullActionLabel}
+          >
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium shrink-0 ${ACTION_PILL_CLASS[actionType]}`}
+            >
+              <span aria-hidden>{ACTION_ICON[actionType]}</span>
+              {ACTION_LABEL[actionType]}
+            </span>
+            <span
+              className={`flex-1 min-w-0 truncate text-[11.5px] ${
+                isAtrasada ? "text-red-600 font-semibold" : "text-muted-foreground"
+              }`}
+            >
+              {actionWhen}
+            </span>
+            {diasLabel && (
+              <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+                {diasLabel}
+              </span>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Rodapé: corretor / parceria — só aparece quando houver dado */}
       {(corretorNome || parceiroNome) && (
