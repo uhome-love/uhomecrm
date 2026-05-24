@@ -72,7 +72,10 @@ export default function ModoTimeRow({ row, onClick }: Props) {
           </div>
         </div>
       </td>
-      {numCell(row.total_leads)}
+      <td className="px-4 py-3 text-sm tabular-nums text-right text-neutral-700">
+        {row.total_leads}
+        <span className="text-neutral-400"> / {row.total_recebidos}</span>
+      </td>
       {numCell(row.sem_tarefa, false, true)}
       {numCell(row.atrasados, true)}
       {numCell(row.em_dia)}

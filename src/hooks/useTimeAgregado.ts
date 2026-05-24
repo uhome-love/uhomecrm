@@ -24,6 +24,7 @@ export interface TimeAgregadoRow {
   avatar_url: string | null;
   segmento_principal: string | null;
   total_leads: number;
+  total_recebidos: number;
   sem_tarefa: number;
   atrasados: number;
   em_dia: number;
