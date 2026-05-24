@@ -16,6 +16,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { todayBRT } from "@/lib/utils";
 
 export interface CarteiraBuckets {
   sem_tarefa: number;
@@ -27,11 +28,14 @@ export interface CarteiraBuckets {
 
 const EMPTY: CarteiraBuckets = { sem_tarefa: 0, atrasado: 0, para_hoje: 0, em_dia: 0, total: 0 };
 
-function endOfDayBRT(): Date {
-  // Fim do dia BRT em instante absoluto.
-  const todayBRT = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-  // 23:59:59.999 BRT = +00:00 next-day-02:59:59.999 UTC. Construir via offset -03:00.
-  return new Date(`${todayBRT}T23:59:59.999-03:00`);
+/**
+ * Extrai YYYY-MM-DD de um valor `vence_em` (coluna `date` no Postgres).
+ * PostgREST devolve a string `YYYY-MM-DD` direto; usamos slice como fallback
+ * defensivo se o backend mudar pra timestamptz no futuro.
+ */
+function ymdBRT(v: string): string {
+  if (v.length >= 10 && v[4] === "-" && v[7] === "-") return v.slice(0, 10);
+  return new Date(v).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
 export function useCorretorKpisCarteira() {
