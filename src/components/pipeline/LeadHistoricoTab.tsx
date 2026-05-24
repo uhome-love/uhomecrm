@@ -313,39 +313,47 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
       </div>
 
 
-      {/* Timeline */}
-      <div className="relative">
-        <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
-        <div className="space-y-0">
-          {timeline.slice(0, 15).map((item, i) => (
-            <div key={i} className="relative flex gap-4 pb-4 group/timeline">
-              <div className={`relative z-10 h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${item.color}`}>
-                <item.icon className="h-3.5 w-3.5" />
-              </div>
-              <div className="pt-0.5 flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">{item.title}</p>
-                    {item.description && <p className="text-xs text-muted-foreground whitespace-pre-wrap">{item.description}</p>}
-                    <p className="text-xs text-muted-foreground/60">{formatDateSafe(item.date, "dd/MM 'às' HH:mm", { locale: ptBR, fallback: "Data inválida" })}</p>
-                  </div>
-                  {item.sourceId && item.sourceType !== "system" && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 shrink-0 opacity-0 group-hover/timeline:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                      onClick={() => setDeleteTarget(item)}
-                      title="Remover registro"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Timeline agrupada por dia (Drawer Wide v4) */}
+      <DrawerTimelineGroup
+        items={timeline.slice(0, 30).map((item, i) => {
+          // mapeia o "color" antigo → tipo canônico do novo grupo
+          const tipoGuess = (() => {
+            const t = item.title.toLowerCase();
+            if (item.sourceType === "anotacao") return "anotacao";
+            if (item.sourceType === "historico") return "historico";
+            if (item.sourceType === "tarefa") return "tarefa";
+            if (item.sourceType === "imovel_event") return "imovel_event";
+            if (/ligaç|liga[rç]|telefon/.test(t)) return "ligacao";
+            if (/whats|mensagem/.test(t)) return "whatsapp";
+            if (/email|e-mail/.test(t)) return "email";
+            if (/visita|tour/.test(t)) return "visita";
+            if (/reuni/.test(t)) return "reuniao";
+            if (/follow/.test(t)) return "followup";
+            if (/nota|anotaç/.test(t)) return "nota";
+            if (/aceito|entrou|distribu/.test(t)) return "aceito";
+            return undefined;
+          })();
+          return {
+            id: `${item.sourceType ?? "x"}-${item.sourceId ?? i}-${item.date}`,
+            title: item.title,
+            description: item.description,
+            date: item.date,
+            tipo: tipoGuess,
+            kind: item.sourceType as any,
+            trailing: item.sourceId && item.sourceType !== "system" ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                onClick={() => setDeleteTarget(item)}
+                title="Remover registro"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            ) : null,
+          };
+        })}
+      />
 
       {/* Notas */}
       <div className="border-t border-border/50 pt-4 space-y-3">
