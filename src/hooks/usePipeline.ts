@@ -269,7 +269,11 @@ export function usePipeline(
         .range(from, from + pageSize - 1);
 
       if (isAdmin) {
-        // CEO sees all leads - no filter
+        // CEO: por padrão sem filtro. Quando o consumidor passa
+        // scopeCorretorIds (CEO filtrando por gestor), aplica server-side.
+        if (scopeCorretorIds && scopeCorretorIds.length > 0) {
+          query = query.in("corretor_id", scopeCorretorIds);
+        }
       } else if (isGestor) {
         query = query.in("corretor_id", teamScopeIds);
       } else {
