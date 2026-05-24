@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────
 import React from "react";
 import { Brain, BarChart3, Radar, LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square, Users, Building2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Select primitives no longer used here — corretor/gestor selects extraídos.
 import PipelineAdvancedFilters, { type PipelineFilters } from "@/components/pipeline/PipelineAdvancedFilters";
 import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
 import { PipelineSortDropdown } from "@/components/pipeline/PipelineSortDropdown";
