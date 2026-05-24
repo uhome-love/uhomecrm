@@ -233,6 +233,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         {/* Line 2 mobile: pílulas unificadas Dashboard↔Pipeline */}
         <div className="flex items-center gap-2 px-3 pb-2 border-b border-slate-200 dark:border-gray-700 overflow-x-auto">
           <PipelineFiltroBadges
+            counts={pillCounts}
             active={
               negociosFilter ? "negocios"
               : clientStatusFilter === "em_dia" ? "em_dia"
