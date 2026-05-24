@@ -5,9 +5,11 @@
  *   - Em dia / Sem tarefa / Atrasado vêm de `useCorretorKpisCarteira` (mesma queryKey/cache)
  *   - Negócios vem de `useNegociosCount` (categoria informacional, stage convertido)
  *
- * Decisão CEO 23/05/2026:
- *   - "Em dia" = `em_dia` puro (espelha Dashboard, não soma para_hoje)
- *   - "Para hoje" NÃO vira pílula — Activity-Based sort já empurra para topo da coluna
+ * Decisão CEO 25/05/2026 (revisão da decisão de 23/05):
+ *   - "Em dia" no Pipeline = `em_dia + para_hoje` (saúde do funil, não execução do dia)
+ *   - Soma garante que Em dia + Sem tarefa + Atrasado + Negócios = total do header
+ *   - Dashboard segue mostrando 4 buckets separados (visão de execução do dia)
+ *   - Princípio 59b: mesma fonte de verdade ≠ números idênticos; agrupamento pode variar por tela
  *
  * Click escreve `?filtro=em_dia|sem_tarefa|atrasado|negocios` na URL e chama onChange.
  * URL é a fonte de verdade do filtro; PipelineKanban tem useEffect que re-sincroniza.
