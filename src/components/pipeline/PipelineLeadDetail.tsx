@@ -577,6 +577,10 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             <TabsContent value="tarefas" className="mt-0">
               <DrawerTasksTab
                 tarefas={leadData.tarefas}
+                leadId={lead.id}
+                leadNome={lead.nome}
+                leadStageId={lead.stage_id ?? null}
+                onAddTarefa={leadData.addTarefa}
                 onToggleTarefa={leadData.toggleTarefa}
                 onDeleteTarefa={leadData.deleteTarefa}
                 onReload={leadData.reload}

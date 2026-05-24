@@ -235,6 +235,16 @@ export default function DrawerTasksTab({
           onSaved={() => { setAdiarTarefa(null); onReload(); }}
         />
       )}
+
+      <TaskCompletionDialog
+        open={!!completingTarefa}
+        onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
+        tarefaTitulo={completingTarefa?.titulo || ""}
+        leadNome={leadNome}
+        leadId={leadId}
+        currentStageId={leadStageId ?? undefined}
+        onConfirm={handleCompletionConfirm}
+      />
     </div>
   );
 }
