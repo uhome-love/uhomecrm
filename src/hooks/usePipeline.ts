@@ -209,7 +209,12 @@ export function usePipeline(
 
     // Role-based visibility
     if (isAdmin) {
-      // CEO/Admin: vê TODOS os leads sem filtro
+      // CEO/Admin: vê TODOS os leads sem filtro — exceto se consumidor
+      // passou scopeCorretorIds (ex.: dropdown "filtrar por gestor").
+      if (scopeCorretorIds && scopeCorretorIds.length === 0) {
+        setLeads([]);
+        return;
+      }
     } else if (isGestor) {
       // Gerentes: leads do time
       const { data: teamMembers, error: teamError } = await runQueryWithRetry<any[]>(() =>
