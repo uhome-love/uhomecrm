@@ -113,7 +113,7 @@ export default function CardOverflowMenu({
                     <DropdownMenuItem
                       key={s.id}
                       onClick={() => {
-                        trackMenuAction(lead.id, `change_stage:${s.tipo || s.nome}`);
+                        trackMenuAction(lead, `change_stage:${s.tipo || s.nome}`);
                         onMoveLead(lead.id, s.id);
                       }}
                       className="text-sm"
@@ -128,7 +128,7 @@ export default function CardOverflowMenu({
 
           <DropdownMenuItem
             onClick={() => {
-              trackMenuAction(lead.id, "schedule_visit");
+              trackMenuAction(lead, "schedule_visit");
               setScheduleOpen(true);
             }}
             className="text-sm"
@@ -138,7 +138,7 @@ export default function CardOverflowMenu({
 
           <DropdownMenuItem
             onClick={() => {
-              trackMenuAction(lead.id, "create_task");
+              trackMenuAction(lead, "create_task");
               onOpenDetail();
             }}
             className="text-sm"
@@ -148,7 +148,7 @@ export default function CardOverflowMenu({
 
           <DropdownMenuItem
             onClick={() => {
-              trackMenuAction(lead.id, "transfer");
+              trackMenuAction(lead, "transfer");
               setTransferOpen(true);
             }}
             className="text-sm"
@@ -158,7 +158,7 @@ export default function CardOverflowMenu({
 
           <DropdownMenuItem
             onClick={() => {
-              trackMenuAction(lead.id, "partnership");
+              trackMenuAction(lead, "partnership");
               setPartnerOpen(true);
             }}
             className="text-sm"
@@ -170,7 +170,7 @@ export default function CardOverflowMenu({
 
           <DropdownMenuItem
             onClick={() => {
-              trackMenuAction(lead.id, "discard");
+              trackMenuAction(lead, "discard");
               setDiscardTipo("reengajavel");
               setDiscardOpen(true);
             }}
@@ -181,7 +181,7 @@ export default function CardOverflowMenu({
 
           <DropdownMenuItem
             onClick={() => {
-              trackMenuAction(lead.id, "inactivate");
+              trackMenuAction(lead, "inactivate");
               setDiscardTipo("definitivo");
               setDiscardOpen(true);
             }}
