@@ -140,6 +140,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [nextActionOpen, setNextActionOpen] = useState(false);
   const [scheduleVisitOpen, setScheduleVisitOpen] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false);
+  const [anotarOpen, setAnotarOpen] = useState(false);
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
