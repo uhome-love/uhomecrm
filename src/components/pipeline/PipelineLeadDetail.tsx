@@ -325,8 +325,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </div>
         }>
 
-        {/* ════════════ HEADER COMPACTO ════════════ */}
-        <div className="shrink-0 border-b border-border/50 bg-card px-5 pt-4 pb-3 space-y-2.5">
+        {/* ════════════ LAYOUT 2 COLUNAS (Drawer wide v3) ════════════ */}
+        <div className="flex-1 flex min-h-0 overflow-hidden">
+        <DrawerLeadInfo>
+        {/* ════════════ HEADER (col esquerda) ════════════ */}
+        <div className="space-y-2.5 pb-2 border-b border-border/50">
+
           {/* Row 1: Name + Stage + Temp + Score + Days */}
           <div className="flex items-center gap-2 min-w-0 pr-8">
             {editingName ? (
