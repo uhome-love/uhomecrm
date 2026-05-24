@@ -71,10 +71,22 @@ export interface PipelineSegmento {
   ordem: number;
 }
 
-export function usePipeline(pipelineTipo: string = "leads") {
+export function usePipeline(
+  pipelineTipo: string = "leads",
+  options?: { scopeCorretorIds?: string[] | null }
+) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const { isGestor, isAdmin } = useUserRole();
+  // Escopo opcional vindo do consumidor (ex.: CEO filtrando por gestor).
+  // Quando array (mesmo vazio), aplica .in("corretor_id", ...) na query
+  // do server, evitando trazer 10k+ leads pra filtrar no cliente.
+  // Stable key pra não invalidar loadLeads a cada render.
+  const scopeCorretorIds = options?.scopeCorretorIds ?? null;
+  const scopeKey = useMemo(
+    () => (scopeCorretorIds ? scopeCorretorIds.slice().sort().join(",") : "__none__"),
+    [scopeCorretorIds]
+  );
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [leads, setLeads] = useState<PipelineLead[]>([]);
   const [segmentos, setSegmentos] = useState<PipelineSegmento[]>([]);
@@ -197,7 +209,12 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     // Role-based visibility
     if (isAdmin) {
-      // CEO/Admin: vê TODOS os leads sem filtro
+      // CEO/Admin: vê TODOS os leads sem filtro — exceto se consumidor
+      // passou scopeCorretorIds (ex.: dropdown "filtrar por gestor").
+      if (scopeCorretorIds && scopeCorretorIds.length === 0) {
+        setLeads([]);
+        return;
+      }
     } else if (isGestor) {
       // Gerentes: leads do time
       const { data: teamMembers, error: teamError } = await runQueryWithRetry<any[]>(() =>
@@ -252,7 +269,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
         .range(from, from + pageSize - 1);
 
       if (isAdmin) {
-        // CEO sees all leads - no filter
+        // CEO: por padrão sem filtro. Quando o consumidor passa
+        // scopeCorretorIds (CEO filtrando por gestor), aplica server-side.
+        if (scopeCorretorIds && scopeCorretorIds.length > 0) {
+          query = query.in("corretor_id", scopeCorretorIds);
+        }
       } else if (isGestor) {
         query = query.in("corretor_id", teamScopeIds);
       } else {
@@ -360,7 +381,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin, shouldHideLeadFromPipeline]);
+  }, [userId, isGestor, isAdmin, shouldHideLeadFromPipeline, scopeKey]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }

@@ -66,8 +66,32 @@ type ClientStatusFilter = "todos" | LeadClientStatus;
 export default function PipelineKanban() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const pipeline = usePipeline();
+  // Filtro CEO por gestor (Fase 1) — declarado ANTES de usePipeline para que
+  // possamos passar scopeCorretorIds e empurrar o filtro pra query do server.
+  const [gestorFilter, setGestorFilter] = useState<string>("todos");
   const { isGestor, isAdmin, isCorretor, loading: roleLoading, roles } = useUserRole();
+  const { data: gestorTeamUserIds } = useQuery({
+    queryKey: ["pipeline-gestor-team", gestorFilter],
+    queryFn: async () => {
+      if (!isAdmin || gestorFilter === "todos") return null;
+      const { data } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", gestorFilter)
+        .eq("status", "ativo");
+      return new Set((data || []).map((r: any) => r.user_id).filter(Boolean) as string[]);
+    },
+    enabled: isAdmin && gestorFilter !== "todos",
+    staleTime: 5 * 60 * 1000,
+  });
+  // Quando CEO escolhe um gestor específico, materializa array pra passar
+  // como scope server-side ao usePipeline. Mantém key estável (sort+join).
+  const pipelineScopeCorretorIds = useMemo<string[] | null>(() => {
+    if (!isAdmin || gestorFilter === "todos") return null;
+    if (!gestorTeamUserIds) return []; // ainda carregando lista → não traz nada
+    return Array.from(gestorTeamUserIds);
+  }, [isAdmin, gestorFilter, gestorTeamUserIds]);
+  const pipeline = usePipeline("leads", { scopeCorretorIds: pipelineScopeCorretorIds });
   const { user: authUser, loading: authLoading } = useAuth();
   // Bug-fix Bug 3: useUserRole retorna loading=false enquanto useAuth ainda
   // resolve user (query disabled => isLoading=false). Combinamos os dois para
@@ -138,22 +162,9 @@ export default function PipelineKanban() {
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Filtro CEO por gestor (Fase 1) — restringe leads aos corretores daquele gestor.
-  const [gestorFilter, setGestorFilter] = useState<string>("todos");
-  const { data: gestorTeamUserIds } = useQuery({
-    queryKey: ["pipeline-gestor-team", gestorFilter],
-    queryFn: async () => {
-      if (!isAdmin || gestorFilter === "todos") return null;
-      const { data } = await supabase
-        .from("team_members")
-        .select("user_id")
-        .eq("gerente_id", gestorFilter)
-        .eq("status", "ativo");
-      return new Set((data || []).map((r: any) => r.user_id).filter(Boolean) as string[]);
-    },
-    enabled: isAdmin && gestorFilter !== "todos",
-    staleTime: 5 * 60 * 1000,
-  });
+  // (gestorFilter + query gestorTeamUserIds movidos pra topo do componente
+  // pra alimentar usePipeline com scopeCorretorIds — Fase C performance.)
+
   
   // Bulk selection state
   const [selectionMode, setSelectionMode] = useState(false);
