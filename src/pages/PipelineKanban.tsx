@@ -118,6 +118,25 @@ export default function PipelineKanban() {
     }
   }, [searchParams, pipeline.leads]);
 
+  // URL sync para ?filtro= (Pipeline v2 — Fase 2)
+  // Padrão TabProvider: páginas que vivem em aba persistente precisam re-sync
+  // quando URL muda sem remount. Mapeia URL→state interno (LeadClientStatus).
+  // "negocios" é informacional (filter por stage) — fica pra Fase 6 implementar.
+  useEffect(() => {
+    const f = searchParams.get("filtro");
+    if (!f) return;
+    const urlToInternal: Record<string, ClientStatusFilter> = {
+      em_dia: "em_dia",
+      sem_tarefa: "desatualizado",
+      atrasado: "tarefa_atrasada",
+    };
+    const target = urlToInternal[f];
+    if (target && target !== clientStatusFilter) {
+      setClientStatusFilter(target);
+    }
+    // "negocios" não mexe em clientStatusFilter — Fase 6 trata via stage filter.
+  }, [searchParams]);
+
   // Load tasks for status classification
   const leadIds = useMemo(() => pipeline.leads.map(l => l.id), [pipeline.leads]);
   const leadIdsKey = useMemo(() => leadIds.slice().sort().join(","), [leadIds]);
@@ -288,6 +307,11 @@ export default function PipelineKanban() {
     setFilters({ ...EMPTY_FILTERS });
     setCampaignTagFilter("all");
     setClientStatusFilter("todos");
+    // Limpa URL pra não re-disparar useEffect de sync acima.
+    if (searchParams.get("filtro")) {
+      searchParams.delete("filtro");
+      setSearchParams(searchParams, { replace: true });
+    }
   };
 
   const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos";
