@@ -470,7 +470,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             stages={stages}
             onMoveLead={(leadId, newStageId, observacao) => { onMove(leadId, newStageId, observacao); }}
             onOpenDetail={() => { /* já está aberto */ }}
-            onCreateTask={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}
+            onCreateTask={() => { setActiveTab("tarefas"); setNextActionOpen(true); }}
             trigger={
               <button className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg border border-border bg-card hover:bg-muted/40 text-[11px] text-muted-foreground transition-colors">
                 <MoreHorizontal className="h-3.5 w-3.5" />
