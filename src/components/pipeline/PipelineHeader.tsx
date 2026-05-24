@@ -438,6 +438,12 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               Pipeline
             </span>
             <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeadsCount} leads</span>
+            <PipelineScopeBadge
+              isAdmin={isAdmin}
+              isGestor={isGestor}
+              filteredCount={filteredLeadsCount}
+              gestorFilter={gestorFilter}
+            />
           </div>
 
           {/* Pílulas movidas para linha 2 (ver abaixo) */}
@@ -447,24 +453,16 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           <div className="flex items-center gap-1.5 min-w-0">
             {(isAdmin || isGestor) && (
-              <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-                <SelectTrigger
-                  className={`h-[32px] text-[12px] max-w-[170px] min-w-[120px] shrink rounded-lg font-medium truncate ${
-                    corretorFilter !== "all"
-                      ? "border-[#4969FF] bg-[#4969FF]/5 dark:bg-[#4969FF]/10 text-[#4969FF]"
-                      : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
-                  }`}
-                >
-                  <SelectValue placeholder="Todos os corretores" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os corretores</SelectItem>
-                  {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
-                  {corretorOptions.map(([id, nome]) => (
-                    <SelectItem key={id} value={id}>{nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PipelineCorretorSelect
+                value={corretorFilter}
+                onChange={setCorretorFilter}
+                options={corretorOptions}
+                isAdmin={isAdmin}
+                variant="desktop"
+              />
+            )}
+            {isAdmin && setGestorFilter && (
+              <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="desktop" />
             )}
 
             {/* Dropdown "Todas as campanhas" removido — filtro disponível em Filtros Avançados */}
