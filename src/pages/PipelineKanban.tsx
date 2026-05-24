@@ -782,8 +782,8 @@ export default function PipelineKanban() {
         open={focusModeOpen}
         onClose={() => { setFocusModeOpen(false); pipeline.reload(); }}
         pipelineTipo="leads"
-        modo={activeTab === "time" ? "time" : "leads"}
       />
+
 
     </div>
     </ErrorBoundary>
