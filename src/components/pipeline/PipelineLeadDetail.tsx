@@ -530,8 +530,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       )}
 
       {lead.origem_detalhe && !lead.observacoes && (
-        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-          <FileText className="h-3 w-3" /> {lead.origem_detalhe}
+        <p className="text-[11px] text-muted-foreground flex items-start gap-1 min-w-0" title={lead.origem_detalhe}>
+          <FileText className="h-3 w-3 shrink-0 mt-0.5" />
+          <span className="line-clamp-2 min-w-0 break-words">{lead.origem_detalhe}</span>
         </p>
       )}
 
