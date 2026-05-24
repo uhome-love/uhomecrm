@@ -27,6 +27,8 @@ import {
   Flame, Snowflake, Sun, Zap, Brain, TrendingUp,
   Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil
 } from "lucide-react";
+import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
+import DrawerTimeline from "./drawer/DrawerTimeline";
 import PartnershipDialog from "./PartnershipDialog";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
 import HomiLeadAssistant from "./HomiLeadAssistant";
