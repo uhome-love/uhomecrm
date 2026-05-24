@@ -194,3 +194,43 @@ export async function fetchInBatchesWithRetry<T>(
 
   return { rows: allRows, errors: allErrors };
 }
+
+// ─────────────────────────────────────────────────────────────────
+// ProximaTarefa + isTaskHigherPriority
+// Migrados de CardStatusLine.tsx em Mai/2026 para permitir que
+// PipelineMobileView reuse a lógica sem depender de um componente
+// (CardStatusLine) que será deletado na limpeza do legacy PipelineCard.
+// ─────────────────────────────────────────────────────────────────
+
+export interface ProximaTarefa {
+  tipo: string;
+  vence_em: string | null;
+  hora_vencimento: string | null;
+}
+
+function _toValidDateFromYMD(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Compara duas tarefas pendentes e devolve `true` se `candidate` é mais
+ * urgente que `current` (vence antes, ou no mesmo dia mas em hora menor).
+ */
+export function isTaskHigherPriority(candidate: ProximaTarefa, current: ProximaTarefa) {
+  const candidateDate = candidate.vence_em ? _toValidDateFromYMD(candidate.vence_em) : null;
+  const currentDate = current.vence_em ? _toValidDateFromYMD(current.vence_em) : null;
+
+  if (candidateDate && !currentDate) return true;
+  if (!candidateDate && currentDate) return false;
+  if (candidateDate && currentDate) {
+    if (candidateDate.getTime() !== currentDate.getTime()) {
+      return candidateDate.getTime() < currentDate.getTime();
+    }
+    const candidateHour = candidate.hora_vencimento || "23:59";
+    const currentHour = current.hora_vencimento || "23:59";
+    return candidateHour < currentHour;
+  }
+  return false;
+}
