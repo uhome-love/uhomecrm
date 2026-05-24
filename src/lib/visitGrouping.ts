@@ -22,7 +22,7 @@ export function groupVisitsByStatus<V extends VisitaLike>(visitas: V[]): Grouped
   const realizadas: V[] = [];
   for (const v of visitas) {
     const isFuture = (v.data_visita ?? "") >= today;
-    const isDoneStatus = v.status === "realizada" || v.status === "cancelada" || v.status === "nao_compareceu";
+    const isDoneStatus = v.status === "realizada" || v.status === "cancelada" || v.status === "no_show" || v.status === "nao_compareceu";
     if (isFuture && !isDoneStatus) agendadas.push(v);
     else realizadas.push(v);
   }

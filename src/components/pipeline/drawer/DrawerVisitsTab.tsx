@@ -28,20 +28,24 @@ interface Props {
 
 const STATUS_STYLE: Record<string, string> = {
   agendada: "bg-amber-100 text-amber-700",
+  marcada: "bg-amber-100 text-amber-700",
   confirmada: "bg-emerald-100 text-emerald-700",
   pendente: "bg-amber-100 text-amber-700",
   realizada: "bg-indigo-100 text-indigo-700",
   cancelada: "bg-red-100 text-red-700",
+  no_show: "bg-red-100 text-red-700",
   nao_compareceu: "bg-red-100 text-red-700",
   reagendada: "bg-purple-100 text-purple-700",
 };
 
 const STATUS_LABEL: Record<string, string> = {
   agendada: "Agendada",
+  marcada: "Agendada",
   confirmada: "Confirmada",
   pendente: "Pendente",
   realizada: "Realizada",
   cancelada: "Cancelada",
+  no_show: "Não compareceu",
   nao_compareceu: "Não compareceu",
   reagendada: "Reagendada",
 };

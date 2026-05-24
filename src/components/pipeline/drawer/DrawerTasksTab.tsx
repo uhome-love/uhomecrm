@@ -3,7 +3,7 @@
 // Agrupa por prazo: atrasadas / hoje / amanhã / esta semana / próximas
 // ─────────────────────────────────────────────────────────────────
 import { useMemo, useState } from "react";
-import { Phone, MessageCircle, Mail, Calendar, FileText, Home, CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw } from "lucide-react";
+import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -25,29 +25,33 @@ type TipoCanon = "call" | "msg" | "followup" | "visit" | "outro";
 
 const TIPO_MAP: Record<string, TipoCanon> = {
   ligar: "call",
+  ligacao: "call",
   retornar_cliente: "call",
   whatsapp: "msg",
   enviar_material: "msg",
   enviar_proposta: "msg",
+  email: "msg",
+  proposta: "msg",
   follow_up: "followup",
   marcar_visita: "visit",
   confirmar_visita: "visit",
+  visita: "visit",
 };
 
 const TIPO_LABEL: Record<TipoCanon, string> = {
-  call: "Ligar",
-  msg: "Mensagem",
+  call: "Ligação",
+  msg: "WhatsApp",
   followup: "Follow-up",
   visit: "Visita",
   outro: "Tarefa",
 };
 
-const TIPO_ICON: Record<TipoCanon, React.ElementType> = {
-  call: Phone,
-  msg: MessageCircle,
-  followup: FileText,
-  visit: Home,
-  outro: Calendar,
+const TIPO_EMOJI: Record<TipoCanon, string> = {
+  call: "📞",
+  msg: "💬",
+  followup: "📨",
+  visit: "🏠",
+  outro: "📝",
 };
 
 const TIPO_CIRCLE: Record<TipoCanon, string> = {
@@ -210,7 +214,7 @@ function TaskCard({
   onEdit: () => void;
 }) {
   const tipo = canonTipo(tarefa.tipo);
-  const Icon = TIPO_ICON[tipo];
+  const emoji = TIPO_EMOJI[tipo];
 
   const isAtrasada = bucket === "atrasadas";
   const isHoje = bucket === "hoje";
@@ -230,8 +234,8 @@ function TaskCard({
       )}
 
       <div className="flex items-center gap-2 mb-2">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${TIPO_CIRCLE[tipo]}`}>
-          <Icon className="h-3.5 w-3.5" />
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-base flex-shrink-0 ${TIPO_CIRCLE[tipo]}`}>
+          <span aria-hidden>{emoji}</span>
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[11px] font-semibold text-zinc-500 mb-0.5 flex items-center gap-1.5 flex-wrap">
