@@ -607,15 +607,6 @@ const PipelineCard = memo(function PipelineCard({
           leadId={lead.id}
           leadNome={lead.nome}
           stages={stages}
-          onDone={() => {
-            // Force refresh do pipeline: o realtime/refetch do usePipeline já
-            // captura o UPDATE, mas chamamos onMoveLead com mesma stage para
-            // forçar UI re-render caso a query esteja em cache.
-            if (onMoveLead) {
-              const descarteStage = stages.find(s => s.tipo === "descarte");
-              if (descarteStage) onMoveLead(lead.id, descarteStage.id);
-            }
-          }}
         />
       </div>
     </div>
