@@ -123,6 +123,24 @@ function formatPhoneBR(raw: string | null | undefined): string {
   return raw;
 }
 
+/** Só a parte temporal: "agora", "hoje 14:30", "amanhã", "em 3 dias", "28/05". */
+function formatTaskWhen(tarefa: CardMinimalProximaTarefa | null | undefined): string {
+  if (!tarefa?.vence_em) return "definir";
+  const hoje = todayBRT();
+  if (tarefa.vence_em < hoje) return "agora";
+  if (tarefa.vence_em === hoje) {
+    return tarefa.hora_vencimento ? `hoje ${tarefa.hora_vencimento.slice(0, 5)}` : "hoje";
+  }
+  const [yh, mh, dh] = hoje.split("-").map(Number);
+  const [yv, mv, dv] = tarefa.vence_em.split("-").map(Number);
+  const diffDays = Math.round(
+    (Date.UTC(yv, mv - 1, dv) - Date.UTC(yh, mh - 1, dh)) / 86400000
+  );
+  if (diffDays === 1) return "amanhã";
+  if (diffDays > 0 && diffDays <= 6) return `em ${diffDays} dias`;
+  return formatBRT(`${tarefa.vence_em}T12:00:00-03:00`, "dd/MM");
+}
+
 function daysInStage(stageChangedAt: string | null | undefined): number | null {
   if (!stageChangedAt) return null;
   const t = new Date(stageChangedAt).getTime();
