@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import PipelineAdvancedFilters, { type PipelineFilters } from "@/components/pipeline/PipelineAdvancedFilters";
 import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
 import type { LeadClientStatus } from "@/components/pipeline/CardStatusLine";
-import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
+import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 
 export type ClientStatusFilter = "todos" | LeadClientStatus;
 
