@@ -90,14 +90,6 @@ const SIDEBAR_BY_STATUS: Record<StatusKey, string> = {
   descarte: "before:bg-zinc-400 dark:before:bg-zinc-600",
 };
 
-const NEXT_ACTION_TONE: Record<StatusKey, string> = {
-  atrasada: "text-red-600 dark:text-red-400",
-  hoje: "text-amber-600 dark:text-amber-400",
-  futura: "text-emerald-600 dark:text-emerald-400",
-  sem: "text-muted-foreground",
-  convertido: "text-primary",
-  descarte: "text-muted-foreground",
-};
 
 function deduplicateEmp(raw: string): string {
   if (!raw) return "";
