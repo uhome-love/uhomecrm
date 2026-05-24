@@ -27,6 +27,10 @@
  *
  * Fonte de "toque real": pipeline_atividades.tipo ∈ TOUCH_TYPES
  *   (ultima_acao_at NÃO é mais usado — campo poluído por mudanca_etapa, criação, etc.)
+ *
+ * Modo 'time': retorna leads críticos do time todo (gestor/admin).
+ * Reservado pra Fase 3 (Equipes CEO). Atualmente sem consumidor na UI
+ * porque gestor não trabalha leads 1 por vez (orquestra time).
  */
 
 export const FOCUS_LEVELS = { attention: 1, warning: 5, critical: 10 } as const;
