@@ -625,6 +625,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           {/* Pílulas Em dia/Sem tarefa/Atrasado/Negócios — alinhadas à direita da linha de tabs */}
           <div className="shrink-0">
             <PipelineFiltroBadges
+              counts={pillCounts}
               active={
                 negociosFilter ? "negocios"
                 : clientStatusFilter === "em_dia" ? "em_dia"
