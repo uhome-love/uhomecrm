@@ -300,6 +300,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
       hora_vencimento: format(novaData, "HH:mm"),
     } as any).eq("id", id);
     toast.success("Tarefa adiada ✅");
+    invalidateTaskQueries(queryClient, leadId);
     onReload();
   };
 
@@ -311,6 +312,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     } as any).eq("id", adiarId);
     toast.success("Tarefa reagendada ✅");
     setAdiarId(null);
+    invalidateTaskQueries(queryClient, leadId);
     onReload();
   };
 
@@ -327,6 +329,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     } as any).eq("id", editId);
     toast.success("Tarefa atualizada ✅");
     setEditId(null);
+    invalidateTaskQueries(queryClient, leadId);
     onReload();
   };
 

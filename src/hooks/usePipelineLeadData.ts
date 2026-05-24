@@ -186,7 +186,8 @@ export function usePipelineLeadData(leadId: string | null) {
     if (error) { toast.error("Erro ao excluir tarefa"); return; }
     toast.success("Tarefa excluída");
     loadAll();
-  }, [loadAll]);
+    invalidateTaskQueries(queryClient, leadId);
+  }, [loadAll, queryClient, leadId]);
 
   const toggleTarefa = useCallback(async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "concluida" ? "pendente" : "concluida";
@@ -202,7 +203,8 @@ export function usePipelineLeadData(leadId: string | null) {
       toast.success("Tarefa concluída");
     }
     loadAll();
-  }, [loadAll]);
+    invalidateTaskQueries(queryClient, leadId);
+  }, [loadAll, queryClient, leadId]);
 
   return {
     atividades, anotacoes, tarefas, historico, loading,

@@ -4,18 +4,27 @@ import type { QueryClient } from "@tanstack/react-query";
  * Fonte única de verdade para invalidação de cache de tarefas.
  *
  * Use SEMPRE este helper após qualquer mutação em `pipeline_tarefas`
- * ou `negocios_tarefas` (UPDATE status="concluida", INSERT nova tarefa,
- * UPDATE vence_em, etc.). Garante que Central de Tarefas, Agenda Widget
- * e dependentes (owned-lead-task-map, homi-insight) reflitam o estado novo.
+ * ou `negocios_tarefas` (INSERT, UPDATE vence_em/hora/descricao, UPDATE
+ * status="concluida", DELETE). Garante que **todos** os consumidores
+ * reflitam o estado novo sem reload:
+ *   - Central de Tarefas (`minhas-tarefas`, `minhas-tarefas-negocios`)
+ *   - Agenda Widget do Dashboard (`agenda-widget*`)
+ *   - **KPIs do Dashboard do corretor** (`corretor-kpis-carteira`,
+ *     `corretor-tarefas-hoje`)
+ *   - **Pílulas de tarefa nos cards do Kanban** (`pipeline-tarefas-map`,
+ *     `pipeline-tarefas-map-mobile`)
+ *   - Banner "Leads sem tarefa" (`corretor-leads-sem-tarefa`)
+ *   - Mapa derivado (`owned-lead-task-map`) e HOMI insight do lead.
  *
- * As 5 queryKeys que renderizam o badge "Atrasada/Pendente" recebem
- * `refetchType: 'all'` para forçar refetch mesmo de observers inativos —
- * sem isso o React Query devolve cache stale enquanto refetcha em background
- * e o usuário vê badge ATRASADA falso por alguns segundos (bug R4.5.1 Issue B).
+ * As keys críticas recebem `refetchType: 'all'` para forçar refetch mesmo
+ * de observers inativos — sem isso o React Query devolve cache stale
+ * enquanto refetcha em background e o usuário vê dado errado por alguns
+ * segundos (bug R4.5.1 Issue B). Para o Dashboard isso é especialmente
+ * importante porque cada KPI tem observer único e staleTime > 0.
  *
- * `owned-lead-task-map` e `homi-insight` usam o default (só refetcha observers
- * ativos) porque já são re-derivados via cascata do `minhas-tarefas` refetch
- * e o tráfego extra não compensa.
+ * `owned-lead-task-map` e `homi-insight` usam o default (só refetcha
+ * observers ativos) porque já são re-derivados via cascata do
+ * `minhas-tarefas` refetch e o tráfego extra não compensa.
  */
 export function invalidateTaskQueries(qc: QueryClient, leadId?: string | null) {
   const critical = { refetchType: "all" as const };
@@ -24,6 +33,10 @@ export function invalidateTaskQueries(qc: QueryClient, leadId?: string | null) {
   qc.invalidateQueries({ queryKey: ["agenda-widget"], ...critical });
   qc.invalidateQueries({ queryKey: ["agenda-widget-leads"], ...critical });
   qc.invalidateQueries({ queryKey: ["agenda-widget-negocios"], ...critical });
+  qc.invalidateQueries({ queryKey: ["corretor-kpis-carteira"], ...critical });
+  qc.invalidateQueries({ queryKey: ["corretor-tarefas-hoje"], ...critical });
+  qc.invalidateQueries({ queryKey: ["pipeline-tarefas-map"], ...critical });
+  qc.invalidateQueries({ queryKey: ["pipeline-tarefas-map-mobile"], ...critical });
   qc.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
   // Banner "Leads sem tarefa" no CorretorDashboard — staleTime 60s mascarava
   // criação/conclusão recente de tarefa. Sem refetchType:'all' porque só o

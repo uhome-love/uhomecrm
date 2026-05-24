@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { toast } from "sonner";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";

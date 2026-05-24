@@ -225,14 +225,22 @@ export default function DrawerTasksTab({
         <EditTaskDialog
           tarefa={editTarefa}
           onClose={() => setEditTarefa(null)}
-          onSaved={() => { setEditTarefa(null); onReload(); }}
+          onSaved={() => {
+            setEditTarefa(null);
+            invalidateTaskQueries(queryClient, leadId);
+            onReload();
+          }}
         />
       )}
       {adiarTarefa && (
         <AdiarTaskDialog
           tarefa={adiarTarefa}
           onClose={() => setAdiarTarefa(null)}
-          onSaved={() => { setAdiarTarefa(null); onReload(); }}
+          onSaved={() => {
+            setAdiarTarefa(null);
+            invalidateTaskQueries(queryClient, leadId);
+            onReload();
+          }}
         />
       )}
 
