@@ -165,7 +165,11 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Minha rotina",       path: "/corretor",          icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
         { label: "Aceite de leads",    path: "/aceite",            icon: <UserCheck    size={15} strokeWidth={1.5} /> },
-        { label: "WhatsApp Inbox",     path: "/whatsapp",              icon: <MessageSquare size={15} strokeWidth={1.5} /> },
+        // WhatsApp Inbox standalone descontinuado pra role 'corretor' em 24/05/2026
+        // Razão: baixa adesão (18 page-views/7d, mediana 3.1s)
+        // WhatsApp agora vive no drawer do lead (grid 2x2 + botão direto)
+        // Rota /whatsapp continua ativa pra admin/gestor e deeplinks
+        // Migration completa (deletar página + componentes) fica pra Quality Sprint
       ],
     },
     {
