@@ -126,18 +126,24 @@ export default function PipelineKanban() {
   // "negocios" é informacional (filter por stage) — fica pra Fase 6 implementar.
   useEffect(() => {
     const f = searchParams.get("filtro");
-    if (!f) return;
     const urlToInternal: Record<string, ClientStatusFilter> = {
       em_dia: "em_dia",
       sem_tarefa: "desatualizado",
       atrasado: "tarefa_atrasada",
     };
+    if (f === "negocios") {
+      if (!negociosFilter) setNegociosFilter(true);
+      if (clientStatusFilter !== "todos") setClientStatusFilter("todos");
+      return;
+    }
+    if (negociosFilter) setNegociosFilter(false);
+    if (!f) return;
     const target = urlToInternal[f];
     if (target && target !== clientStatusFilter) {
       setClientStatusFilter(target);
     }
-    // "negocios" não mexe em clientStatusFilter — Fase 6 trata via stage filter.
   }, [searchParams]);
+
 
   // Load tasks for status classification
   const leadIds = useMemo(() => pipeline.leads.map(l => l.id), [pipeline.leads]);
