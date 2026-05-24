@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect, memo } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
 import CardMinimal from "./CardMinimal";
+import NegocioCriadoColumn from "./NegocioCriadoColumn";
 import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, AlignLeft, Trash2, Loader2 } from "lucide-react";
@@ -857,35 +858,49 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   </div>
                 </div>
 
-                {/* Cards list — virtualized */}
-                <VirtualizedCardList
-                  stageLeads={stageLeads}
-                  stage={stage}
-                  stages={stages}
-                  segmentos={segmentos}
-                  corretorNomes={corretorNomes}
-                  corretorAvatars={corretorAvatars}
-                  parcerias={parcerias}
-                  selectionMode={selectionMode}
-                  selectedLeads={selectedLeads}
-                  arrivedLeadId={arrivedLeadId}
-                  onToggleSelect={onToggleSelect}
-                  onSelectLead={onSelectLead}
-                  onMoveLead={(leadId: string, stageId: string) => {
-                    const lead = leads.find(l => l.id === leadId);
-                    const targetStage = stages.find(s => s.id === stageId);
-                    if (lead && targetStage && needsTransitionPopup(targetStage.nome, targetStage.tipo, lead)) {
-                      setTransitionPopup({ lead, targetStage });
-                      return;
-                    }
-                    completeTransition(leadId, stageId);
-                  }}
-                  onTransferred={onTransferred}
-                  stageIndexMap={stageIndexMap}
-                  handleDragStart={handleDragStart}
-                  tarefasMap={tarefasMap}
-                  whatsappUnreadSet={whatsappUnreadSet}
-                />
+                {/* Cards list — convertido usa coluna com agrupamento próprio */}
+                {stage.tipo === "convertido" ? (
+                  <NegocioCriadoColumn
+                    stageLeads={stageLeads}
+                    stage={stage}
+                    corretorNomes={corretorNomes}
+                    parcerias={parcerias}
+                    onSelectLead={onSelectLead}
+                    handleDragStart={handleDragStart}
+                    selectionMode={selectionMode}
+                    selectedLeads={selectedLeads}
+                    onToggleSelect={onToggleSelect}
+                  />
+                ) : (
+                  <VirtualizedCardList
+                    stageLeads={stageLeads}
+                    stage={stage}
+                    stages={stages}
+                    segmentos={segmentos}
+                    corretorNomes={corretorNomes}
+                    corretorAvatars={corretorAvatars}
+                    parcerias={parcerias}
+                    selectionMode={selectionMode}
+                    selectedLeads={selectedLeads}
+                    arrivedLeadId={arrivedLeadId}
+                    onToggleSelect={onToggleSelect}
+                    onSelectLead={onSelectLead}
+                    onMoveLead={(leadId: string, stageId: string) => {
+                      const lead = leads.find(l => l.id === leadId);
+                      const targetStage = stages.find(s => s.id === stageId);
+                      if (lead && targetStage && needsTransitionPopup(targetStage.nome, targetStage.tipo, lead)) {
+                        setTransitionPopup({ lead, targetStage });
+                        return;
+                      }
+                      completeTransition(leadId, stageId);
+                    }}
+                    onTransferred={onTransferred}
+                    stageIndexMap={stageIndexMap}
+                    handleDragStart={handleDragStart}
+                    tarefasMap={tarefasMap}
+                    whatsappUnreadSet={whatsappUnreadSet}
+                  />
+                )}
               </div>
             );
           })}
