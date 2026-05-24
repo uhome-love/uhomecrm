@@ -10,7 +10,7 @@
 // Mantém todos os classNames, estados e callbacks idênticos ao original.
 // ─────────────────────────────────────────────────────────────────
 import React from "react";
-import { Brain, BarChart3, Radar, LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square } from "lucide-react";
+import { Brain, BarChart3, Radar, LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square, Users, Building2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PipelineAdvancedFilters, { type PipelineFilters } from "@/components/pipeline/PipelineAdvancedFilters";
 import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
@@ -18,7 +18,11 @@ import { PipelineSortDropdown } from "@/components/pipeline/PipelineSortDropdown
 import type { PipelineSortOrder } from "@/lib/pipelineSortOrder";
 import type { LeadClientStatus } from "@/components/pipeline/CardStatusLine";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
+import PipelineCorretorSelect from "@/components/pipeline/header/PipelineCorretorSelect";
+import PipelineGestorSelect from "@/components/pipeline/header/PipelineGestorSelect";
+import PipelineScopeBadge from "@/components/pipeline/header/PipelineScopeBadge";
 
+export type PipelineTabMode = "kanban" | "inteligencia" | "time" | "equipes";
 export type ClientStatusFilter = "todos" | LeadClientStatus;
 
 export interface CampaignTag {
