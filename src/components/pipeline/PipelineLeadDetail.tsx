@@ -20,12 +20,12 @@ import { usePipelineLeadData } from "@/hooks/usePipelineLeadData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
-  Phone, Mail, MessageSquare, Calendar, MapPin, Loader2,
+  Phone, Mail, Calendar, MapPin, Loader2,
   Clock, Building2, Target, DollarSign,
   Plus, CheckCircle2, AlertTriangle, ChevronRight,
   FileText, ChevronDown, ClipboardList,
-  Flame, Snowflake, Sun, Zap, Brain, TrendingUp,
-  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil, StickyNote
+  Flame, Snowflake, Sun, Brain, TrendingUp,
+  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil
 } from "lucide-react";
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
 import DrawerTimeline from "./drawer/DrawerTimeline";
