@@ -767,11 +767,15 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
               <div
                 key={stage.id}
                 className="flex flex-col shrink-0 h-full"
+                data-stage-tipo={stage.tipo || undefined}
+                data-drop-target={isDragOver || undefined}
                 style={{
                   width: `${getColumnWidth()}px`,
                   scrollSnapAlign: "start",
                   animation: `pipelineFadeUp 0.35s cubic-bezier(0.25,0.46,0.45,0.94) ${colIdx * 0.05}s both`,
                   transition: isDragOver ? "all 0.2s ease" : undefined,
+                  background: isDragOver ? "rgba(34,197,94,0.04)" : undefined,
+                  borderRadius: isDragOver ? 10 : undefined,
                 }}
                 onDragOver={(e) => handleDragOver(e, stage.id)}
                 onDragLeave={handleDragLeave}
@@ -782,10 +786,10 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   className="shrink-0"
                   style={{
                     background: "hsl(var(--pipeline-column-bg))",
-                    border: isDragOver ? "1px solid #4969FF" : "1px solid hsl(var(--pipeline-column-border))",
+                    border: isDragOver ? "1px solid #22c55e" : "1px solid hsl(var(--pipeline-column-border))",
                     borderRadius: 10,
                     padding: "10px 12px",
-                    boxShadow: isDragOver ? "0 4px 16px rgba(79,70,229,0.10)" : "0 1px 2px rgba(0,0,0,0.04)",
+                    boxShadow: isDragOver ? "0 4px 16px rgba(34,197,94,0.12)" : "0 1px 2px rgba(0,0,0,0.04)",
                     marginBottom: 8,
                     animation: isFlashing ? "columnFlash 0.6s ease-out" : undefined,
                     ["--flash-color" as any]: "#4969FF",
