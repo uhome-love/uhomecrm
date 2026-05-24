@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,12 +12,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Plus, Pin, PinOff, Send, StickyNote, ArrowRight, CheckCircle2,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Plus, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
   Building2, Share2, Search as SearchIcon, Trash2, Megaphone
 } from "lucide-react";
-import { formatDateSafe, parseDateTimeSafe } from "@/lib/utils";
-import { ptBR } from "date-fns/locale";
+import { parseDateTimeSafe } from "@/lib/utils";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -221,13 +225,17 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   const [descricao, setDescricao] = useState("");
   const [followUp, setFollowUp] = useState<"none" | "amanha" | "custom">("none");
   const [followUpDate, setFollowUpDate] = useState("");
-  const [newNota, setNewNota] = useState("");
+  const [novoHistoricoOpen, setNovoHistoricoOpen] = useState(false);
+  const [novaNota, setNovaNota] = useState("");
+  const [savingNota, setSavingNota] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TimelineItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const { data: imovelEvents } = useLeadImoveisEvents(leadId);
 
   const timeline = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes);
+  const totalEventos = timeline.length;
+  const totalNotas = anotacoes?.length ?? 0;
 
   const handleSave = async () => {
     const titulo = descricao.trim() || (ATIVIDADE_TIPOS[tipo]?.label || tipo);
@@ -273,10 +281,21 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
     }
   };
 
-  const handleAddNota = async () => {
-    if (!newNota.trim()) return;
-    await onAddAnotacao(newNota.trim());
-    setNewNota("");
+  const handleSaveNota = async () => {
+    const conteudo = novaNota.trim();
+    if (!conteudo) return;
+    setSavingNota(true);
+    try {
+      await onAddAnotacao(conteudo);
+      setNovaNota("");
+      setNovoHistoricoOpen(false);
+      toast.success("Histórico adicionado");
+    } catch (err) {
+      console.error("Erro ao adicionar histórico:", err);
+      toast.error("Erro ao adicionar histórico");
+    } finally {
+      setSavingNota(false);
+    }
   };
 
   const handleDeleteItem = async () => {
@@ -307,81 +326,110 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   };
 
   return (
-    <div className="px-6 pb-8 space-y-5 mt-0">
-      {/* Header (botão "Registrar Atividade" removido em Drawer Wide v3 — anotação livre vai pelo botão "Anotar" do grid 2x2) */}
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-bold text-foreground">📝 Histórico</h4>
+    <div className="pb-8">
+      {/* Header padronizado (igual Tarefas/Visitas) */}
+      <div className="px-7 pt-6 pb-4 flex justify-between items-end border-b border-zinc-100">
+        <div>
+          <div className="text-lg font-bold text-zinc-900 tracking-tight">Histórico</div>
+          <div className="text-xs text-zinc-500 mt-0.5">
+            {totalEventos} evento{totalEventos !== 1 ? "s" : ""}
+            {totalNotas > 0 && <> · {totalNotas} nota{totalNotas !== 1 ? "s" : ""}</>}
+          </div>
+        </div>
+        <button
+          onClick={() => setNovoHistoricoOpen(true)}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
+        >
+          <Plus className="h-3.5 w-3.5" /> Novo histórico
+        </button>
       </div>
-
 
       {/* Timeline agrupada por dia (Drawer Wide v4) */}
-      <DrawerTimelineGroup
-        items={timeline.slice(0, 30).map((item, i) => {
-          // mapeia o "color" antigo → tipo canônico do novo grupo
-          const tipoGuess = (() => {
-            const t = item.title.toLowerCase();
-            if (item.sourceType === "anotacao") return "anotacao";
-            if (item.sourceType === "historico") return "historico";
-            if (item.sourceType === "tarefa") return "tarefa";
-            if (item.sourceType === "imovel_event") return "imovel_event";
-            if (/ligaç|liga[rç]|telefon/.test(t)) return "ligacao";
-            if (/whats|mensagem/.test(t)) return "whatsapp";
-            if (/email|e-mail/.test(t)) return "email";
-            if (/visita|tour/.test(t)) return "visita";
-            if (/reuni/.test(t)) return "reuniao";
-            if (/follow/.test(t)) return "followup";
-            if (/nota|anotaç/.test(t)) return "nota";
-            if (/aceito|entrou|distribu/.test(t)) return "aceito";
-            return undefined;
-          })();
-          return {
-            id: `${item.sourceType ?? "x"}-${item.sourceId ?? i}-${item.date}`,
-            title: item.title,
-            description: item.description,
-            date: item.date,
-            tipo: tipoGuess,
-            kind: item.sourceType as any,
-            trailing: item.sourceId && item.sourceType !== "system" ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                onClick={() => setDeleteTarget(item)}
-                title="Remover registro"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            ) : null,
-          };
-        })}
-      />
-
-      {/* Notas */}
-      <div className="border-t border-border/50 pt-4 space-y-3">
-        <h5 className="text-sm font-bold text-muted-foreground flex items-center gap-1.5">
-          <StickyNote className="h-4 w-4" /> Notas
-        </h5>
-        <div className="flex gap-2">
-          <Input className="h-9 text-sm flex-1" placeholder="Adicionar nota..." value={newNota} onChange={e => setNewNota(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAddNota()} />
-          <Button size="sm" className="h-9 w-9 p-0" onClick={handleAddNota} disabled={!newNota.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-        {anotacoes.map(nota => (
-          <div key={nota.id} className={`p-3 rounded-xl border ${nota.fixada ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20" : "border-border/50 bg-card"}`}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-semibold">{nota.autor_nome || "Usuário"}</span>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">{formatDateSafe(nota.created_at, "dd/MM HH:mm", { locale: ptBR, fallback: "Data inválida" })}</span>
-                <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => onToggleFixar(nota.id, nota.fixada)}>
-                  {nota.fixada ? <PinOff className="h-3 w-3 text-amber-500" /> : <Pin className="h-3 w-3 text-muted-foreground" />}
+      <div className="px-7 pt-4">
+        <DrawerTimelineGroup
+          items={timeline.slice(0, 30).map((item, i) => {
+            const tipoGuess = (() => {
+              const t = item.title.toLowerCase();
+              if (item.sourceType === "anotacao") return "anotacao";
+              if (item.sourceType === "historico") return "historico";
+              if (item.sourceType === "tarefa") return "tarefa";
+              if (item.sourceType === "imovel_event") return "imovel_event";
+              if (/ligaç|liga[rç]|telefon/.test(t)) return "ligacao";
+              if (/whats|mensagem/.test(t)) return "whatsapp";
+              if (/email|e-mail/.test(t)) return "email";
+              if (/visita|tour/.test(t)) return "visita";
+              if (/reuni/.test(t)) return "reuniao";
+              if (/follow/.test(t)) return "followup";
+              if (/nota|anotaç/.test(t)) return "nota";
+              if (/aceito|entrou|distribu/.test(t)) return "aceito";
+              return undefined;
+            })();
+            return {
+              id: `${item.sourceType ?? "x"}-${item.sourceId ?? i}-${item.date}`,
+              title: item.title,
+              description: item.description,
+              date: item.date,
+              tipo: tipoGuess,
+              kind: item.sourceType as any,
+              trailing: item.sourceId && item.sourceType !== "system" ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  onClick={() => setDeleteTarget(item)}
+                  title="Remover registro"
+                >
+                  <Trash2 className="h-3 w-3" />
                 </Button>
-              </div>
-            </div>
-            <p className="text-sm whitespace-pre-wrap">{nota.conteudo}</p>
-          </div>
-        ))}
+              ) : null,
+            };
+          })}
+        />
       </div>
+
+      {/* Modal Novo Histórico */}
+      <Dialog
+        open={novoHistoricoOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setNovoHistoricoOpen(false);
+            setNovaNota("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <StickyNote className="h-4 w-4" /> Novo histórico
+            </DialogTitle>
+          </DialogHeader>
+          <Textarea
+            autoFocus
+            rows={5}
+            placeholder="Descreva o que aconteceu..."
+            value={novaNota}
+            onChange={(e) => setNovaNota(e.target.value)}
+            className="text-sm"
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setNovoHistoricoOpen(false);
+                setNovaNota("");
+              }}
+              disabled={savingNota}
+            >
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={handleSaveNota} disabled={savingNota || !novaNota.trim()}>
+              {savingNota ? "Adicionando..." : "Adicionar ao histórico"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Confirmação de exclusão */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
