@@ -71,10 +71,22 @@ export interface PipelineSegmento {
   ordem: number;
 }
 
-export function usePipeline(pipelineTipo: string = "leads") {
+export function usePipeline(
+  pipelineTipo: string = "leads",
+  options?: { scopeCorretorIds?: string[] | null }
+) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const { isGestor, isAdmin } = useUserRole();
+  // Escopo opcional vindo do consumidor (ex.: CEO filtrando por gestor).
+  // Quando array (mesmo vazio), aplica .in("corretor_id", ...) na query
+  // do server, evitando trazer 10k+ leads pra filtrar no cliente.
+  // Stable key pra não invalidar loadLeads a cada render.
+  const scopeCorretorIds = options?.scopeCorretorIds ?? null;
+  const scopeKey = useMemo(
+    () => (scopeCorretorIds ? scopeCorretorIds.slice().sort().join(",") : "__none__"),
+    [scopeCorretorIds]
+  );
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [leads, setLeads] = useState<PipelineLead[]>([]);
   const [segmentos, setSegmentos] = useState<PipelineSegmento[]>([]);
