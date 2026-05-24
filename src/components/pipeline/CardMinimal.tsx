@@ -20,7 +20,8 @@ import { memo, useMemo } from "react";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT } from "@/lib/brtTime";
-import { MoreVertical, Handshake } from "lucide-react";
+import { Handshake } from "lucide-react";
+import CardOverflowMenu from "./CardOverflowMenu";
 
 export interface CardMinimalProximaTarefa {
   tipo: string | null;
