@@ -193,6 +193,11 @@ const CardMinimal = memo(function CardMinimal({
   const isAtrasada = status === "atrasada";
   const showActionLine = stage?.tipo !== "convertido" && stage?.tipo !== "descarte";
 
+  const substatus = useMemo(
+    () => getLeadSubstatusBadge(lead.flag_status, stage?.tipo),
+    [lead.flag_status, stage?.tipo]
+  );
+
   return (
     <div
       draggable
@@ -218,11 +223,18 @@ const CardMinimal = memo(function CardMinimal({
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >
-      {/* Header: nome + 3-dot */}
-      <div className="flex items-start gap-2 min-w-0">
+      {/* Header: nome + substatus + 3-dot */}
+      <div className="flex items-start gap-1.5 min-w-0">
         <div className="flex-1 min-w-0">
-          <div className="text-[13.5px] font-semibold text-foreground tracking-tight leading-tight truncate">
-            {lead.nome || "Sem nome"}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex-1 min-w-0 text-[13.5px] font-semibold text-foreground tracking-tight leading-tight truncate">
+              {lead.nome || "Sem nome"}
+            </div>
+            {substatus && (
+              <span className={`shrink-0 ${substatus.className}`}>
+                {substatus.label}
+              </span>
+            )}
           </div>
           {empreendimento && (
             <div className="text-[11px] text-muted-foreground truncate mt-0.5">
@@ -240,6 +252,7 @@ const CardMinimal = memo(function CardMinimal({
           />
         )}
       </div>
+
 
       {/* Telefone com ícone discreto */}
       {telefoneFmt && (
