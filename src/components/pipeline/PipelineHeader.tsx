@@ -296,24 +296,16 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
 
           {(isAdmin || isGestor) && (
-            <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-              <SelectTrigger
-                className={`h-7 text-[10px] w-[110px] shrink-0 rounded-[7px] font-semibold ${
-                  corretorFilter !== "all"
-                    ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
-                    : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
-                }`}
-              >
-                <SelectValue placeholder="Corretores" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
-                {corretorOptions.map(([id, nome]) => (
-                  <SelectItem key={id} value={id}>{nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <PipelineCorretorSelect
+              value={corretorFilter}
+              onChange={setCorretorFilter}
+              options={corretorOptions}
+              isAdmin={isAdmin}
+              variant="tablet"
+            />
+          )}
+          {isAdmin && setGestorFilter && (
+            <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="compact" />
           )}
 
           <PipelineAdvancedFilters
