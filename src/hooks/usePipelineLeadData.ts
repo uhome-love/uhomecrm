@@ -186,10 +186,17 @@ export function usePipelineLeadData(leadId: string | null) {
 
   const toggleTarefa = useCallback(async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "concluida" ? "pendente" : "concluida";
-    await supabase.from("pipeline_tarefas").update({
+    const { error } = await supabase.from("pipeline_tarefas").update({
       status: newStatus,
       concluida_em: newStatus === "concluida" ? new Date().toISOString() : null,
     } as any).eq("id", id);
+    if (error) {
+      toast.error("Erro ao atualizar tarefa");
+      return;
+    }
+    if (newStatus === "concluida") {
+      toast.success("Tarefa concluída");
+    }
     loadAll();
   }, [loadAll]);
 

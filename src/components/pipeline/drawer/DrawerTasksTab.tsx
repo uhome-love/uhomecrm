@@ -167,7 +167,7 @@ export default function DrawerTasksTab({
                     key={t.id}
                     tarefa={t}
                     bucket={g.key}
-                    onToggle={() => onToggleTarefa(t.id, "concluida")}
+                    onToggle={() => onToggleTarefa(t.id, t.status)}
                     onDelete={() => onDeleteTarefa(t.id)}
                     onAdiar={() => setAdiarTarefa(t)}
                     onEdit={() => setEditTarefa(t)}
