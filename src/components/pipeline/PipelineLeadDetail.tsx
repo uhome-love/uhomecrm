@@ -463,32 +463,38 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             onAnotar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
           />
 
-          {/* Botão "Mais ações" full-width */}
-          <DropdownMenu onOpenChange={(open) => { if (open) trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "more_menu" }); }}>
-            <DropdownMenuTrigger asChild>
+          {/* Botão "Mais ações" full-width — reusa CardOverflowMenu (mesmas 7 ações do menu ··· do card) */}
+          <CardOverflowMenu
+            lead={lead}
+            stages={stages}
+            onMoveLead={(leadId, newStageId, observacao) => { onMove(leadId, newStageId, observacao); }}
+            onOpenDetail={() => { /* já está aberto */ }}
+            onCreateTask={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}
+            trigger={
               <button className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg border border-border bg-card hover:bg-muted/40 text-[11px] text-muted-foreground transition-colors">
                 <MoreHorizontal className="h-3.5 w-3.5" />
                 Mais ações
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => navigate(`/imoveis?lead_id=${lead.id}&lead_nome=${encodeURIComponent(lead.nome)}`)}>
-                <Search className="h-3.5 w-3.5 mr-2" /> Buscar imóveis
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPartnerOpen(true)}>
-                <Handshake className="h-3.5 w-3.5 mr-2" /> Parceria
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive" onClick={() => { setInativarMotivo(""); setInativarObs(""); setTipoDescarte("reengajavel"); setInativarOpen(true); }}>
-                <Ban className="h-3.5 w-3.5 mr-2" /> Inativar Lead
-              </DropdownMenuItem>
-              {isAdmin && onDelete && (
+            }
+          />
+
+          {/* Apagar (CEO) — admin only, isolado fora do menu padrão */}
+          {isAdmin && onDelete && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-full flex items-center justify-center gap-1.5 h-7 rounded-md text-[10px] text-destructive/70 hover:text-destructive hover:bg-destructive/5 transition-colors">
+                  <Trash2 className="h-3 w-3" />
+                  Ações admin
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
-                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar (CEO)
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar lead (CEO)
                 </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
         </div>
 
         {/* Caixa Empreendimento polida (header + 3 métricas) */}
