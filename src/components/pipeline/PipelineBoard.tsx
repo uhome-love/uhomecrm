@@ -12,6 +12,7 @@ import { formatBRLCompact } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import PipelineStageTransitionPopup, { needsTransitionPopup, type TransitionResult } from "./PipelineStageTransitionPopup";
+import { sortLeadsByActivity } from "@/lib/pipelineSortOrder";
 
 interface PipelineBoardProps {
   stages: PipelineStage[];
@@ -345,11 +346,14 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       const arr = map.get(lead.stage_id);
       if (arr) arr.push(lead);
     }
-    for (const [, arr] of map) {
-      arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    // Activity-Based sort: tarefa atrasada → hoje → futura → sem tarefa.
+    // Fallback gracioso: se tarefasMap ainda não carregou, todos caem no bucket "sem
+    // tarefa" e a ordem fica created_at DESC — mesma UX do legado.
+    for (const [stageId, arr] of map) {
+      map.set(stageId, sortLeadsByActivity(arr, tarefasMap));
     }
     return map;
-  }, [visibleStages, leads]);
+  }, [visibleStages, leads, tarefasMap]);
 
   const stageIndexMap = useMemo(() => {
     const m = new Map<string, number>();
