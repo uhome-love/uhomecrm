@@ -474,6 +474,7 @@ export default function PipelineKanban() {
       <PipelineHeader
         filteredLeadsCount={filteredLeads.length}
         displayedClientStatusCounts={displayedClientStatusCounts}
+        pillCounts={pillCounts}
         campaignTagCounts={campaignTagCounts}
         campaignTags={CAMPAIGN_TAGS}
         pipelineStages={pipeline.stages}
