@@ -28,6 +28,7 @@ import {
   Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil
 } from "lucide-react";
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
+import DrawerLeadHeader from "./drawer/DrawerLeadHeader";
 import DrawerTimeline from "./drawer/DrawerTimeline";
 import DrawerActionGrid from "./drawer/DrawerActionGrid";
 import DrawerEmpreendimento from "./drawer/DrawerEmpreendimento";
