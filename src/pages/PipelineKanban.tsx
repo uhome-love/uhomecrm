@@ -543,26 +543,10 @@ export default function PipelineKanban() {
         </div>
       )}
 
-      {/* Manager actions */}
-      {activeTab === "kanban" && isGestor && !isAdmin && (
-        <div style={{ padding: "0 28px" }}>
-          <PipelineManagerActions
-            leads={pipeline.leads}
-            corretorNomes={pipeline.corretorNomes}
-            tarefasMap={kanbanTarefasMap}
-            stageTypeById={stageTypeById}
-          />
-        </div>
-      )}
+      {/* PipelineManagerActions e PipelineTeamVisitas movidos para Modo Time (Fase 2).
+          Imports lazy preservados para reuso. */}
 
-      {/* Team visits for managers */}
-      {activeTab === "kanban" && (isGestor || isAdmin) && (
-        <div style={{ padding: "4px 28px 0" }}>
-          <Suspense fallback={null}>
-            <PipelineTeamVisitas />
-          </Suspense>
-        </div>
-      )}
+
 
 
       {/* Content area */}
