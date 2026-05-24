@@ -33,6 +33,7 @@ import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
 import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
 import DiscardLeadDialog from "./DiscardLeadDialog";
+import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 interface CardOverflowMenuProps {
   lead: PipelineLead;
@@ -42,10 +43,13 @@ interface CardOverflowMenuProps {
   onTransferred?: (leadId: string, corretorId: string, nome: string) => void;
 }
 
-function trackMenuAction(leadId: string, action: string) {
-  // TODO P3: substituir por trackPipelineEvent quando disponível
-  // eslint-disable-next-line no-console
-  console.debug("[pipeline_card_menu_action]", { lead_id: leadId, action });
+function trackMenuAction(lead: PipelineLead, action: string) {
+  trackPipelineEvent("pipeline_card_menu_action", {
+    lead_id: lead.id,
+    stage_id: lead.stage_id,
+    corretor_id: lead.corretor_id,
+    action,
+  });
 }
 
 export default function CardOverflowMenu({
@@ -67,7 +71,17 @@ export default function CardOverflowMenu({
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu
+        onOpenChange={(open) => {
+          if (open) {
+            trackPipelineEvent("pipeline_card_menu_opened", {
+              lead_id: lead.id,
+              stage_id: lead.stage_id,
+              corretor_id: lead.corretor_id,
+            });
+          }
+        }}
+      >
         <DropdownMenuTrigger asChild>
           <button
             type="button"
