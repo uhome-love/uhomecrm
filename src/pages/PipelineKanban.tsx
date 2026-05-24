@@ -42,6 +42,7 @@ import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type 
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
 import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
+import PipelineHeader from "@/components/pipeline/PipelineHeader";
 
 // Campaign tag definitions
 const CAMPAIGN_TAGS = [
@@ -380,560 +381,56 @@ export default function PipelineKanban() {
         staleSince={pipeline.staleSince}
         onRetry={() => pipeline.reload()}
       />
-      {/* ═══ HEADER ═══ */}
-      <div
-        className="shrink-0 bg-[#f7f7fb] dark:bg-[#141e30] border-b border-[#e8e8f0] dark:border-white/[0.07] sticky top-0 z-40"
-      >
-        {/* ── MOBILE HEADER (< md) ── */}
-        <div className="md:hidden">
-          {/* Line 1: Title + filters + novo */}
-          <div className="flex items-center gap-2 h-[46px] px-3">
-            <div className="h-6 w-6 rounded-md bg-[#4969FF] flex items-center justify-center shrink-0">
-              <LayoutGrid className="h-3 w-3 text-white" />
-            </div>
-            <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeads.length}</span>
-            <div className="flex-1" />
+      {/* ═══ HEADER (Fase 6: extraído para PipelineHeader.tsx) ═══ */}
+      <PipelineHeader
+        filteredLeadsCount={filteredLeads.length}
+        displayedClientStatusCounts={displayedClientStatusCounts}
+        campaignTagCounts={campaignTagCounts}
+        campaignTags={CAMPAIGN_TAGS}
+        pipelineStages={pipeline.stages}
+        pipelineSegmentos={pipeline.segmentos}
+        pipelineLeads={pipeline.leads}
+        corretorNomes={pipeline.corretorNomes}
+        corretorOptions={corretorOptions}
+        visitaLeadIds={visitaLeadIds}
+        focusLeadsCount={focusLeads.length}
+        filaCeoCount={filaCeoCount}
+        filaCeoNovosCount={filaCeoNovosCount}
+        filaCeoRedistCount={filaCeoRedistCount}
+        isAdmin={isAdmin}
+        isGestor={isGestor}
+        canAdd={canAdd}
+        filters={filters}
+        setFilters={setFilters}
+        corretorFilter={corretorFilter}
+        setCorretorFilter={setCorretorFilter}
+        campaignTagFilter={campaignTagFilter}
+        setCampaignTagFilter={setCampaignTagFilter}
+        clientStatusFilter={clientStatusFilter}
+        setClientStatusFilter={setClientStatusFilter}
+        negociosFilter={negociosFilter}
+        setNegociosFilter={setNegociosFilter}
+        hasAnyFilter={hasAnyFilter}
+        clearAllFilters={clearAllFilters}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        intelView={intelView}
+        setIntelView={setIntelView}
+        refreshing={refreshing}
+        handleRefresh={handleRefresh}
+        setAddOpen={setAddOpen}
+        setFocusModeOpen={setFocusModeOpen}
+        filaCeoFilter={filaCeoFilter}
+        setFilaCeoFilter={setFilaCeoFilter}
+        openDispatch={openDispatch}
+        selectionMode={selectionMode}
+        setSelectionMode={setSelectionMode}
+        clearSelection={clearSelection}
+        mobileSearchOpen={mobileSearchOpen}
+        setMobileSearchOpen={setMobileSearchOpen}
+        mobileSearchRef={mobileSearchRef}
+      />
 
-            {(isAdmin || isGestor) && (
-              <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-                <SelectTrigger
-                  className={`h-7 text-[10px] w-[100px] shrink-0 rounded-[7px] text-[10px] font-semibold ${
-                    corretorFilter !== "all"
-                      ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
-                      : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
-                  }`}
-                >
-                  <SelectValue placeholder="Corretor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
-                  {corretorOptions.map(([id, nome]) => (
-                    <SelectItem key={id} value={id}>{nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            <PipelineAdvancedFilters
-              filters={filters}
-              onChange={setFilters}
-              stages={pipeline.stages}
-              segmentos={pipeline.segmentos}
-              leads={pipeline.leads}
-              corretorNomes={pipeline.corretorNomes}
-              isManager={isGestor || isAdmin}
-              visitaLeadIds={visitaLeadIds}
-            />
-
-            {/* Mobile search toggle */}
-            <button
-              onClick={() => {
-                setMobileSearchOpen(v => !v);
-                setTimeout(() => mobileSearchRef.current?.focus(), 100);
-              }}
-              className="relative w-6 h-6 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
-            >
-              <Search className="h-3 w-3 text-slate-500 dark:text-slate-400" />
-              {filters.search && (
-                <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
-              )}
-            </button>
-
-            {canAdd && activeTab === "kanban" && (
-              <button
-                onClick={() => setAddOpen(true)}
-                className="bg-[#4969FF] hover:bg-[#3350E6] text-white rounded-[7px] px-2.5 py-[5px] font-bold text-xs border-none cursor-pointer whitespace-nowrap"
-              >
-                + Novo
-              </button>
-            )}
-          </div>
-
-          {/* Mobile search bar (expandable) */}
-          {(mobileSearchOpen || filters.search) && (
-            <div className="flex items-center gap-2 px-3 py-1.5 animate-fade-in border-b border-slate-200 dark:border-gray-700">
-              <Search className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
-              <input
-                ref={mobileSearchRef}
-                type="text"
-                placeholder="Buscar lead por nome, telefone..."
-                value={filters.search}
-                onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="flex-1 bg-transparent text-xs text-slate-800 dark:text-slate-100 outline-none h-7"
-              />
-              <button
-                onClick={() => {
-                  setFilters(f => ({ ...f, search: "" }));
-                  setMobileSearchOpen(false);
-                }}
-                className="bg-transparent border-none cursor-pointer p-0.5"
-              >
-                <X className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-              </button>
-            </div>
-          )}
-
-          {/* Line 2 mobile: Status chips compact */}
-          <div className="flex items-center gap-3 px-3 pb-2 border-b border-slate-200 dark:border-gray-700">
-            <button
-              onClick={() => setClientStatusFilter(f => f === "em_dia" ? "todos" : "em_dia")}
-              className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-transparent border-none cursor-pointer"
-            >
-              <div className="w-[5px] h-[5px] rounded-full bg-emerald-600" />
-              {displayedClientStatusCounts.em_dia}
-            </button>
-            <button
-              onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
-              className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-transparent border-none cursor-pointer"
-            >
-              <div className="w-[5px] h-[5px] rounded-full bg-amber-600" />
-              {displayedClientStatusCounts.desatualizado}
-            </button>
-            <button
-              onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
-              className="flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-transparent border-none cursor-pointer"
-            >
-              <div className="w-[5px] h-[5px] rounded-full bg-red-600" />
-              {displayedClientStatusCounts.tarefa_atrasada}
-            </button>
-            <div className="flex-1" />
-            {hasAnyFilter && (
-              <button onClick={clearAllFilters} className="text-[10px] font-semibold text-red-600 bg-transparent border-none cursor-pointer">
-                <X className="h-[10px] w-[10px] inline" /> Limpar
-              </button>
-            )}
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="w-6 h-6 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
-            >
-              <RefreshCw className={`h-3 w-3 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
-            </button>
-          </div>
-        </div>
-
-        {/* ── TABLET HEADER (md to lg) ── */}
-        <div className="hidden md:block lg:hidden">
-          <div className="flex items-center gap-2 h-12 px-4 border-b border-slate-200 dark:border-gray-700">
-            <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeads.length}</span>
-
-            <div className="flex-1" />
-
-            {/* Tab switcher - icons only */}
-            <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-[7px] p-0.5">
-              {[
-                { key: "kanban", icon: <LayoutGrid className="h-3 w-3" />, label: "Kanban" },
-                { key: "inteligencia", icon: <Brain className="h-3 w-3" />, label: "Intel" },
-              ].map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  title={tab.label}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold border-none cursor-pointer ${
-                    activeTab === tab.key
-                      ? "bg-white dark:bg-gray-700 shadow-sm text-slate-800 dark:text-slate-100"
-                      : "bg-transparent text-slate-500 dark:text-slate-400"
-                  }`}
-                >
-                  {tab.icon}
-                  <span className="hidden xl:inline">{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {(isAdmin || isGestor) && (
-              <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-                <SelectTrigger
-                  className={`h-7 text-[10px] w-[110px] shrink-0 rounded-[7px] font-semibold ${
-                    corretorFilter !== "all"
-                      ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
-                      : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
-                  }`}
-                >
-                  <SelectValue placeholder="Corretores" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
-                  {corretorOptions.map(([id, nome]) => (
-                    <SelectItem key={id} value={id}>{nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            <PipelineAdvancedFilters
-              filters={filters}
-              onChange={setFilters}
-              stages={pipeline.stages}
-              segmentos={pipeline.segmentos}
-              leads={pipeline.leads}
-              corretorNomes={pipeline.corretorNomes}
-              isManager={isGestor || isAdmin}
-              visitaLeadIds={visitaLeadIds}
-            />
-
-            <div className="relative w-[120px]">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 dark:text-slate-500" />
-              <input
-                placeholder="Buscar..."
-                value={filters.search}
-                onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="w-full outline-none h-[30px] rounded-[7px] bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 pl-[26px] pr-2 text-[11px] font-medium text-slate-800 dark:text-slate-100"
-              />
-            </div>
-
-            <button onClick={handleRefresh} disabled={refreshing} className="w-7 h-7 rounded-[7px] border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer">
-              <RefreshCw className={`h-3 w-3 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
-            </button>
-
-            {canAdd && activeTab === "kanban" && (
-              <button
-                onClick={() => setAddOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-1.5 font-bold text-[11px] border-none cursor-pointer whitespace-nowrap"
-              >
-                + Novo Lead
-              </button>
-            )}
-          </div>
-
-          {/* Tablet line 2: status chips + fila ceo */}
-          <div className="flex items-center gap-2 overflow-x-auto h-8 px-4">
-            {/* Status chips */}
-            {[
-              { key: "em_dia" as const, label: "Em dia", color: "#059669", bg: "bg-emerald-50 dark:bg-emerald-950", border: "border-emerald-300 dark:border-emerald-800", count: displayedClientStatusCounts.em_dia },
-              { key: "desatualizado" as const, label: "Desatual.", color: "#D97706", bg: "bg-amber-50 dark:bg-amber-950", border: "border-amber-300 dark:border-amber-800", count: displayedClientStatusCounts.desatualizado },
-              { key: "tarefa_atrasada" as const, label: "Atrasado", color: "#DC2626", bg: "bg-red-50 dark:bg-red-950", border: "border-red-300 dark:border-red-800", count: displayedClientStatusCounts.tarefa_atrasada },
-            ].map(chip => (
-              <button
-                key={chip.key}
-                onClick={() => setClientStatusFilter(f => f === chip.key ? "todos" : chip.key)}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer whitespace-nowrap border ${
-                  clientStatusFilter === chip.key ? `${chip.bg} ${chip.border}` : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700"
-                }`}
-                style={{ color: chip.color }}
-              >
-                <div className="w-[5px] h-[5px] rounded-full" style={{ background: chip.color }} />
-                {chip.label} {chip.count > 0 && chip.count}
-              </button>
-            ))}
-
-            {isAdmin && filaCeoCount > 0 && (
-              <>
-                <button
-                  onClick={() => setFilaCeoFilter(f => !f)}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer whitespace-nowrap border ${
-                    filaCeoFilter
-                      ? "bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-800"
-                      : "bg-white dark:bg-gray-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-gray-700"
-                  }`}
-                >
-                  📥 CEO {filaCeoCount}
-                </button>
-                {filaCeoNovosCount > 0 && (
-                  <button
-                    onClick={() => openDispatch("novos")}
-                    className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-emerald-600 text-white border-none cursor-pointer"
-                    title="Leads novos aguardando distribuição"
-                  >
-                    🆕 Novos {filaCeoNovosCount}
-                  </button>
-                )}
-                {filaCeoRedistCount > 0 && (
-                  <button
-                    onClick={() => openDispatch("redistribuicao")}
-                    className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-amber-600 text-white border-none cursor-pointer"
-                    title="Leads aguardando confirmação de redistribuição"
-                  >
-                    🔄 Redistrib. {filaCeoRedistCount}
-                  </button>
-                )}
-              </>
-            )}
-
-            {isAdmin && activeTab === "kanban" && (
-              <button
-                onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
-                className={`h-[22px] rounded-md px-2 text-[10px] font-semibold cursor-pointer flex items-center gap-1 border ${
-                  selectionMode
-                    ? "border-blue-600 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400"
-                    : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
-                }`}
-              >
-                {selectionMode ? <CheckSquare className="h-[10px] w-[10px]" /> : <Square className="h-[10px] w-[10px]" />}
-                {selectionMode ? "Selec..." : "Selec."}
-              </button>
-            )}
-
-            {hasAnyFilter && (
-              <button onClick={clearAllFilters} className="text-[9px] font-semibold text-red-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5">
-                <X className="h-[9px] w-[9px]" /> Limpar
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* ── DESKTOP HEADER (lg+) ── */}
-        <div className="hidden lg:block">
-          {/* Line 1 — Title + Filters + Search + Novo Lead */}
-          <div className="flex items-center h-12 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
-            {/* LEFT: Title */}
-            <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center shrink-0">
-                <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
-              </div>
-              <span className="text-[15px] font-bold text-[#0a0a0a] dark:text-white tracking-tight whitespace-nowrap">
-                Pipeline
-              </span>
-              <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeads.length} leads</span>
-            </div>
-
-            <div className="flex-1" />
-
-            {/* CENTER-RIGHT: Filters inline */}
-            <div className="flex items-center gap-1.5 min-w-0">
-              {(isAdmin || isGestor) && (
-                <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-                  <SelectTrigger
-                    className={`h-[32px] text-[12px] max-w-[170px] min-w-[120px] shrink rounded-lg font-medium truncate ${
-                      corretorFilter !== "all"
-                        ? "border-[#4969FF] bg-[#4969FF]/5 dark:bg-[#4969FF]/10 text-[#4969FF]"
-                        : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
-                    }`}
-                  >
-                    <SelectValue placeholder="Todos os corretores" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os corretores</SelectItem>
-                    {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
-                    {corretorOptions.map(([id, nome]) => (
-                      <SelectItem key={id} value={id}>{nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-
-              {Object.keys(campaignTagCounts).length > 0 && (
-                <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
-                  <SelectTrigger
-                    className={`h-[32px] text-[12px] max-w-[190px] min-w-[130px] shrink rounded-lg font-medium truncate ${
-                      campaignTagFilter !== "all"
-                        ? "border-[#4969FF] bg-[#4969FF]/5 dark:bg-[#4969FF]/10 text-[#4969FF]"
-                        : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
-                    }`}
-                  >
-                    <SelectValue placeholder="Todas as origens" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as campanhas</SelectItem>
-                    {CAMPAIGN_TAGS.filter(ct => campaignTagCounts[ct.tag]).map(ct => (
-                      <SelectItem key={ct.tag} value={ct.tag}>
-                        {ct.label} ({campaignTagCounts[ct.tag]})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-
-              <PipelineAdvancedFilters
-                filters={filters}
-                onChange={setFilters}
-                stages={pipeline.stages}
-                segmentos={pipeline.segmentos}
-                leads={pipeline.leads}
-                corretorNomes={pipeline.corretorNomes}
-                isManager={isGestor || isAdmin}
-                visitaLeadIds={visitaLeadIds}
-              />
-
-              {/* Search */}
-              <div className="relative transition-all duration-200" style={{ width: filters.search ? 180 : 130 }}>
-                <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
-                <input
-                  placeholder="Buscar..."
-                  value={filters.search}
-                  onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                  className="w-full outline-none h-8 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-[#4969FF] dark:focus:border-[#4969FF]"
-                />
-                {filters.search && (
-                  <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <X className="h-3 w-3 text-[#a1a1aa] dark:text-[#52525b]" />
-                  </button>
-                )}
-              </div>
-
-              {/* Modo Foco */}
-              {activeTab === "kanban" && (
-                <button
-                  onClick={() => setFocusModeOpen(true)}
-                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3 rounded-lg font-semibold text-xs border-none cursor-pointer text-white"
-                  style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}
-                >
-                  <Zap size={13} strokeWidth={2} /> Modo Foco
-                  {focusLeads.length > 0 && (
-                    <span className="bg-white/20 rounded-md px-1.5 py-px text-[10px] font-bold">
-                      {focusLeads.length}
-                    </span>
-                  )}
-                </button>
-              )}
-
-              {/* Novo Lead */}
-              {canAdd && activeTab === "kanban" && (
-                <button
-                  onClick={() => setAddOpen(true)}
-                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3.5 bg-[#4969FF] hover:bg-[#3350E6] text-white rounded-lg font-semibold text-xs border-none cursor-pointer"
-                >
-                  <Plus size={13} strokeWidth={2} /> Novo Lead
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Line 2 — Views + actions + indicators — fixed 32px */}
-          <div className="flex items-center overflow-x-auto h-8 px-6 gap-1">
-            {/* View switcher */}
-            {[
-              { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
-              { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
-            ].map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs border-none cursor-pointer ${
-                  activeTab === tab.key
-                    ? "bg-[#4969FF] text-white font-semibold"
-                    : "bg-transparent text-[#71717a] dark:text-[#a1a1aa] font-medium"
-                }`}
-              >
-                {tab.icon} {tab.label}
-              </button>
-            ))}
-
-            {activeTab === "inteligencia" && (
-              <div className="flex items-center bg-[#f0f0f5] dark:bg-gray-800 rounded-[7px] p-0.5 ml-0.5">
-                {[
-                  { key: "funil", icon: <BarChart3 className="h-3 w-3 inline mr-1" />, label: "Funil" },
-                  { key: "radar", icon: <Radar className="h-3 w-3 inline mr-1" />, label: "Radar" },
-                ].map(v => (
-                  <button
-                    key={v.key}
-                    onClick={() => setIntelView(v.key as any)}
-                    className={`px-2 py-[3px] rounded-md text-[11px] font-semibold border-none cursor-pointer ${
-                      intelView === v.key
-                        ? "bg-white dark:bg-gray-700 text-[#0a0a0a] dark:text-white"
-                        : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
-                    }`}
-                  >
-                    {v.icon}{v.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Refresh */}
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="shrink-0 flex items-center justify-center transition-colors w-7 h-7 rounded-[7px] text-[#a1a1aa] dark:text-[#52525b] bg-transparent border-none cursor-pointer"
-            >
-              <RefreshCw size={12} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
-            </button>
-
-            {isAdmin && activeTab === "kanban" && (
-              <button
-                onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
-                className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs font-medium border-none cursor-pointer ${
-                  selectionMode
-                    ? "bg-[#4969FF] text-white"
-                    : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
-                }`}
-              >
-                {selectionMode ? <CheckSquare size={12} strokeWidth={1.5} /> : <Square size={12} strokeWidth={1.5} />}
-                {selectionMode ? "Selecionando..." : "Selecionar"}
-              </button>
-            )}
-
-            {/* Separator */}
-            {isAdmin && filaCeoCount > 0 && (
-              <>
-                <div className="w-px h-4 bg-[#e8e8f0] dark:bg-white/[0.07] mx-1 shrink-0" />
-                <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b]">Fila CEO</span>
-                <button
-                  onClick={() => setFilaCeoFilter(f => !f)}
-                  className={`shrink-0 flex items-center gap-1 transition-colors h-[22px] px-1.5 rounded-md text-[10px] font-bold cursor-pointer border ${
-                    filaCeoFilter
-                      ? "bg-[#4969FF]/10 text-[#4969FF] border-[#4969FF]"
-                      : "bg-transparent text-[#a1a1aa] dark:text-[#52525b] border-[#e8e8f0] dark:border-white/[0.07]"
-                  }`}
-                >
-                  {filaCeoFilter ? "Filtrando" : "Filtrar"}
-                </button>
-                {filaCeoNovosCount > 0 && (
-                  <button
-                    onClick={() => openDispatch("novos")}
-                    className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold border-none cursor-pointer"
-                    title="Distribuir leads novos (Meta, site, ImovelWeb...)"
-                  >
-                    🆕 Novos <span className="font-bold">{filaCeoNovosCount}</span>
-                  </button>
-                )}
-                {filaCeoRedistCount > 0 && (
-                  <button
-                    onClick={() => openDispatch("redistribuicao")}
-                    className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold border-none cursor-pointer"
-                    title="Confirmar redistribuição (leads reciclados após 72h)"
-                  >
-                    🔄 Redistrib. <span className="font-bold">{filaCeoRedistCount}</span>
-                  </button>
-                )}
-              </>
-            )}
-
-            <div className="flex-1" />
-
-            {/* Pílulas unificadas Dashboard↔Pipeline (Fase 2) */}
-            <div className="shrink-0">
-              <PipelineFiltroBadges
-                active={
-                  negociosFilter ? "negocios"
-                  : clientStatusFilter === "em_dia" ? "em_dia"
-                  : clientStatusFilter === "desatualizado" ? "sem_tarefa"
-                  : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
-                  : null
-                }
-                onChange={(key) => {
-                  if (key === "negocios") {
-                    setNegociosFilter(true);
-                    setClientStatusFilter("todos");
-                    return;
-                  }
-                  setNegociosFilter(false);
-                  const internalMap: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
-                    em_dia: "em_dia",
-                    sem_tarefa: "desatualizado",
-                    atrasado: "tarefa_atrasada",
-                  };
-                  setClientStatusFilter(key ? internalMap[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
-                }}
-              />
-            </div>
-
-
-            {hasAnyFilter && (
-              <button
-                onClick={clearAllFilters}
-                className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-[#ef4444] bg-transparent border-none cursor-pointer"
-              >
-                <X size={10} strokeWidth={1.5} /> Limpar
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* Active filter badges row — hidden on mobile kanban */}
       {hasAnyFilter && !(isMobile && activeTab === "kanban") && (
