@@ -746,8 +746,7 @@ export default function MinhasTarefas() {
     const { error } = await supabase.from("pipeline_tarefas").update({ vence_em: dateToBRT(novaData), hora_vencimento: format(novaData, "HH:mm") } as any).eq("id", id);
     if (error) { toast.error("Não foi possível adiar: " + error.message); return; }
     toast.success("Tarefa adiada ✅");
-    queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
+    invalidateTaskQueries(queryClient, null);
   };
 
   const handleAdiarCustom = async () => {
@@ -756,8 +755,7 @@ export default function MinhasTarefas() {
     if (error) { toast.error("Não foi possível reagendar: " + error.message); return; }
     toast.success("Tarefa reagendada ✅");
     setAdiarId(null);
-    queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
+    invalidateTaskQueries(queryClient, null);
   };
 
   const handleCriarTarefa = async () => {
@@ -838,8 +836,7 @@ export default function MinhasTarefas() {
     if (error) { toast.error("Não foi possível salvar: " + error.message); return; }
     toast.success("Tarefa atualizada ✅");
     setEditId(null);
-    queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
+    invalidateTaskQueries(queryClient, null);
   };
 
   const tabs: { key: TabFilter; label: string; count: number }[] = [

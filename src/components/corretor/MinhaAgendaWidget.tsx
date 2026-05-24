@@ -179,8 +179,7 @@ export default function MinhaAgendaWidget() {
       hora_vencimento: format(novaData, "HH:mm"),
     } as any).eq("id", id);
     toast.success("Tarefa adiada ✅");
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget-leads"] });
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget-negocios"] });
+    invalidateTaskQueries(queryClient, null);
   };
 
   const handleAdiarCustom = async () => {
@@ -192,8 +191,7 @@ export default function MinhaAgendaWidget() {
     } as any).eq("id", adiarId);
     toast.success("Tarefa reagendada ✅");
     setAdiarId(null);
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget-leads"] });
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget-negocios"] });
+    invalidateTaskQueries(queryClient, null);
   };
 
   const renderTarefa = (t: TarefaAgenda, variant: "atrasada" | "proxima" | "futura") => {
