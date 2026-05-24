@@ -500,14 +500,14 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
             <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
 
-            {(activeTab === "kanban" || activeTab === "time") && (
+            {activeTab === "kanban" && (
               <button
                 onClick={() => setFocusModeOpen(true)}
                 className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-9 px-3 rounded-lg font-semibold text-xs border-none cursor-pointer text-white"
                 style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}
               >
-                <Zap size={13} strokeWidth={2} /> {activeTab === "time" ? "Modo Foco do Time" : "Modo Foco"}
-                {activeTab === "kanban" && focusLeadsCount > 0 && (
+                <Zap size={13} strokeWidth={2} /> Modo Foco
+                {focusLeadsCount > 0 && (
                   <span className="bg-white/20 rounded-md px-1.5 py-px text-[10px] font-bold">
                     {focusLeadsCount}
                   </span>
