@@ -1,36 +1,55 @@
-## Drawer Wide v4 — Polimento Editorial
+# Drawer Wide v4 — Abas Tarefas e Visitas (editorial)
 
-Refinamento visual do drawer v3 atual. Mantém estrutura (2 col, 3 abas, largura 70%), só polir.
+Reformulação visual das abas Tarefas e Visitas do drawer, mantendo a linguagem editorial da aba Histórico (v4). Sem mexer em queries, hooks, telemetria, Sprint 1 ou Dashboard v3. Sequências sugeridas HOMI/Lia ficam para fase futura (removidas da aba por ora).
 
-### Arquivos novos
-- `src/lib/leadHelpers.ts` — `getInitials(nome)` + `formatDayHeader(date)` (HOJE / ONTEM / nome do dia / "22 DE MAIO")
-- `src/components/pipeline/drawer/DrawerLeadHeader.tsx` — avatar gradient 56px + iniciais + nome 20px/700 + pílulas (stage + status) + linhas de contato (📞 / ✉) com border-bottom sutil. Mantém edição inline de nome/telefone, popover de mover stage, tooltip do status.
-- `src/components/pipeline/drawer/DrawerTimelineGroup.tsx` — cabeçalho do dia ("HOJE") com linha divisória, e item de evento com ícone em círculo 36px com bg sutil por tipo, linha conectora vertical entre eventos do mesmo grupo, título / descrição / hora.
+## Arquivos novos
 
-### Arquivos editados
-- `PipelineLeadDetail.tsx` — substituir bloco "Row 1/2" do header pelo novo `DrawerLeadHeader`. Manter `DrawerProximaAcao` (já existe), `DrawerActionGrid` 2x2 (já existe), `DrawerEmpreendimento` (passar a renderizar empreendimento+meta no topo + grid de 3 métricas — pequena melhoria visual interna). Adicionar label "AÇÕES" cinza antes do grid. Adicionar botão "··· Mais ações" full-width sob o grid (atalho equivalente ao ⋯ atual, sem remover o atual). Remover "Row 2.5" duplicada (combobox empreendimento — mover edição para clique no card empreendimento).
-- `DrawerEmpreendimento.tsx` — refazer visual: header com ícone+nome+meta_ads no topo + divider + grid 3 métricas (tentativas/dias na etapa/últ. contato), aceitar `meta` prop.
-- `LeadHistoricoTab.tsx` — substituir loop atual da timeline por agrupamento por dia usando `DrawerTimelineGroup` + `DrawerTimelineEventItem`. Manter delete/notas/form de atividade ocultos como já estão.
+1. **`src/lib/taskGrouping.ts`** (~60 linhas)
+   - `groupTasksByDeadline(tarefas)` → buckets `atrasadas | hoje | amanha | semana | proximas`
+   - `formatTaskDeadline(vence_em)` → "Vencida há X dias" / "Hoje · HH:MM" / "Amanhã · HH:MM" / "Sexta · 27 Mai · HH:MM" / "27 Mai · HH:MM"
+   - Usa `parseDateBRT` / `formatBRT` existentes (regra global BRT)
 
-### Não tocar
-Layout 2 col, abas, largura, Sprint 1, Dashboard v3, queries, telemetria, lógica de filtros, `useCorretorKpisCarteira`.
+2. **`src/lib/visitGrouping.ts`** (~30 linhas)
+   - `groupVisitsByStatus(visitas)` → `{ agendadas, realizadas }` (futuro vs passado em BRT)
 
-### Cores por tipo (timeline circle bg)
-- ligacao/call/nao_atendeu → `bg-red-50 text-red-600`
-- whatsapp/mensagem → `bg-indigo-50 text-indigo-600`
-- tarefa concluída / entrada / aceito → `bg-emerald-50 text-emerald-600`
-- nota/anotacao → `bg-amber-50 text-amber-600`
-- visita → `bg-sky-50 text-sky-600`
-- historico/move → `bg-violet-50 text-violet-600`
-- fallback → `bg-zinc-100 text-zinc-600`
+3. **`src/components/pipeline/drawer/DrawerTasksTab.tsx`** (~260 linhas)
+   - Header "Tarefas" + subtítulo dinâmico (X atrasada · Y hoje · Z próximas) + botão indigo "+ Nova tarefa"
+   - 5 grupos com header uppercase colorido + count chip; grupos vazios omitidos
+   - Card por tarefa com:
+     - ícone 32px em círculo (cor por tipo: call=red, msg=indigo, followup=purple, visit=emerald, outro=zinc)
+     - bg + borda lateral 3px (vermelho/âmbar/branco neutro)
+     - prazo + badge tipo + título + descrição opcional
+     - ações inline: Feito (primário) / Adiar / Editar / 🗑
+   - Empty state com ícone, copy e CTA "+ Criar tarefa"
+   - Reusa props existentes (`onToggleTarefa`, `onDeleteTarefa`, `onAddTarefa`)
+   - Edit abre `EditTaskDialog` existente (se não existir, abre o NewTaskDialog em modo edição via state)
 
-### Critérios de aceite (alinhados ao prompt)
-- Avatar gradient indigo→roxo com iniciais
-- Nome 20px/700 tracking-tight
-- Pílulas stage + status em linha
-- Contato em rows separadas com ícone
-- Caixa PRÓXIMA AÇÃO gradient (já existe)
-- Grid 2x2 puro (já existe) + label "AÇÕES" + botão Mais ações
-- Empreendimento polido (header + 3 métricas)
-- Timeline agrupada por dia com ícones em círculo e linha conectora
-- Build limpo, Sprint 1 / Dashboard v3 intactos
+4. **`src/components/pipeline/drawer/DrawerVisitsTab.tsx`** (~250 linhas)
+   - Header "Visitas" + subtítulo dinâmico (X agendada · Y realizadas) + botão "+ Agendar visita"
+   - 2 grupos: Agendadas (futuras) / Realizadas (passadas)
+   - Card com caixa de data 56px (gradient verde futuro / cinza passado), hora, badge status (Confirmada/Pendente/Realizada/Cancelada), empreendimento, endereço com 📍
+   - Ações contextuais: futuras (Ver mapa / Confirmar / Reagendar / Editar) vs passadas (Ver observações / Status interesse)
+   - Empty state com ícone 📍, copy persuasivo e CTA "+ Agendar primeira visita"
+   - Reusa hook de visitas já consumido por `OpportunityVisitasTab`
+
+## Arquivos editados
+
+5. **`src/components/pipeline/PipelineLeadDetail.tsx`**
+   - Substituir `<TabsContent value="tarefas">` para usar `DrawerTasksTab` (remover bloco de Sequências sugeridas dessa aba — fica para fase futura)
+   - Substituir `<TabsContent value="visitas">` para usar `DrawerVisitsTab` (remover header inline e `OpportunityVisitasTab`)
+   - Conectar callbacks: `onNovaTarefa`, `onAgendarVisita` → handlers já existentes (`setNextActionOpen`, `setScheduleVisitOpen`)
+   - Sem mudanças em queries, hooks ou outras tabs
+
+## Não mexer
+
+- Aba Histórico (já v4 OK)
+- Coluna esquerda do drawer
+- `LeadTarefasTab.tsx` e `OpportunityVisitasTab.tsx` legados (ficam no projeto caso outras telas usem; só não são mais renderizados pelo drawer)
+- Hooks `useLeadData`, queries Supabase
+- Sprint 1, Dashboard v3, telemetria
+
+## Decisões (recomendações do brief, aplicadas)
+
+- Tarefas muito vencidas mantêm borda vermelha
+- Edit em **modal** (reusa `EditTaskDialog` se existir; senão usa NewTaskDialog hidratado)
+- Sequências HOMI/Lia removidas das abas no v4; voltam em fase futura
