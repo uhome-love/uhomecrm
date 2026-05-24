@@ -209,6 +209,8 @@ const PipelineMobileView = memo(function PipelineMobileView({
               <CardMinimal
                 lead={lead}
                 stage={activeStage}
+                stages={stages}
+                onMoveLead={onMoveLead}
                 corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
                 parceiroNome={parcerias[lead.id]}
                 proximaTarefa={tarefasMap[lead.id] || null}
