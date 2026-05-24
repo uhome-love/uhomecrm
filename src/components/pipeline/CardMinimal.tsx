@@ -37,6 +37,12 @@ interface CardMinimalProps {
   proximaTarefa?: CardMinimalProximaTarefa | null;
   onClick: () => void;
   onDragStart: () => void;
+  /** Stages do pipeline — necessário para o menu ··· (sub-menu "Mudar de etapa"). */
+  stages?: PipelineStage[];
+  /** Handler para mover lead via menu. Se omitido, sub-menu é desabilitado. */
+  onMoveLead?: (leadId: string, newStageId: string, observacao?: string) => void;
+  /** Callback após repasse de lead. */
+  onTransferred?: (leadId: string, corretorId: string, nome: string) => void;
 }
 
 type StatusKey = "atrasada" | "hoje" | "futura" | "sem" | "convertido" | "descarte";
