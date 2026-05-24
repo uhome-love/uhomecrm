@@ -275,7 +275,7 @@ export default function PipelineKanban() {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isAdmin, gestorFilter, gestorTeamUserIds]);
 
   const filteredLeads = useMemo(() => {
     const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
