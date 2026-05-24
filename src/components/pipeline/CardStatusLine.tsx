@@ -1,5 +1,23 @@
-import { useMemo } from "react";
-import { format, isToday as isTodayFn, isTomorrow as isTomorrowFn, isYesterday as isYesterdayFn, startOfDay } from "date-fns";
+// ─────────────────────────────────────────────────────────────────
+// CardStatusLine — Módulo de utilidades de status de lead/tarefa.
+//
+// Histórico: este arquivo originalmente exportava um componente JSX
+// (CardStatusLine) consumido pelo legacy PipelineCard.tsx. O componente
+// e a função getCardStatus foram removidos em Mai/2026 junto com o
+// PipelineCard. O arquivo permanece como utils puros porque os símbolos
+// abaixo ainda são consumidos por:
+//   - src/pages/MinhasTarefas.tsx
+//   - src/pages/PipelineKanban.tsx
+//   - src/components/pipeline/PipelineHeader.tsx
+//   - src/components/pipeline/PipelineAdvancedFilters.tsx
+//   - src/components/pipeline/PipelineManagerActions.tsx
+//   - src/components/pipeline/CardQuickTaskPopover.tsx (TIPO_LABELS)
+//
+// Ticket Quality Sprint pendente: renomear para src/lib/leadStatusUtils.ts
+// e atualizar os 6 imports acima.
+// ─────────────────────────────────────────────────────────────────
+
+import { isToday as isTodayFn, startOfDay } from "date-fns";
 import type { PipelineLead } from "@/hooks/usePipeline";
 
 const TIPO_LABELS: Record<string, string> = {
@@ -17,14 +35,6 @@ function toValidDateFromYMD(value: string | null | undefined): Date | null {
 
 export type LeadClientStatus = "em_dia" | "desatualizado" | "tarefa_atrasada";
 
-export interface CardStatusResult {
-  indicator: string | null;
-  indicatorCls: string;
-  text: string;
-  textCls: string;
-  borderCls: string;
-}
-
 export interface ProximaTarefa {
   tipo: string;
   vence_em: string | null;
@@ -41,15 +51,6 @@ function getTaskDate(task: ProximaTarefa | null | undefined, _lead: PipelineLead
     if (taskDate) return taskDate;
   }
   return null;
-}
-
-function getTaskLabel(task: ProximaTarefa | null | undefined, lead: PipelineLead) {
-  if (task?.tipo) return TIPO_LABELS[task.tipo] || task.tipo;
-  return lead.proxima_acao || "Follow-up";
-}
-
-function getTaskHour(task: ProximaTarefa | null | undefined) {
-  return task?.hora_vencimento?.slice(0, 5) || "";
 }
 
 export function getLeadStatusFilter(lead: PipelineLead, proximaTarefa: ProximaTarefa | null, stageTipo?: string): LeadClientStatus {
@@ -96,61 +97,6 @@ export function isTaskHigherPriority(candidate: ProximaTarefa, current: ProximaT
   }
 
   return false;
-}
-
-export function getCardStatus(lead: PipelineLead, proximaTarefa: ProximaTarefa | null, stageTipo?: string): CardStatusResult {
-  if (stageTipo === "descarte") {
-    return { indicator: "⚫", indicatorCls: "text-muted-foreground", text: "Descartado", textCls: "text-muted-foreground", borderCls: "border-l-muted" };
-  }
-  const status = getLeadStatusFilter(lead, proximaTarefa, stageTipo);
-  const taskDate = getTaskDate(proximaTarefa, lead);
-  const hora = getTaskHour(proximaTarefa);
-  const label = getTaskLabel(proximaTarefa, lead);
-
-  if (status === "tarefa_atrasada" && taskDate) {
-    const dateLabel = isYesterdayFn(taskDate) ? "ontem" : format(taskDate, "dd/MM");
-    return { indicator: "🔴", indicatorCls: "text-destructive", text: `🔴 Atrasado: ${label} ${dateLabel} ${hora}`.trim(), textCls: "text-destructive font-semibold", borderCls: "border-l-destructive" };
-  }
-
-  if (status === "em_dia") {
-    if (!taskDate) {
-      return { indicator: "✅", indicatorCls: "text-green-500", text: "✅ Em dia", textCls: "text-muted-foreground", borderCls: "border-l-green-400" };
-    }
-
-    if (isTodayFn(taskDate)) {
-      return { indicator: "✅", indicatorCls: "text-green-500", text: `✅ Hoje ${hora}: ${label}`.trim(), textCls: "text-muted-foreground", borderCls: "border-l-green-400" };
-    }
-
-    const dateLabel = isTomorrowFn(taskDate) ? "amanhã" : format(taskDate, "dd/MM");
-    return { indicator: "✅", indicatorCls: "text-green-500", text: `✅ Próximo: ${label} ${dateLabel} ${hora}`.trim(), textCls: "text-muted-foreground", borderCls: "border-l-green-400" };
-  }
-
-  return { indicator: "🟡", indicatorCls: "text-amber-500", text: "🟡 Desatualizado · sem tarefa futura", textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
-}
-
-interface CardStatusLineProps {
-  status: CardStatusResult;
-  stageChangedAt: string | null | undefined;
-}
-
-export default function CardStatusLine({ status }: CardStatusLineProps) {
-  const statusColor = useMemo(() => {
-    if (status.indicator === "🔴") return "hsl(var(--danger-500))";
-    if (status.indicator === "🟡" || status.indicator === "⚠️") return "hsl(var(--warning-600))";
-    return "hsl(var(--success-500))";
-  }, [status.indicator]);
-
-  return (
-    <div className="flex items-center justify-between gap-1" style={{ paddingTop: 2 }}>
-      <p style={{
-        fontSize: 11, fontWeight: 600, color: statusColor,
-        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-      }}>
-        {status.text || "✅ Em dia"}
-      </p>
-    </div>
-  );
 }
 
 export { TIPO_LABELS, toValidDateFromYMD };
