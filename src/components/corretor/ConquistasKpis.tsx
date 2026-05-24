@@ -13,8 +13,8 @@ export default function ConquistasKpis() {
   const visitas = data?.visitasRealizadas ?? 0;
   const vendas = data?.vendas ?? 0;
 
-  const go = (kpi: string, path: string) => {
-    logDashboard("dashboard_kpi_click", { kpi });
+  const go = (kpi: string, path: string, extra?: Record<string, unknown>) => {
+    logDashboard("dashboard_kpi_click", { kpi, ...extra });
     navigate(path);
   };
 
@@ -26,7 +26,7 @@ export default function ConquistasKpis() {
           value={visitas}
           label="Visitas realizadas"
           icon={<CalendarCheck className="h-4 w-4 text-emerald-600" />}
-          onClick={() => go("visitas", "/agenda-visitas")}
+          onClick={() => go("visitas", "/agenda-visitas?status=realizadas", { destination: "agenda", status: "realizadas" })}
           loading={isLoading}
         />
         <ConquistaBox

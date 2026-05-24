@@ -361,6 +361,12 @@ export default function AgendaVisitas() {
     setSearchParams(params, { replace: true });
   }, [period, searchTerm, kpiFilter, equipeFilter, setSearchParams]);
 
+  // Sync state from URL when navegação externa muda ?status= (TabProvider não remonta)
+  useEffect(() => {
+    const s = searchParams.get("status");
+    if ((s || null) !== kpiFilter) setKpiFilter(s || null);
+  }, [searchParams]);
+
   // Scroll to day
   useEffect(() => {
     if (scrollToDay) {
