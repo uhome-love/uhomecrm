@@ -482,8 +482,8 @@ export default function PipelineKanban() {
         setNegociosFilter={setNegociosFilter}
         hasAnyFilter={hasAnyFilter}
         clearAllFilters={clearAllFilters}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        activeTab={activeTab as string}
+        setActiveTab={setActiveTab as (v: string) => void}
         intelView={intelView}
         setIntelView={setIntelView}
         refreshing={refreshing}
