@@ -571,6 +571,11 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="shrink-0 px-5 pt-4 pb-1 flex items-center gap-2 border-b border-border/50">
             <TabsList className="bg-muted/50 h-8 flex-1">
+              {isMobile && (
+                <TabsTrigger value="info" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
+                  ℹ️ Info
+                </TabsTrigger>
+              )}
               <TabsTrigger value="historico" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
                 📝 Histórico
                 {leadData.atividades.length > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{leadData.atividades.length}</Badge>}
@@ -583,6 +588,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 📊 Visitas
               </TabsTrigger>
             </TabsList>
+
           </div>
 
           {/* Tabs Radar (Match) e WhatsApp removidas em Pipeline v2 — Fase 4:
