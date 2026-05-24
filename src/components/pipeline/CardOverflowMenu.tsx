@@ -86,7 +86,7 @@ export default function CardOverflowMenu({
           <button
             type="button"
             onClick={(e) => e.stopPropagation()}
-            className="shrink-0 -mr-1 -mt-0.5 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity"
+            className="shrink-0 -mr-1 -mt-0.5 p-1 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-muted/60 data-[state=open]:text-foreground data-[state=open]:bg-muted/60 transition-colors"
             aria-label="Ações do lead"
           >
             <MoreVertical className="h-3.5 w-3.5" />
