@@ -1,52 +1,45 @@
-## Substatus no Card — Achados + Plano
+## Alinhar "Mais ações" do drawer com menu ··· do card
 
-### Investigação no schema
+### Investigação
 
-**Não existem** colunas `tentativas`, `visita_status`, `pos_visita_status`, `negocio_status` em `pipeline_leads`. Tudo o que o drawer chama "Status da Etapa" vive em **um único campo JSONB**: `pipeline_leads.flag_status` (já presente em `PipelineLead.flag_status`, já trafegado em `usePipeline`).
+1. **Componente:** `CardOverflowMenu` (default export, `src/components/pipeline/CardOverflowMenu.tsx`). Já implementa as 7 ações + dialogs internos (`CardScheduleVisitDialog`, `PartnershipDialog`, `PipelineTransferDialog`, `DiscardLeadDialog`).
+2. **Localização do botão "Mais ações":** `src/components/pipeline/PipelineLeadDetail.tsx`, linhas 466-491 (não em `DrawerLeadInfo`). Hoje tem 4 itens próprios: Buscar imóveis, Parceria, Inativar, Apagar (CEO).
+3. **Tabs:** `activeTab`/`setActiveTab` já existe; aba "tarefas" + estado `showNovaTarefa` já controlam abertura do form de nova tarefa.
 
-A estrutura desse JSONB varia por `stage.tipo`. Já está toda mapeada em `src/components/pipeline/LeadFlagBadges.tsx` — vou **reusar a mesma fonte de verdade** para o card, em vez de inventar nomes novos.
+### Decisão "Criar tarefa" no drawer
 
-### Mapa real `flag_status` por stage
+Opção (a): foca aba "Tarefas" **e** dispara `setShowNovaTarefa(true)` para abrir direto o form de nova tarefa (mais útil que só focar a aba). Coerente com o atalho de teclado `t` que já faz isso (linha 293).
 
-| Stage.tipo | Chaves do JSON | Valores possíveis |
-|---|---|---|
-| `sem_contato` | `tentativas` (string "0".."7") | contador X/7 |
-| `contato_inicial` | `impressao`, `intencao` | `gostou` / `nao_gostou`; `morar` / `investir` |
-| `busca` | `status_busca` | `busca_pendente` / `imoveis_enviados` |
-| `aquecimento` | `prazo` (string dias) | "3", "7", … |
-| `visita` | `status_visita` | `marcada` / `realizada` / `no_show` / `reagendada` |
-| `pos_visita` | `feedback_coletado`/`simulacao_enviada`/`objecoes_mapeadas` ("sim"), `interesse` (`alto`/`medio`/`baixo`) | combinatório |
-| outros (`novo_lead`, `negociacao`, `proposta`, `assinatura`, `descarte`, `convertido`) | — | sem flag estruturada hoje |
+### Mudanças
 
-**Importante:** "Negócio Criado" não tem substatus em `pipeline_leads` — o status comercial fica em `negocios` (`vendido` / `perdido` etc.) e o card de negócio é o `NegocioCard` separado. Para os leads em estágios de fechamento dentro do pipeline, não há badge — comportamento atual preservado.
+**`CardOverflowMenu.tsx`**
+- Nova prop opcional `trigger?: React.ReactNode` — quando passada, substitui o botão `MoreVertical` default; envolvida em `<DropdownMenuTrigger asChild>` igual.
+- Nova prop opcional `onCreateTask?: () => void` — quando passada, é chamada no clique de "Criar tarefa" em vez de `onOpenDetail()`. Card continua sem passar (default = abre drawer).
+- Telemetria preservada (mesmo `pipeline_card_menu_action`).
 
-### Plano de implementação
+**`PipelineLeadDetail.tsx`**
+- Remove o bloco `<DropdownMenu>` (linhas 467-491) inteiro.
+- Substitui por `<CardOverflowMenu lead={lead} stages={stages} onMoveLead={…} onOpenDetail={() => {}} onTransferred={…} onCreateTask={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }} trigger={<button className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg border border-border bg-card hover:bg-muted/40 text-[11px] text-muted-foreground transition-colors"><MoreHorizontal className="h-3.5 w-3.5" /> Mais ações</button>} />`.
+- Remove imports não usados: `DropdownMenu`/`DropdownMenuTrigger`/`DropdownMenuContent`/`DropdownMenuItem`/`DropdownMenuSeparator`, `Search`, `Ban` (se nada mais usar), e o handler `Buscar imóveis` (navigate inline já some).
+- "Apagar (CEO)" estava só nesse menu — vou **preservar** como item extra no drawer (não está no spec mas é guard-rail admin). Solução: renderizar logo após o `CardOverflowMenu` como um `DropdownMenu` mínimo separado, OU adicionar inline depois. Para minimizar mudança e manter a regra "card === drawer", vou mover "Apagar (CEO)" para fora do menu, como botão pequeno destrutivo abaixo (visível só para admins). Reportar pra confirmação? Não — manter como ícone pequeno discreto ao lado de "Mais ações", já que é função admin rara.
 
-**Novo helper `getLeadSubstatusBadge(flagStatus, stageTipo)`** em `src/lib/leadHelpers.ts` retornando **um único** `{ label, className } | null` para caber compacto no header do card. Prioridade (quando há múltiplos sinais no mesmo stage, escolhe o mais "operacional"):
+  *Simplificação:* manter como `DropdownMenu` mínimo separado **só quando `isAdmin && onDelete`**, ao lado do "Mais ações". Não polui no caso comum.
 
-- `sem_contato` → "☎️ X/7" (vermelho se ≥5, âmbar se ≥3, cinza)
-- `contato_inicial` → `intencao` (Morar/Investir) > `impressao` (Gostou/Não gostou)
-- `busca` → `status_busca`
-- `aquecimento` → `⏰ Xd`
-- `visita` → `status_visita` (Marcada/Realizada/No-show/Reagendada)
-- `pos_visita` → `interesse` (🔥 Alto / 🟡 Médio / ❄️ Baixo); fallback para `feedback_coletado=sim` → "💬 Feedback"
-- demais → `null`
+**`CardMinimal.tsx`**
+- Sem mudança — continua passando só os props originais (sem `trigger`, sem `onCreateTask`).
 
-Cores via Tailwind tokens (`bg-red-100 text-red-700`, `bg-amber-100 text-amber-700`, `bg-emerald-100 text-emerald-700`, `bg-indigo-100 text-indigo-700`, `bg-purple-100 text-purple-700`, `bg-zinc-100 text-zinc-600`).
+### NÃO toca
 
-**`CardMinimal.tsx`:** inserir o badge no header entre o bloco do nome (flex-1) e o `CardOverflowMenu`. Estrutura: `flex items-start gap-1.5 min-w-0`, badge `shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-semibold leading-tight`. Nome continua truncando primeiro. Quando helper retorna `null`, nada renderiza (sem placeholder).
-
-### Não toca
-
-- `LeadFlagBadges` (continua sendo usado em outros lugares; novo helper é independente e compacto).
-- `LeadFlagControls`, drawer, `NegocioCard`, queries, types do banco.
-- DnD, menu, ordenação.
+- Dialogs (DiscardLeadDialog etc.), telemetria, queries, lógica de moveLead, Sprint 1, Dashboard v3.
+- `Buscar imóveis` página/rota — só remove o atalho do drawer.
 
 ### Aceite
 
-- Badge aparece à direita do nome, antes do `···`.
-- Stages sem flag preenchida não mostram nada.
-- Cores semânticas conforme spec.
+- "Mais ações" abre menu com 7 itens iguais ao card.
+- "Criar tarefa" foca aba Tarefas e abre form de nova tarefa.
+- "Buscar imóveis" sumiu do drawer.
+- Botão admin "Apagar (CEO)" preservado para isAdmin.
+- Card visual inalterado.
 - Build limpo.
 
 Aguardando GO.

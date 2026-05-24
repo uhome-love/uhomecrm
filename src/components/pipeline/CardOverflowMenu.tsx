@@ -41,6 +41,10 @@ interface CardOverflowMenuProps {
   onMoveLead: (leadId: string, newStageId: string, observacao?: string) => void;
   onOpenDetail: () => void;
   onTransferred?: (leadId: string, corretorId: string, nome: string) => void;
+  /** Override do clique em "Criar tarefa". Default: onOpenDetail(). */
+  onCreateTask?: () => void;
+  /** Trigger customizado. Default: botão ··· (MoreVertical). */
+  trigger?: React.ReactNode;
 }
 
 function trackMenuAction(lead: PipelineLead, action: string) {
@@ -58,6 +62,8 @@ export default function CardOverflowMenu({
   onMoveLead,
   onOpenDetail,
   onTransferred,
+  onCreateTask,
+  trigger,
 }: CardOverflowMenuProps) {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [partnerOpen, setPartnerOpen] = useState(false);
@@ -83,14 +89,16 @@ export default function CardOverflowMenu({
         }}
       >
         <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            onClick={(e) => e.stopPropagation()}
-            className="shrink-0 -mr-1 -mt-0.5 p-1 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-muted/60 data-[state=open]:text-foreground data-[state=open]:bg-muted/60 transition-colors"
-            aria-label="Ações do lead"
-          >
-            <MoreVertical className="h-3.5 w-3.5" />
-          </button>
+          {trigger ?? (
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className="shrink-0 -mr-1 -mt-0.5 p-1 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-muted/60 data-[state=open]:text-foreground data-[state=open]:bg-muted/60 transition-colors"
+              aria-label="Ações do lead"
+            >
+              <MoreVertical className="h-3.5 w-3.5" />
+            </button>
+          )}
         </DropdownMenuTrigger>
 
         <DropdownMenuContent
@@ -139,12 +147,14 @@ export default function CardOverflowMenu({
           <DropdownMenuItem
             onClick={() => {
               trackMenuAction(lead, "create_task");
-              onOpenDetail();
+              if (onCreateTask) onCreateTask();
+              else onOpenDetail();
             }}
             className="text-sm"
           >
             <span className="mr-2">✓</span>Criar tarefa
           </DropdownMenuItem>
+
 
           <DropdownMenuItem
             onClick={() => {
