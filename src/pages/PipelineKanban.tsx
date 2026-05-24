@@ -620,6 +620,10 @@ export default function PipelineKanban() {
                     onSelectLead={setSelectedLead}
                   />
                 )
+              ) : activeTab === "time" ? (
+                <ModoTimePlaceholder />
+              ) : activeTab === "equipes" ? (
+                <EquipesViewPlaceholder />
               ) : null}
             </Suspense>
             </ErrorBoundary>
