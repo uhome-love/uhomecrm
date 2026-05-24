@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import type { PipelineAtividade, PipelineAnotacao, PipelineTarefa, PipelineHistorico } from "@/hooks/usePipelineLeadData";
 import type { PipelineStage, PipelineLead } from "@/hooks/usePipeline";
 import { useLeadImoveisEvents, type LeadImovelEvent } from "@/hooks/useLeadImoveisEvents";
+import DrawerTimelineGroup from "./drawer/DrawerTimelineGroup";
 
 const ATIVIDADE_BUTTONS = [
   { value: "ligacao", label: "Ligou", emoji: "📞" },
