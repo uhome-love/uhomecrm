@@ -49,10 +49,13 @@ export default function PipelineFiltroBadges({ active, onChange }: PipelineFiltr
   const { data: negocios = 0 } = useNegociosCount();
 
   const counts: Record<PipelineFiltroKey, number> = {
-    em_dia: carteira?.em_dia ?? 0,
+  const counts: Record<PipelineFiltroKey, number> = {
+    // "Em dia" agrega em_dia + para_hoje — leads saudáveis (não atrasados, não sem tarefa).
+    em_dia: (carteira?.em_dia ?? 0) + (carteira?.para_hoje ?? 0),
     sem_tarefa: carteira?.sem_tarefa ?? 0,
     atrasado: carteira?.atrasado ?? 0,
     negocios,
+  };
   };
 
   const handleClick = (key: PipelineFiltroKey) => {
