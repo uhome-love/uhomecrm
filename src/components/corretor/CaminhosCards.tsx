@@ -62,7 +62,7 @@ export default function CaminhosCards() {
         <ActionCard
           icon={<Phone className="h-5 w-5 text-rose-600" />}
           title="Oferta Ativa"
-          subtitle={`${turnos} turno${turnos === 1 ? "" : "s"}`}
+          subtitle="Ligar agora"
           onClick={() => click("oferta_ativa", () => navigate("/corretor/call"))}
         />
         <ActionCard
