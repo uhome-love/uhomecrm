@@ -317,14 +317,32 @@ const CardMinimal = memo(function CardMinimal({
 
       {/* Rodapé: corretor / parceria — só aparece quando houver dado */}
       {(corretorNome || parceiroNome) && (
-        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-muted-foreground min-w-0">
+        <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
           {parceiroNome ? (
             <>
-              <Handshake className="h-3 w-3 shrink-0" />
-              <span className="truncate">{parceiroNome}</span>
+              <Handshake className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <span className="truncate text-[11px] font-medium text-foreground/70">
+                {parceiroNome}
+              </span>
             </>
           ) : (
-            <span className="truncate">{corretorNome}</span>
+            <>
+              {corretorAvatarUrl ? (
+                <img
+                  src={corretorAvatarUrl}
+                  alt={corretorNome || ""}
+                  className="w-[22px] h-[22px] rounded-full object-cover shrink-0"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-[22px] h-[22px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[9px] shrink-0">
+                  {getInitials(corretorNome || "")}
+                </div>
+              )}
+              <span className="truncate text-[11px] font-medium text-foreground/70">
+                {corretorNome}
+              </span>
+            </>
           )}
         </div>
       )}
