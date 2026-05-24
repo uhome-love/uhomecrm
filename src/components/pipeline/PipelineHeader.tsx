@@ -466,13 +466,13 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               visitaLeadIds={visitaLeadIds}
             />
 
-            <div className="relative transition-all duration-200" style={{ width: filters.search ? 180 : 130 }}>
+            <div className="relative w-[280px]">
               <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
               <input
-                placeholder="Buscar..."
+                placeholder="Buscar lead, telefone, empreendimento..."
                 value={filters.search}
                 onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="w-full outline-none h-8 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-[#4969FF] dark:focus:border-[#4969FF]"
+                className="w-full outline-none h-9 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-[#4969FF] dark:focus:border-[#4969FF]"
               />
               {filters.search && (
                 <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -486,7 +486,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             {activeTab === "kanban" && (
               <button
                 onClick={() => setFocusModeOpen(true)}
-                className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3 rounded-lg font-semibold text-xs border-none cursor-pointer text-white"
+                className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-9 px-3 rounded-lg font-semibold text-xs border-none cursor-pointer text-white"
                 style={{ background: "linear-gradient(135deg, #4969FF, #7C3AED)" }}
               >
                 <Zap size={13} strokeWidth={2} /> Modo Foco
@@ -501,7 +501,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             {canAdd && activeTab === "kanban" && (
               <button
                 onClick={() => setAddOpen(true)}
-                className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3.5 bg-[#4969FF] hover:bg-[#3350E6] text-white rounded-lg font-semibold text-xs border-none cursor-pointer"
+                className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-9 px-3.5 bg-[#4969FF] hover:bg-[#3350E6] text-white rounded-lg font-semibold text-xs border-none cursor-pointer"
               >
                 <Plus size={13} strokeWidth={2} /> Novo Lead
               </button>
