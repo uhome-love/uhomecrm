@@ -117,33 +117,23 @@ export default function PipelineKanban() {
     : ["kanban", "inteligencia"];
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
-  // Inicialização única após role resolver — com one-shot migration v2.
+  // Default determinístico por role — sem persistência.
+  // Persistir em localStorage gerava bug: um clique acidental em outra aba
+  // grudava aquela aba "para sempre", sobrescrevendo o default da role.
+  // Cleanup defensivo das chaves antigas no primeiro mount.
   useEffect(() => {
     if (!rolesReady) return;
     if (activeTab !== null) return;
     try {
-      const MIGRATION_KEY = "uhome:pipeline-mode:migrated-v2";
-      const alreadyMigrated = window.localStorage.getItem(MIGRATION_KEY);
-      if (!alreadyMigrated && (isAdmin || isGestor)) {
-        // Limpa valor poluído pelo bug pré-fix (provavelmente "kanban")
-        window.localStorage.removeItem(tabStorageKey);
-        window.localStorage.setItem(MIGRATION_KEY, "true");
-        setActiveTab(defaultTabForRole);
-        return;
-      }
-      const saved = window.localStorage.getItem(tabStorageKey);
-      if (saved && allowedTabsForRole.includes(saved)) setActiveTab(saved);
-      else setActiveTab(defaultTabForRole);
-    } catch {
-      setActiveTab(defaultTabForRole);
-    }
+      window.localStorage.removeItem("uhome:pipeline-mode:admin");
+      window.localStorage.removeItem("uhome:pipeline-mode:gestor");
+      window.localStorage.removeItem("uhome:pipeline-mode:corretor");
+      window.localStorage.removeItem("uhome:pipeline-mode:migrated-v2");
+    } catch { /* ignore */ }
+    setActiveTab(defaultTabForRole);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rolesReady, tabStorageKey, defaultTabForRole, isAdmin, isGestor]);
+  }, [rolesReady, defaultTabForRole]);
 
-  useEffect(() => {
-    if (!rolesReady || activeTab === null) return;
-    try { window.localStorage.setItem(tabStorageKey, activeTab); } catch { /* ignore */ }
-  }, [activeTab, tabStorageKey, rolesReady]);
 
   // Se a role mudou (login/logout) e o tab salvo não pertence ao role atual, força default.
   useEffect(() => {
