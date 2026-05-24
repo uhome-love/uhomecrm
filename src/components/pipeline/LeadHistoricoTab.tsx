@@ -281,10 +281,21 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
     }
   };
 
-  const handleAddNota = async () => {
-    if (!newNota.trim()) return;
-    await onAddAnotacao(newNota.trim());
-    setNewNota("");
+  const handleSaveNota = async () => {
+    const conteudo = novaNota.trim();
+    if (!conteudo) return;
+    setSavingNota(true);
+    try {
+      await onAddAnotacao(conteudo);
+      setNovaNota("");
+      setNovoHistoricoOpen(false);
+      toast.success("Histórico adicionado");
+    } catch (err) {
+      console.error("Erro ao adicionar histórico:", err);
+      toast.error("Erro ao adicionar histórico");
+    } finally {
+      setSavingNota(false);
+    }
   };
 
   const handleDeleteItem = async () => {
