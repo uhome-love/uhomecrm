@@ -806,11 +806,16 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     }}>
                       {emoji}
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--pipeline-text-primary))", flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: isDragOver ? "#16a34a" : "hsl(var(--pipeline-text-primary))", flex: 1, transition: "color 0.2s ease" }}>
                       {stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
                     </span>
                     <span style={{
-                      fontSize: 13, fontWeight: 700, color: "#4969FF",
+                      fontSize: 13, fontWeight: 700,
+                      color: isDragOver ? "#16a34a" : "#4969FF",
+                      background: isDragOver ? "rgba(34,197,94,0.12)" : undefined,
+                      borderRadius: isDragOver ? 6 : undefined,
+                      padding: isDragOver ? "0 6px" : undefined,
+                      transition: "all 0.2s ease",
                     }}>
                       {stageLeads.length}
                     </span>
