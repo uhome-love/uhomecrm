@@ -413,8 +413,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
       {/* ── DESKTOP HEADER (lg+) ── */}
       <div className="hidden lg:block">
-        {/* Line 1 — Title + Filters + Search + Novo Lead */}
-        <div className="flex items-center h-12 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
+        {/* Line 1 — Title + Pílulas + Actions (compacto) */}
+        <div className="flex items-center flex-wrap h-12 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
           <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
             <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center shrink-0">
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
@@ -423,6 +423,33 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               Pipeline
             </span>
             <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeadsCount} leads</span>
+          </div>
+
+          {/* Pílulas Em dia/Sem tarefa/Atrasado/Negócios — agora na linha 1 */}
+          <div className="shrink-0">
+            <PipelineFiltroBadges
+              active={
+                negociosFilter ? "negocios"
+                : clientStatusFilter === "em_dia" ? "em_dia"
+                : clientStatusFilter === "desatualizado" ? "sem_tarefa"
+                : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
+                : null
+              }
+              onChange={(key) => {
+                if (key === "negocios") {
+                  setNegociosFilter(true);
+                  setClientStatusFilter("todos");
+                  return;
+                }
+                setNegociosFilter(false);
+                const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
+                  em_dia: "em_dia",
+                  sem_tarefa: "desatualizado",
+                  atrasado: "tarefa_atrasada",
+                };
+                setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
+              }}
+            />
           </div>
 
           <div className="flex-1" />
@@ -497,6 +524,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               )}
             </div>
 
+            <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
+
             {activeTab === "kanban" && (
               <button
                 onClick={() => setFocusModeOpen(true)}
@@ -523,7 +552,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         </div>
 
-        {/* Line 2 — Views + actions + pílulas */}
+        {/* Line 2 — Tabs + Intel toggle + ações admin */}
         <div className="flex items-center overflow-x-auto h-9 px-6 gap-1">
           {[
             { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
@@ -621,44 +650,22 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           )}
 
           <div className="flex-1" />
+        </div>
 
-          <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
-
-          <div className="shrink-0">
-            <PipelineFiltroBadges
-              active={
-                negociosFilter ? "negocios"
-                : clientStatusFilter === "em_dia" ? "em_dia"
-                : clientStatusFilter === "desatualizado" ? "sem_tarefa"
-                : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
-                : null
-              }
-              onChange={(key) => {
-                if (key === "negocios") {
-                  setNegociosFilter(true);
-                  setClientStatusFilter("todos");
-                  return;
-                }
-                setNegociosFilter(false);
-                const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
-                  em_dia: "em_dia",
-                  sem_tarefa: "desatualizado",
-                  atrasado: "tarefa_atrasada",
-                };
-                setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
-              }}
-            />
-          </div>
-
-          {hasAnyFilter && (
+        {/* Line 3 — Filtros ativos (condicional) */}
+        {hasAnyFilter && (
+          <div className="flex items-center h-7 px-6 gap-2 border-t border-[#e8e8f0]/60 dark:border-white/[0.05]">
+            <span className="text-[10px] uppercase tracking-wide text-[#a1a1aa] dark:text-[#52525b] font-semibold">
+              Filtros ativos
+            </span>
             <button
               onClick={clearAllFilters}
-              className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-[#ef4444] bg-transparent border-none cursor-pointer ml-2"
+              className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-[#ef4444] bg-transparent border-none cursor-pointer"
             >
-              <X size={10} strokeWidth={1.5} /> Limpar
+              <X size={10} strokeWidth={1.5} /> Limpar todos
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Vestigial reference for compat — unused state surfaced to keep prop interface stable */}

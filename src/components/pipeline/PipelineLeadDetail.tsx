@@ -314,7 +314,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:w-[70vw] sm:max-w-[1100px] p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
+      <SheetContent className="w-full sm:w-[70vw] sm:max-w-[2000px] p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
         <ErrorBoundary fallback={
           <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
             <span className="text-destructive font-semibold">Erro ao carregar detalhes do lead</span>
