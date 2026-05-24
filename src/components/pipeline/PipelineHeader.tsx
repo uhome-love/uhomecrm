@@ -425,32 +425,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeadsCount} leads</span>
           </div>
 
-          {/* Pílulas Em dia/Sem tarefa/Atrasado/Negócios — agora na linha 1 */}
-          <div className="shrink-0">
-            <PipelineFiltroBadges
-              active={
-                negociosFilter ? "negocios"
-                : clientStatusFilter === "em_dia" ? "em_dia"
-                : clientStatusFilter === "desatualizado" ? "sem_tarefa"
-                : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
-                : null
-              }
-              onChange={(key) => {
-                if (key === "negocios") {
-                  setNegociosFilter(true);
-                  setClientStatusFilter("todos");
-                  return;
-                }
-                setNegociosFilter(false);
-                const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
-                  em_dia: "em_dia",
-                  sem_tarefa: "desatualizado",
-                  atrasado: "tarefa_atrasada",
-                };
-                setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
-              }}
-            />
-          </div>
+          {/* Pílulas movidas para linha 2 (ver abaixo) */}
+
 
           <div className="flex-1" />
 
@@ -476,27 +452,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               </Select>
             )}
 
-            {Object.keys(campaignTagCounts).length > 0 && (
-              <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
-                <SelectTrigger
-                  className={`h-[32px] text-[12px] max-w-[190px] min-w-[130px] shrink rounded-lg font-medium truncate ${
-                    campaignTagFilter !== "all"
-                      ? "border-[#4969FF] bg-[#4969FF]/5 dark:bg-[#4969FF]/10 text-[#4969FF]"
-                      : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
-                  }`}
-                >
-                  <SelectValue placeholder="Todas as origens" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as campanhas</SelectItem>
-                  {campaignTags.filter(ct => campaignTagCounts[ct.tag]).map(ct => (
-                    <SelectItem key={ct.tag} value={ct.tag}>
-                      {ct.label} ({campaignTagCounts[ct.tag]})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            {/* Dropdown "Todas as campanhas" removido — filtro disponível em Filtros Avançados */}
+
 
             <PipelineAdvancedFilters
               filters={filters}
@@ -650,7 +607,35 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           )}
 
           <div className="flex-1" />
+
+          {/* Pílulas Em dia/Sem tarefa/Atrasado/Negócios — alinhadas à direita da linha de tabs */}
+          <div className="shrink-0">
+            <PipelineFiltroBadges
+              active={
+                negociosFilter ? "negocios"
+                : clientStatusFilter === "em_dia" ? "em_dia"
+                : clientStatusFilter === "desatualizado" ? "sem_tarefa"
+                : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
+                : null
+              }
+              onChange={(key) => {
+                if (key === "negocios") {
+                  setNegociosFilter(true);
+                  setClientStatusFilter("todos");
+                  return;
+                }
+                setNegociosFilter(false);
+                const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
+                  em_dia: "em_dia",
+                  sem_tarefa: "desatualizado",
+                  atrasado: "tarefa_atrasada",
+                };
+                setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
+              }}
+            />
+          </div>
         </div>
+
 
         {/* Line 3 — Filtros ativos (condicional) */}
         {hasAnyFilter && (
