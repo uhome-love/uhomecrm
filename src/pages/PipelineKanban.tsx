@@ -79,6 +79,7 @@ export default function PipelineKanban() {
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
   const [clientStatusFilter, setClientStatusFilter] = useState<ClientStatusFilter>("todos");
+  const [negociosFilter, setNegociosFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
