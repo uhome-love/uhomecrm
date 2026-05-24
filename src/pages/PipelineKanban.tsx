@@ -368,7 +368,7 @@ export default function PipelineKanban() {
       </div>
     } onError={(err) => console.error("[PipelineKanban] Render crash:", err.message, err.stack)}>
     <div
-      className="flex flex-col w-full max-w-full min-w-0 overflow-hidden bg-[#f0f0f5] dark:bg-[#0e1525]"
+      className="flex flex-col w-full max-w-full min-w-0 overflow-hidden bg-[#f0f0f5] dark:bg-[#0e1525] px-2 pt-2"
       style={{ height: "calc(100vh - 56px)" }}
     >
       {/* Badge de cache antigo — só renderiza se staleSince !== null. ErrorBoundary interno. */}
