@@ -10764,6 +10764,25 @@ export type Database = {
           status: string
         }[]
       }
+      get_time_agregado: {
+        Args: { p_gestor_id: string }
+        Returns: {
+          alerta_principal: string
+          atrasados: number
+          avatar_url: string
+          conversao_pct: number
+          corretor_id: string
+          em_dia: number
+          negocios: number
+          nome: string
+          para_hoje: number
+          segmento_principal: string
+          sem_contato_5d: number
+          sem_tarefa: number
+          total_leads: number
+          vgv_pipeline: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
