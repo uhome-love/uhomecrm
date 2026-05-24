@@ -509,26 +509,26 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             )}
           </div>
 
-          {/* Row 3: Action grid 2x2 + overflow menu */}
+          {/* Row 3a: Caixa PRÓXIMA AÇÃO (gradient destacado) */}
+          <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} />
+
+          {/* Row 3b: Action grid 2x2 + overflow menu */}
           <div className="flex items-start gap-1.5">
             <div className="flex-1 min-w-0">
               <DrawerActionGrid
                 hasPhone={!!lead.telefone}
-                primary={nextTask ? undefined : (lead.telefone ? "ligar" : "anotar")}
+                primary={(() => {
+                  const tipo = parseNextActionType(nextTask, lead.proxima_acao);
+                  if (tipo === "ligar" || tipo === "whatsapp") return tipo;
+                  return undefined;
+                })()}
                 onLigar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
                 onWhatsapp={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
                 onScripts={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "scripts" }); setComunicacaoOpen(true); }}
-                onRegistrar={() => { /* wrapped abaixo via QuickActionMenu */ }}
                 onAnotar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
-                registrarWrapper={(node) => (
-                  <QuickActionMenu leadId={lead.id} leadNome={lead.nome} corretorId={lead.corretor_id} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
-                    <div onClick={() => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar" })}>
-                      {node}
-                    </div>
-                  </QuickActionMenu>
-                )}
               />
             </div>
+
 
             {/* More menu */}
             <DropdownMenu onOpenChange={(open) => { if (open) trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "more_menu" }); }}>
