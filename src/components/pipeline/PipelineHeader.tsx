@@ -275,10 +275,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <div className="flex-1" />
 
           <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-[7px] p-0.5">
-            {[
-              { key: "kanban", icon: <LayoutGrid className="h-3 w-3" />, label: "Kanban" },
-              { key: "inteligencia", icon: <Brain className="h-3 w-3" />, label: "Intel" },
-            ].map(tab => (
+            {roleTabs.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
