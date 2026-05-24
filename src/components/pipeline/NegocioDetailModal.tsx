@@ -110,6 +110,7 @@ const TAREFA_TIPOS: Record<string, string> = {
 
 export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpdate, onMoveFase }: Props) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fullNeg, setFullNeg] = useState<NegocioExtended>(negocio as NegocioExtended);
@@ -428,6 +429,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
       setTarefas(prev => prev.map(t => t.id === editingTaskId ? { ...t, titulo: editTitulo.trim(), tipo: editTipo, vence_em: editData || null, hora_vencimento: editHora || null } : t));
       setEditingTaskId(null);
       toast.success("Tarefa atualizada");
+      invalidateTaskQueries(queryClient, null);
     } else {
       toast.error("Erro ao atualizar tarefa");
     }
