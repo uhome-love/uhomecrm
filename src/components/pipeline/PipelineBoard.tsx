@@ -258,14 +258,15 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   // Stage transition popup state
   const [transitionPopup, setTransitionPopup] = useState<{ lead: PipelineLead; targetStage: PipelineStage } | null>(null);
 
-  // Fetch next pending task per lead for all visible leads
+  // Fetch next pending task per lead — só roda em fallback (sem prop).
+  // Em PipelineKanban, kanbanTarefasMap é passado como prop e evita query duplicada.
   const leadIds = useMemo(() => leads.map(l => l.id), [leads]);
   const leadIdsKey = useMemo(() => leadIds.slice().sort().join(","), [leadIds]);
-  const { data: tarefasMap = {}, refetch: refetchTarefas } = useQuery({
+  const shouldFetchLocalTarefas = providedTarefasMap === undefined;
+  const { data: localTarefasMap = {} } = useQuery({
     queryKey: ["pipeline-tarefas-map", leadIdsKey],
     queryFn: async () => {
       if (leadIds.length === 0) return {};
-      // Batch fetch in chunks of 200
       const map: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }> = {};
       for (let i = 0; i < leadIds.length; i += 200) {
         const chunk = leadIds.slice(i, i + 200);
@@ -278,7 +279,6 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           .order("hora_vencimento", { ascending: true });
         if (data) {
           for (const t of data) {
-            // Keep only the earliest task per lead
             if (!map[t.pipeline_lead_id]) {
               map[t.pipeline_lead_id] = { tipo: t.tipo || "follow_up", vence_em: t.vence_em, hora_vencimento: t.hora_vencimento };
             }
@@ -287,33 +287,37 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       }
       return map;
     },
-    enabled: leadIds.length > 0,
+    enabled: shouldFetchLocalTarefas && leadIds.length > 0,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
+  const tarefasMap = providedTarefasMap ?? localTarefasMap;
 
-  // Fetch leads with unread WhatsApp messages (last msg is direction='received')
-  // Returns an array (JSON-serializable for persistQueryClient/IndexedDB).
+  // Fetch leads with unread WhatsApp messages — chunks rodam em PARALELO (Fase B).
   const { data: whatsappUnreadIds = [] as string[] } = useQuery({
     queryKey: ["pipeline-whatsapp-unread", leadIdsKey],
     queryFn: async () => {
       if (leadIds.length === 0) return [] as string[];
-      const ids: string[] = [];
+      const chunks: string[][] = [];
       for (let i = 0; i < leadIds.length; i += 200) {
-        const chunk = leadIds.slice(i, i + 200);
+        chunks.push(leadIds.slice(i, i + 200));
+      }
+      const results = await Promise.all(chunks.map(async (chunk) => {
         const { data } = await supabase
           .from("whatsapp_mensagens")
           .select("lead_id, direction")
           .in("lead_id", chunk)
           .order("timestamp", { ascending: false })
           .limit(1000);
-        if (data) {
-          const seen = new Set<string>();
-          for (const m of data) {
-            if (!m.lead_id || seen.has(m.lead_id)) continue;
-            seen.add(m.lead_id);
-            if (m.direction === "received") ids.push(m.lead_id);
-          }
+        return data || [];
+      }));
+      const ids: string[] = [];
+      const seen = new Set<string>();
+      for (const data of results) {
+        for (const m of data) {
+          if (!m.lead_id || seen.has(m.lead_id)) continue;
+          seen.add(m.lead_id);
+          if (m.direction === "received") ids.push(m.lead_id);
         }
       }
       return ids;
