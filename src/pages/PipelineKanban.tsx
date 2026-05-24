@@ -319,10 +319,22 @@ export default function PipelineKanban() {
   }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages]);
 
 
+  // Bug-fix Bug 4: corretorNomes é "poliglota" (indexa cada pessoa sob user_id
+  // E profile.id) e inclui gerente_id dos leads — Object.entries() duplicaria
+  // cada nome e vazaria gerentes de outros times. Construímos a lista a partir
+  // dos corretor_id dos leads em escopo, deduplicando por nome.
   const corretorOptions = useMemo(() => {
-    const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
-    return entries;
-  }, [pipeline.corretorNomes]);
+    const ids = new Set<string>();
+    pipeline.leads.forEach(l => { if (l.corretor_id) ids.add(l.corretor_id); });
+    const byName = new Map<string, string>();
+    ids.forEach(id => {
+      const nome = pipeline.corretorNomes[id];
+      if (nome && !byName.has(nome)) byName.set(nome, id);
+    });
+    return [...byName.entries()]
+      .map(([nome, id]) => [id, nome] as [string, string])
+      .sort((a, b) => a[1].localeCompare(b[1]));
+  }, [pipeline.leads, pipeline.corretorNomes]);
 
   const filaCeoCount = useMemo(() =>
     pipeline.leads.filter(l => !l.corretor_id).length,
