@@ -333,264 +333,198 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         {/* ════════════ LAYOUT 2 COLUNAS (Drawer wide v3) ════════════ */}
         <div className="flex-1 flex min-h-0 overflow-hidden">
         <DrawerLeadInfo>
-        {/* ════════════ HEADER (col esquerda) ════════════ */}
-        <div className="space-y-2.5 pb-2 border-b border-border/50">
-
-          {/* Row 1: Name + Stage + Temp + Score + Days */}
-          <div className="flex items-center gap-2 min-w-0 pr-8">
-            {editingName ? (
-              <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                <Input value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") { setEditingName(false); setEditName(lead.nome); } }} className="h-8 text-lg font-bold flex-1" autoFocus disabled={saving} />
-                <Button size="sm" variant="ghost" onClick={handleSaveName} disabled={saving} className="h-7 px-2 text-xs">{saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "✓"}</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setEditingName(false); setEditName(lead.nome); }} className="h-7 px-2 text-xs">✕</Button>
-              </div>
-            ) : (
-              <h2 className="text-lg font-bold text-foreground truncate cursor-pointer hover:text-primary transition-colors flex-1 min-w-0" onClick={() => { setEditName(lead.nome); setEditingName(true); }} title="Clique para editar">
-                {lead.nome}
-              </h2>
-            )}
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
-                  <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
-                  {currentStage?.nome}
-                  <ChevronDown className="h-2.5 w-2.5" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2" align="end">
-                <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 px-1">Mover para:</p>
-                <div className="space-y-0.5">
-                  {stages.filter(s => s.id !== lead.stage_id).map(s => (
-                    <button key={s.id} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left" onClick={() => handleMoveStage(s.id)}>
-                      <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
-                      {s.nome}
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {(() => {
-              const diasSemContato = noContactAlert
-                ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
-                : 0;
-              const chipColor = nextTask
-                ? { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' }
-                : noContactAlert === 'critical'
-                  ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Desatualizado' }
-                  : { bg: '#FAEEDA', color: '#854F0B', dot: '#EF9F27', text: 'Atenção' };
-              const motivosDesat: string[] = [];
-              if (!nextTask) motivosDesat.push('sem tarefa futura');
-              if (noContactAlert) motivosDesat.push(`${diasSemContato}d sem contato`);
-              return (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0 cursor-default" style={{ background: chipColor.bg, color: chipColor.color }}>
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: chipColor.dot, flexShrink: 0 }} />
-                      {chipColor.text}
-                    </span>
-                  </TooltipTrigger>
-                  {!nextTask && motivosDesat.length > 0 && (
-                    <TooltipContent side="bottom" className="text-xs">
-                      {motivosDesat.join(' · ')}
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              );
-            })()}
-
-            <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{daysSinceCreation}d</span>
-          </div>
-
-          {/* Row 2: Contact + Corretor + Origin — single line */}
-          <div className="flex items-center gap-3 text-sm flex-wrap">
-            {editingPhone ? (
-              <div className="flex items-center gap-1">
-                <Input
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  className="h-7 w-40 text-sm"
-                  placeholder="(00) 00000-0000"
-                  autoFocus
-                  onKeyDown={(e) => { if (e.key === "Enter") handleSavePhone(); if (e.key === "Escape") { setEditingPhone(false); setEditPhone(lead.telefone || ""); } }}
-                />
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={handleSavePhone} disabled={saving}>
-                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
-                </Button>
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setEditingPhone(false); setEditPhone(lead.telefone || ""); }}>
-                  Cancelar
-                </Button>
-              </div>
-            ) : lead.telefone ? (
-              <span className="flex items-center gap-1">
-                <a href={`tel:${lead.telefone}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
-                  <Phone className="h-3.5 w-3.5" /> <span className="text-sm">{lead.telefone}</span>
-                </a>
-                {isAdmin && (
-                  <button onClick={() => { setEditPhone(lead.telefone || ""); setEditingPhone(true); }} className="text-muted-foreground hover:text-foreground ml-0.5">
-                    <Pencil className="h-3 w-3" strokeWidth={1.5} />
+        {/* ════════════ HEADER editorial (Drawer Wide v4) ════════════ */}
+        <DrawerLeadHeader
+          nome={lead.nome}
+          telefone={lead.telefone}
+          email={lead.email}
+          canEdit={isAdmin}
+          editingName={editingName}
+          editName={editName}
+          setEditName={setEditName}
+          startEditName={() => { setEditName(lead.nome); setEditingName(true); }}
+          cancelEditName={() => { setEditingName(false); setEditName(lead.nome); }}
+          saveName={handleSaveName}
+          editingPhone={editingPhone}
+          editPhone={editPhone}
+          setEditPhone={setEditPhone}
+          startEditPhone={() => { setEditPhone(lead.telefone || ""); setEditingPhone(true); }}
+          cancelEditPhone={() => { setEditingPhone(false); setEditPhone(lead.telefone || ""); }}
+          savePhone={handleSavePhone}
+          saving={saving}
+          pills={
+            <>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
+                    <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
+                    {currentStage?.nome}
+                    <ChevronDown className="h-2.5 w-2.5" />
                   </button>
-                )}
-              </span>
-            ) : isAdmin ? (
-              <button onClick={() => { setEditPhone(""); setEditingPhone(true); }} className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs">
-                <Phone className="h-3.5 w-3.5" /> <span>Adicionar telefone</span>
-              </button>
-            ) : null}
-            {lead.email && (
-              <a href={`mailto:${lead.email}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1 truncate max-w-[180px]">
-                <Mail className="h-3.5 w-3.5" /> <span className="text-sm truncate">{lead.email}</span>
-              </a>
-            )}
-            {lead.corretor_id && corretorNomes[lead.corretor_id] && (
-              <span className="flex items-center gap-1 text-xs text-primary font-medium">
-                👤 {corretorNomes[lead.corretor_id]}
-              </span>
-            )}
-          </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2" align="end">
+                  <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 px-1">Mover para:</p>
+                  <div className="space-y-0.5">
+                    {stages.filter(s => s.id !== lead.stage_id).map(s => (
+                      <button key={s.id} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left" onClick={() => handleMoveStage(s.id)}>
+                        <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
+                        {s.nome}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
 
-          {/* Row 2.5: Empreendimento edit */}
+              {(() => {
+                const diasSemContato = noContactAlert
+                  ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
+                  : 0;
+                const chipColor = nextTask
+                  ? { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' }
+                  : noContactAlert === 'critical'
+                    ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Desatualizado' }
+                    : { bg: '#FAEEDA', color: '#854F0B', dot: '#EF9F27', text: 'Atenção' };
+                const motivosDesat: string[] = [];
+                if (!nextTask) motivosDesat.push('sem tarefa futura');
+                if (noContactAlert) motivosDesat.push(`${diasSemContato}d sem contato`);
+                return (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 cursor-default" style={{ background: chipColor.bg, color: chipColor.color }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: chipColor.dot, flexShrink: 0 }} />
+                        {chipColor.text}
+                      </span>
+                    </TooltipTrigger>
+                    {!nextTask && motivosDesat.length > 0 && (
+                      <TooltipContent side="bottom" className="text-xs">
+                        {motivosDesat.join(' · ')}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                );
+              })()}
+
+              <span className="text-[10px] text-muted-foreground tabular-nums">{daysSinceCreation}d</span>
+            </>
+          }
+        />
+
+        {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
+        {empreendimentoOpen && (
           <div className="flex items-center gap-2">
-            {empreendimentoOpen ? (
-              <div className="flex items-center gap-2 flex-1">
-                <EmpreendimentoCombobox
-                  value={empreendimentoSearch || lead.empreendimento || ""}
-                  onChange={setEmpreendimentoSearch}
-                  className="h-8 text-xs flex-1"
-                />
-                <Button
-                  size="sm"
-                  className="h-8 text-xs px-3"
-                  disabled={savingEmpreendimento || !empreendimentoSearch.trim()}
-                  onClick={async () => {
-                    setSavingEmpreendimento(true);
-                    try {
-                      await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
-                      toast.success("Empreendimento atualizado");
-                      setEmpreendimentoOpen(false);
-                    } catch { toast.error("Erro ao salvar"); }
-                    finally { setSavingEmpreendimento(false); }
-                  }}
-                >
-                  {savingEmpreendimento ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
-                </Button>
-                <Button size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={() => { setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); }}>
-                  Cancelar
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs gap-1.5 rounded-lg"
-                  onClick={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
-                >
-                  <Building2 className="h-3 w-3" />
-                  {lead.empreendimento ? `📍 ${lead.empreendimento}` : "+ Empreendimento"}
-                </Button>
-                {(lead as any).imovel_codigo && (
-                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-blue-50 text-blue-700 border-blue-200">
-                    Cód: {(lead as any).imovel_codigo}
-                  </Badge>
-                )}
-                {(lead as any).imovel_url && (
-                  <a
-                    href={(lead as any).imovel_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-blue-600 hover:underline flex items-center gap-1"
-                  >
-                    <Search className="h-3 w-3" />
-                    Ver imóvel
-                  </a>
-                )}
-              </div>
-            )}
+            <EmpreendimentoCombobox
+              value={empreendimentoSearch || lead.empreendimento || ""}
+              onChange={setEmpreendimentoSearch}
+              className="h-8 text-xs flex-1"
+            />
+            <Button
+              size="sm"
+              className="h-8 text-xs px-3"
+              disabled={savingEmpreendimento || !empreendimentoSearch.trim()}
+              onClick={async () => {
+                setSavingEmpreendimento(true);
+                try {
+                  await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
+                  toast.success("Empreendimento atualizado");
+                  setEmpreendimentoOpen(false);
+                } catch { toast.error("Erro ao salvar"); }
+                finally { setSavingEmpreendimento(false); }
+              }}
+            >
+              {savingEmpreendimento ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={() => { setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); }}>
+              Cancelar
+            </Button>
           </div>
+        )}
 
-          {/* Row 3a: Caixa PRÓXIMA AÇÃO (gradient destacado) */}
-          <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} />
+        {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) */}
+        <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} />
 
-          {/* Row 3b: Action grid 2x2 + overflow menu */}
-          <div className="flex items-start gap-1.5">
-            <div className="flex-1 min-w-0">
-              <DrawerActionGrid
-                hasPhone={!!lead.telefone}
-                primary={(() => {
-                  const tipo = parseNextActionType(nextTask, lead.proxima_acao);
-                  if (tipo === "ligar" || tipo === "whatsapp") return tipo;
-                  return undefined;
-                })()}
-                onLigar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
-                onWhatsapp={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
-                onScripts={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "scripts" }); setComunicacaoOpen(true); }}
-                onAnotar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
-              />
-            </div>
-
-
-            {/* More menu */}
-            <DropdownMenu onOpenChange={(open) => { if (open) trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "more_menu" }); }}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-10 w-9 p-0 rounded-lg shrink-0">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => navigate(`/imoveis?lead_id=${lead.id}&lead_nome=${encodeURIComponent(lead.nome)}`)}>
-                  <Search className="h-3.5 w-3.5 mr-2" /> Buscar imóveis
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPartnerOpen(true)}>
-                  <Handshake className="h-3.5 w-3.5 mr-2" /> Parceria
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive" onClick={() => { setInativarMotivo(""); setInativarObs(""); setTipoDescarte("reengajavel"); setInativarOpen(true); }}>
-                  <Ban className="h-3.5 w-3.5 mr-2" /> Inativar Lead
-                </DropdownMenuItem>
-                {isAdmin && onDelete && (
-                  <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
-                    <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar (CEO)
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+        {/* Label + Grid 2x2 de ações */}
+        <div className="space-y-1.5">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
+            Ações
           </div>
-
-          {/* Row 3.5: Empreendimento metrics card */}
-          <DrawerEmpreendimento
-            empreendimento={null /* já renderizado em row 2.5 */}
-            tentativasContato={callAttempts}
-            diasNaEtapa={Math.floor(hoursInStage / 24)}
-            diasDesdeUltimoContato={daysSinceLastAction}
+          <DrawerActionGrid
+            hasPhone={!!lead.telefone}
+            primary={(() => {
+              const tipo = parseNextActionType(nextTask, lead.proxima_acao);
+              if (tipo === "ligar" || tipo === "whatsapp") return tipo;
+              return undefined;
+            })()}
+            onLigar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
+            onWhatsapp={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
+            onScripts={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "scripts" }); setComunicacaoOpen(true); }}
+            onAnotar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
           />
 
-
-
-          {/* Row 5: Observações / Dados do anúncio (ImovelWeb, etc.) */}
-          {lead.observacoes && (
-            <Collapsible>
-              <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors group">
-                <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
-                <FileText className="h-3 w-3" />
-                {lead.origem === "imovelweb" ? "Dados do anúncio ImovelWeb" : "Observações do lead"}
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-1.5">
-                <div className="text-[11px] text-muted-foreground bg-muted/50 rounded-md px-3 py-2 whitespace-pre-wrap leading-relaxed border border-border/50">
-                  {lead.observacoes}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-
-          {/* origem_detalhe inline */}
-          {lead.origem_detalhe && !lead.observacoes && (
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <FileText className="h-3 w-3" /> {lead.origem_detalhe}
-            </p>
-          )}
+          {/* Botão "Mais ações" full-width */}
+          <DropdownMenu onOpenChange={(open) => { if (open) trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "more_menu" }); }}>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg border border-border bg-card hover:bg-muted/40 text-[11px] text-muted-foreground transition-colors">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+                Mais ações
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate(`/imoveis?lead_id=${lead.id}&lead_nome=${encodeURIComponent(lead.nome)}`)}>
+                <Search className="h-3.5 w-3.5 mr-2" /> Buscar imóveis
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPartnerOpen(true)}>
+                <Handshake className="h-3.5 w-3.5 mr-2" /> Parceria
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onClick={() => { setInativarMotivo(""); setInativarObs(""); setTipoDescarte("reengajavel"); setInativarOpen(true); }}>
+                <Ban className="h-3.5 w-3.5 mr-2" /> Inativar Lead
+              </DropdownMenuItem>
+              {isAdmin && onDelete && (
+                <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar (CEO)
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
+        {/* Caixa Empreendimento polida (header + 3 métricas) */}
+        <DrawerEmpreendimento
+          empreendimento={lead.empreendimento}
+          meta={(() => {
+            const parts: string[] = [];
+            if (lead.origem) parts.push(lead.origem);
+            if (lead.campanha) parts.push(lead.campanha);
+            else if (lead.formulario) parts.push(lead.formulario);
+            return parts.join(" · ") || null;
+          })()}
+          tentativasContato={callAttempts}
+          diasNaEtapa={Math.floor(hoursInStage / 24)}
+          diasDesdeUltimoContato={daysSinceLastAction}
+          onEdit={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
+        />
+
+        {/* Observações / Dados do anúncio (ImovelWeb, etc.) */}
+        {lead.observacoes && (
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors group">
+              <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
+              <FileText className="h-3 w-3" />
+              {lead.origem === "imovelweb" ? "Dados do anúncio ImovelWeb" : "Observações do lead"}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-1.5">
+              <div className="text-[11px] text-muted-foreground bg-muted/50 rounded-md px-3 py-2 whitespace-pre-wrap leading-relaxed border border-border/50">
+                {lead.observacoes}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {lead.origem_detalhe && !lead.observacoes && (
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <FileText className="h-3 w-3" /> {lead.origem_detalhe}
+          </p>
+        )}
 
         {/* ════════════ STAGE COACH ════════════ */}
         <StageCoachBar
