@@ -28,6 +28,7 @@ import {
   ACTION_ICON,
   ACTION_LABEL,
   ACTION_PILL_CLASS,
+  getLeadSubstatusBadge,
 } from "@/lib/leadHelpers";
 
 export interface CardMinimalProximaTarefa {
