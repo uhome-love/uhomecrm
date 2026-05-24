@@ -147,12 +147,14 @@ export default function CardOverflowMenu({
           <DropdownMenuItem
             onClick={() => {
               trackMenuAction(lead, "create_task");
-              onOpenDetail();
+              if (onCreateTask) onCreateTask();
+              else onOpenDetail();
             }}
             className="text-sm"
           >
             <span className="mr-2">✓</span>Criar tarefa
           </DropdownMenuItem>
+
 
           <DropdownMenuItem
             onClick={() => {
