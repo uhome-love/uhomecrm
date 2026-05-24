@@ -52,6 +52,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { differenceInDaysSafe, differenceInHoursSafe, formatDateSafe, formatDistanceToNowSafe, parseDateBRTSafe } from "@/lib/utils";
 import { getScoreTemperature } from "@/lib/scoreTemperatureLabels";
+import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 interface Props {
   lead: PipelineLead;
@@ -501,28 +502,28 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           {/* Row 3: Actions bar — horizontal scroll on mobile */}
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
             {lead.telefone && (
-              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => setIsCallOpen(true)}>
+              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}>
                 <Phone className="h-3.5 w-3.5" /> Ligar
               </Button>
             )}
             {lead.telefone && (
-              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => setIsWhatsAppFlowOpen(true)}>
+              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}>
                 <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
               </Button>
             )}
-            <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => setComunicacaoOpen(true)}>
+            <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "scripts" }); setComunicacaoOpen(true); }}>
               <FileText className="h-3.5 w-3.5" /> Scripts
             </Button>
             
             
             <QuickActionMenu leadId={lead.id} leadNome={lead.nome} corretorId={lead.corretor_id} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
-              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap">
+              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar" })}>
                 <Zap className="h-3.5 w-3.5" /> Registrar
               </Button>
             </QuickActionMenu>
 
             {/* More menu */}
-            <DropdownMenu>
+            <DropdownMenu onOpenChange={(open) => { if (open) trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "more_menu" }); }}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg shrink-0">
                   <MoreHorizontal className="h-4 w-4" />
@@ -547,6 +548,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
 
           {/* Row 4: Context line — empreendimento + formulário + status + tags */}
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
@@ -718,7 +720,15 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 tarefas={leadData.tarefas}
                 historico={leadData.historico}
                 onAddAtividade={leadData.addAtividade}
-                onAddAnotacao={leadData.addAnotacao}
+                onAddAnotacao={async (conteudo: string) => {
+                  const result = await leadData.addAnotacao(conteudo);
+                  trackPipelineEvent("drawer_anotar_saved", {
+                    lead_id: lead.id,
+                    corretor_id: lead.corretor_id,
+                    char_count: (conteudo ?? "").length,
+                  });
+                  return result;
+                }}
                 onToggleFixar={leadData.toggleFixarAnotacao}
                 onAddTarefa={leadData.addTarefa}
                 onReload={leadData.reload}
