@@ -762,7 +762,7 @@ export default function MinhasTarefas() {
 
   const handleCriarTarefa = async () => {
     if (!user || !selectedLeadId || !novoData) return;
-    await supabase.from("pipeline_tarefas").insert({
+    const { error } = await supabase.from("pipeline_tarefas").insert({
       pipeline_lead_id: selectedLeadId,
       titulo: `${TIPO_LABELS[novoTipo] || novoTipo}: ${selectedLeadNome}`,
       descricao: novoObs || null,
@@ -774,6 +774,10 @@ export default function MinhasTarefas() {
       responsavel_id: user.id,
       created_by: user.id,
     } as any);
+    if (error) {
+      toast.error("Não foi possível criar a tarefa: " + error.message);
+      return;
+    }
     toast.success("Tarefa criada ✅");
     setShowNovaTarefa(false);
     setSelectedLeadId(null);
@@ -782,8 +786,7 @@ export default function MinhasTarefas() {
     setNovoObs("");
     setNovoData("");
     setNovoHora("");
-    queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
-    queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
+    invalidateTaskQueries(queryClient, selectedLeadId);
   };
 
   const handleCriarTarefaNegocio = async () => {
