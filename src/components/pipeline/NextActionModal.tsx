@@ -84,7 +84,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
     try {
       if (selected === "tarefa") {
         if (!tarefaData) { toast.error("Informe a data da tarefa"); setSaving(false); return; }
-        await supabase.from("pipeline_tarefas").insert({
+        const { error: insertErr } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: leadId,
           titulo: TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa,
           tipo: tipoTarefa,
@@ -95,6 +95,11 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
           hora_vencimento: tarefaHora || null,
           created_by: user.id,
         } as any);
+        if (insertErr) {
+          toast.error("Erro ao criar tarefa: " + insertErr.message);
+          setSaving(false);
+          return;
+        }
         await supabase.from("pipeline_leads").update({
           proxima_acao: TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa,
           data_proxima_acao: tarefaData,
