@@ -39,6 +39,7 @@ function getDayLabel(dateStr: string): string {
 
 export default function PipelineTeamVisitas() {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [expanded, setExpanded] = useState(false);
 
   const dateFrom = format(startOfDay(new Date()), "yyyy-MM-dd");
