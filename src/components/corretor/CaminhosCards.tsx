@@ -10,7 +10,6 @@ import { logDashboard } from "@/lib/dashboardTelemetry";
 import { useCorretorKpisCarteira } from "@/hooks/useCorretorKpisCarteira";
 import { useCorretorKpisConquistas } from "@/hooks/useCorretorKpisConquistas";
 import { useTarefasHoje } from "@/hooks/useTarefasHoje";
-import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 
 export default function CaminhosCards() {
@@ -19,14 +18,12 @@ export default function CaminhosCards() {
   const { data: carteira } = useCorretorKpisCarteira();
   const { data: conquistas } = useCorretorKpisConquistas();
   const { data: tarefas } = useTarefasHoje();
-  const roleta = useElegibilidadeRoleta();
 
   const priorit = (carteira?.atrasado ?? 0) + (carteira?.para_hoje ?? 0);
   const totalLeads = carteira?.total ?? 0;
   const visitas7d = conquistas?.visitasProximas7d ?? 0;
   const tarefasCount = tarefas?.length ?? 0;
   const vendasMes = conquistas?.vendas ?? 0;
-  const turnos = (roleta as any)?.shifts?.length ?? (roleta as any)?.turnosCredenciados?.length ?? 0;
 
   const click = (action: string, fn: () => void) => {
     logDashboard("dashboard_action_click", { action });
