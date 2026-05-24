@@ -69,6 +69,7 @@ export function calcGestorOwnRow(params: {
     avatar_url: gestorAvatarUrl,
     segmento_principal: null,
     total_leads: meus.length,
+    total_recebidos: meus.length,
     sem_tarefa: semTarefa,
     atrasados,
     em_dia: emDia,
