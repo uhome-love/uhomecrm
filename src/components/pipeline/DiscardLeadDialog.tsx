@@ -11,7 +11,7 @@
  *
  * Update é atômico: um único UPDATE seta motivo + (stage_id OU arquivado=true).
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
