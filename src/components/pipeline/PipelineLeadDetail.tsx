@@ -40,13 +40,12 @@ import QuickActionMenu from "./QuickActionMenu";
 import NextActionModal from "./NextActionModal";
 import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
-import RadarImoveisTab from "./RadarImoveisTab";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
 import StageCoachBar from "./StageCoachBar";
 import LeadFlagControls from "./LeadFlagControls";
 import { CallFocusOverlay } from "./CallFocusOverlay";
 import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
-import LeadWhatsAppTab from "./LeadWhatsAppTab";
+// RadarImoveisTab e LeadWhatsAppTab removidos (Pipeline v2 Fase 4)
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -282,7 +281,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         case "w": if (lead.telefone) setIsWhatsAppFlowOpen(true); break;
         case "t": setActiveTab("tarefas"); setShowNovaTarefa(true); break;
         case "s": setComunicacaoOpen(true); break;
-        case "i": setActiveTab("radar"); break;
+        case "i": setActiveTab("historico"); break;
         default: return;
       }
       e.preventDefault();
@@ -314,7 +313,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
+      <SheetContent className="w-full sm:w-[70vw] sm:max-w-[1100px] p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
         <ErrorBoundary fallback={
           <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
             <span className="text-destructive font-semibold">Erro ao carregar detalhes do lead</span>
@@ -673,14 +672,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <TabsTrigger value="visitas" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
                 📊 Visitas
               </TabsTrigger>
-              <TabsTrigger value="radar" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
-                🎯 Match
-              </TabsTrigger>
-              <TabsTrigger value="whatsapp" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
-                💬 WhatsApp
-              </TabsTrigger>
             </TabsList>
           </div>
+
+          {/* Tabs Radar (Match) e WhatsApp removidas em Pipeline v2 — Fase 4:
+              - "Match" não era usado pelos corretores (enquete 23/05/2026).
+              - WhatsApp passa a abrir SEMPRE em /whatsapp via WhatsAppFocusFlow, não como tab embarcada. */}
 
           <ScrollArea className="flex-1 min-h-0">
             {/* ===== TAB: TAREFAS ===== */}
@@ -742,37 +739,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <OpportunityVisitasTab pipelineLeadId={lead.id} />
             </TabsContent>
 
-
-            <TabsContent value="radar" className="mt-0">
-              <RadarImoveisTab
-                leadId={lead.id}
-                leadNome={lead.nome}
-                leadTelefone={lead.telefone}
-                leadData={{
-                  empreendimento: lead.empreendimento,
-                  campanha: lead.campanha,
-                  campanha_id: lead.campanha_id,
-                  valor_estimado: lead.valor_estimado,
-                  origem: lead.origem,
-                  observacoes: lead.observacoes,
-                  segmento_id: lead.segmento_id,
-                  temperatura: lead.temperatura,
-                }}
-                currentProfile={{
-                  radar_quartos: (lead as any).radar_quartos,
-                  radar_valor_max: (lead as any).radar_valor_max,
-                  radar_tipologia: (lead as any).radar_tipologia,
-                  radar_bairros: (lead as any).radar_bairros,
-                  radar_status_imovel: (lead as any).radar_status_imovel,
-                }}
-                onUpdate={onUpdate}
-              />
-            </TabsContent>
-
-
-            <TabsContent value="whatsapp" className="mt-0">
-              <LeadWhatsAppTab leadId={lead.id} telefone={lead.telefone} />
-            </TabsContent>
+            {/* Tabs radar/whatsapp removidas (Pipeline v2 Fase 4) */}
           </ScrollArea>
         </Tabs>
 
