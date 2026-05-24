@@ -596,8 +596,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               - WhatsApp passa a abrir SEMPRE em /whatsapp via WhatsAppFocusFlow, não como tab embarcada. */}
 
           <ScrollArea className="flex-1 min-h-0">
+            {/* ===== TAB: INFO (mobile only) — espelha conteúdo da coluna esquerda ===== */}
+            {isMobile && (
+              <TabsContent value="info" className="mt-0">
+                <div className="px-5 pt-4">{headerNode}</div>
+                <div className="px-5 py-4 space-y-3">{bodyNode}</div>
+              </TabsContent>
+            )}
             {/* ===== TAB: TAREFAS (v4 editorial) ===== */}
             <TabsContent value="tarefas" className="mt-0">
+
               <DrawerTasksTab
                 tarefas={leadData.tarefas}
                 leadId={lead.id}
