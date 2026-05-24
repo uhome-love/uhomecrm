@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { LoadingState, ErrorState } from "@/components/ui/screen-states";
 import { usePipeline } from "@/hooks/usePipeline";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
+import { loadSortOrder, type SortOrder } from "@/components/pipeline/PipelineSortDropdown";
 import PipelineMobileView from "@/components/pipeline/PipelineMobileView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
@@ -424,6 +425,8 @@ export default function PipelineKanban() {
         mobileSearchOpen={mobileSearchOpen}
         setMobileSearchOpen={setMobileSearchOpen}
         mobileSearchRef={mobileSearchRef}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
       />
 
 

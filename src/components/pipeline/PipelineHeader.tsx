@@ -622,6 +622,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           <div className="flex-1" />
 
+          <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
+
           <div className="shrink-0">
             <PipelineFiltroBadges
               active={
