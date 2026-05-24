@@ -25,29 +25,33 @@ type TipoCanon = "call" | "msg" | "followup" | "visit" | "outro";
 
 const TIPO_MAP: Record<string, TipoCanon> = {
   ligar: "call",
+  ligacao: "call",
   retornar_cliente: "call",
   whatsapp: "msg",
   enviar_material: "msg",
   enviar_proposta: "msg",
+  email: "msg",
+  proposta: "msg",
   follow_up: "followup",
   marcar_visita: "visit",
   confirmar_visita: "visit",
+  visita: "visit",
 };
 
 const TIPO_LABEL: Record<TipoCanon, string> = {
-  call: "Ligar",
-  msg: "Mensagem",
+  call: "Ligação",
+  msg: "WhatsApp",
   followup: "Follow-up",
   visit: "Visita",
   outro: "Tarefa",
 };
 
-const TIPO_ICON: Record<TipoCanon, React.ElementType> = {
-  call: Phone,
-  msg: MessageCircle,
-  followup: FileText,
-  visit: Home,
-  outro: Calendar,
+const TIPO_EMOJI: Record<TipoCanon, string> = {
+  call: "📞",
+  msg: "💬",
+  followup: "📨",
+  visit: "🏠",
+  outro: "📝",
 };
 
 const TIPO_CIRCLE: Record<TipoCanon, string> = {
