@@ -130,6 +130,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
       }
       resetForm();
       onOpenChange(false);
+      invalidateTaskQueries(queryClient, leadId);
       onReload();
     } catch (err: any) {
       toast.error("Erro: " + (err.message || "Falha ao salvar"));
