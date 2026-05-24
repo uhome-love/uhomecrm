@@ -19,6 +19,8 @@ import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/useP
 import { usePipelineLeadData } from "@/hooks/usePipelineLeadData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
+
 import {
   Phone, Mail, Calendar, MapPin, Loader2,
   Clock, Building2, Target, DollarSign,
@@ -83,7 +85,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const leadData = usePipelineLeadData(open ? lead.id : null);
-  const [activeTab, setActiveTab] = useState("historico");
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<string>(() => (isMobile ? "info" : "historico"));
+  useEffect(() => {
+    setActiveTab(isMobile ? "info" : "historico");
+  }, [lead.id, isMobile]);
+
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [homiOpen, setHomiOpen] = useState(false);
@@ -323,7 +330,225 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     return null;
   }, [nextTask, leadData.atividades, lead]);
 
+  // ─────────────────────────────────────────────────────────────────
+  // Conteúdo da coluna esquerda — single source (DRY).
+  // Reusado em desktop (DrawerLeadInfo aside) e mobile (tab "Info").
+  // ─────────────────────────────────────────────────────────────────
+  const headerNode = (
+    <DrawerLeadHeader
+      nome={lead.nome}
+      telefone={lead.telefone}
+      email={lead.email}
+      canEdit={isAdmin}
+      editingName={editingName}
+      editName={editName}
+      setEditName={setEditName}
+      startEditName={() => { setEditName(lead.nome); setEditingName(true); }}
+      cancelEditName={() => { setEditingName(false); setEditName(lead.nome); }}
+      saveName={handleSaveName}
+      editingPhone={editingPhone}
+      editPhone={editPhone}
+      setEditPhone={setEditPhone}
+      startEditPhone={() => { setEditPhone(lead.telefone || ""); setEditingPhone(true); }}
+      cancelEditPhone={() => { setEditingPhone(false); setEditPhone(lead.telefone || ""); }}
+      savePhone={handleSavePhone}
+      saving={saving}
+      pills={
+        <>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
+                <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
+                {currentStage?.nome}
+                <ChevronDown className="h-2.5 w-2.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="end">
+              <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 px-1">Mover para:</p>
+              <div className="space-y-0.5">
+                {stages.filter(s => s.id !== lead.stage_id).map(s => (
+                  <button key={s.id} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left" onClick={() => handleMoveStage(s.id)}>
+                    <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
+                    {s.nome}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {(() => {
+            const diasSemContato = noContactAlert
+              ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
+              : 0;
+            const chipColor = nextTask
+              ? { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' }
+              : noContactAlert === 'critical'
+                ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Desatualizado' }
+                : { bg: '#FAEEDA', color: '#854F0B', dot: '#EF9F27', text: 'Atenção' };
+            const motivosDesat: string[] = [];
+            if (!nextTask) motivosDesat.push('sem tarefa futura');
+            if (noContactAlert) motivosDesat.push(`${diasSemContato}d sem contato`);
+            return (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 cursor-default" style={{ background: chipColor.bg, color: chipColor.color }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: chipColor.dot, flexShrink: 0 }} />
+                    {chipColor.text}
+                  </span>
+                </TooltipTrigger>
+                {!nextTask && motivosDesat.length > 0 && (
+                  <TooltipContent side="bottom" className="text-xs">
+                    {motivosDesat.join(' · ')}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            );
+          })()}
+
+          <span className="text-[10px] text-muted-foreground tabular-nums">{daysSinceCreation}d</span>
+        </>
+      }
+    />
+  );
+
+  const bodyNode = (
+    <>
+      {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
+      {empreendimentoOpen && (
+        <div className="flex items-center gap-2">
+          <EmpreendimentoCombobox
+            value={empreendimentoSearch || lead.empreendimento || ""}
+            onChange={setEmpreendimentoSearch}
+            className="h-8 text-xs flex-1"
+          />
+          <Button
+            size="sm"
+            className="h-8 text-xs px-3"
+            disabled={savingEmpreendimento || !empreendimentoSearch.trim()}
+            onClick={async () => {
+              setSavingEmpreendimento(true);
+              try {
+                await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
+                toast.success("Empreendimento atualizado");
+                setEmpreendimentoOpen(false);
+              } catch { toast.error("Erro ao salvar"); }
+              finally { setSavingEmpreendimento(false); }
+            }}
+          >
+            {savingEmpreendimento ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={() => { setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); }}>
+            Cancelar
+          </Button>
+        </div>
+      )}
+
+      {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) */}
+      <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} />
+
+      {/* Label + Grid 2x2 de ações */}
+      <div className="space-y-1.5">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
+          Ações
+        </div>
+        <DrawerActionGrid
+          hasPhone={!!lead.telefone}
+          primary={(() => {
+            const tipo = parseNextActionType(nextTask, lead.proxima_acao);
+            if (tipo === "ligar" || tipo === "whatsapp") return tipo;
+            return undefined;
+          })()}
+          onLigar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
+          onWhatsapp={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
+          onScripts={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "scripts" }); setComunicacaoOpen(true); }}
+          onAnotar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
+        />
+
+        {/* Botão "Mais ações" full-width — reusa CardOverflowMenu (mesmas 7 ações do menu ··· do card) */}
+        <CardOverflowMenu
+          lead={lead}
+          stages={stages}
+          onMoveLead={(leadId, newStageId, observacao) => { onMove(leadId, newStageId, observacao); }}
+          onOpenDetail={() => { /* já está aberto */ }}
+          onCreateTask={() => { setActiveTab("tarefas"); setNextActionOpen(true); }}
+          trigger={
+            <button className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg border border-border bg-card hover:bg-muted/40 text-[11px] text-muted-foreground transition-colors">
+              <MoreHorizontal className="h-3.5 w-3.5" />
+              Mais ações
+            </button>
+          }
+        />
+
+        {/* Apagar (CEO) — admin only, isolado fora do menu padrão */}
+        {isAdmin && onDelete && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full flex items-center justify-center gap-1.5 h-7 rounded-md text-[10px] text-destructive/70 hover:text-destructive hover:bg-destructive/5 transition-colors">
+                <Trash2 className="h-3 w-3" />
+                Ações admin
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar lead (CEO)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      {/* Caixa Empreendimento polida (header + 3 métricas) */}
+      <DrawerEmpreendimento
+        empreendimento={lead.empreendimento}
+        meta={(() => {
+          const parts: string[] = [];
+          if (lead.origem) parts.push(lead.origem);
+          if (lead.campanha) parts.push(lead.campanha);
+          else if (lead.formulario) parts.push(lead.formulario);
+          return parts.join(" · ") || null;
+        })()}
+        tentativasContato={callAttempts}
+        diasNaEtapa={Math.floor(hoursInStage / 24)}
+        diasDesdeUltimoContato={daysSinceLastAction}
+        onEdit={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
+      />
+
+      {/* Observações / Dados do anúncio (ImovelWeb, etc.) */}
+      {lead.observacoes && (
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors group">
+            <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
+            <FileText className="h-3 w-3" />
+            {lead.origem === "imovelweb" ? "Dados do anúncio ImovelWeb" : "Observações do lead"}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-1.5">
+            <div className="text-[11px] text-muted-foreground bg-muted/50 rounded-md px-3 py-2 whitespace-pre-wrap leading-relaxed border border-border/50">
+              {lead.observacoes}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {lead.origem_detalhe && !lead.observacoes && (
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <FileText className="h-3 w-3" /> {lead.origem_detalhe}
+        </p>
+      )}
+
+      {/* ════════════ FLAG CONTROLS ════════════ */}
+      <LeadFlagControls
+        leadId={lead.id}
+        stageTipo={(currentStage as any)?.tipo || ""}
+        flagStatus={lead.flag_status as Record<string, string> | null}
+        onUpdate={(_updated) => {
+          // Trigger refresh via existing reload mechanism
+        }}
+      />
+    </>
+  );
+
   return (
+
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:w-[70vw] sm:max-w-[2000px] p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
         <ErrorBoundary fallback={
@@ -336,228 +561,21 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
         {/* ════════════ LAYOUT 2 COLUNAS (Drawer wide v3) ════════════ */}
         <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DrawerLeadInfo
-          resetKey={lead.id}
-          header={
-            <DrawerLeadHeader
-              nome={lead.nome}
-              telefone={lead.telefone}
-              email={lead.email}
-              canEdit={isAdmin}
-              editingName={editingName}
-              editName={editName}
-              setEditName={setEditName}
-              startEditName={() => { setEditName(lead.nome); setEditingName(true); }}
-              cancelEditName={() => { setEditingName(false); setEditName(lead.nome); }}
-              saveName={handleSaveName}
-              editingPhone={editingPhone}
-              editPhone={editPhone}
-              setEditPhone={setEditPhone}
-              startEditPhone={() => { setEditPhone(lead.telefone || ""); setEditingPhone(true); }}
-              cancelEditPhone={() => { setEditingPhone(false); setEditPhone(lead.telefone || ""); }}
-              savePhone={handleSavePhone}
-              saving={saving}
-              pills={
-                <>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
-                        <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
-                        {currentStage?.nome}
-                        <ChevronDown className="h-2.5 w-2.5" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-56 p-2" align="end">
-                      <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 px-1">Mover para:</p>
-                      <div className="space-y-0.5">
-                        {stages.filter(s => s.id !== lead.stage_id).map(s => (
-                          <button key={s.id} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left" onClick={() => handleMoveStage(s.id)}>
-                            <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
-                            {s.nome}
-                          </button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
-                  {(() => {
-                    const diasSemContato = noContactAlert
-                      ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
-                      : 0;
-                    const chipColor = nextTask
-                      ? { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' }
-                      : noContactAlert === 'critical'
-                        ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Desatualizado' }
-                        : { bg: '#FAEEDA', color: '#854F0B', dot: '#EF9F27', text: 'Atenção' };
-                    const motivosDesat: string[] = [];
-                    if (!nextTask) motivosDesat.push('sem tarefa futura');
-                    if (noContactAlert) motivosDesat.push(`${diasSemContato}d sem contato`);
-                    return (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 cursor-default" style={{ background: chipColor.bg, color: chipColor.color }}>
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: chipColor.dot, flexShrink: 0 }} />
-                            {chipColor.text}
-                          </span>
-                        </TooltipTrigger>
-                        {!nextTask && motivosDesat.length > 0 && (
-                          <TooltipContent side="bottom" className="text-xs">
-                            {motivosDesat.join(' · ')}
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    );
-                  })()}
-
-                  <span className="text-[10px] text-muted-foreground tabular-nums">{daysSinceCreation}d</span>
-                </>
-              }
-            />
-          }
-        >
-
-
-        {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
-        {empreendimentoOpen && (
-          <div className="flex items-center gap-2">
-            <EmpreendimentoCombobox
-              value={empreendimentoSearch || lead.empreendimento || ""}
-              onChange={setEmpreendimentoSearch}
-              className="h-8 text-xs flex-1"
-            />
-            <Button
-              size="sm"
-              className="h-8 text-xs px-3"
-              disabled={savingEmpreendimento || !empreendimentoSearch.trim()}
-              onClick={async () => {
-                setSavingEmpreendimento(true);
-                try {
-                  await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
-                  toast.success("Empreendimento atualizado");
-                  setEmpreendimentoOpen(false);
-                } catch { toast.error("Erro ao salvar"); }
-                finally { setSavingEmpreendimento(false); }
-              }}
-            >
-              {savingEmpreendimento ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
-            </Button>
-            <Button size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={() => { setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); }}>
-              Cancelar
-            </Button>
-          </div>
-        )}
-
-        {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) */}
-        <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} />
-
-        {/* Label + Grid 2x2 de ações */}
-        <div className="space-y-1.5">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
-            Ações
-          </div>
-          <DrawerActionGrid
-            hasPhone={!!lead.telefone}
-            primary={(() => {
-              const tipo = parseNextActionType(nextTask, lead.proxima_acao);
-              if (tipo === "ligar" || tipo === "whatsapp") return tipo;
-              return undefined;
-            })()}
-            onLigar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
-            onWhatsapp={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
-            onScripts={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "scripts" }); setComunicacaoOpen(true); }}
-            onAnotar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
-          />
-
-          {/* Botão "Mais ações" full-width — reusa CardOverflowMenu (mesmas 7 ações do menu ··· do card) */}
-          <CardOverflowMenu
-            lead={lead}
-            stages={stages}
-            onMoveLead={(leadId, newStageId, observacao) => { onMove(leadId, newStageId, observacao); }}
-            onOpenDetail={() => { /* já está aberto */ }}
-            onCreateTask={() => { setActiveTab("tarefas"); setNextActionOpen(true); }}
-            trigger={
-              <button className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg border border-border bg-card hover:bg-muted/40 text-[11px] text-muted-foreground transition-colors">
-                <MoreHorizontal className="h-3.5 w-3.5" />
-                Mais ações
-              </button>
-            }
-          />
-
-          {/* Apagar (CEO) — admin only, isolado fora do menu padrão */}
-          {isAdmin && onDelete && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="w-full flex items-center justify-center gap-1.5 h-7 rounded-md text-[10px] text-destructive/70 hover:text-destructive hover:bg-destructive/5 transition-colors">
-                  <Trash2 className="h-3 w-3" />
-                  Ações admin
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
-                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar lead (CEO)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-        </div>
-
-        {/* Caixa Empreendimento polida (header + 3 métricas) */}
-        <DrawerEmpreendimento
-          empreendimento={lead.empreendimento}
-          meta={(() => {
-            const parts: string[] = [];
-            if (lead.origem) parts.push(lead.origem);
-            if (lead.campanha) parts.push(lead.campanha);
-            else if (lead.formulario) parts.push(lead.formulario);
-            return parts.join(" · ") || null;
-          })()}
-          tentativasContato={callAttempts}
-          diasNaEtapa={Math.floor(hoursInStage / 24)}
-          diasDesdeUltimoContato={daysSinceLastAction}
-          onEdit={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
-        />
-
-        {/* Observações / Dados do anúncio (ImovelWeb, etc.) */}
-        {lead.observacoes && (
-          <Collapsible>
-            <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors group">
-              <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
-              <FileText className="h-3 w-3" />
-              {lead.origem === "imovelweb" ? "Dados do anúncio ImovelWeb" : "Observações do lead"}
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-1.5">
-              <div className="text-[11px] text-muted-foreground bg-muted/50 rounded-md px-3 py-2 whitespace-pre-wrap leading-relaxed border border-border/50">
-                {lead.observacoes}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
-        {lead.origem_detalhe && !lead.observacoes && (
-          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-            <FileText className="h-3 w-3" /> {lead.origem_detalhe}
-          </p>
-        )}
-
-        {/* StageCoachBar removido — informação redundante com pílulas do header, caixa PRÓXIMA AÇÃO e caixa Empreendimento */}
-
-        {/* ════════════ FLAG CONTROLS ════════════ */}
-        <LeadFlagControls
-          leadId={lead.id}
-          stageTipo={(currentStage as any)?.tipo || ""}
-          flagStatus={lead.flag_status as Record<string, string> | null}
-          onUpdate={(updated) => {
-            // Trigger refresh via existing reload mechanism
-          }}
-        />
+        <DrawerLeadInfo resetKey={lead.id} header={headerNode}>
+          {bodyNode}
         </DrawerLeadInfo>
+
 
         <DrawerTimeline>
         {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="shrink-0 px-5 pt-4 pb-1 flex items-center gap-2 border-b border-border/50">
             <TabsList className="bg-muted/50 h-8 flex-1">
+              {isMobile && (
+                <TabsTrigger value="info" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
+                  ℹ️ Info
+                </TabsTrigger>
+              )}
               <TabsTrigger value="historico" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
                 📝 Histórico
                 {leadData.atividades.length > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{leadData.atividades.length}</Badge>}
@@ -570,6 +588,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 📊 Visitas
               </TabsTrigger>
             </TabsList>
+
           </div>
 
           {/* Tabs Radar (Match) e WhatsApp removidas em Pipeline v2 — Fase 4:
@@ -577,8 +596,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               - WhatsApp passa a abrir SEMPRE em /whatsapp via WhatsAppFocusFlow, não como tab embarcada. */}
 
           <ScrollArea className="flex-1 min-h-0">
+            {/* ===== TAB: INFO (mobile only) — espelha conteúdo da coluna esquerda ===== */}
+            {isMobile && (
+              <TabsContent value="info" className="mt-0">
+                <div className="px-5 pt-4">{headerNode}</div>
+                <div className="px-5 py-4 space-y-3">{bodyNode}</div>
+              </TabsContent>
+            )}
             {/* ===== TAB: TAREFAS (v4 editorial) ===== */}
             <TabsContent value="tarefas" className="mt-0">
+
               <DrawerTasksTab
                 tarefas={leadData.tarefas}
                 leadId={lead.id}
