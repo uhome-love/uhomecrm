@@ -21,6 +21,7 @@ import CardStatusLine, { getCardStatus } from "./CardStatusLine";
 import CardActionBar from "./CardActionBar";
 import CardQuickTaskPopover from "./CardQuickTaskPopover";
 import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
+import DiscardLeadDialog from "./DiscardLeadDialog";
 
 /** Hora atual + 2h, arredondada para :00 ou :30 (formato HH:mm). */
 function plus2hRounded(): string {
@@ -107,6 +108,7 @@ const PipelineCard = memo(function PipelineCard({
   const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false);
   const [isWhatsAppFlowOpen, setIsWhatsAppFlowOpen] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || (lead as any).origem_detalhe || "");
   const status = useMemo(() => getCardStatus(lead, proximaTarefa || null, stage?.tipo), [(lead as any).ultima_acao_at, lead.stage_changed_at, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento, stage?.tipo]);
@@ -192,16 +194,10 @@ const PipelineCard = memo(function PipelineCard({
     toast.success(`Lead movido para ${targetStage?.nome}`);
   };
 
-  const handleMarkLost = async () => {
-    if (!user || !onMoveLead) return;
-    const motivo = prompt("Motivo do descarte:");
-    if (!motivo) return;
-    const descarteStage = stages.find(s => s.tipo === "descarte");
-    if (descarteStage) {
-      await supabase.from("pipeline_leads").update({ motivo_descarte: motivo, tipo_descarte: "reengajavel" } as any).eq("id", lead.id);
-      onMoveLead(lead.id, descarteStage.id);
-      toast.info("Lead movido para Descarte");
-    }
+  const handleMarkLost = () => {
+    // Dialog estilizado substitui window.prompt legado.
+    // Usa buildMotivoDescarte centralizado (4º fluxo de descarte coberto).
+    setDiscardOpen(true);
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -604,6 +600,22 @@ const PipelineCard = memo(function PipelineCard({
           lead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, empreendimento: lead.empreendimento, stage_id: lead.stage_id }}
           stageTipo={stage?.tipo}
           onRefresh={() => {}}
+        />
+        <DiscardLeadDialog
+          open={discardOpen}
+          onOpenChange={setDiscardOpen}
+          leadId={lead.id}
+          leadNome={lead.nome}
+          stages={stages}
+          onDone={() => {
+            // Force refresh do pipeline: o realtime/refetch do usePipeline já
+            // captura o UPDATE, mas chamamos onMoveLead com mesma stage para
+            // forçar UI re-render caso a query esteja em cache.
+            if (onMoveLead) {
+              const descarteStage = stages.find(s => s.tipo === "descarte");
+              if (descarteStage) onMoveLead(lead.id, descarteStage.id);
+            }
+          }}
         />
       </div>
     </div>
