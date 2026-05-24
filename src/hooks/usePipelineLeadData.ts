@@ -176,9 +176,10 @@ export function usePipelineLeadData(leadId: string | null) {
     } as any).eq("id", leadId);
 
     toast.success("Tarefa criada ✅");
+    invalidateTaskQueries(queryClient, leadId);
     loadAll();
     return true;
-  }, [user, leadId, loadAll]);
+  }, [user, leadId, loadAll, queryClient]);
 
   const deleteTarefa = useCallback(async (id: string) => {
     const { error } = await supabase.from("pipeline_tarefas").delete().eq("id", id);
