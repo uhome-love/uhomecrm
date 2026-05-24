@@ -19,6 +19,8 @@ import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/useP
 import { usePipelineLeadData } from "@/hooks/usePipelineLeadData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
+
 import {
   Phone, Mail, Calendar, MapPin, Loader2,
   Clock, Building2, Target, DollarSign,
