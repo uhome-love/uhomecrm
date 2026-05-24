@@ -122,6 +122,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     mobileSearchOpen, setMobileSearchOpen, mobileSearchRef,
     sortOrder, setSortOrder,
     gestorFilter = "todos", setGestorFilter,
+    pillCounts,
   } = props;
 
   // Tabs por role (Fase 1):
