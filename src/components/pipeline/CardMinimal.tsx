@@ -41,6 +41,7 @@ interface CardMinimalProps {
   lead: PipelineLead;
   stage?: PipelineStage;
   corretorNome?: string;
+  corretorAvatarUrl?: string;
   parceiroNome?: string;
   proximaTarefa?: CardMinimalProximaTarefa | null;
   onClick: () => void;
