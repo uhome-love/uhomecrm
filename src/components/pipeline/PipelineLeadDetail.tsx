@@ -923,6 +923,20 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         stages={stages}
         onMoveLead={onMove}
       />
+      <DrawerAnotarDialog
+        open={anotarOpen}
+        onOpenChange={setAnotarOpen}
+        leadNome={lead.nome}
+        onSave={async (conteudo) => {
+          const result = await leadData.addAnotacao(conteudo);
+          trackPipelineEvent("drawer_anotar_saved", {
+            lead_id: lead.id,
+            corretor_id: lead.corretor_id,
+            char_count: conteudo.length,
+          });
+          return result;
+        }}
+      />
     </Sheet>
   );
 }
