@@ -401,7 +401,7 @@ export default function PipelineKanban() {
   const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter;
 
 
-  if (pipeline.loading) {
+  if (pipeline.loading || activeTab === null) {
     return (
       <LoadingState
         title="Carregando pipeline..."
