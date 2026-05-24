@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect, memo } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
 import CardMinimal from "./CardMinimal";
+import NegocioCriadoColumn from "./NegocioCriadoColumn";
 import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, AlignLeft, Trash2, Loader2 } from "lucide-react";
