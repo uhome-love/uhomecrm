@@ -162,22 +162,9 @@ export default function PipelineKanban() {
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Filtro CEO por gestor (Fase 1) — restringe leads aos corretores daquele gestor.
-  const [gestorFilter, setGestorFilter] = useState<string>("todos");
-  const { data: gestorTeamUserIds } = useQuery({
-    queryKey: ["pipeline-gestor-team", gestorFilter],
-    queryFn: async () => {
-      if (!isAdmin || gestorFilter === "todos") return null;
-      const { data } = await supabase
-        .from("team_members")
-        .select("user_id")
-        .eq("gerente_id", gestorFilter)
-        .eq("status", "ativo");
-      return new Set((data || []).map((r: any) => r.user_id).filter(Boolean) as string[]);
-    },
-    enabled: isAdmin && gestorFilter !== "todos",
-    staleTime: 5 * 60 * 1000,
-  });
+  // (gestorFilter + query gestorTeamUserIds movidos pra topo do componente
+  // pra alimentar usePipeline com scopeCorretorIds — Fase C performance.)
+
   
   // Bulk selection state
   const [selectionMode, setSelectionMode] = useState(false);
