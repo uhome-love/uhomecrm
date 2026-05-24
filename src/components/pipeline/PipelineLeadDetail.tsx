@@ -32,6 +32,7 @@ import DrawerTimeline from "./drawer/DrawerTimeline";
 import DrawerActionGrid from "./drawer/DrawerActionGrid";
 import DrawerEmpreendimento from "./drawer/DrawerEmpreendimento";
 import DrawerAnotarDialog from "./drawer/DrawerAnotarDialog";
+import DrawerProximaAcao, { parseNextActionType } from "./drawer/DrawerProximaAcao";
 import PartnershipDialog from "./PartnershipDialog";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
 import HomiLeadAssistant from "./HomiLeadAssistant";
