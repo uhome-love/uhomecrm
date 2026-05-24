@@ -27,6 +27,8 @@ import {
   Flame, Snowflake, Sun, Zap, Brain, TrendingUp,
   Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil
 } from "lucide-react";
+import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
+import DrawerTimeline from "./drawer/DrawerTimeline";
 import PartnershipDialog from "./PartnershipDialog";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
 import HomiLeadAssistant from "./HomiLeadAssistant";
@@ -323,8 +325,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </div>
         }>
 
-        {/* ════════════ HEADER COMPACTO ════════════ */}
-        <div className="shrink-0 border-b border-border/50 bg-card px-5 pt-4 pb-3 space-y-2.5">
+        {/* ════════════ LAYOUT 2 COLUNAS (Drawer wide v3) ════════════ */}
+        <div className="flex-1 flex min-h-0 overflow-hidden">
+        <DrawerLeadInfo>
+        {/* ════════════ HEADER (col esquerda) ════════════ */}
+        <div className="space-y-2.5 pb-2 border-b border-border/50">
+
           {/* Row 1: Name + Stage + Temp + Score + Days */}
           <div className="flex items-center gap-2 min-w-0 pr-8">
             {editingName ? (
@@ -658,8 +664,10 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             // Trigger refresh via existing reload mechanism
           }}
         />
+        </DrawerLeadInfo>
 
-        {/* ════════════ ABAS ════════════ */}
+        <DrawerTimeline>
+        {/* ════════════ ABAS (col direita) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="shrink-0 px-5 pt-2 pb-1 flex items-center gap-2 border-b border-border/50">
             <TabsList className="bg-muted/50 h-8 flex-1">
@@ -752,6 +760,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             {/* Tabs radar/whatsapp removidas (Pipeline v2 Fase 4) */}
           </ScrollArea>
         </Tabs>
+        </DrawerTimeline>
+        </div>
+
 
         {/* ════════════ HOMI SIDE PANEL ════════════ */}
         {homiOpen && (
