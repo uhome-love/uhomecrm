@@ -1,38 +1,36 @@
 import { useState, useRef, useEffect, useMemo, memo, useCallback } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
-import PipelineCard from "./PipelineCard";
+import CardMinimal from "./CardMinimal";
+import NegocioCriadoColumn from "./NegocioCriadoColumn";
 import { PIPELINE_STAGE_EMOJIS } from "@/lib/celebrations";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserRole } from "@/hooks/useUserRole";
-import { isTaskHigherPriority, type ProximaTarefa } from "./CardStatusLine";
+import { isTaskHigherPriority, type ProximaTarefa } from "@/lib/taskQueryUtils";
 
 interface PipelineMobileViewProps {
   stages: PipelineStage[];
   leads: PipelineLead[];
-  segmentos: PipelineSegmento[];
+  segmentos?: PipelineSegmento[]; // legado — não usado pelo CardMinimal
   corretorNomes: Record<string, string>;
-  corretorAvatars?: Record<string, string>;
+  corretorAvatars?: Record<string, string>; // legado — não usado pelo CardMinimal
   parcerias: Record<string, string>;
-  onMoveLead: (leadId: string, newStageId: string, observacao?: string) => void;
+  onMoveLead?: (leadId: string, newStageId: string, observacao?: string) => void; // legado
   onSelectLead: (lead: PipelineLead) => void;
-  onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
+  onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void; // legado
   selectionMode?: boolean;
   selectedLeads?: Set<string>;
   onToggleSelect?: (leadId: string) => void;
-  clientStatusCounts: { em_dia: number; desatualizado: number; tarefa_atrasada: number };
-  clientStatusFilter: string;
-  onStatusFilterChange: (f: string) => void;
+  clientStatusCounts?: { em_dia: number; desatualizado: number; tarefa_atrasada: number };
+  clientStatusFilter?: string;
+  onStatusFilterChange?: (f: string) => void;
 }
 
 const LOAD_BATCH = 20;
 
 const PipelineMobileView = memo(function PipelineMobileView({
-  stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias,
-  onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect,
-  clientStatusCounts, clientStatusFilter, onStatusFilterChange,
+  stages, leads, corretorNomes, parcerias,
+  onSelectLead, selectionMode, selectedLeads, onToggleSelect,
 }: PipelineMobileViewProps) {
-  const { isGestor, isAdmin } = useUserRole();
   const [activeStageId, setActiveStageId] = useState(stages[0]?.id || "");
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -71,14 +69,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
   const visibleLeads = stageLeads.slice(0, visibleCount);
   const hasMore = visibleCount < stageLeads.length;
 
-  // Stage index map for card
-  const stageIndexMap = useMemo(() => {
-    const map = new Map<string, number>();
-    stages.forEach((s, i) => map.set(s.id, i));
-    return map;
-  }, [stages]);
-
-  // Tarefas map
+  // Tarefas map (mesma lógica do desktop)
   const leadIds = useMemo(() => leads.map(l => l.id), [leads]);
   const leadIdsKey = useMemo(() => leadIds.slice().sort().join(","), [leadIds]);
   const { data: tarefasMap = {} } = useQuery({
@@ -152,7 +143,6 @@ const PipelineMobileView = memo(function PipelineMobileView({
                 display: "flex", alignItems: "center", gap: 4,
                 padding: "7px 10px",
                 whiteSpace: "nowrap",
-                borderBottom: isActive ? "2px solid #4969FF" : "2px solid transparent",
                 fontSize: 11, fontWeight: 600,
                 color: isActive ? "#0a0a0a" : "#71717a",
                 cursor: "pointer", flexShrink: 0,
@@ -179,59 +169,68 @@ const PipelineMobileView = memo(function PipelineMobileView({
         })}
       </div>
 
-
-      {/* Cards List */}
-      <div
-        onScroll={handleScroll}
-        style={{
-          flex: 1, minHeight: 0, overflowY: "auto",
-          display: "flex", flexDirection: "column", gap: 6,
-          padding: "8px 12px 80px",
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
-        {stageLeads.length === 0 && (
-          <div style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "center", padding: "48px 0",
-            color: "#94A3B8", fontSize: 13, fontWeight: 500,
-          }}>
-            <span style={{ fontSize: 32, marginBottom: 8 }}>📭</span>
-            Nenhum lead nesta etapa
-          </div>
-        )}
-        {visibleLeads.map(lead => (
-          <div key={lead.id} style={{ width: "100%" }}>
-            <PipelineCard
-              lead={lead}
-              stage={activeStage}
-              stages={stages}
-              segmentos={segmentos}
-              corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
-              corretorAvatar={lead.corretor_id ? corretorAvatars?.[lead.corretor_id] : undefined}
-              parceiroNome={parcerias[lead.id]}
-              onDragStart={() => { }}
-              onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
-              onMoveLead={selectionMode ? undefined : onMoveLead}
-              onTransferred={onTransferred}
-              stageIndexMap={stageIndexMap}
-              proximaTarefa={tarefasMap[lead.id] || null}
-            />
-          </div>
-        ))}
-        {hasMore && (
-          <button
-            onClick={() => setVisibleCount(prev => Math.min(prev + LOAD_BATCH, stageLeads.length))}
-            style={{
-              width: "100%", padding: "10px 0",
-              fontSize: 12, fontWeight: 600, color: "#64748B",
-              background: "none", border: "none", cursor: "pointer",
-            }}
-          >
-            Mostrar mais ({stageLeads.length - visibleCount} restantes)
-          </button>
-        )}
-      </div>
+      {/* Cards List — Negócio Criado usa coluna especializada */}
+      {activeStage?.tipo === "convertido" ? (
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-20 pt-2">
+          <NegocioCriadoColumn
+            stageLeads={stageLeads}
+            stage={activeStage}
+            corretorNomes={corretorNomes}
+            parcerias={parcerias}
+            onSelectLead={onSelectLead}
+            handleDragStart={() => { /* mobile: sem drag */ }}
+            selectionMode={selectionMode}
+            selectedLeads={selectedLeads}
+            onToggleSelect={onToggleSelect}
+          />
+        </div>
+      ) : (
+        <div
+          onScroll={handleScroll}
+          style={{
+            flex: 1, minHeight: 0, overflowY: "auto",
+            display: "flex", flexDirection: "column", gap: 6,
+            padding: "8px 12px 80px",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {stageLeads.length === 0 && (
+            <div style={{
+              display: "flex", flexDirection: "column", alignItems: "center",
+              justifyContent: "center", padding: "48px 0",
+              color: "#94A3B8", fontSize: 13, fontWeight: 500,
+            }}>
+              <span style={{ fontSize: 32, marginBottom: 8 }}>📭</span>
+              Nenhum lead nesta etapa
+            </div>
+          )}
+          {visibleLeads.map(lead => (
+            <div key={lead.id} style={{ width: "100%" }}>
+              <CardMinimal
+                lead={lead}
+                stage={activeStage}
+                corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                parceiroNome={parcerias[lead.id]}
+                proximaTarefa={tarefasMap[lead.id] || null}
+                onDragStart={() => { /* mobile: sem drag */ }}
+                onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
+              />
+            </div>
+          ))}
+          {hasMore && (
+            <button
+              onClick={() => setVisibleCount(prev => Math.min(prev + LOAD_BATCH, stageLeads.length))}
+              style={{
+                width: "100%", padding: "10px 0",
+                fontSize: 12, fontWeight: 600, color: "#64748B",
+                background: "none", border: "none", cursor: "pointer",
+              }}
+            >
+              Mostrar mais ({stageLeads.length - visibleCount} restantes)
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 });
