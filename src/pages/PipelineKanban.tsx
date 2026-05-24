@@ -67,8 +67,12 @@ export default function PipelineKanban() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const pipeline = usePipeline();
-  const { isGestor, isAdmin, isCorretor, loading: roleLoading } = useUserRole();
-  const { user: authUser } = useAuth();
+  const { isGestor, isAdmin, isCorretor, loading: roleLoading, roles } = useUserRole();
+  const { user: authUser, loading: authLoading } = useAuth();
+  // Bug-fix Bug 3: useUserRole retorna loading=false enquanto useAuth ainda
+  // resolve user (query disabled => isLoading=false). Combinamos os dois para
+  // garantir que o efeito de tab só decide depois das roles realmente prontas.
+  const rolesReady = !authLoading && !roleLoading && (roles.length > 0 || !authUser);
   const isMobile = useIsMobile();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
@@ -91,7 +95,7 @@ export default function PipelineKanban() {
 
   // Inicialização única após role resolver — com one-shot migration v2.
   useEffect(() => {
-    if (roleLoading) return;
+    if (!rolesReady) return;
     if (activeTab !== null) return;
     try {
       const MIGRATION_KEY = "uhome:pipeline-mode:migrated-v2";
@@ -110,20 +114,21 @@ export default function PipelineKanban() {
       setActiveTab(defaultTabForRole);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roleLoading, tabStorageKey, defaultTabForRole, isAdmin, isGestor]);
+  }, [rolesReady, tabStorageKey, defaultTabForRole, isAdmin, isGestor]);
 
   useEffect(() => {
-    if (roleLoading || activeTab === null) return;
+    if (!rolesReady || activeTab === null) return;
     try { window.localStorage.setItem(tabStorageKey, activeTab); } catch { /* ignore */ }
-  }, [activeTab, tabStorageKey, roleLoading]);
+  }, [activeTab, tabStorageKey, rolesReady]);
 
   // Se a role mudou (login/logout) e o tab salvo não pertence ao role atual, força default.
   useEffect(() => {
+    if (!rolesReady) return;
     if (activeTab !== null && !allowedTabsForRole.includes(activeTab)) {
       setActiveTab(defaultTabForRole);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roleKey]);
+  }, [roleKey, rolesReady]);
   const [sortOrder, setSortOrder] = useState<SortOrder>(loadSortOrder);
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
@@ -420,7 +425,7 @@ export default function PipelineKanban() {
   const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter;
 
 
-  if (pipeline.loading || activeTab === null) {
+  if (pipeline.loading || !rolesReady || activeTab === null) {
     return (
       <LoadingState
         title="Carregando pipeline..."
