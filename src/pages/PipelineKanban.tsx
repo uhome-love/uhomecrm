@@ -898,19 +898,25 @@ export default function PipelineKanban() {
             <div className="shrink-0">
               <PipelineFiltroBadges
                 active={
-                  clientStatusFilter === "em_dia" ? "em_dia"
+                  negociosFilter ? "negocios"
+                  : clientStatusFilter === "em_dia" ? "em_dia"
                   : clientStatusFilter === "desatualizado" ? "sem_tarefa"
                   : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
                   : null
                 }
                 onChange={(key) => {
-                  const internalMap: Record<PipelineFiltroKey, ClientStatusFilter> = {
+                  if (key === "negocios") {
+                    setNegociosFilter(true);
+                    setClientStatusFilter("todos");
+                    return;
+                  }
+                  setNegociosFilter(false);
+                  const internalMap: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
                     em_dia: "em_dia",
                     sem_tarefa: "desatualizado",
                     atrasado: "tarefa_atrasada",
-                    negocios: "todos", // Fase 6: stage filter ainda não implementado
                   };
-                  setClientStatusFilter(key ? internalMap[key] : "todos");
+                  setClientStatusFilter(key ? internalMap[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
                 }}
               />
             </div>
