@@ -40,6 +40,9 @@ import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type 
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
 import PipelineHeader from "@/components/pipeline/PipelineHeader";
+import ModoTimePlaceholder from "@/components/pipeline/ModoTimePlaceholder";
+import EquipesViewPlaceholder from "@/components/pipeline/EquipesViewPlaceholder";
+import { GERENTES_REAIS } from "@/components/pipeline/header/PipelineGestorSelect";
 
 // Campaign tag definitions
 const CAMPAIGN_TAGS = [
