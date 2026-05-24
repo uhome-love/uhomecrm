@@ -25,10 +25,6 @@ export interface CampaignTag {
   color: string;
 }
 
-interface PipelineSegmento {
-  id: string;
-  nome: string;
-}
 
 export interface PipelineHeaderProps {
   // Counts & data
