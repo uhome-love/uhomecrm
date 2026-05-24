@@ -66,9 +66,32 @@ type ClientStatusFilter = "todos" | LeadClientStatus;
 export default function PipelineKanban() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  // pipeline scope é resolvido logo após o state de gestorFilter (linhas ~142).
-  // Inicializa pipeline sem escopo extra; useMemo abaixo recalcula quando muda.
+  // Filtro CEO por gestor (Fase 1) — declarado ANTES de usePipeline para que
+  // possamos passar scopeCorretorIds e empurrar o filtro pra query do server.
+  const [gestorFilter, setGestorFilter] = useState<string>("todos");
   const { isGestor, isAdmin, isCorretor, loading: roleLoading, roles } = useUserRole();
+  const { data: gestorTeamUserIds } = useQuery({
+    queryKey: ["pipeline-gestor-team", gestorFilter],
+    queryFn: async () => {
+      if (!isAdmin || gestorFilter === "todos") return null;
+      const { data } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", gestorFilter)
+        .eq("status", "ativo");
+      return new Set((data || []).map((r: any) => r.user_id).filter(Boolean) as string[]);
+    },
+    enabled: isAdmin && gestorFilter !== "todos",
+    staleTime: 5 * 60 * 1000,
+  });
+  // Quando CEO escolhe um gestor específico, materializa array pra passar
+  // como scope server-side ao usePipeline. Mantém key estável (sort+join).
+  const pipelineScopeCorretorIds = useMemo<string[] | null>(() => {
+    if (!isAdmin || gestorFilter === "todos") return null;
+    if (!gestorTeamUserIds) return []; // ainda carregando lista → não traz nada
+    return Array.from(gestorTeamUserIds);
+  }, [isAdmin, gestorFilter, gestorTeamUserIds]);
+  const pipeline = usePipeline("leads", { scopeCorretorIds: pipelineScopeCorretorIds });
   const { user: authUser, loading: authLoading } = useAuth();
   // Bug-fix Bug 3: useUserRole retorna loading=false enquanto useAuth ainda
   // resolve user (query disabled => isLoading=false). Combinamos os dois para
