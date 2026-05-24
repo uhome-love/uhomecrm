@@ -30,9 +30,9 @@ interface PipelineBoardProps {
   selectedLeads?: Set<string>;
   onToggleSelect?: (leadId: string) => void;
   sortOrder?: PipelineSortOrder;
-  // Fase B Performance: tarefasMap vem de PipelineKanban (kanbanTarefasMap),
-  // evitando query duplicada de pipeline_tarefas no Board.
-  tarefasMap: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
+  // Opcional para preservar consumidores legados (ex: PosVendas) que ainda
+  // não passam o mapa; nesse caso o Board faz fallback para query local.
+  tarefasMap?: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
 }
 
 const COLUMN_WIDTH_DESKTOP = 268;
