@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 
 export interface PipelineAtividade {
   id: string;
@@ -56,6 +58,7 @@ export interface PipelineHistorico {
 
 export function usePipelineLeadData(leadId: string | null) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [atividades, setAtividades] = useState<PipelineAtividade[]>([]);
   const [anotacoes, setAnotacoes] = useState<PipelineAnotacao[]>([]);
   const [tarefas, setTarefas] = useState<PipelineTarefa[]>([]);
@@ -173,9 +176,10 @@ export function usePipelineLeadData(leadId: string | null) {
     } as any).eq("id", leadId);
 
     toast.success("Tarefa criada ✅");
+    invalidateTaskQueries(queryClient, leadId);
     loadAll();
     return true;
-  }, [user, leadId, loadAll]);
+  }, [user, leadId, loadAll, queryClient]);
 
   const deleteTarefa = useCallback(async (id: string) => {
     const { error } = await supabase.from("pipeline_tarefas").delete().eq("id", id);

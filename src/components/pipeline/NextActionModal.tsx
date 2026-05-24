@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import type { PipelineStage } from "@/hooks/usePipeline";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 
 type OptionType = "tarefa" | "avancar" | "descartar";
 
@@ -47,6 +49,7 @@ interface Props {
 
 export default function NextActionModal({ open, onOpenChange, leadId, leadNome, stages, currentStageId, onMove, onReload }: Props) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selected, setSelected] = useState<OptionType>("tarefa");
   const [saving, setSaving] = useState(false);
 
@@ -81,7 +84,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
     try {
       if (selected === "tarefa") {
         if (!tarefaData) { toast.error("Informe a data da tarefa"); setSaving(false); return; }
-        await supabase.from("pipeline_tarefas").insert({
+        const { error: insertErr } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: leadId,
           titulo: TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa,
           tipo: tipoTarefa,
@@ -92,6 +95,11 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
           hora_vencimento: tarefaHora || null,
           created_by: user.id,
         } as any);
+        if (insertErr) {
+          toast.error("Erro ao criar tarefa: " + insertErr.message);
+          setSaving(false);
+          return;
+        }
         await supabase.from("pipeline_leads").update({
           proxima_acao: TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa,
           data_proxima_acao: tarefaData,
@@ -122,6 +130,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
       }
       resetForm();
       onOpenChange(false);
+      invalidateTaskQueries(queryClient, leadId);
       onReload();
     } catch (err: any) {
       toast.error("Erro: " + (err.message || "Falha ao salvar"));
