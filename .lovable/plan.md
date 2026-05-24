@@ -1,35 +1,52 @@
-## Refino Visual CardMinimal — Nível 2
+## Substatus no Card — Achados + Plano
 
-### Resposta às decisões abertas
+### Investigação no schema
 
-1. **Mapping de tipo:** o card já recebe `proximaTarefa.tipo` como **enum** (`ligacao | whatsapp | email | visita | reuniao | followup | outro`) via `usePipeline`. Não precisa parsear free-text de `lead.proxima_acao` — vou mapear o enum direto, mais robusto. `parseActionType` recebe `tipo: string | null` e retorna `'call' | 'msg' | 'followup' | 'visit' | 'outro'`.
-2. **Coluna empreendimento:** é `lead.empreendimento` (string, já deduplicada via `deduplicateEmp`). Mantenho.
-3. **Truncate:** sim, `truncate` no empreendimento. Pílula sempre visível, texto-quando trunca.
+**Não existem** colunas `tentativas`, `visita_status`, `pos_visita_status`, `negocio_status` em `pipeline_leads`. Tudo o que o drawer chama "Status da Etapa" vive em **um único campo JSONB**: `pipeline_leads.flag_status` (já presente em `PipelineLead.flag_status`, já trafegado em `usePipeline`).
 
-### Arquivos
+A estrutura desse JSONB varia por `stage.tipo`. Já está toda mapeada em `src/components/pipeline/LeadFlagBadges.tsx` — vou **reusar a mesma fonte de verdade** para o card, em vez de inventar nomes novos.
 
-- **`src/lib/leadHelpers.ts`** — adicionar:
-  - `parseTaskActionType(tipo)` → categoria
-  - constantes `ACTION_ICON`, `ACTION_LABEL`, `ACTION_PILL_CLASS` (com versão atrasada: fundo `bg-red-100 text-red-700` para call quando atrasada já é vermelha; demais ganham `ring-1 ring-red-200` se atrasada)
-  - `formatTaskWhen(tarefa)` → só a parte temporal ("agora", "hoje 14:30", "amanhã", "em 3 dias", "28/05", "definir")
+### Mapa real `flag_status` por stage
 
-- **`src/components/pipeline/CardMinimal.tsx`** — re-render:
-  - Linha nome: `text-[13.5px] font-semibold tracking-tight` + menu `···` sempre visível (`text-zinc-400 hover:text-zinc-600`, sem `opacity-0 group-hover`).
-  - Empreendimento: `text-[11px] text-muted-foreground truncate`.
-  - Telefone: `flex items-center gap-1.5` com ícone `📞` 10px cinza claro + número 11px.
-  - Divisor: `border-t border-border/40`.
-  - Linha de ação: pílula colorida (ícone + label) + texto-quando truncado + `Nd` à direita. Atrasada → texto bold vermelho; pílula `call` permanece vermelha (combina com status).
-  - Borda lateral 4px preservada (sem mudanças em `SIDEBAR_BY_STATUS`).
-  - Rodapé corretor/parceria preservado.
+| Stage.tipo | Chaves do JSON | Valores possíveis |
+|---|---|---|
+| `sem_contato` | `tentativas` (string "0".."7") | contador X/7 |
+| `contato_inicial` | `impressao`, `intencao` | `gostou` / `nao_gostou`; `morar` / `investir` |
+| `busca` | `status_busca` | `busca_pendente` / `imoveis_enviados` |
+| `aquecimento` | `prazo` (string dias) | "3", "7", … |
+| `visita` | `status_visita` | `marcada` / `realizada` / `no_show` / `reagendada` |
+| `pos_visita` | `feedback_coletado`/`simulacao_enviada`/`objecoes_mapeadas` ("sim"), `interesse` (`alto`/`medio`/`baixo`) | combinatório |
+| outros (`novo_lead`, `negociacao`, `proposta`, `assinatura`, `descarte`, `convertido`) | — | sem flag estruturada hoje |
+
+**Importante:** "Negócio Criado" não tem substatus em `pipeline_leads` — o status comercial fica em `negocios` (`vendido` / `perdido` etc.) e o card de negócio é o `NegocioCard` separado. Para os leads em estágios de fechamento dentro do pipeline, não há badge — comportamento atual preservado.
+
+### Plano de implementação
+
+**Novo helper `getLeadSubstatusBadge(flagStatus, stageTipo)`** em `src/lib/leadHelpers.ts` retornando **um único** `{ label, className } | null` para caber compacto no header do card. Prioridade (quando há múltiplos sinais no mesmo stage, escolhe o mais "operacional"):
+
+- `sem_contato` → "☎️ X/7" (vermelho se ≥5, âmbar se ≥3, cinza)
+- `contato_inicial` → `intencao` (Morar/Investir) > `impressao` (Gostou/Não gostou)
+- `busca` → `status_busca`
+- `aquecimento` → `⏰ Xd`
+- `visita` → `status_visita` (Marcada/Realizada/No-show/Reagendada)
+- `pos_visita` → `interesse` (🔥 Alto / 🟡 Médio / ❄️ Baixo); fallback para `feedback_coletado=sim` → "💬 Feedback"
+- demais → `null`
+
+Cores via Tailwind tokens (`bg-red-100 text-red-700`, `bg-amber-100 text-amber-700`, `bg-emerald-100 text-emerald-700`, `bg-indigo-100 text-indigo-700`, `bg-purple-100 text-purple-700`, `bg-zinc-100 text-zinc-600`).
+
+**`CardMinimal.tsx`:** inserir o badge no header entre o bloco do nome (flex-1) e o `CardOverflowMenu`. Estrutura: `flex items-start gap-1.5 min-w-0`, badge `shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-semibold leading-tight`. Nome continua truncando primeiro. Quando helper retorna `null`, nada renderiza (sem placeholder).
 
 ### Não toca
 
-- `CardOverflowMenu` (apenas a classe do trigger se necessário — vou inspecionar para garantir que o `···` fique sempre visível; provavelmente o componente já controla isso e basta passar `className` ou ajustar lá um wrapper).
-- DnD, lógica de status, `resolveStatus`, `formatNextAction` (continua disponível mas o card passa a usar a versão decomposta).
-- `NegocioCard`, Sprint 1, Dashboard v3, `usePipeline`.
+- `LeadFlagBadges` (continua sendo usado em outros lugares; novo helper é independente e compacto).
+- `LeadFlagControls`, drawer, `NegocioCard`, queries, types do banco.
+- DnD, menu, ordenação.
 
-### Risco
+### Aceite
 
-- Altura sobe de ~85px para ~95px conforme spec — virtualização (`react-window` no Kanban) usa estimativa; vou checar se há `itemSize` fixo. Se sim, ajusto.
+- Badge aparece à direita do nome, antes do `···`.
+- Stages sem flag preenchida não mostram nada.
+- Cores semânticas conforme spec.
+- Build limpo.
 
 Aguardando GO.

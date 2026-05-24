@@ -94,3 +94,92 @@ export const ACTION_PILL_CLASS: Record<TaskActionType, string> = {
   outro: "bg-zinc-100 text-zinc-600",
 };
 
+// ─────────────────────────────────────────────────────────────────
+// Substatus compacto do CardMinimal — lê pipeline_leads.flag_status
+// Estrutura por stage.tipo mapeada em LeadFlagBadges.tsx (fonte da verdade).
+// Retorna no máx 1 badge para caber no header do card.
+// ─────────────────────────────────────────────────────────────────
+
+export interface SubstatusBadge {
+  label: string;
+  className: string;
+}
+
+const PILL_BASE =
+  "px-1.5 py-0.5 rounded-md text-[10px] font-semibold leading-tight whitespace-nowrap";
+
+const PILL = {
+  red: `${PILL_BASE} bg-red-100 text-red-700`,
+  amber: `${PILL_BASE} bg-amber-100 text-amber-700`,
+  emerald: `${PILL_BASE} bg-emerald-100 text-emerald-700`,
+  indigo: `${PILL_BASE} bg-indigo-100 text-indigo-700`,
+  purple: `${PILL_BASE} bg-purple-100 text-purple-700`,
+  zinc: `${PILL_BASE} bg-zinc-100 text-zinc-600`,
+};
+
+export function getLeadSubstatusBadge(
+  flagStatus: Record<string, string> | null | undefined,
+  stageTipo: string | null | undefined
+): SubstatusBadge | null {
+  if (!flagStatus || !stageTipo) return null;
+  const f = flagStatus;
+
+  switch (stageTipo) {
+    case "sem_contato": {
+      const n = parseInt(f.tentativas || "", 10);
+      if (!Number.isFinite(n) || n <= 0) return null;
+      const color = n >= 5 ? PILL.red : n >= 3 ? PILL.amber : PILL.zinc;
+      return { label: `☎️ ${n}/7`, className: color };
+    }
+
+    case "contato_inicial": {
+      if (f.intencao === "morar") return { label: "🏠 Morar", className: PILL.indigo };
+      if (f.intencao === "investir") return { label: "💰 Investir", className: PILL.purple };
+      if (f.impressao === "gostou") return { label: "👍 Gostou", className: PILL.emerald };
+      if (f.impressao === "nao_gostou") return { label: "👎 Não gostou", className: PILL.red };
+      return null;
+    }
+
+    case "busca": {
+      if (f.status_busca === "imoveis_enviados")
+        return { label: "📨 Enviados", className: PILL.emerald };
+      if (f.status_busca === "busca_pendente")
+        return { label: "🔍 Pendente", className: PILL.amber };
+      return null;
+    }
+
+    case "aquecimento": {
+      const n = parseInt(f.prazo || "", 10);
+      if (!Number.isFinite(n) || n <= 0) return null;
+      return { label: `⏰ ${n}d`, className: PILL.amber };
+    }
+
+    case "visita": {
+      const map: Record<string, SubstatusBadge> = {
+        marcada: { label: "📅 Marcada", className: PILL.indigo },
+        realizada: { label: "✅ Realizada", className: PILL.emerald },
+        no_show: { label: "❌ No-show", className: PILL.red },
+        reagendada: { label: "🔁 Reagendada", className: PILL.amber },
+      };
+      return f.status_visita ? map[f.status_visita] ?? null : null;
+    }
+
+    case "pos_visita": {
+      if (f.interesse === "alto") return { label: "🔥 Alto", className: PILL.red };
+      if (f.interesse === "medio") return { label: "🟡 Médio", className: PILL.amber };
+      if (f.interesse === "baixo") return { label: "❄️ Baixo", className: PILL.zinc };
+      if (f.feedback_coletado === "sim")
+        return { label: "💬 Feedback", className: PILL.emerald };
+      if (f.simulacao_enviada === "sim")
+        return { label: "💰 Simulação", className: PILL.indigo };
+      if (f.objecoes_mapeadas === "sim")
+        return { label: "🤔 Objeções", className: PILL.amber };
+      return null;
+    }
+
+    default:
+      return null;
+  }
+}
+
+
