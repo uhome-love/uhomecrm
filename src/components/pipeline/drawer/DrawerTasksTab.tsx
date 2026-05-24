@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,9 +13,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { PipelineTarefa } from "@/hooks/usePipelineLeadData";
 import { groupTasksByDeadline, formatTaskDeadline } from "@/lib/taskGrouping";
+import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
+import TaskCompletionDialog from "../TaskCompletionDialog";
+import type { CompletionPayload, TipoProximaTarefa } from "../task-completion/types";
+import { runTaskCompletion } from "@/lib/taskCompletion";
 
 interface Props {
   tarefas: PipelineTarefa[];
+  leadId: string;
+  leadNome: string;
+  leadStageId?: string | null;
+  onAddTarefa: (input: {
+    tipo: TipoProximaTarefa;
+    titulo: string;
+    descricao?: string | null;
+    vence_em: string;
+    hora_vencimento?: string | null;
+  }) => Promise<unknown>;
+  /** Mantido para casos edge (não usado pelo botão Feito, que abre o modal). */
   onToggleTarefa: (id: string, status: string) => Promise<void>;
   onDeleteTarefa: (id: string) => Promise<void>;
   onReload: () => void;
