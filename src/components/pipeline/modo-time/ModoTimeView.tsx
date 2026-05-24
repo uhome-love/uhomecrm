@@ -1,18 +1,21 @@
 /**
  * ModoTimeView — container do Modo Time do gestor.
  *
- * Fase 2.2: header + switcher + tabela agregada do time.
- * Fase 2.3 (futuro): alertas + visitas no topo.
- *
- * "Meus Leads" no switcher: nesta fase, ao selecionar essa view,
- * navegamos para o Kanban filtrado pelo próprio gestor (mais simples e
- * operacionalmente equivalente — não duplica lógica de agregação).
+ * Fase 2.3:
+ *  - Alertas no topo (até 3 cards)
+ *  - Visitas da equipe (PipelineTeamVisitas reposicionado)
+ *  - Tabela agregada do time
+ *  - Switcher "Meus Leads": mostra tabela com 1 linha do gestor
+ *    (calculada client-side via calcGestorOwnRow). Click NA linha → Kanban filtrado.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useTimeAgregado } from "@/hooks/useTimeAgregado";
+import { useTimeAgregado, type TimeAgregadoRow } from "@/hooks/useTimeAgregado";
+import { useTimeAlertas, type AlertaAction } from "@/hooks/useTimeAlertas";
 import ModoTimeHeader from "./ModoTimeHeader";
 import ModoTimeTabela from "./ModoTimeTabela";
+import ModoTimeAlertas from "./ModoTimeAlertas";
+import ModoTimeVisitas from "./ModoTimeVisitas";
 import { loadModoTimeView, saveModoTimeView, type ModoTimeView as ViewMode } from "./ModoTimeSwitcher";
 
 interface Props {
@@ -21,14 +24,24 @@ interface Props {
   ownLeadsCount: number;
   /** Click numa linha → filtra Kanban por aquele corretor + troca pra aba kanban. */
   onSelectCorretor: (corretorId: string) => void;
+  /** Linha agregada do próprio gestor (calculada client-side em PipelineKanban). */
+  gestorOwnRow: TimeAgregadoRow | null;
+  /** Click num alerta → aplica filtro no Kanban e troca aba. */
+  onApplyAlertAction: (action: AlertaAction) => void;
 }
 
-export default function ModoTimeView({ gestorId, ownLeadsCount, onSelectCorretor }: Props) {
+export default function ModoTimeView({
+  gestorId,
+  ownLeadsCount,
+  onSelectCorretor,
+  gestorOwnRow,
+  onApplyAlertAction,
+}: Props) {
   const { data: rows = [], isLoading, error } = useTimeAgregado(gestorId);
   const hasOwnLeads = ownLeadsCount > 0;
   const [view, setView] = useState<ViewMode>(() => loadModoTimeView(gestorId));
 
-  // Se o gestor não tem leads próprios, força "meu_time" mesmo que localStorage tenha "meus_leads".
+  // Se o gestor não tem leads próprios, força "meu_time"
   useEffect(() => {
     if (!hasOwnLeads && view === "meus_leads") setView("meu_time");
   }, [hasOwnLeads, view]);
@@ -36,15 +49,20 @@ export default function ModoTimeView({ gestorId, ownLeadsCount, onSelectCorretor
   const handleViewChange = (v: ViewMode) => {
     setView(v);
     saveModoTimeView(gestorId, v);
-    if (v === "meus_leads") {
-      // Atalho: filtra Kanban pelo próprio gestor e troca aba.
-      onSelectCorretor(gestorId);
-    }
   };
+
+  const alertas = useTimeAlertas(rows);
+
+  const displayRows = useMemo<TimeAgregadoRow[]>(() => {
+    if (view === "meus_leads") return gestorOwnRow ? [gestorOwnRow] : [];
+    return rows;
+  }, [view, rows, gestorOwnRow]);
 
   const subtitle =
     view === "meu_time" && rows.length > 0
       ? `${rows.length} ${rows.length === 1 ? "corretor" : "corretores"} no time`
+      : view === "meus_leads"
+      ? "Seus leads como corretor"
       : undefined;
 
   return (
@@ -55,6 +73,13 @@ export default function ModoTimeView({ gestorId, ownLeadsCount, onSelectCorretor
         hasOwnLeads={hasOwnLeads}
         subtitle={subtitle}
       />
+
+      {view === "meu_time" && (
+        <>
+          <ModoTimeAlertas alertas={alertas} onActionClick={onApplyAlertAction} />
+          <ModoTimeVisitas />
+        </>
+      )}
 
       {isLoading && (
         <div className="flex items-center justify-center py-16">
@@ -69,7 +94,7 @@ export default function ModoTimeView({ gestorId, ownLeadsCount, onSelectCorretor
       )}
 
       {!isLoading && !error && (
-        <ModoTimeTabela rows={rows} onRowClick={onSelectCorretor} />
+        <ModoTimeTabela rows={displayRows} onRowClick={onSelectCorretor} />
       )}
     </div>
   );

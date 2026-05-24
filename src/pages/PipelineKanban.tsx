@@ -41,6 +41,8 @@ import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
 import PipelineHeader from "@/components/pipeline/PipelineHeader";
 import ModoTimeView from "@/components/pipeline/modo-time/ModoTimeView";
+import { calcGestorOwnRow } from "@/lib/calcGestorOwnRow";
+import type { AlertaAction } from "@/hooks/useTimeAlertas";
 import EquipesViewPlaceholder from "@/components/pipeline/EquipesViewPlaceholder";
 import { GERENTES_REAIS } from "@/components/pipeline/header/PipelineGestorSelect";
 
@@ -675,6 +677,21 @@ export default function PipelineKanban() {
                     onSelectCorretor={(corretorId) => {
                       setCorretorFilter(corretorId);
                       setActiveTab("kanban");
+                    }}
+                    gestorOwnRow={calcGestorOwnRow({
+                      gestorAuthId: authUser.id,
+                      gestorNome: pipeline.corretorNomes[authUser.id] || authUser.email || "Você",
+                      gestorAvatarUrl: pipeline.corretorAvatars[authUser.id] || null,
+                      leads: pipeline.leads || [],
+                      tarefasMap: kanbanTarefasMap,
+                      stageTipoById: stageTypeById,
+                    })}
+                    onApplyAlertAction={(action: AlertaAction) => {
+                      if (action.tipo === "filtrar_kanban") {
+                        if (action.filtros.corretor_id) setCorretorFilter(action.filtros.corretor_id);
+                        if (action.filtros.status_lead) setClientStatusFilter(action.filtros.status_lead);
+                        setActiveTab("kanban");
+                      }
                     }}
                   />
                 ) : null
