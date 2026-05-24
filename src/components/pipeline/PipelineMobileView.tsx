@@ -28,7 +28,7 @@ interface PipelineMobileViewProps {
 const LOAD_BATCH = 20;
 
 const PipelineMobileView = memo(function PipelineMobileView({
-  stages, leads, corretorNomes, parcerias,
+  stages, leads, corretorNomes, parcerias, onMoveLead,
   onSelectLead, selectionMode, selectedLeads, onToggleSelect,
 }: PipelineMobileViewProps) {
   const [activeStageId, setActiveStageId] = useState(stages[0]?.id || "");
@@ -209,6 +209,8 @@ const PipelineMobileView = memo(function PipelineMobileView({
               <CardMinimal
                 lead={lead}
                 stage={activeStage}
+                stages={stages}
+                onMoveLead={onMoveLead}
                 corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
                 parceiroNome={parcerias[lead.id]}
                 proximaTarefa={tarefasMap[lead.id] || null}

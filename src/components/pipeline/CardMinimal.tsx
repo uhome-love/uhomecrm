@@ -20,7 +20,8 @@ import { memo, useMemo } from "react";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT } from "@/lib/brtTime";
-import { MoreVertical, Handshake } from "lucide-react";
+import { Handshake } from "lucide-react";
+import CardOverflowMenu from "./CardOverflowMenu";
 
 export interface CardMinimalProximaTarefa {
   tipo: string | null;
@@ -36,6 +37,12 @@ interface CardMinimalProps {
   proximaTarefa?: CardMinimalProximaTarefa | null;
   onClick: () => void;
   onDragStart: () => void;
+  /** Stages do pipeline — necessário para o menu ··· (sub-menu "Mudar de etapa"). */
+  stages?: PipelineStage[];
+  /** Handler para mover lead via menu. Se omitido, sub-menu é desabilitado. */
+  onMoveLead?: (leadId: string, newStageId: string, observacao?: string) => void;
+  /** Callback após repasse de lead. */
+  onTransferred?: (leadId: string, corretorId: string, nome: string) => void;
 }
 
 type StatusKey = "atrasada" | "hoje" | "futura" | "sem" | "convertido" | "descarte";
@@ -124,6 +131,9 @@ const CardMinimal = memo(function CardMinimal({
   proximaTarefa,
   onClick,
   onDragStart,
+  stages,
+  onMoveLead,
+  onTransferred,
 }: CardMinimalProps) {
   const status = useMemo(
     () => resolveStatus(proximaTarefa ?? null, stage?.tipo),
@@ -148,6 +158,8 @@ const CardMinimal = memo(function CardMinimal({
   const dias = useMemo(() => daysInStage(lead.stage_changed_at), [lead.stage_changed_at]);
   const diasLabel = dias == null || dias < 1 ? null : dias > 30 ? "30d+" : `${dias}d`;
 
+  const menuEnabled = !!(stages && onMoveLead);
+
   return (
     <div
       draggable
@@ -157,7 +169,6 @@ const CardMinimal = memo(function CardMinimal({
         "group relative cursor-pointer rounded-xl bg-card border border-border/60",
         "px-3 py-2.5 pl-4 shadow-sm hover:shadow-md transition-all",
         "hover:border-border hover:-translate-y-px",
-        // sidebar 4px via ::before
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
         SIDEBAR_BY_STATUS[status],
       ].join(" ")}
@@ -174,19 +185,15 @@ const CardMinimal = memo(function CardMinimal({
             </div>
           )}
         </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            // 3-dot delega abrir drawer (regra "Tudo no Lead").
-            // Não para propagação porque o próprio onClick do card já abre.
-            e.stopPropagation();
-            onClick();
-          }}
-          className="shrink-0 -mr-1 -mt-0.5 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity"
-          aria-label="Ações do lead"
-        >
-          <MoreVertical className="h-3.5 w-3.5" />
-        </button>
+        {menuEnabled && (
+          <CardOverflowMenu
+            lead={lead}
+            stages={stages!}
+            onMoveLead={onMoveLead!}
+            onOpenDetail={onClick}
+            onTransferred={onTransferred}
+          />
+        )}
       </div>
 
       {/* Telefone */}
@@ -199,19 +206,17 @@ const CardMinimal = memo(function CardMinimal({
       {/* Divisor sutil */}
       <div className="mt-2 border-t border-border/40" />
 
-      {/* Próxima ação */}
-      <div className={`mt-2 text-[11px] font-medium truncate ${NEXT_ACTION_TONE[status]}`}>
-        {nextActionLabel}
-      </div>
-
-      {/* Pílula dias na etapa */}
-      {diasLabel && (
-        <div className="mt-1.5">
-          <span className="inline-block text-[10px] font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-md">
+      {/* Próxima ação + dias-na-etapa (compactado em 1 linha) */}
+      <div className="mt-2 flex justify-between items-center gap-2">
+        <span className={`flex-1 min-w-0 truncate text-[11px] font-medium ${NEXT_ACTION_TONE[status]}`}>
+          {nextActionLabel}
+        </span>
+        {diasLabel && (
+          <span className="shrink-0 text-[10px] max-[479px]:text-[9px] font-medium text-muted-foreground">
             {diasLabel}
           </span>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Rodapé: corretor / parceria — só aparece quando houver dado */}
       {(corretorNome || parceiroNome) && (
