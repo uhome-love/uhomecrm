@@ -75,7 +75,31 @@ export default function PipelineKanban() {
   const [filters, setFilters] = useState<PipelineFilters>({ ...EMPTY_FILTERS });
   const { data: parcerias = {} } = useParceriasMap();
   const { data: partnerLeadsByCorretor = {} } = usePartnerLeadsByCorretor();
-  const [activeTab, setActiveTab] = useState("kanban");
+  // Tab default por role + persistência em localStorage (Fase 1 refactor visões)
+  const roleKey: "admin" | "gestor" | "corretor" = isAdmin ? "admin" : isGestor ? "gestor" : "corretor";
+  const tabStorageKey = `uhome:pipeline-mode:${roleKey}`;
+  const defaultTabForRole = isAdmin ? "equipes" : isGestor ? "time" : "kanban";
+  const allowedTabsForRole: string[] = isAdmin
+    ? ["equipes", "kanban", "inteligencia"]
+    : isGestor
+    ? ["time", "kanban", "inteligencia"]
+    : ["kanban", "inteligencia"];
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window === "undefined") return defaultTabForRole;
+    try {
+      const saved = window.localStorage.getItem(tabStorageKey);
+      if (saved && allowedTabsForRole.includes(saved)) return saved;
+    } catch { /* ignore */ }
+    return defaultTabForRole;
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem(tabStorageKey, activeTab); } catch { /* ignore */ }
+  }, [activeTab, tabStorageKey]);
+  // Se a role mudou (login/logout) e o tab salvo não pertence ao role atual, força default.
+  useEffect(() => {
+    if (!allowedTabsForRole.includes(activeTab)) setActiveTab(defaultTabForRole);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleKey]);
   const [sortOrder, setSortOrder] = useState<SortOrder>(loadSortOrder);
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
