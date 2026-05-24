@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import type { PipelineStage } from "@/hooks/usePipeline";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 
 type OptionType = "tarefa" | "avancar" | "descartar";
 
