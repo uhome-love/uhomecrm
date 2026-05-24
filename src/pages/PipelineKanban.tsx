@@ -42,6 +42,7 @@ import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type 
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
 import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
+import PipelineHeader from "@/components/pipeline/PipelineHeader";
 
 // Campaign tag definitions
 const CAMPAIGN_TAGS = [
