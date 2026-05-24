@@ -28,7 +28,7 @@ interface PipelineMobileViewProps {
 const LOAD_BATCH = 20;
 
 const PipelineMobileView = memo(function PipelineMobileView({
-  stages, leads, corretorNomes, parcerias,
+  stages, leads, corretorNomes, parcerias, onMoveLead,
   onSelectLead, selectionMode, selectedLeads, onToggleSelect,
 }: PipelineMobileViewProps) {
   const [activeStageId, setActiveStageId] = useState(stages[0]?.id || "");
