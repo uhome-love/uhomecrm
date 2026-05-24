@@ -5,9 +5,11 @@
  *   - Em dia / Sem tarefa / Atrasado vêm de `useCorretorKpisCarteira` (mesma queryKey/cache)
  *   - Negócios vem de `useNegociosCount` (categoria informacional, stage convertido)
  *
- * Decisão CEO 23/05/2026:
- *   - "Em dia" = `em_dia` puro (espelha Dashboard, não soma para_hoje)
- *   - "Para hoje" NÃO vira pílula — Activity-Based sort já empurra para topo da coluna
+ * Decisão CEO 25/05/2026 (revisão da decisão de 23/05):
+ *   - "Em dia" no Pipeline = `em_dia + para_hoje` (saúde do funil, não execução do dia)
+ *   - Soma garante que Em dia + Sem tarefa + Atrasado + Negócios = total do header
+ *   - Dashboard segue mostrando 4 buckets separados (visão de execução do dia)
+ *   - Princípio 59b: mesma fonte de verdade ≠ números idênticos; agrupamento pode variar por tela
  *
  * Click escreve `?filtro=em_dia|sem_tarefa|atrasado|negocios` na URL e chama onChange.
  * URL é a fonte de verdade do filtro; PipelineKanban tem useEffect que re-sincroniza.
@@ -47,7 +49,8 @@ export default function PipelineFiltroBadges({ active, onChange }: PipelineFiltr
   const { data: negocios = 0 } = useNegociosCount();
 
   const counts: Record<PipelineFiltroKey, number> = {
-    em_dia: carteira?.em_dia ?? 0,
+    // "Em dia" agrega em_dia + para_hoje — leads saudáveis (não atrasados, não sem tarefa).
+    em_dia: (carteira?.em_dia ?? 0) + (carteira?.para_hoje ?? 0),
     sem_tarefa: carteira?.sem_tarefa ?? 0,
     atrasado: carteira?.atrasado ?? 0,
     negocios,
@@ -83,7 +86,7 @@ export default function PipelineFiltroBadges({ active, onChange }: PipelineFiltr
             onClick={() => handleClick(b.key)}
             title={
               b.key === "em_dia"
-                ? "Tarefas de hoje aparecem no topo da coluna"
+                ? "Leads em dia (inclui tarefas pra hoje que ainda não venceram)"
                 : `Filtrar por ${b.label}`
             }
             style={{
