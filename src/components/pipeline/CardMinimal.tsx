@@ -49,9 +49,22 @@ function resolveStatus(
   if (!tarefa?.vence_em) return "sem";
   const hoje = todayBRT();
   if (tarefa.vence_em < hoje) return "atrasada";
-  if (tarefa.vence_em === hoje) return "hoje";
+  if (tarefa.vence_em === hoje) {
+    // Mesmo dia: se hora_vencimento já passou (BRT), considera atrasada
+    // (alinhado com getLeadStatusFilter para que filtro e borda do card combinem).
+    if (tarefa.hora_vencimento) {
+      const nowHHMM = new Date().toLocaleTimeString("en-GB", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      if (tarefa.hora_vencimento.slice(0, 5) < nowHHMM) return "atrasada";
+    }
+    return "hoje";
+  }
   return "futura";
 }
+
 
 // Borda 4px à esquerda — semantic-friendly Tailwind classes.
 const SIDEBAR_BY_STATUS: Record<StatusKey, string> = {

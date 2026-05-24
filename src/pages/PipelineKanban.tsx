@@ -79,6 +79,7 @@ export default function PipelineKanban() {
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
   const [clientStatusFilter, setClientStatusFilter] = useState<ClientStatusFilter>("todos");
+  const [negociosFilter, setNegociosFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -125,18 +126,24 @@ export default function PipelineKanban() {
   // "negocios" é informacional (filter por stage) — fica pra Fase 6 implementar.
   useEffect(() => {
     const f = searchParams.get("filtro");
-    if (!f) return;
     const urlToInternal: Record<string, ClientStatusFilter> = {
       em_dia: "em_dia",
       sem_tarefa: "desatualizado",
       atrasado: "tarefa_atrasada",
     };
+    if (f === "negocios") {
+      if (!negociosFilter) setNegociosFilter(true);
+      if (clientStatusFilter !== "todos") setClientStatusFilter("todos");
+      return;
+    }
+    if (negociosFilter) setNegociosFilter(false);
+    if (!f) return;
     const target = urlToInternal[f];
     if (target && target !== clientStatusFilter) {
       setClientStatusFilter(target);
     }
-    // "negocios" não mexe em clientStatusFilter — Fase 6 trata via stage filter.
   }, [searchParams]);
+
 
   // Load tasks for status classification
   const leadIds = useMemo(() => pipeline.leads.map(l => l.id), [pipeline.leads]);
@@ -224,12 +231,17 @@ export default function PipelineKanban() {
   }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor]);
 
   const filteredLeads = useMemo(() => {
-    if (clientStatusFilter !== "todos") {
-      const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
-      return preFilteredLeads.filter(l => getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id)) === clientStatusFilter);
+    const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
+    let result = preFilteredLeads;
+    if (negociosFilter) {
+      result = result.filter(l => stageMap.get(l.stage_id) === "convertido");
     }
-    return preFilteredLeads;
-  }, [preFilteredLeads, clientStatusFilter, kanbanTarefasMap]);
+    if (clientStatusFilter !== "todos") {
+      result = result.filter(l => getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id)) === clientStatusFilter);
+    }
+    return result;
+  }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages]);
+
 
   const corretorOptions = useMemo(() => {
     const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
@@ -308,14 +320,15 @@ export default function PipelineKanban() {
     setFilters({ ...EMPTY_FILTERS });
     setCampaignTagFilter("all");
     setClientStatusFilter("todos");
-    // Limpa URL pra não re-disparar useEffect de sync acima.
+    setNegociosFilter(false);
     if (searchParams.get("filtro")) {
       searchParams.delete("filtro");
       setSearchParams(searchParams, { replace: true });
     }
   };
 
-  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos";
+  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter;
+
 
   if (pipeline.loading) {
     return (
@@ -886,19 +899,25 @@ export default function PipelineKanban() {
             <div className="shrink-0">
               <PipelineFiltroBadges
                 active={
-                  clientStatusFilter === "em_dia" ? "em_dia"
+                  negociosFilter ? "negocios"
+                  : clientStatusFilter === "em_dia" ? "em_dia"
                   : clientStatusFilter === "desatualizado" ? "sem_tarefa"
                   : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
                   : null
                 }
                 onChange={(key) => {
-                  const internalMap: Record<PipelineFiltroKey, ClientStatusFilter> = {
+                  if (key === "negocios") {
+                    setNegociosFilter(true);
+                    setClientStatusFilter("todos");
+                    return;
+                  }
+                  setNegociosFilter(false);
+                  const internalMap: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
                     em_dia: "em_dia",
                     sem_tarefa: "desatualizado",
                     atrasado: "tarefa_atrasada",
-                    negocios: "todos", // Fase 6: stage filter ainda não implementado
                   };
-                  setClientStatusFilter(key ? internalMap[key] : "todos");
+                  setClientStatusFilter(key ? internalMap[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
                 }}
               />
             </div>
