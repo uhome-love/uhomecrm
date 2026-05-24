@@ -86,7 +86,7 @@ export default function PipelineFiltroBadges({ active, onChange }: PipelineFiltr
             onClick={() => handleClick(b.key)}
             title={
               b.key === "em_dia"
-                ? "Tarefas de hoje aparecem no topo da coluna"
+                ? "Leads em dia (inclui tarefas pra hoje que ainda não venceram)"
                 : `Filtrar por ${b.label}`
             }
             style={{
