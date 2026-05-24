@@ -6,7 +6,7 @@
 // Click → abre drawer do lead (regra "Tudo no Lead").
 // ─────────────────────────────────────────────────────────────────
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { NEGOCIOS_FASES } from "@/hooks/useNegocios";
 import { formatBRLCompact } from "@/lib/utils";
