@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { MapPin, Calendar, Plus, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRT, parseDateBRTSafe as _x } from "@/lib/brtTime";
+import { formatBRT } from "@/lib/brtTime";
 import { parseDateBRTSafe } from "@/lib/utils";
 import { groupVisitsByStatus, type VisitaLike } from "@/lib/visitGrouping";
 
