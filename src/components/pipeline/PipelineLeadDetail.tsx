@@ -336,7 +336,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
         {/* ════════════ LAYOUT 2 COLUNAS (Drawer wide v3) ════════════ */}
         <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DrawerLeadInfo>
+        <DrawerLeadInfo resetKey={lead.id}>
         {/* ════════════ HEADER editorial (Drawer Wide v4) ════════════ */}
         <DrawerLeadHeader
           nome={lead.nome}
