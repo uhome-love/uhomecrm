@@ -16,7 +16,7 @@
 //   • Linha 4 (opcional): telefone + parceiro/corretor
 // ─────────────────────────────────────────────────────────────────
 
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT } from "@/lib/brtTime";
@@ -159,18 +159,22 @@ const CardMinimal = memo(function CardMinimal({
   const diasLabel = dias == null || dias < 1 ? null : dias > 30 ? "30d+" : `${dias}d`;
 
   const menuEnabled = !!(stages && onMoveLead);
+  const [isDragging, setIsDragging] = useState(false);
 
   return (
     <div
       draggable
-      onDragStart={onDragStart}
+      onDragStart={() => { setIsDragging(true); onDragStart(); }}
+      onDragEnd={() => setIsDragging(false)}
       onClick={onClick}
+      data-dragging={isDragging || undefined}
       className={[
         "group relative cursor-pointer rounded-xl bg-card border border-border/60",
         "px-3 py-2.5 pl-4 shadow-sm hover:shadow-md transition-all",
         "hover:border-border hover:-translate-y-px",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
         SIDEBAR_BY_STATUS[status],
+        isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >
       {/* Header: nome + 3-dot */}
