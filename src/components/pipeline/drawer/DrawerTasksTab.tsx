@@ -3,7 +3,7 @@
 // Agrupa por prazo: atrasadas / hoje / amanhã / esta semana / próximas
 // ─────────────────────────────────────────────────────────────────
 import { useMemo, useState } from "react";
-import { Phone, MessageCircle, Mail, Calendar, FileText, Home, CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw } from "lucide-react";
+import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
