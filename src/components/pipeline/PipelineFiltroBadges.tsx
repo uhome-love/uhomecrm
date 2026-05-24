@@ -60,6 +60,14 @@ export default function PipelineFiltroBadges({ active, onChange }: PipelineFiltr
     else searchParams.delete("filtro");
     setSearchParams(searchParams, { replace: true });
     onChange(next);
+    // Scroll horizontal até "Negócio Criado" quando ativar o filtro Negócios
+    if (next === "negocios") {
+      requestAnimationFrame(() => {
+        document
+          .querySelector('[data-stage-tipo="convertido"]')
+          ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+      });
+    }
   };
 
   return (
