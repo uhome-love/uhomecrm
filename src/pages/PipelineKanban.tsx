@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/components/pipeline/CardStatusLine";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
+import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
 
 // Campaign tag definitions
 const CAMPAIGN_TAGS = [
@@ -881,30 +882,27 @@ export default function PipelineKanban() {
 
             <div className="flex-1" />
 
-            {/* Indicators */}
-            <div className="flex items-center gap-3 shrink-0">
-              <button
-                onClick={() => setClientStatusFilter(f => f === "em_dia" ? "todos" : "em_dia")}
-                className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#10b981] bg-transparent border-none cursor-pointer ${clientStatusFilter === "em_dia" ? "opacity-100" : "opacity-70"}`}
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
-                {displayedClientStatusCounts.em_dia.toLocaleString("pt-BR")}
-              </button>
-              <button
-                onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
-                className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#f59e0b] bg-transparent border-none cursor-pointer ${clientStatusFilter === "desatualizado" ? "opacity-100" : "opacity-70"}`}
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
-                {displayedClientStatusCounts.desatualizado.toLocaleString("pt-BR")}
-              </button>
-              <button
-                onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
-                className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#ef4444] bg-transparent border-none cursor-pointer ${clientStatusFilter === "tarefa_atrasada" ? "opacity-100" : "opacity-70"}`}
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
-                {displayedClientStatusCounts.tarefa_atrasada.toLocaleString("pt-BR")}
-              </button>
+            {/* Pílulas unificadas Dashboard↔Pipeline (Fase 2) */}
+            <div className="shrink-0">
+              <PipelineFiltroBadges
+                active={
+                  clientStatusFilter === "em_dia" ? "em_dia"
+                  : clientStatusFilter === "desatualizado" ? "sem_tarefa"
+                  : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
+                  : null
+                }
+                onChange={(key) => {
+                  const internalMap: Record<PipelineFiltroKey, ClientStatusFilter> = {
+                    em_dia: "em_dia",
+                    sem_tarefa: "desatualizado",
+                    atrasado: "tarefa_atrasada",
+                    negocios: "todos", // Fase 6: stage filter ainda não implementado
+                  };
+                  setClientStatusFilter(key ? internalMap[key] : "todos");
+                }}
+              />
             </div>
+
 
             {hasAnyFilter && (
               <button
