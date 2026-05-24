@@ -320,14 +320,15 @@ export default function PipelineKanban() {
     setFilters({ ...EMPTY_FILTERS });
     setCampaignTagFilter("all");
     setClientStatusFilter("todos");
-    // Limpa URL pra não re-disparar useEffect de sync acima.
+    setNegociosFilter(false);
     if (searchParams.get("filtro")) {
       searchParams.delete("filtro");
       setSearchParams(searchParams, { replace: true });
     }
   };
 
-  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos";
+  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter;
+
 
   if (pipeline.loading) {
     return (
