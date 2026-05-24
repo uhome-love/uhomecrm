@@ -38,6 +38,16 @@ export default function TarefasHojeLateral({ variant }: Props) {
           <Sparkles className="h-6 w-6 text-emerald-500 mx-auto mb-2" />
           <div className="text-sm font-semibold text-foreground">Você está em dia</div>
           <div className="text-xs text-muted-foreground mt-1">Nenhuma tarefa pendente para hoje</div>
+          <button
+            type="button"
+            onClick={() => {
+              logDashboard("dashboard_task_click", { action: "ver_proximas", tab: "semana" });
+              navigate("/minhas-tarefas?tab=semana");
+            }}
+            className="mt-4 text-[11px] text-indigo-500 hover:text-indigo-600 hover:underline"
+          >
+            Ver próximas tarefas →
+          </button>
         </div>
       ) : (
         tarefas.map((t) => (
