@@ -236,6 +236,11 @@ const CardMinimal = memo(function CardMinimal({
       <div className="flex items-start gap-1.5 min-w-0">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
+            {stage?.tipo === "novo_lead" && (
+              <span className="shrink-0 inline-block bg-[#4F46E5] text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Novo
+              </span>
+            )}
             <div className="flex-1 min-w-0 text-[13.5px] font-semibold text-foreground tracking-tight leading-tight truncate">
               {lead.nome || "Sem nome"}
             </div>
