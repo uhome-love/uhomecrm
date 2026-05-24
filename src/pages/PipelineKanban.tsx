@@ -188,7 +188,7 @@ export default function PipelineKanban() {
   const { data: visitaLeadIds } = useQuery({
     queryKey: ["pipeline-visita-lead-ids"],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayBRT();
       const { data } = await supabase
         .from("visitas")
         .select("pipeline_lead_id")
