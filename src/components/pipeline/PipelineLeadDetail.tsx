@@ -48,6 +48,7 @@ import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 
 import NextActionModal from "./NextActionModal";
 import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
+import CardOverflowMenu from "./CardOverflowMenu";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
 import StageCoachBar from "./StageCoachBar";
