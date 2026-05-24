@@ -509,33 +509,31 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             )}
           </div>
 
-          {/* Row 3: Actions bar — horizontal scroll on mobile */}
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
-            {lead.telefone && (
-              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}>
-                <Phone className="h-3.5 w-3.5" /> Ligar
-              </Button>
-            )}
-            {lead.telefone && (
-              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}>
-                <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
-              </Button>
-            )}
-            <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "scripts" }); setComunicacaoOpen(true); }}>
-              <FileText className="h-3.5 w-3.5" /> Scripts
-            </Button>
-            
-            
-            <QuickActionMenu leadId={lead.id} leadNome={lead.nome} corretorId={lead.corretor_id} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
-              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar" })}>
-                <Zap className="h-3.5 w-3.5" /> Registrar
-              </Button>
-            </QuickActionMenu>
+          {/* Row 3: Action grid 2x2 + overflow menu */}
+          <div className="flex items-start gap-1.5">
+            <div className="flex-1 min-w-0">
+              <DrawerActionGrid
+                hasPhone={!!lead.telefone}
+                primary={nextTask ? undefined : (lead.telefone ? "ligar" : "anotar")}
+                onLigar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
+                onWhatsapp={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
+                onScripts={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "scripts" }); setComunicacaoOpen(true); }}
+                onRegistrar={() => { /* wrapped abaixo via QuickActionMenu */ }}
+                onAnotar={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setAnotarOpen(true); }}
+                registrarWrapper={(node) => (
+                  <QuickActionMenu leadId={lead.id} leadNome={lead.nome} corretorId={lead.corretor_id} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
+                    <div onClick={() => trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "registrar" })}>
+                      {node}
+                    </div>
+                  </QuickActionMenu>
+                )}
+              />
+            </div>
 
             {/* More menu */}
             <DropdownMenu onOpenChange={(open) => { if (open) trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "more_menu" }); }}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg shrink-0">
+                <Button variant="ghost" size="sm" className="h-10 w-9 p-0 rounded-lg shrink-0">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -558,6 +556,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
+          {/* Row 3.5: Empreendimento metrics card */}
+          <DrawerEmpreendimento
+            empreendimento={null /* já renderizado em row 2.5 */}
+            tentativasContato={callAttempts}
+            diasNaEtapa={Math.floor(hoursInStage / 24)}
+            diasDesdeUltimoContato={daysSinceLastAction}
+          />
 
 
           {/* Row 4: Context line — empreendimento + formulário + status + tags */}
