@@ -19,10 +19,16 @@
 import { memo, useMemo, useState } from "react";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
-import { todayBRT } from "@/lib/brtTime";
-import { Handshake } from "lucide-react";
+import { todayBRT, formatBRT } from "@/lib/brtTime";
+import { Handshake, Phone } from "lucide-react";
 import CardOverflowMenu from "./CardOverflowMenu";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
+import {
+  parseTaskActionType,
+  ACTION_ICON,
+  ACTION_LABEL,
+  ACTION_PILL_CLASS,
+} from "@/lib/leadHelpers";
 
 export interface CardMinimalProximaTarefa {
   tipo: string | null;
