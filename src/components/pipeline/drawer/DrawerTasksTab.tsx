@@ -110,11 +110,16 @@ const GROUPS: Array<{ key: keyof ReturnType<typeof groupTasksByDeadline>; icon: 
 
 export default function DrawerTasksTab({
   tarefas,
-  onToggleTarefa,
+  leadId,
+  leadNome,
+  leadStageId,
+  onAddTarefa,
+  onToggleTarefa: _onToggleTarefa, // eslint-disable-line @typescript-eslint/no-unused-vars
   onDeleteTarefa,
   onReload,
   onNovaTarefa,
 }: Props) {
+  const queryClient = useQueryClient();
   const grouped = useMemo(() => groupTasksByDeadline(tarefas), [tarefas]);
   const countAtrasadas = grouped.atrasadas.length;
   const countHoje = grouped.hoje.length;
@@ -123,6 +128,27 @@ export default function DrawerTasksTab({
 
   const [editTarefa, setEditTarefa] = useState<PipelineTarefa | null>(null);
   const [adiarTarefa, setAdiarTarefa] = useState<PipelineTarefa | null>(null);
+  const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
+
+  async function handleCompletionConfirm(payload: CompletionPayload) {
+    if (!completingTarefa) return;
+    const result = await runTaskCompletion(
+      {
+        tarefaId: completingTarefa.id,
+        tarefaTitulo: completingTarefa.titulo,
+        leadId,
+        leadNome,
+        leadStageId: leadStageId ?? null,
+        addTarefa: onAddTarefa,
+      },
+      payload,
+    );
+    if (result.level === "error") toast.error(result.toastMessage);
+    else toast.success(result.toastMessage);
+    setCompletingTarefa(null);
+    onReload();
+    invalidateTaskQueries(queryClient, leadId);
+  }
 
   return (
     <div className="pb-8">
