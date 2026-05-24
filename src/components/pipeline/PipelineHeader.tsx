@@ -521,10 +521,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
         {/* Line 2 — Tabs + Intel toggle + ações admin */}
         <div className="flex items-center overflow-x-auto h-9 px-6 gap-1">
-          {[
-            { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
-            { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
-          ].map(tab => (
+          {roleTabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
