@@ -358,6 +358,25 @@ export default function PipelineKanban() {
     return counts;
   }, [preFilteredLeads, kanbanTarefasMap, stageTypeById, pipeline.stages.length]);
 
+  // Pílulas (Bug 1 fix): conta client-side a partir dos leads em escopo
+  // — funciona para corretor, gestor e CEO (com/sem filtro de gestor).
+  // Substitui os hooks `useCorretorKpisCarteira`/`useNegociosCount`, que
+  // filtravam por `corretor_id = user.id` e zeravam para admin/gestor.
+  const pillCounts = useMemo(() => {
+    let negocios = 0;
+    if (pipeline.stages.length > 0) {
+      for (const l of preFilteredLeads) {
+        if (stageTypeById[l.stage_id] === "convertido") negocios++;
+      }
+    }
+    return {
+      em_dia: clientStatusCounts.em_dia,
+      sem_tarefa: clientStatusCounts.desatualizado,
+      atrasado: clientStatusCounts.tarefa_atrasada,
+      negocios,
+    };
+  }, [preFilteredLeads, stageTypeById, pipeline.stages.length, clientStatusCounts]);
+
   const lastStableClientStatusCountsRef = useRef(clientStatusCounts);
   const clientStatusCountsReady = pipeline.stages.length > 0 && (!leadIds.length || !tarefasLoading);
 
