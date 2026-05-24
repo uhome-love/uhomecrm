@@ -33,7 +33,7 @@ export default function DrawerLeadInfo({ children, resetKey }: Props) {
       data-drawer-pane="info"
     >
       <ScrollArea className="flex-1 min-h-0">
-        <div className="px-5 py-4 space-y-3">
+        <div className="px-5 pt-2 pb-4 space-y-3">
           {children}
         </div>
       </ScrollArea>
