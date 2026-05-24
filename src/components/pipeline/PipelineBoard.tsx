@@ -870,6 +870,11 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   </div>
                 </div>
 
+                {/* Drop placeholder pulsante */}
+                {isDragOver && (
+                  <div className="h-1 my-1 rounded bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent animate-pulse" />
+                )}
+
                 {/* Cards list — convertido usa coluna com agrupamento próprio */}
                 {stage.tipo === "convertido" ? (
                   <NegocioCriadoColumn
