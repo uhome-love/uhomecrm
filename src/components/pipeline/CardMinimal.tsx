@@ -100,6 +100,22 @@ function deduplicateEmp(raw: string): string {
   return out.join(" · ");
 }
 
+function formatPhoneBR(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const d = String(raw).replace(/\D/g, "");
+  const local = (d.length === 13 || d.length === 12) && d.startsWith("55") ? d.slice(2) : d;
+  if (local.length === 11) return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
+  if (local.length === 10) return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
+  return raw;
+}
+
+function daysInStage(stageChangedAt: string | null | undefined): number | null {
+  if (!stageChangedAt) return null;
+  const t = new Date(stageChangedAt).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.floor((Date.now() - t) / 86400000);
+}
+
 const CardMinimal = memo(function CardMinimal({
   lead,
   stage,
@@ -123,6 +139,14 @@ const CardMinimal = memo(function CardMinimal({
     () => deduplicateEmp(lead.empreendimento || ""),
     [lead.empreendimento]
   );
+
+  const telefoneFmt = useMemo(
+    () => formatPhoneBR(lead.telefone || lead.telefone2 || ""),
+    [lead.telefone, lead.telefone2]
+  );
+
+  const dias = useMemo(() => daysInStage(lead.stage_changed_at), [lead.stage_changed_at]);
+  const diasLabel = dias == null || dias < 1 ? null : dias > 30 ? "30d+" : `${dias}d`;
 
   return (
     <div
@@ -165,10 +189,29 @@ const CardMinimal = memo(function CardMinimal({
         </button>
       </div>
 
+      {/* Telefone */}
+      {telefoneFmt && (
+        <div className="mt-1 text-[12px] text-foreground/80 truncate">
+          {telefoneFmt}
+        </div>
+      )}
+
+      {/* Divisor sutil */}
+      <div className="mt-2 border-t border-border/40" />
+
       {/* Próxima ação */}
-      <div className={`mt-1.5 text-[11px] font-medium truncate ${NEXT_ACTION_TONE[status]}`}>
+      <div className={`mt-2 text-[11px] font-medium truncate ${NEXT_ACTION_TONE[status]}`}>
         {nextActionLabel}
       </div>
+
+      {/* Pílula dias na etapa */}
+      {diasLabel && (
+        <div className="mt-1.5">
+          <span className="inline-block text-[10px] font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-md">
+            {diasLabel}
+          </span>
+        </div>
+      )}
 
       {/* Rodapé: corretor / parceria — só aparece quando houver dado */}
       {(corretorNome || parceiroNome) && (
