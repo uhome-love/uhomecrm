@@ -31,19 +31,26 @@ interface DiscardLeadDialogProps {
   leadId: string;
   leadNome: string;
   stages: PipelineStage[];
+  /** Pré-seleciona o destino do lead (reengajavel|definitivo). Default: 'reengajavel'. */
+  defaultTipo?: "reengajavel" | "definitivo";
   /** Chamado após sucesso para refresh do Kanban (opcional) */
   onDone?: () => void;
 }
 
 export default function DiscardLeadDialog({
-  open, onOpenChange, leadId, leadNome, stages, onDone,
+  open, onOpenChange, leadId, leadNome, stages, defaultTipo = "reengajavel", onDone,
 }: DiscardLeadDialogProps) {
   const [motivo, setMotivo] = useState("");
   const [obs, setObs] = useState("");
-  const [tipo, setTipo] = useState<"reengajavel" | "definitivo">("reengajavel");
+  const [tipo, setTipo] = useState<"reengajavel" | "definitivo">(defaultTipo);
   const [saving, setSaving] = useState(false);
 
-  const reset = () => { setMotivo(""); setObs(""); setTipo("reengajavel"); };
+  // Reagir a mudança de defaultTipo entre aberturas (mesma instância montada)
+  useEffect(() => {
+    if (open) setTipo(defaultTipo);
+  }, [open, defaultTipo]);
+
+  const reset = () => { setMotivo(""); setObs(""); setTipo(defaultTipo); };
 
   const handleConfirm = async () => {
     if (!motivo) { toast.error("Selecione um motivo"); return; }
