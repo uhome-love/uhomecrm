@@ -10780,6 +10780,7 @@ export type Database = {
           sem_contato_5d: number
           sem_tarefa: number
           total_leads: number
+          total_recebidos: number
           vgv_pipeline: number
         }[]
       }

@@ -22,7 +22,7 @@ type SortDir = "asc" | "desc";
 
 const COLUMNS: { key: SortKey; label: string; align?: "left" | "right" }[] = [
   { key: "nome", label: "Corretor", align: "left" },
-  { key: "total_leads", label: "Leads", align: "right" },
+  { key: "total_leads", label: "Ativos / Recebidos", align: "right" },
   { key: "sem_tarefa", label: "Sem tarefa", align: "right" },
   { key: "atrasados", label: "Atrasados", align: "right" },
   { key: "em_dia", label: "Em dia", align: "right" },
