@@ -135,9 +135,12 @@ function addDaysStr(dateStr: string, days: number): string {
   return dt.toISOString().slice(0, 10);
 }
 
+export type FocusMode = "leads" | "time";
+
 export function useFocusLeads(
   corretorAuthId: string | null,
-  pipelineTipo: "leads" | "negocios" = "leads"
+  pipelineTipo: "leads" | "negocios" = "leads",
+  modo: FocusMode = "leads"
 ): UseFocusLeadsReturn {
   const [leads, setLeads] = useState<FocusLead[]>([]);
   const [loading, setLoading] = useState(false);
@@ -151,6 +154,30 @@ export function useFocusLeads(
     if (!corretorAuthId) return;
     setLoading(true);
     setError(null);
+
+    if (modo === "time") {
+      try {
+        await reloadTimeMode({
+          gestorId: corretorAuthId,
+          filters,
+          setLeads,
+          setStaleSince,
+          lastSuccessAtRef,
+          leadsCountRef,
+        });
+      } catch (err: any) {
+        console.error("[useFocusLeads/time] error:", err);
+        if (leadsCountRef.current > 0 && lastSuccessAtRef.current) {
+          setStaleSince(lastSuccessAtRef.current);
+        } else {
+          setError(err.message || "Erro ao buscar leads do time");
+        }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
 
     try {
       const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
@@ -500,7 +527,282 @@ export function useFocusLeads(
     } finally {
       setLoading(false);
     }
-  }, [corretorAuthId, pipelineTipo]);
+  }, [corretorAuthId, pipelineTipo, modo]);
 
   return { leads, loading, error, staleSince, reload };
 }
+
+// ============================================================================
+// MODO TIME — fila do gestor com leads críticos de TODO o time
+// ============================================================================
+//
+// Critérios "crítico" (lead entra se atender ≥1):
+//  1. Sem contato há 5+ dias (COALESCE(ultima_acao_at, created_at) < now-5d)
+//  2. Tarefa atrasada há 3+ dias (vence_em < today-3 ou today-3 com hora passada)
+//  3. Lead em stage tipo='visita_marcada' SEM visita confirmada (confirmed_at IS NULL)
+//  4. Lead com negocio_id parado há 7+ dias (stage_changed_at < now-7d)
+//
+// Inclui leads de ambos os pipelines (leads + negocios). Exclui stages
+// descarte/convertido.
+async function reloadTimeMode(params: {
+  gestorId: string;
+  filters: FocusFilters | undefined;
+  setLeads: (l: FocusLead[]) => void;
+  setStaleSince: (d: Date | null) => void;
+  lastSuccessAtRef: { current: Date | null };
+  leadsCountRef: { current: number };
+}) {
+  const { gestorId, filters, setLeads, setStaleSince, lastSuccessAtRef, leadsCountRef } = params;
+
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const nowHHMM_BRT = new Date().toLocaleTimeString("en-GB", {
+    timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit",
+  });
+  const cutoff5d = addDaysStr(todayStr, -5);
+  const cutoff3dTask = addDaysStr(todayStr, -3);
+  const cutoff7d = addDaysStr(todayStr, -7);
+
+  // 1. Team (auth user_ids dos corretores ativos)
+  const { data: teamData, error: teamErr } = await runQueryWithRetry<
+    Array<{ user_id: string }>
+  >(() =>
+    supabase
+      .from("team_members")
+      .select("user_id")
+      .eq("gerente_id", gestorId)
+      .eq("status", "ativo")
+      .not("user_id", "is", null)
+  );
+  if (teamErr) throw teamErr;
+  const teamIds = (teamData ?? []).map((r) => r.user_id).filter(Boolean);
+  if (teamIds.length === 0) {
+    setLeads([]); leadsCountRef.current = 0; lastSuccessAtRef.current = new Date();
+    setStaleSince(null); return;
+  }
+
+  // 2. Stages (ambos pipelines, exclui descarte/convertido)
+  const { data: stagesData, error: stagesErr } = await runQueryWithRetry<
+    Array<{ id: string; nome: string; tipo: string | null; pipeline_tipo: string | null }>
+  >(() =>
+    supabase
+      .from("pipeline_stages")
+      .select("id, nome, tipo, pipeline_tipo")
+  );
+  if (stagesErr) throw stagesErr;
+  const stageMap: Record<string, { nome: string; tipo: string | null; pipeline_tipo: string }> = {};
+  const allowedStageIds: string[] = [];
+  for (const s of stagesData ?? []) {
+    if (s.tipo === "descarte" || s.tipo === "convertido") continue;
+    stageMap[s.id] = {
+      nome: s.nome,
+      tipo: s.tipo,
+      pipeline_tipo: (s.pipeline_tipo as string) || "leads",
+    };
+    allowedStageIds.push(s.id);
+  }
+
+  // 3. Perfis do time (nomes)
+  const { data: profilesData } = await runQueryWithRetry<
+    Array<{ user_id: string; nome: string | null }>
+  >(() =>
+    supabase
+      .from("profiles")
+      .select("user_id, nome")
+      .in("user_id", teamIds)
+  );
+  const corretorNomeMap = new Map<string, string>();
+  for (const p of profilesData ?? []) {
+    if (p.user_id) corretorNomeMap.set(p.user_id, p.nome || "(sem nome)");
+  }
+
+  // 4. Leads ativos do time (sem filtro de negocio_id; ambos pipelines)
+  const { rows: leadsData, errors: leadsErrors } = await fetchInBatchesWithRetry<any>(
+    teamIds,
+    (chunk) =>
+      supabase
+        .from("pipeline_leads")
+        .select(
+          "id, nome, telefone, telefone2, email, stage_id, stage_changed_at, origem, empreendimento, ultima_acao_at, tags, negocio_id, corretor_id, updated_at, created_at"
+        )
+        .in("corretor_id", chunk)
+        .eq("arquivado", false)
+        .in("stage_id", allowedStageIds),
+    { chunkSize: 50, minChunkSize: 10 }
+  );
+  if (leadsErrors.length) {
+    console.warn("[useFocusLeads/time] chunks de leads com erro", leadsErrors);
+  }
+  if (!leadsData || leadsData.length === 0) {
+    setLeads([]); leadsCountRef.current = 0; lastSuccessAtRef.current = new Date();
+    setStaleSince(null); return;
+  }
+  const leadIds = leadsData.map((l: any) => l.id);
+
+  // 5. Tarefas pendentes (só vencidas/hoje/futuras — não precisa concluídas aqui)
+  const overdueByLead = new Map<string, PendingTaskInfo[]>();
+  const todayByLead = new Map<string, PendingTaskInfo[]>();
+  const upcomingByLead = new Map<string, PendingTaskInfo[]>();
+  const { rows: tasksData } = await fetchInBatchesWithRetry<any>(
+    leadIds,
+    (chunk) =>
+      supabase
+        .from("pipeline_tarefas")
+        .select("id, pipeline_lead_id, titulo, tipo, vence_em, hora_vencimento, status")
+        .in("pipeline_lead_id", chunk)
+        .eq("status", "pendente"),
+    { chunkSize: 50, minChunkSize: 10 }
+  );
+  for (const t of tasksData ?? []) {
+    const lid = t.pipeline_lead_id as string;
+    const venceEm = t.vence_em as string | null;
+    const hora = (t.hora_vencimento as string | null)?.slice(0, 5) ?? null;
+    const info: PendingTaskInfo = {
+      id: t.id,
+      titulo: t.titulo || "(sem título)",
+      vence_em: venceEm,
+      hora_vencimento: t.hora_vencimento ?? null,
+      tipo: t.tipo ?? null,
+      bucket: "upcoming",
+    };
+    if (venceEm && (venceEm < todayStr || (venceEm === todayStr && !!hora && hora < nowHHMM_BRT))) {
+      info.bucket = "overdue";
+      if (!overdueByLead.has(lid)) overdueByLead.set(lid, []);
+      overdueByLead.get(lid)!.push(info);
+    } else if (venceEm === todayStr) {
+      info.bucket = "today";
+      if (!todayByLead.has(lid)) todayByLead.set(lid, []);
+      todayByLead.get(lid)!.push(info);
+    } else {
+      if (!upcomingByLead.has(lid)) upcomingByLead.set(lid, []);
+      upcomingByLead.get(lid)!.push(info);
+    }
+  }
+
+  // 6. Visitas confirmadas (só leads em stage visita_marcada)
+  const leadsEmVisitaMarcada = leadsData
+    .filter((l: any) => stageMap[l.stage_id]?.tipo === "visita_marcada")
+    .map((l: any) => l.id);
+  const visitaConfirmadaSet = new Set<string>();
+  if (leadsEmVisitaMarcada.length > 0) {
+    const { rows: vData } = await fetchInBatchesWithRetry<any>(
+      leadsEmVisitaMarcada,
+      (chunk) =>
+        supabase
+          .from("visitas")
+          .select("pipeline_lead_id, confirmed_at, status")
+          .in("pipeline_lead_id", chunk)
+          .not("confirmed_at", "is", null),
+      { chunkSize: 100, minChunkSize: 20 }
+    );
+    for (const v of vData ?? []) {
+      if (v.pipeline_lead_id) visitaConfirmadaSet.add(v.pipeline_lead_id);
+    }
+  }
+
+  // 7. Aplicar 4 critérios + montar FocusLead[]
+  const horaKey = (h: string | null) => (h ? h.slice(0, 5) : "99:99");
+  const sortByVence = (a: PendingTaskInfo, b: PendingTaskInfo) => {
+    const av = a.vence_em ?? "9999-99-99";
+    const bv = b.vence_em ?? "9999-99-99";
+    if (av !== bv) return av.localeCompare(bv);
+    return horaKey(a.hora_vencimento).localeCompare(horaKey(b.hora_vencimento));
+  };
+
+  const out: FocusLead[] = [];
+  for (const lead of leadsData) {
+    const stageInfo = stageMap[lead.stage_id];
+    if (!stageInfo) continue;
+    if (filters?.leadIds && filters.leadIds.length > 0 && !filters.leadIds.includes(lead.id)) continue;
+
+    const overdueList = (overdueByLead.get(lead.id) ?? []).slice().sort(sortByVence);
+    const todayList = (todayByLead.get(lead.id) ?? []).slice().sort(sortByVence);
+    const upcomingList = (upcomingByLead.get(lead.id) ?? []).slice().sort(sortByVence);
+
+    const lastActionISO: string = lead.ultima_acao_at || lead.created_at;
+    const lastActionDateStr = lastActionISO ? lastActionISO.slice(0, 10) : todayStr;
+    const daysSinceAction = Math.floor(
+      (Date.now() - new Date(lastActionISO || lead.created_at).getTime()) / 86400000
+    );
+    const daysInStage = Math.floor(
+      (Date.now() - new Date(lead.stage_changed_at).getTime()) / 86400000
+    );
+
+    // Critério 1: sem contato 5+d
+    const isSemContato5d = lastActionDateStr < cutoff5d;
+    // Critério 2: tarefa atrasada há 3+ dias
+    const isTaskAtrasada3d = overdueList.some(
+      (t) => t.vence_em && t.vence_em <= cutoff3dTask
+    );
+    // Critério 3: visita marcada sem confirmação
+    const isVisitaSemConfirmacao =
+      stageInfo.tipo === "visita_marcada" && !visitaConfirmadaSet.has(lead.id);
+    // Critério 4: negócio parado 7+d
+    const isNegocioParado7d =
+      !!lead.negocio_id && lead.stage_changed_at &&
+      lead.stage_changed_at.slice(0, 10) < cutoff7d;
+
+    if (!isSemContato5d && !isTaskAtrasada3d && !isVisitaSemConfirmacao && !isNegocioParado7d) {
+      continue;
+    }
+
+    // Razão principal (ordem de severidade)
+    const reasons: string[] = [];
+    if (isTaskAtrasada3d) {
+      const worst = overdueList[0];
+      reasons.push(
+        `🔴 Tarefa atrasada há ${Math.max(
+          0,
+          Math.floor((Date.now() - new Date((worst.vence_em as string) + "T23:59:59").getTime()) / 86400000)
+        )}d`
+      );
+    }
+    if (isNegocioParado7d) reasons.push(`🔴 Negócio parado há ${daysInStage}d`);
+    if (isVisitaSemConfirmacao) reasons.push(`🟠 Visita marcada sem confirmação`);
+    if (isSemContato5d) reasons.push(`🟠 Sem contato há ${daysSinceAction}d`);
+
+    const pendingTaskList = [...overdueList, ...todayList, ...upcomingList];
+
+    out.push({
+      id: lead.id,
+      name: lead.nome,
+      phone: lead.telefone,
+      phone2: lead.telefone2,
+      email: lead.email,
+      stage: stageInfo.nome,
+      stage_id: lead.stage_id,
+      origin: lead.origem,
+      interest: lead.empreendimento,
+      last_contact_at: lead.ultima_acao_at,
+      stage_updated_at: lead.stage_changed_at,
+      overdue_tasks: overdueList.length,
+      overdue_task_list: overdueList.map((t) => ({
+        id: t.id, titulo: t.titulo, vence_em: t.vence_em, tipo: t.tipo,
+      })),
+      next_pending_task: pendingTaskList[0] ?? null,
+      pending_task_list: pendingTaskList,
+      days_without_contact: daysSinceAction,
+      days_in_stage: daysInStage,
+      corretor_name: corretorNomeMap.get(lead.corretor_id) || "—",
+      alert_reasons: reasons,
+      tags: (lead.tags || []).filter(Boolean),
+      negocio_id: lead.negocio_id,
+      pipeline_tipo: stageInfo.pipeline_tipo,
+      state: isTaskAtrasada3d || isNegocioParado7d ? "atrasado" : "sem_direcao",
+      never_touched: false,
+      health: isTaskAtrasada3d || isNegocioParado7d ? "critical" : "warning",
+    });
+  }
+
+  // Ordenação: critical primeiro, depois por daysSinceAction desc
+  out.sort((a, b) => {
+    const rank = (h: FocusHealth) => (h === "critical" ? 0 : h === "warning" ? 1 : 2);
+    if (rank(a.health) !== rank(b.health)) return rank(a.health) - rank(b.health);
+    return b.days_without_contact - a.days_without_contact;
+  });
+
+  setLeads(out);
+  leadsCountRef.current = out.length;
+  lastSuccessAtRef.current = new Date();
+  setStaleSince(null);
+}
+
