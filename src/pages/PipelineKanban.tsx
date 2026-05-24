@@ -257,6 +257,10 @@ export default function PipelineKanban() {
     if (filaCeoFilter) {
       result = result.filter(l => !l.corretor_id);
     }
+    // Fase 1: filtro CEO por gestor — restringe ao time do gestor selecionado.
+    if (isAdmin && gestorFilter !== "todos" && gestorTeamUserIds) {
+      result = result.filter(l => l.corretor_id && gestorTeamUserIds.has(l.corretor_id));
+    }
     if (corretorFilter && corretorFilter !== "all") {
       if (corretorFilter === "sem_corretor") {
         result = result.filter(l => !l.corretor_id);
