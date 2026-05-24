@@ -985,7 +985,7 @@ export default function MinhasTarefas() {
               <Card key={tarefa.id} className={`p-4 border-l-[3px] ${
                 isConcluida ? "border-l-green-500 bg-green-500/5 opacity-70" :
                 isOverdue ? "border-l-red-500 bg-red-500/5" :
-                isToday(new Date(tarefa.vence_em || "")) ? "border-l-yellow-500 bg-yellow-500/5" :
+                tarefa.vence_em && isToday(parseDateBRT(tarefa.vence_em)) ? "border-l-yellow-500 bg-yellow-500/5" :
                 "border-l-muted-foreground/40"
               }`}>
                 <div className="space-y-2">
