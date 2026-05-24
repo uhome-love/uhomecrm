@@ -336,82 +336,86 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
         {/* ════════════ LAYOUT 2 COLUNAS (Drawer wide v3) ════════════ */}
         <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DrawerLeadInfo resetKey={lead.id}>
-        {/* ════════════ HEADER editorial (Drawer Wide v4) ════════════ */}
-        <DrawerLeadHeader
-          nome={lead.nome}
-          telefone={lead.telefone}
-          email={lead.email}
-          canEdit={isAdmin}
-          editingName={editingName}
-          editName={editName}
-          setEditName={setEditName}
-          startEditName={() => { setEditName(lead.nome); setEditingName(true); }}
-          cancelEditName={() => { setEditingName(false); setEditName(lead.nome); }}
-          saveName={handleSaveName}
-          editingPhone={editingPhone}
-          editPhone={editPhone}
-          setEditPhone={setEditPhone}
-          startEditPhone={() => { setEditPhone(lead.telefone || ""); setEditingPhone(true); }}
-          cancelEditPhone={() => { setEditingPhone(false); setEditPhone(lead.telefone || ""); }}
-          savePhone={handleSavePhone}
-          saving={saving}
-          pills={
-            <>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
-                    <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
-                    {currentStage?.nome}
-                    <ChevronDown className="h-2.5 w-2.5" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-2" align="end">
-                  <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 px-1">Mover para:</p>
-                  <div className="space-y-0.5">
-                    {stages.filter(s => s.id !== lead.stage_id).map(s => (
-                      <button key={s.id} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left" onClick={() => handleMoveStage(s.id)}>
-                        <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
-                        {s.nome}
+        <DrawerLeadInfo
+          resetKey={lead.id}
+          header={
+            <DrawerLeadHeader
+              nome={lead.nome}
+              telefone={lead.telefone}
+              email={lead.email}
+              canEdit={isAdmin}
+              editingName={editingName}
+              editName={editName}
+              setEditName={setEditName}
+              startEditName={() => { setEditName(lead.nome); setEditingName(true); }}
+              cancelEditName={() => { setEditingName(false); setEditName(lead.nome); }}
+              saveName={handleSaveName}
+              editingPhone={editingPhone}
+              editPhone={editPhone}
+              setEditPhone={setEditPhone}
+              startEditPhone={() => { setEditPhone(lead.telefone || ""); setEditingPhone(true); }}
+              cancelEditPhone={() => { setEditingPhone(false); setEditPhone(lead.telefone || ""); }}
+              savePhone={handleSavePhone}
+              saving={saving}
+              pills={
+                <>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
+                        <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
+                        {currentStage?.nome}
+                        <ChevronDown className="h-2.5 w-2.5" />
                       </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2" align="end">
+                      <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 px-1">Mover para:</p>
+                      <div className="space-y-0.5">
+                        {stages.filter(s => s.id !== lead.stage_id).map(s => (
+                          <button key={s.id} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left" onClick={() => handleMoveStage(s.id)}>
+                            <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
+                            {s.nome}
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
 
-              {(() => {
-                const diasSemContato = noContactAlert
-                  ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
-                  : 0;
-                const chipColor = nextTask
-                  ? { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' }
-                  : noContactAlert === 'critical'
-                    ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Desatualizado' }
-                    : { bg: '#FAEEDA', color: '#854F0B', dot: '#EF9F27', text: 'Atenção' };
-                const motivosDesat: string[] = [];
-                if (!nextTask) motivosDesat.push('sem tarefa futura');
-                if (noContactAlert) motivosDesat.push(`${diasSemContato}d sem contato`);
-                return (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 cursor-default" style={{ background: chipColor.bg, color: chipColor.color }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: chipColor.dot, flexShrink: 0 }} />
-                        {chipColor.text}
-                      </span>
-                    </TooltipTrigger>
-                    {!nextTask && motivosDesat.length > 0 && (
-                      <TooltipContent side="bottom" className="text-xs">
-                        {motivosDesat.join(' · ')}
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                );
-              })()}
+                  {(() => {
+                    const diasSemContato = noContactAlert
+                      ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
+                      : 0;
+                    const chipColor = nextTask
+                      ? { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' }
+                      : noContactAlert === 'critical'
+                        ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Desatualizado' }
+                        : { bg: '#FAEEDA', color: '#854F0B', dot: '#EF9F27', text: 'Atenção' };
+                    const motivosDesat: string[] = [];
+                    if (!nextTask) motivosDesat.push('sem tarefa futura');
+                    if (noContactAlert) motivosDesat.push(`${diasSemContato}d sem contato`);
+                    return (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 cursor-default" style={{ background: chipColor.bg, color: chipColor.color }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: chipColor.dot, flexShrink: 0 }} />
+                            {chipColor.text}
+                          </span>
+                        </TooltipTrigger>
+                        {!nextTask && motivosDesat.length > 0 && (
+                          <TooltipContent side="bottom" className="text-xs">
+                            {motivosDesat.join(' · ')}
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    );
+                  })()}
 
-              <span className="text-[10px] text-muted-foreground tabular-nums">{daysSinceCreation}d</span>
-            </>
+                  <span className="text-[10px] text-muted-foreground tabular-nums">{daysSinceCreation}d</span>
+                </>
+              }
+            />
           }
-        />
+        >
+
 
         {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
         {empreendimentoOpen && (
