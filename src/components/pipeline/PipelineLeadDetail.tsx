@@ -567,62 +567,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           />
 
 
-          {/* Row 4: Context line — empreendimento + formulário + status + tags */}
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-            {(lead.empreendimento || lead.plataforma) && (
-              <span className="flex items-center gap-1">
-                <Building2 className="h-3 w-3" />
-                <span className="font-semibold text-foreground/80">{originLine}</span>
-              </span>
-            )}
-            {lead.formulario && (
-              <>
-                <span className="text-muted-foreground/40">|</span>
-                <span className="truncate max-w-[220px]">{lead.formulario}</span>
-              </>
-            )}
-            {callAttempts > 0 && (
-              <>
-                <span className="text-muted-foreground/40">|</span>
-                <Badge variant={callAttempts >= 4 ? "destructive" : "secondary"} className="text-[9px] h-4 px-1">
-                  📞 {callAttempts}/4
-                </Badge>
-              </>
-            )}
-            {jetimobCode && (
-              <>
-                <span className="text-muted-foreground/40">|</span>
-                <span className="text-muted-foreground/60">
-                  <Tag className="h-2.5 w-2.5 inline" /> {jetimobCode}
-                </span>
-              </>
-            )}
-            <span className="text-muted-foreground/40">|</span>
-            {noContactAlert ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span className={`font-semibold ${noContactAlert === "critical" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
-                  {noContactAlert === "critical" ? "🔴" : "🟡"} Sem contato
-                </span>
-                <button
-                  onClick={() => setActiveTab("historico")}
-                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                >
-                  Resolver →
-                </button>
-              </span>
-            ) : overdueTasks > 0 ? (
-              <span className="font-semibold text-red-600 dark:text-red-400">
-                🔴 {overdueTasks} tarefa{overdueTasks > 1 ? "s" : ""} atrasada{overdueTasks > 1 ? "s" : ""}
-              </span>
-            ) : nextTask ? (
-              <span className="font-semibold text-primary">
-                ✅ Próx: {nextTask.titulo || nextTask.descricao}
-                {nextTask.vence_em && <span className="font-normal ml-1">· {formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "" })}</span>}
-              </span>
-            ) : (
-              <span className="font-semibold text-amber-600 dark:text-amber-400">⚠️ Sem próxima ação</span>
-            )}
-          </div>
 
           {/* Row 5: Observações / Dados do anúncio (ImovelWeb, etc.) */}
           {lead.observacoes && (
