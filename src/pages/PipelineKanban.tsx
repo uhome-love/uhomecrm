@@ -67,8 +67,12 @@ export default function PipelineKanban() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const pipeline = usePipeline();
-  const { isGestor, isAdmin, isCorretor, loading: roleLoading } = useUserRole();
-  const { user: authUser } = useAuth();
+  const { isGestor, isAdmin, isCorretor, loading: roleLoading, roles } = useUserRole();
+  const { user: authUser, loading: authLoading } = useAuth();
+  // Bug-fix Bug 3: useUserRole retorna loading=false enquanto useAuth ainda
+  // resolve user (query disabled => isLoading=false). Combinamos os dois para
+  // garantir que o efeito de tab só decide depois das roles realmente prontas.
+  const rolesReady = !authLoading && !roleLoading && (roles.length > 0 || !authUser);
   const isMobile = useIsMobile();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
