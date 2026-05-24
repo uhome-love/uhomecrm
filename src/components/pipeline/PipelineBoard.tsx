@@ -188,6 +188,9 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
               <CardMinimal
                 lead={lead}
                 stage={stage}
+                stages={stages}
+                onMoveLead={onMoveLead}
+                onTransferred={onTransferred}
                 corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
                 parceiroNome={parcerias[lead.id]}
                 proximaTarefa={tarefasMap[lead.id] || null}
