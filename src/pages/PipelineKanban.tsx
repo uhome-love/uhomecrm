@@ -72,6 +72,7 @@ export default function PipelineKanban() {
   const { data: parcerias = {} } = useParceriasMap();
   const { data: partnerLeadsByCorretor = {} } = usePartnerLeadsByCorretor();
   const [activeTab, setActiveTab] = useState("kanban");
+  const [sortOrder, setSortOrder] = useState<SortOrder>(loadSortOrder);
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
@@ -551,6 +552,7 @@ export default function PipelineKanban() {
                   selectionMode={selectionMode}
                   selectedLeads={selectedLeads}
                   onToggleSelect={toggleLeadSelection}
+                  sortOrder={sortOrder}
                 />
               ) : activeTab === "inteligencia" ? (
                 intelView === "funil" ? (
