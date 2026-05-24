@@ -98,6 +98,10 @@ export interface PipelineHeaderProps {
   // Fase 1 — Filtro de gestor exclusivo do CEO
   gestorFilter?: string;
   setGestorFilter?: (v: string) => void;
+
+  // Bug-fix Pílulas: contagens calculadas client-side em PipelineKanban
+  // a partir dos leads em escopo (corretor/gestor/CEO com ou sem filtro).
+  pillCounts?: { em_dia: number; sem_tarefa: number; atrasado: number; negocios: number };
 }
 
 export default function PipelineHeader(props: PipelineHeaderProps) {
