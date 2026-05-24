@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useCallback, lazy, Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LoadingState, ErrorState } from "@/components/ui/screen-states";
-import PeriodBadge from "@/components/PeriodBadge";
 import { usePipeline } from "@/hooks/usePipeline";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
 import PipelineMobileView from "@/components/pipeline/PipelineMobileView";
@@ -18,7 +17,7 @@ const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRad
 
 const PipelineManagerActions = lazy(() => import("@/components/pipeline/PipelineManagerActions"));
 const PipelineTeamVisitas = lazy(() => import("@/components/pipeline/PipelineTeamVisitas"));
-import { CheckSquare, Square, Send, X, Zap } from "lucide-react";
+import { Send, X, Loader2 } from "lucide-react";
 import PipelineAdvancedFilters, {
   EMPTY_FILTERS,
   applyFilters,
@@ -27,13 +26,10 @@ import PipelineAdvancedFilters, {
 } from "@/components/pipeline/PipelineAdvancedFilters";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, BarChart3, Radar, Brain, Rocket } from "lucide-react";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
 import BulkActionModal from "@/components/pipeline/BulkActionModal";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchInBatchesWithRetry } from "@/lib/taskQueryUtils";
@@ -41,7 +37,6 @@ import { toast } from "sonner";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/components/pipeline/CardStatusLine";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 import { useFocusLeads } from "@/hooks/useFocusLeads";
-import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
 import PipelineHeader from "@/components/pipeline/PipelineHeader";
 
 // Campaign tag definitions
