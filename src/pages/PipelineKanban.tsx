@@ -231,12 +231,17 @@ export default function PipelineKanban() {
   }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor]);
 
   const filteredLeads = useMemo(() => {
-    if (clientStatusFilter !== "todos") {
-      const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
-      return preFilteredLeads.filter(l => getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id)) === clientStatusFilter);
+    const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
+    let result = preFilteredLeads;
+    if (negociosFilter) {
+      result = result.filter(l => stageMap.get(l.stage_id) === "convertido");
     }
-    return preFilteredLeads;
-  }, [preFilteredLeads, clientStatusFilter, kanbanTarefasMap]);
+    if (clientStatusFilter !== "todos") {
+      result = result.filter(l => getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id)) === clientStatusFilter);
+    }
+    return result;
+  }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages]);
+
 
   const corretorOptions = useMemo(() => {
     const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
