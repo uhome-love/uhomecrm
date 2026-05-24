@@ -649,6 +649,7 @@ export default function PipelineKanban() {
                   selectedLeads={selectedLeads}
                   onToggleSelect={toggleLeadSelection}
                   sortOrder={sortOrder}
+                  tarefasMap={kanbanTarefasMap}
                 />
               ) : activeTab === "inteligencia" ? (
                 intelView === "funil" ? (
