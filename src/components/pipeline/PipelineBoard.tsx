@@ -197,6 +197,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
                 onMoveLead={onMoveLead}
                 onTransferred={onTransferred}
                 corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                corretorAvatarUrl={lead.corretor_id ? corretorAvatars?.[lead.corretor_id] : undefined}
                 parceiroNome={parcerias[lead.id]}
                 proximaTarefa={tarefasMap[lead.id] || null}
                 onDragStart={() => !selectionMode && handleDragStart(lead.id)}
