@@ -85,7 +85,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const leadData = usePipelineLeadData(open ? lead.id : null);
-  const [activeTab, setActiveTab] = useState("historico");
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<string>(() => (isMobile ? "info" : "historico"));
+  useEffect(() => {
+    setActiveTab(isMobile ? "info" : "historico");
+  }, [lead.id, isMobile]);
+
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [homiOpen, setHomiOpen] = useState(false);
