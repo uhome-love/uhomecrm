@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,9 +13,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { PipelineTarefa } from "@/hooks/usePipelineLeadData";
 import { groupTasksByDeadline, formatTaskDeadline } from "@/lib/taskGrouping";
+import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
+import TaskCompletionDialog from "../TaskCompletionDialog";
+import type { CompletionPayload, TipoProximaTarefa } from "../task-completion/types";
+import { runTaskCompletion } from "@/lib/taskCompletion";
 
 interface Props {
   tarefas: PipelineTarefa[];
+  leadId: string;
+  leadNome: string;
+  leadStageId?: string | null;
+  onAddTarefa: (input: {
+    tipo: TipoProximaTarefa;
+    titulo: string;
+    descricao?: string | null;
+    vence_em: string;
+    hora_vencimento?: string | null;
+  }) => Promise<unknown>;
+  /** Mantido para casos edge (não usado pelo botão Feito, que abre o modal). */
   onToggleTarefa: (id: string, status: string) => Promise<void>;
   onDeleteTarefa: (id: string) => Promise<void>;
   onReload: () => void;
@@ -94,11 +110,16 @@ const GROUPS: Array<{ key: keyof ReturnType<typeof groupTasksByDeadline>; icon: 
 
 export default function DrawerTasksTab({
   tarefas,
-  onToggleTarefa,
+  leadId,
+  leadNome,
+  leadStageId,
+  onAddTarefa,
+  onToggleTarefa: _onToggleTarefa, // eslint-disable-line @typescript-eslint/no-unused-vars
   onDeleteTarefa,
   onReload,
   onNovaTarefa,
 }: Props) {
+  const queryClient = useQueryClient();
   const grouped = useMemo(() => groupTasksByDeadline(tarefas), [tarefas]);
   const countAtrasadas = grouped.atrasadas.length;
   const countHoje = grouped.hoje.length;
@@ -107,6 +128,27 @@ export default function DrawerTasksTab({
 
   const [editTarefa, setEditTarefa] = useState<PipelineTarefa | null>(null);
   const [adiarTarefa, setAdiarTarefa] = useState<PipelineTarefa | null>(null);
+  const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
+
+  async function handleCompletionConfirm(payload: CompletionPayload) {
+    if (!completingTarefa) return;
+    const result = await runTaskCompletion(
+      {
+        tarefaId: completingTarefa.id,
+        tarefaTitulo: completingTarefa.titulo,
+        leadId,
+        leadNome,
+        leadStageId: leadStageId ?? null,
+        addTarefa: onAddTarefa,
+      },
+      payload,
+    );
+    if (result.level === "error") toast.error(result.toastMessage);
+    else toast.success(result.toastMessage);
+    setCompletingTarefa(null);
+    onReload();
+    invalidateTaskQueries(queryClient, leadId);
+  }
 
   return (
     <div className="pb-8">
@@ -167,7 +209,7 @@ export default function DrawerTasksTab({
                     key={t.id}
                     tarefa={t}
                     bucket={g.key}
-                    onToggle={() => onToggleTarefa(t.id, t.status)}
+                    onToggle={() => setCompletingTarefa(t)}
                     onDelete={() => onDeleteTarefa(t.id)}
                     onAdiar={() => setAdiarTarefa(t)}
                     onEdit={() => setEditTarefa(t)}
@@ -193,6 +235,16 @@ export default function DrawerTasksTab({
           onSaved={() => { setAdiarTarefa(null); onReload(); }}
         />
       )}
+
+      <TaskCompletionDialog
+        open={!!completingTarefa}
+        onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
+        tarefaTitulo={completingTarefa?.titulo || ""}
+        leadNome={leadNome}
+        leadId={leadId}
+        currentStageId={leadStageId ?? undefined}
+        onConfirm={handleCompletionConfirm}
+      />
     </div>
   );
 }
