@@ -314,7 +314,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
+      <SheetContent className="w-full sm:w-[70vw] sm:max-w-[1100px] p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
         <ErrorBoundary fallback={
           <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
             <span className="text-destructive font-semibold">Erro ao carregar detalhes do lead</span>
@@ -673,14 +673,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <TabsTrigger value="visitas" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
                 📊 Visitas
               </TabsTrigger>
-              <TabsTrigger value="radar" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
-                🎯 Match
-              </TabsTrigger>
-              <TabsTrigger value="whatsapp" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
-                💬 WhatsApp
-              </TabsTrigger>
             </TabsList>
           </div>
+
+          {/* Tabs Radar (Match) e WhatsApp removidas em Pipeline v2 — Fase 4:
+              - "Match" não era usado pelos corretores (enquete 23/05/2026).
+              - WhatsApp passa a abrir SEMPRE em /whatsapp via WhatsAppFocusFlow, não como tab embarcada. */}
 
           <ScrollArea className="flex-1 min-h-0">
             {/* ===== TAB: TAREFAS ===== */}
