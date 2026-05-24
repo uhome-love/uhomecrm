@@ -41,6 +41,12 @@ interface FocusModeModalProps {
    * (ex.: "Leads Sem Tarefa" → ["no_next_step"]).
    */
   initialCriteria?: FocusCriteria[];
+  /**
+   * "leads" (default) — fila do próprio corretor (régua de 4 estados).
+   * "time" — fila do gestor com leads críticos de TODO o time
+   *           (4 critérios: sem contato 5d, tarefa atrasada 3d, visita s/ confirm, negócio parado 7d).
+   */
+  modo?: "leads" | "time";
 }
 
 // TASK_TYPES e QUICK_MESSAGES removidos (Sprint 1 Mudança 4) — fluxo de criação
@@ -51,13 +57,14 @@ interface FocusModeModalProps {
 type CriteriaType = FocusCriteria;
 // CRITERIA_OPTIONS movido para FocusConfigScreen (Sprint 1 R1).
 
-export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", initialCriteria }: FocusModeModalProps) {
+export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", initialCriteria, modo = "leads" }: FocusModeModalProps) {
   const { user } = useAuth();
   const corretorId = user?.id ?? null;
-  const { leads, loading, reload, staleSince } = useFocusLeads(corretorId, pipelineTipo);
+  const { leads, loading, reload, staleSince } = useFocusLeads(corretorId, pipelineTipo, modo);
   // Silent counts: separa instância para alimentar contadores da tela de config
   // sem interferir na fila ativa nem disparar telemetria.
-  const { leads: countsLeads, loading: countsLoading, reload: reloadCounts } = useFocusLeads(corretorId, pipelineTipo);
+  const { leads: countsLeads, loading: countsLoading, reload: reloadCounts } = useFocusLeads(corretorId, pipelineTipo, modo);
+
 
   // Config screen state
   const [configPhase, setConfigPhase] = useState(true);
