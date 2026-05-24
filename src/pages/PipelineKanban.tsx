@@ -11,6 +11,7 @@ import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { todayBRT } from "@/lib/utils";
 import { useParceriasMap, usePartnerLeadsByCorretor } from "@/hooks/useParcerias";
 
 const PipelineFlowDashboard = lazy(() => import("@/components/pipeline/PipelineFlowDashboard"));
@@ -187,7 +188,7 @@ export default function PipelineKanban() {
   const { data: visitaLeadIds } = useQuery({
     queryKey: ["pipeline-visita-lead-ids"],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayBRT();
       const { data } = await supabase
         .from("visitas")
         .select("pipeline_lead_id")
