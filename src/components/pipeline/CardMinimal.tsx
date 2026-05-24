@@ -41,6 +41,7 @@ interface CardMinimalProps {
   lead: PipelineLead;
   stage?: PipelineStage;
   corretorNome?: string;
+  corretorAvatarUrl?: string;
   parceiroNome?: string;
   proximaTarefa?: CardMinimalProximaTarefa | null;
   onClick: () => void;
@@ -141,10 +142,18 @@ function daysInStage(stageChangedAt: string | null | undefined): number | null {
   return Math.floor((Date.now() - t) / 86400000);
 }
 
+function getInitials(nome: string): string {
+  if (!nome) return "??";
+  const parts = nome.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 const CardMinimal = memo(function CardMinimal({
   lead,
   stage,
   corretorNome,
+  corretorAvatarUrl,
   parceiroNome,
   proximaTarefa,
   onClick,
@@ -219,7 +228,7 @@ const CardMinimal = memo(function CardMinimal({
         "px-3 py-2.5 pl-4 shadow-sm hover:shadow-md transition-all",
         "hover:border-border hover:-translate-y-px",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
-        SIDEBAR_BY_STATUS[status],
+        stage?.tipo === "novo_lead" ? "before:bg-[#4F46E5]" : SIDEBAR_BY_STATUS[status],
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >
@@ -227,6 +236,11 @@ const CardMinimal = memo(function CardMinimal({
       <div className="flex items-start gap-1.5 min-w-0">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
+            {stage?.tipo === "novo_lead" && (
+              <span className="shrink-0 inline-block bg-[#4F46E5] text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Novo
+              </span>
+            )}
             <div className="flex-1 min-w-0 text-[13.5px] font-semibold text-foreground tracking-tight leading-tight truncate">
               {lead.nome || "Sem nome"}
             </div>
@@ -303,14 +317,32 @@ const CardMinimal = memo(function CardMinimal({
 
       {/* Rodapé: corretor / parceria — só aparece quando houver dado */}
       {(corretorNome || parceiroNome) && (
-        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-muted-foreground min-w-0">
+        <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
           {parceiroNome ? (
             <>
-              <Handshake className="h-3 w-3 shrink-0" />
-              <span className="truncate">{parceiroNome}</span>
+              <Handshake className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <span className="truncate text-[11px] font-medium text-foreground/70">
+                {parceiroNome}
+              </span>
             </>
           ) : (
-            <span className="truncate">{corretorNome}</span>
+            <>
+              {corretorAvatarUrl ? (
+                <img
+                  src={corretorAvatarUrl}
+                  alt={corretorNome || ""}
+                  className="w-[22px] h-[22px] rounded-full object-cover shrink-0"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-[22px] h-[22px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[9px] shrink-0">
+                  {getInitials(corretorNome || "")}
+                </div>
+              )}
+              <span className="truncate text-[11px] font-medium text-foreground/70">
+                {corretorNome}
+              </span>
+            </>
           )}
         </div>
       )}
