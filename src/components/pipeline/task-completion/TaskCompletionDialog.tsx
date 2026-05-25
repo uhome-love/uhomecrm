@@ -163,7 +163,7 @@ export default function TaskCompletionDialog({
         onOpenChange(v);
       }}
     >
-      <DialogContent className="max-w-[560px] p-0 gap-0 overflow-hidden bg-card border-border text-foreground">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] max-h-[90vh] overflow-y-auto p-0 gap-0 bg-card border-border text-foreground">
         <CompletionProgress step={step} title={stepTitle} subtitle={subtitle} />
 
         {step === 1 ? (
