@@ -341,7 +341,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
     // Update negocio + move to proposta
     await onUpdate(negocio.id, {
       empreendimento: propEmpreendimento || fullNeg.empreendimento,
-      vgv_estimado: propVgv ? parseFloat(propVgv) : fullNeg.vgv_estimado,
+      vgv_estimado: propVgv ? parseCurrencyToNumber(propVgv) : fullNeg.vgv_estimado,
     } as any);
     onMoveFase(negocio.id, "proposta");
     setPropostaPopup(false);
@@ -361,7 +361,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
     } as any);
     await onUpdate(negocio.id, {
       empreendimento: contEmpreendimento || fullNeg.empreendimento,
-      vgv_final: contVgv ? parseFloat(contVgv) : fullNeg.vgv_final,
+      vgv_final: contVgv ? parseCurrencyToNumber(contVgv) : fullNeg.vgv_final,
     } as any);
     onMoveFase(negocio.id, "documentacao");
     setContratoPopup(false);
@@ -1055,7 +1055,13 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
             </div>
             <div>
               <Label className="text-xs font-semibold mb-1 block">VGV (R$)</Label>
-              <Input type="number" value={propVgv} onChange={e => setPropVgv(e.target.value)} placeholder="500000" className="h-9 text-sm" />
+              <Input
+                inputMode="numeric"
+                value={formatCurrencyInput(propVgv)}
+                onChange={e => setPropVgv(handleCurrencyChange(e.target.value))}
+                placeholder="R$ 500.000,00"
+                className="h-9 text-sm"
+              />
             </div>
             <Button className="w-full gap-1.5 text-xs" onClick={handleSubmitProposta}>
               📄 Enviar e mover para Proposta
@@ -1081,7 +1087,13 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
             </div>
             <div>
               <Label className="text-xs font-semibold mb-1 block">VGV (R$)</Label>
-              <Input type="number" value={contVgv} onChange={e => setContVgv(e.target.value)} placeholder="500000" className="h-9 text-sm" />
+              <Input
+                inputMode="numeric"
+                value={formatCurrencyInput(contVgv)}
+                onChange={e => setContVgv(handleCurrencyChange(e.target.value))}
+                placeholder="R$ 500.000,00"
+                className="h-9 text-sm"
+              />
             </div>
             <div>
               <Label className="text-xs font-semibold mb-1 block">Tipo de Assinatura</Label>
