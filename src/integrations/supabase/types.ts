@@ -10589,6 +10589,14 @@ export type Database = {
         Args: { p_gestor_id: string; p_periodo?: string }
         Returns: Json
       }
+      get_dashboard_gerente_v4_dia: {
+        Args: { p_gestor_id: string; p_visitas_range?: string }
+        Returns: Json
+      }
+      get_dashboard_gerente_v4_kpis: {
+        Args: { p_gestor_id: string; p_periodo?: string }
+        Returns: Json
+      }
       get_distribuicao_performance: {
         Args: { p_periodo?: string }
         Returns: Json
