@@ -1165,7 +1165,9 @@ export type Database = {
           meta_aproveitados: number | null
           meta_assinados: number | null
           meta_contratos: number | null
+          meta_leads: number
           meta_ligacoes: number
+          meta_negocios: number
           meta_propostas: number | null
           meta_vgv_assinado: number
           meta_visitas_marcadas: number
@@ -1180,7 +1182,9 @@ export type Database = {
           meta_aproveitados?: number | null
           meta_assinados?: number | null
           meta_contratos?: number | null
+          meta_leads?: number
           meta_ligacoes?: number
+          meta_negocios?: number
           meta_propostas?: number | null
           meta_vgv_assinado?: number
           meta_visitas_marcadas?: number
@@ -1195,7 +1199,9 @@ export type Database = {
           meta_aproveitados?: number | null
           meta_assinados?: number | null
           meta_contratos?: number | null
+          meta_leads?: number
           meta_ligacoes?: number
+          meta_negocios?: number
           meta_propostas?: number | null
           meta_vgv_assinado?: number
           meta_visitas_marcadas?: number
@@ -10578,6 +10584,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_dashboard_gerente: {
+        Args: { p_gestor_id: string; p_periodo?: string }
+        Returns: Json
       }
       get_distribuicao_performance: {
         Args: { p_periodo?: string }
