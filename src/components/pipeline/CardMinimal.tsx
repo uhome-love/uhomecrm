@@ -327,8 +327,8 @@ const CardMinimal = memo(function CardMinimal({
         <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
           {parceiroNome ? (
             <>
-              <Handshake className="h-3 w-3 shrink-0 text-muted-foreground" />
-              <span className="truncate text-[11px] font-medium text-foreground/70">
+              <Handshake className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
+              <span className="truncate text-[11px] font-semibold text-purple-700 dark:text-purple-300">
                 {parceiroNome}
               </span>
             </>
