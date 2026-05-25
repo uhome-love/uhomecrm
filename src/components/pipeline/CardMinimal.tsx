@@ -243,6 +243,11 @@ const CardMinimal = memo(function CardMinimal({
                 Novo
               </span>
             )}
+            {parceiroNome && (
+              <span className="shrink-0 inline-flex items-center gap-0.5 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                🤝 Parceria
+              </span>
+            )}
             <div className="flex-1 min-w-0 text-[13.5px] font-semibold text-foreground tracking-tight leading-tight truncate">
               {lead.nome || "Sem nome"}
             </div>
