@@ -24,7 +24,7 @@ export default function FocusFooter({ currentIndex, total, onPrev, onNext }: Pro
 
   return (
     <div
-      className="sticky bottom-0 left-0 right-0 z-10 grid grid-cols-3 items-center px-4 sm:px-6 py-3 shrink-0"
+      className="shrink-0 grid grid-cols-3 items-center px-4 sm:px-6 py-3"
       style={{
         background: "rgba(15, 15, 35, 0.95)",
         backdropFilter: "blur(8px)",
