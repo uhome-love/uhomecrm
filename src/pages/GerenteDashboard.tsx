@@ -61,6 +61,8 @@ export default function GerenteDashboard() {
 
   const { data, error, isLoading, refetch } = useDashboardGerenteV3(user?.id, periodo);
 
+  const avatarSrc = profile?.avatar_gamificado_url ?? profile?.avatar_url ?? null;
+
   if (roleLoading || (!data && isLoading)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -112,8 +114,6 @@ export default function GerenteDashboard() {
   const kpis = data?.kpis_top;
   const corretores: CorretorRowV3[] = data?.corretores ?? [];
   const mesKey = data?.mes_key ?? new Date().toISOString().slice(0, 7);
-
-  const avatarSrc = profile?.avatar_gamificado_url ?? profile?.avatar_url ?? null;
 
   function handleRowClick(row: CorretorRowV3) {
     navigate("/pipeline", { state: { corretorFilter: row.user_id } });
