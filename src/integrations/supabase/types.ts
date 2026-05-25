@@ -9084,7 +9084,7 @@ export type Database = {
           created_by: string
           data_visita: string
           empreendimento: string | null
-          gerente_id: string
+          gerente_id: string | null
           google_event_id: string | null
           google_event_link: string | null
           hora_visita: string | null
@@ -9122,7 +9122,7 @@ export type Database = {
           created_by: string
           data_visita: string
           empreendimento?: string | null
-          gerente_id: string
+          gerente_id?: string | null
           google_event_id?: string | null
           google_event_link?: string | null
           hora_visita?: string | null
@@ -9160,7 +9160,7 @@ export type Database = {
           created_by?: string
           data_visita?: string
           empreendimento?: string | null
-          gerente_id?: string
+          gerente_id?: string | null
           google_event_id?: string | null
           google_event_link?: string | null
           hora_visita?: string | null
