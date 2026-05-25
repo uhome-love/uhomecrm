@@ -57,6 +57,7 @@ export function useDashboardGerenteV3(gestorId: string | undefined, periodo: Per
     queryKey: ["dashboard-gerente-v3", gestorId, periodo],
     enabled: !!gestorId,
     staleTime: 60_000,
+    retry: 1,
     queryFn: async (): Promise<DashboardGerenteV3Payload> => {
       const { data, error } = await supabase.rpc("get_dashboard_gerente", {
         p_gestor_id: gestorId!,
