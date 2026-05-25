@@ -433,7 +433,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
       {/* ── DESKTOP HEADER (lg+) ── */}
       <div className="hidden lg:block">
         {/* Line 1 — Title + Pílulas + Actions (compacto) */}
-        <div className="flex items-center flex-wrap h-12 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
+        <div className="flex items-center flex-nowrap min-h-12 py-1.5 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
           <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
             <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center shrink-0">
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
@@ -455,7 +455,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           <div className="flex-1" />
 
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
             {(isAdmin || isGestor) && (
               <PipelineCorretorSelect
                 value={corretorFilter}
@@ -483,7 +483,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               visitaLeadIds={visitaLeadIds}
             />
 
-            <div className="relative w-[280px]">
+            <div className="relative w-[200px] xl:w-[260px]">
               <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
               <input
                 placeholder="Buscar lead, telefone, empreendimento..."
@@ -528,7 +528,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         </div>
 
         {/* Line 2 — Tabs + Intel toggle + ações admin */}
-        <div className="flex items-center overflow-x-auto h-9 px-6 gap-1">
+        <div className="flex items-center flex-wrap gap-y-1 min-h-9 py-1 px-6 gap-1">
           {roleTabs.map(tab => (
             <button
               key={tab.key}
