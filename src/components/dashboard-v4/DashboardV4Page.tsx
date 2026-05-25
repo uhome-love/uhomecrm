@@ -9,6 +9,10 @@ import { EditarMetasModal } from "@/components/gerente/dashboard-v3/EditarMetasM
 import { useDashboardGerenteV4Kpis } from "@/hooks/useDashboardGerenteV4Kpis";
 import { V4KpisGrid } from "./V4KpisGrid";
 import { V4QuickActions } from "./V4QuickActions";
+import { V4PanelVisitas } from "./V4PanelVisitas";
+import { V4PanelNegocios } from "./V4PanelNegocios";
+import { V4PanelAlertas } from "./V4PanelAlertas";
+import { V4PanelRoleta } from "./V4PanelRoleta";
 
 export function DashboardV4Page() {
   const { user } = useAuth();
@@ -61,7 +65,12 @@ export function DashboardV4Page() {
 
       <V4QuickActions />
 
-      {/* Painéis 2×2 (Prompt 3) entram aqui */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <V4PanelVisitas gestorId={user?.id} />
+        <V4PanelNegocios gestorId={user?.id} />
+        <V4PanelAlertas alertas={data?.alertas_corretores ?? []} isLoading={isLoading} />
+        <V4PanelRoleta gestorId={user?.id} />
+      </div>
 
       {user?.id && (
         <EditarMetasModal
