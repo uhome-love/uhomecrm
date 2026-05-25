@@ -257,7 +257,17 @@ export function useVisitas(filters?: {
         return null;
       }
 
-      gerenteId = isAdmin ? (teamMember.gerente_id || gerenteId || user.id) : user.id;
+      if (isAdmin) {
+        gerenteId = teamMember.gerente_id || gerenteId || null;
+        if (!gerenteId) {
+          console.warn("[createVisita] gerente_id não encontrado em team_members (admin path)", {
+            corretor_id: corretorId,
+            user_id: user.id,
+          });
+        }
+      } else {
+        gerenteId = user.id;
+      }
     }
 
     if (isGestor && !isAdmin) {
