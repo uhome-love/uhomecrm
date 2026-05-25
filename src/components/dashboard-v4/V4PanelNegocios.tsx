@@ -27,7 +27,7 @@ function formatVgvShort(v: number): string {
 }
 
 function cardVgv(c: MiniPipelineCard): number {
-  return Number(c.vgv_final ?? c.vgv_estimado ?? 0);
+  return Number(c.vgv ?? 0);
 }
 
 function Column({ fase }: { fase: MiniPipelineFase }) {
