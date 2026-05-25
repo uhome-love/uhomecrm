@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { format, isToday, isTomorrow, isBefore, startOfDay, endOfWeek, addDays, addHours } from "date-fns";
 import { dateToBRT, parseDateBRT } from "@/lib/utils";
 import { fetchInBatchesWithRetry, normalizeQueryError, runQueryWithRetry } from "@/lib/taskQueryUtils";
+import { classifyTask } from "@/lib/taskBuckets";
 import { ptBR } from "date-fns/locale";
 import { Phone, MessageCircle, CheckCircle2, Clock, Calendar, Building2, User, ClipboardList, Plus, Search, Pencil, BookOpen, Target, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -509,20 +510,18 @@ export default function MinhasTarefas() {
     return map;
   }, [ownedLeadsFull, ownedLeadTaskMap]);
 
-  // Atrasadas: usa MESMA regra do pipeline — exclui descarte/com negócio, considera vence<hoje OU mesmo dia + hora<agora.
-  // Conta DISTINCT leads pra bater com o número do pipeline.
+  // Atrasadas (regra canônica unificada — ver src/lib/taskBuckets.ts):
+  // tarefa pendente com vence_em<hoje OU (vence_em=hoje E hora_vencimento<agora BRT).
+  // Conta TAREFAS (não leads distintos) para alinhar com o KPI do dashboard.
   const atrasadasTarefas = useMemo(() => {
-    if (categoria !== "leads") {
-      return pendentes.filter(t => t.vence_em && isBefore(parseDateBRT(t.vence_em), todayStart));
-    }
     return pendentes.filter(t => {
-      if (!isLeadElegivel(t)) return false;
-      return ownedLeadStatusMap.get(t.pipeline_lead_id) === "tarefa_atrasada";
+      if (categoria === "leads" && !isLeadElegivel(t)) return false;
+      return classifyTask({ vence_em: t.vence_em, hora_vencimento: t.hora_vencimento }).isOverdue;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendentes, categoria, ownedLeadsMap, ownedLeadStatusMap, todayStart]);
+  }, [pendentes, categoria, ownedLeadsMap]);
 
-  // Conta de leads únicos atrasados (pra bater com pipeline)
+  // Conta de leads únicos atrasados (uso interno — ex: badge auxiliar)
   const atrasadasLeadCount = useMemo(() => new Set(atrasadasTarefas.map(t => t.pipeline_lead_id).filter(Boolean)).size, [atrasadasTarefas]);
 
   const hoje = useMemo(() => pendentes.filter(t => t.vence_em && isToday(parseDateBRT(t.vence_em))), [pendentes]);
@@ -841,7 +840,7 @@ export default function MinhasTarefas() {
 
   const tabs: { key: TabFilter; label: string; count: number }[] = [
     { key: "todas", label: "📋 Todas", count: pendentes.length },
-    { key: "atrasadas", label: "🔴 Atrasadas", count: categoria === "leads" ? atrasadasLeadCount : atrasadasTarefas.length },
+    { key: "atrasadas", label: "🔴 Atrasadas", count: atrasadasTarefas.length },
     { key: "hoje", label: "📅 Hoje", count: hoje.length },
     { key: "amanha", label: "📅 Amanhã", count: amanha.length },
     { key: "semana", label: "📅 Semana", count: semana.length },
@@ -880,7 +879,7 @@ export default function MinhasTarefas() {
       <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
         <span>📊 <strong className="text-foreground">Total pendentes:</strong> {pendentes.length}</span>
         <span>·</span>
-        <span><strong className="text-destructive">Atrasadas:</strong> {categoria === "leads" ? atrasadasLeadCount : atrasadasTarefas.length}</span>
+        <span><strong className="text-destructive">Atrasadas:</strong> {atrasadasTarefas.length}</span>
         <span>·</span>
         <span><strong className="text-foreground">Hoje:</strong> {hoje.length}</span>
         <span>·</span>
