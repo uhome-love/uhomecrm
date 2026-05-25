@@ -284,10 +284,17 @@ export function useVisitas(filters?: {
           .limit(1)
           .maybeSingle();
 
-        gerenteId = tm?.gerente_id || user.id;
+        gerenteId = tm?.gerente_id ?? null;
+        if (!tm?.gerente_id) {
+          console.warn("[useVisitas] gerente_id não encontrado em team_members", {
+            corretor_id: corretorId,
+            user_id: user.id,
+            contexto: "createVisita",
+          });
+        }
       } catch (e) {
-        console.warn("[createVisita] Falha ao resolver gerente_id, usando usuário logado", e);
-        gerenteId = user.id;
+        console.warn("[createVisita] Falha ao resolver gerente_id", e);
+        gerenteId = null;
       }
     }
 
