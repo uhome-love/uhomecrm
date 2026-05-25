@@ -9,6 +9,10 @@ import { EditarMetasModal } from "@/components/gerente/dashboard-v3/EditarMetasM
 import { useDashboardGerenteV4Kpis } from "@/hooks/useDashboardGerenteV4Kpis";
 import { V4KpisGrid } from "./V4KpisGrid";
 import { V4QuickActions } from "./V4QuickActions";
+import { V4PanelVisitas } from "./V4PanelVisitas";
+import { V4PanelNegocios } from "./V4PanelNegocios";
+import { V4PanelAlertas } from "./V4PanelAlertas";
+import { V4PanelRoleta } from "./V4PanelRoleta";
 
 export function DashboardV4Page() {
   const { user } = useAuth();
