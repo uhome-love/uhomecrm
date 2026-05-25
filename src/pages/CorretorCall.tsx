@@ -206,7 +206,7 @@ export default function CorretorCall() {
     setShowSummary(true);
   };
 
-  if (!metaSalva) return null;
+  if (progressLoading) return null;
 
   // ── WARMUP: IMMERSIVE BATTLE ENTRY ──
   if (phase === "warmup" || phase === "launching") {
