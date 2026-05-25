@@ -84,15 +84,8 @@ export default function CorretorCall() {
     };
   }, []);
 
-  // Check meta exists (only after loading finishes)
-  const metaSalva = progressLoading || !!goals;
-
-  useEffect(() => {
-    if (!progressLoading && !goals) {
-      toast.warning("Defina sua meta do dia antes de iniciar o Call!");
-      navigate("/corretor", { replace: true });
-    }
-  }, [progressLoading, goals, navigate]);
+  // Meta do dia foi descontinuada — não bloqueia mais entrada na tela.
+  // useCorretorProgress retorna defaults (30/5/3) quando goals é null.
 
   useEffect(() => {
     if (!user) return;
