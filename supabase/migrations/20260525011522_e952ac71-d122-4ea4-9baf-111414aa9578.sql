@@ -1,0 +1,1 @@
+ALTER TABLE public.visitas ALTER COLUMN gerente_id DROP NOT NULL;
