@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, lazy, Suspense, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { LoadingState, ErrorState } from "@/components/ui/screen-states";
 import { usePipeline } from "@/hooks/usePipeline";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
@@ -153,6 +153,20 @@ export default function PipelineKanban() {
   const [negociosFilter, setNegociosFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Filtro vindo do Dashboard Gerente v3 via location.state.corretorFilter
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const incoming = (location.state as { corretorFilter?: string } | null)?.corretorFilter;
+    if (incoming) {
+      setCorretorFilter(incoming);
+      setActiveTab("kanban");
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
 
   // (gestorFilter + query gestorTeamUserIds movidos pra topo do componente
   // pra alimentar usePipeline com scopeCorretorIds — Fase C performance.)
