@@ -509,20 +509,18 @@ export default function MinhasTarefas() {
     return map;
   }, [ownedLeadsFull, ownedLeadTaskMap]);
 
-  // Atrasadas: usa MESMA regra do pipeline — exclui descarte/com negócio, considera vence<hoje OU mesmo dia + hora<agora.
-  // Conta DISTINCT leads pra bater com o número do pipeline.
+  // Atrasadas (regra canônica unificada — ver src/lib/taskBuckets.ts):
+  // tarefa pendente com vence_em<hoje OU (vence_em=hoje E hora_vencimento<agora BRT).
+  // Conta TAREFAS (não leads distintos) para alinhar com o KPI do dashboard.
   const atrasadasTarefas = useMemo(() => {
-    if (categoria !== "leads") {
-      return pendentes.filter(t => t.vence_em && isBefore(parseDateBRT(t.vence_em), todayStart));
-    }
     return pendentes.filter(t => {
-      if (!isLeadElegivel(t)) return false;
-      return ownedLeadStatusMap.get(t.pipeline_lead_id) === "tarefa_atrasada";
+      if (categoria === "leads" && !isLeadElegivel(t)) return false;
+      return classifyTask({ vence_em: t.vence_em, hora_vencimento: t.hora_vencimento }).isOverdue;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendentes, categoria, ownedLeadsMap, ownedLeadStatusMap, todayStart]);
+  }, [pendentes, categoria, ownedLeadsMap]);
 
-  // Conta de leads únicos atrasados (pra bater com pipeline)
+  // Conta de leads únicos atrasados (uso interno — ex: badge auxiliar)
   const atrasadasLeadCount = useMemo(() => new Set(atrasadasTarefas.map(t => t.pipeline_lead_id).filter(Boolean)).size, [atrasadasTarefas]);
 
   const hoje = useMemo(() => pendentes.filter(t => t.vence_em && isToday(parseDateBRT(t.vence_em))), [pendentes]);
