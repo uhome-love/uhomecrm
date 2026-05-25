@@ -21,7 +21,7 @@ function saudacao() {
   return "Boa noite";
 }
 
-export function DashboardHeader({ nome, avatarUrl, periodo, onPeriodoChange, onEditarMetas }: Props) {
+export function DashboardHeader({ nome, avatarUrl, periodo, onPeriodoChange, onEditarMetas, hidePeriodoToggle = false }: Props) {
   const primeiroNome = nome?.split(" ")[0] ?? "";
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 pb-2">
