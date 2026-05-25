@@ -528,7 +528,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         </div>
 
         {/* Line 2 — Tabs + Intel toggle + ações admin */}
-        <div className="flex items-center overflow-x-auto h-9 px-6 gap-1">
+        <div className="flex items-center flex-wrap gap-y-1 min-h-9 py-1 px-6 gap-1">
           {roleTabs.map(tab => (
             <button
               key={tab.key}
