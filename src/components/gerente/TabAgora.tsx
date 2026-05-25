@@ -78,7 +78,18 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
   const today = todayBRT();
 
   const loadData = useCallback(async () => {
-    if (!user || teamUserIds.length === 0) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    if (teamUserIds.length === 0) {
+      setCorretores([]);
+      setSemLigacaoNomes([]);
+      setOfflineNomes([]);
+      setLeadsSemContato48h(0);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     const todayStart = `${today}T00:00:00-03:00`;
