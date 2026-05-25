@@ -433,7 +433,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
       {/* ── DESKTOP HEADER (lg+) ── */}
       <div className="hidden lg:block">
         {/* Line 1 — Title + Pílulas + Actions (compacto) */}
-        <div className="flex items-center flex-wrap h-12 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
+        <div className="flex items-center flex-nowrap min-h-12 py-1.5 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
           <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
             <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center shrink-0">
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
