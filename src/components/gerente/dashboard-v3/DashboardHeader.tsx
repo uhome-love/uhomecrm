@@ -38,7 +38,7 @@ export function DashboardHeader({ nome, avatarUrl, periodo, onPeriodoChange, onE
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <PeriodoToggle value={periodo} onChange={onPeriodoChange} />
+        {!hidePeriodoToggle && <PeriodoToggle value={periodo} onChange={onPeriodoChange} />}
         {onEditarMetas && (
           <Button variant="outline" size="sm" onClick={onEditarMetas} className="gap-2">
             <Settings2 className="h-4 w-4" />
