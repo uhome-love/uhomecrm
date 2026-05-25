@@ -143,17 +143,15 @@ export default function GerenteDashboard() {
 
       {kpis && (
         <>
-          {/* Headline + 3 secundários — grid responsivo */}
-          <div className="grid gap-4 lg:grid-cols-4">
-            <div className="lg:col-span-2">
-              <HeadlineVendasCard
-                vendas={Number(kpis.vendas) || 0}
-                meta={Number(kpis.meta_vendas) || 0}
-                vendasQtd={kpis.vendas_qtd}
-                delta={kpis.delta_vendas}
-                periodoLabel={periodoLabel(periodo)}
-              />
-            </div>
+          {/* 4 KPIs em uma linha (≥1100px): 1.4fr | 1fr | 1fr | 1fr; 2x2 abaixo */}
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 dash-v3-kpis">
+            <HeadlineVendasCard
+              vendas={Number(kpis.vendas) || 0}
+              meta={Number(kpis.meta_vendas) || 0}
+              vendasQtd={kpis.vendas_qtd}
+              delta={kpis.delta_vendas}
+              periodoLabel={periodoLabel(periodo)}
+            />
             <SecondaryMetricCard
               label="Leads recebidos"
               value={kpis.leads}
@@ -170,23 +168,23 @@ export default function GerenteDashboard() {
               icon={CalendarCheck}
               tone="warning"
             />
-          </div>
-
-          {/* Negócios ativos — linha cheia compacta */}
-          <div className="grid gap-4 lg:grid-cols-4">
             <SecondaryMetricCard
-              label="Negócios ativos no funil"
+              label="Negócios ativos"
               value={kpis.negocios}
               meta={kpis.meta_negocios}
               delta={null}
               icon={Briefcase}
               tone="success"
-              hideProgress={false}
             />
-            <div className="lg:col-span-3 rounded-2xl border border-border bg-card/50 p-5 flex items-center text-sm text-muted-foreground">
-              Clique em um corretor abaixo para abrir o Pipeline filtrado pela carteira dele.
-            </div>
           </div>
+
+          <style>{`
+            @media (min-width: 1100px) {
+              .dash-v3-kpis {
+                grid-template-columns: 1.4fr 1fr 1fr 1fr;
+              }
+            }
+          `}</style>
 
           {/* Tabela do time */}
           <TeamPerformanceTable rows={corretores} onRowClick={handleRowClick} />
