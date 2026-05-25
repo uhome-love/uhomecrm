@@ -65,7 +65,12 @@ export function DashboardV4Page() {
 
       <V4QuickActions />
 
-      {/* Painéis 2×2 (Prompt 3) entram aqui */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <V4PanelVisitas gestorId={user?.id} />
+        <V4PanelNegocios gestorId={user?.id} />
+        <V4PanelAlertas alertas={data?.alertas_corretores ?? []} isLoading={isLoading} />
+        <V4PanelRoleta gestorId={user?.id} />
+      </div>
 
       {user?.id && (
         <EditarMetasModal
