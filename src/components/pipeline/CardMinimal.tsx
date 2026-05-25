@@ -224,9 +224,11 @@ const CardMinimal = memo(function CardMinimal({
       }}
       data-dragging={isDragging || undefined}
       className={[
-        "group relative cursor-pointer rounded-xl bg-card border border-border/60",
-        "px-3 py-2.5 pl-4 shadow-sm hover:shadow-md transition-all",
-        "hover:border-border hover:-translate-y-px",
+        "group relative cursor-pointer rounded-xl shadow-sm hover:shadow-md transition-all",
+        "px-3 py-2.5 pl-4 hover:-translate-y-px",
+        parceiroNome
+          ? "bg-purple-50/40 dark:bg-purple-950/20 border border-purple-300/70 dark:border-purple-700/60 ring-1 ring-purple-400/50 hover:border-purple-400"
+          : "bg-card border border-border/60 hover:border-border",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
         stage?.tipo === "novo_lead" ? "before:bg-[#4F46E5]" : SIDEBAR_BY_STATUS[status],
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
@@ -239,6 +241,11 @@ const CardMinimal = memo(function CardMinimal({
             {stage?.tipo === "novo_lead" && (
               <span className="shrink-0 inline-block bg-[#4F46E5] text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Novo
+              </span>
+            )}
+            {parceiroNome && (
+              <span className="shrink-0 inline-flex items-center gap-0.5 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                🤝 Parceria
               </span>
             )}
             <div className="flex-1 min-w-0 text-[13.5px] font-semibold text-foreground tracking-tight leading-tight truncate">
@@ -320,8 +327,8 @@ const CardMinimal = memo(function CardMinimal({
         <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
           {parceiroNome ? (
             <>
-              <Handshake className="h-3 w-3 shrink-0 text-muted-foreground" />
-              <span className="truncate text-[11px] font-medium text-foreground/70">
+              <Handshake className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
+              <span className="truncate text-[11px] font-semibold text-purple-700 dark:text-purple-300">
                 {parceiroNome}
               </span>
             </>
