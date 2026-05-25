@@ -20,7 +20,47 @@ const TURNO_LABEL: Record<string, string> = {
   dia_todo: "Dia todo",
 };
 
-function CredCard({ c }: { c: RoletaCredenciado }) {
+const TURNO_ORDER: Record<string, number> = {
+  manha: 0,
+  tarde: 1,
+  noturna: 2,
+  dia_todo: 3,
+};
+
+interface CredAgrupado {
+  corretor_id: string;
+  nome: string | null;
+  avatar_url: string | null;
+  turno_ativo_agora: boolean;
+  turnos: { janela: string; leads: number }[];
+}
+
+function groupByCorretor(list: RoletaCredenciado[]): CredAgrupado[] {
+  const map = new Map<string, CredAgrupado>();
+  for (const c of list) {
+    const existing = map.get(c.corretor_id);
+    if (existing) {
+      existing.turno_ativo_agora = existing.turno_ativo_agora || c.turno_ativo_agora;
+      existing.turnos.push({ janela: c.janela, leads: c.leads_recebidos_dia });
+    } else {
+      map.set(c.corretor_id, {
+        corretor_id: c.corretor_id,
+        nome: c.nome,
+        avatar_url: c.avatar_url,
+        turno_ativo_agora: c.turno_ativo_agora,
+        turnos: [{ janela: c.janela, leads: c.leads_recebidos_dia }],
+      });
+    }
+  }
+  for (const item of map.values()) {
+    item.turnos.sort(
+      (a, b) => (TURNO_ORDER[a.janela] ?? 99) - (TURNO_ORDER[b.janela] ?? 99),
+    );
+  }
+  return Array.from(map.values());
+}
+
+function CredCard({ c }: { c: CredAgrupado }) {
   return (
     <div className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/20 p-2.5">
       <div className="relative shrink-0">
@@ -36,8 +76,10 @@ function CredCard({ c }: { c: RoletaCredenciado }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-foreground truncate">{c.nome ?? "—"}</p>
-        <p className="text-[10px] text-muted-foreground">
-          {TURNO_LABEL[c.janela] ?? c.janela} · {c.leads_recebidos_dia} leads
+        <p className="text-[10px] text-muted-foreground truncate">
+          {c.turnos
+            .map((t) => `${TURNO_LABEL[t.janela] ?? t.janela} · ${t.leads}`)
+            .join("  ·  ")}
         </p>
       </div>
     </div>
@@ -49,7 +91,8 @@ export function V4PanelRoleta({ gestorId }: Props) {
   const { data, isLoading } = useDashboardGerenteV4Dia(gestorId, "hoje");
   const roleta = data?.roleta_dia;
   const credenciados = roleta?.credenciados ?? [];
-  const ativos = credenciados.filter((c) => c.turno_ativo_agora).length;
+  const agrupados = groupByCorretor(credenciados);
+  const ativos = agrupados.filter((c) => c.turno_ativo_agora).length;
   const turnoLabel = TURNO_LABEL[roleta?.turno_ativo_atual ?? ""] ?? "—";
 
   return (
@@ -64,7 +107,7 @@ export function V4PanelRoleta({ gestorId }: Props) {
           ativos > 0 ? "bg-success-50 text-success-700" : "bg-muted/40 text-muted-foreground",
         )}
       >
-        Credenciados agora: <span className="tabular-nums font-bold">{ativos}</span> / {credenciados.length}
+        Credenciados agora: <span className="tabular-nums font-bold">{ativos}</span> / {agrupados.length}
       </div>
 
       <div className="flex-1 min-h-[180px]">
@@ -74,7 +117,7 @@ export function V4PanelRoleta({ gestorId }: Props) {
               <Skeleton key={i} className="h-14 w-full" />
             ))}
           </div>
-        ) : credenciados.length === 0 ? (
+        ) : agrupados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Users className="h-8 w-8 text-muted-foreground/60 mb-2" />
             <p className="text-sm text-muted-foreground">
@@ -83,7 +126,7 @@ export function V4PanelRoleta({ gestorId }: Props) {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2.5">
-            {credenciados.map((c) => (
+            {agrupados.map((c) => (
               <CredCard key={c.corretor_id} c={c} />
             ))}
           </div>
