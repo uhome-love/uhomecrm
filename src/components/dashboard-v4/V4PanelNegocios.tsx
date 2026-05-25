@@ -49,14 +49,14 @@ function Column({ fase }: { fase: MiniPipelineFase }) {
         <div className="space-y-1.5">
           {fase.top_cards.map((c) => (
             <div
-              key={c.id}
+              key={c.negocio_id}
               className={cn(
                 "rounded-md border border-border border-l-4 bg-muted/30 px-2 py-1.5",
                 border,
               )}
             >
               <p className="text-xs font-medium text-foreground truncate">
-                {c.nome_cliente ?? "—"}
+                {c.cliente_nome ?? "—"}
               </p>
               <p className="text-[10px] text-muted-foreground tabular-nums">
                 {formatVgvShort(cardVgv(c))}
