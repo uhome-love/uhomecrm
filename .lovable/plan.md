@@ -1,27 +1,41 @@
 ## Problema
 
-O KPI "Negócios" no Dashboard do Gerente (`/gerente/dashboard`) está contabilizando **todos os negócios da empresa com `status = 'ativo'`**, incluindo fases finalizadas (`vendido`, `distrato`, `perdido`). Resultado: ~177 negócios em vez dos ~13 realmente em andamento.
+No painel "Roleta — turno X" do Dashboard do Gerente, corretores que estão credenciados em mais de um turno (ex.: Leo Dorneles em Manhã + Tarde, Luiza Clós, Thalia) aparecem como cards duplicados — um por turno. Visualmente parece que existem mais pessoas do que há de fato.
 
-A função RPC `get_dashboard_gerente_v4_kpis`, no CTE `negocios_ativos_total`, filtra apenas por `status = 'ativo'` sem excluir as fases de encerramento.
+## Solução (somente UI, sem mexer em backend)
 
-## Correção
+Agrupar os credenciados por `corretor_id` no `V4PanelRoleta` e renderizar **um único card por corretor**, listando dentro dele todos os turnos que ele participa com a contagem de leads de cada turno.
 
-Ajustar o CTE `negocios_ativos_total` da função `get_dashboard_gerente_v4_kpis` para:
+### Formato do card consolidado
 
-1. Manter o escopo do time do gerente (`corretor_id = ANY(v_team_prof)`) — já está correto.
-2. Manter `status = 'ativo'`.
-3. **Adicionar** filtro: `fase NOT IN ('vendido', 'distrato', 'perdido')`.
+```text
+┌──────────────────────────────────────────┐
+│ [avatar•]  Leo Dorneles                  │
+│            Manhã · 2  ·  Tarde · 2       │
+└──────────────────────────────────────────┘
+```
 
-Assim só entram negócios efetivamente em andamento (`novo_negocio`, `proposta`, `negociacao` e quaisquer fases ativas futuras), alinhado ao grupo "🔄 Em andamento" do Pipeline de Negócios.
+- Nome do corretor em destaque (igual hoje).
+- Linha secundária: `Manhã · X leads · Tarde · Y leads · Noite · Z leads`, mostrando apenas os turnos em que ele realmente está credenciado, separados por `·`.
+- Bolinha verde de "online" continua aparecendo se **qualquer** um dos turnos do corretor estiver ativo agora (`turno_ativo_agora === true` em alguma das entradas).
+- Ordem dos turnos fixa: Manhã → Tarde → Noite → Dia todo.
 
-## Detalhes técnicos
+### KPI "Credenciados agora"
 
-- Migration única: `CREATE OR REPLACE FUNCTION public.get_dashboard_gerente_v4_kpis(...)` reescrevendo a função inteira, alterando somente o CTE `negocios_ativos_total`.
-- Sem mudanças no frontend: `V4KpisGrid` já lê `kpis.negocios_ativos` do payload.
-- Sem mudanças em outros KPIs (Leads, Visitas, Vendas) nem nos painéis (`V4PanelNegocios`, alertas, roleta).
+Hoje mostra `ativos / total` contando entradas (turnos). Vai passar a contar **corretores distintos**:
+- `ativos` = quantidade de corretores únicos com algum turno ativo agora.
+- `total`  = quantidade de corretores únicos credenciados no dia.
+
+Isso alinha o número ao novo layout (1 card = 1 pessoa).
+
+## Arquivos afetados
+
+- `src/components/dashboard-v4/V4PanelRoleta.tsx` — único arquivo a alterar:
+  - Novo helper `groupByCorretor(credenciados)` que devolve `{ corretor_id, nome, avatar_url, turno_ativo_agora, turnos: [{janela, leads_recebidos_dia}] }`.
+  - `CredCard` passa a receber esse objeto agrupado e renderizar a linha de turnos.
+  - Ajustar contagem `ativos` / `credenciados.length` para usar a lista agrupada.
 
 ## Fora de escopo
 
-- Dashboard CEO e demais agregações.
-- Painel `V4PanelNegocios` (lista detalhada).
-- Metas de negócios (`negocios_meta`).
+- Hook `useDashboardGerenteV4Dia` e RPC do backend permanecem como estão (continuam retornando 1 linha por turno; o agrupamento é feito no cliente).
+- Outros painéis do dashboard, página `/roleta`, fluxo de credenciamento.
