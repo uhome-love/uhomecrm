@@ -17,11 +17,9 @@ export interface VisitaV4 {
 }
 
 export interface MiniPipelineCard {
-  id: string;
-  nome_cliente: string | null;
-  vgv_final: number | null;
-  vgv_estimado: number | null;
-  updated_at: string;
+  negocio_id: string;
+  cliente_nome: string | null;
+  vgv: number | null;
 }
 
 export interface MiniPipelineFase {
