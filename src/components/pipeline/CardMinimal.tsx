@@ -224,9 +224,11 @@ const CardMinimal = memo(function CardMinimal({
       }}
       data-dragging={isDragging || undefined}
       className={[
-        "group relative cursor-pointer rounded-xl bg-card border border-border/60",
-        "px-3 py-2.5 pl-4 shadow-sm hover:shadow-md transition-all",
-        "hover:border-border hover:-translate-y-px",
+        "group relative cursor-pointer rounded-xl shadow-sm hover:shadow-md transition-all",
+        "px-3 py-2.5 pl-4 hover:-translate-y-px",
+        parceiroNome
+          ? "bg-purple-50/40 dark:bg-purple-950/20 border border-purple-300/70 dark:border-purple-700/60 ring-1 ring-purple-400/50 hover:border-purple-400"
+          : "bg-card border border-border/60 hover:border-border",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r",
         stage?.tipo === "novo_lead" ? "before:bg-[#4F46E5]" : SIDEBAR_BY_STATUS[status],
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
