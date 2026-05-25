@@ -10,6 +10,8 @@ interface Props {
   periodo: PeriodoV3;
   onPeriodoChange: (p: PeriodoV3) => void;
   onEditarMetas?: () => void;
+  /** v4: ocultar o seletor de período (KPIs do v4 são fixos no mês). */
+  hidePeriodoToggle?: boolean;
 }
 
 function saudacao() {
@@ -19,7 +21,7 @@ function saudacao() {
   return "Boa noite";
 }
 
-export function DashboardHeader({ nome, avatarUrl, periodo, onPeriodoChange, onEditarMetas }: Props) {
+export function DashboardHeader({ nome, avatarUrl, periodo, onPeriodoChange, onEditarMetas, hidePeriodoToggle = false }: Props) {
   const primeiroNome = nome?.split(" ")[0] ?? "";
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 pb-2">
@@ -36,7 +38,7 @@ export function DashboardHeader({ nome, avatarUrl, periodo, onPeriodoChange, onE
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <PeriodoToggle value={periodo} onChange={onPeriodoChange} />
+        {!hidePeriodoToggle && <PeriodoToggle value={periodo} onChange={onPeriodoChange} />}
         {onEditarMetas && (
           <Button variant="outline" size="sm" onClick={onEditarMetas} className="gap-2">
             <Settings2 className="h-4 w-4" />
