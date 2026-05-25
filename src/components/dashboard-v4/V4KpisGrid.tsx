@@ -42,7 +42,7 @@ function VisitasCard({ kpis }: { kpis: KpisTopV4 }) {
         <span className="text-xs text-muted-foreground">realizadas</span>
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">
-        {kpis.visitas_agendadas.toLocaleString("pt-BR")} agendadas
+        de {kpis.visitas_total.toLocaleString("pt-BR")} no mês
         {meta > 0 && <> · meta {meta.toLocaleString("pt-BR")}</>}
       </p>
 

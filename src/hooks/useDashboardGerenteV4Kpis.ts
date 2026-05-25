@@ -9,6 +9,7 @@ export interface KpisTopV4 {
 
   visitas_realizadas: number;
   visitas_agendadas: number;
+  visitas_total: number;
   visitas_meta: number;
   visitas_delta_pct: number | null;
 
