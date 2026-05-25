@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Users, TrendingUp, CalendarCheck, Briefcase } from "lucide-react";
+import { AlertCircle, Loader2, Users, TrendingUp, CalendarCheck, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -59,12 +59,52 @@ export default function GerenteDashboard() {
     },
   });
 
-  const { data, isLoading, refetch } = useDashboardGerenteV3(user?.id, periodo);
+  const { data, error, isLoading, refetch } = useDashboardGerenteV3(user?.id, periodo);
 
   if (roleLoading || (!data && isLoading)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-5">
+        <DashboardHeader
+          nome={profile?.nome ?? "Gerente"}
+          avatarUrl={avatarSrc}
+          periodo={periodo}
+          onPeriodoChange={setPeriodo}
+          onEditarMetas={() => setMetasOpen(true)}
+        />
+
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-5 flex items-start gap-3">
+          <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Não foi possível carregar o dashboard do time</p>
+            <p className="text-xs text-muted-foreground">
+              {error.message || "Ocorreu um erro ao buscar os indicadores e corretores."}
+            </p>
+          </div>
+        </div>
+
+        {user?.id && (
+          <EditarMetasModal
+            open={metasOpen}
+            onOpenChange={setMetasOpen}
+            gestorId={user.id}
+            mesKey={new Date().toISOString().slice(0, 7)}
+            initial={{
+              meta_vgv_assinado: 0,
+              meta_leads: 400,
+              meta_visitas_realizadas: 0,
+              meta_negocios: 90,
+            }}
+            onSaved={() => refetch()}
+          />
+        )}
       </div>
     );
   }
