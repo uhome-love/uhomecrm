@@ -1,41 +1,53 @@
 /**
- * useCorretorKpisCarteira — 4 KPIs régua mutuamente exclusivos do Dashboard v3.
+ * useCorretorKpisCarteira — KPIs do Dashboard /corretor.
  *
- * Régua por lead ativo (em ordem):
- *   1. sem_tarefa  — nenhuma pipeline_tarefa pendente
- *   2. atrasado    — ∃ tarefa pendente com vence_em < now
- *   3. para_hoje   — ∃ tarefa pendente vencendo até fim do dia BRT
- *   4. em_dia      — caso contrário
+ * Regras canônicas (ver src/lib/taskBuckets.ts):
+ *   - tarefas_hoje:       count de TAREFAS pendentes com vence_em=hoje BRT
+ *                         (inclui as que já passaram da hora — overlap esperado)
+ *   - tarefas_atrasadas:  count de TAREFAS pendentes vencidas
+ *                         (data<hoje OR data=hoje E hora<agora; NULL→23:59)
+ *   - leads_sem_tarefa:   LEADS ativos sem nenhuma tarefa pendente
+ *   - leads_em_dia:       LEADS ativos com tarefas só no futuro
  *
- * Garantia: sem_tarefa + atrasado + para_hoje + em_dia = total ativos (SQL validado).
- *
- * Reusa o filtro de "lead ativo" alinhado a focusSuggestions.fetchActiveLeadIds:
- *   corretor_id = auth.users.id, arquivado=false, negocio_id IS NULL,
- *   stage.tipo NOT IN ('descarte','convertido'), stage.ativo=true.
+ * Escopo de leads ativos: corretor_id = auth.users.id, arquivado=false,
+ * negocio_id IS NULL, stage.tipo NOT IN ('descarte','convertido').
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { todayBRT } from "@/lib/utils";
+import { computeTaskBuckets, type TaskBuckets } from "@/lib/taskBuckets";
 
-export interface CarteiraBuckets {
-  sem_tarefa: number;
-  atrasado: number;
+const EMPTY: TaskBuckets = {
+  tarefas_hoje: 0,
+  tarefas_atrasadas: 0,
+  leads_sem_tarefa: 0,
+  leads_em_dia: 0,
+  total_leads: 0,
+};
+
+// Retrocompat: campos antigos mantidos como alias para componentes legados.
+export interface CarteiraBuckets extends TaskBuckets {
+  /** @deprecated use tarefas_hoje */
   para_hoje: number;
+  /** @deprecated use tarefas_atrasadas */
+  atrasado: number;
+  /** @deprecated use leads_sem_tarefa */
+  sem_tarefa: number;
+  /** @deprecated use leads_em_dia */
   em_dia: number;
+  /** @deprecated use total_leads */
   total: number;
 }
 
-const EMPTY: CarteiraBuckets = { sem_tarefa: 0, atrasado: 0, para_hoje: 0, em_dia: 0, total: 0 };
-
-/**
- * Extrai YYYY-MM-DD de um valor `vence_em` (coluna `date` no Postgres).
- * PostgREST devolve a string `YYYY-MM-DD` direto; usamos slice como fallback
- * defensivo se o backend mudar pra timestamptz no futuro.
- */
-function ymdBRT(v: string): string {
-  if (v.length >= 10 && v[4] === "-" && v[7] === "-") return v.slice(0, 10);
-  return new Date(v).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+function withAliases(b: TaskBuckets): CarteiraBuckets {
+  return {
+    ...b,
+    para_hoje: b.tarefas_hoje,
+    atrasado: b.tarefas_atrasadas,
+    sem_tarefa: b.leads_sem_tarefa,
+    em_dia: b.leads_em_dia,
+    total: b.total_leads,
+  };
 }
 
 export function useCorretorKpisCarteira() {
@@ -43,9 +55,8 @@ export function useCorretorKpisCarteira() {
   return useQuery<CarteiraBuckets>({
     queryKey: ["corretor-kpis-carteira", user?.id],
     queryFn: async () => {
-      if (!user?.id) return EMPTY;
+      if (!user?.id) return withAliases(EMPTY);
 
-      // 1. Stages excluídos (descarte/convertido)
       const { data: stages } = await supabase
         .from("pipeline_stages")
         .select("id, tipo")
@@ -56,7 +67,6 @@ export function useCorretorKpisCarteira() {
           .map((s: any) => s.id as string)
       );
 
-      // 2. Leads ativos do corretor
       const { data: leads } = await supabase
         .from("pipeline_leads")
         .select("id, stage_id")
@@ -67,47 +77,24 @@ export function useCorretorKpisCarteira() {
         .filter((l: any) => !excluded.has(l.stage_id))
         .map((l: any) => l.id as string);
 
-      if (ativos.length === 0) return EMPTY;
+      if (ativos.length === 0) return withAliases(EMPTY);
 
-      // 3. Tarefas pendentes para esses leads
       const { data: tarefas } = await supabase
         .from("pipeline_tarefas")
-        .select("pipeline_lead_id, vence_em")
+        .select("pipeline_lead_id, vence_em, hora_vencimento")
         .eq("status", "pendente")
         .in("pipeline_lead_id", ativos);
 
-      // Comparação de data em string YYYY-MM-DD no fuso BRT — evita o pitfall
-      // de `new Date("YYYY-MM-DD").getTime()` que parseia como 00:00 UTC e
-      // colocava tarefas de amanhã BRT no bucket "para_hoje" entre 21h-23h59 UTC.
-      const hojeStr = todayBRT();
-      type LeadState = "atrasado" | "hoje" | "futuro";
-      const PRIORITY: Record<LeadState, number> = { atrasado: 0, hoje: 1, futuro: 2 };
-      const stateByLead = new Map<string, LeadState>();
+      const buckets = computeTaskBuckets(
+        (tarefas || []).map((t: any) => ({
+          pipeline_lead_id: t.pipeline_lead_id,
+          vence_em: t.vence_em,
+          hora_vencimento: t.hora_vencimento,
+        })),
+        ativos
+      );
 
-      for (const t of tarefas || []) {
-        const id = (t as any).pipeline_lead_id as string;
-        const venceRaw = (t as any).vence_em as string | null;
-        if (!venceRaw) continue;
-        const venceDia = ymdBRT(venceRaw);
-        const novo: LeadState =
-          venceDia < hojeStr ? "atrasado" :
-          venceDia === hojeStr ? "hoje" : "futuro";
-        const atual = stateByLead.get(id);
-        if (atual === undefined || PRIORITY[novo] < PRIORITY[atual]) {
-          stateByLead.set(id, novo);
-        }
-      }
-
-      let sem_tarefa = 0, atrasado = 0, para_hoje = 0, em_dia = 0;
-      for (const id of ativos) {
-        const s = stateByLead.get(id);
-        if (!s) sem_tarefa++;
-        else if (s === "atrasado") atrasado++;
-        else if (s === "hoje") para_hoje++;
-        else em_dia++;
-      }
-
-      return { sem_tarefa, atrasado, para_hoje, em_dia, total: ativos.length };
+      return withAliases(buckets);
     },
     enabled: !!user?.id,
     staleTime: 60_000,
