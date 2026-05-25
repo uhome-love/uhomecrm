@@ -867,18 +867,18 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
               </motion.div>
             </AnimatePresence>
           ) : null}
-
-          {/* R5 Item 4 — Footer fixo (sticky) com Anterior / posição / Próximo.
-              Compartilha handlers com useFocusKeyboardShortcuts (← / →). */}
-          {!configPhase && !loading && !showEmpty && leads.length > 0 && currentLead && (
-            <FocusFooter
-              currentIndex={currentIndex}
-              total={leads.length}
-              onPrev={goToPrev}
-              onNext={goToNext}
-            />
-          )}
         </div>
+
+        {/* R5 Item 4 — Footer fixo na base do modal (irmão do body scrollável).
+            Compartilha handlers com useFocusKeyboardShortcuts (← / →). */}
+        {!configPhase && !loading && !showEmpty && leads.length > 0 && currentLead && (
+          <FocusFooter
+            currentIndex={currentIndex}
+            total={leads.length}
+            onPrev={goToPrev}
+            onNext={goToNext}
+          />
+        )}
 
         {/* R5 Item 3 — Dica primeira vez do dia: ensina as setas (canto inferior direito). */}
         {!configPhase && !loading && !showEmpty && currentLead && !completingOverdue && (
