@@ -455,7 +455,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           <div className="flex-1" />
 
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
             {(isAdmin || isGestor) && (
               <PipelineCorretorSelect
                 value={corretorFilter}
