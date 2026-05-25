@@ -76,15 +76,17 @@ interface KpiBoxProps {
   borderColor: string;
   onClick: () => void;
   loading?: boolean;
+  hint?: string;
 }
 
-function KpiBox({ value, label, borderColor, onClick, loading }: KpiBoxProps) {
+function KpiBox({ value, label, borderColor, onClick, loading, hint }: KpiBoxProps) {
   return (
     <Card
       role="button"
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick()}
+      title={hint}
       className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary"
       style={{ borderTop: `3px solid ${borderColor}` }}
     >
