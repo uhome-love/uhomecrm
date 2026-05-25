@@ -613,7 +613,13 @@ export async function createVisitaFromOA(params: {
     .limit(1)
     .maybeSingle();
 
-  const gerenteId = tm?.gerente_id || params.corretorId;
+  const gerenteId = tm?.gerente_id ?? null;
+  if (!tm?.gerente_id) {
+    console.warn("[useVisitas] gerente_id não encontrado em team_members", {
+      corretor_id: params.corretorId,
+      contexto: "createVisitaFromOA",
+    });
+  }
   const dataVisita = params.dataVisita
     || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
   const horaVisita = params.horaVisita || null;
