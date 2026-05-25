@@ -1,41 +1,14 @@
-## Problema
+## Mudança: Sempre exibir top 5 no card "Pipelines desatualizados"
 
-No painel "Roleta — turno X" do Dashboard do Gerente, corretores que estão credenciados em mais de um turno (ex.: Leo Dorneles em Manhã + Tarde, Luiza Clós, Thalia) aparecem como cards duplicados — um por turno. Visualmente parece que existem mais pessoas do que há de fato.
+**Onde**: função `get_dashboard_gerente_v4_kpis` no banco (CTE `alertas_filtrados`).
 
-## Solução (somente UI, sem mexer em backend)
+**O que muda**:
+- Remover o filtro `score >= 40`.
+- Manter ordenação por `score DESC` e `LIMIT 5`.
+- Manter o cálculo de severidade (`crítico` ≥ 70, `atenção` 40–69, e adicionar `ok`/`baixo` para score < 40 para o badge não ficar vazio).
 
-Agrupar os credenciados por `corretor_id` no `V4PanelRoleta` e renderizar **um único card por corretor**, listando dentro dele todos os turnos que ele participa com a contagem de leads de cada turno.
+**Resultado**: o card sempre mostra os 5 corretores com maior `tarefas_atrasadas + leads_sem_acao_30d` do time, mesmo que o score seja baixo. Corretores sem nenhuma pendência aparecem com badge neutro.
 
-### Formato do card consolidado
+**Fora de escopo**: UI do card, outras KPIs, lógica de score em si.
 
-```text
-┌──────────────────────────────────────────┐
-│ [avatar•]  Leo Dorneles                  │
-│            Manhã · 2  ·  Tarde · 2       │
-└──────────────────────────────────────────┘
-```
-
-- Nome do corretor em destaque (igual hoje).
-- Linha secundária: `Manhã · X leads · Tarde · Y leads · Noite · Z leads`, mostrando apenas os turnos em que ele realmente está credenciado, separados por `·`.
-- Bolinha verde de "online" continua aparecendo se **qualquer** um dos turnos do corretor estiver ativo agora (`turno_ativo_agora === true` em alguma das entradas).
-- Ordem dos turnos fixa: Manhã → Tarde → Noite → Dia todo.
-
-### KPI "Credenciados agora"
-
-Hoje mostra `ativos / total` contando entradas (turnos). Vai passar a contar **corretores distintos**:
-- `ativos` = quantidade de corretores únicos com algum turno ativo agora.
-- `total`  = quantidade de corretores únicos credenciados no dia.
-
-Isso alinha o número ao novo layout (1 card = 1 pessoa).
-
-## Arquivos afetados
-
-- `src/components/dashboard-v4/V4PanelRoleta.tsx` — único arquivo a alterar:
-  - Novo helper `groupByCorretor(credenciados)` que devolve `{ corretor_id, nome, avatar_url, turno_ativo_agora, turnos: [{janela, leads_recebidos_dia}] }`.
-  - `CredCard` passa a receber esse objeto agrupado e renderizar a linha de turnos.
-  - Ajustar contagem `ativos` / `credenciados.length` para usar a lista agrupada.
-
-## Fora de escopo
-
-- Hook `useDashboardGerenteV4Dia` e RPC do backend permanecem como estão (continuam retornando 1 linha por turno; o agrupamento é feito no cliente).
-- Outros painéis do dashboard, página `/roleta`, fluxo de credenciamento.
+Aprove para eu aplicar a migration.
