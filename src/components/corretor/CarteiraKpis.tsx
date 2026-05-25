@@ -13,7 +13,10 @@ export default function CarteiraKpis() {
   const { data, isLoading } = useCorretorKpisCarteira();
   const navigate = useNavigate();
 
-  const buckets = data ?? { sem_tarefa: 0, atrasado: 0, para_hoje: 0, em_dia: 0, total: 0 };
+  const buckets = data ?? {
+    tarefas_hoje: 0, tarefas_atrasadas: 0, leads_sem_tarefa: 0, leads_em_dia: 0, total_leads: 0,
+    para_hoje: 0, atrasado: 0, sem_tarefa: 0, em_dia: 0, total: 0,
+  };
 
   const openCentral = (kpi: string, tab: Tab) => {
     logDashboard("dashboard_kpi_click", { kpi, destination: "central_tarefas", tab });
@@ -25,36 +28,39 @@ export default function CarteiraKpis() {
     navigate("/pipeline-leads");
   };
 
-  const semTarefaAtivo = buckets.sem_tarefa > 0;
+  const semTarefaAtivo = buckets.leads_sem_tarefa > 0;
 
   return (
     <section className="space-y-2">
       <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado da carteira</h2>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <KpiBox
-          value={buckets.para_hoje}
+          value={buckets.tarefas_hoje}
           label="Para hoje"
+          hint="Tarefas com vencimento hoje (inclui atrasadas)"
           borderColor="#4F46E5"
           onClick={() => openCentral("para_hoje", "hoje")}
           loading={isLoading}
         />
         <KpiBox
-          value={buckets.atrasado}
-          label="Atrasados"
+          value={buckets.tarefas_atrasadas}
+          label="Atrasadas"
+          hint="Tarefas cujo horário de vencimento já passou"
           borderColor="#DC2626"
           onClick={() => openCentral("atrasados", "atrasadas")}
           loading={isLoading}
         />
         <KpiBoxAmber
-          value={buckets.sem_tarefa}
-          label="Sem tarefa"
+          value={buckets.leads_sem_tarefa}
+          label="Leads sem tarefa"
           ativo={semTarefaAtivo}
           onClick={() => openCentral("sem_tarefa", "desatualizados")}
           loading={isLoading}
         />
         <KpiBox
-          value={buckets.em_dia}
+          value={buckets.leads_em_dia}
           label="Em dia"
+          hint="Leads ativos com tarefas só no futuro"
           borderColor="#22c55e"
           onClick={openPipeline}
           loading={isLoading}
