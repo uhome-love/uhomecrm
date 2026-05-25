@@ -483,7 +483,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               visitaLeadIds={visitaLeadIds}
             />
 
-            <div className="relative w-[280px]">
+            <div className="relative w-[200px] xl:w-[260px]">
               <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
               <input
                 placeholder="Buscar lead, telefone, empreendimento..."
