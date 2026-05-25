@@ -1,25 +1,72 @@
-## Destacar leads em parceria com cor roxa no pipeline
+## Diagnóstico do bug
 
-Hoje o card do pipeline (`CardMinimal`) já recebe `parceiroNome` e mostra o nome do parceiro com o ícone 🤝 no rodapé. Visualmente, porém, ele fica idêntico a um lead normal — só dá pra notar lendo o rodapé.
+A Jéssica preencheu **R$ 312.940** corretamente na aba **Imóvel** do drawer (`handleSaveImovel` usa `parseCurrencyToNumber` com máscara R$ — salvou `vgv_estimado = 312940` ✓).
 
-### O que vai mudar
+O problema está no **popup "Contrato enviado"** (e no popup "Proposta enviada"), em `src/components/pipeline/NegocioDetailModal.tsx`:
 
-Quando o lead for de parceria (`parceiroNome` presente), o card vai ganhar:
+```tsx
+// linha 1084 — input cru, sem máscara de moeda
+<Input type="number" value={contVgv} onChange={e => setContVgv(e.target.value)} placeholder="500000" />
 
-1. **Anel/borda roxa sutil ao redor do card** (`ring-1 ring-purple-400/60` + `border-purple-300/60`), sobrepondo a borda padrão — mantém o card limpo, mas imediatamente reconhecível como "compartilhado".
-2. **Fundo levemente tingido de roxo** (`bg-purple-50/40` no light, `bg-purple-950/10` no dark) para reforçar sem agredir.
-3. **Badge "🤝 Parceria"** roxo no header, ao lado do nome do lead (mesmo padrão visual do badge "Novo"), para ficar óbvio mesmo com o card scrollado.
-4. O ícone 🤝 + nome do parceiro no rodapé ganha cor roxa (`text-purple-600 dark:text-purple-400`) em vez do cinza atual.
+// linha 364 — parseFloat direto
+vgv_final: contVgv ? parseFloat(contVgv) : fullNeg.vgv_final,
+```
 
-A **borda esquerda 4px** (vermelho/âmbar/verde/cinza por status da tarefa) **continua igual** — é a informação operacional principal e não pode ser perdida. O roxo é uma camada visual adicional.
+Quando a Jéssica digitou o valor com ponto de milhar (`312.942`), `parseFloat("312.942")` interpretou o ponto como **decimal** → gravou **R$ 312,94** em `vgv_final`. Como todas as somas (vendas realizadas, KPIs do gerente, rankings, relatórios) usam `vgv_final ?? vgv_estimado`, esse R$ 312,94 substituiu o valor correto e zerou a venda nas somas.
 
-### Escopo
+**Confirmo a regra:** sim, o sistema deve sempre preservar o VGV **exato com centavos** — todas as views/RPCs já tratam `vgv_final` como `numeric` (preserva centavos). O bug é apenas no parse de entrada.
 
-- Só `src/components/pipeline/CardMinimal.tsx`.
-- Sem mudanças em hooks, banco, lógica de parceria ou regras de negócio.
-- Funciona automaticamente nos dois lados da parceria (corretor 1 e corretor 2), porque ambos já recebem `parceiroNome` via `usePipeline`.
+## Correção em 2 partes
 
-### Fora de escopo
+### Parte 1 — Corrigir o dado da venda da Jéssica (UPDATE pontual)
 
-- Lead detail drawer, central de tarefas, modo foco, oferta ativa — só pediu "no CRM"/pipeline. Se quiser estender depois, é trivial.
-- Cor configurável: vai fixo em roxo (tom da identidade visual, alinhado com o gradient atual `#4F46E5 → #7e22ce`).
+```sql
+UPDATE public.negocios
+SET vgv_final = 312940
+WHERE id = '7dfa579a-703a-42c6-8eb1-a01d0e10d3e8';
+```
+
+Valor alinhado ao `vgv_estimado = 312940` (R$ 312.940,00 — exatamente o que ela digitou na aba Imóvel).
+
+### Parte 2 — Corrigir o bug nos popups (Proposta + Contrato)
+
+Trocar os 2 inputs `type="number"` por inputs com máscara R$, exatamente como já é feito em `handleSaveImovel`:
+
+**Arquivo:** `src/components/pipeline/NegocioDetailModal.tsx`
+
+1. **Input do popup Proposta (linha 1058)** — usar `formatCurrencyInput` / `handleCurrencyChange`:
+   ```tsx
+   <Input
+     value={formatCurrencyInput(propVgv)}
+     onChange={e => setPropVgv(handleCurrencyChange(e.target.value))}
+     placeholder="R$ 500.000,00"
+     className="h-9 text-sm"
+   />
+   ```
+
+2. **Input do popup Contrato (linha 1084)** — mesma máscara para `contVgv`.
+
+3. **Submit handlers (linhas 344 e 364)** — trocar `parseFloat(x)` por `parseCurrencyToNumber(x)`:
+   ```tsx
+   vgv_estimado: propVgv ? parseCurrencyToNumber(propVgv) : fullNeg.vgv_estimado,
+   // ...
+   vgv_final: contVgv ? parseCurrencyToNumber(contVgv) : fullNeg.vgv_final,
+   ```
+
+Isso garante:
+- Usuário enxerga sempre o valor formatado (R$ 312.940,00) enquanto digita.
+- Backend recebe o número exato com centavos preservados.
+- Mesma lógica/máscara da aba Imóvel — consistência total.
+
+## Verificação pós-correção
+
+1. SQL: `SELECT vgv_final FROM negocios WHERE id = '7dfa579a-...'` → `312940`.
+2. UI `/vendas-realizadas` → o card da venda mostra **R$ 312.940**.
+3. UI `/gerente/dashboard` → KPI vendas da Jéssica sobe ~R$ 312.627 (de 313 para 312.940).
+4. UI `/ranking` → posição/VGV da Jéssica reflete o valor correto.
+5. Testar abrir popup Contrato em outro negócio, digitar "1.250.000,50" → confirmar que salva `1250000.5` em `vgv_final`.
+
+## Fora de escopo
+
+- Auditar outros formulários de VGV no app (não há indício de bug fora desses 2 popups; o resto já usa `parseCurrencyToNumber`).
+- Validação de valor mínimo (poderia ser adicionada depois para prevenir typos, mas não foi pedido agora).
