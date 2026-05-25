@@ -10,6 +10,8 @@ interface Props {
   periodo: PeriodoV3;
   onPeriodoChange: (p: PeriodoV3) => void;
   onEditarMetas?: () => void;
+  /** v4: ocultar o seletor de período (KPIs do v4 são fixos no mês). */
+  hidePeriodoToggle?: boolean;
 }
 
 function saudacao() {
