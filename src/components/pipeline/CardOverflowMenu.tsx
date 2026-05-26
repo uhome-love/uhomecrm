@@ -29,7 +29,9 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
-import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
+import VisitaForm from "@/components/visitas/VisitaForm";
+import { useVisitas } from "@/hooks/useVisitas";
+import { supabase } from "@/integrations/supabase/client";
 import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
 import DiscardLeadDialog from "./DiscardLeadDialog";
@@ -65,6 +67,7 @@ export default function CardOverflowMenu({
   onCreateTask,
   trigger,
 }: CardOverflowMenuProps) {
+  const { createVisita } = useVisitas();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
@@ -205,12 +208,32 @@ export default function CardOverflowMenu({
       {/* Dialogs — isolados de propagation do card */}
       <div data-no-card-click onClick={(e) => e.stopPropagation()}>
         {scheduleOpen && (
-          <CardScheduleVisitDialog
+          <VisitaForm
             open={scheduleOpen}
-            onOpenChange={setScheduleOpen}
-            lead={lead}
-            stages={stages}
-            onMoveLead={onMoveLead}
+            onClose={() => setScheduleOpen(false)}
+            onSubmit={async (data) => {
+              const result = await createVisita(data);
+              if (result) {
+                const visitaStage = stages.find(
+                  (s) => s.tipo === "visita" || s.nome.toLowerCase().includes("visita marcada")
+                );
+                if (visitaStage && lead.stage_id !== visitaStage.id) {
+                  try {
+                    onMoveLead(lead.id, visitaStage.id);
+                  } catch (e) {
+                    console.warn("[CardOverflowMenu] move stage falhou", e);
+                  }
+                }
+              }
+              return result;
+            }}
+            initialData={{
+              nome_cliente: lead.nome,
+              telefone: lead.telefone || "",
+              empreendimento: lead.empreendimento || "",
+              corretor_id: lead.corretor_id || undefined,
+              pipeline_lead_id: lead.id,
+            } as any}
           />
         )}
         {partnerOpen && (

@@ -23,6 +23,8 @@ import { ptBR } from "date-fns/locale";
 import HomiCopilotCard from "./HomiCopilotCard";
 import MediaRenderer from "./MediaRenderer";
 import { formatBRT } from "@/lib/brtTime";
+import VisitaForm from "@/components/visitas/VisitaForm";
+import { useVisitas } from "@/hooks/useVisitas";
 
 interface Message {
   id: string;
@@ -263,9 +265,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
   // Dialog/popover states
   const [visitOpen, setVisitOpen] = useState(false);
-  const [visitDate, setVisitDate] = useState("");
-  const [visitTime, setVisitTime] = useState("10:00");
-  const [visitLocal, setVisitLocal] = useState("");
+  const { createVisita } = useVisitas();
 
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDeadline, setTaskDeadline] = useState("amanha");
@@ -324,14 +324,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     }
   };
 
-  // Reset visit form when dialog opens
-  useEffect(() => {
-    if (visitOpen && leadInfo) {
-      setVisitDate(format(new Date(), "yyyy-MM-dd"));
-      setVisitTime("10:00");
-      setVisitLocal(leadInfo.empreendimento || "");
-    }
-  }, [visitOpen, leadInfo]);
+  // (Visit form state agora gerenciado pelo VisitaForm padrão)
 
   // --- Audio recording ---
   const startRecording = async () => {
@@ -668,54 +661,30 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     setTimeout(() => textareaRef.current?.focus(), 100);
   };
 
-  const handleScheduleVisit = async () => {
-    if (!leadInfo || !profileId || !visitDate || !visitTime) return;
-    const [h, m] = visitTime.split(":").map(Number);
-    const dt = setMinutes(setHours(new Date(visitDate + "T00:00:00"), h), m);
-
+  // handleScheduleVisit removido — agora usamos o VisitaForm padrão (Agenda) via createVisita.
+  // Após sucesso: move a etapa para "visita" e pré-preenche mensagem de confirmação.
+  const handleVisitSubmitted = async (visita: any) => {
+    if (!leadInfo) return;
     try {
-      const { data: { user: authVisitUser } } = await supabase.auth.getUser();
-      const authUid = authVisitUser?.id || profileId;
-      const { error: visitErr } = await supabase.from("visitas").insert({
-        pipeline_lead_id: leadId,
-        nome_cliente: leadInfo.nome,
-        telefone: leadInfo.telefone || null,
-        corretor_id: authUid,
-        gerente_id: authUid,
-        created_by: authUid,
-        data_visita: format(dt, "yyyy-MM-dd"),
-        hora_visita: visitTime,
-        empreendimento: leadInfo.empreendimento || "",
-        local_visita: visitLocal || null,
-        tipo: "lead",
-        status: "marcada",
-        origem: "pipeline",
-      });
-      if (visitErr) throw new Error(visitErr.message || "Erro ao agendar visita");
-      if (authVisitUser) {
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: leadId,
-          tipo: "visita",
-          titulo: `Visita agendada para ${format(dt, "dd/MM 'às' HH:mm", { locale: ptBR })}`,
-          data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-          prioridade: "media",
-          status: "concluida",
-          created_by: authVisitUser.id,
-        });
-      }
-      const visitaStage = stages.find(s => s.nome.toLowerCase().includes("visita"));
-      if (visitaStage) {
+      const visitaStage = stages.find((s) => s.nome.toLowerCase().includes("visita"));
+      if (visitaStage && leadInfo.stage_id !== visitaStage.id) {
         await supabase.from("pipeline_leads").update({ stage_id: visitaStage.id }).eq("id", leadInfo.id);
       }
-      setText(replaceVars(
-        "Olá {nome}! Confirmando nossa visita para {data}. Qualquer dúvida estou à disposição! 😊",
-        leadInfo.nome,
-        leadInfo.empreendimento,
-      ).replace("{data}", format(dt, "dd/MM 'às' HH:mm", { locale: ptBR })));
-      toast.success("✅ Visita agendada!");
-      setVisitOpen(false);
-    } catch (err: any) {
-      toast.error("Erro ao agendar: " + (err.message || ""));
+      const data = visita?.data_visita;
+      const hora = visita?.hora_visita;
+      if (data && hora) {
+        const [h, m] = String(hora).split(":").map(Number);
+        const dt = setMinutes(setHours(new Date(`${data}T00:00:00`), h || 0), m || 0);
+        setText(
+          replaceVars(
+            "Olá {nome}! Confirmando nossa visita para {data}. Qualquer dúvida estou à disposição! 😊",
+            leadInfo.nome,
+            leadInfo.empreendimento,
+          ).replace("{data}", format(dt, "dd/MM 'às' HH:mm", { locale: ptBR })),
+        );
+      }
+    } catch (e) {
+      console.warn("[ConversationThread] pós-visita falhou", e);
     }
   };
 
@@ -1328,52 +1297,26 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         )}
       </div>
 
-      {/* Visit Dialog */}
-      <Dialog open={visitOpen} onOpenChange={setVisitOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-base">Agendar Visita</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium">Data</label>
-              <Input
-                type="date"
-                value={visitDate}
-                onChange={e => setVisitDate(e.target.value)}
-                min={format(new Date(), "yyyy-MM-dd")}
-                className="h-8 text-xs mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium">Hora</label>
-              <Select value={visitTime} onValueChange={setVisitTime}>
-                <SelectTrigger className="h-8 text-xs mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIME_SLOTS.map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs font-medium">Local</label>
-              <Input
-                value={visitLocal}
-                onChange={e => setVisitLocal(e.target.value)}
-                placeholder="Empreendimento / estande"
-                className="h-8 text-xs mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button size="sm" variant="outline" onClick={() => setVisitOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={handleScheduleVisit} disabled={!visitDate}>Confirmar Visita</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Visit Form (padrão Agenda) */}
+      {visitOpen && leadInfo && (
+        <VisitaForm
+          open={visitOpen}
+          onClose={() => setVisitOpen(false)}
+          onSubmit={async (data) => {
+            const result = await createVisita(data);
+            if (result) {
+              await handleVisitSubmitted(result);
+            }
+            return result;
+          }}
+          initialData={{
+            nome_cliente: leadInfo.nome,
+            telefone: leadInfo.telefone || "",
+            empreendimento: leadInfo.empreendimento || "",
+            pipeline_lead_id: leadInfo.id,
+          } as any}
+        />
+      )}
     </div>
   );
 }
