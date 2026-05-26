@@ -661,54 +661,30 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     setTimeout(() => textareaRef.current?.focus(), 100);
   };
 
-  const handleScheduleVisit = async () => {
-    if (!leadInfo || !profileId || !visitDate || !visitTime) return;
-    const [h, m] = visitTime.split(":").map(Number);
-    const dt = setMinutes(setHours(new Date(visitDate + "T00:00:00"), h), m);
-
+  // handleScheduleVisit removido — agora usamos o VisitaForm padrão (Agenda) via createVisita.
+  // Após sucesso: move a etapa para "visita" e pré-preenche mensagem de confirmação.
+  const handleVisitSubmitted = async (visita: any) => {
+    if (!leadInfo) return;
     try {
-      const { data: { user: authVisitUser } } = await supabase.auth.getUser();
-      const authUid = authVisitUser?.id || profileId;
-      const { error: visitErr } = await supabase.from("visitas").insert({
-        pipeline_lead_id: leadId,
-        nome_cliente: leadInfo.nome,
-        telefone: leadInfo.telefone || null,
-        corretor_id: authUid,
-        gerente_id: authUid,
-        created_by: authUid,
-        data_visita: format(dt, "yyyy-MM-dd"),
-        hora_visita: visitTime,
-        empreendimento: leadInfo.empreendimento || "",
-        local_visita: visitLocal || null,
-        tipo: "lead",
-        status: "marcada",
-        origem: "pipeline",
-      });
-      if (visitErr) throw new Error(visitErr.message || "Erro ao agendar visita");
-      if (authVisitUser) {
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: leadId,
-          tipo: "visita",
-          titulo: `Visita agendada para ${format(dt, "dd/MM 'às' HH:mm", { locale: ptBR })}`,
-          data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-          prioridade: "media",
-          status: "concluida",
-          created_by: authVisitUser.id,
-        });
-      }
-      const visitaStage = stages.find(s => s.nome.toLowerCase().includes("visita"));
-      if (visitaStage) {
+      const visitaStage = stages.find((s) => s.nome.toLowerCase().includes("visita"));
+      if (visitaStage && leadInfo.stage_id !== visitaStage.id) {
         await supabase.from("pipeline_leads").update({ stage_id: visitaStage.id }).eq("id", leadInfo.id);
       }
-      setText(replaceVars(
-        "Olá {nome}! Confirmando nossa visita para {data}. Qualquer dúvida estou à disposição! 😊",
-        leadInfo.nome,
-        leadInfo.empreendimento,
-      ).replace("{data}", format(dt, "dd/MM 'às' HH:mm", { locale: ptBR })));
-      toast.success("✅ Visita agendada!");
-      setVisitOpen(false);
-    } catch (err: any) {
-      toast.error("Erro ao agendar: " + (err.message || ""));
+      const data = visita?.data_visita;
+      const hora = visita?.hora_visita;
+      if (data && hora) {
+        const [h, m] = String(hora).split(":").map(Number);
+        const dt = setMinutes(setHours(new Date(`${data}T00:00:00`), h || 0), m || 0);
+        setText(
+          replaceVars(
+            "Olá {nome}! Confirmando nossa visita para {data}. Qualquer dúvida estou à disposição! 😊",
+            leadInfo.nome,
+            leadInfo.empreendimento,
+          ).replace("{data}", format(dt, "dd/MM 'às' HH:mm", { locale: ptBR })),
+        );
+      }
+    } catch (e) {
+      console.warn("[ConversationThread] pós-visita falhou", e);
     }
   };
 
