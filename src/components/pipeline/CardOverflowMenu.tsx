@@ -29,7 +29,9 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
-import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
+import VisitaForm from "@/components/visitas/VisitaForm";
+import { useVisitas } from "@/hooks/useVisitas";
+import { supabase } from "@/integrations/supabase/client";
 import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
 import DiscardLeadDialog from "./DiscardLeadDialog";
