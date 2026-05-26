@@ -258,7 +258,74 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
   // IMPORTANTE: negocios.corretor_id referencia profiles.id (não auth.users.id).
   // A coluna canônica para vincular ao usuário é negocios.auth_user_id.
 
-  const [created, distrato, signed] = await Promise.all([
+  // Tipo de linha do `signed` (mantém a mesma assinatura que o consumidor downstream espera)
+  type SignedRow = {
+    auth_user_id: string;
+    pipeline_lead_id: string | null;
+    vgv_final: number | null;
+    vgv_estimado: number | null;
+    data_assinatura: string;
+  };
+
+  // Resolver profiles.id do time — negocios.corretor_id referencia profiles.id (não auth.users.id).
+  // Necessário porque, após o RLS hardening, gestores só enxergam negocios do próprio time
+  // via OR(auth_user_id IN time, corretor_id IN profiles do time).
+  const { data: teamProfs } = await supabase
+    .from("profiles")
+    .select("id")
+    .in("user_id", ids);
+  const teamProfileIds: string[] = Array.from(new Set((teamProfs || []).map(p => p.id as string).filter(Boolean)));
+
+  // Helper para o fetch "own-team signed" — pode ser fatiado em chunks por causa do URL cap (~2000 chars)
+  // do PostgREST quando teamProfileIds é grande (>50 ids ≈ 1.8KB só nessa cláusula).
+  const fetchOwnSignedChunk = (profileChunk: string[]) =>
+    fetchAllPaged<SignedRow>(() => {
+      let q = supabase
+        .from("negocios")
+        .select("auth_user_id, pipeline_lead_id, vgv_final, vgv_estimado, data_assinatura, fase")
+        .eq("fase", "vendido")
+        .or(
+          profileChunk.length
+            ? `auth_user_id.in.(${ids.join(",")}),corretor_id.in.(${profileChunk.join(",")})`
+            : `auth_user_id.in.(${ids.join(",")})`
+        );
+      if (start) q = q.gte("data_assinatura", start);
+      if (end) q = q.lte("data_assinatura", end);
+      return q;
+    });
+
+  // Particionar teamProfileIds em chunks de 50 (PostgREST URL cap).
+  const PROFILE_CHUNK = 50;
+  const profileChunks: string[][] = teamProfileIds.length === 0
+    ? [[]]
+    : Array.from({ length: Math.ceil(teamProfileIds.length / PROFILE_CHUNK) }, (_, i) =>
+        teamProfileIds.slice(i * PROFILE_CHUNK, (i + 1) * PROFILE_CHUNK)
+      );
+
+  // "Partner signed": leads em que algum membro do time é parceiro/principal,
+  // mas o negocio.auth_user_id pode pertencer ao outro corretor (fora do time).
+  const partnerSignedPromise = (async (): Promise<SignedRow[]> => {
+    const { data: partnerLeads } = await supabase
+      .from("v_user_partner_leads")
+      .select("pipeline_lead_id")
+      .in("user_id", ids);
+    const partnerLeadIds = [...new Set(
+      (partnerLeads || []).map(p => p.pipeline_lead_id as string).filter(Boolean)
+    )];
+    if (partnerLeadIds.length === 0) return [];
+    return fetchAllPaged<SignedRow>(() => {
+      let q = supabase
+        .from("negocios")
+        .select("auth_user_id, pipeline_lead_id, vgv_final, vgv_estimado, data_assinatura, fase")
+        .eq("fase", "vendido")
+        .in("pipeline_lead_id", partnerLeadIds);
+      if (start) q = q.gte("data_assinatura", start);
+      if (end) q = q.lte("data_assinatura", end);
+      return q;
+    });
+  })();
+
+  const [created, distrato, ownSignedChunks, partnerSigned] = await Promise.all([
     fetchAllPaged<{ auth_user_id: string; created_at: string }>(() => {
       let q = supabase.from("negocios").select("auth_user_id, created_at").in("auth_user_id", ids);
       if (start) q = q.gte("created_at", toIsoStart(start)!);
@@ -271,15 +338,21 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
       if (end) q = q.lte("fase_changed_at", toIsoEnd(end)!);
       return q;
     }),
-    fetchAllPaged<{ auth_user_id: string; pipeline_lead_id: string | null; vgv_final: number | null; vgv_estimado: number | null; data_assinatura: string }>(() => {
-      // Buscamos TODOS os assinados do período (sem .in user) — necessário para que parceiros recebam crédito
-      // mesmo quando o `auth_user_id` do negócio aponta para o outro corretor.
-      let q = supabase.from("negocios").select("auth_user_id, pipeline_lead_id, vgv_final, vgv_estimado, data_assinatura, fase").eq("fase", "vendido");
-      if (start) q = q.gte("data_assinatura", start);
-      if (end) q = q.lte("data_assinatura", end);
-      return q;
-    }),
+    Promise.all(profileChunks.map(fetchOwnSignedChunk)),
+    partnerSignedPromise,
   ]);
+
+  // Mescla own-team (todos os chunks) + partner com dedupe por (pipeline_lead_id, auth_user_id, data_assinatura).
+  // negocios.id não está sendo selecionado para manter o select original; a chave composta abaixo identifica
+  // unicamente cada linha no escopo deste fetch.
+  const signedMap = new Map<string, SignedRow>();
+  const pushSigned = (row: SignedRow) => {
+    const key = `${row.pipeline_lead_id ?? "_"}|${row.auth_user_id ?? "_"}|${row.data_assinatura ?? "_"}`;
+    if (!signedMap.has(key)) signedMap.set(key, row);
+  };
+  ownSignedChunks.flat().forEach(pushSigned);
+  partnerSigned.forEach(pushSigned);
+  const signed: SignedRow[] = Array.from(signedMap.values());
 
   // Buscar parcerias ativas para os negócios assinados, com auth_user_id de cada lado
   const signedLeadIds = [...new Set(signed.map(s => s.pipeline_lead_id).filter(Boolean))] as string[];
