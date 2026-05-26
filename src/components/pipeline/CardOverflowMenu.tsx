@@ -208,12 +208,32 @@ export default function CardOverflowMenu({
       {/* Dialogs — isolados de propagation do card */}
       <div data-no-card-click onClick={(e) => e.stopPropagation()}>
         {scheduleOpen && (
-          <CardScheduleVisitDialog
+          <VisitaForm
             open={scheduleOpen}
-            onOpenChange={setScheduleOpen}
-            lead={lead}
-            stages={stages}
-            onMoveLead={onMoveLead}
+            onClose={() => setScheduleOpen(false)}
+            onSubmit={async (data) => {
+              const result = await createVisita(data);
+              if (result) {
+                const visitaStage = stages.find(
+                  (s) => s.tipo === "visita" || s.nome.toLowerCase().includes("visita marcada")
+                );
+                if (visitaStage && lead.stage_id !== visitaStage.id) {
+                  try {
+                    onMoveLead(lead.id, visitaStage.id);
+                  } catch (e) {
+                    console.warn("[CardOverflowMenu] move stage falhou", e);
+                  }
+                }
+              }
+              return result;
+            }}
+            initialData={{
+              nome_cliente: lead.nome,
+              telefone: lead.telefone || "",
+              empreendimento: lead.empreendimento || "",
+              corretor_id: lead.corretor_id || undefined,
+              pipeline_lead_id: lead.id,
+            } as any}
           />
         )}
         {partnerOpen && (
