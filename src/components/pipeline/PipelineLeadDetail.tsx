@@ -49,7 +49,8 @@ import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 
 import NextActionModal from "./NextActionModal";
-import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
+import VisitaForm from "@/components/visitas/VisitaForm";
+import { useVisitas } from "@/hooks/useVisitas";
 import CardOverflowMenu from "./CardOverflowMenu";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
@@ -151,6 +152,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [inativando, setInativando] = useState(false);
   const [nextActionOpen, setNextActionOpen] = useState(false);
   const [scheduleVisitOpen, setScheduleVisitOpen] = useState(false);
+  const { createVisita } = useVisitas();
   const [isCallOpen, setIsCallOpen] = useState(false);
   const [anotarOpen, setAnotarOpen] = useState(false);
 
@@ -805,12 +807,26 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         stageTipo={currentStage?.tipo}
         onRefresh={leadData.reload}
       />
-      <CardScheduleVisitDialog
+      <VisitaForm
         open={scheduleVisitOpen}
-        onOpenChange={(v) => { setScheduleVisitOpen(v); if (!v) leadData.reload(); }}
-        lead={lead as any}
-        stages={stages}
-        onMoveLead={onMove}
+        onClose={() => { setScheduleVisitOpen(false); leadData.reload(); }}
+        onSubmit={async (data) => {
+          const result = await createVisita(data);
+          if (result) {
+            const visitaStage = stages.find(s => s.tipo === "visita" || s.nome.toLowerCase().includes("visita marcada"));
+            if (visitaStage && lead.stage_id !== visitaStage.id) {
+              try { await onMove(lead.id, visitaStage.id); } catch (e) { console.warn("[VisitaForm] move stage falhou", e); }
+            }
+          }
+          return result;
+        }}
+        initialData={{
+          nome_cliente: lead.nome,
+          telefone: lead.telefone || "",
+          empreendimento: lead.empreendimento || "",
+          corretor_id: lead.corretor_id || undefined,
+          pipeline_lead_id: lead.id,
+        } as any}
       />
       <DrawerAnotarDialog
         open={anotarOpen}

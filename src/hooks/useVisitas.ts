@@ -597,6 +597,7 @@ export function useVisitas(filters?: {
 export async function createVisitaFromOA(params: {
   corretorId: string;
   leadId?: string;
+  pipelineLeadId?: string;
   nomeCliente: string;
   telefone?: string;
   empreendimento?: string;
@@ -624,10 +625,27 @@ export async function createVisitaFromOA(params: {
     || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
   const horaVisita = params.horaVisita || null;
 
+  // Resolver pipeline_lead_id (canonico): se não veio, tentar via telefone+corretor
+  let pipelineLeadId = extractUuid(params.pipelineLeadId);
+  if (!pipelineLeadId && params.telefone) {
+    const phone = params.telefone.replace(/\D/g, "");
+    if (phone.length >= 8) {
+      const { data: pl } = await supabase
+        .from("pipeline_leads")
+        .select("id")
+        .eq("corretor_id", params.corretorId)
+        .ilike("telefone", `%${phone.slice(-8)}`)
+        .limit(1)
+        .maybeSingle();
+      pipelineLeadId = (pl?.id as string | undefined) ?? null;
+    }
+  }
+
   const payload = {
     corretor_id: params.corretorId,
     gerente_id: gerenteId,
     lead_id: extractUuid(params.leadId),
+    pipeline_lead_id: pipelineLeadId,
     nome_cliente: sanitizeText(params.nomeCliente) || "Sem nome",
     telefone: sanitizeText(params.telefone),
     empreendimento: sanitizeText(params.empreendimento),
