@@ -152,6 +152,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [inativando, setInativando] = useState(false);
   const [nextActionOpen, setNextActionOpen] = useState(false);
   const [scheduleVisitOpen, setScheduleVisitOpen] = useState(false);
+  const { createVisita } = useVisitas();
   const [isCallOpen, setIsCallOpen] = useState(false);
   const [anotarOpen, setAnotarOpen] = useState(false);
 
