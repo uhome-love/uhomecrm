@@ -274,7 +274,7 @@ async function fetchNegocios(filters: RankingFilters, corretores: CorretorBase[]
     .from("profiles")
     .select("id")
     .in("user_id", ids);
-  const teamProfileIds = [...new Set((teamProfs || []).map(p => p.id as string).filter(Boolean))];
+  const teamProfileIds: string[] = Array.from(new Set((teamProfs || []).map(p => p.id as string).filter(Boolean)));
 
   // Helper para o fetch "own-team signed" — pode ser fatiado em chunks por causa do URL cap (~2000 chars)
   // do PostgREST quando teamProfileIds é grande (>50 ids ≈ 1.8KB só nessa cláusula).
