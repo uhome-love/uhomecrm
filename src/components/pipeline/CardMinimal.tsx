@@ -85,10 +85,10 @@ function resolveStatus(
 // Borda 4px à esquerda — semantic-friendly Tailwind classes.
 const SIDEBAR_BY_STATUS: Record<StatusKey, string> = {
   atrasada: "before:bg-red-500",
-  hoje: "before:bg-amber-500",
+  hoje: "before:bg-emerald-500",
   futura: "before:bg-emerald-500",
-  sem: "before:bg-slate-300 dark:before:bg-slate-600",
-  convertido: "before:bg-primary",
+  sem: "before:bg-amber-500",
+  convertido: "before:bg-sky-500",
   descarte: "before:bg-zinc-400 dark:before:bg-zinc-600",
 };
 
