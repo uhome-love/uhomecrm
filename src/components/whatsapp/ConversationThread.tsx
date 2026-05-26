@@ -265,9 +265,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
 
   // Dialog/popover states
   const [visitOpen, setVisitOpen] = useState(false);
-  const [visitDate, setVisitDate] = useState("");
-  const [visitTime, setVisitTime] = useState("10:00");
-  const [visitLocal, setVisitLocal] = useState("");
+  const { createVisita } = useVisitas();
 
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDeadline, setTaskDeadline] = useState("amanha");
