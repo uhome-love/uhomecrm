@@ -49,7 +49,8 @@ import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 
 import NextActionModal from "./NextActionModal";
-import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
+import VisitaForm from "@/components/visitas/VisitaForm";
+import { useVisitas } from "@/hooks/useVisitas";
 import CardOverflowMenu from "./CardOverflowMenu";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
