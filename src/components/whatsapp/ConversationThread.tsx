@@ -1297,52 +1297,26 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
         )}
       </div>
 
-      {/* Visit Dialog */}
-      <Dialog open={visitOpen} onOpenChange={setVisitOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-base">Agendar Visita</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium">Data</label>
-              <Input
-                type="date"
-                value={visitDate}
-                onChange={e => setVisitDate(e.target.value)}
-                min={format(new Date(), "yyyy-MM-dd")}
-                className="h-8 text-xs mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium">Hora</label>
-              <Select value={visitTime} onValueChange={setVisitTime}>
-                <SelectTrigger className="h-8 text-xs mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIME_SLOTS.map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs font-medium">Local</label>
-              <Input
-                value={visitLocal}
-                onChange={e => setVisitLocal(e.target.value)}
-                placeholder="Empreendimento / estande"
-                className="h-8 text-xs mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button size="sm" variant="outline" onClick={() => setVisitOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={handleScheduleVisit} disabled={!visitDate}>Confirmar Visita</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Visit Form (padrão Agenda) */}
+      {visitOpen && leadInfo && (
+        <VisitaForm
+          open={visitOpen}
+          onClose={() => setVisitOpen(false)}
+          onSubmit={async (data) => {
+            const result = await createVisita(data);
+            if (result) {
+              await handleVisitSubmitted(result);
+            }
+            return result;
+          }}
+          initialData={{
+            nome_cliente: leadInfo.nome,
+            telefone: leadInfo.telefone || "",
+            empreendimento: leadInfo.empreendimento || "",
+            pipeline_lead_id: leadInfo.id,
+          } as any}
+        />
+      )}
     </div>
   );
 }
