@@ -23,6 +23,8 @@ import { ptBR } from "date-fns/locale";
 import HomiCopilotCard from "./HomiCopilotCard";
 import MediaRenderer from "./MediaRenderer";
 import { formatBRT } from "@/lib/brtTime";
+import VisitaForm from "@/components/visitas/VisitaForm";
+import { useVisitas } from "@/hooks/useVisitas";
 
 interface Message {
   id: string;
