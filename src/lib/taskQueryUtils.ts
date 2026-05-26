@@ -230,6 +230,8 @@ function _toValidDateFromYMD(value: string | null | undefined): Date | null {
 /**
  * Compara duas tarefas pendentes e devolve `true` se `candidate` é mais
  * urgente que `current` (vence antes, ou no mesmo dia mas em hora menor).
+ * Default de `hora_vencimento` ausente = "23:59" (alinhado com a regra canônica
+ * em src/lib/taskBuckets.ts — fonte da verdade para classificação hoje/atrasada).
  */
 export function isTaskHigherPriority(candidate: ProximaTarefa, current: ProximaTarefa) {
   const candidateDate = candidate.vence_em ? _toValidDateFromYMD(candidate.vence_em) : null;
