@@ -1,45 +1,83 @@
-# Cleanup final Dashboard v4 — deletar tabs órfãs
+# Plan — Migration A (Fase 0.5 v2): RLS hardening
 
-## A) Verificação prévia (concluída)
+## 1. Verificação pg_policies (executada)
 
-Executado:
+Conferi os nomes reais via `pg_policies`. **Todos batem 100% com o snapshot do prompt** — nenhum `DROP IF EXISTS` vai falhar silenciosamente.
+
+| Tabela | Policy a dropar | Confere? |
+|---|---|---|
+| `negocios` | `Users can view negocios` (SELECT, qual=true) | ✅ |
+| `oferta_ativa_tentativas` | `Users can view own tentativas` (SELECT) | ✅ |
+| `pipeline_tarefas` | `Gestores can manage tarefas` (ALL) | ✅ |
+| `pipeline_tarefas` | `Corretores can view own tarefas` (SELECT) | ✅ |
+| `pipeline_tarefas` | `Corretores can view tasks on their leads` (SELECT) | ✅ |
+| `pipeline_atividades` | `Gestores can manage atividades` (ALL) | ✅ |
+| `pipeline_atividades` | `Corretores can view own atividades` (SELECT) | ✅ |
+
+### Policies preservadas (NÃO mexer)
+
+- `negocios`: INSERT `Users can insert negocios` (with_check=true), UPDATE `Users can update negocios` (qual=true), DELETE `Admins and gestores can delete negocios` — **mantidas**.
+- `oferta_ativa_tentativas`: INSERT (admin + own), UPDATE/DELETE admin — **mantidas**.
+- `pipeline_tarefas`: INSERT/UPDATE/DELETE granulares de corretor (own + tasks on their leads) — **mantidas**. A "Gestores can manage tarefas" era a única ALL gestor; após o drop, gestor passa a escrever apenas via nova `pt_gestor_team_write` (escopada).
+- `pipeline_atividades`: INSERT corretor own, UPDATE own, DELETE own — **mantidas**. Idem: gestor escreve via nova `pa_gestor_team_write`.
+
+### Observação importante (mudança de comportamento intencional)
+
+Hoje gestor pode INSERT/UPDATE/DELETE tarefa/atividade de **qualquer corretor**. Pós-migration: só do **próprio time** (validado pelas auditorias 0.25/0.4/0.6 — zero call site depende do escopo global).
+
+## 2. Arquivo de migration
+
+Migration única, criada via `supabase--migration` (DDL apenas, Regra 1). Conta como **1 de 2 do dia** (Regra 2).
+
+## 3. Diff resumido do schema
+
+```text
+negocios
+  - SELECT "Users can view negocios" (qual=true)            ──► DROP
+  + SELECT "negocios_select_scoped"                          ──► CREATE
+        (auth_user_id=uid OR gerente_id=uid OR admin
+         OR corretor_id IN profiles do time
+         OR EXISTS pipeline_parcerias ativa onde uid é principal/parceiro)
+
+oferta_ativa_tentativas
+  - SELECT "Users can view own tentativas"                   ──► DROP
+  + SELECT "oat_select_scoped"                               ──► CREATE
+        (corretor_id=uid OR admin OR corretor_id IN time)
+
+pipeline_tarefas
+  - SELECT "Corretores can view own tarefas"                 ──► DROP
+  - SELECT "Corretores can view tasks on their leads"        ──► DROP
+  - ALL    "Gestores can manage tarefas" (global)            ──► DROP
+  + SELECT "pt_select_scoped"                                ──► CREATE
+  + ALL    "pt_admin_all"                                    ──► CREATE
+  + ALL    "pt_gestor_team_write" (escopada ao time)         ──► CREATE
+
+pipeline_atividades
+  - SELECT "Corretores can view own atividades"              ──► DROP
+  - ALL    "Gestores can manage atividades" (global)         ──► DROP
+  + SELECT "pa_select_scoped"                                ──► CREATE
+  + ALL    "pa_admin_all"                                    ──► CREATE
+  + ALL    "pa_gestor_team_write" (escopada ao time)         ──► CREATE
 ```
-rg "TabAgora|TabProducao|TabPipeline|TabMetas|TeamReportExport" src/ -g '*.ts' -g '*.tsx'
-```
 
-Resultado: **apenas auto-referências** (cada `export default function` dentro do próprio arquivo). Nenhum import externo. Seguro para deletar.
+Total: 7 DROPs + 8 CREATEs = 15 statements em **1 migration**.
 
-```
-src/components/gerente/TabAgora.tsx         → self
-src/components/gerente/TabPipeline.tsx      → self
-src/components/gerente/TabMetas.tsx         → self
-src/components/gerente/TabProducao.tsx      → self
-src/components/gerente/TeamReportExport.tsx → self
-```
+## 4. SQL final a aplicar
 
-## B) Deletar 5 arquivos
+Idêntico ao bloco do prompt (já validado — todos os nomes de drop confirmados em pg_policies). Sem ajustes.
 
-- `src/components/gerente/TabAgora.tsx`
-- `src/components/gerente/TabProducao.tsx`
-- `src/components/gerente/TabPipeline.tsx`
-- `src/components/gerente/TabMetas.tsx`
-- `src/components/gerente/TeamReportExport.tsx`
+## 5. Plano de execução (após sua aprovação)
 
-## C) Verificação pós-deleção
+1. Chamar `supabase--migration` com o SQL completo + description em PT plano.
+2. Após aprovação/execução pelo usuário: rodar `supabase--linter` e reportar diff de warnings.
+3. Re-listar `pg_policies` para as 4 tabelas e colar como prova de estado final.
+4. Entregar checklist de validação manual (snapshot VGV R$ 926k, /pipeline, Dashboard v4, DevTools 401/403, EXPLAIN).
 
-1. Re-rodar `rg "TabAgora|TabProducao|TabPipeline|TabMetas|TeamReportExport" src/ -g '*.ts' -g '*.tsx'` → esperar zero resultados.
-2. Confirmar build limpo (sem warnings de import não resolvido).
+## 6. Guardrails
 
-## D) Polimento final (somente leitura — sem mudanças)
+- Nenhum código frontend tocado.
+- Nenhuma RPC, cron, edge function ou tabela alterada.
+- Policies write de `negocios` e `oferta_ativa_tentativas` permanecem `true` (fora do escopo desta fase — backlog).
+- Rollback do prompt já aprovado, pronto para colar se algo quebrar.
 
-- Conferir `DashboardHeader` → botão Metas continua acionando `setMetasOpen(true)` em `DashboardV4Page`.
-- Conferir `V4PanelAlertas` → clique em corretor segue `navigate("/pipeline", { state: { corretorFilter, view: "modo-time" } })`.
-- Conferir consistência visual dos painéis v4 (tipografia, spacing, radius). Reportar inconsistências, sem editar sem aprovação.
-
-## Não tocar
-
-`dashboard-v3/*`, `useDashboardGerenteV3.ts`, RPCs, `pageRegistry`, infra, worker, componentes v4, tipos v4.
-
-## Entregável
-
-Report final com: resultado busca prévia (✓ feito), confirmação deleção, busca pós-deleção, status build, e qualquer warning. Aguardo sua validação visual em `/gerente/dashboard` antes de fechar v4.
+**Aguardando autorização para Agent Mode.**
