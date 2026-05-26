@@ -17,8 +17,8 @@
 // e atualizar os 6 imports acima.
 // ─────────────────────────────────────────────────────────────────
 
-import { isToday as isTodayFn, startOfDay } from "date-fns";
 import type { PipelineLead } from "@/hooks/usePipeline";
+import { classifyTask } from "@/lib/taskBuckets";
 
 const TIPO_LABELS: Record<string, string> = {
   follow_up: "Follow-up", ligar: "Ligar", whatsapp: "WhatsApp",
@@ -41,43 +41,23 @@ export interface ProximaTarefa {
   hora_vencimento: string | null;
 }
 
-function getTaskDate(task: ProximaTarefa | null | undefined, _lead: PipelineLead): Date | null {
-  // IMPORTANTE: só consideramos a data da TAREFA pendente real (pipeline_tarefas).
-  // Não usar fallback para lead.data_proxima_acao — esse campo legado costuma
-  // ficar desatualizado (não é zerado ao concluir tarefa) e gerava falsos
-  // "🔴 Atrasado" em leads que na verdade não têm tarefa pendente.
-  if (task?.vence_em) {
-    const taskDate = toValidDateFromYMD(task.vence_em);
-    if (taskDate) return taskDate;
-  }
-  return null;
-}
-
 export function getLeadStatusFilter(lead: PipelineLead, proximaTarefa: ProximaTarefa | null, stageTipo?: string): LeadClientStatus {
   // Leads descartados não são considerados atrasados/desatualizados
   if (stageTipo === "descarte") return "em_dia";
   // Leads com negócio criado (negocio_id) são sempre considerados "em dia"
   if ((lead as any).negocio_id) return "em_dia";
 
-  const now = new Date();
-  const todayStart = startOfDay(now);
-  const taskDate = getTaskDate(proximaTarefa, lead);
-
-  if (!taskDate) {
+  // Sem tarefa pendente real (pipeline_tarefas): não usar fallback para
+  // lead.data_proxima_acao — esse campo legado costuma ficar desatualizado
+  // (não é zerado ao concluir tarefa) e gerava falsos "🔴 Atrasado".
+  if (!proximaTarefa?.vence_em) {
     if (proximaTarefa?.tipo) return "em_dia";
     return "desatualizado";
   }
 
-  if (taskDate < todayStart) return "tarefa_atrasada";
-
-  // Mesmo dia: considerar hora_vencimento (BRT). Se já passou da hora, é atrasada.
-  if (isTodayFn(taskDate) && proximaTarefa?.hora_vencimento) {
-    const nowHHMM = now.toLocaleTimeString("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
-    const taskHHMM = proximaTarefa.hora_vencimento.slice(0, 5);
-    if (taskHHMM < nowHHMM) return "tarefa_atrasada";
-  }
-
-  return "em_dia";
+  // Regra canônica única de classificação — ver src/lib/taskBuckets.ts.
+  const { isOverdue } = classifyTask(proximaTarefa);
+  return isOverdue ? "tarefa_atrasada" : "em_dia";
 }
 
 export function isTaskHigherPriority(candidate: ProximaTarefa, current: ProximaTarefa) {
