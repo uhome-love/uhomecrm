@@ -324,14 +324,7 @@ export default function ConversationThread({ leadId, leadInfo, messages, onMessa
     }
   };
 
-  // Reset visit form when dialog opens
-  useEffect(() => {
-    if (visitOpen && leadInfo) {
-      setVisitDate(format(new Date(), "yyyy-MM-dd"));
-      setVisitTime("10:00");
-      setVisitLocal(leadInfo.empreendimento || "");
-    }
-  }, [visitOpen, leadInfo]);
+  // (Visit form state agora gerenciado pelo VisitaForm padrão)
 
   // --- Audio recording ---
   const startRecording = async () => {
