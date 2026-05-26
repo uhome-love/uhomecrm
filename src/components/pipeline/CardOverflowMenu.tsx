@@ -67,6 +67,7 @@ export default function CardOverflowMenu({
   onCreateTask,
   trigger,
 }: CardOverflowMenuProps) {
+  const { createVisita } = useVisitas();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
