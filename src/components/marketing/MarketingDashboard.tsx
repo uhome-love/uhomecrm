@@ -17,6 +17,7 @@ import * as XLSX from "xlsx";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 const CANAL_COLORS: Record<string, string> = {
   meta_ads: "#4969FF",
@@ -30,7 +31,7 @@ const CANAL_COLORS: Record<string, string> = {
 };
 
 function formatBRL(v: number) {
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  return fmtMoney(v, "exact");
 }
 function formatNum(v: number) {
   return v.toLocaleString("pt-BR");

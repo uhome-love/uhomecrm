@@ -10,6 +10,7 @@ import { DollarSign, Plus, Users, FileText, Clock, Loader2 } from "lucide-react"
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface Comissao {
   id: string;
@@ -98,7 +99,7 @@ export default function OpportunityPropostasTab({ pipelineLeadId, valorEstimado,
           <div>
             <span className="text-[10px] text-muted-foreground">VGV Estimado</span>
             <p className="text-sm font-bold text-foreground">
-              {valorEstimado ? `R$ ${valorEstimado.toLocaleString("pt-BR")}` : "—"}
+              {fmtMoney(valorEstimado || null, "exact")}
             </p>
           </div>
           <div>
@@ -108,7 +109,7 @@ export default function OpportunityPropostasTab({ pipelineLeadId, valorEstimado,
           <div>
             <span className="text-[10px] text-muted-foreground">Valor Comissão</span>
             <p className="text-sm font-bold text-primary">
-              {totalValor > 0 ? `R$ ${totalValor.toLocaleString("pt-BR")}` : "—"}
+              {totalValor > 0 ? fmtMoney(totalValor, "exact", { decimals: 2 }) : "—"}
             </p>
           </div>
         </div>
@@ -187,7 +188,7 @@ export default function OpportunityPropostasTab({ pipelineLeadId, valorEstimado,
                   </div>
                   <p className="text-[10px] text-muted-foreground">
                     {c.percentual}%
-                    {c.valor_comissao ? ` • R$ ${c.valor_comissao.toLocaleString("pt-BR")}` : ""}
+                    {c.valor_comissao ? ` • ${fmtMoney(c.valor_comissao, "exact", { decimals: 2 })}` : ""}
                     {" • "}
                     {(() => { try { const d = new Date(c.created_at); return Number.isNaN(d.getTime()) ? "—" : format(d, "dd/MM/yyyy", { locale: ptBR }); } catch { return "—"; } })()}
                   </p>

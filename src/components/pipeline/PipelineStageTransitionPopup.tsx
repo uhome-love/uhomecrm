@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { supabase } from "@/integrations/supabase/client";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 export interface TransitionResult {
   leadId: string;
@@ -594,7 +595,7 @@ function NegocioCriadoForm({ lead, onConfirm, targetStageId }: { lead: PipelineL
           onClick={() => onConfirm({
             leadId: lead.id,
             targetStageId,
-            observacao: `Negócio Criado | VGV: R$ ${vgvNumber.toLocaleString("pt-BR")} | Empreendimento: ${empreendimento || "—"}${obs ? ` | ${obs}` : ""}`,
+            observacao: `Negócio Criado | VGV: ${fmtMoney(vgvNumber, "exact")} | Empreendimento: ${empreendimento || "—"}${obs ? ` | ${obs}` : ""}`,
             extraData: { criarNegocio: true, vgv: vgvNumber, empreendimento, observacao: obs },
           })}
         >

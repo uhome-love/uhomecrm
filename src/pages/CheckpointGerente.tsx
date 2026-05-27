@@ -11,6 +11,7 @@ import CheckpointCards from "@/components/checkpoint/CheckpointCards";
 import AproveitadosTab from "@/components/checkpoint/AproveitadosTab";
 import LeadsDistribuidosPanel from "@/components/distribuicao/LeadsDistribuidosPanel";
 import RelatoriosTab from "@/components/checkpoint/RelatoriosTab";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 
 import CheckpointVisaoGeralTab from "@/components/checkpoint/CheckpointVisaoGeralTab";
@@ -65,7 +66,8 @@ export const calcStatus = (row: CheckpointRow, published: boolean): CheckpointRo
 
 export const pct = (a: number, b: number) => b === 0 ? 0 : Math.round((a / b) * 100);
 export const fmt = (n: number) => n.toLocaleString("pt-BR");
-export const fmtR = (n: number) => `R$ ${n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + "M" : n >= 1_000 ? (n / 1_000).toFixed(0) + "k" : n}`;
+// Checkpoint detalhado = Categoria A (valor exato, sem centavos por D1; D4 alinhado a D2 — round)
+export const fmtR = (n: number) => fmtMoney(n, "exact");
 
 // ─── MAIN ───
 export default function CheckpointGerente() {

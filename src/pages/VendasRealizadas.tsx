@@ -20,12 +20,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, formatBRL, formatBRLCompact } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
 import { resolveFormName } from "@/lib/metaFormIdMap";
 
-const formatCurrency = formatBRLCompact;
-const formatCurrencyFull = (v: number) => formatBRL(v);
+const formatCurrency = formatBRLCompact; // KPI cards / inline text (Categoria B — short, M3)
+const formatVgvExact = (v: number) => fmtMoney(v, "exact"); // Categoria A — exato
+const formatCurrencyFull = (v: number) => fmtMoney(v, "exact", { decimals: 2 }); // comissões
 
 function getInitials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join("");
@@ -518,7 +520,7 @@ export default function VendasRealizadas() {
                       <p className="text-[10px] text-muted-foreground">{r.count} venda{r.count > 1 ? "s" : ""}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-black text-emerald-500">{formatCurrency(r.vgv)}</p>
+                      <p className="text-sm font-black text-emerald-500">{formatVgvExact(r.vgv)}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -644,7 +646,7 @@ export default function VendasRealizadas() {
                               </td>
                             )}
                             <td className="py-3 px-3 text-right">
-                              <span className="text-sm font-black text-emerald-500">{formatCurrency(vgv)}</span>
+                              <span className="text-sm font-black text-emerald-500">{formatVgvExact(vgv)}</span>
                               {v.pipeline_lead_id && parceriaLeadIds.has(v.pipeline_lead_id) && (() => {
                                 const splitPct = parceriaPartners[v.pipeline_lead_id!]?.fator_split;
                                 const pctLabel = splitPct ? `${Math.round(splitPct * 100)}%` : "50%";
@@ -674,7 +676,7 @@ export default function VendasRealizadas() {
                       <td colSpan={isAdmin || isGestor ? 3 : 2} className="py-3 px-3 text-sm font-bold text-foreground">
                         Total — {filtered.length} venda{filtered.length !== 1 ? "s" : ""}
                       </td>
-                      <td className="py-3 px-3 text-right text-sm font-black text-emerald-500">{formatCurrency(totalVGV)}</td>
+                      <td className="py-3 px-3 text-right text-sm font-black text-emerald-500">{formatVgvExact(totalVGV)}</td>
                       <td></td>
                       <td></td>
                       <td className="py-3 px-3 text-right text-xs font-bold text-yellow-500">{formatCurrencyFull(totalCorretagem * 0.34)}</td>
@@ -742,7 +744,7 @@ export default function VendasRealizadas() {
                                 <Badge variant="secondary" className="text-[9px] h-4">{item.count} venda{item.count > 1 ? "s" : ""}</Badge>
                               </div>
                               <div className="text-right">
-                                <span className="text-sm font-black text-emerald-500">{formatCurrency(item.vgv)}</span>
+                                <span className="text-sm font-black text-emerald-500">{formatVgvExact(item.vgv)}</span>
                                 <span className="text-[10px] text-muted-foreground ml-1.5">({pct.toFixed(1)}%)</span>
                               </div>
                             </div>
@@ -822,7 +824,7 @@ export default function VendasRealizadas() {
                             <td className="py-2.5 px-3 text-center text-[10px] text-muted-foreground">
                               {row.dataAssinatura ? format(new Date(row.dataAssinatura + "T12:00:00"), "dd/MM/yy") : "—"}
                             </td>
-                            <td className="py-2.5 px-3 text-right text-xs font-black text-emerald-500">{formatCurrency(row.vgv)}</td>
+                            <td className="py-2.5 px-3 text-right text-xs font-black text-emerald-500">{formatVgvExact(row.vgv)}</td>
                           </tr>
                         ))}
                       </tbody>

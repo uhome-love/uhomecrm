@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { negociosRelinkService } from "@/services/negociosRelinkService";
 import BuscaManualLeadDialog from "@/components/ceo/BuscaManualLeadDialog";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface NegocioRelink {
   id: string;
@@ -53,8 +54,7 @@ const METODO_LABEL: Record<string, { label: string; cor: string }> = {
   sem_lead: { label: "📦 Arquivado · sem lead", cor: "bg-slate-200 text-slate-800" },
 };
 
-const fmtBRL = (v: number | null) =>
-  (v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const fmtBRL = (v: number | null) => fmtMoney(v ?? 0, "exact");
 
 type FiltroAba = "todos" | "ouro" | "ambiguos" | "ceo" | "sem_match" | "resolvidos";
 
@@ -195,11 +195,7 @@ export default function CeoReligacaoNegocios() {
 
   const handleCopiarResumo = (n: NegocioRelink) => {
     const lead = n.lead_id_proposto ? leadsMap[n.lead_id_proposto] : null;
-    const vgv = (n.vgv_final ?? n.vgv_estimado ?? 0).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      maximumFractionDigits: 0,
-    });
+    const vgv = fmtMoney(n.vgv_final ?? n.vgv_estimado ?? 0, "exact");
     const linhas = [
       `🔴 NEGÓCIO #${n.id.slice(0, 8)} · ${n.fase.toUpperCase()}`,
       `Cliente: ${n.nome_cliente}`,
