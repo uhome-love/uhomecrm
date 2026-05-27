@@ -12,6 +12,7 @@ import { Loader2, Bot, MessageSquare, ShieldQuestion, Send, FileText, Sparkles, 
 import ReactMarkdown from "react-markdown";
 import { formatDistanceToNowSafe, differenceInDaysSafe, differenceInHoursSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface Props {
   leadId: string;
@@ -295,7 +296,7 @@ Etapa do funil: ${etapa}
 Temperatura: ${temperatura || "morno"}
 Origem: ${origem || "N/A"} ${origemDetalhe ? `(${origemDetalhe})` : ""}
 Score de oportunidade: ${oportunidadeScore || "N/A"}
-Valor estimado: ${valorEstimado ? `R$ ${valorEstimado.toLocaleString("pt-BR")}` : "N/A"}
+Valor estimado: ${valorEstimado ? fmtMoney(valorEstimado, "exact") : "N/A"}
 Próxima ação definida: ${proximaAcao || "Nenhuma"}
 Observações: ${observacoes || "Nenhuma"}
 Lead há: ${briefing?.diasComo || 0} dias

@@ -1,12 +1,6 @@
 import { useRankingData, type NegociosRow, type RankingFilters } from "@/hooks/useRankingsData";
 import RankingTable, { type Column } from "./RankingTable";
-
-const fmtBRL = (n: number) =>
-  n >= 1_000_000
-    ? `R$ ${(n / 1_000_000).toFixed(2)}M`
-    : n >= 1_000
-    ? `R$ ${(n / 1_000).toFixed(0)}k`
-    : `R$ ${n.toFixed(0)}`;
+import { fmtMoney } from "@/lib/fmtMoney";
 
 export default function RankingNegocios({ filters, currentUserId }: { filters: RankingFilters; currentUserId?: string }) {
   const { data, loading } = useRankingData<NegociosRow>("negocios", filters);
@@ -24,7 +18,7 @@ export default function RankingNegocios({ filters, currentUserId }: { filters: R
       columns={columns}
       caption="Ordenado por VGV de vendas assinadas · clique nas colunas para reordenar"
       primaryLabel="VGV Assinado"
-      primaryRender={r => fmtBRL(r.vgv_assinado)}
+      primaryRender={r => fmtMoney(r.vgv_assinado, "exact")}
       primarySortValue={r => r.vgv_assinado}
       highlightUserId={currentUserId}
     />

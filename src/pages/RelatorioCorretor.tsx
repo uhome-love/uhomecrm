@@ -14,6 +14,7 @@ import { Loader2, Sparkles, Download, Save, RefreshCw, FileText, History, Trash2
 import { toast } from "sonner";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from "date-fns";
 import { formatBRLCompact } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 import { ptBR } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
 import GerarManualTab from "@/components/relatorio/GerarManualTab";
@@ -396,7 +397,9 @@ export default function RelatorioCorretor() {
   };
 
   const pct = (real: number, meta: number) => meta > 0 ? Math.round((real / meta) * 100) : 0;
-  const fmtVgv = formatBRLCompact;
+  // Relatório 1:1 = Categoria A (valor exato p/ decisão)
+  const fmtVgv = (v: number | null | undefined) => fmtMoney(v, "exact");
+  void formatBRLCompact;
 
   const metricRows = [
     { label: "Ligações", ...metricas.ligacoes, fmt: (v: number) => String(v) },

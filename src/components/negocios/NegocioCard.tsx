@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { formatCurrencyInput, parseCurrencyToNumber, handleCurrencyChange } from "@/utils/currencyFormat";
 import { formatBRLCompact } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 import { NEGOCIOS_FASES, type Negocio, type CorretorInfo } from "@/hooks/useNegocios";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,7 +19,9 @@ import { differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-const formatVGV = formatBRLCompact;
+// Categoria A — card de negócio individual usa valor exato
+const formatVGV = (v: number | null | undefined) => fmtMoney(v, "exact");
+void formatBRLCompact;
 
 const CARD_QUICK_ACTIONS = [
   { id: "simulacao", emoji: "📊", label: "Mandei simulação", tipo: "simulacao", titulo: "Simulação enviada" },

@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Plus, Search, FileText, Link, Loader2, Trash2, Settings, FileDown } from "lucide-react";
 import { formatBRL } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 import { toast } from "sonner";
 import PagadoriaConfigModal from "@/components/pagadorias/PagadoriaConfigModal";
 import ContratoIntermediacao from "@/components/pagadorias/ContratoIntermediacao";
@@ -171,8 +172,10 @@ export default function PagadoriasPage() {
     return true;
   });
 
-  const fmtR = (v: number) => formatBRL(v, 2);
+  // Pagadorias = comissões → centavos obrigatórios (D1)
+  const fmtR = (v: number) => fmtMoney(v, "exact", { decimals: 2 });
   const fmtVgv = (v: number | null) => v === null ? "Acima" : `Até ${fmtR(v)}`;
+  void formatBRL;
 
   const handleSave = async () => {
     if (!user) return;

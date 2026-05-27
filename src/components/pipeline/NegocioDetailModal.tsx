@@ -25,6 +25,7 @@ import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 import { cn } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 import SolicitarPagadoriaDialog from "./SolicitarPagadoriaDialog";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -558,7 +559,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
                 {fullNeg.vgv_estimado && (
                   <span className="text-xs font-semibold text-amber-600 flex items-center gap-0.5">
                     <TrendingUp className="h-3 w-3" />
-                    R$ {fullNeg.vgv_estimado.toLocaleString("pt-BR")}
+                    {fmtMoney(fullNeg.vgv_estimado, "exact")}
                   </span>
                 )}
               </div>

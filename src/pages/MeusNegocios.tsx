@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { formatCurrencyInput, parseCurrencyToNumber, handleCurrencyChange } from "@/utils/currencyFormat";
 import PeriodBadge from "@/components/PeriodBadge";
 import { formatBRLCompact } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 import { useNegocios, NEGOCIOS_FASES, type Negocio, type CorretorInfo } from "@/hooks/useNegocios";
 import { useLeadProgression } from "@/hooks/useLeadProgression";
 import { useLeadsParados } from "@/hooks/useLeadsParados";
@@ -30,7 +31,9 @@ import VendaCelebration from "@/components/pipeline/VendaCelebration";
 import FaseTransitionModal, { type TransitionData } from "@/components/pipeline/FaseTransitionModal";
 import { supabase } from "@/integrations/supabase/client";
 
-const formatVGV = formatBRLCompact;
+// Categoria A — valor exato (drawer/cards de negócio individual). Compact ainda exportado p/ compat.
+const formatVGV = (v: number | null | undefined) => fmtMoney(v, "exact");
+void formatBRLCompact;
 
 const TEAM_COLORS: Record<string, string> = {
   "gabrielle": "bg-pink-500/15 text-pink-600 border-pink-500/30",

@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface LeadInfo {
   id: string;
@@ -294,7 +295,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
           ) : (
             <div className="flex items-center gap-0.5">
               <span className="text-[11px] font-medium truncate max-w-[100px]">
-                {localLead.valor_estimado ? `R$ ${Number(localLead.valor_estimado).toLocaleString("pt-BR")}` : "—"}
+                {fmtMoney(localLead.valor_estimado ? Number(localLead.valor_estimado) : null, "exact")}
               </span>
               {!isReadOnly && (
                 <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => startEdit("orcamento", String(localLead.valor_estimado || ""))}>

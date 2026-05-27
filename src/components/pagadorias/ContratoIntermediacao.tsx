@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Download, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface Credor {
   credor_nome: string;
@@ -64,7 +65,8 @@ function formatDate(dateStr: string) {
 }
 
 function fmtR(v: number) {
-  return `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // Contrato exige centavos (D1: centavos só em contratos/comissões)
+  return fmtMoney(v, "exact", { decimals: 2 });
 }
 
 function fmtDateShort(dateStr: string) {

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Loader2, Star, Eye, Send, X, ExternalLink, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface Props {
   leadId: string;
@@ -18,7 +19,7 @@ interface Props {
 }
 
 function formatCurrency(val: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(val);
+  return fmtMoney(val, "exact");
 }
 
 function scoreBadge(score: number) {

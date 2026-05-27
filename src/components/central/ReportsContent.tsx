@@ -13,10 +13,13 @@ import { ptBR } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { formatBRLCompact } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 type ReportType = "funil" | "forecast" | "completo";
 
-const fmtCurrency = formatBRLCompact;
+// Prompt p/ AI: valor exato evita ambiguidade no LLM (Categoria A)
+const fmtCurrency = (v: number | null | undefined) => fmtMoney(v, "exact");
+void formatBRLCompact;
 
 export default function ReportsContent() {
   const { user } = useAuth();
