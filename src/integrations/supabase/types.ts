@@ -10270,6 +10270,18 @@ export type Database = {
       }
     }
     Functions: {
+      _kpi_team_window_core: {
+        Args: {
+          p_end: string
+          p_include_partner_split?: boolean
+          p_prev_end?: string
+          p_prev_start?: string
+          p_start: string
+          p_team_auth: string[]
+          p_team_prof: string[]
+        }
+        Returns: Json
+      }
       aceitar_lead: {
         Args: {
           p_corretor_id: string
