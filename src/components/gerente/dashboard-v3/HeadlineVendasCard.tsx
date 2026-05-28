@@ -38,8 +38,26 @@ export function HeadlineVendasCard({ vendas, meta, vendasQtd, delta, periodoLabe
         </div>
 
         <div className="mt-4 flex items-baseline gap-3">
-          <span className="text-4xl font-bold tracking-tight">{fmtBRL(vendas)}</span>
-          <span className="text-sm text-white/70">/ meta {fmtBRL(meta)}</span>
+          {(() => {
+            const vT = fmtMoney(vendas, "shortWithTooltip");
+            const mT = fmtMoney(meta, "shortWithTooltip");
+            return (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-4xl font-bold tracking-tight cursor-help">{vT.display}</span>
+                  </TooltipTrigger>
+                  <TooltipContent>{vT.title}</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-sm text-white/70 cursor-help">/ meta {mT.display}</span>
+                  </TooltipTrigger>
+                  <TooltipContent>Meta: {mT.title}</TooltipContent>
+                </Tooltip>
+              </>
+            );
+          })()}
         </div>
 
         <div className="mt-4">
