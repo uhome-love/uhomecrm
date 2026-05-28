@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Briefcase } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 import {
   useDashboardGerenteV4Dia,
   type MiniPipelineCard,
@@ -19,12 +20,7 @@ const BORDER_BY_FASE: Record<string, string> = {
   documentacao: "border-l-emerald-500",
 };
 
-function formatVgvShort(v: number): string {
-  if (!v || v <= 0) return "R$ 0";
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (v >= 1_000) return `R$ ${Math.round(v / 1_000)}k`;
-  return `R$ ${v.toLocaleString("pt-BR")}`;
-}
+const formatVgvShort = (v: number) => fmtMoney(v, "short");
 
 function cardVgv(c: MiniPipelineCard): number {
   return Number(c.vgv ?? 0);

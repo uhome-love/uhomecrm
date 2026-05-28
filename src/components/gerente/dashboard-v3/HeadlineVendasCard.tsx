@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface Props {
   vendas: number;
@@ -9,11 +10,7 @@ interface Props {
   periodoLabel: string;
 }
 
-function fmtBRL(v: number) {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(2).replace(".", ",")}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}K`;
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
-}
+const fmtBRL = (v: number) => fmtMoney(v, "short");
 
 export function HeadlineVendasCard({ vendas, meta, vendasQtd, delta, periodoLabel }: Props) {
   const pct = meta > 0 ? Math.min(100, (vendas / meta) * 100) : 0;
