@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ShoppingBag, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { ReportFilters, getDateRange, getPeriodoAnterior, fmtMoney, fmtDate } from "./reportUtils";
+import { ReportFilters, getDateRange, getPeriodoAnterior, fmtDate } from "./reportUtils";
+import { fmtMoney as _fmtMoneyLib } from "@/lib/fmtMoney";
+const fmtMoney = (v: number) => _fmtMoneyLib(v, "short");
 import { fetchAllRows } from "@/lib/paginatedFetch";
 
 // ── Types ──────────────────────────────────────────────────────────────────────

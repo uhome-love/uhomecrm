@@ -22,8 +22,10 @@ import { cn } from "@/lib/utils";
 import {
   getPropertyPreviewImages, getPropertyThumbImages,
   extractOrigemExterna, extractEntrega, extractEndereco,
-  getNum, getNumIncZero, fmtBRL, fmtCompact,
+  getNum, getNumIncZero,
 } from "@/lib/imovelHelpers";
+import { fmtMoney } from "@/lib/fmtMoney";
+const fmtBRL = (v: number) => fmtMoney(v, "exact");
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
 import { track } from "@/lib/tracker";
 

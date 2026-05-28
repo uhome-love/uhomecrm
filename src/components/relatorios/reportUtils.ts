@@ -43,12 +43,9 @@ export function getPeriodoAnterior(s: Date, e: Date): { startDate: Date; endDate
   return { startDate: prevStart, endDate: prevEnd };
 }
 
-export function fmtMoney(v: number): string {
-  const r = Math.round(v);
-  if (r >= 1_000_000) return `R$ ${(r / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (r >= 1_000) return `R$ ${Math.round(r / 1_000)}k`;
-  return `R$ ${r.toLocaleString("pt-BR")}`;
-}
+// `fmtMoney` removed (M5 cleanup). Import directly from `@/lib/fmtMoney`:
+//   import { fmtMoney } from "@/lib/fmtMoney";
+//   fmtMoney(v, "short")  // matches former local behavior (R$ 1,5M / R$ 925k)
 
 export function fmtDate(d: string): string {
   if (!d) return "—";

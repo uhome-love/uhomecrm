@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { format, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, addMonths, isSameWeek, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -104,10 +105,7 @@ export default function RankingEquipe() {
   ];
 
   const [exporting, setExporting] = useState(false);
-  const fmtBRL = (n: number) =>
-    n >= 1_000_000 ? `R$ ${(n / 1_000_000).toFixed(2)}M`
-    : n >= 1_000 ? `R$ ${(n / 1_000).toFixed(0)}k`
-    : `R$ ${n.toFixed(0)}`;
+  const fmtBRL = (n: number) => fmtMoney(n, "short");
 
   const handleExportPdf = async () => {
     try {
