@@ -424,7 +424,11 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
                     {[selectedLead.empreendimento, stageName(selectedLead.stage_id), selectedLead.telefone].filter(Boolean).join(" · ")}
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-destructive" onClick={() => set("pipeline_lead_id", "")}>
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-destructive" onClick={() => {
+                  setForm(f => ({ ...f, pipeline_lead_id: "", nome_cliente: "", telefone: "", empreendimento: "" }));
+                  setFormErrors({});
+                  setSearchPipeline("");
+                }}>
                   Trocar
                 </Button>
               </div>
@@ -605,7 +609,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
                 )}
 
                 {/* Empreendimento combobox as fallback for empreendimentos da carteira */}
-                {!imovelSearch && !selectedImovel && (
+                {!imovelSearch && !selectedImovel && !form.empreendimento && (
                   <div className="mt-1">
                     <p className="text-[10px] text-muted-foreground mb-1">Ou selecione um empreendimento da carteira:</p>
                     <EmpreendimentoCombobox
@@ -616,6 +620,15 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
                     />
                   </div>
                 )}
+                {!imovelSearch && !selectedImovel && form.empreendimento && (
+                  <button
+                    type="button"
+                    onClick={() => set("empreendimento", "")}
+                    className="text-[10px] text-destructive hover:underline mt-1"
+                  >
+                    Limpar imóvel
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -625,7 +638,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
             <Label className="text-xs font-semibold mb-1 block">Local da Visita</Label>
             <Select value={form.local_visita} onValueChange={v => set("local_visita", v)}>
               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Onde será a visita?" /></SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" className="z-[60] max-h-[40vh]">
                 {LOCAL_OPTIONS.map(o => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
@@ -638,7 +651,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
             <Label className="text-xs font-semibold mb-1 block">Responsável pela Visita</Label>
             <Select value={form.responsavel_visita} onValueChange={v => set("responsavel_visita", v)}>
               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Quem acompanha a visita?" /></SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" className="z-[60] max-h-[40vh]">
                 {RESPONSAVEL_OPTIONS.map(o => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
@@ -652,7 +665,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
               <Label className="text-xs font-semibold mb-1 block">Corretor</Label>
               <Select value={form.corretor_id} onValueChange={v => set("corretor_id", v)}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione o corretor" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" className="z-[60] max-h-[40vh]">
                   {parceiroGroups.length > 1 ? (
                     parceiroGroups.map(([equipe, members]) => (
                       <SelectGroup key={equipe}>
@@ -763,9 +776,21 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
           </div>
 
           {/* Submit */}
+          {mode === "create" && !UUID_REGEX.test(form.pipeline_lead_id) && form.nome_cliente.trim() && (
+            <p className="text-[11px] text-amber-600 -mb-2">
+              Selecione um lead da lista acima para continuar.
+            </p>
+          )}
           <Button
             className="w-full gap-2 h-10 text-sm font-semibold"
-            disabled={!form.nome_cliente.trim() || !form.data_visita || submitting || (isParceria && !parceiroId)}
+            disabled={
+              !form.nome_cliente.trim() ||
+              !form.data_visita ||
+              !form.responsavel_visita ||
+              (mode === "create" && !UUID_REGEX.test(form.pipeline_lead_id)) ||
+              submitting ||
+              (isParceria && !parceiroId)
+            }
             onClick={handleSubmit}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}

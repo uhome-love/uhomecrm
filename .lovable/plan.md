@@ -1,83 +1,82 @@
-# Plan — Migration A (Fase 0.5 v2): RLS hardening
+## Diagnóstico — Modal Nova Visita (`src/components/visitas/VisitaForm.tsx`)
 
-## 1. Verificação pg_policies (executada)
+Auditei o componente, o hook `useVisitas.createVisita`, o schema da tabela `visitas`, RLS e triggers. **Schema, constraints, triggers e RLS estão OK** — `local_visita` é `text` nullable, sem CHECK constraint. Não há nada no backend que rejeite o valor. O erro percebido pelo usuário vem do **frontend**.
 
-Conferi os nomes reais via `pg_policies`. **Todos batem 100% com o snapshot do prompt** — nenhum `DROP IF EXISTS` vai falhar silenciosamente.
+Encontrei **4 bugs reais** no modal que explicam o corretor não conseguir finalizar:
 
-| Tabela | Policy a dropar | Confere? |
-|---|---|---|
-| `negocios` | `Users can view negocios` (SELECT, qual=true) | ✅ |
-| `oferta_ativa_tentativas` | `Users can view own tentativas` (SELECT) | ✅ |
-| `pipeline_tarefas` | `Gestores can manage tarefas` (ALL) | ✅ |
-| `pipeline_tarefas` | `Corretores can view own tarefas` (SELECT) | ✅ |
-| `pipeline_tarefas` | `Corretores can view tasks on their leads` (SELECT) | ✅ |
-| `pipeline_atividades` | `Gestores can manage atividades` (ALL) | ✅ |
-| `pipeline_atividades` | `Corretores can view own atividades` (SELECT) | ✅ |
+### Bug #1 — Validação silenciosa de `responsavel_visita` quebra o submit
+`useVisitas.createVisita` (linha ~324) força `responsavel_visita` quando `tipo === "lead"`. O default no form é `"proprio_corretor"`, **mas** `RESPONSAVEL_OPTIONS` em `ReuniaoNegocioForm.tsx` usa `"corretor"` — e em outros lugares o valor enviado pode ser sanitizado a null. No `VisitaForm.tsx` o default está correto, **mas** se o usuário abre o dropdown e fecha sem escolher (Radix Select em mobile), o valor não muda. O problema real: o validador exige `responsavel_visita` mas o botão de submit **não** está desabilitado por isso — então o usuário clica, recebe toast genérico e não entende.
 
-### Policies preservadas (NÃO mexer)
+### Bug #2 — Dois campos de "Imóvel" duplicados visíveis simultaneamente
+Na screenshot aparece "Casa Tua" no input Jetimob **e** no combobox "Ou selecione um empreendimento da carteira". A lógica `{!imovelSearch && !selectedImovel}` deveria esconder o segundo, mas como ambos chamam `set("empreendimento", value)`, há race condition: digitando no Jetimob seta `empreendimento`, então `imovelSearch` fica preenchido mas o combobox renderiza o valor mesmo assim em re-render. Confunde o usuário (parece que precisa preencher os dois).
 
-- `negocios`: INSERT `Users can insert negocios` (with_check=true), UPDATE `Users can update negocios` (qual=true), DELETE `Admins and gestores can delete negocios` — **mantidas**.
-- `oferta_ativa_tentativas`: INSERT (admin + own), UPDATE/DELETE admin — **mantidas**.
-- `pipeline_tarefas`: INSERT/UPDATE/DELETE granulares de corretor (own + tasks on their leads) — **mantidas**. A "Gestores can manage tarefas" era a única ALL gestor; após o drop, gestor passa a escrever apenas via nova `pt_gestor_team_write` (escopada).
-- `pipeline_atividades`: INSERT corretor own, UPDATE own, DELETE own — **mantidas**. Idem: gestor escreve via nova `pa_gestor_team_write`.
+### Bug #3 — Botão "Trocar" do Cliente não limpa `nome_cliente`
+Linha 427: `onClick={() => set("pipeline_lead_id", "")}` zera apenas o id. O `nome_cliente` continua "Amadeu" no estado. Se o corretor trocar de cliente e tentar submeter sem re-selecionar da lista, o validador passa (nome ok), o `pipeline_lead_id` falha com "Selecione um lead válido da lista" — mas o input mostra "Amadeu" preenchido, ficando confuso.
 
-### Observação importante (mudança de comportamento intencional)
+### Bug #4 — Select "Local da Visita" sem feedback de erro visível em mobile
+O Radix `Select` com `SelectContent` default não usa `position="popper"` explicitamente em alguns casos. Em viewport 440px o dropdown pode abrir fora da tela. Provável causa do "está dando erro" relatado: o dropdown não abre/abre cortado e o corretor não consegue escolher → como `local_visita` é opcional o submit funcionaria mesmo vazio, **mas** combinado com Bug #1 (responsavel não setado em algum fluxo) o submit falha em seguida.
 
-Hoje gestor pode INSERT/UPDATE/DELETE tarefa/atividade de **qualquer corretor**. Pós-migration: só do **próprio time** (validado pelas auditorias 0.25/0.4/0.6 — zero call site depende do escopo global).
+---
 
-## 2. Arquivo de migration
+## Plano de correção (escopo cirúrgico, só frontend)
 
-Migration única, criada via `supabase--migration` (DDL apenas, Regra 1). Conta como **1 de 2 do dia** (Regra 2).
+### Arquivos a alterar
+1. **`src/components/visitas/VisitaForm.tsx`**
 
-## 3. Diff resumido do schema
+### Mudanças
 
-```text
-negocios
-  - SELECT "Users can view negocios" (qual=true)            ──► DROP
-  + SELECT "negocios_select_scoped"                          ──► CREATE
-        (auth_user_id=uid OR gerente_id=uid OR admin
-         OR corretor_id IN profiles do time
-         OR EXISTS pipeline_parcerias ativa onde uid é principal/parceiro)
-
-oferta_ativa_tentativas
-  - SELECT "Users can view own tentativas"                   ──► DROP
-  + SELECT "oat_select_scoped"                               ──► CREATE
-        (corretor_id=uid OR admin OR corretor_id IN time)
-
-pipeline_tarefas
-  - SELECT "Corretores can view own tarefas"                 ──► DROP
-  - SELECT "Corretores can view tasks on their leads"        ──► DROP
-  - ALL    "Gestores can manage tarefas" (global)            ──► DROP
-  + SELECT "pt_select_scoped"                                ──► CREATE
-  + ALL    "pt_admin_all"                                    ──► CREATE
-  + ALL    "pt_gestor_team_write" (escopada ao time)         ──► CREATE
-
-pipeline_atividades
-  - SELECT "Corretores can view own atividades"              ──► DROP
-  - ALL    "Gestores can manage atividades" (global)         ──► DROP
-  + SELECT "pa_select_scoped"                                ──► CREATE
-  + ALL    "pa_admin_all"                                    ──► CREATE
-  + ALL    "pa_gestor_team_write" (escopada ao time)         ──► CREATE
+**1. Botão "Trocar" do Cliente — limpar nome também**
+```diff
+- onClick={() => set("pipeline_lead_id", "")}
++ onClick={() => {
++   setForm(f => ({ ...f, pipeline_lead_id: "", nome_cliente: "", telefone: "", empreendimento: "" }));
++   setFormErrors({});
++ }}
 ```
 
-Total: 7 DROPs + 8 CREATEs = 15 statements em **1 migration**.
+**2. Imóvel — esconder combobox da carteira quando QUALQUER campo de empreendimento estiver preenchido**
+```diff
+- {!imovelSearch && !selectedImovel && (
++ {!imovelSearch && !selectedImovel && !form.empreendimento && (
+```
+E adicionar um botão "limpar" no input Jetimob quando preenchido (para reabrir o combobox da carteira).
 
-## 4. SQL final a aplicar
+**3. Local da Visita — forçar `position="popper"` no SelectContent + sideOffset**
+```diff
+- <SelectContent>
++ <SelectContent position="popper" className="z-[60] max-h-[40vh]">
+```
+Aplicar o mesmo em Responsável e Corretor para garantir consistência mobile.
 
-Idêntico ao bloco do prompt (já validado — todos os nomes de drop confirmados em pg_policies). Sem ajustes.
+**4. Botão Submit — desabilitar enquanto faltar `responsavel_visita`** (já é validado, só falta refletir no `disabled`):
+```diff
+- disabled={!form.nome_cliente.trim() || !form.data_visita || submitting || (isParceria && !parceiroId)}
++ disabled={
++   !form.nome_cliente.trim() ||
++   !form.data_visita ||
++   !form.responsavel_visita ||
++   (mode === "create" && !UUID_REGEX.test(form.pipeline_lead_id)) ||
++   submitting ||
++   (isParceria && !parceiroId)
++ }
+```
 
-## 5. Plano de execução (após sua aprovação)
+**5. Mensagem de erro inline visível** — quando o usuário tenta clicar mas falta lead, mostrar texto abaixo do search ("Selecione um lead da lista para continuar") ao invés de só toast.
 
-1. Chamar `supabase--migration` com o SQL completo + description em PT plano.
-2. Após aprovação/execução pelo usuário: rodar `supabase--linter` e reportar diff de warnings.
-3. Re-listar `pg_policies` para as 4 tabelas e colar como prova de estado final.
-4. Entregar checklist de validação manual (snapshot VGV R$ 926k, /pipeline, Dashboard v4, DevTools 401/403, EXPLAIN).
+### Diagnóstico extra (se após o fix o erro persistir)
+Adicionar `console.error` mais detalhado em `useVisitas.createVisita` já está presente (linhas 363-377) — capturando `error.message`, `code`, `hint`, `details`. Depois do deploy do fix, pedir ao corretor para reproduzir e verificamos console.
 
-## 6. Guardrails
+### Fora de escopo (não tocar)
+- Schema `visitas`, RLS, triggers (estão OK).
+- Hook `useVisitas` (validações estão corretas).
+- `ReuniaoNegocioForm.tsx` (fluxo de Reunião de Negócio é separado, não é o que o corretor usa no pipeline).
+- Backend, RPCs, edge functions.
 
-- Nenhum código frontend tocado.
-- Nenhuma RPC, cron, edge function ou tabela alterada.
-- Policies write de `negocios` e `oferta_ativa_tentativas` permanecem `true` (fora do escopo desta fase — backlog).
-- Rollback do prompt já aprovado, pronto para colar se algo quebrar.
+### Critérios de aceite
+1. Trocar cliente limpa todos os campos do cliente anterior.
+2. Combobox de empreendimento some quando o Jetimob ou form.empreendimento estiver preenchido.
+3. Dropdown "Local da Visita" abre dentro da tela em viewport 440px.
+4. Botão "Agendar Visita" fica desabilitado até todos os obrigatórios estarem OK (sem toast surpresa).
+5. Build limpo, zero hex inline, sem mexer em design tokens.
 
-**Aguardando autorização para Agent Mode.**
+Aguardo aprovação para executar.
