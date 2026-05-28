@@ -1,6 +1,7 @@
 import { TrendingDown, TrendingUp, Minus, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmtMoney } from "@/lib/fmtMoney";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
   vgv: number;
