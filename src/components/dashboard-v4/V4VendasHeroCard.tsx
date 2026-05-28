@@ -35,8 +35,28 @@ export function V4VendasHeroCard({ vgv, count, meta, deltaPct }: Props) {
 
       <p className="relative mt-3 text-sm text-white/80">Vendas · Este mês</p>
       <div className="relative mt-1 flex items-baseline gap-2">
-        <span className="text-3xl font-bold tracking-tight">{formatVgv(vgv)}</span>
-        {meta > 0 && <span className="text-xs text-white/70">/ {formatVgv(meta)}</span>}
+        {(() => {
+          const vgvT = fmtMoney(vgv, "shortWithTooltip");
+          return (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-3xl font-bold tracking-tight cursor-help">{vgvT.display}</span>
+              </TooltipTrigger>
+              <TooltipContent>{vgvT.title}</TooltipContent>
+            </Tooltip>
+          );
+        })()}
+        {meta > 0 && (() => {
+          const metaT = fmtMoney(meta, "shortWithTooltip");
+          return (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs text-white/70 cursor-help">/ {metaT.display}</span>
+              </TooltipTrigger>
+              <TooltipContent>Meta: {metaT.title}</TooltipContent>
+            </Tooltip>
+          );
+        })()}
       </div>
       <p className="relative mt-0.5 text-xs text-white/80">
         {count} {count === 1 ? "venda assinada" : "vendas assinadas"}
