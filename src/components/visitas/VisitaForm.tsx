@@ -638,7 +638,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
             <Label className="text-xs font-semibold mb-1 block">Local da Visita</Label>
             <Select value={form.local_visita} onValueChange={v => set("local_visita", v)}>
               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Onde será a visita?" /></SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" className="z-[60] max-h-[40vh]">
                 {LOCAL_OPTIONS.map(o => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
