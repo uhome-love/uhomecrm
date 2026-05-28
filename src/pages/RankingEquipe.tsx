@@ -104,10 +104,7 @@ export default function RankingEquipe() {
   ];
 
   const [exporting, setExporting] = useState(false);
-  const fmtBRL = (n: number) =>
-    n >= 1_000_000 ? `R$ ${(n / 1_000_000).toFixed(2)}M`
-    : n >= 1_000 ? `R$ ${(n / 1_000).toFixed(0)}k`
-    : `R$ ${n.toFixed(0)}`;
+  const fmtBRL = (n: number) => fmtMoney(n, "short");
 
   const handleExportPdf = async () => {
     try {
