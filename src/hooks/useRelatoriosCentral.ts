@@ -175,21 +175,39 @@ export function useRelatoriosCentral(
     [filters.periodo, filters.de, filters.ate]
   );
 
-  const makeQuery = (secao: string, rpc: RpcName) =>
-    useQuery({
-      queryKey: ["central", secao, gestorId, range.start, range.end],
-      queryFn: () => fetchRpc(rpc, gestorId as string, range),
-      enabled: !!gestorId,
-      staleTime: STALE_MS,
-      gcTime: GC_MS,
-      retry: 1,
-    });
+  const baseOpts = {
+    enabled: !!gestorId,
+    staleTime: STALE_MS,
+    gcTime: GC_MS,
+    retry: 1,
+  };
 
-  const pipelineLeads = makeQuery("pipeline-leads", "get_relatorio_pipeline_leads");
-  const ofertaAtiva = makeQuery("oferta-ativa", "get_relatorio_oferta_ativa");
-  const visitas = makeQuery("visitas", "get_relatorio_visitas");
-  const negocios = makeQuery("negocios", "get_relatorio_negocios");
-  const vendas = makeQuery("vendas", "get_relatorio_vendas");
+  const pipelineLeads = useQuery({
+    ...baseOpts,
+    queryKey: ["central", "pipeline-leads", gestorId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_pipeline_leads", gestorId as string, range),
+  });
+  const ofertaAtiva = useQuery({
+    ...baseOpts,
+    queryKey: ["central", "oferta-ativa", gestorId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_oferta_ativa", gestorId as string, range),
+  });
+  const visitas = useQuery({
+    ...baseOpts,
+    queryKey: ["central", "visitas", gestorId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_visitas", gestorId as string, range),
+  });
+  const negocios = useQuery({
+    ...baseOpts,
+    queryKey: ["central", "negocios", gestorId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_negocios", gestorId as string, range),
+  });
+  const vendas = useQuery({
+    ...baseOpts,
+    queryKey: ["central", "vendas", gestorId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_vendas", gestorId as string, range),
+  });
+
 
   const all = [pipelineLeads, ofertaAtiva, visitas, negocios, vendas];
   const isAnyLoading = all.some((q) => q.isLoading);
