@@ -2,38 +2,26 @@ import { differenceInDays, differenceInHours, format, formatDistanceToNow } from
 import { differenceInMinutes } from "date-fns";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { fmtMoney } from "./fmtMoney";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Formats a number as Brazilian Real (BRL) — full format.
- * E.g. 1500000 → "R$ 1.500.000,00"
- *      240000  → "R$ 240.000,00"
- * @param decimals number of decimal places (default 0 for imobiliário)
+ * @deprecated Use `fmtMoney(v, "exact", { decimals })` from `@/lib/fmtMoney`.
+ * Kept as a thin wrapper for backward compatibility.
  */
 export function formatBRL(v: number | null | undefined, decimals = 0): string {
-  if (v == null || isNaN(v)) return "—";
-  return v.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+  return fmtMoney(v, "exact", { decimals });
 }
 
 /**
- * Compact BRL for KPI cards and small spaces.
- * E.g. 1500000 → "R$ 1,5M"
- *      240000  → "R$ 240k"
- *      800     → "R$ 800"
+ * @deprecated Use `fmtMoney(v, "short")` from `@/lib/fmtMoney`.
+ * Kept as a thin wrapper for backward compatibility.
  */
 export function formatBRLCompact(v: number | null | undefined): string {
-  if (v == null || isNaN(v)) return "—";
-  if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (Math.abs(v) >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
-  return formatBRL(v);
+  return fmtMoney(v, "short");
 }
 
 function parseDateValue(value: string | Date | null | undefined, dateOnly = false): Date | null {
