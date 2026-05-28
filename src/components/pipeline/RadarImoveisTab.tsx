@@ -183,9 +183,7 @@ function normalize(s: string): string {
 }
 
 function fmtPrice(v: number): string {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".0", "")}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}mil`;
-  return `R$ ${v}`;
+  return fmtMoney(v, "short");
 }
 
 function getPropertyCode(item: ImovelResult): string {

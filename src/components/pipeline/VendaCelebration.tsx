@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import ImmersiveScreen, { ConfettiBurst } from "@/components/immersive/ImmersiveScreen";
 import { Trophy, PartyPopper, ArrowRight, TrendingUp, Star } from "lucide-react";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface Props {
   nomeCliente: string;
@@ -13,10 +14,7 @@ interface Props {
   onDismiss: () => void;
 }
 
-function formatVGVBig(value: number): string {
-  if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
-  return `R$ ${value.toLocaleString("pt-BR")}`;
-}
+const formatVGVBig = (value: number) => fmtMoney(value, "short");
 
 export default function VendaCelebration({ nomeCliente, empreendimento, vgv, corretorNome, onDismiss }: Props) {
   const navigate = useNavigate();
