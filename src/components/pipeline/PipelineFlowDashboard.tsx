@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { calculateLeadScore, getSlaStatus } from "@/lib/leadScoring";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface PipelineFlowDashboardProps {
   stages: PipelineStage[];
@@ -193,11 +194,8 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
     return `${Math.round(hours / 24)}d`;
   };
 
-  const formatVGV = (value: number) => {
-    if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(1).replace(".", ",")}M`;
-    if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(0)}mil`;
-    return `R$ ${value.toLocaleString("pt-BR")}`;
-  };
+  const formatVGV = (value: number) => fmtMoney(value, "short");
+  const formatVGVExact = (value: number) => fmtMoney(value, "exact");
 
   return (
     <div className="space-y-6 overflow-y-auto max-h-full pb-8 pr-1">
@@ -347,7 +345,7 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
                       </div>
 
                       {metric.vgv > 0 && (
-                        <span className="text-[10px] text-primary font-semibold mt-1">
+                        <span className="text-[10px] text-primary font-semibold mt-1" title={formatVGVExact(metric.vgv)}>
                           {formatVGV(metric.vgv)}
                         </span>
                       )}
@@ -468,7 +466,7 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
                           <span className="text-[10px] text-red-600">🔥 {c.quentes} quentes</span>
                         )}
                         {c.vgv > 0 && (
-                          <span className="text-[10px] text-primary font-medium">{formatVGV(c.vgv)}</span>
+                          <span className="text-[10px] text-primary font-medium" title={formatVGVExact(c.vgv)}>{formatVGV(c.vgv)}</span>
                         )}
                         <span className="text-[10px] text-muted-foreground">
                           Conv: {taxaConversao}%

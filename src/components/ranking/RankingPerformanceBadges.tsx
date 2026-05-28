@@ -13,6 +13,8 @@ export interface PerformanceBadge {
   label: string;
   winner: string;
   value: string;
+  /** Optional exact-value title, shown as native tooltip on hover (used when `value` is abbreviated). */
+  valueTitle?: string;
   color: string;
   bgColor: string;
   icon: React.ElementType;
@@ -50,7 +52,7 @@ export default function RankingPerformanceBadges({ badges, currentUserId }: Prop
                 </span>
               </div>
               <p className="text-xs font-black text-foreground truncate">{firstName}</p>
-              <p className={`text-sm font-black ${badge.color}`}>{badge.value}</p>
+              <p className={`text-sm font-black ${badge.color}`} title={badge.valueTitle}>{badge.value}</p>
               <span className="absolute top-1 right-1 text-lg opacity-20">{badge.emoji}</span>
             </motion.div>
           );
@@ -111,12 +113,14 @@ export function computePerformanceBadges(
   const topVGV = [...combined].sort((a, b) => b.vgv_valor - a.vgv_valor)[0];
   if (topVGV.vgv_valor > 0) {
     const fmtValue = fmtMoney(topVGV.vgv_valor, "short");
+    const fmtExact = fmtMoney(topVGV.vgv_valor, "exact");
     badges.push({
       id: "maior_venda",
       emoji: "💰",
       label: "Maior Venda",
       winner: topVGV.nome,
       value: fmtValue,
+      valueTitle: fmtExact,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50/50 dark:bg-emerald-900/10",
       icon: DollarSign,

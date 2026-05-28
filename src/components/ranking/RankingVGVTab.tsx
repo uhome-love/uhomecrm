@@ -104,10 +104,10 @@ export default function RankingVGVTab({ period, dateRange }: { period: "hoje" | 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { icon: FileText, label: "Propostas", value: totals.propostas, color: "text-primary" },
-          { icon: DollarSign, label: "VGV Gerado", value: fmtBRL(totals.vgvGerado), color: "text-blue-600" },
-          { icon: ShoppingBag, label: "Vendas", value: totals.vendas, color: "text-emerald-600" },
-          { icon: DollarSign, label: "VGV Assinado", value: fmtBRL(totals.vgvAssinado), color: "text-emerald-600" },
+          { icon: FileText, label: "Propostas", value: totals.propostas, title: undefined as string | undefined, color: "text-primary" },
+          { icon: DollarSign, label: "VGV Gerado", value: fmtBRL(totals.vgvGerado), title: fmtMoney(totals.vgvGerado, "exact"), color: "text-blue-600" },
+          { icon: ShoppingBag, label: "Vendas", value: totals.vendas, title: undefined, color: "text-emerald-600" },
+          { icon: DollarSign, label: "VGV Assinado", value: fmtBRL(totals.vgvAssinado), title: fmtMoney(totals.vgvAssinado, "exact"), color: "text-emerald-600" },
         ].map(kpi => (
           <Card key={kpi.label}>
             <CardContent className="p-3">
@@ -115,7 +115,7 @@ export default function RankingVGVTab({ period, dateRange }: { period: "hoje" | 
                 <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
                 <span className="text-xs text-muted-foreground">{kpi.label}</span>
               </div>
-              <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
+              <p className={`text-2xl font-bold ${kpi.color}`} title={kpi.title}>{kpi.value}</p>
             </CardContent>
           </Card>
         ))}
@@ -174,9 +174,9 @@ export default function RankingVGVTab({ period, dateRange }: { period: "hoje" | 
                          </div>
                        </td>
                        <td className="py-2.5 px-3 text-center">{c.real_propostas}</td>
-                       <td className="py-2.5 px-3 text-center text-blue-600 font-medium">{fmtBRL(c.real_vgv_gerado)}</td>
+                       <td className="py-2.5 px-3 text-center text-blue-600 font-medium" title={fmtMoney(c.real_vgv_gerado, "exact")}>{fmtBRL(c.real_vgv_gerado)}</td>
                        <td className="py-2.5 px-3 text-center">{hasVenda ? "✅" : "—"}</td>
-                       <td className={`py-2.5 px-3 text-center font-bold text-lg ${hasVenda ? "text-emerald-600" : "text-muted-foreground"}`}>
+                       <td className={`py-2.5 px-3 text-center font-bold text-lg ${hasVenda ? "text-emerald-600" : "text-muted-foreground"}`} title={hasVenda ? fmtMoney(c.real_vgv_assinado, "exact") : undefined}>
                          {hasVenda ? fmtBRL(c.real_vgv_assinado) : "—"}
                        </td>
                      </tr>
