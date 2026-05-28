@@ -14,6 +14,7 @@ import {
 import { differenceInHoursSafe, formatDistanceToNowSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { getSlaStatus } from "@/lib/leadScoring";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface OpportunityRadarProps {
   leads: PipelineLead[];
