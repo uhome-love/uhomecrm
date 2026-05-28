@@ -174,9 +174,9 @@ export default function RankingVGVTab({ period, dateRange }: { period: "hoje" | 
                          </div>
                        </td>
                        <td className="py-2.5 px-3 text-center">{c.real_propostas}</td>
-                       <td className="py-2.5 px-3 text-center text-blue-600 font-medium">{fmtBRL(c.real_vgv_gerado)}</td>
+                       <td className="py-2.5 px-3 text-center text-blue-600 font-medium" title={fmtMoney(c.real_vgv_gerado, "exact")}>{fmtBRL(c.real_vgv_gerado)}</td>
                        <td className="py-2.5 px-3 text-center">{hasVenda ? "✅" : "—"}</td>
-                       <td className={`py-2.5 px-3 text-center font-bold text-lg ${hasVenda ? "text-emerald-600" : "text-muted-foreground"}`}>
+                       <td className={`py-2.5 px-3 text-center font-bold text-lg ${hasVenda ? "text-emerald-600" : "text-muted-foreground"}`} title={hasVenda ? fmtMoney(c.real_vgv_assinado, "exact") : undefined}>
                          {hasVenda ? fmtBRL(c.real_vgv_assinado) : "—"}
                        </td>
                      </tr>
