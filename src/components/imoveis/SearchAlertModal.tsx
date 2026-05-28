@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 import type { ImoveisFilters } from "@/stores/imoveisSearchStore";
 
 interface Props {
@@ -29,10 +30,7 @@ export function SearchAlertModal({ open, onClose, filters, queryIA, userId }: Pr
       parts.push(bairros.length <= 2 ? bairros.join(", ") : `${bairros[0]} +${bairros.length - 1}`);
     }
     if (filters.precoMax) {
-      const fmt = filters.precoMax >= 1_000_000
-        ? `R$ ${(filters.precoMax / 1_000_000).toFixed(1).replace(".0", "")}M`
-        : `R$ ${Math.round(filters.precoMax / 1_000)}k`;
-      parts.push(`até ${fmt}`);
+      parts.push(`até ${fmtMoney(filters.precoMax, "short")}`);
     }
     if (filters.quartos) parts.push(`${filters.quartos}+ quartos`);
     if (queryIA) parts.push(`IA: "${queryIA}"`);

@@ -4,6 +4,7 @@
  */
 
 import type { SiteImovel, MapPin, BuscaFilters } from "@/types/imoveis";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 /* ── Private helpers ── */
 
@@ -208,9 +209,7 @@ export function formatPreco(preco: number): string {
 
 export function formatPrecoCompact(preco: number): string {
   if (!preco) return "";
-  if (preco >= 1_000_000) return `R$${(preco / 1_000_000).toFixed(1).replace(".0", "")}M`;
-  if (preco >= 1_000) return `R$${Math.round(preco / 1_000)}k`;
-  return `R$${preco}`;
+  return fmtMoney(preco, "short");
 }
 
 export function siteImovelToMapPin(imovel: SiteImovel, bounds?: BuscaFilters["bounds"]): MapPin | null {

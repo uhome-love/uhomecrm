@@ -8,6 +8,7 @@ import { DollarSign, FileText, ShoppingBag, Loader2 } from "lucide-react";
 import RankingPodium, { type PodiumEntry } from "./RankingPodium";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 const medals = ["👑", "🥈", "🥉"];
 
@@ -15,11 +16,7 @@ function getInitials(nome: string) {
   return nome.split(" ").map(n => n[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 }
 
-function fmtBRL(v: number) {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
-  return `R$ ${v.toLocaleString("pt-BR")}`;
-}
+const fmtBRL = (v: number) => fmtMoney(v, "short");
 
 const periodMap: Record<string, CeoPeriod> = { hoje: "dia", semana: "semana", mes: "mes" };
 

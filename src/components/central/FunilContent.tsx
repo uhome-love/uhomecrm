@@ -14,10 +14,12 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, sub
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
 import { formatBRLCompact } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
+void formatBRLCompact; // kept for M5 cleanup
 
 type PeriodoTipo = "semanal" | "mensal";
 
-const fmtCurrency = formatBRLCompact;
+const fmtCurrency = (v: number) => fmtMoney(v, "short");
 function fmtPct(v: number) {
   if (!isFinite(v) || isNaN(v)) return "—";
   return `${v.toFixed(1)}%`;

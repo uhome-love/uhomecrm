@@ -25,7 +25,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
 import { resolveFormName } from "@/lib/metaFormIdMap";
 
-const formatCurrency = formatBRLCompact; // KPI cards / inline text (Categoria B — short, M3)
+const formatCurrency = (v: number) => fmtMoney(v, "short"); // KPI cards / inline text (Categoria B — short)
 const formatVgvExact = (v: number) => fmtMoney(v, "exact"); // Categoria A — exato
 const formatCurrencyFull = (v: number) => fmtMoney(v, "exact", { decimals: 2 }); // comissões
 

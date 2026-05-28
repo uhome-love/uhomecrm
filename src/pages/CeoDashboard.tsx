@@ -24,7 +24,10 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
 import BulkEmpreendimentoAssign from "@/components/ceo/BulkEmpreendimentoAssign";
-import { formatBRLCompact } from "@/lib/utils";
+import { formatBRLCompact as _formatBRLCompactLegacy } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
+void _formatBRLCompactLegacy; // M5 cleanup
+const formatBRLCompact = (v: number) => fmtMoney(v, "short");
 import { CeoDashboardSkeleton } from "@/components/ui/skeleton-dashboard";
 import KpiDetailDialog, { type KpiDetailType } from "@/components/ceo/KpiDetailDialog";
 

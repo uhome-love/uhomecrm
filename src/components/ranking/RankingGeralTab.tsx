@@ -27,6 +27,7 @@ import RankingPodium, { type PodiumEntry } from "./RankingPodium";
 import RankingPositionCard from "./RankingPositionCard";
 import RankingPerformanceBadges, { computePerformanceBadges } from "./RankingPerformanceBadges";
 import { motion } from "framer-motion";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 const periodMap: Record<string, string> = { hoje: "dia", semana: "semana", mes: "mes", trimestre: "mes", personalizado: "mes" };
 
@@ -278,7 +279,7 @@ export default function RankingGeralTab({ period, dateRange }: { period: "hoje" 
       tips.push({ text: "Fechar 1 venda", icon: DollarSign });
     } else if (above.vgv_valor > myEntry.vgv_valor) {
       const diff = above.vgv_valor - myEntry.vgv_valor;
-      const fmtDiff = diff >= 1_000_000 ? `R$${(diff / 1_000_000).toFixed(1)}M` : `R$${(diff / 1_000).toFixed(0)}k`;
+      const fmtDiff = fmtMoney(diff, "short");
       tips.push({ text: `+${fmtDiff} em VGV`, icon: DollarSign });
     }
     if (above.visitas > myEntry.visitas) {
@@ -462,7 +463,7 @@ export default function RankingGeralTab({ period, dateRange }: { period: "hoje" 
                     <td className="py-2.5 px-2 text-center">
                       <div className={`inline-flex flex-col items-center px-1.5 py-0.5 rounded-md ${getScoreBg(c.vgv_norm)}`}>
                         <span className={`text-xs font-bold ${getScoreColor(c.vgv_norm)}`}>
-                          {c.vgv_valor >= 1_000_000 ? `${(c.vgv_valor / 1_000_000).toFixed(1)}M` : c.vgv_valor >= 1_000 ? `${(c.vgv_valor / 1_000).toFixed(0)}k` : c.vgv_valor || "—"}
+                          {c.vgv_valor ? fmtMoney(c.vgv_valor, "short", { hideSymbol: true }) : "—"}
                         </span>
                         <span className="text-[9px] text-muted-foreground">#{c.vgv_rank}</span>
                       </div>

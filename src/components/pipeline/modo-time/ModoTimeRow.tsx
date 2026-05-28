@@ -4,6 +4,7 @@
  * Click na linha → callback que filtra o Kanban pelo corretor e troca a aba.
  */
 import { type TimeAgregadoRow } from "@/hooks/useTimeAgregado";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface Props {
   row: TimeAgregadoRow;
@@ -12,9 +13,7 @@ interface Props {
 
 function formatVgv(v: number): string {
   if (!v) return "—";
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (v >= 1_000) return `R$ ${Math.round(v / 1_000)}k`;
-  return `R$ ${v.toFixed(0)}`;
+  return fmtMoney(v, "short");
 }
 
 function formatPct(v: number | null): string {

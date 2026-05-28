@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusBadge } from "./StatusBadge";
 import { cn } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 import type { CorretorRowV3 } from "@/hooks/useDashboardGerenteV3";
 
 interface Props {
@@ -8,12 +9,7 @@ interface Props {
   onRowClick?: (row: CorretorRowV3) => void;
 }
 
-function fmtBRL(v: number) {
-  if (!v) return "R$ 0";
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(2).replace(".", ",")}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}K`;
-  return `R$ ${v.toFixed(0)}`;
-}
+const fmtBRL = (v: number) => fmtMoney(v, "short");
 
 export function TeamPerformanceTable({ rows, onRowClick }: Props) {
   if (!rows.length) {

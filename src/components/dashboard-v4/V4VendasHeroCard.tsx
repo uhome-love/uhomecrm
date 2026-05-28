@@ -1,5 +1,6 @@
 import { TrendingDown, TrendingUp, Minus, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface Props {
   vgv: number;
@@ -8,11 +9,7 @@ interface Props {
   deltaPct: number | null;
 }
 
-function formatVgv(v: number): string {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
-  return `R$ ${v.toLocaleString("pt-BR")}`;
-}
+const formatVgv = (v: number) => fmtMoney(v, "short");
 
 export function V4VendasHeroCard({ vgv, count, meta, deltaPct }: Props) {
   const pct = meta > 0 ? Math.min(100, (vgv / meta) * 100) : null;
