@@ -157,10 +157,6 @@ export function getNumIncZero(item: any, ...keys: string[]): number | null {
   return null;
 }
 
-export const fmtBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-
-export const fmtCompact = (v: number) => {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".0", "")}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}mil`;
-  return fmtBRL(v);
-};
+// Money formatters removed (M5 cleanup). Use `fmtMoney` from `@/lib/fmtMoney`:
+//   fmtMoney(v, "exact") replaces former fmtBRL
+//   fmtMoney(v, "short") replaces former fmtCompact
