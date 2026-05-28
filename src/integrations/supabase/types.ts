@@ -10739,6 +10739,10 @@ export type Database = {
         }[]
       }
       get_profile_id_for_auth: { Args: never; Returns: string }
+      get_ranking_central: {
+        Args: { p_end: string; p_gestor_id: string; p_start: string }
+        Returns: Json
+      }
       get_ranking_gestao_leads: {
         Args: { p_end?: string; p_periodo?: string; p_start?: string }
         Returns: {
@@ -10764,6 +10768,56 @@ export type Database = {
           visitas_marcadas: number
           visitas_realizadas: number
         }[]
+      }
+      get_relatorio_negocios: {
+        Args: {
+          p_end: string
+          p_gestor_id: string
+          p_prev_end?: string
+          p_prev_start?: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      get_relatorio_oferta_ativa: {
+        Args: {
+          p_end: string
+          p_gestor_id: string
+          p_prev_end?: string
+          p_prev_start?: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      get_relatorio_pipeline_leads: {
+        Args: {
+          p_end: string
+          p_gestor_id: string
+          p_prev_end?: string
+          p_prev_start?: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      get_relatorio_vendas: {
+        Args: {
+          p_end: string
+          p_gestor_id: string
+          p_prev_end?: string
+          p_prev_start?: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      get_relatorio_visitas: {
+        Args: {
+          p_end: string
+          p_gestor_id: string
+          p_prev_end?: string
+          p_prev_start?: string
+          p_start: string
+        }
+        Returns: Json
       }
       get_team_contacts: {
         Args: { _user_ids: string[] }
