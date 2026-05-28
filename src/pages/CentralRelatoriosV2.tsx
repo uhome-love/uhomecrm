@@ -1,12 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useToast } from "@/hooks/use-toast";
 import { CentralHeader } from "@/components/central-v2/CentralHeader";
 import { CentralSidebar } from "@/components/central-v2/CentralSidebar";
 import { CentralFilters } from "@/components/central-v2/CentralFilters";
 import { EmptyStateView } from "@/components/central-v2/EmptyStateView";
+import { GeralView } from "@/components/central-v2/GeralView";
 import { useCentralUrlState } from "@/components/central-v2/useCentralUrlState";
 import { DEFAULT_SECTION, isCentralSection, type CentralSectionId } from "@/components/central-v2/sections";
+import { exportGeral } from "@/lib/centralPdf";
+
+const PERIODO_LABELS: Record<string, string> = {
+  hoje: "Hoje",
+  semana: "Semana atual",
+  mes: "Mês atual",
+  trimestre: "Trimestre atual",
+  custom: "Período personalizado",
+};
 
 /**
  * Mapeia o parâmetro legado ?visao= para a nova seção.
@@ -23,8 +34,6 @@ export default function CentralRelatoriosV2() {
   const [params, setParams] = useSearchParams();
   const visao = params.get("visao");
 
-  // Normalização do legado: roda em useEffect para evitar setState no render.
-  // Calcula em useMemo a decisão; o useEffect aplica.
   const legacyDecision = useMemo(() => normalizeLegacyVisao(visao), [visao]);
 
   useEffect(() => {
@@ -50,11 +59,45 @@ export default function CentralRelatoriosV2() {
 function CentralRelatoriosV2Inner() {
   const { state, update } = useCentralUrlState();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
 
   const handleSelect = (id: CentralSectionId) => {
     update({ secao: id });
     setMobileOpen(false);
   };
+
+  // Listener do botão "Exportar PDF" do header.
+  useEffect(() => {
+    const handler = async (e: Event) => {
+      const detail = (e as CustomEvent<{ secao?: CentralSectionId }>).detail;
+      if (detail?.secao !== "geral") {
+        toast({
+          title: "Exportação indisponível",
+          description: "PDF disponível apenas na visão Geral neste momento.",
+        });
+        return;
+      }
+      try {
+        setIsExporting(true);
+        await exportGeral({
+          periodoLabel: PERIODO_LABELS[state.periodo] ?? state.periodo,
+          equipeLabel: state.equipe ? "Equipe selecionada" : "Todas as equipes",
+        });
+      } catch (err) {
+        console.error("[CentralRelatoriosV2] export error", err);
+        toast({
+          title: "Falha ao gerar PDF",
+          description: "Tente novamente em alguns instantes.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsExporting(false);
+      }
+    };
+    window.addEventListener("central:export-pdf", handler);
+    return () => window.removeEventListener("central:export-pdf", handler);
+  }, [state.periodo, state.equipe, toast]);
 
   return (
     <div className="min-h-full bg-background">
@@ -77,9 +120,21 @@ function CentralRelatoriosV2Inner() {
 
         <main className="flex flex-col gap-4 p-4 sm:p-6">
           <CentralFilters state={state} onChange={update} />
-          <EmptyStateView secao={state.secao} />
+          {state.secao === "geral" ? (
+            <GeralView state={state} />
+          ) : (
+            <EmptyStateView secao={state.secao} />
+          )}
         </main>
       </div>
+
+      {isExporting && (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+          <div className="central-card pointer-events-auto px-5 py-3 text-sm text-foreground">
+            Gerando PDF…
+          </div>
+        </div>
+      )}
     </div>
   );
 }
