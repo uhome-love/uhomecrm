@@ -113,12 +113,14 @@ export function computePerformanceBadges(
   const topVGV = [...combined].sort((a, b) => b.vgv_valor - a.vgv_valor)[0];
   if (topVGV.vgv_valor > 0) {
     const fmtValue = fmtMoney(topVGV.vgv_valor, "short");
+    const fmtExact = fmtMoney(topVGV.vgv_valor, "exact");
     badges.push({
       id: "maior_venda",
       emoji: "💰",
       label: "Maior Venda",
       winner: topVGV.nome,
       value: fmtValue,
+      valueTitle: fmtExact,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50/50 dark:bg-emerald-900/10",
       icon: DollarSign,
