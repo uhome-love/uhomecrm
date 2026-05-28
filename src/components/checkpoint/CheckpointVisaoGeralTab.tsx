@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { format, subDays, addDays, differenceInDays } from "date-fns";
 import { cn, formatBRLCompact } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
+void formatBRLCompact; // kept for M5 cleanup
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -37,7 +39,7 @@ const NEGOCIO_FASES = [
   { key: "assinado", label: "Assinado", color: "bg-emerald-500" },
 ];
 
-const fmtCurrency = formatBRLCompact;
+const fmtCurrency = (v: number) => fmtMoney(v, "short");
 
 interface Alert {
   id: string;

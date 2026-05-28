@@ -1,5 +1,5 @@
 import { Target, FileText, ShoppingCart, DollarSign } from "lucide-react";
-import { formatBRLCompact } from "@/lib/utils";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface Props {
   visitas: number;
@@ -8,7 +8,7 @@ interface Props {
   vgv: number;
 }
 
-const fmtCurrency = formatBRLCompact;
+const fmtCurrency = (v: number) => fmtMoney(v, "short");
 
 const cards = (p: Props) => [
   { label: "Visitas Realizadas", value: String(p.visitas), icon: Target, color: "text-primary" },
