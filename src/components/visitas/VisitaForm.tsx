@@ -776,9 +776,21 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
           </div>
 
           {/* Submit */}
+          {mode === "create" && !UUID_REGEX.test(form.pipeline_lead_id) && form.nome_cliente.trim() && (
+            <p className="text-[11px] text-amber-600 -mb-2">
+              Selecione um lead da lista acima para continuar.
+            </p>
+          )}
           <Button
             className="w-full gap-2 h-10 text-sm font-semibold"
-            disabled={!form.nome_cliente.trim() || !form.data_visita || submitting || (isParceria && !parceiroId)}
+            disabled={
+              !form.nome_cliente.trim() ||
+              !form.data_visita ||
+              !form.responsavel_visita ||
+              (mode === "create" && !UUID_REGEX.test(form.pipeline_lead_id)) ||
+              submitting ||
+              (isParceria && !parceiroId)
+            }
             onClick={handleSubmit}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
