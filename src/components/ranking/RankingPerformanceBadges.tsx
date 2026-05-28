@@ -52,7 +52,7 @@ export default function RankingPerformanceBadges({ badges, currentUserId }: Prop
                 </span>
               </div>
               <p className="text-xs font-black text-foreground truncate">{firstName}</p>
-              <p className={`text-sm font-black ${badge.color}`}>{badge.value}</p>
+              <p className={`text-sm font-black ${badge.color}`} title={badge.valueTitle}>{badge.value}</p>
               <span className="absolute top-1 right-1 text-lg opacity-20">{badge.emoji}</span>
             </motion.div>
           );
