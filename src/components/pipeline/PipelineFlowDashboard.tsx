@@ -194,11 +194,8 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
     return `${Math.round(hours / 24)}d`;
   };
 
-  const formatVGV = (value: number) => {
-    if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(1).replace(".", ",")}M`;
-    if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(0)}mil`;
-    return `R$ ${value.toLocaleString("pt-BR")}`;
-  };
+  const formatVGV = (value: number) => fmtMoney(value, "short");
+  const formatVGVExact = (value: number) => fmtMoney(value, "exact");
 
   return (
     <div className="space-y-6 overflow-y-auto max-h-full pb-8 pr-1">
