@@ -36,6 +36,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import LeadMatchesWidget from "./LeadMatchesWidget";
 import RadarFullscreenModal from "./radar/RadarFullscreenModal";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 /* ═══════════════════════════════════════════
    TYPES
