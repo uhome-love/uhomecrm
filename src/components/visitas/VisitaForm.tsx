@@ -651,7 +651,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
             <Label className="text-xs font-semibold mb-1 block">Responsável pela Visita</Label>
             <Select value={form.responsavel_visita} onValueChange={v => set("responsavel_visita", v)}>
               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Quem acompanha a visita?" /></SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" className="z-[60] max-h-[40vh]">
                 {RESPONSAVEL_OPTIONS.map(o => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
