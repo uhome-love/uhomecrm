@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { format, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, addMonths, isSameWeek, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
