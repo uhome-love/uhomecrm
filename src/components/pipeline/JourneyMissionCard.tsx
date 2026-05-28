@@ -3,6 +3,7 @@ import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { differenceInDays } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import LeadFlagBadges from "./LeadFlagBadges";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface PhaseTheme {
   name: string;
@@ -53,11 +54,8 @@ const JourneyMissionCard = memo(function JourneyMissionCard({
     return { text: `🔥 ${daysInStage}d — atenção!`, color: "#F87171" };
   }, [daysInStage]);
 
-  const formatVGV = (v: number) => {
-    if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-    if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}mil`;
-    return `R$ ${v.toLocaleString("pt-BR")}`;
-  };
+  const formatVGV = (v: number) => fmtMoney(v, "short");
+
 
   return (
     <TooltipProvider delayDuration={300}>
