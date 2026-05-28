@@ -13,6 +13,8 @@ export interface PerformanceBadge {
   label: string;
   winner: string;
   value: string;
+  /** Optional exact-value title, shown as native tooltip on hover (used when `value` is abbreviated). */
+  valueTitle?: string;
   color: string;
   bgColor: string;
   icon: React.ElementType;
