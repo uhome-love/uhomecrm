@@ -17,6 +17,8 @@ import { formatBRLCompact } from "@/lib/utils";
 import { fmtMoney } from "@/lib/fmtMoney";
 void formatBRLCompact; // kept for M5 cleanup
 
+type PeriodoTipo = "semanal" | "mensal";
+
 const fmtCurrency = (v: number) => fmtMoney(v, "short");
 function fmtPct(v: number) {
   if (!isFinite(v) || isNaN(v)) return "—";
