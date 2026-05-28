@@ -34,8 +34,10 @@ import { cn } from "@/lib/utils";
 import {
   getPropertyPreviewImages, getPropertyThumbImages, getPropertyFullscreenImages,
   extractOrigemExterna, extractEntrega, extractEndereco,
-  getNum, getNumIncZero, fmtBRL,
+  getNum, getNumIncZero,
 } from "@/lib/imovelHelpers";
+import { fmtMoney } from "@/lib/fmtMoney";
+const fmtBRL = (v: number) => fmtMoney(v, "exact");
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
