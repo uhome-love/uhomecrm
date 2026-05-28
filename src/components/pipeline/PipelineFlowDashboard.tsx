@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { calculateLeadScore, getSlaStatus } from "@/lib/leadScoring";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 interface PipelineFlowDashboardProps {
   stages: PipelineStage[];
