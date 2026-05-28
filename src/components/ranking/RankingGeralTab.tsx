@@ -27,6 +27,7 @@ import RankingPodium, { type PodiumEntry } from "./RankingPodium";
 import RankingPositionCard from "./RankingPositionCard";
 import RankingPerformanceBadges, { computePerformanceBadges } from "./RankingPerformanceBadges";
 import { motion } from "framer-motion";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 const periodMap: Record<string, string> = { hoje: "dia", semana: "semana", mes: "mes", trimestre: "mes", personalizado: "mes" };
 
