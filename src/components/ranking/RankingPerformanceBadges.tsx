@@ -5,6 +5,7 @@
 
 import { motion } from "framer-motion";
 import { Award, Crown, Phone, Eye, TrendingUp, DollarSign, Zap, Target } from "lucide-react";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 export interface PerformanceBadge {
   id: string;
@@ -109,11 +110,7 @@ export function computePerformanceBadges(
   // Maior Venda
   const topVGV = [...combined].sort((a, b) => b.vgv_valor - a.vgv_valor)[0];
   if (topVGV.vgv_valor > 0) {
-    const fmtValue = topVGV.vgv_valor >= 1_000_000
-      ? `R$ ${(topVGV.vgv_valor / 1_000_000).toFixed(1)}M`
-      : topVGV.vgv_valor >= 1_000
-      ? `R$ ${(topVGV.vgv_valor / 1_000).toFixed(0)}k`
-      : `R$ ${topVGV.vgv_valor}`;
+    const fmtValue = fmtMoney(topVGV.vgv_valor, "short");
     badges.push({
       id: "maior_venda",
       emoji: "💰",

@@ -35,6 +35,7 @@ import {
   siteImovelToMapPin,
   formatPreco, CIDADES_PERMITIDAS, PROPERTY_TYPES,
 } from "@/utils/imoveisFormat";
+import { fmtMoney } from "@/lib/fmtMoney";
 import {
   fetchSiteImoveisRemote as fetchSiteImoveis,
   fetchMapPinsRemote as fetchMapPins,
@@ -84,7 +85,7 @@ const sortLabels: Record<string, string> = {
 const quartoOptions = [1, 2, 3, 4];
 
 function fmtPrecoLabel(min: number, max: number): string {
-  const fmt = (v: number) => v >= 1000000 ? `${(v / 1000000).toFixed(v % 1000000 === 0 ? 0 : 1)}M` : `${(v / 1000).toFixed(0)}k`;
+  const fmt = (v: number) => fmtMoney(v, "short", { hideSymbol: true });
   if (min && max) return `R$ ${fmt(min)} – ${fmt(max)}`;
   if (min) return `A partir de R$ ${fmt(min)}`;
   if (max) return `Até R$ ${fmt(max)}`;
