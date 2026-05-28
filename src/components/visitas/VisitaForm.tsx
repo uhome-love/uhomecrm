@@ -609,7 +609,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
                 )}
 
                 {/* Empreendimento combobox as fallback for empreendimentos da carteira */}
-                {!imovelSearch && !selectedImovel && (
+                {!imovelSearch && !selectedImovel && !form.empreendimento && (
                   <div className="mt-1">
                     <p className="text-[10px] text-muted-foreground mb-1">Ou selecione um empreendimento da carteira:</p>
                     <EmpreendimentoCombobox
@@ -619,6 +619,15 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
                       placeholder="Selecione ou digite o empreendimento"
                     />
                   </div>
+                )}
+                {!imovelSearch && !selectedImovel && form.empreendimento && (
+                  <button
+                    type="button"
+                    onClick={() => set("empreendimento", "")}
+                    className="text-[10px] text-destructive hover:underline mt-1"
+                  >
+                    Limpar imóvel
+                  </button>
                 )}
               </div>
             )}
