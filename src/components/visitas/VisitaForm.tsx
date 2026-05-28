@@ -424,7 +424,11 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
                     {[selectedLead.empreendimento, stageName(selectedLead.stage_id), selectedLead.telefone].filter(Boolean).join(" · ")}
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-destructive" onClick={() => set("pipeline_lead_id", "")}>
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-destructive" onClick={() => {
+                  setForm(f => ({ ...f, pipeline_lead_id: "", nome_cliente: "", telefone: "", empreendimento: "" }));
+                  setFormErrors({});
+                  setSearchPipeline("");
+                }}>
                   Trocar
                 </Button>
               </div>
