@@ -665,7 +665,7 @@ export default function VisitaForm({ open, onClose, onSubmit, onDelete, initialD
               <Label className="text-xs font-semibold mb-1 block">Corretor</Label>
               <Select value={form.corretor_id} onValueChange={v => set("corretor_id", v)}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione o corretor" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" className="z-[60] max-h-[40vh]">
                   {parceiroGroups.length > 1 ? (
                     parceiroGroups.map(([equipe, members]) => (
                       <SelectGroup key={equipe}>
