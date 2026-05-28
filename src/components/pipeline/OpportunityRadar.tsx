@@ -157,11 +157,7 @@ export default function OpportunityRadar({ leads, stages, corretorNomes, onSelec
 
   const toggleSection = (key: string) => setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
 
-  const formatVGV = (v: number) => {
-    if (v === 0) return "R$ 0";
-    if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-    return `R$ ${(v / 1_000).toFixed(0)}mil`;
-  };
+  const formatVGV = (v: number) => fmtMoney(v, "short");
 
   const formatSla = (mins: number) => {
     if (mins <= 0) return "Estourado";
