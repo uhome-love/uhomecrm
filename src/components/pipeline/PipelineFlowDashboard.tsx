@@ -466,7 +466,7 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
                           <span className="text-[10px] text-red-600">🔥 {c.quentes} quentes</span>
                         )}
                         {c.vgv > 0 && (
-                          <span className="text-[10px] text-primary font-medium">{formatVGV(c.vgv)}</span>
+                          <span className="text-[10px] text-primary font-medium" title={formatVGVExact(c.vgv)}>{formatVGV(c.vgv)}</span>
                         )}
                         <span className="text-[10px] text-muted-foreground">
                           Conv: {taxaConversao}%
