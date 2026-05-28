@@ -173,7 +173,7 @@ export default function CeoDashboard() {
   // Fila CEO
   const loadFilaCeo = useCallback(async () => {
     const [countRes, logRes] = await Promise.all([
-      supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).eq("aceite_status", "pendente_distribuicao").is("corretor_id", null),
+      supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).eq("aceite_status", "pendente_distribuicao").is("corretor_id", null).eq("arquivado", false),
       supabase.from("audit_log").select("created_at, depois").eq("acao", "dispatch_fila_ceo").order("created_at", { ascending: false }).limit(1),
     ]);
     setFilaCeoCount(countRes.count || 0);
