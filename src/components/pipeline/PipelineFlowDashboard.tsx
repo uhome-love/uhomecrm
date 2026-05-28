@@ -345,7 +345,7 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
                       </div>
 
                       {metric.vgv > 0 && (
-                        <span className="text-[10px] text-primary font-semibold mt-1">
+                        <span className="text-[10px] text-primary font-semibold mt-1" title={formatVGVExact(metric.vgv)}>
                           {formatVGV(metric.vgv)}
                         </span>
                       )}
