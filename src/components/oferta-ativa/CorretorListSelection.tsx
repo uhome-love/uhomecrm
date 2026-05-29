@@ -308,7 +308,6 @@ export default function CorretorListSelection() {
     setCollapsed(prev => {
       const next = new Set(prev);
       if (next.has(segId)) next.delete(segId); else next.add(segId);
-      try { localStorage.setItem(COLLAPSED_STORAGE_KEY, JSON.stringify([...next])); } catch {}
       return next;
     });
   }, []);
