@@ -82,22 +82,31 @@ export function CentralFilters({ state, onChange }: Props) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        {isAdmin && (
-          <SelectStub
-            label="Equipe"
-            value={state.equipe ?? ""}
-            placeholder="Todas as equipes"
-            onChange={(v) => onChange({ equipe: v || undefined })}
-          />
-        )}
-        <SelectStub
-          label="Corretor"
-          value={state.corretor ?? ""}
-          placeholder="Todos os corretores"
-          onChange={(v) => onChange({ corretor: v || undefined })}
-        />
-      </div>
+      {isAdmin && (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Equipe</span>
+            <Select
+              value={state.equipe ?? ALL_EQUIPES}
+              onValueChange={(v) =>
+                onChange({ equipe: v === ALL_EQUIPES ? undefined : v })
+              }
+            >
+              <SelectTrigger className="h-9 w-[220px]">
+                <SelectValue placeholder="Todas as equipes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_EQUIPES}>Todas as equipes</SelectItem>
+                {equipes.map((eq) => (
+                  <SelectItem key={eq.id} value={eq.id}>
+                    {eq.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
