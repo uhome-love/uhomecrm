@@ -304,7 +304,6 @@
   .surface-raised  { background: hsl(var(--card)); box-shadow: var(--shadow-md); }
 
   /* ── Central Relatórios v2 ── */
-  .font-central-display { font-family: var(--font-focus-display); }
   .central-card { @apply rounded-[14px] border border-border bg-card shadow-sm; }
 
 
