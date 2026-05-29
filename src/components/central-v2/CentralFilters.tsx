@@ -5,8 +5,18 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useEquipesDisponiveis } from "@/hooks/useEquipesDisponiveis";
 import type { CentralPeriodo, CentralUrlState } from "./useCentralUrlState";
+
+const ALL_EQUIPES = "__all__";
 
 interface Props {
   state: CentralUrlState;
