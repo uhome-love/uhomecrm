@@ -53,7 +53,7 @@ function playWhoosh() {
 export default function CorretorCall() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { progress, goals, isLoading: progressLoading } = useCorretorProgress();
+  const { progress, goals, metaConfirmadaHoje, saveGoals, refetchGoals, isLoading: progressLoading } = useCorretorProgress();
   const { isGestor, isAdmin } = useUserRole();
   const [phase, setPhase] = useState<CallPhase>("warmup");
   const [nome, setNome] = useState("");
