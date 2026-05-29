@@ -47,12 +47,12 @@ export interface CorretorProgress {
 
 export function useCorretorProgress() {
   const { stats, isLoading: statsLoading, applyOptimisticUpdate } = useCorretorDailyStats();
-  const { goals, isLoading: goalsLoading, saveGoals, refetch: refetchGoals } = useCorretorDailyGoals();
+  const { goals, metaEfetiva, metaConfirmadaHoje, isLoading: goalsLoading, saveGoals, refetch: refetchGoals } = useCorretorDailyGoals();
 
-  // === Targets — single computation ===
-  const metaLigacoes = goals?.meta_ligacoes || 30;
-  const metaAproveitados = goals?.meta_aproveitados || 5;
-  const metaVisitas = goals?.meta_visitas_marcadas || 3;
+  // === Targets — meta efetiva (hoje > ontem display-only > defaults 30/5/3) ===
+  const metaLigacoes = metaEfetiva.meta_ligacoes;
+  const metaAproveitados = metaEfetiva.meta_aproveitados;
+  const metaVisitas = metaEfetiva.meta_visitas_marcadas;
 
   // === Progress % ===
   const progLigacoes = Math.min(100, Math.round((stats.tentativas / metaLigacoes) * 100));
