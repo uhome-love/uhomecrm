@@ -148,7 +148,7 @@ async function fetchRpc(
 // ─────────────────────────────────────────────────────────────────
 export interface UseRelatoriosCentralResult {
   range: CentralRange;
-  gestorId: string | null;
+  gestorId: string | null | undefined;
   pipelineLeads: UseQueryResult<Record<string, unknown>>;
   ofertaAtiva: UseQueryResult<Record<string, unknown>>;
   visitas: UseQueryResult<Record<string, unknown>>;
