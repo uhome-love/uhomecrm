@@ -296,12 +296,10 @@ export default function CorretorListSelection() {
   const [viewMode, setViewMode] = useState<ViewMode>("produto");
   const [showExhausted, setShowExhausted] = useState(false);
   const [higienizarTarget, setHigienizarTarget] = useState<{ lista: { id: string; nome: string } | null; ids?: string[] } | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem(COLLAPSED_STORAGE_KEY);
-      return new Set(raw ? JSON.parse(raw) : []);
-    } catch { return new Set(); }
-  });
+  // Default: todos os segmentos começam COLAPSADOS a cada sessão.
+  // Persistência da escolha não é necessária (toda sessão começa fechado).
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const collapseInitRef = useRef(false);
   const { lists: savedLists, isLoading: savedLoading, markUsed, deleteList } = useCustomLists();
   const { setOpen, open } = useSidebar();
   const prevOpenRef = useRef(open);
