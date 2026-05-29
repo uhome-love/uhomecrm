@@ -284,7 +284,7 @@ function SavedListRow({ list, onStart, onDelete }: { list: CustomList; onStart: 
 
 type ViewMode = "produto" | "listas" | "personalizadas";
 
-const COLLAPSED_STORAGE_KEY = "oa-segmentos-colapsados";
+
 
 export default function CorretorListSelection() {
   const { listas, isLoading } = useOAListas();
