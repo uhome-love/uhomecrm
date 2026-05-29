@@ -63,9 +63,6 @@ export default function CorretorCall() {
   const [activeTab, setActiveTab] = useState("call");
   const [hasInteracted, setHasInteracted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [activeTab, setActiveTab] = useState("call");
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
   // Edição inline da meta diária
   const [editingMeta, setEditingMeta] = useState<null | "lig" | "aprv" | "vis">(null);
   const [metaDraft, setMetaDraft] = useState("");
