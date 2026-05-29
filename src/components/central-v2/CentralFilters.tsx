@@ -151,30 +151,3 @@ function DateField({
   );
 }
 
-// Placeholder de select — RPCs de equipe/corretor entram no Prompt 6.
-function SelectStub({
-  label,
-  value,
-  placeholder,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <input
-        type="text"
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-[200px] rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        disabled
-        aria-label={`${label} (em construção)`}
-      />
-    </div>
-  );
-}
