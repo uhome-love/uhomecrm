@@ -243,10 +243,10 @@ export function useRelatorioIndividual(
 ) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
-  const gestorId = !user?.id
+  const gestorId: string | null | undefined = !user?.id
     ? null
     : isAdmin
-      ? filters.equipe || user.id
+      ? filters.equipe ?? undefined
       : user.id;
   const range = resolvePeriodo(filters.periodo, filters.de, filters.ate);
 
@@ -259,9 +259,9 @@ export function useRelatorioIndividual(
   };
 
   return useQuery({
-    queryKey: ["central", secao, gestorId, range.start, range.end],
-    queryFn: () => fetchRpc(rpcMap[secao], gestorId as string, range),
-    enabled: !!gestorId,
+    queryKey: ["central", secao, gestorId ?? "ALL", range.start, range.end],
+    queryFn: () => fetchRpc(rpcMap[secao], gestorId ?? undefined, range),
+    enabled: gestorId !== null,
     staleTime: STALE_MS,
     gcTime: GC_MS,
     retry: 1,
