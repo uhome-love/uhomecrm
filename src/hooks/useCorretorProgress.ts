@@ -102,6 +102,7 @@ export function useCorretorProgress() {
   return {
     progress,
     goals,
+    metaConfirmadaHoje,
     isLoading: statsLoading || goalsLoading,
     saveGoals,
     refetchGoals,
