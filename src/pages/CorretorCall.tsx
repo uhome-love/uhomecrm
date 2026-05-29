@@ -140,15 +140,19 @@ export default function CorretorCall() {
       const belowId = myPos === 1 && sorted.length > 1 ? sorted[1]?.[0] : null;
       const abovePts = aboveId ? points[aboveId] : 0;
 
+      // Busca nomes dos rivais em UMA query (acima + abaixo)
       let aboveName = "";
-      if (aboveId) {
-        const { data: profile } = await (supabase.from("profiles").select("nome") as any).eq("user_id", aboveId).single();
-        aboveName = profile?.nome?.split(" ")[0] || "Líder";
-      }
       let belowName = "";
-      if (belowId) {
-        const { data: profile } = await (supabase.from("profiles").select("nome") as any).eq("user_id", belowId).single();
-        belowName = profile?.nome?.split(" ")[0] || "#2";
+      const rivalIds = [aboveId, belowId].filter(Boolean) as string[];
+      if (rivalIds.length > 0) {
+        const { data: rivals } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", rivalIds);
+        const nameOf = (id: string | null) =>
+          rivals?.find((r) => r.user_id === id)?.nome?.split(" ")[0];
+        if (aboveId) aboveName = nameOf(aboveId) || "Líder";
+        if (belowId) belowName = nameOf(belowId) || "#2";
       }
 
       // Count leads available — corretor-specific: only from lists they have access to
