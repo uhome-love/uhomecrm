@@ -69,7 +69,7 @@ function BigCard({
       {loading ? (
         <Skeleton className="mt-2 h-9 w-32" />
       ) : (
-        <div className="mt-1 font-central-display text-3xl text-foreground sm:text-4xl">
+        <div className="mt-1 font-display text-3xl text-foreground sm:text-4xl">
           {error ? "—" : (value ?? "—")}
         </div>
       )}

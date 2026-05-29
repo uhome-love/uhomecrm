@@ -33,7 +33,7 @@ export function SectionVisitas({ query }: Props) {
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-2 border-b border-border pb-2">
         <MapPin className="h-5 w-5 text-primary" strokeWidth={1.75} />
-        <h2 className="font-central-display text-xl text-foreground">Visitas</h2>
+        <h2 className="font-display text-xl text-foreground">Visitas</h2>
       </div>
 
       {query.error ? (

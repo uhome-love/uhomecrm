@@ -29,7 +29,7 @@ export function SectionVendas({ query }: Props) {
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-2 border-b border-border pb-2">
         <TrendingUp className="h-5 w-5 text-primary" strokeWidth={1.75} />
-        <h2 className="font-central-display text-xl text-foreground">Vendas</h2>
+        <h2 className="font-display text-xl text-foreground">Vendas</h2>
       </div>
 
       {query.error ? (
