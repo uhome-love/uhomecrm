@@ -37,6 +37,10 @@ export function invalidateTaskQueries(qc: QueryClient, leadId?: string | null) {
   qc.invalidateQueries({ queryKey: ["corretor-tarefas-hoje"], ...critical });
   qc.invalidateQueries({ queryKey: ["pipeline-tarefas-map"], ...critical });
   qc.invalidateQueries({ queryKey: ["pipeline-tarefas-map-mobile"], ...critical });
+  // Mapa de "próxima tarefa" que pinta o status (🔴 atrasado / 🟢 em dia) dos
+  // cards do Kanban (src/pages/PipelineKanban.tsx). Sem este invalidate o card
+  // continua vermelho após concluir/editar a tarefa no Lead Detail até dar F5.
+  qc.invalidateQueries({ queryKey: ["pipeline-kanban-tarefas"], ...critical });
   qc.invalidateQueries({ queryKey: ["owned-lead-task-map"] });
   // Banner "Leads sem tarefa" no CorretorDashboard — staleTime 60s mascarava
   // criação/conclusão recente de tarefa. Sem refetchType:'all' porque só o
