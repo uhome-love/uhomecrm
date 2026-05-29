@@ -33,6 +33,7 @@ const PILLS: Array<{ id: CentralPeriodo; label: string }> = [
 
 export function CentralFilters({ state, onChange }: Props) {
   const { isAdmin } = useUserRole();
+  const { data: equipes = [] } = useEquipesDisponiveis();
   const showCustom = state.periodo === "custom";
 
   const deDate = useMemo(() => (state.de ? new Date(state.de) : undefined), [state.de]);
