@@ -249,7 +249,7 @@ export function useCorretorDailyGoals() {
     refetch();
   };
 
-  return { goals, isLoading, saveGoals, refetch };
+  return { goals, metaEfetiva, metaConfirmadaHoje, isLoading, saveGoals, refetch };
 }
 
 export function useDailyMotivation() {
