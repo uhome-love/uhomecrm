@@ -11,11 +11,6 @@ interface Props {
   onClick: () => void;
 }
 
-function ultimaAtividadeLabel(iso: string | null): string {
-  if (!iso) return "sem atividade";
-  return `há ${formatBRT(iso, "dd/MM")}`;
-}
-
 export default function CorretorMiniCard({ corretor, onClick }: Props) {
   return (
     <button
