@@ -30,12 +30,22 @@ export function useCorretorDailyStats() {
       const brtDateStr = nowUtc.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); // "YYYY-MM-DD"
       const dayStartUtc = new Date(`${brtDateStr}T00:00:00-03:00`).toISOString();
 
-      const { data, error } = await supabase
-        .from("oferta_ativa_tentativas")
-        .select("canal, resultado, pontos")
-        .eq("corretor_id", user!.id)
-        .gte("created_at", dayStartUtc);
+      // Paraleliza tentativas + visitas (independentes) — reduz 1 RTT
+      const [tentativasRes, visitasRes] = await Promise.all([
+        supabase
+          .from("oferta_ativa_tentativas")
+          .select("canal, resultado, pontos")
+          .eq("corretor_id", user!.id)
+          .gte("created_at", dayStartUtc),
+        supabase
+          .from("visitas")
+          .select("id")
+          .eq("corretor_id", user!.id)
+          .gte("created_at", dayStartUtc)
+          .in("status", ["marcada", "confirmada", "realizada", "reagendada"]),
+      ]);
 
+      const { data, error } = tentativasRes;
       if (error) throw error;
 
       const s: CorretorDailyStats = {
@@ -60,28 +70,14 @@ export function useCorretorDailyStats() {
         ? Math.round((s.aproveitados / s.tentativas) * 100)
         : 0;
 
-      // Count visitas_marcadas from BOTH sources:
-      // 1) Agenda de Visitas (visitas table) — includes manual + OA-created
-      // 2) This is the TRUE source of truth for "visitas marcadas"
-      try {
-        const { data: visitasData, error: visitasError } = await supabase
-          .from("visitas")
-          .select("id")
-          .eq("corretor_id", user!.id)
-          .gte("created_at", dayStartUtc)
-          .in("status", ["marcada", "confirmada", "realizada", "reagendada"]);
-
-        if (visitasError) {
-          console.error("Erro ao buscar visitas marcadas:", visitasError);
-          // Fallback to checkpoint RPC
-          const { data: visitasCount } = await supabase
-            .rpc("get_corretor_daily_visitas", { p_user_id: user!.id });
-          s.visitas_marcadas = Number(visitasCount || 0);
-        } else {
-          s.visitas_marcadas = visitasData?.length || 0;
-        }
-      } catch (err) {
-        console.error("Erro ao buscar visitas marcadas:", err);
+      // visitas_marcadas — fonte da verdade: tabela visitas
+      if (visitasRes.error) {
+        console.error("Erro ao buscar visitas marcadas:", visitasRes.error);
+        const { data: visitasCount } = await supabase
+          .rpc("get_corretor_daily_visitas", { p_user_id: user!.id });
+        s.visitas_marcadas = Number(visitasCount || 0);
+      } else {
+        s.visitas_marcadas = visitasRes.data?.length || 0;
       }
 
       return s;
@@ -147,9 +143,22 @@ export interface CorretorGoals {
   aprovado_por: string | null;
 }
 
+// Defaults globais quando não há meta de hoje nem de ontem
+const META_DEFAULTS = { meta_ligacoes: 30, meta_aproveitados: 5, meta_visitas_marcadas: 3 };
+
+export interface MetaEfetiva {
+  meta_ligacoes: number;
+  meta_aproveitados: number;
+  meta_visitas_marcadas: number;
+}
+
 export function useCorretorDailyGoals() {
   const { user } = useAuth();
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  // Ontem em BRT (display-only fallback)
+  const yesterday = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   const { data: goals, isLoading, refetch } = useQuery({
     queryKey: ["corretor-daily-goals", user?.id, today],
@@ -164,10 +173,47 @@ export function useCorretorDailyGoals() {
       return data as CorretorGoals | null;
     },
     enabled: !!user,
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
     refetchInterval: 60_000,
     refetchOnWindowFocus: false,
   });
+
+  // 2ª query leve: meta de ontem (apenas para pré-preencher exibição, nunca grava)
+  const { data: goalsYesterday } = useQuery({
+    queryKey: ["corretor-daily-goals-yesterday", user?.id, yesterdayStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("corretor_daily_goals")
+        .select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas")
+        .eq("corretor_id", user!.id)
+        .eq("data", yesterdayStr)
+        .maybeSingle();
+      if (error) throw error;
+      return data as MetaEfetiva | null;
+    },
+    // Só precisa do fallback quando NÃO há meta de hoje
+    enabled: !!user && goals === null,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Regra A→D: hoje > ontem (display-only) > defaults
+  const metaEfetiva: MetaEfetiva = goals
+    ? {
+        meta_ligacoes: goals.meta_ligacoes,
+        meta_aproveitados: goals.meta_aproveitados,
+        meta_visitas_marcadas: goals.meta_visitas_marcadas,
+      }
+    : goalsYesterday
+    ? {
+        meta_ligacoes: goalsYesterday.meta_ligacoes,
+        meta_aproveitados: goalsYesterday.meta_aproveitados,
+        meta_visitas_marcadas: goalsYesterday.meta_visitas_marcadas,
+      }
+    : { ...META_DEFAULTS };
+
+  // Flag: existe registro confirmado de hoje?
+  const metaConfirmadaHoje = !!goals;
 
   const saveGoals = async (metaLigacoes: number, metaAproveitados: number, metaVisitasMarcadas: number, observacao?: string) => {
     if (!user) return;
@@ -199,7 +245,7 @@ export function useCorretorDailyGoals() {
     refetch();
   };
 
-  return { goals, isLoading, saveGoals, refetch };
+  return { goals, metaEfetiva, metaConfirmadaHoje, isLoading, saveGoals, refetch };
 }
 
 export function useDailyMotivation() {

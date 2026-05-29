@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, Pause, X, ChevronRight, Loader2 } from "lucide-react";
+import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, Pause, X, ChevronRight, Loader2, Pencil } from "lucide-react";
 import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 import ImmersiveScreen from "@/components/immersive/ImmersiveScreen";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
@@ -53,14 +54,40 @@ function playWhoosh() {
 export default function CorretorCall() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { progress, goals, isLoading: progressLoading } = useCorretorProgress();
+  const { profile } = useAuthUser();
+  const { progress, goals, metaConfirmadaHoje, saveGoals, refetchGoals, isLoading: progressLoading } = useCorretorProgress();
   const { isGestor, isAdmin } = useUserRole();
   const [phase, setPhase] = useState<CallPhase>("warmup");
-  const [nome, setNome] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // Perfil reusa cache do useAuthUser (AppLayout) — sem query duplicada
+  const nome = profile?.nome ? profile.nome.split(" ")[0] : "";
+  const avatarUrl = profile?.avatar_url ?? null;
   const [activeTab, setActiveTab] = useState("call");
   const [hasInteracted, setHasInteracted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  // Edição inline da meta diária
+  const [editingMeta, setEditingMeta] = useState<null | "lig" | "aprv" | "vis">(null);
+  const [metaDraft, setMetaDraft] = useState("");
+  const [savingMeta, setSavingMeta] = useState(false);
+
+  const confirmMeta = async (key: "lig" | "aprv" | "vis", value: number) => {
+    if (!Number.isFinite(value) || value <= 0) {
+      setEditingMeta(null);
+      return;
+    }
+    setSavingMeta(true);
+    try {
+      const lig = key === "lig" ? value : progress.metaLigacoes;
+      const aprv = key === "aprv" ? value : progress.metaAproveitados;
+      const vis = key === "vis" ? value : progress.metaVisitas;
+      await saveGoals(lig, aprv, vis);
+      await refetchGoals();
+    } catch (e) {
+      console.error("Erro ao salvar meta:", e);
+    } finally {
+      setSavingMeta(false);
+      setEditingMeta(null);
+    }
+  };
 
   // Track user interaction for sound
   useEffect(() => {
@@ -87,13 +114,7 @@ export default function CorretorCall() {
   // Meta do dia foi descontinuada — não bloqueia mais entrada na tela.
   // useCorretorProgress retorna defaults (30/5/3) quando goals é null.
 
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("nome, avatar_url").eq("user_id", user.id).single().then(({ data }) => {
-      if (data?.nome) setNome(data.nome.split(" ")[0]);
-      if (data?.avatar_url) setAvatarUrl(data.avatar_url);
-    });
-  }, [user]);
+
 
   // Ranking & leads data for warmup screen
   const { data: warmupData } = useQuery({
@@ -119,15 +140,19 @@ export default function CorretorCall() {
       const belowId = myPos === 1 && sorted.length > 1 ? sorted[1]?.[0] : null;
       const abovePts = aboveId ? points[aboveId] : 0;
 
+      // Busca nomes dos rivais em UMA query (acima + abaixo)
       let aboveName = "";
-      if (aboveId) {
-        const { data: profile } = await (supabase.from("profiles").select("nome") as any).eq("user_id", aboveId).single();
-        aboveName = profile?.nome?.split(" ")[0] || "Líder";
-      }
       let belowName = "";
-      if (belowId) {
-        const { data: profile } = await (supabase.from("profiles").select("nome") as any).eq("user_id", belowId).single();
-        belowName = profile?.nome?.split(" ")[0] || "#2";
+      const rivalIds = [aboveId, belowId].filter(Boolean) as string[];
+      if (rivalIds.length > 0) {
+        const { data: rivals } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", rivalIds);
+        const nameOf = (id: string | null) =>
+          rivals?.find((r) => r.user_id === id)?.nome?.split(" ")[0];
+        if (aboveId) aboveName = nameOf(aboveId) || "Líder";
+        if (belowId) belowName = nameOf(belowId) || "#2";
       }
 
       // Count leads available — corretor-specific: only from lists they have access to
@@ -256,30 +281,81 @@ export default function CorretorCall() {
             Sua Missão de Hoje
           </h1>
 
-          {/* Metas card */}
-          <div className="flex gap-4 rounded-2xl px-8 py-5" style={{ background: "var(--arena-subtle-bg)", border: "1px solid var(--arena-card-border)" }}>
-            <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>🔥 {progress.metaLigacoes}</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>ligações</p>
-            </div>
-            <div className="w-px" style={{ background: "var(--arena-card-border)" }} />
-            <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>✅ {progress.metaAproveitados}</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>aproveit.</p>
-            </div>
-            <div className="w-px" style={{ background: "var(--arena-card-border)" }} />
-            <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>📅 {progress.metaVisitas}</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>visitas</p>
-            </div>
+          {/* Metas card — progresso + edição inline */}
+          <div className="w-full max-w-[420px] rounded-2xl px-5 py-4 space-y-3.5" style={{ background: "var(--arena-subtle-bg)", border: "1px solid var(--arena-card-border)" }}>
+            {([
+              { key: "lig" as const, emoji: "🔥", label: "Ligações", atual: progress.tentativas, meta: progress.metaLigacoes, pct: ligPct },
+              { key: "aprv" as const, emoji: "✅", label: "Aproveitamentos", atual: progress.aproveitados, meta: progress.metaAproveitados, pct: aprvPct },
+              { key: "vis" as const, emoji: "📅", label: "Visitas", atual: progress.visitasMarcadas || 0, meta: progress.metaVisitas, pct: visitPct },
+            ]).map((m) => {
+              const barColor = m.pct >= 100 ? "bg-emerald-400" : m.pct >= 50 ? "bg-amber-400" : "bg-blue-400/70";
+              return (
+                <div key={m.key} className="flex items-center gap-3">
+                  <span className="text-lg leading-none">{m.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center text-sm mb-1" style={{ color: "var(--arena-text)" }}>
+                      <span className="truncate">{m.label}</span>
+                      {editingMeta === m.key ? (
+                        <span className="flex items-center gap-1">
+                          <span style={{ color: "var(--arena-text-muted)" }}>{m.atual}/</span>
+                          <input
+                            type="number"
+                            min={1}
+                            autoFocus
+                            disabled={savingMeta}
+                            value={metaDraft}
+                            onChange={(e) => setMetaDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") confirmMeta(m.key, parseInt(metaDraft, 10));
+                              if (e.key === "Escape") setEditingMeta(null);
+                            }}
+                            onBlur={() => setEditingMeta(null)}
+                            className="w-14 h-6 text-right rounded bg-black/30 border border-white/20 px-1 text-sm outline-none focus:border-blue-400"
+                            style={{ color: "var(--arena-text)" }}
+                          />
+                        </span>
+                      ) : (
+                        <span className="font-bold tabular-nums">
+                          {m.atual}/{m.meta}{m.pct >= 100 && " ✨"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
+                      <motion.div
+                        className={`h-full rounded-full ${barColor}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${m.pct}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setMetaDraft(String(m.meta));
+                      setEditingMeta(m.key);
+                    }}
+                    className="opacity-50 hover:opacity-100 transition-opacity shrink-0"
+                    aria-label={`Editar meta de ${m.label}`}
+                  >
+                    <Pencil className="h-3.5 w-3.5" style={{ color: "var(--arena-text-muted)" }} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Progress if already started today */}
+          {/* Meta herdada de ontem (discreto) */}
+          {!metaConfirmadaHoje && (
+            <p className="text-[11px] mt-1.5" style={{ color: "var(--arena-text-subtle)" }}>
+              meta herdada de ontem · toque no lápis para confirmar
+            </p>
+          )}
+
+          {/* Pontos do dia */}
           {progress.tentativas > 0 && (
-            <div className="mt-4 flex gap-4 text-xs" style={{ color: "var(--arena-text-muted)" }}>
-              <span>🔥 {progress.tentativas}/{progress.metaLigacoes} feitas</span>
-              <span>✅ {progress.aproveitados}/{progress.metaAproveitados} aprov.</span>
-              <span>⭐ {progress.pontos}pts</span>
+            <div className="mt-3 text-xs" style={{ color: "var(--arena-text-muted)" }}>
+              ⭐ {progress.pontos} pts hoje
             </div>
           )}
         </motion.div>
