@@ -61,6 +61,30 @@ export default function CorretorCall() {
   const [activeTab, setActiveTab] = useState("call");
   const [hasInteracted, setHasInteracted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  // Edição inline da meta diária
+  const [editingMeta, setEditingMeta] = useState<null | "lig" | "aprv" | "vis">(null);
+  const [metaDraft, setMetaDraft] = useState("");
+  const [savingMeta, setSavingMeta] = useState(false);
+
+  const confirmMeta = async (key: "lig" | "aprv" | "vis", value: number) => {
+    if (!Number.isFinite(value) || value <= 0) {
+      setEditingMeta(null);
+      return;
+    }
+    setSavingMeta(true);
+    try {
+      const lig = key === "lig" ? value : progress.metaLigacoes;
+      const aprv = key === "aprv" ? value : progress.metaAproveitados;
+      const vis = key === "vis" ? value : progress.metaVisitas;
+      await saveGoals(lig, aprv, vis);
+      await refetchGoals();
+    } catch (e) {
+      console.error("Erro ao salvar meta:", e);
+    } finally {
+      setSavingMeta(false);
+      setEditingMeta(null);
+    }
+  };
 
   // Track user interaction for sound
   useEffect(() => {
