@@ -30,12 +30,22 @@ export function useCorretorDailyStats() {
       const brtDateStr = nowUtc.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); // "YYYY-MM-DD"
       const dayStartUtc = new Date(`${brtDateStr}T00:00:00-03:00`).toISOString();
 
-      const { data, error } = await supabase
-        .from("oferta_ativa_tentativas")
-        .select("canal, resultado, pontos")
-        .eq("corretor_id", user!.id)
-        .gte("created_at", dayStartUtc);
+      // Paraleliza tentativas + visitas (independentes) — reduz 1 RTT
+      const [tentativasRes, visitasRes] = await Promise.all([
+        supabase
+          .from("oferta_ativa_tentativas")
+          .select("canal, resultado, pontos")
+          .eq("corretor_id", user!.id)
+          .gte("created_at", dayStartUtc),
+        supabase
+          .from("visitas")
+          .select("id")
+          .eq("corretor_id", user!.id)
+          .gte("created_at", dayStartUtc)
+          .in("status", ["marcada", "confirmada", "realizada", "reagendada"]),
+      ]);
 
+      const { data, error } = tentativasRes;
       if (error) throw error;
 
       const s: CorretorDailyStats = {
@@ -60,28 +70,14 @@ export function useCorretorDailyStats() {
         ? Math.round((s.aproveitados / s.tentativas) * 100)
         : 0;
 
-      // Count visitas_marcadas from BOTH sources:
-      // 1) Agenda de Visitas (visitas table) — includes manual + OA-created
-      // 2) This is the TRUE source of truth for "visitas marcadas"
-      try {
-        const { data: visitasData, error: visitasError } = await supabase
-          .from("visitas")
-          .select("id")
-          .eq("corretor_id", user!.id)
-          .gte("created_at", dayStartUtc)
-          .in("status", ["marcada", "confirmada", "realizada", "reagendada"]);
-
-        if (visitasError) {
-          console.error("Erro ao buscar visitas marcadas:", visitasError);
-          // Fallback to checkpoint RPC
-          const { data: visitasCount } = await supabase
-            .rpc("get_corretor_daily_visitas", { p_user_id: user!.id });
-          s.visitas_marcadas = Number(visitasCount || 0);
-        } else {
-          s.visitas_marcadas = visitasData?.length || 0;
-        }
-      } catch (err) {
-        console.error("Erro ao buscar visitas marcadas:", err);
+      // visitas_marcadas — fonte da verdade: tabela visitas
+      if (visitasRes.error) {
+        console.error("Erro ao buscar visitas marcadas:", visitasRes.error);
+        const { data: visitasCount } = await supabase
+          .rpc("get_corretor_daily_visitas", { p_user_id: user!.id });
+        s.visitas_marcadas = Number(visitasCount || 0);
+      } else {
+        s.visitas_marcadas = visitasRes.data?.length || 0;
       }
 
       return s;
