@@ -60,8 +60,8 @@ export function SectionOA({ query }: Props) {
 function buildKpis(data: Record<string, unknown>): KpiItem[] {
   const tentativas = safeGet<number>(data, "oferta_ativa.tentativas", "OA tentativas");
   const aproveitados = safeGet<number>(data, "oferta_ativa.aproveitados", "OA aproveitados");
-  const ativos = safeGet<number>(data, "oferta_ativa.ativos_pipeline", "OA ativos_pipeline");
-  const negocios = safeGet<number>(data, "oferta_ativa.negocios_oa", "OA negocios_oa");
+  const ativos = safeGet<number>(data, "oferta_ativa.ativos_no_pipeline", "OA ativos_no_pipeline");
+  const negocios = safeGet<number>(data, "oferta_ativa.negocios_da_oa", "OA negocios_da_oa");
 
   return [
     { label: "Tentativas", value: fmtInt(tentativas) },
