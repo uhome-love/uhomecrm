@@ -28,7 +28,7 @@ export function CentralHeader({ secao, onOpenSidebar }: Props) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="min-w-0">
-            <h1 className="font-central-display truncate text-2xl leading-tight text-foreground sm:text-[28px]">
+            <h1 className="font-display truncate text-2xl leading-tight text-foreground sm:text-[28px]">
               Central de Relatórios
             </h1>
             <p className="truncate text-sm text-muted-foreground">{s.label}</p>

@@ -13,7 +13,7 @@ export function EmptyStateView({ secao }: Props) {
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Icon className="h-6 w-6" strokeWidth={1.75} />
       </div>
-      <h2 className="font-central-display text-2xl text-foreground">{s.label}</h2>
+      <h2 className="font-display text-2xl text-foreground">{s.label}</h2>
       <p className="max-w-md text-sm text-muted-foreground">
         Em construção — dados desta seção entram na próxima fase.
       </p>

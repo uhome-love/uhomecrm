@@ -22,7 +22,7 @@ export function RankingTeaser() {
           <Trophy className="h-5 w-5" strokeWidth={1.75} />
         </div>
         <div>
-          <div className="font-central-display text-base text-foreground">
+          <div className="font-display text-base text-foreground">
             Ranking da equipe
           </div>
           <div className="text-sm text-muted-foreground">
