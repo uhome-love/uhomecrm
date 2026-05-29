@@ -284,7 +284,7 @@ function SavedListRow({ list, onStart, onDelete }: { list: CustomList; onStart: 
 
 type ViewMode = "produto" | "listas" | "personalizadas";
 
-const COLLAPSED_STORAGE_KEY = "oa-segmentos-colapsados";
+
 
 export default function CorretorListSelection() {
   const { listas, isLoading } = useOAListas();
@@ -296,12 +296,10 @@ export default function CorretorListSelection() {
   const [viewMode, setViewMode] = useState<ViewMode>("produto");
   const [showExhausted, setShowExhausted] = useState(false);
   const [higienizarTarget, setHigienizarTarget] = useState<{ lista: { id: string; nome: string } | null; ids?: string[] } | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem(COLLAPSED_STORAGE_KEY);
-      return new Set(raw ? JSON.parse(raw) : []);
-    } catch { return new Set(); }
-  });
+  // Default: todos os segmentos começam COLAPSADOS a cada sessão.
+  // Persistência da escolha não é necessária (toda sessão começa fechado).
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const collapseInitRef = useRef(false);
   const { lists: savedLists, isLoading: savedLoading, markUsed, deleteList } = useCustomLists();
   const { setOpen, open } = useSidebar();
   const prevOpenRef = useRef(open);
@@ -310,7 +308,6 @@ export default function CorretorListSelection() {
     setCollapsed(prev => {
       const next = new Set(prev);
       if (next.has(segId)) next.delete(segId); else next.add(segId);
-      try { localStorage.setItem(COLLAPSED_STORAGE_KEY, JSON.stringify([...next])); } catch {}
       return next;
     });
   }, []);
@@ -403,6 +400,17 @@ export default function CorretorListSelection() {
 
     return groups;
   }, [liberadas, filterListas, statsMap, showExhausted, segmentMap]);
+
+  // Ao carregar os segmentos pela primeira vez na sessão, começar todos colapsados.
+  useEffect(() => {
+    if (collapseInitRef.current) return;
+    const segIds = Object.keys(segmentGroups);
+    if (segIds.length === 0) return;
+    collapseInitRef.current = true;
+    setCollapsed(new Set(segIds));
+  }, [segmentGroups]);
+
+
 
   // All listas flat (for "listas" view mode)
   const allListasFlat = useMemo(() => {
