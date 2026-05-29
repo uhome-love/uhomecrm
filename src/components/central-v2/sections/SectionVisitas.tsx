@@ -60,7 +60,7 @@ function buildKpis(data: Record<string, unknown>): KpiItem[] {
   const criadas = safeGet<number>(data, "visitas.criadas", "Visitas criadas");
   const realizadas = safeGet<number>(data, "visitas.realizadas", "Visitas realizadas");
   const noShow = safeGet<number>(data, "visitas.no_show", "Visitas no_show");
-  const taxa = safeGet<number>(data, "visitas.taxa_comparecimento", "Visitas taxa_comparecimento");
+  const taxa = safeGet<number>(data, "visitas.taxa_comparecimento_pct", "Visitas taxa_comparecimento_pct");
 
   return [
     { label: "Criadas", value: fmtInt(criadas) },
