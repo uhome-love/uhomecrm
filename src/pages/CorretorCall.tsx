@@ -280,30 +280,81 @@ export default function CorretorCall() {
             Sua Missão de Hoje
           </h1>
 
-          {/* Metas card */}
-          <div className="flex gap-4 rounded-2xl px-8 py-5" style={{ background: "var(--arena-subtle-bg)", border: "1px solid var(--arena-card-border)" }}>
-            <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>🔥 {progress.metaLigacoes}</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>ligações</p>
-            </div>
-            <div className="w-px" style={{ background: "var(--arena-card-border)" }} />
-            <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>✅ {progress.metaAproveitados}</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>aproveit.</p>
-            </div>
-            <div className="w-px" style={{ background: "var(--arena-card-border)" }} />
-            <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>📅 {progress.metaVisitas}</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>visitas</p>
-            </div>
+          {/* Metas card — progresso + edição inline */}
+          <div className="w-full max-w-[420px] rounded-2xl px-5 py-4 space-y-3.5" style={{ background: "var(--arena-subtle-bg)", border: "1px solid var(--arena-card-border)" }}>
+            {([
+              { key: "lig" as const, emoji: "🔥", label: "Ligações", atual: progress.tentativas, meta: progress.metaLigacoes, pct: ligPct },
+              { key: "aprv" as const, emoji: "✅", label: "Aproveitamentos", atual: progress.aproveitados, meta: progress.metaAproveitados, pct: aprvPct },
+              { key: "vis" as const, emoji: "📅", label: "Visitas", atual: progress.visitasMarcadas || 0, meta: progress.metaVisitas, pct: visitPct },
+            ]).map((m) => {
+              const barColor = m.pct >= 100 ? "bg-emerald-400" : m.pct >= 50 ? "bg-amber-400" : "bg-blue-400/70";
+              return (
+                <div key={m.key} className="flex items-center gap-3">
+                  <span className="text-lg leading-none">{m.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center text-sm mb-1" style={{ color: "var(--arena-text)" }}>
+                      <span className="truncate">{m.label}</span>
+                      {editingMeta === m.key ? (
+                        <span className="flex items-center gap-1">
+                          <span style={{ color: "var(--arena-text-muted)" }}>{m.atual}/</span>
+                          <input
+                            type="number"
+                            min={1}
+                            autoFocus
+                            disabled={savingMeta}
+                            value={metaDraft}
+                            onChange={(e) => setMetaDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") confirmMeta(m.key, parseInt(metaDraft, 10));
+                              if (e.key === "Escape") setEditingMeta(null);
+                            }}
+                            onBlur={() => setEditingMeta(null)}
+                            className="w-14 h-6 text-right rounded bg-black/30 border border-white/20 px-1 text-sm outline-none focus:border-blue-400"
+                            style={{ color: "var(--arena-text)" }}
+                          />
+                        </span>
+                      ) : (
+                        <span className="font-bold tabular-nums">
+                          {m.atual}/{m.meta}{m.pct >= 100 && " ✨"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
+                      <motion.div
+                        className={`h-full rounded-full ${barColor}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${m.pct}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setMetaDraft(String(m.meta));
+                      setEditingMeta(m.key);
+                    }}
+                    className="opacity-50 hover:opacity-100 transition-opacity shrink-0"
+                    aria-label={`Editar meta de ${m.label}`}
+                  >
+                    <Pencil className="h-3.5 w-3.5" style={{ color: "var(--arena-text-muted)" }} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Progress if already started today */}
+          {/* Meta herdada de ontem (discreto) */}
+          {!metaConfirmadaHoje && (
+            <p className="text-[11px] mt-1.5" style={{ color: "var(--arena-text-subtle)" }}>
+              meta herdada de ontem · toque no lápis para confirmar
+            </p>
+          )}
+
+          {/* Pontos do dia */}
           {progress.tentativas > 0 && (
-            <div className="mt-4 flex gap-4 text-xs" style={{ color: "var(--arena-text-muted)" }}>
-              <span>🔥 {progress.tentativas}/{progress.metaLigacoes} feitas</span>
-              <span>✅ {progress.aproveitados}/{progress.metaAproveitados} aprov.</span>
-              <span>⭐ {progress.pontos}pts</span>
+            <div className="mt-3 text-xs" style={{ color: "var(--arena-text-muted)" }}>
+              ⭐ {progress.pontos} pts hoje
             </div>
           )}
         </motion.div>
