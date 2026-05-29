@@ -43,7 +43,7 @@ import PipelineHeader from "@/components/pipeline/PipelineHeader";
 import ModoTimeView from "@/components/pipeline/modo-time/ModoTimeView";
 import { calcGestorOwnRow } from "@/lib/calcGestorOwnRow";
 import type { AlertaAction } from "@/hooks/useTimeAlertas";
-import EquipesViewPlaceholder from "@/components/pipeline/EquipesViewPlaceholder";
+import EquipesView from "@/components/pipeline/equipes/EquipesView";
 import { GERENTES_REAIS } from "@/components/pipeline/header/PipelineGestorSelect";
 
 // Campaign tag definitions
@@ -711,7 +711,13 @@ export default function PipelineKanban() {
                 ) : null
 
               ) : activeTab === "equipes" ? (
-                <EquipesViewPlaceholder />
+                <EquipesView
+                  onOpenKanban={(corretorId) => {
+                    setCorretorFilter(corretorId);
+                    setActiveTab("kanban");
+                  }}
+                />
+
               ) : null}
             </Suspense>
             </ErrorBoundary>
