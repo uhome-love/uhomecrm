@@ -147,9 +147,22 @@ export interface CorretorGoals {
   aprovado_por: string | null;
 }
 
+// Defaults globais quando não há meta de hoje nem de ontem
+const META_DEFAULTS = { meta_ligacoes: 30, meta_aproveitados: 5, meta_visitas_marcadas: 3 };
+
+export interface MetaEfetiva {
+  meta_ligacoes: number;
+  meta_aproveitados: number;
+  meta_visitas_marcadas: number;
+}
+
 export function useCorretorDailyGoals() {
   const { user } = useAuth();
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  // Ontem em BRT (display-only fallback)
+  const yesterday = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   const { data: goals, isLoading, refetch } = useQuery({
     queryKey: ["corretor-daily-goals", user?.id, today],
@@ -164,10 +177,47 @@ export function useCorretorDailyGoals() {
       return data as CorretorGoals | null;
     },
     enabled: !!user,
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
     refetchInterval: 60_000,
     refetchOnWindowFocus: false,
   });
+
+  // 2ª query leve: meta de ontem (apenas para pré-preencher exibição, nunca grava)
+  const { data: goalsYesterday } = useQuery({
+    queryKey: ["corretor-daily-goals-yesterday", user?.id, yesterdayStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("corretor_daily_goals")
+        .select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas")
+        .eq("corretor_id", user!.id)
+        .eq("data", yesterdayStr)
+        .maybeSingle();
+      if (error) throw error;
+      return data as MetaEfetiva | null;
+    },
+    // Só precisa do fallback quando NÃO há meta de hoje
+    enabled: !!user && goals === null,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Regra A→D: hoje > ontem (display-only) > defaults
+  const metaEfetiva: MetaEfetiva = goals
+    ? {
+        meta_ligacoes: goals.meta_ligacoes,
+        meta_aproveitados: goals.meta_aproveitados,
+        meta_visitas_marcadas: goals.meta_visitas_marcadas,
+      }
+    : goalsYesterday
+    ? {
+        meta_ligacoes: goalsYesterday.meta_ligacoes,
+        meta_aproveitados: goalsYesterday.meta_aproveitados,
+        meta_visitas_marcadas: goalsYesterday.meta_visitas_marcadas,
+      }
+    : { ...META_DEFAULTS };
+
+  // Flag: existe registro confirmado de hoje?
+  const metaConfirmadaHoje = !!goals;
 
   const saveGoals = async (metaLigacoes: number, metaAproveitados: number, metaVisitasMarcadas: number, observacao?: string) => {
     if (!user) return;
