@@ -67,7 +67,7 @@ function buildKpis(data: Record<string, unknown>, assinados: number | null): Kpi
   const ativos = safeGet<number>(data, "negocios.ativos", "Negocios ativos");
   const criados = safeGet<number>(data, "negocios.criados", "Negocios criados");
   const criadosPrev = safeGet<number>(data, "negocios.criados_prev", "Negocios criados_prev");
-  const cairam = safeGet<number>(data, "negocios.cairam", "Negocios cairam");
+  const cairam = safeGet<number>(data, "negocios.caidos", "Negocios caidos");
 
   return [
     { label: "Ativos", value: fmtInt(ativos) },
