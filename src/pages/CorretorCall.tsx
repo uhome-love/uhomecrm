@@ -114,13 +114,7 @@ export default function CorretorCall() {
   // Meta do dia foi descontinuada — não bloqueia mais entrada na tela.
   // useCorretorProgress retorna defaults (30/5/3) quando goals é null.
 
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("nome, avatar_url").eq("user_id", user.id).single().then(({ data }) => {
-      if (data?.nome) setNome(data.nome.split(" ")[0]);
-      if (data?.avatar_url) setAvatarUrl(data.avatar_url);
-    });
-  }, [user]);
+
 
   // Ranking & leads data for warmup screen
   const { data: warmupData } = useQuery({
