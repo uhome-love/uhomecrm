@@ -408,36 +408,56 @@ export default function VendasRealizadas() {
         subtitle={dateRange.label}
         icon={<TrendingUp size={18} strokeWidth={1.5} />}
         actions={
-          <Popover open={showMonthPicker} onOpenChange={setShowMonthPicker}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <CalendarDays className="h-3.5 w-3.5" />
-                {MESES[selectedMonth]}
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-2" align="end">
-              <div className="grid grid-cols-3 gap-1">
-                {MESES.map((mes, i) => (
-                  <button
-                    key={mes}
-                    onClick={() => { setSelectedMonth(i); setShowMonthPicker(false); }}
-                    className={cn(
-                      "text-xs py-2 px-1 rounded-lg font-medium transition-all",
-                      selectedMonth === i
-                        ? "bg-[#4969FF] text-white"
-                        : "hover:bg-[#f5f5f5] dark:hover:bg-white/[0.06] text-[#0a0a0a] dark:text-[#fafafa]",
-                      i > new Date().getMonth() && selectedYear >= new Date().getFullYear()
-                        ? "opacity-40 pointer-events-none"
-                        : ""
-                    )}
-                  >
-                    {mes.slice(0, 3)}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center rounded-lg border border-border/60 p-0.5">
+              {(["mes", "ano"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setPeriodMode(mode)}
+                  className={cn(
+                    "text-xs font-medium px-3 py-1.5 rounded-md transition-all",
+                    periodMode === mode
+                      ? "bg-[#4969FF] text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {mode === "mes" ? "Mês" : "Ano"}
+                </button>
+              ))}
+            </div>
+            {periodMode === "mes" && (
+              <Popover open={showMonthPicker} onOpenChange={setShowMonthPicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {MESES[selectedMonth]}
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2" align="end">
+                  <div className="grid grid-cols-3 gap-1">
+                    {MESES.map((mes, i) => (
+                      <button
+                        key={mes}
+                        onClick={() => { setSelectedMonth(i); setShowMonthPicker(false); }}
+                        className={cn(
+                          "text-xs py-2 px-1 rounded-lg font-medium transition-all",
+                          selectedMonth === i
+                            ? "bg-[#4969FF] text-white"
+                            : "hover:bg-[#f5f5f5] dark:hover:bg-white/[0.06] text-[#0a0a0a] dark:text-[#fafafa]",
+                          i > new Date().getMonth() && selectedYear >= new Date().getFullYear()
+                            ? "opacity-40 pointer-events-none"
+                            : ""
+                        )}
+                      >
+                        {mes.slice(0, 3)}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
         }
       />
 
