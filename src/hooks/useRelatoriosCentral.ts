@@ -164,10 +164,10 @@ export function useRelatoriosCentral(
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
 
-  const gestorId = useMemo<string | null>(() => {
-    if (!user?.id) return null;
-    if (isAdmin) return filters.equipe || user.id;
-    return user.id;
+  const gestorId = useMemo<string | null | undefined>(() => {
+    if (!user?.id) return null;                 // não autenticado → bloqueia query
+    if (isAdmin) return filters.equipe ?? undefined; // admin sem equipe → undefined = todas
+    return user.id;                             // gestor → próprio id
   }, [user?.id, isAdmin, filters.equipe]);
 
   const range = useMemo(
@@ -175,8 +175,10 @@ export function useRelatoriosCentral(
     [filters.periodo, filters.de, filters.ate]
   );
 
+  const keyId = gestorId ?? "ALL";
+
   const baseOpts = {
-    enabled: !!gestorId,
+    enabled: gestorId !== null,
     staleTime: STALE_MS,
     gcTime: GC_MS,
     retry: 1,
@@ -184,28 +186,28 @@ export function useRelatoriosCentral(
 
   const pipelineLeads = useQuery({
     ...baseOpts,
-    queryKey: ["central", "pipeline-leads", gestorId, range.start, range.end],
-    queryFn: () => fetchRpc("get_relatorio_pipeline_leads", gestorId as string, range),
+    queryKey: ["central", "pipeline-leads", keyId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_pipeline_leads", gestorId ?? undefined, range),
   });
   const ofertaAtiva = useQuery({
     ...baseOpts,
-    queryKey: ["central", "oferta-ativa", gestorId, range.start, range.end],
-    queryFn: () => fetchRpc("get_relatorio_oferta_ativa", gestorId as string, range),
+    queryKey: ["central", "oferta-ativa", keyId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_oferta_ativa", gestorId ?? undefined, range),
   });
   const visitas = useQuery({
     ...baseOpts,
-    queryKey: ["central", "visitas", gestorId, range.start, range.end],
-    queryFn: () => fetchRpc("get_relatorio_visitas", gestorId as string, range),
+    queryKey: ["central", "visitas", keyId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_visitas", gestorId ?? undefined, range),
   });
   const negocios = useQuery({
     ...baseOpts,
-    queryKey: ["central", "negocios", gestorId, range.start, range.end],
-    queryFn: () => fetchRpc("get_relatorio_negocios", gestorId as string, range),
+    queryKey: ["central", "negocios", keyId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_negocios", gestorId ?? undefined, range),
   });
   const vendas = useQuery({
     ...baseOpts,
-    queryKey: ["central", "vendas", gestorId, range.start, range.end],
-    queryFn: () => fetchRpc("get_relatorio_vendas", gestorId as string, range),
+    queryKey: ["central", "vendas", keyId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_vendas", gestorId ?? undefined, range),
   });
 
 
