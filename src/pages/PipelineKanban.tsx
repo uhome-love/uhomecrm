@@ -746,7 +746,7 @@ export default function PipelineKanban() {
           onOpenChange={(open) => {
             if (!open) {
               setSelectedLead(null);
-              queryClient.invalidateQueries({ queryKey: ["pipeline-tarefas-map"] });
+              queryClient.invalidateQueries({ queryKey: ["pipeline-kanban-tarefas"] });
               pipeline.reload();
             }
           }}
