@@ -122,11 +122,11 @@ export function resolvePeriodo(
 // ─────────────────────────────────────────────────────────────────
 async function fetchRpc(
   rpc: RpcName,
-  gestorId: string,
+  gestorId: string | undefined,
   range: CentralRange
 ): Promise<Record<string, unknown>> {
   const { data, error } = await supabase.rpc(rpc, {
-    p_gestor_id: gestorId,
+    p_gestor_id: gestorId ?? null, // null = "todas as equipes" (admin only)
     p_start: range.start,
     p_end: range.end,
     p_prev_start: range.prevStart,
