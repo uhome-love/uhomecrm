@@ -586,7 +586,7 @@ export default function CorretorListSelection() {
                             const total = bucket.listas.reduce((s, l) => s + (statsMap?.[l.id]?.total ?? 0), 0);
                             const pct = total > 0 ? Math.round(((total - naFila) / total) * 100) : 0;
                             const aprovPct = total > 0 ? Math.round((aprov / total) * 100) : 0;
-                            const saude = aprovPct >= 30 ? { dot: "🟢", txt: "Saudável" } : aprovPct >= 10 ? { dot: "🟡", txt: "Mediana" } : { dot: "🔴", txt: "Fria" };
+                            const saude = aprovPct >= 30 ? { dot: "🟢", txt: "Bem trabalhada" } : aprovPct >= 10 ? { dot: "🔵", txt: "Em andamento" } : { dot: "💎", txt: "Nova" };
                             const ultimaH = bucket.listas
                               .map(l => l.ultima_higienizacao_at)
                               .filter(Boolean)
