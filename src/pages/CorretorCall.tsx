@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, Pause, X, ChevronRight, Loader2 } from "lucide-react";
+import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, Pause, X, ChevronRight, Loader2, Pencil } from "lucide-react";
 import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 import ImmersiveScreen from "@/components/immersive/ImmersiveScreen";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
