@@ -96,15 +96,23 @@ export default function VendasRealizadas() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [periodMode, setPeriodMode] = useState<"mes" | "ano">("mes");
 
   const dateRange = useMemo(() => {
+    if (periodMode === "ano") {
+      return {
+        start: `${selectedYear}-01-01`,
+        end: `${selectedYear}-12-31`,
+        label: `Ano de ${selectedYear}`,
+      };
+    }
     const target = setMonth(new Date(selectedYear, 0, 1), selectedMonth);
     return {
       start: format(startOfMonth(target), "yyyy-MM-dd"),
       end: format(endOfMonth(target), "yyyy-MM-dd"),
       label: `${MESES[selectedMonth]} ${selectedYear}`,
     };
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, periodMode]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["vendas-realizadas", user?.id, isAdmin, isGestor, dateRange.start, dateRange.end],
