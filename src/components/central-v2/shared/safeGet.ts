@@ -15,7 +15,11 @@ export function safeGet<T = unknown>(
     obj
   );
 
-  if (import.meta.env.DEV && value === undefined) {
+  const rootEmpty =
+    obj == null ||
+    (typeof obj === "object" && !Array.isArray(obj) && Object.keys(obj as object).length === 0);
+
+  if (import.meta.env.DEV && value === undefined && !rootEmpty) {
     // eslint-disable-next-line no-console
     console.warn(`[Central v2] Missing field: ${label} at ${path}`, obj);
   }
