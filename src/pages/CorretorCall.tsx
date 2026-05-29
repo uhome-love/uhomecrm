@@ -53,11 +53,16 @@ function playWhoosh() {
 export default function CorretorCall() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile } = useAuthUser();
   const { progress, goals, metaConfirmadaHoje, saveGoals, refetchGoals, isLoading: progressLoading } = useCorretorProgress();
   const { isGestor, isAdmin } = useUserRole();
   const [phase, setPhase] = useState<CallPhase>("warmup");
-  const [nome, setNome] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // Perfil reusa cache do useAuthUser (AppLayout) — sem query duplicada
+  const nome = profile?.nome ? profile.nome.split(" ")[0] : "";
+  const avatarUrl = profile?.avatar_url ?? null;
+  const [activeTab, setActiveTab] = useState("call");
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [activeTab, setActiveTab] = useState("call");
   const [hasInteracted, setHasInteracted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
