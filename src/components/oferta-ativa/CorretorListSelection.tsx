@@ -401,6 +401,17 @@ export default function CorretorListSelection() {
     return groups;
   }, [liberadas, filterListas, statsMap, showExhausted, segmentMap]);
 
+  // Ao carregar os segmentos pela primeira vez na sessão, começar todos colapsados.
+  useEffect(() => {
+    if (collapseInitRef.current) return;
+    const segIds = Object.keys(segmentGroups);
+    if (segIds.length === 0) return;
+    collapseInitRef.current = true;
+    setCollapsed(new Set(segIds));
+  }, [segmentGroups]);
+
+
+
   // All listas flat (for "listas" view mode)
   const allListasFlat = useMemo(() => {
     const matched = filterListas(liberadas);
