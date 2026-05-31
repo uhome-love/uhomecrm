@@ -9,6 +9,9 @@ import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/useP
 import { Loader2, AlertTriangle, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 
 interface Props {
   open: boolean;
