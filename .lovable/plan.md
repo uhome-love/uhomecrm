@@ -1,56 +1,74 @@
-## Objetivo
+# Relatórios individuais 1 a 1 — Maio/2026
 
-O gestor Bruno precisa de uma carteira **própria** dentro do pipeline de leads:
-- Criar leads sem erro de permissão
-- Manter esses leads sob sua gestão (sem serem "doados" automaticamente para um corretor)
-- **Filtrar para ver só os próprios leads** ou ver todos os da equipe
-- Continuar vendo os negócios da equipe (pipeline de negócios)
+Objetivo: gerar **um PDF por corretor ativo** (28 corretores, todos os times), cobrindo **01–31/maio/2026**, com números de desempenho, origens/campanhas, insights, melhorias e elogios, e **comparação com a média do time e da empresa** (benchmark). Saída: arquivos para download, prontos para entregar no 1 a 1.
 
-## Diagnóstico
+Como é uma geração de artefatos (não uma feature do CRM), faço por script lendo o banco direto e produzindo os PDFs — sem alterar o app.
 
-Investiguei o banco e o código:
+## O que cada PDF terá
 
-1. **Bruno tem os papéis `gestor` e `corretor`** corretamente atribuídos.
-2. **A regra de inserção do gestor já existe** no pipeline de leads e, no banco, permite o cadastro.
-3. **Causa real do problema:** quando o gestor cadastra um lead sem definir responsável, um gatilho automático (`trg_auto_distribute_lead`) **distribui o lead para um corretor da roleta** (ou o deixa pendente). O lead sai da mão do gestor e ele não o vê mais. Isso, combinado com a falta de responsável definido, gera o comportamento de "não consigo adicionar / o lead some" que aparece como erro de permissão.
-4. **Visibilidade já funciona:** gestor vê leads dos 13 membros do time (`is_lead_in_my_team`) e os negócios da equipe (`negocios_select_scoped` já cobre time + próprios). Negócios não precisam de mudança.
+```text
+┌──────────────────────────────────────────────┐
+│  CAPA: Nome do corretor · Equipe · Maio 2026  │
+│  Avatar/iniciais · selo de destaque do mês    │
+├──────────────────────────────────────────────┤
+│  RESUMO EXECUTIVO (cards):                     │
+│  Presença · Roletas · Leads · Visitas         │
+│  Negócios · Vendas (VGV assinado)             │
+│  cada card: valor + média time + média empresa│
+├──────────────────────────────────────────────┤
+│  FUNIL DE CONVERSÃO                            │
+│  Leads → Visitas → Negócios → Vendas          │
+│  com % de conversão entre etapas              │
+├──────────────────────────────────────────────┤
+│  ORIGENS DOS LEADS (top, com %)               │
+│  CAMPANHAS com melhor aproveitamento          │
+│  (lead → visita/negócio por campanha)         │
+├──────────────────────────────────────────────┤
+│  CURIOSIDADES & INSIGHTS (texto)              │
+│  MELHORIAS (pontos de atenção) + ELOGIOS      │
+├──────────────────────────────────────────────┤
+│  Rodapé: posição no ranking da empresa        │
+└──────────────────────────────────────────────┘
+```
 
-## Solução
+## Métricas e fontes (período 01–31/05/2026, BRT)
 
-### 1. Frontend — diálogo de novo lead (`PipelineAddLeadDialog.tsx`)
-- Para gestor/admin, adicionar seletor **"Atribuir a"** com:
-  - **Minha carteira (eu)** — padrão
-  - **Membros do time** (lista dos corretores do time)
-  - **Distribuir automaticamente** (mantém a roleta)
-- Corretor comum: nada muda (auto-atribuído a si mesmo).
+- **Presença**: view `v_kpi_presenca` (por `auth_user_id` e `data`). *Atenção: os dados de presença de maio estão esparsos (142 registros, marcados como ausente/nulo). Vou exibir o que existir e, se continuar vazio, uso participação na roleta (dias credenciado) como proxy e sinalizo isso no relatório.*
+- **Roletas**: `roleta_distribuicoes` por `enviado_em` — total recebidas, aceitas (status/`aceito_em`), e tempo de 1ª interação. Chave: `corretor_id = profiles.id`.
+- **Leads**: `pipeline_leads` por `created_at`. Chave: `corretor_id = profiles.user_id`.
+- **Pipeline**: distribuição de leads por estágio (`pipeline_stages`) no fim do mês.
+- **Visitas**: `visitas` por `data_visita` — criadas, realizadas, no-show (`status`/`resultado_visita`). Chave: `corretor_id = profiles.user_id`.
+- **Negócios**: `negocios` por `created_at` — criados, e por fase. Chave: `auth_user_id`.
+- **Vendas / VGV assinado**: `negocios` com `fase='vendido'` e `data_assinatura` em maio; valor = `coalesce(vgv_final, vgv_estimado)` (regra canônica da memória).
+- **Origens**: `pipeline_leads.origem` (meta_ads, Oferta Ativa, imovelweb, site_uhome, etc.).
+- **Campanhas**: `pipeline_leads.campanha`/`conjunto_anuncio`/`anuncio`/`formulario` — ranking por volume e por aproveitamento (conversão para visita/negócio).
+- **Benchmark**: para cada métrica calculo média do **time** (via `team_members`) e média da **empresa** (28 corretores) e mostro lado a lado.
 
-### 2. Frontend — lógica de criação (`usePipeline.ts`, `addLead`)
-- **Minha carteira:** grava `corretor_id` = id do próprio gestor e `aceite_status = "aceito"` → impede a distribuição automática e mantém o lead visível.
-- **Membro do time:** grava `corretor_id` do membro escolhido.
-- **Distribuir automaticamente:** envia `corretor_id` nulo (comportamento atual da roleta).
+## Insights, melhorias e elogios
 
-### 3. Frontend — filtro "Minha carteira / Equipe" no pipeline de leads
-- Adicionar um seletor de escopo na barra do pipeline, visível apenas para gestor/admin:
-  - **Equipe (todos)** — padrão atual (todos os leads do time + próprios)
-  - **Minha carteira** — mostra somente os leads cujo responsável é o próprio gestor
-- O filtro é client-side sobre os leads já carregados (`corretor_id = id do gestor`), simples e instantâneo. A preferência fica lembrada na sessão.
+Gerados por regras determinísticas a partir dos números de cada corretor comparados ao benchmark, por exemplo:
+- Elogio: melhor conversão visita→venda do time; maior VGV; resposta mais rápida na roleta.
+- Melhoria: muitos leads parados sem visita; baixa taxa de aceite de roleta; alto no-show.
+- Curiosidade: campanha/origem que mais converteu para aquele corretor; dia/semana mais produtivo.
 
-### 4. Banco — reforço das permissões (garantia)
-- **Garantir** a regra de inserção do gestor (recriar de forma idempotente).
-- **Adicionar** ao gestor a permissão de ver/editar leads que ele mesmo criou (`created_by = gestor`), além dos da equipe — assim, mesmo um lead sem responsável criado por ele permanece visível e gerenciável.
-- Não altera visibilidade dos corretores nem dos negócios (já corretas).
+(Opcional, se você quiser: posso enriquecer os textos de insight com a Lovable AI. Por padrão farei por regras, sem custo de IA — me avise se quiser a versão com IA.)
 
-## Resultado esperado
-- Gestor cria leads sem erro.
-- Lead criado fica na **carteira do gestor** por padrão (não é doado).
-- Gestor pode direcionar o lead a um corretor ou à distribuição automática.
-- Gestor alterna entre **Minha carteira** e **Equipe (todos)** no pipeline.
-- Gestor continua vendo todos os negócios da equipe.
+## Identidade visual
+
+Seguir o tema do CRM: Off-white / Deep Slate (#0A0E1A), destaque Indigo (#4969FF), cantos arredondados, tipografia limpa. Logo Uhome na capa/rodapé.
 
 ## Detalhes técnicos
-- Arquivos: `src/components/pipeline/PipelineAddLeadDialog.tsx`, `src/hooks/usePipeline.ts`, e a página/board do pipeline de leads para o seletor de escopo.
-- Migration de RLS em `pipeline_leads`: recriar política INSERT de gestor; adicionar `created_by = auth.uid()` às políticas SELECT/UPDATE de gestor (sem `anon`; mantendo `service_role`).
-- Sem mudanças em `negocios` (RLS já cobre time + próprios + parcerias).
-- Lista de membros do time via `team_members` (`gerente_id = auth.uid()`).
 
-Estimativa: ~45–55 min, risco baixo (1 migration + frontend).
+1. Script Python (reportlab) lê o banco via consultas SQL agregadas por corretor, respeitando o mapeamento de IDs por tabela e o fuso BRT.
+2. Resolve `profiles` (id + user_id + nome + equipe via `team_members`) para 28 corretores ativos.
+3. Calcula métricas individuais + benchmarks (time/empresa) numa passada.
+4. Gera 1 PDF por corretor em `/mnt/documents/relatorios-maio-2026/` + um `.zip` com todos.
+5. **QA obrigatório**: converto páginas de uma amostra de PDFs em imagem e inspeciono (layout, textos cortados, números, gráficos) antes de entregar; corrijo e re-renderizo até ficar limpo.
+6. Entrego os artefatos (zip + amostras) para download.
+
+## Fora de escopo
+
+- Nenhuma alteração no app/CRM nem no banco (apenas leitura).
+- Sem nova página no CRM (foi escolhido PDF por corretor).
+
+Confirmando: gero os 28 PDFs + um zip, com benchmark de time e empresa, textos de insight por regras. Quando aprovar, executo.
