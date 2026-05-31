@@ -303,6 +303,7 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
                 </Select>
               </div>
             )}
+            <div>
               <Label>Segmento</Label>
               <Select value={form.segmento_id} onValueChange={v => setForm(f => ({ ...f, segmento_id: v }))}>
                 <SelectTrigger>
