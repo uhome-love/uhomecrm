@@ -59,6 +59,38 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
   const [checkingDup, setCheckingDup] = useState(false);
   const debouncedPhone = useDebounce(form.telefone, 500);
 
+  const { isGestor, isAdmin } = useUserRole();
+  const { user } = useAuth();
+  const isManager = isGestor || isAdmin;
+  // "self" = minha carteira | "auto" = distribuição automática | <authId> = membro do time
+  const [assignTo, setAssignTo] = useState<string>("self");
+
+  // Membros do time do gestor (para atribuição manual)
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ["add-lead-team-members", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data: tm } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", user.id)
+        .eq("status", "ativo");
+      const ids = (tm || []).map((r: any) => r.user_id).filter(Boolean);
+      if (ids.length === 0) return [];
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, nome")
+        .in("user_id", ids);
+      return (profs || [])
+        .map((p: any) => ({ authId: p.user_id as string, nome: (p.nome as string) || "Sem nome" }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+    },
+    enabled: isManager && open,
+    staleTime: 5 * 60 * 1000,
+  });
+
+
+
   // Check for duplicates when phone changes
   useEffect(() => {
     const normalized = debouncedPhone.replace(/\D/g, "");
