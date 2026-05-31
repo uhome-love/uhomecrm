@@ -172,6 +172,17 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
 
     setLoading(true);
     try {
+      // Resolve responsável quando gestor/admin cadastra:
+      //  - "self" → próprio gestor (carteira própria)
+      //  - "auto" → null (distribuição automática)
+      //  - <authId> → membro do time escolhido
+      let corretor_id: string | null | undefined = undefined;
+      if (isManager) {
+        if (assignTo === "self") corretor_id = user?.id ?? null;
+        else if (assignTo === "auto") corretor_id = null;
+        else corretor_id = assignTo;
+      }
+
       const result = await onAdd({
         nome: form.nome.trim(),
         telefone: form.telefone || null,
@@ -182,12 +193,15 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
         origem_detalhe: form.origem_detalhe || null,
         observacoes: form.observacoes || null,
         valor_estimado: form.valor_estimado ? parseFloat(form.valor_estimado) : null,
+        ...(isManager ? { corretor_id } : {}),
       });
       if (result) {
         setForm({ nome: "", telefone: "", email: "", segmento_id: "", empreendimento: "", origem: "", origem_detalhe: "", observacoes: "", valor_estimado: "" });
+        setAssignTo("self");
         setDuplicates([]);
         onOpenChange(false);
       }
+
     } catch (err: any) {
       console.error("Erro ao adicionar lead:", err);
       const msg = err?.message || "";
