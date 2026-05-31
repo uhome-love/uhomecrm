@@ -148,6 +148,9 @@ export default function PipelineKanban() {
   const [sortOrder, setSortOrder] = useState<SortOrder>(loadSortOrder);
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
+  // Gestor/admin: alterna entre ver toda a equipe ou apenas a própria carteira
+  // (leads cujo responsável é o próprio usuário logado). Filtro client-side.
+  const [minhaCarteira, setMinhaCarteira] = useState(false);
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
   const [clientStatusFilter, setClientStatusFilter] = useState<ClientStatusFilter>("todos");
   const [negociosFilter, setNegociosFilter] = useState(false);
@@ -317,11 +320,15 @@ export default function PipelineKanban() {
         result = result.filter(l => l.corretor_id === corretorFilter || partnerLeadIds.has(l.id));
       }
     }
+    // "Minha carteira": gestor/admin vê apenas os leads sob sua responsabilidade.
+    if (minhaCarteira && authUser?.id) {
+      result = result.filter(l => l.corretor_id === authUser.id);
+    }
     if (campaignTagFilter && campaignTagFilter !== "all") {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isAdmin, gestorFilter, gestorTeamUserIds]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isAdmin, gestorFilter, gestorTeamUserIds, minhaCarteira, authUser?.id]);
 
   const filteredLeads = useMemo(() => {
     const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
@@ -560,7 +567,29 @@ export default function PipelineKanban() {
       />
 
 
-      {/* Active filter badges row — hidden on mobile kanban */}
+      {/* Toggle "Minha carteira / Equipe" — gestor e admin, somente no Kanban */}
+      {(isGestor || isAdmin) && activeTab === "kanban" && (
+        <div className="flex items-center gap-1 shrink-0" style={{ padding: "8px 28px 0" }}>
+          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
+            <button
+              type="button"
+              onClick={() => setMinhaCarteira(false)}
+              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${!minhaCarteira ? "bg-[#4969FF] text-white" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Equipe
+            </button>
+            <button
+              type="button"
+              onClick={() => setMinhaCarteira(true)}
+              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${minhaCarteira ? "bg-[#4969FF] text-white" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Minha carteira
+            </button>
+          </div>
+        </div>
+      )}
+
+
       {hasAnyFilter && !(isMobile && activeTab === "kanban") && (
         <div className="flex items-center gap-1 flex-wrap shrink-0" style={{ padding: "6px 28px 0" }}>
           {filters.temperaturas.length > 0 && (

@@ -720,9 +720,15 @@ export function usePipeline(
       }
     }
 
-    // If corretor is adding, auto-assign to themselves and mark as accepted
+    // If corretor is adding, auto-assign to themselves and mark as accepted.
+    // Gestor/admin can choose a responsible (own carteira or a team member) via
+    // lead.corretor_id; only when left null the lead goes to auto-distribution.
     const isCorretorAdding = !isGestor && !isAdmin;
     const corretorId = isCorretorAdding ? user.id : (lead.corretor_id || null);
+    // Sempre que houver um responsável definido (próprio gestor ou membro do
+    // time), o lead já entra "aceito" — evita o gatilho de distribuição
+    // automática e mantém o lead visível na carteira do responsável.
+    const isAssigned = !!corretorId;
 
     const { data, error } = await supabase
       .from("pipeline_leads")
@@ -735,8 +741,8 @@ export function usePipeline(
         empreendimento,
         stage_id: firstStage.id,
         corretor_id: corretorId,
-        aceite_status: isCorretorAdding ? "aceito" : undefined,
-        aceito_em: isCorretorAdding ? new Date().toISOString() : undefined,
+        aceite_status: isAssigned ? "aceito" : undefined,
+        aceito_em: isAssigned ? new Date().toISOString() : undefined,
         origem: origem || "Manual",
         origem_detalhe: lead.origem_detalhe || null,
         observacoes: lead.observacoes || null,

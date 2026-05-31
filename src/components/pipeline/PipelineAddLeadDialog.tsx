@@ -9,6 +9,9 @@ import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/useP
 import { Loader2, AlertTriangle, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 
 interface Props {
   open: boolean;
@@ -55,6 +58,38 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
   const [duplicates, setDuplicates] = useState<DuplicateResult[]>([]);
   const [checkingDup, setCheckingDup] = useState(false);
   const debouncedPhone = useDebounce(form.telefone, 500);
+
+  const { isGestor, isAdmin } = useUserRole();
+  const { user } = useAuth();
+  const isManager = isGestor || isAdmin;
+  // "self" = minha carteira | "auto" = distribuição automática | <authId> = membro do time
+  const [assignTo, setAssignTo] = useState<string>("self");
+
+  // Membros do time do gestor (para atribuição manual)
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ["add-lead-team-members", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data: tm } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", user.id)
+        .eq("status", "ativo");
+      const ids = (tm || []).map((r: any) => r.user_id).filter(Boolean);
+      if (ids.length === 0) return [];
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, nome")
+        .in("user_id", ids);
+      return (profs || [])
+        .map((p: any) => ({ authId: p.user_id as string, nome: (p.nome as string) || "Sem nome" }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+    },
+    enabled: isManager && open,
+    staleTime: 5 * 60 * 1000,
+  });
+
+
 
   // Check for duplicates when phone changes
   useEffect(() => {
@@ -137,6 +172,17 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
 
     setLoading(true);
     try {
+      // Resolve responsável quando gestor/admin cadastra:
+      //  - "self" → próprio gestor (carteira própria)
+      //  - "auto" → null (distribuição automática)
+      //  - <authId> → membro do time escolhido
+      let corretor_id: string | null | undefined = undefined;
+      if (isManager) {
+        if (assignTo === "self") corretor_id = user?.id ?? null;
+        else if (assignTo === "auto") corretor_id = null;
+        else corretor_id = assignTo;
+      }
+
       const result = await onAdd({
         nome: form.nome.trim(),
         telefone: form.telefone || null,
@@ -147,12 +193,15 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
         origem_detalhe: form.origem_detalhe || null,
         observacoes: form.observacoes || null,
         valor_estimado: form.valor_estimado ? parseFloat(form.valor_estimado) : null,
+        ...(isManager ? { corretor_id } : {}),
       });
       if (result) {
         setForm({ nome: "", telefone: "", email: "", segmento_id: "", empreendimento: "", origem: "", origem_detalhe: "", observacoes: "", valor_estimado: "" });
+        setAssignTo("self");
         setDuplicates([]);
         onOpenChange(false);
       }
+
     } catch (err: any) {
       console.error("Erro ao adicionar lead:", err);
       const msg = err?.message || "";
@@ -237,6 +286,23 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
                 placeholder="email@exemplo.com"
               />
             </div>
+            {isManager && (
+              <div className="col-span-2">
+                <Label>Atribuir a</Label>
+                <Select value={assignTo} onValueChange={setAssignTo}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="self">Minha carteira (eu)</SelectItem>
+                    <SelectItem value="auto">Distribuir automaticamente</SelectItem>
+                    {teamMembers.map(m => (
+                      <SelectItem key={m.authId} value={m.authId}>{m.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label>Segmento</Label>
               <Select value={form.segmento_id} onValueChange={v => setForm(f => ({ ...f, segmento_id: v }))}>
