@@ -148,6 +148,9 @@ export default function PipelineKanban() {
   const [sortOrder, setSortOrder] = useState<SortOrder>(loadSortOrder);
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
+  // Gestor/admin: alterna entre ver toda a equipe ou apenas a própria carteira
+  // (leads cujo responsável é o próprio usuário logado). Filtro client-side.
+  const [minhaCarteira, setMinhaCarteira] = useState(false);
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
   const [clientStatusFilter, setClientStatusFilter] = useState<ClientStatusFilter>("todos");
   const [negociosFilter, setNegociosFilter] = useState(false);
