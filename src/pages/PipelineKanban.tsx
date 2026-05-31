@@ -320,11 +320,15 @@ export default function PipelineKanban() {
         result = result.filter(l => l.corretor_id === corretorFilter || partnerLeadIds.has(l.id));
       }
     }
+    // "Minha carteira": gestor/admin vê apenas os leads sob sua responsabilidade.
+    if (minhaCarteira && authUser?.id) {
+      result = result.filter(l => l.corretor_id === authUser.id);
+    }
     if (campaignTagFilter && campaignTagFilter !== "all") {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isAdmin, gestorFilter, gestorTeamUserIds]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isAdmin, gestorFilter, gestorTeamUserIds, minhaCarteira, authUser?.id]);
 
   const filteredLeads = useMemo(() => {
     const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
