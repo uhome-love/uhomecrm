@@ -286,7 +286,23 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
                 placeholder="email@exemplo.com"
               />
             </div>
-            <div>
+            {isManager && (
+              <div className="col-span-2">
+                <Label>Atribuir a</Label>
+                <Select value={assignTo} onValueChange={setAssignTo}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="self">Minha carteira (eu)</SelectItem>
+                    <SelectItem value="auto">Distribuir automaticamente</SelectItem>
+                    {teamMembers.map(m => (
+                      <SelectItem key={m.authId} value={m.authId}>{m.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
               <Label>Segmento</Label>
               <Select value={form.segmento_id} onValueChange={v => setForm(f => ({ ...f, segmento_id: v }))}>
                 <SelectTrigger>
