@@ -567,7 +567,29 @@ export default function PipelineKanban() {
       />
 
 
-      {/* Active filter badges row — hidden on mobile kanban */}
+      {/* Toggle "Minha carteira / Equipe" — gestor e admin, somente no Kanban */}
+      {(isGestor || isAdmin) && activeTab === "kanban" && (
+        <div className="flex items-center gap-1 shrink-0" style={{ padding: "8px 28px 0" }}>
+          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
+            <button
+              type="button"
+              onClick={() => setMinhaCarteira(false)}
+              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${!minhaCarteira ? "bg-[#4969FF] text-white" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Equipe
+            </button>
+            <button
+              type="button"
+              onClick={() => setMinhaCarteira(true)}
+              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${minhaCarteira ? "bg-[#4969FF] text-white" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Minha carteira
+            </button>
+          </div>
+        </div>
+      )}
+
+
       {hasAnyFilter && !(isMobile && activeTab === "kanban") && (
         <div className="flex items-center gap-1 flex-wrap shrink-0" style={{ padding: "6px 28px 0" }}>
           {filters.temperaturas.length > 0 && (
