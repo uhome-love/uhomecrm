@@ -292,7 +292,8 @@ export function useRoleta() {
     const { data: segs } = await supabase
       .from("roleta_segmentos")
       .select("id, nome, descricao, faixa_preco, ativo")
-      .eq("ativo", true);
+      .eq("ativo", true)
+      .order("nome");
     const { data: camps } = await supabase
       .from("roleta_campanhas")
       .select("id, empreendimento, segmento_id, ativo")
