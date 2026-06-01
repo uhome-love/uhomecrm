@@ -1,46 +1,50 @@
-# Correções nos relatórios de maio/2026
+## Objetivo
 
-Investiguei os dados e encontrei a causa dos números errados.
+Reorganizar os segmentos da roleta de leads para junho em **6 segmentos**, redistribuir os empreendimentos e deixar **ativos apenas os que estão no ar**, mantendo o restante mapeado porém inativo.
 
-## O problema
+## Como a roleta resolve segmento (confirmado)
 
-**Roleta diurna/noturna estava contando LEADS distribuídos, não TURNOS.**
-O script usa `roleta_distribuicoes` (cada linha = 1 lead que caiu na roleta). Por isso números como 46 noturnas / 74 diurnas — são leads recebidos, não plantões. A fonte correta para "quantas roletas o corretor fez" é `roleta_credenciamentos` (1 linha = corretor credenciado naquele dia/turno).
+- O segmento de um lead é resolvido pela tabela `roleta_campanhas` (empreendimento → `segmento_id`), via correspondência por nome. Os nomes dos segmentos ficam em `roleta_segmentos`.
+- **Avulso** é o fallback automático: qualquer lead sem campanha correspondente e cuja origem não seja "geral" cai em Avulso. Como **ImóvelWeb e Site** chegam como "Avulso - ImovelWeb"/origem própria (não jetimob), eles já caem em Avulso automaticamente — **não precisa cadastrar empreendimento** para o Avulso.
 
-Exemplo real (Junior Padilha, maio):
+## Estrutura final dos 6 segmentos
+
 ```text
-manhã:     14 dias
-tarde:     18 dias
-noturna:   13 dias   (≤ 31 ✓)
-dia_todo:   5 dias   (domingos / benefício)
+S1 - MCMV          → Open Bosque, isla, Alto Lindóia            [NO AR]
+S2 - Médio Padrão  → Las Casas [NO AR] + demais médios (inativos)
+S3 - Avulso        → ImóvelWeb + Site (fallback automático)     [NO AR]
+S4 - Investimento  → Shift, Átrio [NO AR] + demais (inativos)
+S5 - Produto Foco  → Casa Tua                                   [NO AR]
+S6 - Alto Padrão   → atuais empreendimentos (todos inativos)
 ```
 
-## O que vou corrigir
+### Renomear segmentos (`roleta_segmentos`)
+- `S1 - MCMV / Médio Padrão` → **`S1 - MCMV`**
+- `Médio-Alto Padrão` (hoje inativo) → **`S2 - Médio Padrão`** + ativar
+- `S2 - Alto Padrão` → **`S6 - Alto Padrão`**
+- `S3 - Avulso`, `S4 - Investimento`, `S5 - Produto Foco` → mantidos
 
-### 1. Roleta: separar diurna, noturna e dia todo (fonte = credenciamentos)
-- **Diurna** = nº de turnos de manhã + nº de turnos de tarde.
-- **Noturna** = nº de dias credenciado na janela `noturna` (máx. 31).
-- **Dia todo (Domingo / benefício)** = nº de dias na janela `dia_todo`, exibido como informação separada e clara (é a roleta de domingo, benefício do corretor).
-- Trocar a query `data["roletas"]` para usar `roleta_credenciamentos` em vez de `roleta_distribuicoes`, devolvendo `diurna`, `noturna` e `dia_todo` separados.
+### Reatribuir empreendimentos (`roleta_campanhas`)
 
-### 2. Visitas realizadas (apenas as que aconteceram)
-- A lista detalhada e o KPI "visitas realizadas" passam a considerar **somente `status = 'realizada'`** (exclui `no_show` e `marcada`).
-- Manter "visitas criadas" como total (todos os status) para comparação.
-- Conferido em maio: 139 realizadas, 163 no_show, 36 marcadas.
+**S1 - MCMV** (ativos): Open Bosque, isla, Alto Lindóia
 
-### 3. Origem + Campanha
-- Hoje o relatório mostra só a origem. Vou adicionar a **campanha** ao lado, na mesma seção, mostrando origem e campanha por corretor (volume e melhor aproveitamento).
+**S2 - Médio Padrão**: Las Casas (ativo); Orygem, Melnick Day, Me Day, Melnick Day Medio Padrao (mapeados, **inativos**)
 
-## Fluxo
-1. Ajustar `/tmp/fetch_data.py` (queries de roleta, visitas, campanha) e `/tmp/gen_reports.py` (seção roleta com 3 blocos e seção origem+campanha).
-2. Regerar o **modelo do Junior Padilha**, converter em imagem e validar visualmente (QA).
-3. Te mostrar o modelo corrigido para aprovação.
-4. Após o OK, regerar os **28 relatórios + o ZIP** (mantendo os ajustes manuais de Thalia, Gustavo e Rafaela).
+**S4 - Investimento**: Shift (ativo), **Átrio - ABF movido de Produto Foco** (ativo); Casa Bastian, Melnick Day Compactos, Alfa, Go Carlos Gomes, Connect JW, skyline menino deus (mapeados, **inativos**)
 
-## Detalhe técnico
-- `data["roletas"]` sobre `roleta_credenciamentos` no período:
-  `COUNT(*) FILTER (janela='manha') + COUNT(*) FILTER (janela='tarde') AS diurna`,
-  `COUNT(*) FILTER (janela='noturna') AS noturna`,
-  `COUNT(*) FILTER (janela='dia_todo') AS dia_todo`.
-- Visitas: reforçar `status='realizada'` em `visitas` (KPI realizadas) e `visitas_detalhe`.
-- Campanha: nova query agregando `pipeline_leads.campanha` por corretor; render na página de origens.
+**S5 - Produto Foco**: Casa Tua (ativo) — Átrio sai daqui
+
+**S6 - Alto Padrão**: Lake Eyre, Seen Menino Deus, Melnick Day Alto Padrao, Boa Vista Country Club, Seen Três Figueiras, High Garden Iguatemi → todos **inativos**
+
+## Passos de implementação
+
+1. **Dados — `roleta_segmentos`**: atualizar os 3 nomes e ativar o segmento "S2 - Médio Padrão".
+2. **Dados — `roleta_campanhas`**: atualizar `segmento_id` e `ativo` de cada empreendimento conforme o mapa acima (Átrio passa para Investimento; médios e investimento extras viram inativos; alto padrão tudo inativo; MCMV com Alto Lindóia).
+3. **Frontend — `src/hooks/useRoletaSegmentos.ts`**: atualizar `SEGMENTO_VISUALS` para os novos nomes (`s1 - mcmv`, `s2 - médio padrão`, `s6 - alto padrão`) mantendo ícones/cores coerentes (MCMV 🏠, Médio Padrão, Alto Padrão 🏆), preservando chaves antigas como compatibilidade.
+4. **Verificação**: reconsultar o join `roleta_campanhas × roleta_segmentos` para confirmar o estado final e checar o painel em Configurações → Roleta/Campanhas.
+
+## Notas técnicas
+
+- Alterações de `roleta_segmentos`/`roleta_campanhas` são **dados** (UPDATE), feitas pela ferramenta de dados — não por migração de schema.
+- Nenhuma mudança na função `distribuir_lead_atomico` (a lógica de Avulso/fallback já cobre ImóvelWeb e Site).
+- A ordenação na UI é alfabética por nome; o prefixo S1..S6 garante a ordem correta.
