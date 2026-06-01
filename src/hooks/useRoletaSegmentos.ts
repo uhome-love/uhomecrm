@@ -29,19 +29,27 @@ const S2 = { icon: "🏆", color: "#F0B95A", bg: "rgba(240,185,90,0.08)", border
 const S3 = { icon: "🎯", color: "#F472B6", bg: "rgba(244,114,182,0.08)", border: "rgba(244,114,182,0.25)", order: 3 };
 const S4 = { icon: "📈", color: "#4ADE80", bg: "rgba(74,222,128,0.08)", border: "rgba(74,222,128,0.25)", order: 4 };
 
+const S5 = { icon: "🏘️", color: "#38BDF8", bg: "rgba(56,189,248,0.08)", border: "rgba(56,189,248,0.25)", order: 5 };
+
 const SEGMENTO_VISUALS: Record<string, { icon: string; color: string; bg: string; border: string; order: number }> = {
-  // Novos nomes (S1..S4)
+  // Reorganização junho/2026 (S1..S6)
+  "s1 - mcmv": S1,
+  "s2 - médio padrão": S5,
+  "s2 - medio padrao": S5,
+  "s3 - avulso": S3,
+  "s4 - investimento": S4,
+  "s5 - produto foco": S3,
+  "s6 - alto padrão": S2,
+  "s6 - alto padrao": S2,
+  // Compatibilidade com nomes antigos
   "s1 - mcmv / médio padrão": S1,
   "s1 - mcmv / medio padrao": S1,
   "s2 - alto padrão": S2,
   "s2 - alto padrao": S2,
-  "s3 - avulso": S3,
-  "s4 - investimento": S4,
-  // Compatibilidade com nomes antigos
   "altíssimo padrão": S2,
   "altissimo padrao": S2,
-  "médio-alto padrão": S1,
-  "medio-alto padrao": S1,
+  "médio-alto padrão": S5,
+  "medio-alto padrao": S5,
   "investimento": S4,
   "mcmv / até 500k": S1,
   "mcmv / ate 500k": S1,
