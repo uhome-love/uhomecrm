@@ -462,8 +462,8 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
           </div>
         )}
       </div>
-      </div>
-    </div>
-    , document.body
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
