@@ -6,6 +6,18 @@ export interface RoletaSegmento {
   nome: string;
 }
 
+export function getRoletaSegmentoOrder(nome: string | null | undefined) {
+  if (!nome) return 99;
+  const match = nome.trim().match(/^s\s*(\d+)/i);
+  return match ? Number(match[1]) : 99;
+}
+
+export function compareRoletaSegmentosByNome(a: string | null | undefined, b: string | null | undefined) {
+  const orderDiff = getRoletaSegmentoOrder(a) - getRoletaSegmentoOrder(b);
+  if (orderDiff !== 0) return orderDiff;
+  return (a || "").localeCompare(b || "pt-BR", "pt-BR", { sensitivity: "base" });
+}
+
 /** All active roleta segmentos — used to label OA lists and group them. */
 export function useRoletaSegmentos() {
   return useQuery({
@@ -17,7 +29,7 @@ export function useRoletaSegmentos() {
         .eq("ativo", true)
         .order("nome");
       if (error) throw error;
-      return (data || []) as RoletaSegmento[];
+      return ((data || []) as RoletaSegmento[]).sort((a, b) => compareRoletaSegmentosByNome(a.nome, b.nome));
     },
     staleTime: 5 * 60_000,
   });

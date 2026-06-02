@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { todayBRT } from "@/lib/utils";
@@ -305,7 +306,7 @@ export function useRoleta() {
       descricao: s.descricao,
       faixa_preco: s.faixa_preco,
       campanhas: (camps || []).filter(c => c.segmento_id === s.id).map(c => c.empreendimento),
-    }));
+    })).sort((a, b) => compareRoletaSegmentosByNome(a.nome, b.nome));
     setSegmentos(mapped);
   }, []);
 

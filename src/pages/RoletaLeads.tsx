@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useRoleta, getCurrentWindowInfo, getBrtDateInfo, type JanelaId, type RoletaSegmento } from "@/hooks/useRoleta";
+import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
 import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -67,6 +68,7 @@ function CeoView() {
   }
 
   const pendentes = credenciamentos.filter(c => c.status === "pendente");
+  const segmentosOrdenados = [...segmentos].sort((a, b) => compareRoletaSegmentosByNome(a.nome, b.nome));
 
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-4 md:p-6 -m-4 md:-m-6 min-h-full space-y-4">
@@ -183,7 +185,7 @@ function CeoView() {
               <Target className="h-5 w-5" /> Roleta Ativa por Segmento
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {segmentos.map(seg => {
+            {segmentosOrdenados.map(seg => {
                 // Already sorted by leads_recebidos ascending from the hook
                 const segFila = fila.filter(f => f.segmento_id === seg.id);
                 return (
@@ -288,7 +290,7 @@ function CeoView() {
             <div>
               <label className="text-sm font-medium mb-1 block">Segmentos</label>
               <div className="space-y-2 border rounded-md p-3 max-h-48 overflow-y-auto">
-                {segmentos.map(s => {
+                {segmentosOrdenados.map(s => {
                   const checked = selectedSegmentos.includes(s.id);
                   return (
                     <label key={s.id} className="flex items-center gap-2 cursor-pointer text-sm hover:bg-muted/50 rounded px-1 py-0.5">
@@ -524,7 +526,8 @@ function CorretorView() {
     credenciar(selectedJanela, seg1, seg2 || null);
   };
 
-  const seg2Options = segmentos.filter(s => s.id !== seg1);
+  const segmentosOrdenados = [...segmentos].sort((a, b) => compareRoletaSegmentosByNome(a.nome, b.nome));
+  const seg2Options = segmentosOrdenados.filter(s => s.id !== seg1);
 
   return (
     <div className="max-w-lg mx-auto space-y-6 py-8">
@@ -594,7 +597,7 @@ function CorretorView() {
                 <SelectValue placeholder="Selecione o segmento principal" />
               </SelectTrigger>
               <SelectContent>
-                {segmentos.map(s => (
+                {segmentosOrdenados.map(s => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.nome} {s.campanhas.length > 0 && `(${s.campanhas.join(", ")})`}
                   </SelectItem>
