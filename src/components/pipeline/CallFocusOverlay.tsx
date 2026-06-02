@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { createPortal } from "react-dom";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -209,14 +209,20 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
     { num: 3, label: "Próximo passo" },
   ];
 
-  return createPortal(
-    <div
-      onClick={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
-      onPointerDown={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', pointerEvents: 'auto' }}
-    >
-      <div onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}>
+  return (
+    <DialogPrimitive.Root open={isOpen} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay
+          style={{ position: 'fixed', inset: 0, zIndex: 99998, backgroundColor: 'rgba(0,0,0,0.5)' }}
+        />
+        <DialogPrimitive.Content
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          aria-describedby={undefined}
+          style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 99999, backgroundColor: 'white', borderRadius: '16px', width: 'calc(100% - 48px)', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}
+        >
+          <DialogPrimitive.Title style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
+            Registrar ligação
+          </DialogPrimitive.Title>
       {/* HEADER */}
       <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-border/50">
         <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: "#EEEDFE", color: "#534AB7" }}>
@@ -456,8 +462,8 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
           </div>
         )}
       </div>
-      </div>
-    </div>
-    , document.body
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
