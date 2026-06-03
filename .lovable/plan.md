@@ -1,25 +1,36 @@
-# Corrigir modal de registro de ligação (não dá para digitar na Observação)
+## Objetivo
+Cruzar a base do CSV HubSpot (Lake / Golden Lake / Lake Eyre) com Pipeline de Leads, Negócios e Oferta Ativa, e incluir na Oferta Ativa apenas os leads que **não** existem em nenhuma dessas bases.
 
-## Problema
-O modal `CallFocusOverlay` é renderizado via `createPortal(document.body)` enquanto o drawer do lead (`Sheet` do Radix) está aberto. O focus trap do `Sheet` rouba o foco do `<Textarea>` de Observação (que está fora do `SheetContent`), impedindo clicar e escrever. O mesmo afeta os `<Input>` de data/hora.
+## Resultado da auditoria (cruzamento já executado)
+O arquivo enviado tem **2.193 contatos**, todos com conversão **Lake Eyre** (não há Golden Lake nem outro empreendimento no arquivo). Cruzamento feito por telefone (chave = 8 últimos dígitos, robusta a variação de DDD e 9º dígito), comparando contra `telefone`/`telefone2`/`telefone_normalizado` de cada base:
 
-## Causa raiz
-Foco preso pelo `FocusScope` do Radix no `SheetContent`; o conteúdo do portal está fora desse escopo.
+```text
+Total no CSV ............................. 2.193
+ - Telefone inválido (<8 dígitos) ........      2
+ - Já em Oferta Ativa ....................  1.160
+ - Já no Pipeline de Leads ...............    323
+ - Já em Negócios ........................      0
+ - Novos a incluir .......................    708
+     · com telefone completo válido ......    704  ✅ incluir
+     · telefone curto/incompleto .........      4  ❌ descartar
+```
 
-## Correção (frontend apenas)
-Converter `src/components/pipeline/CallFocusOverlay.tsx` para usar os primitivos de Dialog do Radix (`@/components/ui/dialog`) em vez do `createPortal` manual. Diálogos aninhados do Radix empilham os focus scopes corretamente: o diálogo de cima (CallFocusOverlay) passa a deter o foco e o `Sheet` pai libera o trap enquanto ele estiver aberto.
+**Conclusão: 704 leads novos serão incluídos na Oferta Ativa.**
 
-Passos:
-1. Trocar a estrutura de retorno: remover `createPortal` e a `<div>` overlay manual; usar `Dialog` + `DialogContent` controlados por `isOpen`/`onClose` (`open={isOpen}` e `onOpenChange` chamando `onClose`).
-2. Migrar todo o conteúdo atual (header, progress steps, body das fases 1/2/3 e footer) para dentro do `DialogContent`, mantendo a mesma aparência (largura ~560px, cantos arredondados, layout em coluna com header/body rolável/footer).
-3. Remover os `stopPropagation`/`preventDefault` manuais de pointer/mouse que existiam para contornar o problema, já que o Radix passa a gerenciar overlay e cliques.
-4. Garantir que o `<Textarea>` de Observação e os `<Input type="date/time">` fiquem plenamente focáveis e editáveis.
-5. Manter intactos: lógica de fases, `handleSalvar`, criação de próxima tarefa, movimentação de etapa e os botões "Atendeu/Não atendeu", "Continuar", "Salvar e fechar".
+## O que será feito
+1. Inserir os **704 leads** na lista existente **"Lake Eyre"** (`oferta_ativa_leads`), com:
+   - `status = 'na_fila'` (disponível para os corretores)
+   - `empreendimento = 'Lake Eyre'`
+   - `nome` = Nome + Sobrenome do CSV
+   - `telefone` normalizado (+55), `telefone_normalizado`, `email`, `campanha` e `origem` vindos do CSV
+   - `data_lead` = data de conversão do CSV
+2. Atualizar o `total_leads` da lista "Lake Eyre".
+3. Re-verificação pós-import confirmando que nenhum dos inseridos colide com Pipeline/Negócios/Oferta Ativa.
 
-## Verificação
-- Testar no preview: abrir um lead → botão **Ligar** → escolher "Não atendeu" → clicar e digitar na Observação → escolher próxima tarefa/data/hora → "Salvar e fechar".
-- Confirmar também o fluxo "Atendeu" → "Continuar" → fase 3 → "Salvar tudo e fechar".
-- Conferir que o drawer do lead continua funcionando normalmente após fechar o modal.
+## Detalhes técnicos
+- Inserção via ferramenta de dados (não migração) na tabela `oferta_ativa_leads`, usando `lista_id = 88476caf-76a2-44dd-b24c-587144c42e33`.
+- Dedup interno do CSV já aplicado (0 duplicados internos encontrados).
+- Os 4 telefones curtos e os 2 inválidos ficam de fora por não serem acionáveis em ligação.
 
-## Observação
-O `WhatsAppFocusFlow.tsx` usa o mesmo padrão `createPortal` e pode ter o mesmo problema, mas não tem campo de texto livre relatado. Fora do escopo agora; posso corrigir depois se desejado.
+## Confirmação necessária
+- Confirma incluir na lista existente **"Lake Eyre"**? (alternativa: criar uma nova lista, ex. "Lake Eyre - HubSpot Jun/2026").
