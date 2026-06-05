@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
 
 type StatusOnline = "na_empresa" | "em_plantao" | "em_pausa" | "offline";
 
@@ -286,7 +287,7 @@ export default function RoletaStatusBar() {
     const segList: Segmento[] = (segs || []).map(s => ({
       ...s,
       empreendimentos: (camps || []).filter(c => c.segmento_id === s.id).map(c => c.empreendimento).filter(Boolean) as string[],
-    }));
+    })).sort((a, b) => compareRoletaSegmentosByNome(a.nome, b.nome));
     setSegmentos(segList);
 
     // Fetch credenciamentos for today — check all janelas
