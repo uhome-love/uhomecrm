@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useRoleta, getCurrentWindowInfo, getBrtDateInfo, type JanelaId, type RoletaSegmento } from "@/hooks/useRoleta";
-import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
+import { compareRoletaSegmentos } from "@/hooks/useRoletaSegmentos";
 import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -68,7 +68,7 @@ function CeoView() {
   }
 
   const pendentes = credenciamentos.filter(c => c.status === "pendente");
-  const segmentosOrdenados = [...segmentos].sort((a, b) => compareRoletaSegmentosByNome(a.nome, b.nome));
+  const segmentosOrdenados = [...segmentos].sort(compareRoletaSegmentos);
 
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-4 md:p-6 -m-4 md:-m-6 min-h-full space-y-4">
@@ -526,7 +526,7 @@ function CorretorView() {
     credenciar(selectedJanela, seg1, seg2 || null);
   };
 
-  const segmentosOrdenados = [...segmentos].sort((a, b) => compareRoletaSegmentosByNome(a.nome, b.nome));
+  const segmentosOrdenados = [...segmentos].sort(compareRoletaSegmentos);
   const seg2Options = segmentosOrdenados.filter(s => s.id !== seg1);
 
   return (
