@@ -175,7 +175,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
         .map(({ empreendimento, segmento_nome, ignorar_segmento }) => ({ empreendimento, segmento_nome, ignorar_segmento }));
 
       if (camps.length === 0) {
-        toast.error("Nenhuma campanha ativa vinculada a segmentos S1–S4. Configure em Configurações → Campanhas da Roleta.");
+        toast.error("Nenhuma campanha ativa vinculada a segmentos S1–S6. Configure em Configurações → Campanhas da Roleta.");
       }
 
       setCampanhas(camps);

@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Trash2, Target, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
+import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
 
 interface Campanha {
   id: string;
@@ -44,7 +45,7 @@ export default function RoletaCampanhasPanel() {
       supabase.from("roleta_segmentos").select("id, nome").order("nome"),
     ]);
     setCampanhas((campRes.data || []) as Campanha[]);
-    setSegmentos((segRes.data || []) as Segmento[]);
+    setSegmentos(((segRes.data || []) as Segmento[]).sort((a, b) => compareRoletaSegmentosByNome(a.nome, b.nome)));
     setLoading(false);
   }
 
