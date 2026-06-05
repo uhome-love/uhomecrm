@@ -6,16 +6,40 @@ export interface RoletaSegmento {
   nome: string;
 }
 
+const SEGMENTO_ORDER_BY_ID: Record<string, number> = {
+  "9948f523-29f4-46a7-bc1b-81ff8bb8dd50": 1,
+  "d364f084-a63b-4be3-892e-15d66e367b43": 2,
+  "5311aaaa-0000-4000-8000-000000000003": 3,
+  "409aeddf-077f-473a-97cc-dfc0692ed35e": 4,
+  "5311aaaa-0000-4000-8000-000000000005": 5,
+  "93ca556c-9a32-4fb8-b1af-148100ea47f0": 6,
+};
+
 export function getRoletaSegmentoOrder(nome: string | null | undefined) {
   if (!nome) return 99;
   const match = nome.trim().match(/^s\s*(\d+)/i);
   return match ? Number(match[1]) : 99;
 }
 
+export function getRoletaSegmentoStableOrder(segmento: { id?: string | null; nome?: string | null | undefined }) {
+  const idOrder = segmento.id ? SEGMENTO_ORDER_BY_ID[segmento.id] : undefined;
+  if (typeof idOrder === "number") return idOrder;
+  return getRoletaSegmentoOrder(segmento.nome);
+}
+
 export function compareRoletaSegmentosByNome(a: string | null | undefined, b: string | null | undefined) {
   const orderDiff = getRoletaSegmentoOrder(a) - getRoletaSegmentoOrder(b);
   if (orderDiff !== 0) return orderDiff;
   return (a || "").localeCompare(b || "pt-BR", "pt-BR", { sensitivity: "base" });
+}
+
+export function compareRoletaSegmentos(
+  a: { id?: string | null; nome?: string | null | undefined },
+  b: { id?: string | null; nome?: string | null | undefined },
+) {
+  const orderDiff = getRoletaSegmentoStableOrder(a) - getRoletaSegmentoStableOrder(b);
+  if (orderDiff !== 0) return orderDiff;
+  return compareRoletaSegmentosByNome(a.nome, b.nome);
 }
 
 /** All active roleta segmentos — used to label OA lists and group them. */
@@ -29,7 +53,7 @@ export function useRoletaSegmentos() {
         .eq("ativo", true)
         .order("nome");
       if (error) throw error;
-      return ((data || []) as RoletaSegmento[]).sort((a, b) => compareRoletaSegmentosByNome(a.nome, b.nome));
+      return ((data || []) as RoletaSegmento[]).sort(compareRoletaSegmentos);
     },
     staleTime: 5 * 60_000,
   });
