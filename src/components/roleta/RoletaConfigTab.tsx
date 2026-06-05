@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Save, Plus, Trash2, Settings, Tag, Globe } from "lucide-react";
 import { toast } from "sonner";
+import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
 
 interface ConfigItem {
   id: string;
@@ -42,7 +43,7 @@ export default function RoletaConfigTab() {
       const segs = (segRes.data || []).map(s => ({
         ...s,
         campanhas: (campRes.data || []).filter(c => c.segmento_id === s.id),
-      }));
+      })).sort((a, b) => compareRoletaSegmentosByNome(a.nome, b.nome));
       setSegmentos(segs);
 
       const vals: Record<string, string> = {};
