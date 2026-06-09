@@ -44,7 +44,7 @@ export default function DrawerEmpreendimento({
             <Building2 className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-foreground truncate">
+            <div className="text-[13px] font-semibold text-foreground line-clamp-2 break-words leading-tight">
               {empreendimento || "Sem empreendimento"}
             </div>
             {meta && (
