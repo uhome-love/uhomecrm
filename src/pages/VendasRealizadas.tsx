@@ -343,19 +343,46 @@ export default function VendasRealizadas() {
   const comissaoCorretor36 = totalCorretagem * 0.36;
   const comissaoGerente = totalCorretagem * 0.15;
 
-  // Rankings by corretor
+  // Rankings by corretor (split-aware: partnership deals divide VGV per fator_split)
   const corretorRanking = useMemo(() => {
+    // Key the map by auth_user_id so the same person isn't duplicated across
+    // own deals (corretor_id = profile.id) and partnership deals (auth_user_id).
     const map: Record<string, { nome: string; avatar: string | null; vgv: number; count: number }> = {};
+    const addToVendor = (
+      authId: string,
+      nome: string,
+      avatar: string | null,
+      vgv: number,
+    ) => {
+      if (!map[authId]) map[authId] = { nome: nome || "Corretor", avatar: avatar || null, vgv: 0, count: 0 };
+      map[authId].vgv += vgv;
+      map[authId].count += 1;
+    };
+
     filtered.forEach(v => {
+      const vgv = v.vgv_final || v.vgv_estimado || 0;
+      const parceria = v.pipeline_lead_id ? parceriaPartners[v.pipeline_lead_id] : null;
+
+      if (parceria && parceria.auth_user_ids.length >= 2) {
+        // Split VGV evenly per fator_split across each partner
+        const split = parceria.fator_split || 0.5;
+        parceria.auth_user_ids.forEach(authId => {
+          const p = authProfiles[authId];
+          addToVendor(authId, p?.nome || "Corretor", p?.avatar_gamificado_url || p?.avatar_url || null, vgv * split);
+        });
+        return;
+      }
+
+      // Normal deal: full VGV to the primary corretor (resolve to auth_user_id)
       const cId = v.corretor_id;
       if (!cId) return;
       const p = profiles[cId];
-      if (!map[cId]) map[cId] = { nome: p?.nome || "Corretor", avatar: p?.avatar_gamificado_url || p?.avatar_url || null, vgv: 0, count: 0 };
-      map[cId].vgv += v.vgv_final || v.vgv_estimado || 0;
-      map[cId].count += 1;
+      const authId = profileIdToAuthId[cId] || cId;
+      addToVendor(authId, p?.nome || "Corretor", p?.avatar_gamificado_url || p?.avatar_url || null, vgv);
     });
+
     return Object.entries(map).sort((a, b) => b[1].vgv - a[1].vgv);
-  }, [filtered, profiles]);
+  }, [filtered, profiles, authProfiles, parceriaPartners, profileIdToAuthId]);
 
   const medalEmojis = ["🥇", "🥈", "🥉"];
 
