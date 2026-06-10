@@ -179,7 +179,8 @@ Deno.serve(async (req) => {
     const sinceUnix = Math.floor(Date.now() / 1000) - days * 86400;
 
     // Descobre forms
-    const { pages, forms } = await discoverForms(token);
+    const debug: Record<string, unknown> = {};
+    const { pages, forms } = await discoverForms(token, debug);
 
     if (mode === "test") {
       return json({
@@ -188,6 +189,7 @@ Deno.serve(async (req) => {
         pages,
         forms_count: forms.length,
         forms: forms.slice(0, 100),
+        debug,
       });
     }
 
