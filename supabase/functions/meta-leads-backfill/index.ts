@@ -60,25 +60,34 @@ async function discoverForms(token: string, debug?: Record<string, unknown>): Pr
   const pagesOut: any[] = [];
 
   // Tenta /me/accounts (user token, com access_token de cada página).
-  let pages: any[] = [];
+  const pageMap = new Map<string, any>();
   try {
     const acc = await metaGet("me/accounts", token, { fields: "id,name,access_token", limit: "200" });
-    pages = acc.data || [];
+    for (const p of acc.data || []) pageMap.set(p.id, p);
     if (debug) debug.me_accounts = (acc.data || []).map((p: any) => ({ id: p.id, name: p.name, has_token: !!p.access_token }));
   } catch (e) {
     if (debug) debug.me_accounts_error = (e as Error).message;
   }
 
-  // Se vazio, trata token como page token (pega /me).
-  if (pages.length === 0) {
-    try {
-      const me = await metaGet("me", token, { fields: "id,name" });
-      if (debug) debug.me = me;
-      if (me.id) pages = [{ id: me.id, name: me.name }];
-    } catch (e) {
-      if (debug) debug.me_error = (e as Error).message;
+  // Páginas via Business Manager (owned_pages + client_pages de cada business).
+  try {
+    const biz = await metaGet("me/businesses", token, { fields: "id,name", limit: "200" });
+    if (debug) debug.businesses = (biz.data || []).map((b: any) => ({ id: b.id, name: b.name }));
+    for (const b of biz.data || []) {
+      for (const edge of ["owned_pages", "client_pages"]) {
+        try {
+          const resp = await metaGet(`${b.id}/${edge}`, token, { fields: "id,name,access_token", limit: "200" });
+          for (const p of resp.data || []) if (!pageMap.has(p.id)) pageMap.set(p.id, p);
+        } catch (e) {
+          if (debug) ((debug.business_pages_errors as unknown[]) ||= []).push({ business: b.id, edge, error: (e as Error).message });
+        }
+      }
     }
+  } catch (e) {
+    if (debug) debug.businesses_error = (e as Error).message;
   }
+
+  const pages: any[] = Array.from(pageMap.values());
 
   if (debug) {
     try {
