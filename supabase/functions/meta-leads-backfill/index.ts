@@ -193,6 +193,70 @@ async function fetchLeadsForForm(formId: string, token: string, sinceUnix: numbe
   } while (next);
   return leads;
 }
+/**
+ * Verifica se o token Meta ainda é válido. Retorna { valid, reason }.
+ * Detecta especificamente token expirado/inválido (OAuthException, código 190).
+ */
+async function checkTokenValidity(token: string): Promise<{ valid: boolean; reason?: string; code?: number }> {
+  try {
+    await metaGet("me", token, { fields: "id" });
+    return { valid: true };
+  } catch (e) {
+    const msg = (e as Error).message || "";
+    const m = msg.match(/"code"\s*:\s*(\d+)/);
+    const code = m ? Number(m[1]) : undefined;
+    const isAuth = code === 190 || /OAuthException|access token|Session has expired|expired/i.test(msg);
+    return { valid: !isAuth, reason: isAuth ? msg : undefined, code };
+  }
+}
+
+/**
+ * Dispara alerta de token Meta inválido/expirado para todos os admins.
+ * Dedup diário via agrupamento_key para não spammar a cada hora.
+ */
+async function alertTokenExpired(supabase: any, reason: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  const groupKey = `meta_token_expired_${today}`;
+
+  // ops_events (rastreio + edge-health-alert)
+  try {
+    await supabase.from("ops_events").insert({
+      fn: "meta-leads-backfill",
+      level: "error",
+      category: "meta_token",
+      message: "Token do Meta inválido ou expirado — backfill de leads parado",
+      error_detail: reason?.slice(0, 1000),
+    });
+  } catch (_e) { /* noop */ }
+
+  // Notifica admins (1x por dia via dedup)
+  try {
+    const { data: admins } = await supabase
+      .from("user_roles").select("user_id").eq("role", "admin");
+    const adminIds: string[] = (admins || []).map((r: any) => r.user_id).filter(Boolean);
+    if (adminIds.length === 0) return;
+
+    // Já alertou hoje? evita duplicar
+    const { data: existing } = await supabase
+      .from("notifications")
+      .select("id")
+      .eq("agrupamento_key", groupKey)
+      .limit(1);
+    if (existing && existing.length > 0) return;
+
+    const rows = adminIds.map((uid) => ({
+      user_id: uid,
+      tipo: "alerta",
+      categoria: "sistema",
+      titulo: "⚠️ Token do Meta expirou",
+      mensagem: "Os leads do Meta pararam de entrar no CRM porque o token de acesso ficou inválido. Atualize o token (META_GRAPH_API_TOKEN) para retomar a captura automática.",
+      dados: { fn: "meta-leads-backfill", reason: reason?.slice(0, 300) },
+      agrupamento_key: groupKey,
+      cargo_destino: ["admin"],
+    }));
+    await supabase.from("notifications").insert(rows);
+  } catch (_e) { /* noop */ }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
