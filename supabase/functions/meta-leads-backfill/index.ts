@@ -211,12 +211,19 @@ Deno.serve(async (req) => {
     const webhookSecret = Deno.env.get("META_WEBHOOK_SECRET");
     if (!webhookSecret) return json({ error: "META_WEBHOOK_SECRET não configurado" }, 503);
 
-    // ── Auth: cron secret OU admin JWT ──
+    // ── Auth: cron secret OU anon-key (cron pg_net) OU admin JWT ──
     const cronSecret = Deno.env.get("SYNC_SECRET");
     const providedCron = req.headers.get("x-cron-secret");
     let authorized = !!cronSecret && providedCron === cronSecret;
 
     const body = await req.json().catch(() => ({}));
+
+    // Caminho cron: pg_cron chama com a anon key no Bearer (padrão do projeto).
+    // A operação é idempotente e não expõe dados sensíveis.
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const rawAuth = req.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!authorized && anonKey && rawAuth === anonKey) authorized = true;
+
 
     if (!authorized) {
       const authHeader = req.headers.get("Authorization");
