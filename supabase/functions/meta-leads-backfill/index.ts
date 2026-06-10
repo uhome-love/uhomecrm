@@ -320,6 +320,21 @@ Deno.serve(async (req) => {
     const debug: Record<string, unknown> = {};
     const { pages, forms } = await discoverForms(token, explicitPageIds, debug);
 
+    // Sem forms = possível token expirado/inválido. Confirma e alerta admins.
+    if (forms.length === 0) {
+      const tok = await checkTokenValidity(token);
+      if (!tok.valid) {
+        await alertTokenExpired(supabase, tok.reason || "token inválido");
+        return json({
+          success: false,
+          token_ok: false,
+          error: "Token do Meta inválido ou expirado — admins notificados",
+          reason: tok.reason,
+          code: tok.code,
+        }, 200);
+      }
+    }
+
     if (mode === "test") {
       return json({
         success: true,
@@ -330,6 +345,7 @@ Deno.serve(async (req) => {
         debug,
       });
     }
+
 
     // ── BACKFILL ──
     // 453 formulários sequenciais estouram o limite da edge function.
