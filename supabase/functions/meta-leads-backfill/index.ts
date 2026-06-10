@@ -28,6 +28,21 @@ const corsHeaders = {
 const META_API_VERSION = "v21.0";
 const META_BASE = `https://graph.facebook.com/${META_API_VERSION}`;
 
+// Form IDs conhecidos (espelho de src/lib/metaFormIdMap.ts). Usados como
+// fallback para descobrir a página quando /me/accounts e /me/businesses
+// não enumeram nada para o token.
+const KNOWN_FORM_IDS: string[] = [
+  "960687922961852", "968777322384911", "1162388785694311", "1193321542872133",
+  "1407341861064013", "1176432314301412", "1593024068412518", "1626788291996359",
+  "1435408764647078", "1800577237319392", "1877406309585794", "2055662701942686",
+  "3325414164266311", "895837159874711", "897551219671969", "900345566146636",
+  "945021998283301", "945250778357878", "921991273926020", "924855113517986",
+  "966583865699014", "1253040266458947", "1486693902966370", "1853179655371596",
+  "1581836316228994", "1575975843886888", "4369342313310610",
+];
+
+
+
 interface MetaLead {
   id: string;
   created_time: string;
@@ -55,30 +70,68 @@ async function metaGet(path: string, token: string, params: Record<string, strin
 }
 
 /** Descobre todos os form IDs acessíveis pelo token (todas as páginas). */
-async function discoverForms(token: string, debug?: Record<string, unknown>): Promise<{ pages: any[]; forms: { id: string; name: string; page: string }[] }> {
+async function discoverForms(token: string, explicitPageIds: string[] = [], debug?: Record<string, unknown>): Promise<{ pages: any[]; forms: { id: string; name: string; page: string }[] }> {
   const forms: { id: string; name: string; page: string }[] = [];
   const pagesOut: any[] = [];
 
-  // Tenta /me/accounts (user token, com access_token de cada página).
-  let pages: any[] = [];
+  const pageMap = new Map<string, any>();
+
+  // Caminho B — páginas informadas manualmente (garantido mesmo sem /me/accounts).
+  for (const pid of explicitPageIds) {
+    if (!pid) continue;
+    let name = pid;
+    try {
+      const p = await metaGet(pid, token, { fields: "id,name" });
+      name = p.name || pid;
+    } catch (e) {
+      if (debug) ((debug.explicit_page_errors as unknown[]) ||= []).push({ page: pid, error: (e as Error).message });
+    }
+    pageMap.set(pid, { id: pid, name });
+  }
+
+  // Caminho A — /me/accounts (token de usuário, com access_token de cada página).
   try {
     const acc = await metaGet("me/accounts", token, { fields: "id,name,access_token", limit: "200" });
-    pages = acc.data || [];
+    for (const p of acc.data || []) pageMap.set(p.id, p);
     if (debug) debug.me_accounts = (acc.data || []).map((p: any) => ({ id: p.id, name: p.name, has_token: !!p.access_token }));
   } catch (e) {
     if (debug) debug.me_accounts_error = (e as Error).message;
   }
 
-  // Se vazio, trata token como page token (pega /me).
-  if (pages.length === 0) {
-    try {
-      const me = await metaGet("me", token, { fields: "id,name" });
-      if (debug) debug.me = me;
-      if (me.id) pages = [{ id: me.id, name: me.name }];
-    } catch (e) {
-      if (debug) debug.me_error = (e as Error).message;
+  // Caminho A — páginas via Business Manager (owned_pages + client_pages).
+  try {
+    const biz = await metaGet("me/businesses", token, { fields: "id,name", limit: "200" });
+    if (debug) debug.businesses = (biz.data || []).map((b: any) => ({ id: b.id, name: b.name }));
+    for (const b of biz.data || []) {
+      for (const edge of ["owned_pages", "client_pages"]) {
+        try {
+          const resp = await metaGet(`${b.id}/${edge}`, token, { fields: "id,name,access_token", limit: "200" });
+          for (const p of resp.data || []) if (!pageMap.has(p.id)) pageMap.set(p.id, p);
+        } catch (e) {
+          if (debug) ((debug.business_pages_errors as unknown[]) ||= []).push({ business: b.id, edge, error: (e as Error).message });
+        }
+      }
+    }
+  } catch (e) {
+    if (debug) debug.businesses_error = (e as Error).message;
+  }
+
+  // Fallback — descobre a(s) página(s) a partir de form IDs conhecidos.
+  // Cada formulário expõe o campo `page`; com a página, enumeramos TODOS os forms dela.
+  if (pageMap.size === 0 && KNOWN_FORM_IDS.length > 0) {
+    if (debug) debug.fallback_via_known_forms = true;
+    for (const fid of KNOWN_FORM_IDS) {
+      try {
+        const f = await metaGet(fid, token, { fields: "id,name,page{id,name}" });
+        const pg = f.page;
+        if (pg?.id && !pageMap.has(pg.id)) pageMap.set(pg.id, { id: pg.id, name: pg.name || pg.id });
+      } catch (e) {
+        if (debug) ((debug.known_form_errors as unknown[]) ||= []).push({ form: fid, error: (e as Error).message });
+      }
     }
   }
+
+  const pages: any[] = Array.from(pageMap.values());
 
   if (debug) {
     try {
@@ -187,9 +240,14 @@ Deno.serve(async (req) => {
     const days = Math.min(Math.max(Number(body.days) || 3, 1), 30);
     const sinceUnix = Math.floor(Date.now() / 1000) - days * 86400;
 
+    // page_ids: do body ou do secret META_PAGE_IDS (CSV)
+    const explicitPageIds: string[] = Array.isArray(body.page_ids)
+      ? body.page_ids.map(String)
+      : (Deno.env.get("META_PAGE_IDS") || "").split(",").map((s) => s.trim()).filter(Boolean);
+
     // Descobre forms
     const debug: Record<string, unknown> = {};
-    const { pages, forms } = await discoverForms(token, debug);
+    const { pages, forms } = await discoverForms(token, explicitPageIds, debug);
 
     if (mode === "test") {
       return json({
