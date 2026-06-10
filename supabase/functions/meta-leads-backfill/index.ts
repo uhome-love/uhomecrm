@@ -210,9 +210,14 @@ Deno.serve(async (req) => {
     const days = Math.min(Math.max(Number(body.days) || 3, 1), 30);
     const sinceUnix = Math.floor(Date.now() / 1000) - days * 86400;
 
+    // page_ids: do body ou do secret META_PAGE_IDS (CSV)
+    const explicitPageIds: string[] = Array.isArray(body.page_ids)
+      ? body.page_ids.map(String)
+      : (Deno.env.get("META_PAGE_IDS") || "").split(",").map((s) => s.trim()).filter(Boolean);
+
     // Descobre forms
     const debug: Record<string, unknown> = {};
-    const { pages, forms } = await discoverForms(token, debug);
+    const { pages, forms } = await discoverForms(token, explicitPageIds, debug);
 
     if (mode === "test") {
       return json({
