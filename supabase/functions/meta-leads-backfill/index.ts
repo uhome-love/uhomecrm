@@ -261,22 +261,32 @@ Deno.serve(async (req) => {
     }
 
     // ── BACKFILL ──
+    // 453 formulários sequenciais estouram o limite da edge function.
+    // Estratégia: paralelismo em lotes + orçamento de tempo (deadline).
+    // Ao atingir o deadline, retorna resultados parciais (idempotente: rodar
+    // de novo continua de onde parou via dedup do receive-meta-lead).
     let totalLeads = 0;
     let reprocessed = 0;
     let skipped = 0;
     let errors = 0;
+    let formsProcessed = 0;
+    let timedOut = false;
     const perForm: Record<string, { name: string; leads: number }> = {};
 
-    for (const form of forms) {
+    const TIME_BUDGET_MS = Math.min(Math.max(Number(body.budget_ms) || 110000, 10000), 140000);
+    const CONCURRENCY = Math.min(Math.max(Number(body.concurrency) || 8, 1), 20);
+    const deadline = Date.now() + TIME_BUDGET_MS;
+
+    const processForm = async (form: { id: string; name: string; page: string }) => {
       let leads: MetaLead[] = [];
       try {
         leads = await fetchLeadsForForm(form.id, token, sinceUnix);
       } catch (e) {
         errors++;
         console.warn(`fetch leads form ${form.id}: ${(e as Error).message}`);
-        continue;
+        return;
       }
-      perForm[form.id] = { name: form.name, leads: leads.length };
+      if (leads.length > 0) perForm[form.id] = { name: form.name, leads: leads.length };
       totalLeads += leads.length;
 
       for (const lead of leads) {
@@ -310,12 +320,21 @@ Deno.serve(async (req) => {
           errors++;
         }
       }
+    };
+
+    for (let i = 0; i < forms.length; i += CONCURRENCY) {
+      if (Date.now() >= deadline) { timedOut = true; break; }
+      const batch = forms.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(processForm));
+      formsProcessed += batch.length;
     }
 
     return json({
       success: true,
       window_days: days,
-      forms_count: forms.length,
+      forms_total: forms.length,
+      forms_processed: formsProcessed,
+      timed_out: timedOut,
       total_leads_found: totalLeads,
       reprocessed,
       skipped_dedup: skipped,
