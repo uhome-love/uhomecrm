@@ -100,6 +100,7 @@ async function discoverForms(token: string, debug?: Record<string, unknown>): Pr
       } while (next);
     } catch (e) {
       console.warn(`leadgen_forms falhou para page ${page.id}: ${(e as Error).message}`);
+      if (debug) ((debug.leadgen_forms_errors as unknown[]) ||= []).push({ page: page.id, error: (e as Error).message });
     }
   }
 
