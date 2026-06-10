@@ -59,7 +59,9 @@ async function discoverForms(token: string, explicitPageIds: string[] = [], debu
   const forms: { id: string; name: string; page: string }[] = [];
   const pagesOut: any[] = [];
 
-  // Páginas informadas manualmente (Caminho B — garantido mesmo sem /me/accounts).
+  const pageMap = new Map<string, any>();
+
+  // Caminho B — páginas informadas manualmente (garantido mesmo sem /me/accounts).
   for (const pid of explicitPageIds) {
     if (!pid) continue;
     let name = pid;
@@ -69,15 +71,10 @@ async function discoverForms(token: string, explicitPageIds: string[] = [], debu
     } catch (e) {
       if (debug) ((debug.explicit_page_errors as unknown[]) ||= []).push({ page: pid, error: (e as Error).message });
     }
-    forms.push({ id: `__page__${pid}`, name, page: name }); // placeholder removido abaixo
+    pageMap.set(pid, { id: pid, name });
   }
-  // remove placeholders; serão tratados como páginas reais
-  const explicitPages = explicitPageIds.filter(Boolean).map((pid) => ({ id: pid, name: forms.find((f) => f.id === `__page__${pid}`)?.name || pid }));
-  forms.length = 0;
 
-
-  // Tenta /me/accounts (user token, com access_token de cada página).
-  const pageMap = new Map<string, any>();
+  // Caminho A — /me/accounts (token de usuário, com access_token de cada página).
   try {
     const acc = await metaGet("me/accounts", token, { fields: "id,name,access_token", limit: "200" });
     for (const p of acc.data || []) pageMap.set(p.id, p);
@@ -86,7 +83,7 @@ async function discoverForms(token: string, explicitPageIds: string[] = [], debu
     if (debug) debug.me_accounts_error = (e as Error).message;
   }
 
-  // Páginas via Business Manager (owned_pages + client_pages de cada business).
+  // Caminho A — páginas via Business Manager (owned_pages + client_pages).
   try {
     const biz = await metaGet("me/businesses", token, { fields: "id,name", limit: "200" });
     if (debug) debug.businesses = (biz.data || []).map((b: any) => ({ id: b.id, name: b.name }));
