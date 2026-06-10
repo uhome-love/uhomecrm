@@ -101,6 +101,21 @@ async function discoverForms(token: string, explicitPageIds: string[] = [], debu
     if (debug) debug.businesses_error = (e as Error).message;
   }
 
+  // Fallback — descobre a(s) página(s) a partir de form IDs conhecidos.
+  // Cada formulário expõe o campo `page`; com a página, enumeramos TODOS os forms dela.
+  if (pageMap.size === 0 && KNOWN_FORM_IDS.length > 0) {
+    if (debug) debug.fallback_via_known_forms = true;
+    for (const fid of KNOWN_FORM_IDS) {
+      try {
+        const f = await metaGet(fid, token, { fields: "id,name,page{id,name}" });
+        const pg = f.page;
+        if (pg?.id && !pageMap.has(pg.id)) pageMap.set(pg.id, { id: pg.id, name: pg.name || pg.id });
+      } catch (e) {
+        if (debug) ((debug.known_form_errors as unknown[]) ||= []).push({ form: fid, error: (e as Error).message });
+      }
+    }
+  }
+
   const pages: any[] = Array.from(pageMap.values());
 
   if (debug) {
