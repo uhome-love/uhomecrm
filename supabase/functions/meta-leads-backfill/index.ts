@@ -55,22 +55,28 @@ async function metaGet(path: string, token: string, params: Record<string, strin
 }
 
 /** Descobre todos os form IDs acessíveis pelo token (todas as páginas). */
-async function discoverForms(token: string): Promise<{ pages: any[]; forms: { id: string; name: string; page: string }[] }> {
+async function discoverForms(token: string, debug?: Record<string, unknown>): Promise<{ pages: any[]; forms: { id: string; name: string; page: string }[] }> {
   const forms: { id: string; name: string; page: string }[] = [];
   const pagesOut: any[] = [];
 
-  // Tenta /me/accounts (user token). Se falhar, trata token como page token.
+  // Tenta /me/accounts (user token, com access_token de cada página).
   let pages: any[] = [];
   try {
-    const acc = await metaGet("me/accounts", token, { fields: "id,name", limit: "200" });
+    const acc = await metaGet("me/accounts", token, { fields: "id,name,access_token", limit: "200" });
     pages = acc.data || [];
-  } catch (_e) {
-    // pode ser um page token — pega /me
+    if (debug) debug.me_accounts = (acc.data || []).map((p: any) => ({ id: p.id, name: p.name, has_token: !!p.access_token }));
+  } catch (e) {
+    if (debug) debug.me_accounts_error = (e as Error).message;
+  }
+
+  // Se vazio, trata token como page token (pega /me).
+  if (pages.length === 0) {
     try {
       const me = await metaGet("me", token, { fields: "id,name" });
-      if (me.id) pages = [me];
-    } catch (_e2) {
-      pages = [];
+      if (debug) debug.me = me;
+      if (me.id) pages = [{ id: me.id, name: me.name }];
+    } catch (e) {
+      if (debug) debug.me_error = (e as Error).message;
     }
   }
 
