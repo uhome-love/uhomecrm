@@ -28,6 +28,21 @@ const corsHeaders = {
 const META_API_VERSION = "v21.0";
 const META_BASE = `https://graph.facebook.com/${META_API_VERSION}`;
 
+// Form IDs conhecidos (espelho de src/lib/metaFormIdMap.ts). Usados como
+// fallback para descobrir a página quando /me/accounts e /me/businesses
+// não enumeram nada para o token.
+const KNOWN_FORM_IDS: string[] = [
+  "960687922961852", "968777322384911", "1162388785694311", "1193321542872133",
+  "1407341861064013", "1176432314301412", "1593024068412518", "1626788291996359",
+  "1435408764647078", "1800577237319392", "1877406309585794", "2055662701942686",
+  "3325414164266311", "895837159874711", "897551219671969", "900345566146636",
+  "945021998283301", "945250778357878", "921991273926020", "924855113517986",
+  "966583865699014", "1253040266458947", "1486693902966370", "1853179655371596",
+  "1581836316228994", "1575975843886888", "4369342313310610",
+];
+
+
+
 interface MetaLead {
   id: string;
   created_time: string;
