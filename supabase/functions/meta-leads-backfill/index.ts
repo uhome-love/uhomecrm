@@ -80,6 +80,15 @@ async function discoverForms(token: string, debug?: Record<string, unknown>): Pr
     }
   }
 
+  if (debug) {
+    try {
+      const perms = await metaGet("me/permissions", token, {});
+      debug.permissions = (perms.data || []).filter((p: any) => p.status === "granted").map((p: any) => p.permission);
+    } catch (e) {
+      debug.permissions_error = (e as Error).message;
+    }
+  }
+
   for (const page of pages) {
     pagesOut.push({ id: page.id, name: page.name });
     // Usa o page access_token quando disponível (de /me/accounts)
