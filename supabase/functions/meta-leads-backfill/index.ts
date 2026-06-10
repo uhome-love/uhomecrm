@@ -55,9 +55,26 @@ async function metaGet(path: string, token: string, params: Record<string, strin
 }
 
 /** Descobre todos os form IDs acessíveis pelo token (todas as páginas). */
-async function discoverForms(token: string, debug?: Record<string, unknown>): Promise<{ pages: any[]; forms: { id: string; name: string; page: string }[] }> {
+async function discoverForms(token: string, explicitPageIds: string[] = [], debug?: Record<string, unknown>): Promise<{ pages: any[]; forms: { id: string; name: string; page: string }[] }> {
   const forms: { id: string; name: string; page: string }[] = [];
   const pagesOut: any[] = [];
+
+  // Páginas informadas manualmente (Caminho B — garantido mesmo sem /me/accounts).
+  for (const pid of explicitPageIds) {
+    if (!pid) continue;
+    let name = pid;
+    try {
+      const p = await metaGet(pid, token, { fields: "id,name" });
+      name = p.name || pid;
+    } catch (e) {
+      if (debug) ((debug.explicit_page_errors as unknown[]) ||= []).push({ page: pid, error: (e as Error).message });
+    }
+    forms.push({ id: `__page__${pid}`, name, page: name }); // placeholder removido abaixo
+  }
+  // remove placeholders; serão tratados como páginas reais
+  const explicitPages = explicitPageIds.filter(Boolean).map((pid) => ({ id: pid, name: forms.find((f) => f.id === `__page__${pid}`)?.name || pid }));
+  forms.length = 0;
+
 
   // Tenta /me/accounts (user token, com access_token de cada página).
   const pageMap = new Map<string, any>();
