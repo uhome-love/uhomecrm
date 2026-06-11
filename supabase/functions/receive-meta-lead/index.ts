@@ -587,6 +587,21 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) {
+      // ── Resiliência: violação de UNIQUE (ex: e-mail já ativo / telefone) NÃO é erro real.
+      // Tratamos como duplicidade idempotente e retornamos 200 para o Make não desativar o cenário.
+      if ((insertError as PostgrestError).code === "23505") {
+        L.info("Insert duplicate (unique violation) — treated as dedup", { telefone, email: anonEmail(email) });
+        logOps("info", "business", "lead_dedup_skipped_unique_violation", {
+          reason: "insert_unique_violation_email_ou_telefone",
+          telefone_anon: await anonPhone(telefone),
+          email_anon: anonEmail(email),
+          empreendimento,
+        });
+        return new Response(
+          JSON.stringify({ success: true, action: "skipped_unique_violation" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       // BLOCO 4a: captura error_detail estruturado (message/code/details/hint) + payload anonimizado.
       // Tipagem nativa via PostgrestError, sem cast `as unknown`.
       const errAny = insertError as PostgrestError;
