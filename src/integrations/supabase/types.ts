@@ -7746,6 +7746,7 @@ export type Database = {
         Row: {
           audience_payload: Json | null
           audience_source: string | null
+          cancel_requested: boolean
           created_at: string
           enviados: number
           erros: Json | null
@@ -7764,6 +7765,7 @@ export type Database = {
         Insert: {
           audience_payload?: Json | null
           audience_source?: string | null
+          cancel_requested?: boolean
           created_at?: string
           enviados?: number
           erros?: Json | null
@@ -7782,6 +7784,7 @@ export type Database = {
         Update: {
           audience_payload?: Json | null
           audience_source?: string | null
+          cancel_requested?: boolean
           created_at?: string
           enviados?: number
           erros?: Json | null
