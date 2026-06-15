@@ -10,7 +10,7 @@ import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import StaleDataBadge from "@/components/pipeline/StaleDataBadge";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient, useQuery, keepPreviousData } from "@tanstack/react-query";
 import { todayBRT } from "@/lib/utils";
 import { useParceriasMap, usePartnerLeadsByCorretor } from "@/hooks/useParcerias";
 
@@ -266,8 +266,14 @@ export default function PipelineKanban() {
         }
       }
 
+      // CRÍTICO (fix looping de contadores): se algum chunk falhou, o mapa está
+      // INCOMPLETO — leads sem linha aqui seriam classificados como "sem tarefa"
+      // por engano, causando o vai-e-volta "49 sem tarefa ⇄ 33 em dia/17 atrasado".
+      // Lançamos erro para o React Query MANTER o último mapa válido (via
+      // placeholderData: keepPreviousData) em vez de gravar um mapa parcial.
       if (errors.length) {
-        console.warn("[PipelineKanban] Algumas consultas de tarefas falharam e foram isoladas por chunk", errors);
+        console.warn("[PipelineKanban] Consultas de tarefas falharam — preservando último mapa válido", errors);
+        throw new Error("Falha parcial ao carregar tarefas do pipeline");
       }
 
       return map;
@@ -275,6 +281,7 @@ export default function PipelineKanban() {
     enabled: leadIds.length > 0,
     staleTime: 10_000,
     refetchOnWindowFocus: true,
+    placeholderData: keepPreviousData,
   });
 
   // Query real visitas for the "Visita marcada" filter
@@ -419,7 +426,13 @@ export default function PipelineKanban() {
   }, [preFilteredLeads, stageTypeById, pipeline.stages.length, clientStatusCounts]);
 
   const lastStableClientStatusCountsRef = useRef(clientStatusCounts);
-  const clientStatusCountsReady = pipeline.stages.length > 0 && (!leadIds.length || !tarefasLoading);
+  // Pronto quando: stages carregados E (sem leads OU tarefas não estão carregando).
+  // Reforço anti-flash: se há leads mas o mapa de tarefas veio vazio, NÃO está
+  // pronto — mantém o último valor estável em vez de mostrar "todos sem tarefa".
+  const tarefasMapEmpty = Object.keys(kanbanTarefasMap).length === 0;
+  const clientStatusCountsReady =
+    pipeline.stages.length > 0 &&
+    (!leadIds.length || (!tarefasLoading && !tarefasMapEmpty));
 
   useEffect(() => {
     if (!clientStatusCountsReady) return;
@@ -434,7 +447,13 @@ export default function PipelineKanban() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await pipeline.reload();
+    // Recarrega leads E invalida o mapa de tarefas — sem isso o botão só
+    // atualizava os leads e o status (em dia/atrasado) ficava stale para o
+    // gestor (realtime desligado), mesmo após o corretor concluir a tarefa.
+    await Promise.all([
+      pipeline.reload(),
+      queryClient.invalidateQueries({ queryKey: ["pipeline-kanban-tarefas"] }),
+    ]);
     setRefreshing(false);
   };
 
