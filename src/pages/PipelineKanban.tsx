@@ -426,7 +426,13 @@ export default function PipelineKanban() {
   }, [preFilteredLeads, stageTypeById, pipeline.stages.length, clientStatusCounts]);
 
   const lastStableClientStatusCountsRef = useRef(clientStatusCounts);
-  const clientStatusCountsReady = pipeline.stages.length > 0 && (!leadIds.length || !tarefasLoading);
+  // Pronto quando: stages carregados E (sem leads OU tarefas não estão carregando).
+  // Reforço anti-flash: se há leads mas o mapa de tarefas veio vazio, NÃO está
+  // pronto — mantém o último valor estável em vez de mostrar "todos sem tarefa".
+  const tarefasMapEmpty = Object.keys(kanbanTarefasMap).length === 0;
+  const clientStatusCountsReady =
+    pipeline.stages.length > 0 &&
+    (!leadIds.length || (!tarefasLoading && !tarefasMapEmpty));
 
   useEffect(() => {
     if (!clientStatusCountsReady) return;
