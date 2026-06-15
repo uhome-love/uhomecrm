@@ -61,11 +61,26 @@ export default function LiveDispatchBanner() {
         .from("reengajamento_config" as any)
         .update({ paused: true })
         .eq("id", cfg.id);
-      toast.success("Pausa solicitada — o disparo para após a mensagem em curso");
+      toast.success("Pausa solicitada — o disparo para após a mensagem em curso (retomável)");
       qc.invalidateQueries({ queryKey: ["reengajamento-config-banner"] });
       qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
     } catch (e: any) {
       toast.error("Erro ao pausar: " + e.message);
+    }
+  }
+
+  async function pararDisparo() {
+    if (!activeRun?.id) return;
+    if (!confirm("Parar este disparo definitivamente? Os leads restantes não serão enviados e o disparo não poderá ser retomado.")) return;
+    try {
+      await supabase
+        .from("reengajamento_dispatch_runs" as any)
+        .update({ cancel_requested: true })
+        .eq("id", activeRun.id);
+      toast.success("Parada solicitada — o disparo será encerrado após a mensagem em curso");
+      qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
+    } catch (e: any) {
+      toast.error("Erro ao parar: " + e.message);
     }
   }
 
