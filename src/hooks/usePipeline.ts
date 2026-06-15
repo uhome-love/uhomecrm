@@ -527,7 +527,7 @@ export function usePipeline(
       if (batchTimer) clearTimeout(batchTimer);
       supabase.removeChannel(channel);
     };
-  }, [userId, shouldHideLeadFromPipeline]);
+  }, [userId, realtimeEnabled, shouldHideLeadFromPipeline]);
 
   // Reload leads when tab becomes visible again after a long absence.
   // Threshold raised from 3s → 60s to avoid hammering the backend on
