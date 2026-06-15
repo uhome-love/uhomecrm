@@ -538,13 +538,51 @@ Deno.serve(async (req) => {
                 const routeToRoleta = audSrc === "descartados" || audSrc === "oferta_ativa_lista" || audSrc === "legacy";
                 const justNotifyCorretor = audSrc === "pipeline_ativo" || audSrc === "visita_amanha";
 
-                // Reativa lead se respondeu SIM E origem permite roleta
+                // Reativa lead se respondeu SIM E origem permite reengajamento → SEMPRE Fila do CEO
                 if (buttonResp === "sim" && routeToRoleta) {
+                  const tplName = metaDispatch.template_name || "reengajamento";
                   try {
-                    await reativarLeadNutricao(supabase, metaDispatch.lead_id, { wave: isWave2 ? 2 : 1 });
+                    const { error: filaErr } = await supabase.rpc("reativar_lead_para_fila_ceo", {
+                      p_lead_id: metaDispatch.lead_id,
+                      p_template_name: tplName,
+                    });
+                    if (filaErr) throw filaErr;
+                    console.log(`🔥 Lead ${metaDispatch.lead_id} reengajado (template=${tplName}) → Fila do CEO`);
                   } catch (e) {
-                    console.error("rpc reativar_lead_nutricao_manual error:", e);
+                    console.error("rpc reativar_lead_para_fila_ceo error:", e);
                   }
+
+                  // Atividade na timeline registrando o reengajamento
+                  await supabase.from("pipeline_atividades").insert({
+                    pipeline_lead_id: metaDispatch.lead_id,
+                    tipo: "whatsapp",
+                    titulo: `🔥 Lead reengajado pelo template "${tplName}" → Fila do CEO`,
+                    descricao: `Lead respondeu SIM ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao disparo do template "${tplName}". Reativado e enviado para a Fila do CEO para distribuição manual.`,
+                    data: new Date().toISOString().slice(0, 10),
+                    status: "concluida",
+                  });
+
+                  // Notifica admins/CEO sobre novo lead reengajado na fila
+                  try {
+                    const { data: admins } = await supabase
+                      .from("user_roles")
+                      .select("user_id")
+                      .in("role", ["admin", "ceo", "gestor"]);
+                    const leadNome = currentLead?.nome || "Lead";
+                    for (const a of admins || []) {
+                      await supabase.from("notifications").insert({
+                        user_id: a.user_id,
+                        titulo: `🔥 Lead reengajado na Fila do CEO: ${leadNome}`,
+                        mensagem: `${leadNome} respondeu SIM ao template "${tplName}" e está na Fila do CEO aguardando distribuição manual.`,
+                        tipo: "lead_reengajado",
+                        categoria: "leads",
+                        dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "fila_ceo" },
+                      });
+                    }
+                  } catch (e) {
+                    console.error("notify CEO fila error:", e);
+                  }
+                  continue;
                 } else if (buttonResp === "sim" && justNotifyCorretor) {
                   // Pipeline ativo / visita amanhã — não move stage, não chama roleta. Só marca interesse + notifica corretor atual.
                   await supabase.from("pipeline_leads").update({
