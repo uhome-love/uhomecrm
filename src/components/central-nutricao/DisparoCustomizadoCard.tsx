@@ -20,7 +20,12 @@ type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before
 
 export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => void }) {
   const [canal, setCanal] = useState<Canal>("meta");
-  const [source, setSource] = useState<Source>("descartados");
+  // Multi-fonte: combina públicos (descartados + oferta ativa) com dedup por telefone.
+  // visita_amanha é exclusiva (usa função dedicada), então nunca combina.
+  const [sources, setSources] = useState<Source[]>(["descartados"]);
+  const source = sources[0] ?? "descartados";
+  const has = (s: Source) => sources.includes(s);
+  const isCombined = sources.length > 1;
   const [tipoDescarte, setTipoDescarte] = useState<"reengajavel" | "definitivo" | "todos">("reengajavel");
   const [stageIds, setStageIds] = useState<string[]>([]);
   const [listaIds, setListaIds] = useState<string[]>([]);
