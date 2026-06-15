@@ -83,6 +83,10 @@ export function usePipeline(
   // do server, evitando trazer 10k+ leads pra filtrar no cliente.
   // Stable key pra não invalidar loadLeads a cada render.
   const scopeCorretorIds = options?.scopeCorretorIds ?? null;
+  // Realtime opt-out: na visão CEO/gestor (empresa inteira) os crons de fundo
+  // escrevem em pipeline_leads o tempo todo → o realtime company-wide causava
+  // flicker contínuo nos contadores e travava a interação. Desligamos por escopo.
+  const realtimeEnabled = options?.realtime ?? true;
   const scopeKey = useMemo(
     () => (scopeCorretorIds ? scopeCorretorIds.slice().sort().join(",") : "__none__"),
     [scopeCorretorIds]
