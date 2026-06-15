@@ -526,6 +526,16 @@ Deno.serve(async (req) => {
     };
 
     for (const lead of leads || []) {
+      // Parar (encerra a campanha) — checagem por run
+      {
+        const { data: runState } = await supabase
+          .from("reengajamento_dispatch_runs").select("cancel_requested").eq("id", runId).maybeSingle();
+        if (runState?.cancel_requested) {
+          stopReason = "Parado pelo usuário";
+          await updateRun({ status: "cancelled", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+          return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "cancelled", cancelled: true, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      }
       if (Date.now() - startedAt > MAX_RUN_MS) {
         // Encadeia automaticamente um próximo run para continuar de onde parou
         // (a query já exclui leads com reengajamento_enviado_at preenchido).
