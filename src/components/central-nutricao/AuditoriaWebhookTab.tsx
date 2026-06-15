@@ -76,21 +76,35 @@ export default function AuditoriaWebhookTab() {
   const [page, setPage] = useState(0);
   const [liveActive, setLiveActive] = useState(false);
 
-  // Realtime subscription → invalidate query on any change
+  // Realtime subscription → invalidate query on change (throttled to avoid storm during active dispatch)
+  const pendingInvalidateRef = useRef(false);
+  const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    const flush = () => {
+      throttleTimerRef.current = null;
+      if (pendingInvalidateRef.current) {
+        pendingInvalidateRef.current = false;
+        qc.invalidateQueries({ queryKey: ["auditoria-meta-webhook"] });
+      }
+    };
     const channel = supabase
       .channel("audit-meta-disparos")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "reengajamento_meta_disparos" },
         () => {
-          qc.invalidateQueries({ queryKey: ["auditoria-meta-webhook"] });
+          // Coalesce bursts of events: invalidate at most once every 4s
+          pendingInvalidateRef.current = true;
+          if (!throttleTimerRef.current) {
+            throttleTimerRef.current = setTimeout(flush, 4000);
+          }
         }
       )
       .subscribe((status) => {
         setLiveActive(status === "SUBSCRIBED");
       });
     return () => {
+      if (throttleTimerRef.current) clearTimeout(throttleTimerRef.current);
       supabase.removeChannel(channel);
     };
   }, [qc]);
