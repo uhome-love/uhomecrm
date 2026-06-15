@@ -95,16 +95,28 @@ export default function LiveDispatchBanner() {
               <Badge className="bg-amber-200 text-amber-900 hover:bg-amber-200">Pausando…</Badge>
             )}
           </span>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={pausarDisparo}
-            disabled={isPausing}
-            className="h-8"
-          >
-            <Pause className="h-3.5 w-3.5 mr-1" />
-            {isPausing ? "Pausando…" : "Pausar agora"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={pausarDisparo}
+              disabled={isPausing || isStopping}
+              className="h-8"
+            >
+              <Pause className="h-3.5 w-3.5 mr-1" />
+              {isPausing ? "Pausando…" : "Pausar"}
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={pararDisparo}
+              disabled={isStopping}
+              className="h-8"
+            >
+              <Square className="h-3.5 w-3.5 mr-1" />
+              {isStopping ? "Parando…" : "Parar"}
+            </Button>
+          </div>
         </div>
 
         <div className="flex justify-between text-xs">
