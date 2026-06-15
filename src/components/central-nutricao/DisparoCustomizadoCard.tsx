@@ -18,6 +18,14 @@ type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_
 type Canal = "meta" | "evolution";
 type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
 
+// Imagem fixa de header por template Meta (templates com cabeçalho de imagem).
+// Para um novo template, basta adicionar o nome → URL pública aqui (ou colar a URL no campo do card).
+const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
+  casatua_junho25k: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-junho25k.png",
+};
+
+
+
 export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => void }) {
   const [canal, setCanal] = useState<Canal>("meta");
   // Multi-fonte: combina públicos (descartados + oferta ativa) com dedup por telefone.
