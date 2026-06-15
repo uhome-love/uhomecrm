@@ -149,11 +149,11 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   }
 
   async function doPreview() {
-    if (source === "pipeline_ativo" && stageIds.length === 0) {
+    if (has("pipeline_ativo") && stageIds.length === 0) {
       toast.error("Selecione ao menos uma etapa do pipeline");
       return;
     }
-    if (source === "oferta_ativa_lista" && listaIds.length === 0) {
+    if (has("oferta_ativa_lista") && listaIds.length === 0) {
       toast.error("Selecione ao menos uma lista da Oferta Ativa");
       return;
     }
