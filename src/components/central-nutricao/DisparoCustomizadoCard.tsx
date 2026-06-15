@@ -45,6 +45,8 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [templateLanguage, setTemplateLanguage] = useState<string>("pt_BR");
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [templateManualMode, setTemplateManualMode] = useState(false);
+  // Imagem fixa do header por template (Meta). Cada novo template pode ter sua imagem aqui.
+  const [headerImageUrl, setHeaderImageUrl] = useState<string>("");
   const [mensagem, setMensagem] = useState<string>("");
   const [preview, setPreview] = useState<{ count: number; sample: any[]; funil?: Record<string, number> } | null>(null);
   const [previewing, setPreviewing] = useState(false);
