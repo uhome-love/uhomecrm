@@ -335,7 +335,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
 
 
         {/* Filtros dinâmicos */}
-        {source === "descartados" && (
+        {has("descartados") && (
           <div className="space-y-2">
             <div>
               <Label className="text-xs">Tipo de descarte</Label>
@@ -362,7 +362,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         )}
 
-        {source === "pipeline_ativo" && (
+        {has("pipeline_ativo") && (
           <div>
             <Label className="text-xs">Etapas ({stageIds.length} selecionada{stageIds.length !== 1 ? "s" : ""})</Label>
             <div className="flex flex-wrap gap-1 mt-1 p-2 border rounded-md max-h-40 overflow-y-auto bg-background">
@@ -382,7 +382,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         )}
 
-        {source === "oferta_ativa_lista" && (
+        {has("oferta_ativa_lista") && (
           <div>
             <Label className="text-xs">
               Listas {listaIds.length > 0 && `(${listaIds.length} selecionada${listaIds.length !== 1 ? "s" : ""})`}
@@ -443,7 +443,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         )}
 
-        {source === "visita_amanha" && (
+        {has("visita_amanha") && (
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Data da visita</Label>
@@ -456,7 +456,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         )}
 
         {/* Período (não aplicável para visita_amanha) */}
-        {source !== "visita_amanha" && (
+        {!has("visita_amanha") && (
           <div>
             <Label className="text-xs">Período (opcional)</Label>
             <div className="flex gap-2 items-end">
@@ -630,7 +630,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             </p>
           </div>
         )}
-        {canal === "evolution" && source !== "descartados" && (
+        {canal === "evolution" && !has("descartados") && (
           <div>
             <Label className="text-xs">Mensagem (Evolution)</Label>
             <Textarea
@@ -657,7 +657,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             )}
           </div>
 
-          {preview?.funil && source === "descartados" && (
+          {preview?.funil && has("descartados") && (
             <div className="text-[11px] border rounded p-2 bg-background space-y-1">
               <div className="font-medium text-indigo-700 mb-1">Conferência — Funil de descartados</div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
