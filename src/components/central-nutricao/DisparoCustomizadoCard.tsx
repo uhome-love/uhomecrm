@@ -298,19 +298,39 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         </div>
 
-        {/* PÚBLICO */}
+        {/* PÚBLICO (multi-fonte) */}
         <div>
-          <Label className="text-xs">Público</Label>
-          <Select value={source} onValueChange={(v) => { setSource(v as Source); setPreview(null); }}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="descartados">Descartados</SelectItem>
-              <SelectItem value="pipeline_ativo">Pipeline ativo (etapas)</SelectItem>
-              <SelectItem value="oferta_ativa_lista">Lista da Oferta Ativa</SelectItem>
-              <SelectItem value="visita_amanha">Visita amanhã (pipeline ativo)</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label className="text-xs">Público {isCombined && <Badge variant="outline" className="text-[9px] ml-1">combinado · dedup por telefone</Badge>}</Label>
+          <div className="grid grid-cols-2 gap-1.5 mt-1">
+            {([
+              { v: "descartados", label: "Descartados" },
+              { v: "oferta_ativa_lista", label: "Oferta Ativa (listas)" },
+              { v: "pipeline_ativo", label: "Pipeline ativo (etapas)" },
+              { v: "visita_amanha", label: "Visita amanhã" },
+            ] as { v: Source; label: string }[]).map(({ v, label }) => (
+              <Button
+                key={v}
+                type="button"
+                size="sm"
+                variant={has(v) ? "default" : "outline"}
+                onClick={() => toggleSource(v)}
+                className="h-8 justify-start text-[11px]"
+              >
+                <Check className={cn("h-3 w-3 mr-1", has(v) ? "opacity-100" : "opacity-0")} />
+                {label}
+              </Button>
+            ))}
+          </div>
+          {isCombined && (
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Os públicos serão unidos em um único disparo. Cada lead recebe só 1 mensagem (dedup pelos últimos 8 dígitos do telefone; prioridade: descartados &gt; oferta ativa &gt; pipeline).
+            </p>
+          )}
+          {has("visita_amanha") && (
+            <p className="text-[10px] text-amber-600 mt-1">Visita amanhã é exclusiva e não combina com outros públicos.</p>
+          )}
         </div>
+
 
         {/* Filtros dinâmicos */}
         {source === "descartados" && (
