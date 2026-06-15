@@ -20,7 +20,12 @@ type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before
 
 export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => void }) {
   const [canal, setCanal] = useState<Canal>("meta");
-  const [source, setSource] = useState<Source>("descartados");
+  // Multi-fonte: combina públicos (descartados + oferta ativa) com dedup por telefone.
+  // visita_amanha é exclusiva (usa função dedicada), então nunca combina.
+  const [sources, setSources] = useState<Source[]>(["descartados"]);
+  const source = sources[0] ?? "descartados";
+  const has = (s: Source) => sources.includes(s);
+  const isCombined = sources.length > 1;
   const [tipoDescarte, setTipoDescarte] = useState<"reengajavel" | "definitivo" | "todos">("reengajavel");
   const [stageIds, setStageIds] = useState<string[]>([]);
   const [listaIds, setListaIds] = useState<string[]>([]);
@@ -119,6 +124,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     } : undefined;
     const base: Record<string, unknown> = {
       source,
+      sources,
       canal,
       periodo,
       empreendimento: empreendimento || undefined,
@@ -130,10 +136,10 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (dedupMode === "only_sent_before" && dedupCutoff) {
       base.dedup_cutoff = new Date(dedupCutoff + "T00:00:00-03:00").toISOString();
     }
-    if (source === "descartados") base.tipo_descarte = tipoDescarte;
-    if (source === "pipeline_ativo") base.stage_ids = stageIds;
-    if (source === "oferta_ativa_lista") base.lista_ids = listaIds;
-    if (source === "visita_amanha") base.data_visita = dataVisita;
+    if (has("descartados")) base.tipo_descarte = tipoDescarte;
+    if (has("pipeline_ativo")) base.stage_ids = stageIds;
+    if (has("oferta_ativa_lista")) base.lista_ids = listaIds;
+    if (has("visita_amanha")) base.data_visita = dataVisita;
     if (canal === "meta" && templateName) {
       base.template_name = templateName;
       base.template_language = templateLanguage;
@@ -143,11 +149,11 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   }
 
   async function doPreview() {
-    if (source === "pipeline_ativo" && stageIds.length === 0) {
+    if (has("pipeline_ativo") && stageIds.length === 0) {
       toast.error("Selecione ao menos uma etapa do pipeline");
       return;
     }
-    if (source === "oferta_ativa_lista" && listaIds.length === 0) {
+    if (has("oferta_ativa_lista") && listaIds.length === 0) {
       toast.error("Selecione ao menos uma lista da Oferta Ativa");
       return;
     }
@@ -177,7 +183,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       toast.error("Selecione o template Meta que será usado neste disparo");
       return;
     }
-    if (canal === "evolution" && !mensagem && source !== "descartados") {
+    if (canal === "evolution" && !mensagem && !has("descartados")) {
       toast.error("Escreva a mensagem que será enviada");
       return;
     }
@@ -207,8 +213,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     setFiring(true);
     try {
       // visita_amanha delega para função dedicada (mantém lógica testada)
-      const fn = source === "visita_amanha" ? "visita-amanha-enqueue" : "reengajamento-descartados-enqueue";
-      const body = source === "visita_amanha"
+      const isVisita = sources.length === 1 && sources[0] === "visita_amanha";
+      const fn = isVisita ? "visita-amanha-enqueue" : "reengajamento-descartados-enqueue";
+      const body = isVisita
         ? { force: true, audience: buildAudience() }
         : { force: true, iniciado_por: "manual_custom", audience: buildAudience() };
 
@@ -228,6 +235,16 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
 
   function toggleStage(id: string) {
     setStageIds((prev) => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+  }
+
+  function toggleSource(s: Source) {
+    setPreview(null);
+    setSources((prev) => {
+      // visita_amanha é exclusiva
+      if (s === "visita_amanha") return prev.includes("visita_amanha") ? ["descartados"] : ["visita_amanha"];
+      const next = prev.includes(s) ? prev.filter((x) => x !== s) : [...prev.filter((x) => x !== "visita_amanha"), s];
+      return next.length ? next : ["descartados"];
+    });
   }
 
   function setPeriodoQuick(kind: "hoje" | "semana" | "mes" | "30d") {
@@ -283,22 +300,42 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         </div>
 
-        {/* PÚBLICO */}
+        {/* PÚBLICO (multi-fonte) */}
         <div>
-          <Label className="text-xs">Público</Label>
-          <Select value={source} onValueChange={(v) => { setSource(v as Source); setPreview(null); }}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="descartados">Descartados</SelectItem>
-              <SelectItem value="pipeline_ativo">Pipeline ativo (etapas)</SelectItem>
-              <SelectItem value="oferta_ativa_lista">Lista da Oferta Ativa</SelectItem>
-              <SelectItem value="visita_amanha">Visita amanhã (pipeline ativo)</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label className="text-xs">Público {isCombined && <Badge variant="outline" className="text-[9px] ml-1">combinado · dedup por telefone</Badge>}</Label>
+          <div className="grid grid-cols-2 gap-1.5 mt-1">
+            {([
+              { v: "descartados", label: "Descartados" },
+              { v: "oferta_ativa_lista", label: "Oferta Ativa (listas)" },
+              { v: "pipeline_ativo", label: "Pipeline ativo (etapas)" },
+              { v: "visita_amanha", label: "Visita amanhã" },
+            ] as { v: Source; label: string }[]).map(({ v, label }) => (
+              <Button
+                key={v}
+                type="button"
+                size="sm"
+                variant={has(v) ? "default" : "outline"}
+                onClick={() => toggleSource(v)}
+                className="h-8 justify-start text-[11px]"
+              >
+                <Check className={cn("h-3 w-3 mr-1", has(v) ? "opacity-100" : "opacity-0")} />
+                {label}
+              </Button>
+            ))}
+          </div>
+          {isCombined && (
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Os públicos serão unidos em um único disparo. Cada lead recebe só 1 mensagem (dedup pelos últimos 8 dígitos do telefone; prioridade: descartados &gt; oferta ativa &gt; pipeline).
+            </p>
+          )}
+          {has("visita_amanha") && (
+            <p className="text-[10px] text-amber-600 mt-1">Visita amanhã é exclusiva e não combina com outros públicos.</p>
+          )}
         </div>
 
+
         {/* Filtros dinâmicos */}
-        {source === "descartados" && (
+        {has("descartados") && (
           <div className="space-y-2">
             <div>
               <Label className="text-xs">Tipo de descarte</Label>
@@ -325,7 +362,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         )}
 
-        {source === "pipeline_ativo" && (
+        {has("pipeline_ativo") && (
           <div>
             <Label className="text-xs">Etapas ({stageIds.length} selecionada{stageIds.length !== 1 ? "s" : ""})</Label>
             <div className="flex flex-wrap gap-1 mt-1 p-2 border rounded-md max-h-40 overflow-y-auto bg-background">
@@ -345,7 +382,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         )}
 
-        {source === "oferta_ativa_lista" && (
+        {has("oferta_ativa_lista") && (
           <div>
             <Label className="text-xs">
               Listas {listaIds.length > 0 && `(${listaIds.length} selecionada${listaIds.length !== 1 ? "s" : ""})`}
@@ -406,7 +443,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         )}
 
-        {source === "visita_amanha" && (
+        {has("visita_amanha") && (
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Data da visita</Label>
@@ -419,7 +456,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         )}
 
         {/* Período (não aplicável para visita_amanha) */}
-        {source !== "visita_amanha" && (
+        {!has("visita_amanha") && (
           <div>
             <Label className="text-xs">Período (opcional)</Label>
             <div className="flex gap-2 items-end">
@@ -593,7 +630,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             </p>
           </div>
         )}
-        {canal === "evolution" && source !== "descartados" && (
+        {canal === "evolution" && !has("descartados") && (
           <div>
             <Label className="text-xs">Mensagem (Evolution)</Label>
             <Textarea
@@ -620,7 +657,29 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             )}
           </div>
 
-          {preview?.funil && source === "descartados" && (
+          {preview?.funil && isCombined && (preview.funil as any).por_fonte && (
+            <div className="text-[11px] border rounded p-2 bg-background space-y-1">
+              <div className="font-medium text-indigo-700 mb-1">Conferência — Público combinado</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                {Object.entries((preview.funil as any).por_fonte as Record<string, number>).map(([fonte, qtd]) => (
+                  <div key={fonte} className="contents">
+                    <span className="text-muted-foreground capitalize">{fonte.replace(/_/g, " ")}</span>
+                    <span className="text-right font-mono">{qtd}</span>
+                  </div>
+                ))}
+                {typeof (preview.funil as any).duplicados_removidos === "number" && (
+                  <>
+                    <span className="text-muted-foreground">— Duplicados removidos (mesmo telefone)</span>
+                    <span className="text-right font-mono text-amber-600">−{(preview.funil as any).duplicados_removidos}</span>
+                  </>
+                )}
+                <span className="font-medium pt-1 border-t mt-1">= Elegíveis (1 msg por telefone)</span>
+                <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.count}</span>
+              </div>
+            </div>
+          )}
+
+          {preview?.funil && has("descartados") && (
             <div className="text-[11px] border rounded p-2 bg-background space-y-1">
               <div className="font-medium text-indigo-700 mb-1">Conferência — Funil de descartados</div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">

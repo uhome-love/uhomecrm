@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Pause } from "lucide-react";
+import { Loader2, Pause, Square } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 
@@ -46,6 +46,7 @@ export default function LiveDispatchBanner() {
   if (!activeRun) return null;
 
   const isPausing = !!cfg?.paused && !!activeRun;
+  const isStopping = !!activeRun?.cancel_requested;
   const processados =
     (activeRun.enviados || 0) + (activeRun.falhas || 0) + (activeRun.ignorados || 0);
   const progressPct =
@@ -61,11 +62,26 @@ export default function LiveDispatchBanner() {
         .from("reengajamento_config" as any)
         .update({ paused: true })
         .eq("id", cfg.id);
-      toast.success("Pausa solicitada — o disparo para após a mensagem em curso");
+      toast.success("Pausa solicitada — o disparo para após a mensagem em curso (retomável)");
       qc.invalidateQueries({ queryKey: ["reengajamento-config-banner"] });
       qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
     } catch (e: any) {
       toast.error("Erro ao pausar: " + e.message);
+    }
+  }
+
+  async function pararDisparo() {
+    if (!activeRun?.id) return;
+    if (!confirm("Parar este disparo definitivamente? Os leads restantes não serão enviados e o disparo não poderá ser retomado.")) return;
+    try {
+      await supabase
+        .from("reengajamento_dispatch_runs" as any)
+        .update({ cancel_requested: true })
+        .eq("id", activeRun.id);
+      toast.success("Parada solicitada — o disparo será encerrado após a mensagem em curso");
+      qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
+    } catch (e: any) {
+      toast.error("Erro ao parar: " + e.message);
     }
   }
 
@@ -76,20 +92,34 @@ export default function LiveDispatchBanner() {
           <span className="flex items-center gap-2 text-sm font-medium">
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
             Disparo em andamento
-            {isPausing && (
+            {isStopping ? (
+              <Badge className="bg-rose-200 text-rose-900 hover:bg-rose-200">Parando…</Badge>
+            ) : isPausing && (
               <Badge className="bg-amber-200 text-amber-900 hover:bg-amber-200">Pausando…</Badge>
             )}
           </span>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={pausarDisparo}
-            disabled={isPausing}
-            className="h-8"
-          >
-            <Pause className="h-3.5 w-3.5 mr-1" />
-            {isPausing ? "Pausando…" : "Pausar agora"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={pausarDisparo}
+              disabled={isPausing || isStopping}
+              className="h-8"
+            >
+              <Pause className="h-3.5 w-3.5 mr-1" />
+              {isPausing ? "Pausando…" : "Pausar"}
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={pararDisparo}
+              disabled={isStopping}
+              className="h-8"
+            >
+              <Square className="h-3.5 w-3.5 mr-1" />
+              {isStopping ? "Parando…" : "Parar"}
+            </Button>
+          </div>
         </div>
 
         <div className="flex justify-between text-xs">
