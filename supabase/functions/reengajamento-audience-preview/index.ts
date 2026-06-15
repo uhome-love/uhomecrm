@@ -14,7 +14,8 @@ type AudienceSource = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | 
 type DedupMode = "exclude_sent" | "include_all" | "only_sent_before";
 
 interface Audience {
-  source: AudienceSource;
+  source?: AudienceSource;
+  sources?: AudienceSource[];
   canal?: "meta" | "evolution";
   tipo_descarte?: "reengajavel" | "definitivo" | "todos";
   stage_ids?: string[];
