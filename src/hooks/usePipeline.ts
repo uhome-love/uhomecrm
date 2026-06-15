@@ -73,7 +73,7 @@ export interface PipelineSegmento {
 
 export function usePipeline(
   pipelineTipo: string = "leads",
-  options?: { scopeCorretorIds?: string[] | null }
+  options?: { scopeCorretorIds?: string[] | null; realtime?: boolean }
 ) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
