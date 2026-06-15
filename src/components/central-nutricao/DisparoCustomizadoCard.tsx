@@ -18,6 +18,14 @@ type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_
 type Canal = "meta" | "evolution";
 type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
 
+// Imagem fixa de header por template Meta (templates com cabeçalho de imagem).
+// Para um novo template, basta adicionar o nome → URL pública aqui (ou colar a URL no campo do card).
+const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
+  casatua_junho25k: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-junho25k.png",
+};
+
+
+
 export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => void }) {
   const [canal, setCanal] = useState<Canal>("meta");
   // Multi-fonte: combina públicos (descartados + oferta ativa) com dedup por telefone.
@@ -45,6 +53,8 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [templateLanguage, setTemplateLanguage] = useState<string>("pt_BR");
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [templateManualMode, setTemplateManualMode] = useState(false);
+  // Imagem fixa do header por template (Meta). Cada novo template pode ter sua imagem aqui.
+  const [headerImageUrl, setHeaderImageUrl] = useState<string>("");
   const [mensagem, setMensagem] = useState<string>("");
   const [preview, setPreview] = useState<{ count: number; sample: any[]; funil?: Record<string, number> } | null>(null);
   const [previewing, setPreviewing] = useState(false);
@@ -108,10 +118,18 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     }
   }, [canal, source, cfgDefaults, templateName]);
 
+  // Auto-preenche a imagem fixa do header conforme o template selecionado
+  useEffect(() => {
+    if (canal !== "meta" || !templateName) return;
+    const mapped = TEMPLATE_HEADER_IMAGES[templateName];
+    if (mapped) setHeaderImageUrl(mapped);
+  }, [canal, templateName]);
+
   function selectTemplate(name: string, language: string) {
     setTemplateName(name);
     setTemplateLanguage(language);
     setTemplatePickerOpen(false);
+    setHeaderImageUrl(TEMPLATE_HEADER_IMAGES[name] || "");
     setPreview(null);
   }
 
@@ -143,6 +161,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (canal === "meta" && templateName) {
       base.template_name = templateName;
       base.template_language = templateLanguage;
+      if (headerImageUrl.trim()) base.header_image_url = headerImageUrl.trim();
     }
     if (canal === "evolution" && mensagem) base.mensagem = mensagem;
     return base;
@@ -628,7 +647,33 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             <p className="text-[10px] text-muted-foreground mt-1">
               Lista vinda direto do Meta Business — apenas templates aprovados. Disparos com botões SIM/NÃO classificam respostas automaticamente.
             </p>
+
+            {/* Imagem fixa do header (templates com cabeçalho de imagem) */}
+            <div className="mt-2">
+              <Label className="text-xs">Imagem do header (templates com cabeçalho de imagem)</Label>
+              <Input
+                placeholder="https://… URL pública da imagem do template"
+                value={headerImageUrl}
+                onChange={(e) => { setHeaderImageUrl(e.target.value); setPreview(null); }}
+                className="h-9 mt-1"
+              />
+              {headerImageUrl.trim() ? (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <img src={headerImageUrl} alt="Header do template" className="h-12 w-12 rounded object-cover border" />
+                  <p className="text-[10px] text-muted-foreground">
+                    {TEMPLATE_HEADER_IMAGES[templateName] === headerImageUrl
+                      ? "✓ Imagem mapeada automaticamente para este template."
+                      : "Imagem personalizada. Deixe em branco se o template não tiver cabeçalho de imagem."}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Deixe em branco se o template não tiver cabeçalho de imagem. Templates só de texto ignoram este campo.
+                </p>
+              )}
+            </div>
           </div>
+
         )}
         {canal === "evolution" && !has("descartados") && (
           <div>

@@ -237,6 +237,8 @@ Deno.serve(async (req) => {
     // Validações por canal
     let evoUrl = "", evoKey = "";
     let metaPhoneId = "", metaToken = "", metaTemplate = "", metaLang = "pt_BR";
+    // Imagem de header por disparo (override): cada template pode ter sua própria imagem fixa.
+    const overrideHeaderImg = (bodyAudience?.header_image_url && String(bodyAudience.header_image_url).trim()) || "";
     if (canal === "evolution") {
       evoUrl = Deno.env.get("EVOLUTION_API_URL") || "";
       evoKey = Deno.env.get("EVOLUTION_API_KEY") || "";
@@ -609,7 +611,7 @@ Deno.serve(async (req) => {
 
       try {
         if (canal === "meta") {
-          const headerImageUrl = String((wave === 2 ? cfg.meta_header_image_url_2 : cfg.meta_header_image_url) || "").trim() || undefined;
+          const headerImageUrl = overrideHeaderImg || String((wave === 2 ? cfg.meta_header_image_url_2 : cfg.meta_header_image_url) || "").trim() || undefined;
           const r = await sendMetaTemplate({
             phoneNumberId: metaPhoneId, accessToken: metaToken, to: phone,
             templateName: metaTemplate, lang: metaLang, nome: firstName, headerImageUrl,
