@@ -46,6 +46,7 @@ export default function LiveDispatchBanner() {
   if (!activeRun) return null;
 
   const isPausing = !!cfg?.paused && !!activeRun;
+  const isStopping = !!activeRun?.cancel_requested;
   const processados =
     (activeRun.enviados || 0) + (activeRun.falhas || 0) + (activeRun.ignorados || 0);
   const progressPct =
