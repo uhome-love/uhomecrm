@@ -1,45 +1,32 @@
-# Reengajamento: roteamento de respostas (Fila do CEO + inativação limpa)
+# Destravar a Central de Disparos para o template aprovado `casatua_junho25k`
 
-## Objetivo
-Quando um lead que recebeu um disparo (ex: template `casatua_junho25k`) responder:
+## Diagnóstico
+O toast "🛑 Central travada…" **não** é sobre o template novo. Existem 3 trincos independentes hoje ativos:
 
-- **Positivo** — botão "Quero informações" ou texto tipo "quero informações", "sim", "tenho interesse":
-  → **Reativar** o lead e **enviar SEMPRE para a Fila do CEO** (nunca distribuir automático pela roleta), com **registro no histórico de que é um lead reengajado pelo template** (nome do template).
-- **Negativo** — botão "Não tenho interesse, obrigado" ou texto "não quero mais", "não tenho interesse":
-  → Transformar o lead em **inativo (descarte definitivo + arquivado)** e **removê-lo da lista de descartados** para limpar a base.
+1. **Kill-switch global** — `system_flags.campaign_dispatch_enabled = false`
+   (motivo antigo: "WABA quality recovery — bombardeio, LGPD, disparos fora do CRM"). É verificado dentro da edge function `reengajamento-descartados-enqueue` (via `campaign-gate.ts`). Enquanto estiver `false`, **nenhum** disparo sai, mesmo destravando o resto.
 
-## Situação atual (já existe)
-O webhook `whatsapp-webhook` já:
-- Casa a resposta ao disparo via `wamid` em `reengajamento_meta_disparos`.
-- Classifica SIM/NÃO por botão ou texto (já cobre "quero" e "não tenho interesse").
-- No SIM (origem descartados/oferta ativa) chama `reativar_lead_nutricao_manual`, que hoje **manda para a roleta** (`distribuir_lead_atomico`) — precisa mudar para Fila do CEO.
-- No NÃO já marca descarte definitivo, mas **não arquiva** (não some 100% da lista de descartados).
+2. **Pausa manual da Central** — `reengajamento_config.paused = true` e `paused_until_release = true`
+   (motivo: "Templates casatua_maio e reativacao_opcoes_perfil_v2 com >70% falha…"). É o texto exato do toast. Verificado no front (`DisparoCustomizadoCard.disparar`) e no loop do enqueue.
 
-A audiência de "descartados" já exclui `tipo_descarte = definitivo`, `reengajamento_status = respondeu_nao*` e `arquivado = true`.
+3. **Blacklist de templates** — `blocked_templates`: `casatua_maio` e `reativacao_opcoes_perfil_v2`.
+   `casatua_junho25k` **NÃO** está nessa lista → passa normalmente. Esses dois continuam bloqueados (templates ruins, devem permanecer).
 
-## Mudanças
+Ou seja: o bloqueio aponta para templates antigos de baixa qualidade, mas o novo (`casatua_junho25k`, aprovado, imagem ok, baixa falha) está pronto.
 
-### 1. Nova função no banco (migration)
-Criar `public.reativar_lead_para_fila_ceo(p_lead_id uuid, p_template_name text)`:
-- Faz o mesmo que `reativar_lead_nutricao_manual` (cancela parcerias/tarefas pendentes, move para stage "Novo Lead", limpa descarte/arquivado, `reativado_por_nutricao = true`, `reengajamento_status = 'respondeu_sim'`).
-- Define `corretor_id = NULL` e `aceite_status = 'pendente_distribuicao'` — é exatamente o critério da Fila do CEO.
-- **NÃO** chama `distribuir_lead_atomico` (o lead permanece na Fila do CEO, conforme regra "Fila CEO Manual Only").
-- Registra em `pipeline_historico` e `observacoes` que o lead foi **reengajado pelo template `<p_template_name>`** e enviado para a Fila do CEO.
-- `SECURITY DEFINER`, `search_path = public`, com GRANT execute para `service_role`/`authenticated`.
+## Ação (somente dados, sem mudança de código)
+1. **Liberar kill-switch global**: `system_flags.campaign_dispatch_enabled = true`, com `reason` atualizado: "Liberado após verificação Business Manager — uso restrito a templates aprovados (casatua_junho25k). Salvaguardas: rate limit 250/dia, dedup por telefone, opt-out NÃO→inativa, Pausar/Parar."
 
-### 2. Edge function `whatsapp-webhook`
-- No bloco de resposta positiva (`buttonResp === "sim"` com origem `descartados`/`oferta_ativa_lista`/`legacy`): trocar a chamada de `reativarLeadNutricao` por `reativar_lead_para_fila_ceo`, passando `metaDispatch.template_name`.
-- Registrar `pipeline_atividades` com título indicando "🔥 Reengajado pelo template `<template>` → Fila do CEO".
-- (Opcional) Criar `notifications` para admins/CEO avisando novo lead reengajado na fila.
-- No bloco de resposta negativa (`buttonResp === "nao"`): além do que já faz, definir `arquivado = true` para **remover definitivamente da lista de descartados** (regra "Inativar = permanent hide"), mantendo o carimbo de motivo e o registro de histórico.
-- Garantir que a detecção positiva/negativa continue cobrindo os textos/botões citados (já coberto pelos regex atuais — validar).
+2. **Tirar a pausa manual da Central**: em `reengajamento_config` → `paused = false`, `paused_until_release = false`, `paused_reason` atualizado para registrar a liberação e a data BRT.
 
-### 3. Validação
-- Deploy das funções.
-- Simular payloads de webhook (botão "Quero informações" e botão "Não tenho interesse, obrigado") via `supabase--curl_edge_functions` apontando para `wamid` de teste em `reengajamento_meta_disparos`.
-- Conferir no banco: lead positivo aparece na Fila do CEO (`corretor_id IS NULL` + `aceite_status='pendente_distribuicao'`) com histórico do template; lead negativo fica `tipo_descarte='definitivo'`, `arquivado=true` e some da audiência de descartados.
+3. **Atualizar o template default da config** para não apontar mais a um template bloqueado: `meta_template_name` e `meta_template_name_2 = 'casatua_junho25k'` (a UI já permite override por disparo, mas o default não pode ser um template na blacklist).
 
-## Detalhes técnicos
-- Fila do CEO = `pipeline_leads` com `corretor_id IS NULL` e `aceite_status = 'pendente_distribuicao'` (usado por `PendingLeadsPanel`/`FilaCeoDispatchModal`).
-- Stage "Novo Lead": `d3843b2f-2fa1-4c31-9129-4eb0ed21f019`. Stage "Descarte": `1dd66c25-3848-4053-9f66-82e902989b4d`.
-- Sem alteração de UI da Central de Disparos; mudança é no roteamento de respostas (backend).
+4. **Manter a blacklist** intacta (`casatua_maio` e `reativacao_opcoes_perfil_v2` continuam bloqueados) para impedir reuso dos templates problemáticos.
+
+## Resultado esperado
+- O botão "Disparar para 2160 leads" passa a funcionar com `casatua_junho25k`.
+- As respostas continuam roteando conforme já implementado (SIM → Fila do CEO; NÃO → inativa/arquiva).
+- Os templates antigos de má qualidade seguem bloqueados.
+
+## Observação de segurança
+A pausa original foi por qualidade WABA (bombardeio/LGPD). As salvaguardas que mitigam isso já existem na ferramenta atual (rate limit 250/dia, delays, dedup, opt-out automático no NÃO, Pausar/Parar em tempo real). Se durante o disparo a Meta voltar a acusar >X% de falha, o auto-pause por qualidade (já existente no enqueue) re-pausa sozinho.
