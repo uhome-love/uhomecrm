@@ -654,7 +654,7 @@ Deno.serve(async (req) => {
                     pipeline_lead_id: metaDispatch.lead_id,
                     tipo: "sistema",
                     titulo: "🚫 Lead inativado — respondeu NÃO ao reengajamento",
-                    descricao: `Lead respondeu NÃO ao template Meta WhatsApp e foi inativado automaticamente. Não será enviado para roleta.`,
+                    descricao: `Lead respondeu NÃO ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao template "${metaDispatch.template_name || "reengajamento"}" e foi inativado/arquivado automaticamente. Removido da lista de descartados. Não será enviado para roleta.`,
                     data: new Date().toISOString().slice(0, 10),
                     status: "concluida",
                   });
