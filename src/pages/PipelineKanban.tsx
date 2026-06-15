@@ -266,8 +266,14 @@ export default function PipelineKanban() {
         }
       }
 
+      // CRÍTICO (fix looping de contadores): se algum chunk falhou, o mapa está
+      // INCOMPLETO — leads sem linha aqui seriam classificados como "sem tarefa"
+      // por engano, causando o vai-e-volta "49 sem tarefa ⇄ 33 em dia/17 atrasado".
+      // Lançamos erro para o React Query MANTER o último mapa válido (via
+      // placeholderData: keepPreviousData) em vez de gravar um mapa parcial.
       if (errors.length) {
-        console.warn("[PipelineKanban] Algumas consultas de tarefas falharam e foram isoladas por chunk", errors);
+        console.warn("[PipelineKanban] Consultas de tarefas falharam — preservando último mapa válido", errors);
+        throw new Error("Falha parcial ao carregar tarefas do pipeline");
       }
 
       return map;
@@ -275,6 +281,7 @@ export default function PipelineKanban() {
     enabled: leadIds.length > 0,
     staleTime: 10_000,
     refetchOnWindowFocus: true,
+    placeholderData: keepPreviousData,
   });
 
   // Query real visitas for the "Visita marcada" filter
