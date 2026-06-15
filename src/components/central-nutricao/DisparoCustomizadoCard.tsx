@@ -213,8 +213,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     setFiring(true);
     try {
       // visita_amanha delega para função dedicada (mantém lógica testada)
-      const fn = source === "visita_amanha" ? "visita-amanha-enqueue" : "reengajamento-descartados-enqueue";
-      const body = source === "visita_amanha"
+      const isVisita = sources.length === 1 && sources[0] === "visita_amanha";
+      const fn = isVisita ? "visita-amanha-enqueue" : "reengajamento-descartados-enqueue";
+      const body = isVisita
         ? { force: true, audience: buildAudience() }
         : { force: true, iniciado_por: "manual_custom", audience: buildAudience() };
 
