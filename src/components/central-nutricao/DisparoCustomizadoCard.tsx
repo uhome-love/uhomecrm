@@ -657,6 +657,28 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             )}
           </div>
 
+          {preview?.funil && isCombined && (preview.funil as any).por_fonte && (
+            <div className="text-[11px] border rounded p-2 bg-background space-y-1">
+              <div className="font-medium text-indigo-700 mb-1">Conferência — Público combinado</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                {Object.entries((preview.funil as any).por_fonte as Record<string, number>).map(([fonte, qtd]) => (
+                  <div key={fonte} className="contents">
+                    <span className="text-muted-foreground capitalize">{fonte.replace(/_/g, " ")}</span>
+                    <span className="text-right font-mono">{qtd}</span>
+                  </div>
+                ))}
+                {typeof (preview.funil as any).duplicados_removidos === "number" && (
+                  <>
+                    <span className="text-muted-foreground">— Duplicados removidos (mesmo telefone)</span>
+                    <span className="text-right font-mono text-amber-600">−{(preview.funil as any).duplicados_removidos}</span>
+                  </>
+                )}
+                <span className="font-medium pt-1 border-t mt-1">= Elegíveis (1 msg por telefone)</span>
+                <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.count}</span>
+              </div>
+            </div>
+          )}
+
           {preview?.funil && has("descartados") && (
             <div className="text-[11px] border rounded p-2 bg-background space-y-1">
               <div className="font-medium text-indigo-700 mb-1">Conferência — Funil de descartados</div>
