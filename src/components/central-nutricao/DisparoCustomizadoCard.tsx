@@ -118,10 +118,18 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     }
   }, [canal, source, cfgDefaults, templateName]);
 
+  // Auto-preenche a imagem fixa do header conforme o template selecionado
+  useEffect(() => {
+    if (canal !== "meta" || !templateName) return;
+    const mapped = TEMPLATE_HEADER_IMAGES[templateName];
+    if (mapped) setHeaderImageUrl(mapped);
+  }, [canal, templateName]);
+
   function selectTemplate(name: string, language: string) {
     setTemplateName(name);
     setTemplateLanguage(language);
     setTemplatePickerOpen(false);
+    setHeaderImageUrl(TEMPLATE_HEADER_IMAGES[name] || "");
     setPreview(null);
   }
 
