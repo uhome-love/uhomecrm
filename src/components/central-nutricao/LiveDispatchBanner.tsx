@@ -92,7 +92,9 @@ export default function LiveDispatchBanner() {
           <span className="flex items-center gap-2 text-sm font-medium">
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
             Disparo em andamento
-            {isPausing && (
+            {isStopping ? (
+              <Badge className="bg-rose-200 text-rose-900 hover:bg-rose-200">Parando…</Badge>
+            ) : isPausing && (
               <Badge className="bg-amber-200 text-amber-900 hover:bg-amber-200">Pausando…</Badge>
             )}
           </span>
