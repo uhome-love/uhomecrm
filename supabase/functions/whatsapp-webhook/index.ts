@@ -92,31 +92,7 @@ async function distributeViroleta(supabaseUrl: string, serviceKey: string, leadI
   }
 }
 
-async function reativarLeadNutricao(supabase: any, leadId: string, opts?: { wave?: 1 | 2 }) {
-  if (opts?.wave === 2) {
-    const { data, error } = await supabase.rpc("reativar_lead_nutricao_campanha", {
-      p_lead_id: leadId,
-      p_empreendimento: "Casa Tua",
-      p_campanha_label: "Casa Tua (Maio/2026)",
-    });
-    if (error) {
-      console.error("❌ Nutrição wave2 reactivation RPC failed:", error.message);
-      throw error;
-    }
-    return data;
-  }
 
-  const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual", {
-    p_lead_id: leadId,
-  });
-
-  if (error) {
-    console.error("❌ Nutrição reactivation RPC failed:", error.message);
-    throw error;
-  }
-
-  return data;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -538,13 +514,51 @@ Deno.serve(async (req) => {
                 const routeToRoleta = audSrc === "descartados" || audSrc === "oferta_ativa_lista" || audSrc === "legacy";
                 const justNotifyCorretor = audSrc === "pipeline_ativo" || audSrc === "visita_amanha";
 
-                // Reativa lead se respondeu SIM E origem permite roleta
+                // Reativa lead se respondeu SIM E origem permite reengajamento → SEMPRE Fila do CEO
                 if (buttonResp === "sim" && routeToRoleta) {
+                  const tplName = metaDispatch.template_name || "reengajamento";
                   try {
-                    await reativarLeadNutricao(supabase, metaDispatch.lead_id, { wave: isWave2 ? 2 : 1 });
+                    const { error: filaErr } = await supabase.rpc("reativar_lead_para_fila_ceo", {
+                      p_lead_id: metaDispatch.lead_id,
+                      p_template_name: tplName,
+                    });
+                    if (filaErr) throw filaErr;
+                    console.log(`🔥 Lead ${metaDispatch.lead_id} reengajado (template=${tplName}) → Fila do CEO`);
                   } catch (e) {
-                    console.error("rpc reativar_lead_nutricao_manual error:", e);
+                    console.error("rpc reativar_lead_para_fila_ceo error:", e);
                   }
+
+                  // Atividade na timeline registrando o reengajamento
+                  await supabase.from("pipeline_atividades").insert({
+                    pipeline_lead_id: metaDispatch.lead_id,
+                    tipo: "whatsapp",
+                    titulo: `🔥 Lead reengajado pelo template "${tplName}" → Fila do CEO`,
+                    descricao: `Lead respondeu SIM ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao disparo do template "${tplName}". Reativado e enviado para a Fila do CEO para distribuição manual.`,
+                    data: new Date().toISOString().slice(0, 10),
+                    status: "concluida",
+                  });
+
+                  // Notifica admins/CEO sobre novo lead reengajado na fila
+                  try {
+                    const { data: admins } = await supabase
+                      .from("user_roles")
+                      .select("user_id")
+                      .in("role", ["admin", "ceo", "gestor"]);
+                    const leadNome = currentLead?.nome || "Lead";
+                    for (const a of admins || []) {
+                      await supabase.from("notifications").insert({
+                        user_id: a.user_id,
+                        titulo: `🔥 Lead reengajado na Fila do CEO: ${leadNome}`,
+                        mensagem: `${leadNome} respondeu SIM ao template "${tplName}" e está na Fila do CEO aguardando distribuição manual.`,
+                        tipo: "lead_reengajado",
+                        categoria: "leads",
+                        dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "fila_ceo" },
+                      });
+                    }
+                  } catch (e) {
+                    console.error("notify CEO fila error:", e);
+                  }
+                  continue;
                 } else if (buttonResp === "sim" && justNotifyCorretor) {
                   // Pipeline ativo / visita amanhã — não move stage, não chama roleta. Só marca interesse + notifica corretor atual.
                   await supabase.from("pipeline_leads").update({
@@ -595,6 +609,7 @@ Deno.serve(async (req) => {
                     stage_changed_at: new Date().toISOString(),
                     conversation_window_until: null,
                     reativado_por_nutricao: false,
+                    arquivado: true,
                   }).eq("id", metaDispatch.lead_id);
 
                   // Cancela qualquer sequência de nutrição/reativação ativa
@@ -615,7 +630,7 @@ Deno.serve(async (req) => {
                     pipeline_lead_id: metaDispatch.lead_id,
                     tipo: "sistema",
                     titulo: "🚫 Lead inativado — respondeu NÃO ao reengajamento",
-                    descricao: `Lead respondeu NÃO ao template Meta WhatsApp e foi inativado automaticamente. Não será enviado para roleta.`,
+                    descricao: `Lead respondeu NÃO ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao template "${metaDispatch.template_name || "reengajamento"}" e foi inativado/arquivado automaticamente. Removido da lista de descartados. Não será enviado para roleta.`,
                     data: new Date().toISOString().slice(0, 10),
                     status: "concluida",
                   });
