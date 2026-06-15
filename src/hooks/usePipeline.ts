@@ -73,7 +73,7 @@ export interface PipelineSegmento {
 
 export function usePipeline(
   pipelineTipo: string = "leads",
-  options?: { scopeCorretorIds?: string[] | null }
+  options?: { scopeCorretorIds?: string[] | null; realtime?: boolean }
 ) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -83,6 +83,10 @@ export function usePipeline(
   // do server, evitando trazer 10k+ leads pra filtrar no cliente.
   // Stable key pra não invalidar loadLeads a cada render.
   const scopeCorretorIds = options?.scopeCorretorIds ?? null;
+  // Realtime opt-out: na visão CEO/gestor (empresa inteira) os crons de fundo
+  // escrevem em pipeline_leads o tempo todo → o realtime company-wide causava
+  // flicker contínuo nos contadores e travava a interação. Desligamos por escopo.
+  const realtimeEnabled = options?.realtime ?? true;
   const scopeKey = useMemo(
     () => (scopeCorretorIds ? scopeCorretorIds.slice().sort().join(",") : "__none__"),
     [scopeCorretorIds]
@@ -460,7 +464,7 @@ export function usePipeline(
 
   // ─── Granular realtime: update only the changed lead in local state ───
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !realtimeEnabled) return;
     let batchTimer: ReturnType<typeof setTimeout> | null = null;
     const pendingEvents: Array<{ eventType: string; new_record: any; old_record: any }> = [];
 
@@ -523,7 +527,7 @@ export function usePipeline(
       if (batchTimer) clearTimeout(batchTimer);
       supabase.removeChannel(channel);
     };
-  }, [userId, shouldHideLeadFromPipeline]);
+  }, [userId, realtimeEnabled, shouldHideLeadFromPipeline]);
 
   // Reload leads when tab becomes visible again after a long absence.
   // Threshold raised from 3s → 60s to avoid hammering the backend on
