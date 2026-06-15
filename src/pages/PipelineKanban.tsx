@@ -93,7 +93,7 @@ export default function PipelineKanban() {
     if (!gestorTeamUserIds) return []; // ainda carregando lista → não traz nada
     return Array.from(gestorTeamUserIds);
   }, [isAdmin, gestorFilter, gestorTeamUserIds]);
-  const pipeline = usePipeline("leads", { scopeCorretorIds: pipelineScopeCorretorIds });
+  const pipeline = usePipeline("leads", { scopeCorretorIds: pipelineScopeCorretorIds, realtime: !(isAdmin || isGestor) });
   const { user: authUser, loading: authLoading } = useAuth();
   // Bug-fix Bug 3: useUserRole retorna loading=false enquanto useAuth ainda
   // resolve user (query disabled => isLoading=false). Combinamos os dois para
