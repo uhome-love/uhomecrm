@@ -161,6 +161,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (canal === "meta" && templateName) {
       base.template_name = templateName;
       base.template_language = templateLanguage;
+      if (headerImageUrl.trim()) base.header_image_url = headerImageUrl.trim();
     }
     if (canal === "evolution" && mensagem) base.mensagem = mensagem;
     return base;
