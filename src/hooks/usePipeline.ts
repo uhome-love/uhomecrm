@@ -464,7 +464,7 @@ export function usePipeline(
 
   // ─── Granular realtime: update only the changed lead in local state ───
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !realtimeEnabled) return;
     let batchTimer: ReturnType<typeof setTimeout> | null = null;
     const pendingEvents: Array<{ eventType: string; new_record: any; old_record: any }> = [];
 
