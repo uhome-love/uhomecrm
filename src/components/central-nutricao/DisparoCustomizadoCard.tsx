@@ -235,6 +235,16 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     setStageIds((prev) => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
   }
 
+  function toggleSource(s: Source) {
+    setPreview(null);
+    setSources((prev) => {
+      // visita_amanha é exclusiva
+      if (s === "visita_amanha") return prev.includes("visita_amanha") ? ["descartados"] : ["visita_amanha"];
+      const next = prev.includes(s) ? prev.filter((x) => x !== s) : [...prev.filter((x) => x !== "visita_amanha"), s];
+      return next.length ? next : ["descartados"];
+    });
+  }
+
   function setPeriodoQuick(kind: "hoje" | "semana" | "mes" | "30d") {
     const now = new Date();
     const fmt = (d: Date) => d.toISOString().slice(0, 10);
