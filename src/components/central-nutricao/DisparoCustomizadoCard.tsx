@@ -183,7 +183,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       toast.error("Selecione o template Meta que será usado neste disparo");
       return;
     }
-    if (canal === "evolution" && !mensagem && source !== "descartados") {
+    if (canal === "evolution" && !mensagem && !has("descartados")) {
       toast.error("Escreva a mensagem que será enviada");
       return;
     }
