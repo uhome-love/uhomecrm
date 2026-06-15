@@ -1,32 +1,45 @@
-# Destravar a Central de Disparos para o template aprovado `casatua_junho25k`
+## Problema
 
-## Diagnóstico
-O toast "🛑 Central travada…" **não** é sobre o template novo. Existem 3 trincos independentes hoje ativos:
+Na visão CEO do Pipeline (aba Kanban), os leads ficam "atualizando sem parar" — os contadores **em dia / sem tarefa / atrasado** piscam continuamente e a contagem de leads muda sozinha, impossibilitando olhar ou mexer nos leads.
 
-1. **Kill-switch global** — `system_flags.campaign_dispatch_enabled = false`
-   (motivo antigo: "WABA quality recovery — bombardeio, LGPD, disparos fora do CRM"). É verificado dentro da edge function `reengajamento-descartados-enqueue` (via `campaign-gate.ts`). Enquanto estiver `false`, **nenhum** disparo sai, mesmo destravando o resto.
+## Causa raiz
 
-2. **Pausa manual da Central** — `reengajamento_config.paused = true` e `paused_until_release = true`
-   (motivo: "Templates casatua_maio e reativacao_opcoes_perfil_v2 com >70% falha…"). É o texto exato do toast. Verificado no front (`DisparoCustomizadoCard.disparar`) e no loop do enqueue.
+`src/hooks/usePipeline.ts` mantém uma assinatura realtime que escuta **toda** a tabela `pipeline_leads` (`event: "*"`, sem filtro). 
 
-3. **Blacklist de templates** — `blocked_templates`: `casatua_maio` e `reativacao_opcoes_perfil_v2`.
-   `casatua_junho25k` **NÃO** está nessa lista → passa normalmente. Esses dois continuam bloqueados (templates ruins, devem permanecer).
+- Para um corretor: recebe poucos eventos (só os leads dele) → ok.
+- Para o CEO: ~2.400 leads da empresa inteira carregados, e os automatismos de fundo (roleta, nutrição, reengajamento, dispatches, crons) escrevem nessa tabela constantemente. Cada lote de eventos chama `setLeads(...)`, o que muda a referência da lista → recalcula `preFilteredLeads` → refaz a query `pipeline-kanban-tarefas` → recalcula os contadores → re-renderiza o board. Em escala company-wide isso vira flicker contínuo.
 
-Ou seja: o bloqueio aponta para templates antigos de baixa qualidade, mas o novo (`casatua_junho25k`, aprovado, imagem ok, baixa falha) está pronto.
+## Correção proposta
 
-## Ação (somente dados, sem mudança de código)
-1. **Liberar kill-switch global**: `system_flags.campaign_dispatch_enabled = true`, com `reason` atualizado: "Liberado após verificação Business Manager — uso restrito a templates aprovados (casatua_junho25k). Salvaguardas: rate limit 250/dia, dedup por telefone, opt-out NÃO→inativa, Pausar/Parar."
+Desligar a atualização realtime automática quando o escopo for a empresa inteira (visão CEO/gestor sem filtro), mantendo-a para o corretor. O CEO continua com o botão de atualizar manual e o `StaleDataBadge` já existentes.
 
-2. **Tirar a pausa manual da Central**: em `reengajamento_config` → `paused = false`, `paused_until_release = false`, `paused_reason` atualizado para registrar a liberação e a data BRT.
+### Passo 1 — `usePipeline` aceita flag de realtime
+- Adicionar à assinatura de opções: `options?: { scopeCorretorIds?: string[] | null; realtime?: boolean }`.
+- Default seguro: `const realtimeEnabled = options?.realtime ?? true;` (mantém comportamento atual para todos os outros consumidores).
+- No `useEffect` da assinatura realtime (linhas ~462-526): retornar cedo quando `!realtimeEnabled` (não criar o channel) e incluir `realtimeEnabled` nas dependências.
 
-3. **Atualizar o template default da config** para não apontar mais a um template bloqueado: `meta_template_name` e `meta_template_name_2 = 'casatua_junho25k'` (a UI já permite override por disparo, mas o default não pode ser um template na blacklist).
+### Passo 2 — `PipelineKanban` desliga realtime no escopo company-wide
+- Onde hoje chama `usePipeline("leads", { scopeCorretorIds: pipelineScopeCorretorIds })` (linha ~96), passar também `realtime`.
+- Condição de desligar (firehose): visão de alto volume sem escopo de corretor próprio — quando `isAdmin` (CEO) ou `isGestor` e o escopo não está restrito a um time específico pequeno. Regra prática: `realtime: !(isAdmin || isGestor)` → realtime só para corretor. (Mantém a vista do corretor reativa, que é onde a UX em tempo real importa de fato.)
 
-4. **Manter a blacklist** intacta (`casatua_maio` e `reativacao_opcoes_perfil_v2` continuam bloqueados) para impedir reuso dos templates problemáticos.
+### Passo 3 — Reforçar atualização manual para o CEO
+- Garantir que o botão de atualizar (`handleRefresh` → `pipeline.reload()`) fique visível/claro na visão CEO, já que ela deixa de ser tempo-real. (Já existe; apenas confirmar.)
 
 ## Resultado esperado
-- O botão "Disparar para 2160 leads" passa a funcionar com `casatua_junho25k`.
-- As respostas continuam roteando conforme já implementado (SIM → Fila do CEO; NÃO → inativa/arquiva).
-- Os templates antigos de má qualidade seguem bloqueados.
 
-## Observação de segurança
-A pausa original foi por qualidade WABA (bombardeio/LGPD). As salvaguardas que mitigam isso já existem na ferramenta atual (rate limit 250/dia, delays, dedup, opt-out automático no NÃO, Pausar/Parar em tempo real). Se durante o disparo a Meta voltar a acusar >X% de falha, o auto-pause por qualidade (já existente no enqueue) re-pausa sozinho.
+- CEO: a lista para de piscar; contadores ficam estáveis; dá para filtrar, abrir e mexer nos leads. Atualização sob demanda pelo botão de refresh.
+- Corretor: comportamento inalterado (realtime continua ativo na carteira própria).
+
+## Validação
+
+1. Abrir Pipeline → aba Kanban como CEO e confirmar que os contadores param de oscilar e o board fica interativo.
+2. Confirmar que o botão de atualizar traz dados frescos.
+3. Logar como corretor e confirmar que um lead alterado ainda atualiza em tempo real.
+
+## Detalhe técnico
+
+Arquivos afetados:
+- `src/hooks/usePipeline.ts` — nova opção `realtime`, guard no `useEffect` da assinatura `pipeline-leads-realtime`.
+- `src/pages/PipelineKanban.tsx` — passar `realtime: !(isAdmin || isGestor)` ao `usePipeline`.
+
+Nenhuma migração de banco ou mudança de RLS necessária.
