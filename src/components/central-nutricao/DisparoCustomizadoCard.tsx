@@ -647,7 +647,33 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             <p className="text-[10px] text-muted-foreground mt-1">
               Lista vinda direto do Meta Business — apenas templates aprovados. Disparos com botões SIM/NÃO classificam respostas automaticamente.
             </p>
+
+            {/* Imagem fixa do header (templates com cabeçalho de imagem) */}
+            <div className="mt-2">
+              <Label className="text-xs">Imagem do header (templates com cabeçalho de imagem)</Label>
+              <Input
+                placeholder="https://… URL pública da imagem do template"
+                value={headerImageUrl}
+                onChange={(e) => { setHeaderImageUrl(e.target.value); setPreview(null); }}
+                className="h-9 mt-1"
+              />
+              {headerImageUrl.trim() ? (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <img src={headerImageUrl} alt="Header do template" className="h-12 w-12 rounded object-cover border" />
+                  <p className="text-[10px] text-muted-foreground">
+                    {TEMPLATE_HEADER_IMAGES[templateName] === headerImageUrl
+                      ? "✓ Imagem mapeada automaticamente para este template."
+                      : "Imagem personalizada. Deixe em branco se o template não tiver cabeçalho de imagem."}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Deixe em branco se o template não tiver cabeçalho de imagem. Templates só de texto ignoram este campo.
+                </p>
+              )}
+            </div>
           </div>
+
         )}
         {canal === "evolution" && !has("descartados") && (
           <div>
