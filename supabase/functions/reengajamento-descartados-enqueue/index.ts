@@ -183,17 +183,25 @@ Deno.serve(async (req) => {
     }
   } catch { /* ignore */ }
 
-  const isCustomAudience = !!bodyAudience?.source;
+  // Fontes: aceita `sources: string[]` (combinado) ou `source` único (compat).
+  const sourcesArr: string[] = (Array.isArray(bodyAudience?.sources) && bodyAudience.sources.length)
+    ? bodyAudience.sources.map(String)
+    : (bodyAudience?.source ? [String(bodyAudience.source)] : []);
+  const isCustomAudience = sourcesArr.length > 0;
+  const isCombined = sourcesArr.length > 1;
+  const primarySource = sourcesArr[0] || "";
+  const singleSourceKey = (src: string): string =>
+    src === "descartados"
+      ? `descartados:${bodyAudience.tipo_descarte || "reengajavel"}`
+      : src === "oferta_ativa_lista"
+        ? `oferta_ativa:${(((bodyAudience.lista_ids && bodyAudience.lista_ids.length) ? bodyAudience.lista_ids : (bodyAudience.lista_id ? [bodyAudience.lista_id] : [])) as string[]).slice().sort().join(",") || "?"}`
+        : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`;
   const audSource: string = isCustomAudience
-    ? (bodyAudience.source === "descartados"
-        ? `descartados:${bodyAudience.tipo_descarte || "reengajavel"}`
-        : bodyAudience.source === "oferta_ativa_lista"
-          ? `oferta_ativa:${(((bodyAudience.lista_ids && bodyAudience.lista_ids.length) ? bodyAudience.lista_ids : (bodyAudience.lista_id ? [bodyAudience.lista_id] : [])) as string[]).slice().sort().join(",") || "?"}`
-          : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`)
+    ? (isCombined ? `combo:${sourcesArr.slice().sort().join("+")}` : singleSourceKey(primarySource))
     : "";
   // Canonical source for routing on reply (column audience_source in reengajamento_meta_disparos)
   const audienceSourceCanonical: string = isCustomAudience
-    ? String(bodyAudience.source)
+    ? (isCombined ? "combo" : primarySource)
     : "legacy";
 
   const url = new URL(req.url);
