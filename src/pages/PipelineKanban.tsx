@@ -447,7 +447,13 @@ export default function PipelineKanban() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await pipeline.reload();
+    // Recarrega leads E invalida o mapa de tarefas — sem isso o botão só
+    // atualizava os leads e o status (em dia/atrasado) ficava stale para o
+    // gestor (realtime desligado), mesmo após o corretor concluir a tarefa.
+    await Promise.all([
+      pipeline.reload(),
+      queryClient.invalidateQueries({ queryKey: ["pipeline-kanban-tarefas"] }),
+    ]);
     setRefreshing(false);
   };
 
