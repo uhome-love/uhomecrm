@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Loader2, CheckCircle2, XCircle, MessageSquare, ExternalLink, MousePointerClick, Radio, ChevronDown, AlertCircle } from "lucide-react";
 import { formatBRT } from "@/lib/brtTime";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import RespostasRecebidasHoje from "./RespostasRecebidasHoje";
 
@@ -76,21 +76,35 @@ export default function AuditoriaWebhookTab() {
   const [page, setPage] = useState(0);
   const [liveActive, setLiveActive] = useState(false);
 
-  // Realtime subscription → invalidate query on any change
+  // Realtime subscription → invalidate query on change (throttled to avoid storm during active dispatch)
+  const pendingInvalidateRef = useRef(false);
+  const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    const flush = () => {
+      throttleTimerRef.current = null;
+      if (pendingInvalidateRef.current) {
+        pendingInvalidateRef.current = false;
+        qc.invalidateQueries({ queryKey: ["auditoria-meta-webhook"] });
+      }
+    };
     const channel = supabase
       .channel("audit-meta-disparos")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "reengajamento_meta_disparos" },
         () => {
-          qc.invalidateQueries({ queryKey: ["auditoria-meta-webhook"] });
+          // Coalesce bursts of events: invalidate at most once every 4s
+          pendingInvalidateRef.current = true;
+          if (!throttleTimerRef.current) {
+            throttleTimerRef.current = setTimeout(flush, 4000);
+          }
         }
       )
       .subscribe((status) => {
         setLiveActive(status === "SUBSCRIBED");
       });
     return () => {
+      if (throttleTimerRef.current) clearTimeout(throttleTimerRef.current);
       supabase.removeChannel(channel);
     };
   }, [qc]);
@@ -104,7 +118,7 @@ export default function AuditoriaWebhookTab() {
         .from("reengajamento_meta_disparos")
         .select(
           "id, lead_id, phone, status, button_response, response_text, sent_at, responded_at, template_name, audience_source",
-          { count: "exact" }
+          { count: "estimated" }
         )
         .order("sent_at", { ascending: false })
         .range(from, to);
@@ -140,6 +154,7 @@ export default function AuditoriaWebhookTab() {
       return { rows, total: count ?? rows.length };
     },
     refetchInterval: 10000,
+    placeholderData: keepPreviousData,
   });
 
   const rows = data?.rows ?? [];
