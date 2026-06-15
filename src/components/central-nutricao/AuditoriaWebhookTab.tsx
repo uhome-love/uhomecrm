@@ -154,6 +154,7 @@ export default function AuditoriaWebhookTab() {
       return { rows, total: count ?? rows.length };
     },
     refetchInterval: 10000,
+    placeholderData: keepPreviousData,
   });
 
   const rows = data?.rows ?? [];
