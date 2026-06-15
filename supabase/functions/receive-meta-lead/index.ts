@@ -591,14 +591,113 @@ Deno.serve(async (req) => {
       // Tratamos como duplicidade idempotente e retornamos 200 para o Make não desativar o cenário.
       if ((insertError as PostgrestError).code === "23505") {
         L.info("Insert duplicate (unique violation) — treated as dedup", { telefone, email: anonEmail(email) });
+
+        // O lead já existe (colidiu por e-mail ou telefone). Localiza o registro
+        // existente — provavelmente casou por E-MAIL (telefone diferente, por isso
+        // o check inicial por telefone não pegou). Se tiver corretor, reativa:
+        // atualiza o lead, registra no histórico e notifica o corretor.
+        let dup: { id: string; corretor_id: string | null; nome: string | null; empreendimento: string | null; stage_id: string | null; arquivado: boolean | null } | null = null;
+        if (email) {
+          const { data } = await supabase
+            .from("pipeline_leads")
+            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado")
+            .eq("email", email)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          dup = data;
+        }
+        if (!dup) {
+          const { data } = await supabase
+            .from("pipeline_leads")
+            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado")
+            .eq("telefone", telefone)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          dup = data;
+        }
+
+        if (dup && dup.corretor_id) {
+          const todayStamp = new Date().toISOString().slice(0, 10);
+          const interestLabel = empreendimento || dup.empreendimento || "mesmo imóvel";
+          const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
+          const SEM_CONTATO_STAGE_ID = "2fcba9be-1188-4a54-9452-394beefdc330";
+          const isDiscarded = dup.stage_id === DESCARTE_STAGE_ID || dup.arquivado === true;
+
+          const updatePayload: Record<string, unknown> = {
+            updated_at: new Date().toISOString(),
+            observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (Meta Ads direto)${message ? ` — "${message}"` : ""}`,
+          };
+          if (isDiscarded) {
+            updatePayload.stage_id = SEM_CONTATO_STAGE_ID;
+            updatePayload.stage_changed_at = new Date().toISOString();
+            updatePayload.arquivado = false;
+            updatePayload.motivo_descarte = null;
+          }
+
+          await supabase.from("pipeline_leads").update(updatePayload).eq("id", dup.id);
+
+          await Promise.all([
+            supabase.from("notifications").insert({
+              user_id: dup.corretor_id,
+              tipo: "lead",
+              categoria: "lead_retorno",
+              titulo: `🔄 Lead reativado! ${dup.nome || name}`,
+              mensagem: `${dup.nome || name} demonstrou novo interesse em ${interestLabel} (Meta Ads direto).`,
+              dados: { pipeline_lead_id: dup.id, lead_nome: dup.nome || name, novo_empreendimento: interestLabel },
+              agrupamento_key: `lead_retorno_${dup.id}_${todayStamp}`,
+            }),
+            supabase.from("pipeline_atividades").insert({
+              pipeline_lead_id: dup.id,
+              tipo: "entrada",
+              titulo: `🔄 Novo interesse via Meta Ads`,
+              descricao: `Lead demonstrou novo interesse em ${interestLabel} (Meta Ads).${message ? `\nMensagem: "${message}"` : ""}`,
+              data: todayStamp,
+              prioridade: "alta",
+              status: "completed",
+              created_by: dup.corretor_id,
+            }),
+          ]);
+
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                user_id: dup.corretor_id,
+                title: "🔄 Lead reativado!",
+                body: `${dup.nome || name} — ${interestLabel}`,
+                url: `/pipeline-leads?lead=${dup.id}`,
+              }),
+            });
+          } catch (e) { L.warn("Push error", { leadId: dup.id }, e); }
+
+          L.info("Reactivated existing lead (email/phone unique match)", { leadId: dup.id, corretor: dup.corretor_id });
+          logOps("info", "business", "lead_dedup_reactivated", {
+            reason: isDiscarded ? "lead_descartado_reativado_para_sem_contato" : "lead_ativo_recebeu_novo_interesse_via_email_match",
+            lead_id: dup.id,
+            corretor_id: dup.corretor_id,
+            was_discarded: isDiscarded,
+            telefone_anon: await anonPhone(telefone),
+            email_anon: anonEmail(email),
+          });
+          return new Response(
+            JSON.stringify({ success: true, action: "reactivated", lead_id: dup.id, trace_id: traceId }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Sem corretor ou sem lead localizado — apenas registra dedup idempotente.
         logOps("info", "business", "lead_dedup_skipped_unique_violation", {
           reason: "insert_unique_violation_email_ou_telefone",
           telefone_anon: await anonPhone(telefone),
           email_anon: anonEmail(email),
           empreendimento,
+          lead_id: dup?.id || null,
         });
         return new Response(
-          JSON.stringify({ success: true, action: "skipped_unique_violation" }),
+          JSON.stringify({ success: true, action: "skipped_unique_violation", lead_id: dup?.id || null }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
