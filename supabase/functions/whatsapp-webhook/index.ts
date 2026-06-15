@@ -633,6 +633,7 @@ Deno.serve(async (req) => {
                     stage_changed_at: new Date().toISOString(),
                     conversation_window_until: null,
                     reativado_por_nutricao: false,
+                    arquivado: true,
                   }).eq("id", metaDispatch.lead_id);
 
                   // Cancela qualquer sequência de nutrição/reativação ativa
