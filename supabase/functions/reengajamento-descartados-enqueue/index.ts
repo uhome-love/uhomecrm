@@ -183,17 +183,25 @@ Deno.serve(async (req) => {
     }
   } catch { /* ignore */ }
 
-  const isCustomAudience = !!bodyAudience?.source;
+  // Fontes: aceita `sources: string[]` (combinado) ou `source` único (compat).
+  const sourcesArr: string[] = (Array.isArray(bodyAudience?.sources) && bodyAudience.sources.length)
+    ? bodyAudience.sources.map(String)
+    : (bodyAudience?.source ? [String(bodyAudience.source)] : []);
+  const isCustomAudience = sourcesArr.length > 0;
+  const isCombined = sourcesArr.length > 1;
+  const primarySource = sourcesArr[0] || "";
+  const singleSourceKey = (src: string): string =>
+    src === "descartados"
+      ? `descartados:${bodyAudience.tipo_descarte || "reengajavel"}`
+      : src === "oferta_ativa_lista"
+        ? `oferta_ativa:${(((bodyAudience.lista_ids && bodyAudience.lista_ids.length) ? bodyAudience.lista_ids : (bodyAudience.lista_id ? [bodyAudience.lista_id] : [])) as string[]).slice().sort().join(",") || "?"}`
+        : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`;
   const audSource: string = isCustomAudience
-    ? (bodyAudience.source === "descartados"
-        ? `descartados:${bodyAudience.tipo_descarte || "reengajavel"}`
-        : bodyAudience.source === "oferta_ativa_lista"
-          ? `oferta_ativa:${(((bodyAudience.lista_ids && bodyAudience.lista_ids.length) ? bodyAudience.lista_ids : (bodyAudience.lista_id ? [bodyAudience.lista_id] : [])) as string[]).slice().sort().join(",") || "?"}`
-          : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`)
+    ? (isCombined ? `combo:${sourcesArr.slice().sort().join("+")}` : singleSourceKey(primarySource))
     : "";
   // Canonical source for routing on reply (column audience_source in reengajamento_meta_disparos)
   const audienceSourceCanonical: string = isCustomAudience
-    ? String(bodyAudience.source)
+    ? (isCombined ? "combo" : primarySource)
     : "legacy";
 
   const url = new URL(req.url);
@@ -262,12 +270,16 @@ Deno.serve(async (req) => {
     let leads: Array<{ id: string; nome: string; telefone: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" }> = [];
 
     if (isCustomAudience) {
-      const src = String(bodyAudience.source);
       const dedupMode = String(bodyAudience.dedup_mode || "exclude_sent");
       const dedupLookbackDays = Math.max(1, Number(bodyAudience.dedup_lookback_days || 30));
       const dedupSince = new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString();
+      type Lead = { id: string; nome: string; telefone: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" };
+      const last8 = (raw: string | null): string => {
+        const d = (raw || "").replace(/\D/g, "");
+        return d.length >= 8 ? d.slice(-8) : d;
+      };
 
-      if (src === "descartados") {
+      const fetchDescartados = async (cap: number): Promise<Lead[]> => {
         const includeArchivedCustom = bodyAudience.include_archived === true;
         const tipoFilter = String(bodyAudience.tipo_descarte || "reengajavel");
         const cooldownDias = Math.max(0, Number(bodyAudience.cooldown_dias ?? 7));
@@ -288,7 +300,6 @@ Deno.serve(async (req) => {
         if (bodyAudience.periodo?.from) q = q.gte("stage_changed_at", String(bodyAudience.periodo.from));
         if (bodyAudience.periodo?.to) q = q.lte("stage_changed_at", String(bodyAudience.periodo.to));
         if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
-        // Dedup novo: cooldown (default). Modos antigos como override.
         if (dedupMode === "exclude_sent") {
           q = q.is("reengajamento_enviado_at", null);
         } else if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
@@ -298,10 +309,31 @@ Deno.serve(async (req) => {
         } else if (cooldownDias > 0) {
           q = q.or(`reengajamento_enviado_at.is.null,reengajamento_enviado_at.lt.${cooldownCutoff}`);
         }
-        const { data, error } = await q.order("stage_changed_at", { ascending: false }).limit(effectiveLimit);
+        const { data, error } = await q.order("stage_changed_at", { ascending: false }).limit(cap);
         if (error) throw error;
-        leads = (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" }));
-      } else if (src === "pipeline_ativo") {
+        return (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" }));
+      };
+
+      const dedupViaEventos = async (cand: Lead[], sourceKey: string): Promise<Lead[]> => {
+        if (dedupMode === "include_all" || cand.length === 0) return cand;
+        const ids = cand.map((c) => c.id);
+        let evQ = supabase.from("reengajamento_eventos")
+          .select("lead_id")
+          .eq("audience_source", sourceKey)
+          .eq("tipo", "enviado")
+          .in("lead_id", ids)
+          .gte("created_at", dedupSince);
+        if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
+          evQ = evQ.lte("created_at", String(bodyAudience.dedup_cutoff));
+        }
+        const { data: evs } = await evQ;
+        const enviadosSet = new Set((evs || []).map((e: any) => e.lead_id));
+        if (dedupMode === "exclude_sent") return cand.filter((c) => !enviadosSet.has(c.id));
+        if (dedupMode === "only_sent_before") return cand.filter((c) => enviadosSet.has(c.id));
+        return cand;
+      };
+
+      const fetchPipelineAtivo = async (cap: number): Promise<Lead[]> => {
         const stageIds: string[] = (bodyAudience.stage_ids || []).filter(Boolean);
         if (stageIds.length === 0) throw new Error("audience.stage_ids vazio");
         let q = supabase
@@ -313,27 +345,13 @@ Deno.serve(async (req) => {
         if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
         if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
         if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
-        const { data, error } = await q.order("created_at", { ascending: false }).limit(effectiveLimit * 2);
+        const { data, error } = await q.order("created_at", { ascending: false }).limit(cap);
         if (error) throw error;
-        let cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" as const }));
-        if (dedupMode !== "include_all" && cand.length > 0) {
-          const ids = cand.map((c) => c.id);
-          let evQ = supabase.from("reengajamento_eventos")
-            .select("lead_id")
-            .eq("audience_source", audSource)
-            .eq("tipo", "enviado")
-            .in("lead_id", ids)
-            .gte("created_at", dedupSince);
-          if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
-            evQ = evQ.lte("created_at", String(bodyAudience.dedup_cutoff));
-          }
-          const { data: evs } = await evQ;
-          const enviadosSet = new Set((evs || []).map((e: any) => e.lead_id));
-          if (dedupMode === "exclude_sent") cand = cand.filter((c) => !enviadosSet.has(c.id));
-          else if (dedupMode === "only_sent_before") cand = cand.filter((c) => enviadosSet.has(c.id));
-        }
-        leads = cand.slice(0, effectiveLimit);
-      } else if (src === "oferta_ativa_lista") {
+        const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" as const }));
+        return dedupViaEventos(cand, `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`);
+      };
+
+      const fetchOfertaAtiva = async (cap: number): Promise<Lead[]> => {
         const listaIds: string[] = (bodyAudience.lista_ids && bodyAudience.lista_ids.length)
           ? bodyAudience.lista_ids.map(String)
           : (bodyAudience.lista_id ? [String(bodyAudience.lista_id)] : []);
@@ -346,28 +364,39 @@ Deno.serve(async (req) => {
         if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
         if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
         if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
-        const { data, error } = await q.order("created_at", { ascending: false }).limit(effectiveLimit * 2);
+        const { data, error } = await q.order("created_at", { ascending: false }).limit(cap);
         if (error) throw error;
-        let cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, ref: "oferta_ativa_lead" as const }));
-        if (dedupMode !== "include_all" && cand.length > 0) {
-          const ids = cand.map((c) => c.id);
-          let evQ = supabase.from("reengajamento_eventos")
-            .select("lead_id")
-            .eq("audience_source", audSource)
-            .eq("tipo", "enviado")
-            .in("lead_id", ids)
-            .gte("created_at", dedupSince);
-          if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
-            evQ = evQ.lte("created_at", String(bodyAudience.dedup_cutoff));
-          }
-          const { data: evs } = await evQ;
-          const enviadosSet = new Set((evs || []).map((e: any) => e.lead_id));
-          if (dedupMode === "exclude_sent") cand = cand.filter((c) => !enviadosSet.has(c.id));
-          else if (dedupMode === "only_sent_before") cand = cand.filter((c) => enviadosSet.has(c.id));
-        }
-        leads = cand.slice(0, effectiveLimit);
-      } else {
+        const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, ref: "oferta_ativa_lead" as const }));
+        return dedupViaEventos(cand, `oferta_ativa:${listaIds.slice().sort().join(",")}`);
+      };
+
+      const fetchForSource = async (src: string, cap: number): Promise<Lead[]> => {
+        if (src === "descartados") return fetchDescartados(cap);
+        if (src === "pipeline_ativo") return fetchPipelineAtivo(cap);
+        if (src === "oferta_ativa_lista") return fetchOfertaAtiva(cap);
         throw new Error(`audience.source inválido: ${src}`);
+      };
+
+      if (!isCombined) {
+        leads = (await fetchForSource(primarySource, primarySource === "descartados" ? effectiveLimit : effectiveLimit * 2)).slice(0, effectiveLimit);
+      } else {
+        // Combinado: prioridade descartados > oferta_ativa > pipeline_ativo, dedup por últimos 8 dígitos.
+        const priority = ["descartados", "oferta_ativa_lista", "pipeline_ativo"];
+        const ordered = priority.filter((s) => sourcesArr.includes(s));
+        const seen = new Set<string>();
+        const merged: Lead[] = [];
+        for (const src of ordered) {
+          const part = await fetchForSource(src, effectiveLimit * 2);
+          for (const l of part) {
+            const key = last8(l.telefone);
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            merged.push(l);
+            if (merged.length >= effectiveLimit) break;
+          }
+          if (merged.length >= effectiveLimit) break;
+        }
+        leads = merged;
       }
     } else {
       // === Fluxo legado: descartados reengajáveis ===
@@ -487,7 +516,7 @@ Deno.serve(async (req) => {
     // Guard: só altera pipeline_leads quando o público é o legado (descartados)
     // ou quando o custom é descartados. Em pipeline_ativo/oferta_ativa não polui.
     const canTouchPipelineLead = (lead: { ref: string }) =>
-      lead.ref === "pipeline_lead" && (!isCustomAudience || String(bodyAudience?.source) === "descartados");
+      lead.ref === "pipeline_lead" && (!isCustomAudience || sourcesArr.includes("descartados"));
 
     const insertEvento = async (payload: Record<string, unknown>) => {
       await supabase.from("reengajamento_eventos").insert({
@@ -497,6 +526,16 @@ Deno.serve(async (req) => {
     };
 
     for (const lead of leads || []) {
+      // Parar (encerra a campanha) — checagem por run
+      {
+        const { data: runState } = await supabase
+          .from("reengajamento_dispatch_runs").select("cancel_requested").eq("id", runId).maybeSingle();
+        if (runState?.cancel_requested) {
+          stopReason = "Parado pelo usuário";
+          await updateRun({ status: "cancelled", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+          return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "cancelled", cancelled: true, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      }
       if (Date.now() - startedAt > MAX_RUN_MS) {
         // Encadeia automaticamente um próximo run para continuar de onde parou
         // (a query já exclui leads com reengajamento_enviado_at preenchido).
