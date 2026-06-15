@@ -124,6 +124,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     } : undefined;
     const base: Record<string, unknown> = {
       source,
+      sources,
       canal,
       periodo,
       empreendimento: empreendimento || undefined,
@@ -135,10 +136,10 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (dedupMode === "only_sent_before" && dedupCutoff) {
       base.dedup_cutoff = new Date(dedupCutoff + "T00:00:00-03:00").toISOString();
     }
-    if (source === "descartados") base.tipo_descarte = tipoDescarte;
-    if (source === "pipeline_ativo") base.stage_ids = stageIds;
-    if (source === "oferta_ativa_lista") base.lista_ids = listaIds;
-    if (source === "visita_amanha") base.data_visita = dataVisita;
+    if (has("descartados")) base.tipo_descarte = tipoDescarte;
+    if (has("pipeline_ativo")) base.stage_ids = stageIds;
+    if (has("oferta_ativa_lista")) base.lista_ids = listaIds;
+    if (has("visita_amanha")) base.data_visita = dataVisita;
     if (canal === "meta" && templateName) {
       base.template_name = templateName;
       base.template_language = templateLanguage;
