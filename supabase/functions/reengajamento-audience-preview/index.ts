@@ -61,11 +61,16 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const audience: Audience = (body as any)?.audience || {};
-    if (!audience.source) {
+    const sourcesArr: AudienceSource[] = (Array.isArray(audience.sources) && audience.sources.length)
+      ? audience.sources
+      : (audience.source ? [audience.source] : []);
+    if (sourcesArr.length === 0) {
       return new Response(JSON.stringify({ error: "audience.source obrigatório" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    // Garante audience.source preenchido para os fluxos single-source existentes
+    if (!audience.source) audience.source = sourcesArr[0];
 
     const limit = Math.min(Math.max(Number(audience.limit || 500), 1), 10000);
     const dedupMode: DedupMode = audience.dedup_mode || "exclude_sent";
@@ -73,7 +78,89 @@ Deno.serve(async (req) => {
     const includeArchived = audience.include_archived === true;
     const audSource = audienceKey(audience);
 
+    // ─── Público COMBINADO (descartados + oferta ativa + pipeline) com dedup por telefone ───
+    if (sourcesArr.length > 1) {
+      const last8 = (raw: string | null): string => {
+        const d = (raw || "").replace(/\D/g, "");
+        return d.length >= 8 ? d.slice(-8) : d;
+      };
+      type L = { id: string; nome: string; telefone: string | null; ref: string; fonte: string };
+
+      const buildDescartados = async (): Promise<L[]> => {
+        const cooldownDias = Math.max(0, Number(audience.cooldown_dias ?? 7));
+        const cooldownCutoff = new Date(Date.now() - cooldownDias * 24 * 3600 * 1000).toISOString();
+        let q = supabase
+          .from("pipeline_leads")
+          .select("id, nome, telefone")
+          .eq("stage_id", STAGE_DESCARTE_ID)
+          .not("telefone", "is", null);
+        const tipo = audience.tipo_descarte || "reengajavel";
+        if (tipo === "reengajavel") {
+          q = q.neq("tipo_descarte", "definitivo")
+               .not("reengajamento_status", "in", `(${RESPONDEU_NAO_STATUSES.join(",")})`);
+        } else if (tipo === "definitivo") {
+          q = q.eq("tipo_descarte", "definitivo");
+        }
+        if (!includeArchived) q = q.eq("arquivado", false);
+        if (audience.periodo?.from) q = q.gte("stage_changed_at", audience.periodo.from);
+        if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
+        if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+        if (dedupMode === "exclude_sent") q = q.is("reengajamento_enviado_at", null);
+        else if (cooldownDias > 0) q = q.or(`reengajamento_enviado_at.is.null,reengajamento_enviado_at.lt.${cooldownCutoff}`);
+        const { data, error } = await q.order("stage_changed_at", { ascending: false }).limit(limit * 2);
+        if (error) throw error;
+        return (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead", fonte: "descartados" }));
+      };
+
+      const buildOfertaAtiva = async (): Promise<L[]> => {
+        const listaIds: string[] = (audience.lista_ids && audience.lista_ids.length)
+          ? audience.lista_ids
+          : (audience.lista_id ? [audience.lista_id] : []);
+        if (listaIds.length === 0) return [];
+        let q = supabase.from("oferta_ativa_leads").select("id, nome, telefone").in("lista_id", listaIds).not("telefone", "is", null);
+        if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
+        if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);
+        if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+        const { data, error } = await q.order("created_at", { ascending: false }).limit(limit * 2);
+        if (error) throw error;
+        return (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "oferta_ativa_lead", fonte: "oferta_ativa_lista" }));
+      };
+
+      const priority: AudienceSource[] = ["descartados", "oferta_ativa_lista"];
+      const ordered = priority.filter((s) => sourcesArr.includes(s));
+      const porFonte: Record<string, number> = {};
+      const seen = new Set<string>();
+      const merged: L[] = [];
+      let totalBruto = 0;
+      for (const src of ordered) {
+        const part = src === "descartados" ? await buildDescartados() : await buildOfertaAtiva();
+        porFonte[src] = part.length;
+        totalBruto += part.length;
+        for (const l of part) {
+          const key = last8(l.telefone);
+          if (!key || seen.has(key)) continue;
+          seen.add(key);
+          merged.push(l);
+        }
+      }
+      const finalLeads = merged.slice(0, limit);
+      return new Response(JSON.stringify({
+        count: finalLeads.length,
+        count_pre_dedup: totalBruto,
+        sample_count: finalLeads.length,
+        sample: finalLeads.slice(0, 20),
+        audience_source: audSource,
+        funil: {
+          por_fonte: porFonte,
+          total_bruto: totalBruto,
+          duplicados_removidos: totalBruto - merged.length,
+          elegiveis: finalLeads.length,
+        },
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     let leads: Array<{ id: string; nome: string; telefone: string | null; ref: string }> = [];
+
 
     if (audience.source === "descartados") {
       // ─── Funil completo (auditoria) ───
