@@ -118,7 +118,7 @@ export default function AuditoriaWebhookTab() {
         .from("reengajamento_meta_disparos")
         .select(
           "id, lead_id, phone, status, button_response, response_text, sent_at, responded_at, template_name, audience_source",
-          { count: "exact" }
+          { count: "estimated" }
         )
         .order("sent_at", { ascending: false })
         .range(from, to);
