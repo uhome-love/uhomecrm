@@ -5,13 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 const DEFAULT_META = 20;
 
 const EQUIPES = [
-  { nome: "Gabrielle", cor: "#9333EA", corClara: "#F3E8FF", corBorda: "#7C3AED", emoji: "💜", id: "gabrielle" },
   { nome: "Bruno Schuler", cor: "#3350E6", corClara: "#EFF6FF", corBorda: "#1D4ED8", emoji: "💙", id: "bruno" },
   { nome: "Gabriel", cor: "#16A34A", corClara: "#F0FDF4", corBorda: "#15803D", emoji: "💚", id: "gabriel" },
 ];
 
 const GERENTES = [
-  { user_id: "7882d73e-ff5c-4b23-9b08-2adeadcd1800", equipe: "gabrielle" },
   { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", equipe: "bruno" },
   { user_id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", equipe: "gabriel" },
 ];
