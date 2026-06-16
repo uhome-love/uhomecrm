@@ -373,7 +373,9 @@ Deno.serve(async (req) => {
     let totalLeads = 0;
     let reprocessed = 0;
     let skipped = 0;
-    let errors = 0;
+    let formErrors = 0;   // formulários antigos/inacessíveis (não são leads perdidos)
+    let leadErrors = 0;   // leads que o receive-meta-lead recusou (precisa investigar)
+    const leadErrorSamples: { form: string; lead_id: string; status: number; body: string }[] = [];
     let formsProcessed = 0;
     let timedOut = false;
     const perForm: Record<string, { name: string; leads: number }> = {};
@@ -387,12 +389,28 @@ Deno.serve(async (req) => {
       try {
         leads = await fetchLeadsForForm(form.id, token, sinceUnix);
       } catch (e) {
-        errors++;
+        formErrors++;
         console.warn(`fetch leads form ${form.id}: ${(e as Error).message}`);
         return;
       }
       if (leads.length > 0) perForm[form.id] = { name: form.name, leads: leads.length };
       totalLeads += leads.length;
+
+      // Pré-filtro idempotente: pula leads já processados (mesma submissão Meta).
+      // A chave `meta:{lead_id}` é única por submissão — pular aqui evita
+      // martelar o receive-meta-lead com 100% das submissões a cada execução
+      // (era a causa dos timeouts/lead_errors em runs repetidos).
+      if (leads.length > 0) {
+        const keys = leads.map((l) => `meta:${l.id}`);
+        const { data: already } = await supabase
+          .from("jetimob_processed")
+          .select("jetimob_lead_id")
+          .in("jetimob_lead_id", keys);
+        const done = new Set((already || []).map((r: any) => r.jetimob_lead_id));
+        const before = leads.length;
+        leads = leads.filter((l) => !done.has(`meta:${l.id}`));
+        skipped += before - leads.length;
+      }
 
       for (const lead of leads) {
         try {
@@ -419,10 +437,18 @@ Deno.serve(async (req) => {
             if (typeof r.action === "string" && r.action.startsWith("skipped")) skipped++;
             else reprocessed++;
           } else {
-            errors++;
+            leadErrors++;
+            if (leadErrorSamples.length < 15) {
+              leadErrorSamples.push({
+                form: form.name,
+                lead_id: lead.id,
+                status: resp.status,
+                body: JSON.stringify(r).slice(0, 200),
+              });
+            }
           }
         } catch (_e) {
-          errors++;
+          leadErrors++;
         }
       }
     };
@@ -443,7 +469,11 @@ Deno.serve(async (req) => {
       total_leads_found: totalLeads,
       reprocessed,
       skipped_dedup: skipped,
-      errors,
+      // form_errors: formulários antigos/sem acesso no Meta — esperado, NÃO são leads perdidos.
+      form_errors: formErrors,
+      // lead_errors: leads recusados pelo receive-meta-lead — investigar via lead_error_samples.
+      lead_errors: leadErrors,
+      lead_error_samples: leadErrorSamples,
       per_form: perForm,
     });
   } catch (error) {
