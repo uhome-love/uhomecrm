@@ -266,12 +266,11 @@ export default function PlacarDoDia() {
   }, [atualizarTudo]);
 
   const totais = {
-    gabrielle: dados.gabrielle.length,
     bruno: dados.bruno.length,
     gabriel: dados.gabriel.length,
   };
 
-  const totalGeral = totais.gabrielle + totais.bruno + totais.gabriel;
+  const totalGeral = totais.bruno + totais.gabriel;
   const metaGeralAtingida = totalGeral >= meta;
 
   const medalhas = ["🥇", "🥈", "🥉"];
