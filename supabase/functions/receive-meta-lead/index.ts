@@ -70,10 +70,60 @@ function isLikelyTestLead(name: string, email: string, message: string): boolean
   return testTokens.some((token) => combined.includes(token));
 }
 
+// ── Native Meta Leadgen webhook support ──
+const META_API_VERSION = "v21.0";
+const META_BASE = `https://graph.facebook.com/${META_API_VERSION}`;
+
+/** Verify Meta's X-Hub-Signature-256 header (HMAC-SHA256 of raw body with app secret). */
+async function verifyMetaSignature(rawBody: string, signatureHeader: string | null, appSecret: string): Promise<boolean> {
+  if (!signatureHeader) return false;
+  const expected = signatureHeader.startsWith("sha256=") ? signatureHeader.slice(7) : signatureHeader;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(appSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sigBuf = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody));
+  const computed = Array.from(new Uint8Array(sigBuf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  // constant-time-ish compare
+  if (computed.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < computed.length; i++) diff |= computed.charCodeAt(i) ^ expected.charCodeAt(i);
+  return diff === 0;
+}
+
+/** Fetch a single lead's full data from the Graph API by leadgen_id. */
+async function fetchMetaLead(leadgenId: string, token: string): Promise<any> {
+  const fields = "id,created_time,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,form_id,form_name,platform,field_data";
+  const url = `${META_BASE}/${leadgenId}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(token)}`;
+  const r = await fetch(url);
+  const j = await r.json();
+  if (!r.ok) throw new Error(`graph leadgen fetch: ${JSON.stringify(j.error || j)}`);
+  return j;
+}
+
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // ── Native Meta webhook verification (GET hub.challenge) ──
+  if (req.method === "GET") {
+    const u = new URL(req.url);
+    const mode = u.searchParams.get("hub.mode");
+    const token = u.searchParams.get("hub.verify_token");
+    const challenge = u.searchParams.get("hub.challenge");
+    const verifyToken = Deno.env.get("META_WEBHOOK_SECRET");
+    if (mode === "subscribe" && verifyToken && token === verifyToken && challenge) {
+      return new Response(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
+    }
+    return new Response("Forbidden", { status: 403 });
+  }
+
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -91,7 +141,87 @@ Deno.serve(async (req) => {
   };
 
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ── Native Meta Leadgen webhook (object=page, entry[].changes[].value.leadgen_id) ──
+    if (body && body.object === "page" && Array.isArray(body.entry)) {
+      const appSecret = Deno.env.get("META_APP_SECRET");
+      const graphToken = Deno.env.get("META_GRAPH_API_TOKEN");
+      const selfSecret = Deno.env.get("META_WEBHOOK_SECRET");
+
+      if (!appSecret) {
+        L.error("META_APP_SECRET not configured — cannot verify native webhook signature");
+        logOps("error", "integration", "meta_native_webhook_no_app_secret", {});
+        return new Response(JSON.stringify({ error: "Webhook not configured" }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const sigOk = await verifyMetaSignature(rawBody, req.headers.get("x-hub-signature-256"), appSecret);
+      if (!sigOk) {
+        L.warn("Native webhook signature invalid");
+        logOps("warn", "integration", "meta_native_webhook_bad_signature", {});
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (!graphToken || !selfSecret) {
+        L.error("Missing META_GRAPH_API_TOKEN or META_WEBHOOK_SECRET for native processing");
+        return new Response(JSON.stringify({ error: "Webhook not configured" }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Collect all leadgen_ids in the payload
+      const leadgenIds: string[] = [];
+      for (const entry of body.entry) {
+        for (const change of entry.changes || []) {
+          if (change.field === "leadgen" && change.value?.leadgen_id) {
+            leadgenIds.push(String(change.value.leadgen_id));
+          }
+        }
+      }
+      L.info("Native Meta webhook received", { count: leadgenIds.length });
+
+      // Process each lead: fetch full data + forward to standard processing flow
+      const results = await Promise.allSettled(leadgenIds.map(async (lid) => {
+        const lead = await fetchMetaLead(lid, graphToken);
+        const forwardBody = {
+          secret: selfSecret,
+          source: "meta_native",
+          platform: lead.platform || "meta_ads",
+          lead_id: lead.id,
+          field_data: lead.field_data || [],
+          campaign_id: lead.campaign_id,
+          campaign_name: lead.campaign_name,
+          adset_name: lead.adset_name,
+          ad_name: lead.ad_name,
+          formId: lead.form_id,
+          form_name: lead.form_name,
+        };
+        const resp = await fetch(`${supabaseUrl}/functions/v1/receive-meta-lead`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-webhook-secret": selfSecret, "x-trace-id": traceId },
+          body: JSON.stringify(forwardBody),
+        });
+        if (!resp.ok) throw new Error(`forward failed ${resp.status}: ${await resp.text()}`);
+        return lid;
+      }));
+
+      const ok = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.length - ok;
+      if (failed > 0) {
+        L.error("Native webhook: some leads failed", { ok, failed });
+        logOps("error", "integration", "meta_native_webhook_partial", { ok, failed },
+          results.filter((r) => r.status === "rejected").map((r: any) => String(r.reason)).join(" | "));
+      } else {
+        logOps("info", "integration", "meta_native_webhook_ok", { ok });
+      }
+      // Always 200 to Meta to avoid webhook disabling/retries storms
+      return new Response(JSON.stringify({ success: true, processed: ok, failed }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     L.info("Raw body received", { source: body.source || body.platform, hasData: !!body.data });
 
     // ── Auth: simple secret (required) ──
