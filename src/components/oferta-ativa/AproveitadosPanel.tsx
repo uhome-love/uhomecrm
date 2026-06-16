@@ -45,11 +45,15 @@ export default function AproveitadosPanel() {
     if (!user) return;
     setAddingToPlId(lead.id);
     try {
-      if (lead.telefone) {
+      // Dedup pelo MESMO critério da constraint única do banco
+      // (idx_pipeline_leads_unique_phone_active em telefone_normalizado, só dígitos).
+      const telDigits = lead.telefone?.replace(/\D/g, "") || "";
+      if (telDigits) {
         const { data: existing } = await supabase
           .from("pipeline_leads")
           .select("id")
-          .or(`telefone.eq.${lead.telefone},telefone.eq.${lead.telefone?.replace(/\D/g, "")}`)
+          .eq("telefone_normalizado", telDigits)
+          .neq("aceite_status", "descartado")
           .limit(1);
         if (existing && existing.length > 0) {
           setPipelineStatus(prev => ({ ...prev, [lead.id]: "exists" }));
@@ -88,12 +92,24 @@ export default function AproveitadosPanel() {
         created_by: user.id,
       });
 
-      if (error) throw error;
+      if (error) {
+        // 23505 = violação da constraint única de telefone → lead já está no pipeline.
+        // Pode acontecer quando o telefone foi salvo num formato diferente e o
+        // dedup acima não casou. Tratamos como "já existe" em vez de erro.
+        if ((error as { code?: string }).code === "23505") {
+          setPipelineStatus(prev => ({ ...prev, [lead.id]: "exists" }));
+          toast.info("Este lead já existe no Pipeline de Leads");
+          setAddingToPlId(null);
+          return;
+        }
+        throw error;
+      }
       setPipelineStatus(prev => ({ ...prev, [lead.id]: "added" }));
       toast.success("✅ Lead incluído no seu Pipeline!");
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Erro ao incluir no pipeline");
+    } catch (err: unknown) {
+      console.error("[AproveitadosPanel] addToPipeline erro", err);
+      const msg = (err as { message?: string })?.message;
+      toast.error(msg ? `Erro ao incluir no pipeline: ${msg}` : "Erro ao incluir no pipeline");
     }
     setAddingToPlId(null);
   }, [user]);
