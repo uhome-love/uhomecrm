@@ -111,6 +111,20 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // ── Native Meta webhook verification (GET hub.challenge) ──
+  if (req.method === "GET") {
+    const u = new URL(req.url);
+    const mode = u.searchParams.get("hub.mode");
+    const token = u.searchParams.get("hub.verify_token");
+    const challenge = u.searchParams.get("hub.challenge");
+    const verifyToken = Deno.env.get("META_WEBHOOK_SECRET");
+    if (mode === "subscribe" && verifyToken && token === verifyToken && challenge) {
+      return new Response(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
+    }
+    return new Response("Forbidden", { status: 403 });
+  }
+
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
