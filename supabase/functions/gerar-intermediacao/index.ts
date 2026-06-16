@@ -52,6 +52,15 @@ const dataExtenso = (iso: string) => { const [y, m, d] = iso.split("-").map(Numb
 const primeiroNome = (s: string) => s.trim().split(/\s+/)[0] ?? "";
 const sobrenome = (s: string) => { const p = s.trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] ?? ""; };
 const slug = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "").trim();
+function bufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
 
 interface CredorCalc { nome: string; isUhome: boolean; total: number; parcelas: number[]; }
 
