@@ -78,32 +78,30 @@ export function useNegocios() {
         query = query.in("corretor_id", possibleIds);
       }
     } else if (isGestor && !isAdmin) {
-      // Gestor: get team member profile IDs, then filter by corretor_id
-      // This avoids relying on gerente_id which may be incorrect on some negocios
-      const { data: teamMembers } = await supabase
-        .from("team_members")
-        .select("user_id")
-        .eq("gerente_id", user.id);
+      // Gestor/Diretor: resolve managed brokers via RPC (includes diretoria_equipes
+      // hierarchy and excludes inactive members), then filter negocios by corretor_id.
+      // Also include deals where this gestor is the gerente_id (histórico da equipe dele).
+      const { data: managed } = await supabase.rpc("resolve_managed_brokers", { _gestor: user.id });
+      const managedAuthIds = (managed || []).map((m: { user_id: string }) => m.user_id).filter(Boolean);
 
-      if (teamMembers && teamMembers.length > 0) {
-        // Map team_members.user_id to profiles.id (negocios uses profiles.id as corretor_id)
-        const tmUserIds = teamMembers.map(tm => tm.user_id);
+      const teamProfileIds: string[] = [];
+      if (managedAuthIds.length > 0) {
         const { data: teamProfiles } = await supabase
           .from("profiles")
           .select("id")
-          .in("user_id", tmUserIds);
+          .in("user_id", managedAuthIds);
+        teamProfileIds.push(...(teamProfiles || []).map(p => p.id));
+      }
+      // Include gerente's own profile_id (their own deals)
+      if (profileId && !teamProfileIds.includes(profileId)) teamProfileIds.push(profileId);
 
-        const teamProfileIds = (teamProfiles || []).map(p => p.id);
-        // Include gerente's own profile_id too
-        if (profileId) teamProfileIds.push(profileId);
-
-        if (teamProfileIds.length > 0) {
-          query = query.in("corretor_id", teamProfileIds);
-        } else if (profileId) {
-          query = query.eq("gerente_id", profileId);
-        }
+      if (teamProfileIds.length > 0) {
+        // corretor_id in team OR gerente_id = this gestor's profile (antiga equipe dele)
+        const orFilter = profileId
+          ? `corretor_id.in.(${teamProfileIds.join(",")}),gerente_id.eq.${profileId}`
+          : `corretor_id.in.(${teamProfileIds.join(",")})`;
+        query = query.or(orFilter);
       } else if (profileId) {
-        // Fallback: no team members found, use gerente_id
         query = query.eq("gerente_id", profileId);
       }
     }
@@ -116,7 +114,7 @@ export function useNegocios() {
       return;
     }
 
-    let rows = (data || []) as Negocio[];
+    const rows = (data || []) as Negocio[];
 
     // For corretores: also fetch partner negocios via canonical view
     if (!isAdmin && !isGestor) {
