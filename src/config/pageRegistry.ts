@@ -119,6 +119,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "report-center": lazyRetry(() => import("@/pages/CentralRelatoriosV2")),
   materiais: lazyRetry(() => import("@/pages/MateriaisPage")),
   integracoes: lazyRetry(() => import("@/pages/IntegracoesPage")),
+  intermediacao: lazyRetry(() => import("@/pages/IntermediacaoPage")),
 };
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
@@ -198,6 +199,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/gestor/whatsapp-dashboard": { key: "gestao-whatsapp", label: "Gestão WhatsApp",     icon: "BarChart2",     roles: ["gestor", "admin"] },
   "/central-relatorios":        { key: "report-center",     label: "Central Relatórios",  icon: "BarChart2",     roles: ["admin", "gestor", "corretor"] },
   "/materiais":             { key: "materiais",            label: "Materiais",           icon: "FolderOpen" },
+  "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor"] },
 };
 
 // ─── DYNAMIC ROUTES ──────────────────────────────────────────────────────────
