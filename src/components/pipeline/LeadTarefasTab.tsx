@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus, CheckCircle2, Circle, Trash2, Clock, Phone, MessageCircle,
   Mail, Calendar, ChevronDown, ChevronUp, Loader2, Pencil
@@ -53,9 +54,10 @@ interface Props {
   onDeleteTarefa: (id: string) => Promise<void>;
   onReload: () => void;
   onNextAction?: () => void;
+  loading?: boolean;
 }
 
-export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEmail, leadStageId, tarefas, onAddTarefa, onToggleTarefa, onDeleteTarefa, onReload, onNextAction }: Props) {
+export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEmail, leadStageId, tarefas, onAddTarefa, onToggleTarefa, onDeleteTarefa, onReload, onNextAction, loading = false }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [tipo, setTipo] = useState("follow_up");
   const [customTipo, setCustomTipo] = useState("");
@@ -511,8 +513,23 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
         </div>
       )}
 
+      {/* Skeleton de carregamento — evita flash de "Sem tarefas pendentes" */}
+      {loading && pendentes.length === 0 && !showForm && (
+        <div className="space-y-2">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="p-3 rounded-xl border border-border flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-2/3" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Empty */}
-      {pendentes.length === 0 && !showForm && (
+      {!loading && pendentes.length === 0 && !showForm && (
         <div className="text-center py-8">
           <p className="text-sm text-muted-foreground">📋 Sem tarefas pendentes</p>
           <Button variant="link" size="sm" className="text-xs mt-1" onClick={() => setShowForm(true)}>

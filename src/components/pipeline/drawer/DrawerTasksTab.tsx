@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { PipelineTarefa } from "@/hooks/usePipelineLeadData";
 import { groupTasksByDeadline, formatTaskDeadline } from "@/lib/taskGrouping";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
@@ -35,6 +36,7 @@ interface Props {
   onDeleteTarefa: (id: string) => Promise<void>;
   onReload: () => void;
   onNovaTarefa: () => void;
+  loading?: boolean;
 }
 
 type TipoCanon = "call" | "msg" | "followup" | "visit" | "outro";
@@ -118,6 +120,7 @@ export default function DrawerTasksTab({
   onDeleteTarefa,
   onReload,
   onNovaTarefa,
+  loading = false,
 }: Props) {
   const queryClient = useQueryClient();
   const grouped = useMemo(() => groupTasksByDeadline(tarefas), [tarefas]);
@@ -170,8 +173,20 @@ export default function DrawerTasksTab({
         </button>
       </div>
 
-      {/* Empty state */}
-      {totalPendentes === 0 ? (
+      {/* Skeleton de carregamento — evita flash de "Nenhuma tarefa pendente" */}
+      {loading && tarefas.length === 0 ? (
+        <div className="px-7 pt-6 space-y-3">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-2/3" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : totalPendentes === 0 ? (
         <div className="text-center py-16 px-6">
           <div className="w-16 h-16 rounded-full bg-zinc-100 text-zinc-400 flex items-center justify-center text-2xl mx-auto mb-4">
             ✓
