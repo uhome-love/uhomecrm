@@ -1,7 +1,7 @@
 /**
  * gestorTheme — mapa de cores por gestor (reusa os auth_ids de GERENTES_REAIS).
  *
- * Gabrielle → indigo · Bruno → azul · Gabriel → verde.
+ * Diretoria (Gabrielle) → indigo · Bruno → azul · Gabriel → verde.
  * Fallback neutro (slate) para qualquer gestor fora do mapa.
  * Apenas classes Tailwind — zero hex inline.
  */
