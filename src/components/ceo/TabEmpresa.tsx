@@ -5,7 +5,6 @@ import { Phone, CalendarCheck, CalendarDays, Briefcase, DollarSign, Users, Troph
 import { cn, formatBRLCompact } from "@/lib/utils";
 
 const GERENTES = [
-  { user_id: "7882d73e-ff5c-4b23-9b08-2adeadcd1800", nome: "Gabrielle", cor: "#9333EA", equipe: "gabrielle" },
   { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", nome: "Bruno Schuler", cor: "#3350E6", equipe: "bruno" },
   { user_id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", nome: "Gabriel", cor: "#16A34A", equipe: "gabriel" },
 ];
