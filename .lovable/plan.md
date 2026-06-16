@@ -1,62 +1,43 @@
-# Gabrielle Diretora + Reorganização de Equipes + Descarte por Produto + Remoção da Equipe Gabrielle
+## Contexto apurado
 
-## Parte A — Reorganização das equipes (dados)
+IDs canônicos:
+- Gabrielle — `profiles.id` `12da96bd…`, `auth.users.id` `7882d73e…`
+- Taynah — `profiles.id` `c4fc833f…`, `auth.users.id` `b473388d…`
 
-### A1. Redistribuição dos corretores (`team_members`: `gerente_id` + `equipe`)
-```text
-→ Equipe Bruno Schuler: Larissa Barbosa, Matheus Pasin, Halime Maarouf, Luiza Clós, Thalia Pereira
-→ Equipe Gabriel Vieira: Flávio Dias, Leo Dorneles, Jéssica França, Thalia de Oliveira
-```
+Diagnóstico:
+1. **Pipeline de Negócios só mostra a Taynah** — o hook `useNegocios` filtra a equipe do gestor por `team_members` (sem checar `status`) e a única linha restante sob a Gabrielle é a da Taynah (status `inativo`). Além disso o hook **não usa** `diretoria_equipes`/`resolve_managed_brokers`, então a Gabrielle não enxerga as equipes do Bruno e do Gabriel.
+2. **VGV da antiga equipe não aparece** — as vendas assinadas com `gerente_id = 12da96bd` (antiga Equipe Gabrielle) não entram na conta dela porque os dashboards somam apenas por `corretor_id` da equipe resolvida, e os corretores foram remanejados para Bruno/Gabriel. Decisão do usuário: **só ajustar a visão/meta** para que esse VGV apareça **como a antiga equipe dela**.
+3. **Taynah** — ainda tem 1 linha em `team_members` (inativo, sob a Gabrielle) e 14 negócios ativos no nome dela. 0 leads ativos, 0 `user_roles`. Decisão: **arquivar/descartar** os negócios e remover a presença dela.
 
-### A2. Saída da Taynah Bortoletti
-- 116 leads ativos → Descarte (roteados pela Parte C).
-- `team_members.status='inativo'`; remover papel `corretor` em `user_roles`; `profiles` inativo.
+## Mudanças
 
-### A3. Gabrielle vira Diretora
-- Equipe dissolvida: nenhum corretor com `gerente_id`=Gabrielle; remove a linha dela como membro.
-- Mantém papel `gestor`; remove papel `corretor`.
-- 4 leads ativos dela → Descarte (Parte C).
-- Metas antigas em `ceo_metas_mensais` (2 registros) zeradas/encerradas.
+### 1. Corrigir o Pipeline de Negócios (`src/hooks/useNegocios.ts`)
+Para o ramo `isGestor && !isAdmin`, substituir a consulta direta a `team_members` por:
+- Chamar a RPC `resolve_managed_brokers(user.id)` → retorna os `auth_id` dos corretores das equipes geridas (inclui as equipes dos gerentes mapeados em `diretoria_equipes`, ou seja Bruno + Gabriel para a Gabrielle, e já exclui inativos como a Taynah).
+- Mapear esses `auth_id` → `profiles.id` e filtrar `negocios.corretor_id IN (...)`.
+- **Adicionalmente** incluir os negócios em que `gerente_id = profileId` do gestor (histórico da "antiga equipe dela"), unindo os dois conjuntos de IDs no filtro `.in("corretor_id", ...)` e mantendo um segundo fetch por `gerente_id` quando necessário.
 
-## Parte B — Visão de Diretora (vê as 2 equipes, sem duplicar corretores)
-- Nova tabela `diretoria_equipes (diretor_auth_id, gerente_auth_id)` → Gabrielle → [Bruno, Gabriel] (RLS leitura autenticados, gestão admin; GRANTs).
-- Função `resolve_managed_brokers(_gestor uuid)`: time direto + (se diretor) união dos times dirigidos.
-- Tornar director-aware: `get_dashboard_gerente_v4_kpis/_dia`, `get_dashboard_gerente`, `is_corretor_in_my_team`, `is_lead_in_my_team`, `get_team_visitas`, `get_team_contacts`, `get_team_oa_ranking`.
-- `get_pipeline_equipes_overview`: Gabrielle como nível Diretoria, sem dupla contagem.
+Resultado: a Gabrielle passa a ver, no pipeline de negócios, as duas equipes que dirige + o histórico dela como gerente, e a Taynah some.
 
-## Parte C — Descarte vai para a lista do produto (permanente) ✅ CONCLUÍDA
-> `sweep-descartados` reescrito com `normalizeProduto` em TS (acento/caixa/sufixos data+campanha + apelidos). Reusa/reativa lista canônica por produto, dedup por telefone, arquiva do pipeline e recalcula `total_leads`. Processa `reengajavel` E `tipo_descarte IS NULL` (lote de saída de corretor). Lote imediato: 189 leads roteados a 22 produtos; Descarte ficou só com 2 inativados definitivos.
-- `normalize_produto(text)`: remove acento/caixa/espaço, corta sufixos de data/campanha, aplica apelidos (CASA TUA→Casa Tua, ATRIO→Átrio - ABF, Alto Lindoia→Alto Lindóia, Terrace - 2026→Terrace…), vazio→`Sem empreendimento`.
-- Lista canônica única por produto `"<Produto> - Leads Não Aproveitados"` (reusa/reativa se existir, cria se não). Unifica listas duplicadas do mesmo produto movendo `oferta_ativa_leads` (dedup por telefone) e arquivando as origens; recalcula `total_leads`.
-- Reescrever `sweep-descartados`: agrupa por produto normalizado, resolve/cria lista canônica, dedup, insere, arquiva do pipeline, atualiza contagem.
-- Lote imediato: rotear os 120 leads (Taynah + Gabrielle) às listas (Casa Tua, Open Bosque, Isla, Átrio - ABF, Orygem, Alto Lindóia, Las Casas, Terrace, Square Garden, Lake Eyre, Connect JW).
+### 2. VGV/meta da diretora (`get_dashboard_gerente_v4_kpis` e correlatas)
+Migration ajustando as CTEs de vendas (`vendas_atual`/`vendas_prev`) para somar negócios cujo `corretor_id` esteja na equipe resolvida **OU** cujo `gerente_id` seja o `profiles.id` do próprio gestor. Assim o VGV assinado da antiga Equipe Gabrielle aparece atribuído a ela, sem criar nenhuma venda nova. Aplicar o mesmo critério nas funções irmãs que calculam VGV do gestor (`get_dashboard_gerente_v4_dia`, `get_dashboard_gerente`) onde fizer sentido.
 
-## Parte D — Remover "Equipe Gabrielle" de todo o CRM (UI + placar da TV)
+### 3. Remover a Taynah do CRM
+- **Migration**: adicionar o valor `'arquivado'` como status aceito de negócio (já existem `ativo`/`perdido`; sem constraint rígida, então é só convenção).
+- **Insert/Update (data)**: marcar os 14 negócios ativos da Taynah (`corretor_id = c4fc833f…`) como `status = 'arquivado'` para saírem do pipeline.
+- **Insert/Update (data)**: remover a linha dela em `team_members` (`user_id = b473388d…`).
+- Confirmar que `user_roles` e leads ativos já estão zerados (estão).
 
-O ranking principal já é dinâmico (vem de `team_members`), então some sozinho. Mas há **3 equipes fixas no código** que precisam virar **só Bruno e Gabriel**:
-
-- `src/pages/PlacarDoDia.tsx` (placar da TV): remover a equipe `gabrielle` dos arrays `EQUIPES`/`GERENTES`, do estado `dados`, dos totais e da cor da bolinha — manter Bruno e Gabriel.
-- `src/components/ceo/TabEmpresa.tsx`: remover Gabrielle de `GERENTES`.
-- `src/components/pipeline/header/PipelineGestorSelect.tsx`: remover Gabrielle de `GERENTES_REAIS` (filtro por gestor do CEO).
-- `src/components/pipeline/equipes/gestorTheme.ts`: remover o tema da Gabrielle (gestor) e comentário.
-- Texto "3 gerentes (Gabrielle, Bruno, Gabriel)" em `src/pages/HomiAna.tsx` e `supabase/functions/homi-ana/index.ts` → "2 gerentes (Bruno, Gabriel) + Diretora Comercial Gabrielle".
-
-### Preservado de propósito (NÃO é equipe — não mexer)
-- `IntermediacaoPage.tsx` / `gerar-intermediacao`: Gabrielle como **credora/sócia** nos contratos de comissão (CPF/percentual) permanece.
-- `metaFormIdMap` / `receive-meta-lead`: nomes de formulários de anúncio ("… Vídeo Gabrielle") permanecem.
-- Migration `credores_fixos`: percentuais de sócios permanecem.
+### 4. Memória
+Atualizar a memória de estrutura de equipe registrando que a Gabrielle é Diretora sobre Bruno + Gabriel via `diretoria_equipes`, que o VGV da antiga equipe dela conta por `gerente_id`, e que a Taynah foi removida/arquivada.
 
 ## Detalhes técnicos
-- Etapa Descarte: `stage_id=1dd66c25-3848-4053-9f66-82e902989b4d`.
-- DDL (tabela diretoria, funções, patch RPCs) em migrations; operações de dados (reassign, Taynah, metas, unificação/roteamento de listas) via insert tool; respeitar 2 migrations/dia 08–19h BRT. Unificação de listas grandes roda como operação de dados em lotes.
-- Sem linhas-espelho em `team_members`.
+- `negocios.corretor_id` = `profiles.id` (nunca `auth.users.id`); `pipeline_leads.corretor_id` = `auth.users.id`. Sempre resolver antes de filtrar.
+- `resolve_managed_brokers` é `SECURITY DEFINER` e já retorna `DISTINCT` apenas `status='ativo'`.
+- Mudanças de dados (status dos negócios e remoção em `team_members`) via ferramenta de insert; mudanças de função via migration (respeitando o limite de migrations/dia).
+- Nenhuma venda nova é criada — apenas a visão/meta passa a refletir o que já existe.
 
 ## Validação
-- 9 corretores sob o gerente certo; equipe da Gabrielle vazia em todo lugar (placar da TV mostra só Bruno e Gabriel).
-- 120 leads em Descarte roteados às listas de produto corretas.
-- Taynah sem papel/perfil inativo; metas zeradas.
-- RPC simulada como Gabrielle: dashboard/pipeline somam as duas equipes.
-- `sweep-descartados` validado agrupando por produto.
-
-## Ponto de atenção
-A unificação física das listas grandes existentes (ex.: Casa Tua ~2.877+263) é volumosa e pouco reversível — recomendo unificar primeiro os produtos do lote e validar, depois estender.
+- Query confirmando que a Gabrielle vê negócios das duas equipes + os de `gerente_id` dela, e nenhum da Taynah.
+- Query confirmando 0 negócios ativos no nome da Taynah e 0 linhas em `team_members` para ela.
+- Conferir no preview (`/negocios` logada como Gabrielle / via admin) que o board mostra as duas equipes e o VGV assinado do mês aparece.
