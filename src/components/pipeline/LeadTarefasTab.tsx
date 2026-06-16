@@ -53,9 +53,10 @@ interface Props {
   onDeleteTarefa: (id: string) => Promise<void>;
   onReload: () => void;
   onNextAction?: () => void;
+  loading?: boolean;
 }
 
-export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEmail, leadStageId, tarefas, onAddTarefa, onToggleTarefa, onDeleteTarefa, onReload, onNextAction }: Props) {
+export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEmail, leadStageId, tarefas, onAddTarefa, onToggleTarefa, onDeleteTarefa, onReload, onNextAction, loading = false }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [tipo, setTipo] = useState("follow_up");
   const [customTipo, setCustomTipo] = useState("");
