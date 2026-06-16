@@ -24,7 +24,8 @@
 - Tornar director-aware: `get_dashboard_gerente_v4_kpis/_dia`, `get_dashboard_gerente`, `is_corretor_in_my_team`, `is_lead_in_my_team`, `get_team_visitas`, `get_team_contacts`, `get_team_oa_ranking`.
 - `get_pipeline_equipes_overview`: Gabrielle como nível Diretoria, sem dupla contagem.
 
-## Parte C — Descarte vai para a lista do produto (permanente)
+## Parte C — Descarte vai para a lista do produto (permanente) ✅ CONCLUÍDA
+> `sweep-descartados` reescrito com `normalizeProduto` em TS (acento/caixa/sufixos data+campanha + apelidos). Reusa/reativa lista canônica por produto, dedup por telefone, arquiva do pipeline e recalcula `total_leads`. Processa `reengajavel` E `tipo_descarte IS NULL` (lote de saída de corretor). Lote imediato: 189 leads roteados a 22 produtos; Descarte ficou só com 2 inativados definitivos.
 - `normalize_produto(text)`: remove acento/caixa/espaço, corta sufixos de data/campanha, aplica apelidos (CASA TUA→Casa Tua, ATRIO→Átrio - ABF, Alto Lindoia→Alto Lindóia, Terrace - 2026→Terrace…), vazio→`Sem empreendimento`.
 - Lista canônica única por produto `"<Produto> - Leads Não Aproveitados"` (reusa/reativa se existir, cria se não). Unifica listas duplicadas do mesmo produto movendo `oferta_ativa_leads` (dedup por telefone) e arquivando as origens; recalcula `total_leads`.
 - Reescrever `sweep-descartados`: agrupa por produto normalizado, resolve/cria lista canônica, dedup, insere, arquiva do pipeline, atualiza contagem.
