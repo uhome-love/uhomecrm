@@ -611,6 +611,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
               <DrawerTasksTab
                 tarefas={leadData.tarefas}
+                loading={leadData.loading}
                 leadId={lead.id}
                 leadNome={lead.nome}
                 leadStageId={lead.stage_id ?? null}
