@@ -351,7 +351,7 @@ Deno.serve(async (req) => {
 
     const doc = await montarDoc(body);
     const buffer = await Packer.toBuffer(doc);
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const base64 = bufferToBase64(buffer);
 
     const nomeRef = body.comprador.tipoPessoa === "PJ" ? body.comprador.razaoSocial : body.comprador.nomeCompleto;
     const filename = `intermediacao_${slug(sobrenome(nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
