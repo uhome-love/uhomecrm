@@ -70,6 +70,42 @@ function isLikelyTestLead(name: string, email: string, message: string): boolean
   return testTokens.some((token) => combined.includes(token));
 }
 
+// ── Native Meta Leadgen webhook support ──
+const META_API_VERSION = "v21.0";
+const META_BASE = `https://graph.facebook.com/${META_API_VERSION}`;
+
+/** Verify Meta's X-Hub-Signature-256 header (HMAC-SHA256 of raw body with app secret). */
+async function verifyMetaSignature(rawBody: string, signatureHeader: string | null, appSecret: string): Promise<boolean> {
+  if (!signatureHeader) return false;
+  const expected = signatureHeader.startsWith("sha256=") ? signatureHeader.slice(7) : signatureHeader;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(appSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sigBuf = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody));
+  const computed = Array.from(new Uint8Array(sigBuf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  // constant-time-ish compare
+  if (computed.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < computed.length; i++) diff |= computed.charCodeAt(i) ^ expected.charCodeAt(i);
+  return diff === 0;
+}
+
+/** Fetch a single lead's full data from the Graph API by leadgen_id. */
+async function fetchMetaLead(leadgenId: string, token: string): Promise<any> {
+  const fields = "id,created_time,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,form_id,form_name,platform,field_data";
+  const url = `${META_BASE}/${leadgenId}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(token)}`;
+  const r = await fetch(url);
+  const j = await r.json();
+  if (!r.ok) throw new Error(`graph leadgen fetch: ${JSON.stringify(j.error || j)}`);
+  return j;
+}
+
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
