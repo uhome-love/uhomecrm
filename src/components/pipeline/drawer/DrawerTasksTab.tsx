@@ -119,6 +119,7 @@ export default function DrawerTasksTab({
   onDeleteTarefa,
   onReload,
   onNovaTarefa,
+  loading = false,
 }: Props) {
   const queryClient = useQueryClient();
   const grouped = useMemo(() => groupTasksByDeadline(tarefas), [tarefas]);
