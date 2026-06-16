@@ -1,94 +1,61 @@
+# Gabrielle Diretora + Reorganização de Equipes + Descarte por Produto + Remoção da Equipe Gabrielle
 
-# Gerador de Instrumento de Intermediação Imobiliária
+## Parte A — Reorganização das equipes (dados)
 
-Nova página `/intermediacao` (visível só para **admin** e **gestor**) com um formulário que gera o `.docx` do Instrumento Particular de Intermediação Imobiliária da Uhome, replicando exatamente o modelo enviado (Átrio 1107).
+### A1. Redistribuição dos corretores (`team_members`: `gerente_id` + `equipe`)
+```text
+→ Equipe Bruno Schuler: Larissa Barbosa, Matheus Pasin, Halime Maarouf, Luiza Clós, Thalia Pereira
+→ Equipe Gabriel Vieira: Flávio Dias, Leo Dorneles, Jéssica França, Thalia de Oliveira
+```
 
-## Arquivos afetados (checklist)
-- ✅ `src/pages/IntermediacaoPage.tsx` — **novo**
-- ✅ `src/config/pageRegistry.ts` — só adicionar entrada (`PAGE_COMPONENTS` + `ROUTE_TO_TAB`)
-- ✅ `src/components/layout/Sidebar.tsx` — só adicionar item no grupo Vendas (admin e gestor)
-- ✅ `supabase/functions/gerar-intermediacao/index.ts` — **novo**
+### A2. Saída da Taynah Bortoletti
+- 116 leads ativos → Descarte (roteados pela Parte C).
+- `team_members.status='inativo'`; remover papel `corretor` em `user_roles`; `profiles` inativo.
 
-Nenhum outro arquivo, rota, hook, query ou token de cor é alterado.
+### A3. Gabrielle vira Diretora
+- Equipe dissolvida: nenhum corretor com `gerente_id`=Gabrielle; remove a linha dela como membro.
+- Mantém papel `gestor`; remove papel `corretor`.
+- 4 leads ativos dela → Descarte (Parte C).
+- Metas antigas em `ceo_metas_mensais` (2 registros) zeradas/encerradas.
 
-## Observação (RG dos corretores)
-`profiles` tem `cpf`, `creci`, `email`, mas **não tem RG**. Ao selecionar um corretor, auto-preenche **CPF e e-mail**; o **RG fica como campo editável**. Sem alteração de schema.
+## Parte B — Visão de Diretora (vê as 2 equipes, sem duplicar corretores)
+- Nova tabela `diretoria_equipes (diretor_auth_id, gerente_auth_id)` → Gabrielle → [Bruno, Gabriel] (RLS leitura autenticados, gestão admin; GRANTs).
+- Função `resolve_managed_brokers(_gestor uuid)`: time direto + (se diretor) união dos times dirigidos.
+- Tornar director-aware: `get_dashboard_gerente_v4_kpis/_dia`, `get_dashboard_gerente`, `is_corretor_in_my_team`, `is_lead_in_my_team`, `get_team_visitas`, `get_team_contacts`, `get_team_oa_ranking`.
+- `get_pipeline_equipes_overview`: Gabrielle como nível Diretoria, sem dupla contagem.
 
-## 1. Frontend — `src/pages/IntermediacaoPage.tsx`
-shadcn/ui (Card, Input, Select, Button, Table), destaque `#4F46E5`.
+## Parte C — Descarte vai para a lista do produto (permanente)
+- `normalize_produto(text)`: remove acento/caixa/espaço, corta sufixos de data/campanha, aplica apelidos (CASA TUA→Casa Tua, ATRIO→Átrio - ABF, Alto Lindoia→Alto Lindóia, Terrace - 2026→Terrace…), vazio→`Sem empreendimento`.
+- Lista canônica única por produto `"<Produto> - Leads Não Aproveitados"` (reusa/reativa se existir, cria se não). Unifica listas duplicadas do mesmo produto movendo `oferta_ativa_leads` (dedup por telefone) e arquivando as origens; recalcula `total_leads`.
+- Reescrever `sweep-descartados`: agrupa por produto normalizado, resolve/cria lista canônica, dedup, insere, arquiva do pipeline, atualiza contagem.
+- Lote imediato: rotear os 120 leads (Taynah + Gabrielle) às listas (Casa Tua, Open Bosque, Isla, Átrio - ABF, Orygem, Alto Lindóia, Las Casas, Terrace, Square Garden, Lake Eyre, Connect JW).
 
-**Comprador (CONTRATANTE)**
-- Tipo: PF | PJ
-- PJ: Razão Social, CNPJ, sócio-administrador
-- PF: nome completo, gênero, profissão, estado civil (+ regime de bens se casado)
-- Comuns: CPF, RG, telefone, e-mail, endereço completo
+## Parte D — Remover "Equipe Gabrielle" de todo o CRM (UI + placar da TV)
 
-**Imóvel:** Empreendimento (texto livre), Unidade, VGV
+O ranking principal já é dinâmico (vem de `team_members`), então some sozinho. Mas há **3 equipes fixas no código** que precisam virar **só Bruno e Gabriel**:
 
-**Corretores**
-- Corretor 1 e 2 (opcional): busca por nome entre `user_roles` (role `corretor`) join `profiles`; auto-preenche CPF/e-mail, RG editável
-- Percentual de cada corretor (%)
+- `src/pages/PlacarDoDia.tsx` (placar da TV): remover a equipe `gabrielle` dos arrays `EQUIPES`/`GERENTES`, do estado `dados`, dos totais e da cor da bolinha — manter Bruno e Gabriel.
+- `src/components/ceo/TabEmpresa.tsx`: remover Gabrielle de `GERENTES`.
+- `src/components/pipeline/header/PipelineGestorSelect.tsx`: remover Gabrielle de `GERENTES_REAIS` (filtro por gestor do CEO).
+- `src/components/pipeline/equipes/gestorTheme.ts`: remover o tema da Gabrielle (gestor) e comentário.
+- Texto "3 gerentes (Gabrielle, Bruno, Gabriel)" em `src/pages/HomiAna.tsx` e `supabase/functions/homi-ana/index.ts` → "2 gerentes (Bruno, Gabriel) + Diretora Comercial Gabrielle".
 
-**Comissão**
-- Valor total da corretagem
-- % Gabrielle (15% padrão), % Diretoria (10% padrão), % UHome = 100% − soma (read-only)
-- Parcelas: "Adicionar parcela" (data de vencimento + **valor fixo da parcela**), mín. 1, sem limite
+### Preservado de propósito (NÃO é equipe — não mexer)
+- `IntermediacaoPage.tsx` / `gerar-intermediacao`: Gabrielle como **credora/sócia** nos contratos de comissão (CPF/percentual) permanece.
+- `metaFormIdMap` / `receive-meta-lead`: nomes de formulários de anúncio ("… Vídeo Gabrielle") permanecem.
+- Migration `credores_fixos`: percentuais de sócios permanecem.
 
-**Data do contrato** (padrão hoje)
+## Detalhes técnicos
+- Etapa Descarte: `stage_id=1dd66c25-3848-4053-9f66-82e902989b4d`.
+- DDL (tabela diretoria, funções, patch RPCs) em migrations; operações de dados (reassign, Taynah, metas, unificação/roteamento de listas) via insert tool; respeitar 2 migrations/dia 08–19h BRT. Unificação de listas grandes roda como operação de dados em lotes.
+- Sem linhas-espelho em `team_members`.
 
-**Preview em tempo real** (mesma função de cálculo da edge function):
-- Total por credor = % × valor total
-- Por parcela = round2(% × valorParcela); última parcela do credor absorve diferença
-- Linha Total por coluna
-- Tabela 2.1 ZemoBank = soma de todos menos UHome
+## Validação
+- 9 corretores sob o gerente certo; equipe da Gabrielle vazia em todo lugar (placar da TV mostra só Bruno e Gabriel).
+- 120 leads em Descarte roteados às listas de produto corretas.
+- Taynah sem papel/perfil inativo; metas zeradas.
+- RPC simulada como Gabrielle: dashboard/pipeline somam as duas equipes.
+- `sweep-descartados` validado agrupando por produto.
 
-**Gerar Intermediação** → POST edge function → recebe base64 → download `intermediacao_[SOBRENOME]_[EMPREENDIMENTO]_[UNIDADE]_UHome.docx` → toast.
-
-## 2. Roteamento e sidebar
-- `pageRegistry.ts`: `intermediacao` em `PAGE_COMPONENTS`; `ROUTE_TO_TAB["/intermediacao"]` com `roles: ["admin","gestor"]`, ícone `FileSignature`.
-- `Sidebar.tsx`: item "Intermediação" no grupo **Vendas** de admin e gestor.
-
-## 3. Edge Function — `supabase/functions/gerar-intermediacao/index.ts`
-- CORS + OPTIONS; valida JWT em código + `has_role(auth.uid(),'admin')` ou `'gestor'`.
-- Body validado com Zod.
-- Lib `docx` (npm) monta o documento.
-
-### Logo (base64 inline)
-- A logo fica embutida como constante no topo do `index.ts`:
-  `const LOGO_BASE64 = "..."` — gerada de `public/images/uhome-logo-128.png` (PNG ~11 KB / base64 ~15 KB) com `base64 -w0 public/images/uhome-logo-128.png`.
-- Inserida no cabeçalho via `ImageRun` (PNG) centralizada.
-- Fallback: se a constante estiver vazia, texto **"UHome."** negrito centralizado + `// TODO: substituir por ImageRun com logo real`.
-
-### Estrutura (ordem exata do modelo)
-1. Cabeçalho com logo
-2. Título: INSTRUMENTO PARTICULAR DE INTERMEDIAÇÃO IMOBILIÁRIA
-3. Qualificação CONTRATANTE(S) — PF ou PJ
-4. CONTRATADOS: corretor(es) + GABRIELLE RODRIGUES + UHOME (rep. por LUCAS)
-5. Cláusula 1 — objeto (EMPREENDIMENTO / UNIDADE / VGV)
-6. Cláusula 2 — tabela por credor com N colunas de parcelas (corretores, Diretoria, UHome, Total)
-7. Cláusula 2.1 — tabela ZemoBank (sem linha UHome)
-8. Cláusulas 2.2 a 8 — texto jurídico fixo verbatim (mora/IPCA, vencimento antecipado/título executivo, recibos/NF, irrevogabilidade, LGPD 7–7.8, foro Porto Alegre, assinatura digital MP 2.200-2)
-9. "Porto Alegre, [data por extenso]."
-10. Assinaturas: CONTRATANTE(S) → corretor(es) → DIRETORIA: GABRIELLE RODRIGUES → IMOBILIÁRIA UHOME
-11. Testemunhas: Gabriel Vieira (gabriel.uhome@gmail.com) + Carolina de Camargo Madruga (carolina@uhome.com.br)
-
-Retorna `{ filename, base64 }`.
-
-### Dados fixos (hardcoded)
-- Uhome CNPJ 37.900.790/0001-71 · CRECI 25.682J
-- Lucas: CPF 863.851.860-91 · RG 9098653034 · CRECI 58516 · lucas@uhome.imb.br
-- Gabrielle: CPF 032.416.160-37 · RG 3098226875 · gabrielle@uhome.imb.br
-- Banco corretores: ZemoBank (Pix ou Boleto) · Banco Uhome: UHome (Pix ou Boleto)
-
-## Cálculo por parcela (valor fixo, não proporcional)
-- `totalCredor = round2(pct × valorTotalCorretagem)`
-- Cada parcela P: `valorCredorP = round2(pct × valorP)`
-- Última parcela do credor: `totalCredor − soma(parcelas anteriores)`
-- Total por coluna = soma das linhas
-- ZemoBank = corretores + Diretoria (exclui UHome)
-- Moeda pt-BR `R$ #.###,##`; datas `dd/mm/aa`
-
-## Restrições respeitadas
-- Nenhuma rota/hook/query/cor/componente existente alterado
-- Sem enum `ceo`; admin via `has_role(..., 'admin')`
-- Sidebar apenas admin e gestor
+## Ponto de atenção
+A unificação física das listas grandes existentes (ex.: Casa Tua ~2.877+263) é volumosa e pouco reversível — recomendo unificar primeiro os produtos do lote e validar, depois estender.

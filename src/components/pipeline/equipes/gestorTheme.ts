@@ -1,7 +1,7 @@
 /**
  * gestorTheme — mapa de cores por gestor (reusa os auth_ids de GERENTES_REAIS).
  *
- * Gabrielle → indigo · Bruno → azul · Gabriel → verde.
+ * Diretoria (Gabrielle) → indigo · Bruno → azul · Gabriel → verde.
  * Fallback neutro (slate) para qualquer gestor fora do mapa.
  * Apenas classes Tailwind — zero hex inline.
  */
@@ -14,7 +14,7 @@ export interface GestorTheme {
 }
 
 const THEMES: Record<string, GestorTheme> = {
-  // Gabrielle Rodrigues — indigo
+  // Gabrielle Rodrigues (Diretora Comercial) — indigo
   "7882d73e-ff5c-4b23-9b08-2adeadcd1800": {
     ring: "border-indigo-300 dark:border-indigo-800",
     bar: "bg-indigo-500",

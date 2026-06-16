@@ -36,7 +36,6 @@ const formatVGV = (v: number | null | undefined) => fmtMoney(v, "exact");
 void formatBRLCompact;
 
 const TEAM_COLORS: Record<string, string> = {
-  "gabrielle": "bg-pink-500/15 text-pink-600 border-pink-500/30",
   "bruno": "bg-blue-500/15 text-blue-600 border-blue-500/30",
   "gabriel": "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
 };

@@ -5,13 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 const DEFAULT_META = 20;
 
 const EQUIPES = [
-  { nome: "Gabrielle", cor: "#9333EA", corClara: "#F3E8FF", corBorda: "#7C3AED", emoji: "💜", id: "gabrielle" },
   { nome: "Bruno Schuler", cor: "#3350E6", corClara: "#EFF6FF", corBorda: "#1D4ED8", emoji: "💙", id: "bruno" },
   { nome: "Gabriel", cor: "#16A34A", corClara: "#F0FDF4", corBorda: "#15803D", emoji: "💚", id: "gabriel" },
 ];
 
 const GERENTES = [
-  { user_id: "7882d73e-ff5c-4b23-9b08-2adeadcd1800", equipe: "gabrielle" },
   { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", equipe: "bruno" },
   { user_id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", equipe: "gabriel" },
 ];
@@ -114,7 +112,7 @@ function Confetti({ active }) {
 }
 
 export default function PlacarDoDia() {
-  const [dados, setDados] = useState({ gabrielle: [], bruno: [], gabriel: [] });
+  const [dados, setDados] = useState({ bruno: [], gabriel: [] });
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -172,7 +170,7 @@ export default function PlacarDoDia() {
       const membros = (payload as any)?.membros ?? [];
       const todasVisitas = (payload as any)?.visitas ?? [];
 
-      const equipeIds: Record<string, string[]> = { gabrielle: [], bruno: [], gabriel: [] };
+      const equipeIds: Record<string, string[]> = { bruno: [], gabriel: [] };
       const nomeMap: Record<string, string> = {};
       membros.forEach((m: any) => {
         const gerente = GERENTES.find(g => g.user_id === m.gerente_id);
@@ -188,7 +186,7 @@ export default function PlacarDoDia() {
         }
       });
 
-      const novosDados = { gabrielle: [], bruno: [], gabriel: [] };
+      const novosDados = { bruno: [], gabriel: [] };
       const ultimaPorEquipe = {};
       for (const [key, userIds] of Object.entries(equipeIds)) {
         const visitasEquipe = todasVisitas.filter(v => userIds.includes(v.corretor_id));
@@ -268,12 +266,11 @@ export default function PlacarDoDia() {
   }, [atualizarTudo]);
 
   const totais = {
-    gabrielle: dados.gabrielle.length,
     bruno: dados.bruno.length,
     gabriel: dados.gabriel.length,
   };
 
-  const totalGeral = totais.gabrielle + totais.bruno + totais.gabriel;
+  const totalGeral = totais.bruno + totais.gabriel;
   const metaGeralAtingida = totalGeral >= meta;
 
   const medalhas = ["🥇", "🥈", "🥉"];
@@ -566,7 +563,7 @@ export default function PlacarDoDia() {
                 </div>
               ) : (
                 ultimasVisitas.map((v, i) => {
-                  const corBolinha = v.equipe === "gabrielle" ? "#9333EA" : v.equipe === "bruno" ? "#3350E6" : v.equipe === "gabriel" ? "#16A34A" : "#666";
+                  const corBolinha = v.equipe === "bruno" ? "#3350E6" : v.equipe === "gabriel" ? "#16A34A" : "#666";
                   return (
                     <div
                       key={`${v.corretor}-${v.hora}-${i}`}

@@ -34,7 +34,7 @@ Casa Bastian / Shift: #CasaBastian #Shift #InvestimentoImobiliário #RendaPassiv
 Orygem / Casa Tua / Las Casas: #Orygem #CasaTua #LasCasas #ImóvelMédiopadrão #SeuNovoLar #UhomePOA
 Gerais: #Uhome #UhomeNegócios #ImóvelPortoAlegre #CorretorPOA #MercadoImobiliário #NovoComeço
 
-TIME COMERCIAL: ~25 corretores, 3 gerentes (Gabrielle, Bruno, Gabriel)
+TIME COMERCIAL: ~25 corretores, 2 gerentes (Bruno, Gabriel) + Diretora Comercial Gabrielle
 CEO: Lucas Sarmento
 
 Você ajuda Ana Paula com:
