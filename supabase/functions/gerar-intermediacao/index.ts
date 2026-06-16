@@ -52,6 +52,15 @@ const dataExtenso = (iso: string) => { const [y, m, d] = iso.split("-").map(Numb
 const primeiroNome = (s: string) => s.trim().split(/\s+/)[0] ?? "";
 const sobrenome = (s: string) => { const p = s.trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] ?? ""; };
 const slug = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "").trim();
+function bufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
 
 interface CredorCalc { nome: string; isUhome: boolean; total: number; parcelas: number[]; }
 
@@ -110,50 +119,69 @@ const cabecalho = () => {
 
 const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" };
 const borders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
-const tcell = (text: string, opts: { bold?: boolean; fill?: string } = {}) =>
+const tcell = (text: string, opts: { bold?: boolean; fill?: string; width?: number } = {}) =>
   new TableCell({
     borders,
+    width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
     shading: opts.fill ? { fill: opts.fill, type: ShadingType.CLEAR, color: "auto" } : undefined,
     margins: { top: 40, bottom: 40, left: 80, right: 80 },
     children: [new Paragraph({ children: [new TextRun({ text, bold: opts.bold, size: 16 })] })],
   });
 
 function tabelaComissao(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"]["parcelas"]) {
+  const n = parcelas.length;
+  const credorW = 1800, valorW = 1600;
+  const parcelaW = Math.floor((9026 - credorW - valorW) / n);
+  const columnWidths = [credorW, valorW, ...parcelas.map(() => parcelaW)];
+  const tableWidth = columnWidths.reduce((s, w) => s + w, 0);
+
   const header = new TableRow({
     children: [
-      tcell("Credor", { bold: true, fill: "EEEEFF" }),
-      tcell("Valor", { bold: true, fill: "EEEEFF" }),
-      ...parcelas.map((p) => tcell(fmtCurta(p.vencimento), { bold: true, fill: "EEEEFF" })),
+      tcell("Credor", { bold: true, fill: "EEEEFF", width: credorW }),
+      tcell("Valor", { bold: true, fill: "EEEEFF", width: valorW }),
+      ...parcelas.map((p) => tcell(fmtCurta(p.vencimento), { bold: true, fill: "EEEEFF", width: parcelaW })),
     ],
   });
   const rows = calc.credores.map((c) =>
-    new TableRow({ children: [tcell(c.nome), tcell(brl(c.total)), ...c.parcelas.map((v) => tcell(brl(v)))] }));
+    new TableRow({ children: [
+      tcell(c.nome, { width: credorW }),
+      tcell(brl(c.total), { width: valorW }),
+      ...c.parcelas.map((v) => tcell(brl(v), { width: parcelaW })),
+    ] }));
   const totalRow = new TableRow({
     children: [
-      tcell("Total", { bold: true, fill: "F4F4F4" }),
-      tcell(brl(calc.totalGeral), { bold: true, fill: "F4F4F4" }),
-      ...calc.totalLinha.map((v) => tcell(brl(v), { bold: true, fill: "F4F4F4" })),
+      tcell("Total", { bold: true, fill: "F4F4F4", width: credorW }),
+      tcell(brl(calc.totalGeral), { bold: true, fill: "F4F4F4", width: valorW }),
+      ...calc.totalLinha.map((v) => tcell(brl(v), { bold: true, fill: "F4F4F4", width: parcelaW })),
     ],
   });
-  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [header, ...rows, totalRow] });
+  return new Table({ width: { size: tableWidth, type: WidthType.DXA }, columnWidths, rows: [header, ...rows, totalRow] });
 }
 
 function tabelaZemo(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"]["parcelas"]) {
+  const n = parcelas.length;
+  const credorW = 1800, pagW = 1200, valorW = 1600;
+  const parcelaW = Math.floor((9026 - credorW - pagW - valorW) / n);
+  const columnWidths = [credorW, pagW, valorW, ...parcelas.map(() => parcelaW)];
+  const tableWidth = columnWidths.reduce((s, w) => s + w, 0);
+
   const header = new TableRow({
     children: [
-      tcell("Credor", { bold: true, fill: "EEEEFF" }),
-      tcell("Pagamento", { bold: true, fill: "EEEEFF" }),
-      tcell("Valor total", { bold: true, fill: "EEEEFF" }),
-      ...parcelas.map((p) => tcell(fmtCurta(p.vencimento), { bold: true, fill: "EEEEFF" })),
+      tcell("Credor", { bold: true, fill: "EEEEFF", width: credorW }),
+      tcell("Pagamento", { bold: true, fill: "EEEEFF", width: pagW }),
+      tcell("Valor total", { bold: true, fill: "EEEEFF", width: valorW }),
+      ...parcelas.map((p) => tcell(fmtCurta(p.vencimento), { bold: true, fill: "EEEEFF", width: parcelaW })),
     ],
   });
   const row = new TableRow({
     children: [
-      tcell("ZemoBank"), tcell("Pix ou Boleto"), tcell(brl(calc.zemo.total)),
-      ...calc.zemo.parcelas.map((v) => tcell(brl(v))),
+      tcell("ZemoBank", { width: credorW }),
+      tcell("Pix ou Boleto", { width: pagW }),
+      tcell(brl(calc.zemo.total), { width: valorW }),
+      ...calc.zemo.parcelas.map((v) => tcell(brl(v), { width: parcelaW })),
     ],
   });
-  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [header, row] });
+  return new Table({ width: { size: tableWidth, type: WidthType.DXA }, columnWidths, rows: [header, row] });
 }
 
 function assinatura(label: string, nome: string) {
@@ -323,7 +351,7 @@ Deno.serve(async (req) => {
 
     const doc = await montarDoc(body);
     const buffer = await Packer.toBuffer(doc);
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const base64 = bufferToBase64(buffer);
 
     const nomeRef = body.comprador.tipoPessoa === "PJ" ? body.comprador.razaoSocial : body.comprador.nomeCompleto;
     const filename = `intermediacao_${slug(sobrenome(nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
