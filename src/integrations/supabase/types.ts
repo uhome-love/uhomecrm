@@ -2078,6 +2078,27 @@ export type Database = {
         }
         Relationships: []
       }
+      diretoria_equipes: {
+        Row: {
+          created_at: string
+          diretor_auth_id: string
+          gerente_auth_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          diretor_auth_id: string
+          gerente_auth_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          diretor_auth_id?: string
+          gerente_auth_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       distribuicao_escala: {
         Row: {
           aprovacao_status: string
@@ -11040,6 +11061,12 @@ export type Database = {
       resolve_corretor_scope_ids: {
         Args: { p_corretor_id: string }
         Returns: string[]
+      }
+      resolve_managed_brokers: {
+        Args: { _gestor: string }
+        Returns: {
+          user_id: string
+        }[]
       }
       rpc_placar_do_dia: { Args: never; Returns: Json }
       show_limit: { Args: never; Returns: number }
