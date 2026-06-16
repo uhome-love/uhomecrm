@@ -447,6 +447,14 @@ Deno.serve(async (req) => {
       } catch (e) { L.warn("Push error", { leadId: existing.id }, e); }
 
       L.info("Reactivated existing lead", { telefone, leadId: existing.id, corretor: existing.corretor_id });
+
+      // Registra a chave de dedup para que o backfill NÃO reprocesse/renotifique este lead
+      try {
+        await supabase
+          .from("jetimob_processed")
+          .upsert({ jetimob_lead_id: dedupRegistryId, telefone }, { onConflict: "jetimob_lead_id" });
+      } catch (e) { L.warn("Dedup registry upsert warn (reactivation/phone)", { dedupRegistryId }, e); }
+
       // BLOCO 4b: lead descartado/arquivado reativado por novo touch
       logOps("info", "business", "lead_dedup_reactivated", {
         reason: isDiscarded ? "lead_descartado_reativado_para_sem_contato" : "lead_ativo_recebeu_novo_interesse",
@@ -674,6 +682,14 @@ Deno.serve(async (req) => {
           } catch (e) { L.warn("Push error", { leadId: dup.id }, e); }
 
           L.info("Reactivated existing lead (email/phone unique match)", { leadId: dup.id, corretor: dup.corretor_id });
+
+          // Registra a chave de dedup para que o backfill NÃO reprocesse/renotifique este lead
+          try {
+            await supabase
+              .from("jetimob_processed")
+              .upsert({ jetimob_lead_id: dedupRegistryId, telefone }, { onConflict: "jetimob_lead_id" });
+          } catch (e) { L.warn("Dedup registry upsert warn (reactivation/email)", { dedupRegistryId }, e); }
+
           logOps("info", "business", "lead_dedup_reactivated", {
             reason: isDiscarded ? "lead_descartado_reativado_para_sem_contato" : "lead_ativo_recebeu_novo_interesse_via_email_match",
             lead_id: dup.id,
