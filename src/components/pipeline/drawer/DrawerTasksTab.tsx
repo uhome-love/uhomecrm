@@ -35,6 +35,7 @@ interface Props {
   onDeleteTarefa: (id: string) => Promise<void>;
   onReload: () => void;
   onNovaTarefa: () => void;
+  loading?: boolean;
 }
 
 type TipoCanon = "call" | "msg" | "followup" | "visit" | "outro";
