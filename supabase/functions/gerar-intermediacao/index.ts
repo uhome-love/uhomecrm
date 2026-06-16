@@ -120,41 +120,59 @@ const tcell = (text: string, opts: { bold?: boolean; fill?: string; width?: numb
   });
 
 function tabelaComissao(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"]["parcelas"]) {
+  const n = parcelas.length;
+  const credorW = 1800, valorW = 1600;
+  const parcelaW = Math.floor((9026 - credorW - valorW) / n);
+  const columnWidths = [credorW, valorW, ...parcelas.map(() => parcelaW)];
+  const tableWidth = columnWidths.reduce((s, w) => s + w, 0);
+
   const header = new TableRow({
     children: [
-      tcell("Credor", { bold: true, fill: "EEEEFF" }),
-      tcell("Valor", { bold: true, fill: "EEEEFF" }),
-      ...parcelas.map((p) => tcell(fmtCurta(p.vencimento), { bold: true, fill: "EEEEFF" })),
+      tcell("Credor", { bold: true, fill: "EEEEFF", width: credorW }),
+      tcell("Valor", { bold: true, fill: "EEEEFF", width: valorW }),
+      ...parcelas.map((p) => tcell(fmtCurta(p.vencimento), { bold: true, fill: "EEEEFF", width: parcelaW })),
     ],
   });
   const rows = calc.credores.map((c) =>
-    new TableRow({ children: [tcell(c.nome), tcell(brl(c.total)), ...c.parcelas.map((v) => tcell(brl(v)))] }));
+    new TableRow({ children: [
+      tcell(c.nome, { width: credorW }),
+      tcell(brl(c.total), { width: valorW }),
+      ...c.parcelas.map((v) => tcell(brl(v), { width: parcelaW })),
+    ] }));
   const totalRow = new TableRow({
     children: [
-      tcell("Total", { bold: true, fill: "F4F4F4" }),
-      tcell(brl(calc.totalGeral), { bold: true, fill: "F4F4F4" }),
-      ...calc.totalLinha.map((v) => tcell(brl(v), { bold: true, fill: "F4F4F4" })),
+      tcell("Total", { bold: true, fill: "F4F4F4", width: credorW }),
+      tcell(brl(calc.totalGeral), { bold: true, fill: "F4F4F4", width: valorW }),
+      ...calc.totalLinha.map((v) => tcell(brl(v), { bold: true, fill: "F4F4F4", width: parcelaW })),
     ],
   });
-  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [header, ...rows, totalRow] });
+  return new Table({ width: { size: tableWidth, type: WidthType.DXA }, columnWidths, rows: [header, ...rows, totalRow] });
 }
 
 function tabelaZemo(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"]["parcelas"]) {
+  const n = parcelas.length;
+  const credorW = 1800, pagW = 1200, valorW = 1600;
+  const parcelaW = Math.floor((9026 - credorW - pagW - valorW) / n);
+  const columnWidths = [credorW, pagW, valorW, ...parcelas.map(() => parcelaW)];
+  const tableWidth = columnWidths.reduce((s, w) => s + w, 0);
+
   const header = new TableRow({
     children: [
-      tcell("Credor", { bold: true, fill: "EEEEFF" }),
-      tcell("Pagamento", { bold: true, fill: "EEEEFF" }),
-      tcell("Valor total", { bold: true, fill: "EEEEFF" }),
-      ...parcelas.map((p) => tcell(fmtCurta(p.vencimento), { bold: true, fill: "EEEEFF" })),
+      tcell("Credor", { bold: true, fill: "EEEEFF", width: credorW }),
+      tcell("Pagamento", { bold: true, fill: "EEEEFF", width: pagW }),
+      tcell("Valor total", { bold: true, fill: "EEEEFF", width: valorW }),
+      ...parcelas.map((p) => tcell(fmtCurta(p.vencimento), { bold: true, fill: "EEEEFF", width: parcelaW })),
     ],
   });
   const row = new TableRow({
     children: [
-      tcell("ZemoBank"), tcell("Pix ou Boleto"), tcell(brl(calc.zemo.total)),
-      ...calc.zemo.parcelas.map((v) => tcell(brl(v))),
+      tcell("ZemoBank", { width: credorW }),
+      tcell("Pix ou Boleto", { width: pagW }),
+      tcell(brl(calc.zemo.total), { width: valorW }),
+      ...calc.zemo.parcelas.map((v) => tcell(brl(v), { width: parcelaW })),
     ],
   });
-  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [header, row] });
+  return new Table({ width: { size: tableWidth, type: WidthType.DXA }, columnWidths, rows: [header, row] });
 }
 
 function assinatura(label: string, nome: string) {
