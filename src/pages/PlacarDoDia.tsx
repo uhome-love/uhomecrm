@@ -186,7 +186,7 @@ export default function PlacarDoDia() {
         }
       });
 
-      const novosDados = { gabrielle: [], bruno: [], gabriel: [] };
+      const novosDados = { bruno: [], gabriel: [] };
       const ultimaPorEquipe = {};
       for (const [key, userIds] of Object.entries(equipeIds)) {
         const visitasEquipe = todasVisitas.filter(v => userIds.includes(v.corretor_id));
