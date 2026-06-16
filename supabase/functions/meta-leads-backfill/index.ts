@@ -396,6 +396,22 @@ Deno.serve(async (req) => {
       if (leads.length > 0) perForm[form.id] = { name: form.name, leads: leads.length };
       totalLeads += leads.length;
 
+      // Pré-filtro idempotente: pula leads já processados (mesma submissão Meta).
+      // A chave `meta:{lead_id}` é única por submissão — pular aqui evita
+      // martelar o receive-meta-lead com 100% das submissões a cada execução
+      // (era a causa dos timeouts/lead_errors em runs repetidos).
+      if (leads.length > 0) {
+        const keys = leads.map((l) => `meta:${l.id}`);
+        const { data: already } = await supabase
+          .from("jetimob_processed")
+          .select("jetimob_lead_id")
+          .in("jetimob_lead_id", keys);
+        const done = new Set((already || []).map((r: any) => r.jetimob_lead_id));
+        const before = leads.length;
+        leads = leads.filter((l) => !done.has(`meta:${l.id}`));
+        skipped += before - leads.length;
+      }
+
       for (const lead of leads) {
         try {
           const payload = {
