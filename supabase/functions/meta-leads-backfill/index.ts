@@ -373,7 +373,9 @@ Deno.serve(async (req) => {
     let totalLeads = 0;
     let reprocessed = 0;
     let skipped = 0;
-    let errors = 0;
+    let formErrors = 0;   // formulários antigos/inacessíveis (não são leads perdidos)
+    let leadErrors = 0;   // leads que o receive-meta-lead recusou (precisa investigar)
+    const leadErrorSamples: { form: string; lead_id: string; status: number; body: string }[] = [];
     let formsProcessed = 0;
     let timedOut = false;
     const perForm: Record<string, { name: string; leads: number }> = {};
@@ -387,7 +389,7 @@ Deno.serve(async (req) => {
       try {
         leads = await fetchLeadsForForm(form.id, token, sinceUnix);
       } catch (e) {
-        errors++;
+        formErrors++;
         console.warn(`fetch leads form ${form.id}: ${(e as Error).message}`);
         return;
       }
