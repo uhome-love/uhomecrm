@@ -1,30 +1,41 @@
-# Corrigir "Retorno ao vivo" travado durante disparo
+## Objetivo
 
-## Sintoma
-Na aba **Retorno ao vivo** (`/central-nutricao`), enquanto um disparo está em andamento, o painel fica preso no spinner ("carregando") ou mostra "nenhuma entrada encontrada", em vez de exibir o andamento real.
+Eliminar o flash de "Nenhuma tarefa pendente" / "Sem tarefas pendentes" enquanto as tarefas do lead ainda estão carregando, mostrando um **skeleton** nas duas abas de tarefas. Nenhuma funcionalidade existente é alterada — apenas adicionamos um estado visual de carregamento.
 
-## Causa raiz
-Em `src/components/central-nutricao/AuditoriaWebhookTab.tsx`:
+## Causa
 
-- Há uma assinatura realtime que, a **cada** insert/update na tabela `reengajamento_meta_disparos`, chama `qc.invalidateQueries(["auditoria-meta-webhook"])`.
-- Durante um disparo ativo, a tabela recebe **dezenas/centenas de escritas por minuto** (cada mensagem muda status: sent → delivered → read…).
-- Cada invalidação **cancela a busca em andamento e reinicia**. Como os eventos chegam mais rápido do que a query consegue terminar (ela faz 3 consultas em sequência: disparos + `count exact`, `pipeline_leads`, `profiles`), a busca **nunca conclui** → `isLoading` nunca vira `false` → spinner eterno.
+`usePipelineLeadData` já tem um flag `loading`, mas:
+- ele não é repassado para `DrawerTasksTab` nem `LeadTarefasTab`, então as abas mostram o empty state durante o fetch;
+- o `loading` só vira `true` quando o `loadAll` roda (um frame depois da abertura), deixando um instante com `loading=false` e lista vazia.
 
-## Correção (1 arquivo: `AuditoriaWebhookTab.tsx`)
+## Mudanças (somente frontend, sem schema)
 
-1. **Throttle da invalidação realtime**: em vez de invalidar a cada evento, acumular os eventos e invalidar no máximo **uma vez a cada ~4s** (via `useRef` com timer). Isso deixa a busca respirar e concluir, mantendo a atualização "ao vivo" suave.
+### 1. `src/hooks/usePipelineLeadData.ts`
+- Adicionar um efeito que liga `loading=true` imediatamente quando `leadId` fica definido (e `false` quando nulo), antes do `loadAll` completar:
+```ts
+useEffect(() => {
+  if (leadId) setLoading(true); else setLoading(false);
+}, [leadId]);
+```
+- Nada mais muda; `loading` já é retornado pelo hook e usado internamente. As mutações continuam idênticas.
 
-2. **`placeholderData: keepPreviousData`** na query `auditoria-meta-webhook`: assim, depois do primeiro carregamento, refetches **mantêm os dados anteriores na tela** em vez de voltar ao spinner de página inteira. (import de `keepPreviousData` do `@tanstack/react-query`.)
+### 2. `src/components/pipeline/PipelineLeadDetail.tsx`
+- Passar `loading={leadData.loading}` para `<DrawerTasksTab>` e `<LeadTarefasTab>`.
 
-3. **Aliviar o custo da contagem**: trocar `count: "exact"` por `count: "estimated"` na consulta principal, reduzindo o tempo de cada refetch sob carga de escrita (o número "X de Y carregados" continua útil como referência aproximada). O resumo numérico preciso de hoje já vem da RPC `reengajamento_resumo_hoje`, que não é afetada.
+### 3. `src/components/pipeline/drawer/DrawerTasksTab.tsx`
+- Adicionar prop opcional `loading?: boolean`.
+- Quando `loading && tarefas.length === 0`, renderizar um skeleton (3 linhas usando `@/components/ui/skeleton`) no lugar do empty state. O empty state "Nenhuma tarefa pendente" só aparece após a carga terminar com lista vazia.
 
-## Resultado esperado
-- Abrir "Retorno ao vivo" durante um disparo → a tabela carrega e passa a atualizar suavemente (a cada poucos segundos), mostrando enviados/entregues/lidos/respostas em tempo quase real.
-- Sem mais spinner eterno nem "nenhuma entrada" enquanto o disparo roda.
+### 4. `src/components/pipeline/LeadTarefasTab.tsx`
+- Adicionar prop opcional `loading?: boolean`.
+- Mostrar skeleton (3 linhas) quando `loading && pendentes.length === 0 && !showForm`, e suprimir o bloco "📋 Sem tarefas pendentes" enquanto `loading` for `true`.
 
-## Validação
-- Com o disparo atual em andamento, abrir a aba e confirmar que as linhas aparecem e os contadores avançam.
-- Confirmar que o indicador "Ao vivo" fica verde e os números sobem sem travar.
+## Garantias de não-regressão
+- Props novas são opcionais → nenhum outro chamador quebra.
+- Lógica de criação/conclusão/adiar/editar tarefa e todas as invalidações (`invalidateTaskQueries`) permanecem intactas.
+- Sem mudança de dados, RLS, timezone ou comportamento de negócio.
 
-## Detalhe técnico
-Arquivo único: `src/components/central-nutricao/AuditoriaWebhookTab.tsx`. Sem migração, sem mudança de RLS, sem mexer em edge functions.
+## Verificação
+- Abrir um lead no pipeline e confirmar skeleton → lista (sem flash de "Nenhuma tarefa").
+- Lead sem tarefas: skeleton breve → empty state correto.
+- Criar/concluir tarefa: continua atualizando modal, Central de Tarefas e cards do Kanban.

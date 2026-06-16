@@ -86,6 +86,13 @@ export function usePipelineLeadData(leadId: string | null) {
     }
   }, [leadId, user]);
 
+  // Mostra estado de carregamento IMEDIATAMENTE ao trocar/abrir um lead,
+  // antes mesmo do loadAll rodar — evita o flash de "Nenhuma tarefa pendente".
+  useEffect(() => {
+    if (leadId) setLoading(true);
+    else setLoading(false);
+  }, [leadId]);
+
   useEffect(() => { loadAll(); }, [loadAll]);
 
   const addAtividade = useCallback(async (data: Partial<PipelineAtividade>) => {
