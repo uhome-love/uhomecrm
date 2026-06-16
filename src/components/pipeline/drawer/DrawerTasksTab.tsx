@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { PipelineTarefa } from "@/hooks/usePipelineLeadData";
 import { groupTasksByDeadline, formatTaskDeadline } from "@/lib/taskGrouping";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
