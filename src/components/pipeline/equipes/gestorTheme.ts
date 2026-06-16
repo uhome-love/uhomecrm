@@ -14,7 +14,7 @@ export interface GestorTheme {
 }
 
 const THEMES: Record<string, GestorTheme> = {
-  // Gabrielle Rodrigues — indigo
+  // Gabrielle Rodrigues (Diretora Comercial) — indigo
   "7882d73e-ff5c-4b23-9b08-2adeadcd1800": {
     ring: "border-indigo-300 dark:border-indigo-800",
     bar: "bg-indigo-500",
