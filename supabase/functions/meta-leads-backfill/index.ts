@@ -421,10 +421,18 @@ Deno.serve(async (req) => {
             if (typeof r.action === "string" && r.action.startsWith("skipped")) skipped++;
             else reprocessed++;
           } else {
-            errors++;
+            leadErrors++;
+            if (leadErrorSamples.length < 15) {
+              leadErrorSamples.push({
+                form: form.name,
+                lead_id: lead.id,
+                status: resp.status,
+                body: JSON.stringify(r).slice(0, 200),
+              });
+            }
           }
         } catch (_e) {
-          errors++;
+          leadErrors++;
         }
       }
     };
@@ -445,7 +453,11 @@ Deno.serve(async (req) => {
       total_leads_found: totalLeads,
       reprocessed,
       skipped_dedup: skipped,
-      errors,
+      // form_errors: formulários antigos/sem acesso no Meta — esperado, NÃO são leads perdidos.
+      form_errors: formErrors,
+      // lead_errors: leads recusados pelo receive-meta-lead — investigar via lead_error_samples.
+      lead_errors: leadErrors,
+      lead_error_samples: leadErrorSamples,
       per_form: perForm,
     });
   } catch (error) {
