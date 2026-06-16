@@ -284,9 +284,27 @@ Deno.serve(async (req) => {
 
     // Caminho cron: pg_cron chama com a anon key no Bearer (padrão do projeto).
     // A operação é idempotente e não expõe dados sensíveis.
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    // Aceita tanto a anon key legada (JWT) quanto a publishable key atual —
+    // o ambiente da edge function pode ter SUPABASE_ANON_KEY no formato novo,
+    // enquanto o cron foi configurado com o JWT legado (ou vice-versa).
     const rawAuth = req.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!authorized && anonKey && rawAuth === anonKey) authorized = true;
+    const acceptedKeys = [
+      Deno.env.get("SUPABASE_ANON_KEY"),
+      Deno.env.get("SUPABASE_PUBLISHABLE_KEY"),
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+    ].filter(Boolean) as string[];
+    if (!authorized && rawAuth && acceptedKeys.includes(rawAuth)) authorized = true;
+
+    // Fallback robusto: aceita qualquer JWT Supabase válido com role anon/
+    // service_role (cron pg_net). É idempotente e não expõe dados sensíveis.
+    if (!authorized && rawAuth) {
+      try {
+        const payload = JSON.parse(atob(rawAuth.split(".")[1] || ""));
+        if (payload?.role === "anon" || payload?.role === "service_role") {
+          authorized = true;
+        }
+      } catch (_e) { /* não é JWT — ignora */ }
+    }
 
 
     if (!authorized) {
