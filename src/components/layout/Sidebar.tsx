@@ -323,7 +323,9 @@ export default function Sidebar({
     return () => window.removeEventListener("storage", handler);
   }, [isManagerRole]);
 
-  const rawGroups = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
+  const baseGroups = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
+  const showCorretorMode = role === "gestor" && !!userId && CORRETOR_MODE_GESTORES.includes(userId);
+  const rawGroups = showCorretorMode ? [...baseGroups, MODO_CORRETOR_GROUP] : baseGroups;
   const groups = rawGroups.map(g => ({
     ...g,
     items: g.items.map(item =>
