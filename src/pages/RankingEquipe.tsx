@@ -23,7 +23,7 @@ import { exportRankingsPdf } from "@/lib/exportRankingsPdf";
 import { supabase } from "@/integrations/supabase/client";
 
 type Period = "hoje" | "semana" | "mes" | "personalizado";
-type TabKey = "presencas" | "pipeline" | "visitas" | "negocios" | "oferta_ativa";
+type TabKey = "visao" | "presencas" | "pipeline" | "visitas" | "negocios" | "oferta_ativa";
 
 export default function RankingEquipe() {
   const { user } = useAuthUser();
