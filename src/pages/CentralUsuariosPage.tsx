@@ -525,7 +525,7 @@ function ReassignDialog({
   const [destino, setDestino] = useState("");
   const [opts, setOpts] = useState({ leads: true, negocios: true, tarefas: true });
 
-  useMemo(() => { if (data) { setDestino(""); setOpts({ leads: true, negocios: true, tarefas: true }); } }, [data]);
+  useEffect(() => { if (data) { setDestino(""); setOpts({ leads: true, negocios: true, tarefas: true }); } }, [data]);
 
   const isDelete = data?.mode === "delete";
   const availableDestinos = useMemo(
