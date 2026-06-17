@@ -471,7 +471,7 @@ function PasswordDialog({ target, onClose }: { target: ManagedUser | null; onClo
   const [senha, setSenha] = useState("");
   const [saving, setSaving] = useState(false);
 
-  useMemo(() => { if (target) setSenha(""); }, [target]);
+  useEffect(() => { if (target) setSenha(""); }, [target]);
 
   async function handleSave() {
     if (!target) return;
