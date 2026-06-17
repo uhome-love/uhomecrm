@@ -38,6 +38,14 @@ const THEMES: Record<string, GestorTheme> = {
     avatarBg: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
     dot: "bg-emerald-500",
   },
+  // Junior Padilha — laranja
+  "7a270cc1-a457-4a02-8a62-462ba5a98937": {
+    ring: "border-orange-300 dark:border-orange-800",
+    bar: "bg-orange-500",
+    accentText: "text-orange-600 dark:text-orange-400",
+    avatarBg: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+    dot: "bg-orange-500",
+  },
 };
 
 const FALLBACK: GestorTheme = {
