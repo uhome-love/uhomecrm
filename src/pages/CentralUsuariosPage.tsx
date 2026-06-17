@@ -259,6 +259,9 @@ export default function CentralUsuariosPage() {
       {filtered.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">Nenhum usuário encontrado.</div>
       )}
+      </UsuariosTabsWrapper>
+
+
 
       <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} isAdmin={isAdmin} onDone={refresh} />
 
