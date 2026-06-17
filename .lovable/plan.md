@@ -1,78 +1,41 @@
-# Limpeza do menu CEO + Performance dinâmica
+# Perfil de Gerente — Junior Padilha (pacote único, verificado)
 
-## Parte 1 — Limpar o menu lateral do CEO (só o menu, sem apagar código)
+Junior Padilha vira gerente da Uhome espelhando Bruno/Gabriel (que já têm `gestor`+`corretor`), **mas** com uma diferença: ele precisa continuar operando como corretor (se credenciar na roleta, receber e aceitar leads, tarefas, visitas) enquanto tem a visão de gerente. A auditoria mostrou que quase tudo já é dinâmico — o único ponto de quebra é a **navegação**, que mostra o menu de um único papel.
 
-Edição apenas em `src/components/layout/Sidebar.tsx`, grupo `admin`. As rotas e páginas continuam acessíveis por URL (reversível e seguro). Itens removidos do menu do CEO:
+## Resultado da auditoria (o que JÁ funciona sozinho)
+- **Pipeline de leads (visão time)** — `usePipeline` resolve a equipe do gestor por `team_members.gerente_id` dinamicamente. ✓
+- **Pipeline de negócios** — `useNegocios` usa a RPC `resolve_managed_brokers` (lê `team_members`). ✓
+- **Visitas** — `useEquipesDisponiveis` lê `team_members`. ✓
+- **Dashboard do gerente (V4)** + **aba Equipes (CEO)** — RPCs dinâmicas por `team_members`. ✓
+- **Credenciar / receber leads** — `credenciar_na_roleta` e a distribuição são *role-agnostic* (validam pipeline, não papel). As rotas `/corretor`, `/aceite`, `/corretor/call` **não têm guard de papel** → acessíveis. ✓
 
-- **Uso de Páginas** (`/admin/uso-paginas`)
-- **Ingestão de Leads** (`/admin/ingestao`)
-- **Cadastros** (`/backoffice/cadastros`) — segue disponível no menu do Backoffice, então nada quebra
-- **Integração Jetimob** (`/integracao`)
-- **WhatsApp Inbox** (`/whatsapp`) — removido do menu do CEO
-- **Meu WhatsApp** (`/configuracoes/whatsapp`) — removido do menu do CEO
+## PONTO DE QUEBRA (precisa correção)
+**Menu lateral mostra o nav de UM papel só** (`AppLayout` define `sidebarRole`: admin > rh > gestor > corretor). Como Junior será `gestor`, ele recebe o menu de gestor — que **não tem**: "Minha rotina" (`/corretor`, onde fica a barra de auto-credenciamento na roleta), "Aceite de leads" (`/aceite`) e "Oferta ativa" do corretor (`/corretor/call`). Sem esses itens ele não consegue se credenciar nem aceitar os leads que recebe. As páginas existem e são acessíveis por URL, só faltam no menu.
 
-Mantém-se **Gestão WhatsApp** (`/gestor/whatsapp-dashboard`), que é o painel gerencial e não se confunde com o inbox.
+## Plano de execução
 
-Observação: nada será deletado fisicamente agora (você escolheu "só tirar do menu"). A remoção definitiva de código fica para uma "Quality Sprint" futura.
+### Parte 1 — Dados (sem migração de schema)
+1. Adicionar papel `gestor` ao Junior (`user_roles`), mantendo o `corretor`.
+2. Criar auto-vínculo em `team_members`: `gerente_id = user_id = 7a270cc1-…`, `equipe = "Junior"`, `status = "ativo"` → faz o pipeline pessoal dele aparecer na visão de equipe.
+3. Mover **Adriana Kaiser** (`a5b6ca08-…`) da equipe do Gabriel para a do Junior (atualizar `gerente_id` e `equipe`).
 
-## Parte 2 — Admin → migrar para a Central de Usuários
+### Parte 2 — Navegação híbrida (correção do ponto de quebra)
+4. Em `src/components/layout/Sidebar.tsx`: adicionar um grupo **"Modo Corretor"** no nav de gestor, exibido apenas para gestores que também atuam como corretor, restrito por uma **allowlist de auth_ids** (inicialmente só o Junior) — assim o menu do Bruno/Gabriel não muda. Itens: **Minha rotina** (`/corretor`), **Aceite de leads** (`/aceite`), **Oferta ativa** (`/corretor/call`).
+   - `AppLayout` passa a flag/allowlist ao `Sidebar`.
+   - Quando a equipe do Junior crescer, basta removê-lo da allowlist e ele deixa de ter o modo corretor.
 
-Hoje a página **Admin** (`/admin`) concentra: gestão de papéis (roles), vínculo do `jetimob_user_id`, chave da API 360dialog (WhatsApp), reindexação do Typesense e criação de usuário. A criação/edição de usuário já vive na **Central de Usuários**.
+### Parte 3 — Listas hardcoded de gerentes (cor laranja `#EA580C`)
+5. `src/components/pipeline/header/PipelineGestorSelect.tsx` → incluir Junior em `GERENTES_REAIS` (também alimenta `PipelineScopeBadge` e `PipelineKanban`).
+6. `src/components/pipeline/equipes/gestorTheme.ts` → tema laranja para o auth_id do Junior.
+7. `src/components/ceo/TabEmpresa.tsx` → adicionar Junior à lista `GERENTES` (cor `#EA580C`, equipe "junior").
+8. `src/pages/PlacarDoDia.tsx` → adicionar Junior à lista `GERENTES` (equipe "junior") → entra no placar da TV e no ranking de equipes.
 
-Plano:
-- Adicionar à Central de Usuários uma aba **"Ferramentas de Sistema"** (visível só para `admin`) com: gestão de papéis por usuário, edição do `jetimob_user_id`, configuração da chave 360dialog e botão de reindexação do Typesense.
-- Remover o item **Admin** do menu do CEO (rota `/admin` permanece acessível por enquanto, como segurança).
-- Remover **Cadastros** do menu do CEO (a edição cadastral já existe na Central de Usuários e no Backoffice).
+## Observações
+- **Metas**: a visão de gerente mostra metas zeradas até o Junior (ou o CEO) definir em `ceo_metas_mensais` pelo modal "Editar metas" do dashboard. Não quebra nada — apenas valor inicial 0.
+- IDs canônicos: `team_members.gerente_id` e `user_roles.user_id` = `auth.users.id`.
 
-Resultado: o CEO passa a ter um único ponto de gestão de pessoas + sistema → **Central de Usuários**.
-
-## Parte 3 — Performance (sugestão de refatoração)
-
-Decisão sua: **Placar do Dia continua separado** (vai para a TV, tela cheia). O que falta é uma visão **dinâmica interna ao CRM** para corretor, gerente, diretor e CEO.
-
-Proposta: transformar a atual **Rankings** num hub **"Performance"** com 3 abas, adaptando o conteúdo ao papel de quem acessa:
-
-```
-Performance
-├── Visão Geral (KPIs ao vivo + metas)
-│     cards animados: VGV assinado, visitas, negócios, leads
-│     barras de progresso vs meta, variação vs período anterior
-├── Ranking (já existe: presenças, pipeline, visitas, negócios, oferta ativa)
-│     + pódio animado top 3, badges de evolução (subiu/desceu posição)
-└── Meu desempenho / Equipe (1:1)
-      corretor: o próprio; gerente/diretor: a(s) equipe(s); CEO: tudo
-```
-
-Escopo por papel:
-- **Corretor**: vê apenas o próprio desempenho e sua posição no ranking.
-- **Gerente**: vê a própria equipe.
-- **Diretora (Gabrielle)**: vê as equipes de `diretoria_equipes`.
-- **CEO**: vê todas as equipes.
-
-Elementos "dinâmicos" propostos (internos, não-TV):
-- Atualização ao vivo (realtime) dos números do dia.
-- Pódio animado e indicadores de subida/queda de posição.
-- Comparativo vs período anterior (setas e %).
-- Filtro de período já existente (hoje/semana/mês/personalizado).
-
-Reaproveita os componentes `RankingPresencasLeads`, `RankingPipelineLeads`, `RankingVisitas`, `RankingNegocios`, `RankingOfertaAtiva` e a camada de KPIs (`useKPIs`, `metricsService`).
-
-## Direção visual da nova Performance
-
-- Cards com micro-animações de contagem (count-up) e barras de progresso com brilho suave.
-- Pódio com destaque dourado/prata/bronze para top 3; demais em lista compacta.
-- Realtime sutil (atualização sem recarregar; sem confete — confete fica no Placar/TV).
-- Mantém o design system atual (Off-white/Deep Slate, highlight Indigo `#4969FF`, radius 12px). Sem novas fontes.
-
-## Limpezas adicionais sugeridas (para você decidir depois)
-
-- **Escala diária** (`/escala-diaria`): é o controle de presença/disponibilidade da equipe validado pelo gerente. Se a presença já é capturada de outra forma, pode virar uma aba dentro de "Meu time" em vez de item de menu próprio.
-- Consolidar **Central Relatórios** e a nova **Performance** para evitar sobreposição (Central Relatórios é mais analítico/PDF; Performance é operacional/ao vivo).
-- Após validar, agendar a "Quality Sprint" para deletar de fato o código de WhatsApp Inbox / Meu WhatsApp / Jetimob / Admin que ficarem órfãos.
-
-## Notas técnicas
-
-- Parte 1 e o ajuste de menu da Parte 2 são edições só em `Sidebar.tsx` (sem migração de banco).
-- A aba "Ferramentas de Sistema" reusa as RPCs já existentes (`list_profiles_admin_with_jetimob`, gestão de `user_roles`, reindex Typesense, config 360dialog) — sem novas tabelas.
-- A Performance reusa hooks/serviços existentes; nenhuma mudança de schema é necessária. Realtime via canais do Supabase nas tabelas já usadas (`negocios`, `visitas`, `pipeline_leads`).
-- Tudo respeita escopo por papel via `diretoria_equipes` + `team_members`.
+## Verificação ao final
+- Login do Junior: vê dashboard de gerente + grupo "Modo Corretor" (credenciar na roleta, aceitar leads, oferta ativa).
+- Pipeline de leads/negócios, visitas e central de tarefas mostram leads dele + da Adriana.
+- Filtro "por gestor" (CEO), aba Equipes, TabEmpresa e Placar da TV listam "Junior Padilha" em laranja.
+- Junior consegue se credenciar e receber um lead de teste pela roleta.
