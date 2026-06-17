@@ -174,7 +174,7 @@ export default function PlacarDoDia() {
       const membros = (payload as any)?.membros ?? [];
       const todasVisitas = (payload as any)?.visitas ?? [];
 
-      const equipeIds: Record<string, string[]> = { bruno: [], gabriel: [] };
+      const equipeIds: Record<string, string[]> = emptyPorEquipe();
       const nomeMap: Record<string, string> = {};
       membros.forEach((m: any) => {
         const gerente = GERENTES.find(g => g.user_id === m.gerente_id);
