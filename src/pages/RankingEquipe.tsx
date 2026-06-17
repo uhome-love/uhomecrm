@@ -13,6 +13,7 @@ import { fmtMoney } from "@/lib/fmtMoney";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import RankingFilters from "@/components/ranking/v2/RankingFilters";
+import RankingVisaoGeral from "@/components/ranking/v2/RankingVisaoGeral";
 import RankingPresencasLeads from "@/components/ranking/v2/RankingPresencasLeads";
 import RankingPipelineLeads from "@/components/ranking/v2/RankingPipelineLeads";
 import RankingVisitas from "@/components/ranking/v2/RankingVisitas";
