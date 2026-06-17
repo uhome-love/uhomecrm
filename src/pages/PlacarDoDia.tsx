@@ -269,12 +269,9 @@ export default function PlacarDoDia() {
     };
   }, [atualizarTudo]);
 
-  const totais = {
-    bruno: dados.bruno.length,
-    gabriel: dados.gabriel.length,
-  };
+  const totais = Object.fromEntries(EQUIPES.map(e => [e.id, (dados[e.id] || []).length]));
 
-  const totalGeral = totais.bruno + totais.gabriel;
+  const totalGeral = EQUIPES.reduce((sum, e) => sum + (totais[e.id] || 0), 0);
   const metaGeralAtingida = totalGeral >= meta;
 
   const medalhas = ["🥇", "🥈", "🥉"];
