@@ -29,7 +29,7 @@ export default function RankingEquipe() {
   const { user } = useAuthUser();
   const { isAdmin, isGestor } = useUserRole();
   const [period, setPeriod] = useState<Period>("mes");
-  const [activeTab, setActiveTab] = useState<TabKey>("presencas");
+  const [activeTab, setActiveTab] = useState<TabKey>("visao");
   const [offset, setOffset] = useState(0);
   const [customRange, setCustomRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [calendarOpen, setCalendarOpen] = useState(false);
