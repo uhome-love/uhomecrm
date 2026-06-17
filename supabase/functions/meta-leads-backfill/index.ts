@@ -364,6 +364,65 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Diagnóstico/ativação do webhook NATIVO (leadgen) por página ──
+    // mode "check_subscription": lista apps inscritos e os campos por página.
+    // mode "subscribe": inscreve a(s) página(s) no app para o campo `leadgen`,
+    //   habilitando a entrega em tempo real para receive-meta-lead.
+    if (mode === "check_subscription" || mode === "subscribe") {
+      // Resolve páginas + page access tokens via /me/accounts (necessário para subscribed_apps).
+      const pageTokens = new Map<string, { name: string; token: string }>();
+      try {
+        const acc = await metaGet("me/accounts", token, { fields: "id,name,access_token", limit: "200" });
+        for (const p of acc.data || []) {
+          if (p.id && p.access_token) pageTokens.set(String(p.id), { name: p.name || p.id, token: p.access_token });
+        }
+      } catch (e) {
+        return json({ success: false, error: `me/accounts falhou: ${(e as Error).message}` }, 200);
+      }
+
+      // Filtro opcional de páginas via body.page_ids
+      const targetIds = explicitPageIds.length > 0
+        ? explicitPageIds.filter((id) => pageTokens.has(id))
+        : Array.from(pageTokens.keys());
+
+      const results: Record<string, unknown>[] = [];
+      for (const pid of targetIds) {
+        const { name, token: pageToken } = pageTokens.get(pid)!;
+        try {
+          if (mode === "subscribe") {
+            const subUrl = new URL(`${META_BASE}/${pid}/subscribed_apps`);
+            subUrl.searchParams.set("access_token", pageToken);
+            subUrl.searchParams.set("subscribed_fields", "leadgen");
+            const r = await fetch(subUrl.toString(), { method: "POST" });
+            const j = await r.json();
+            results.push({ page_id: pid, name, action: "subscribe", ok: r.ok, response: j });
+          }
+          // Sempre retorna o estado atual da assinatura após a ação
+          const chkUrl = new URL(`${META_BASE}/${pid}/subscribed_apps`);
+          chkUrl.searchParams.set("access_token", pageToken);
+          const cr = await fetch(chkUrl.toString());
+          const cj = await cr.json();
+          results.push({
+            page_id: pid,
+            name,
+            action: "check",
+            subscribed_apps: (cj.data || []).map((a: any) => ({
+              app: a.name || a.id,
+              fields: a.subscribed_fields || [],
+              leadgen: Array.isArray(a.subscribed_fields)
+                ? a.subscribed_fields.some((f: any) => (typeof f === "string" ? f : f?.name) === "leadgen")
+                : false,
+            })),
+          });
+        } catch (e) {
+          results.push({ page_id: pid, name, error: (e as Error).message });
+        }
+      }
+
+      return json({ success: true, mode, results });
+    }
+
+
 
     // ── BACKFILL ──
     // 453 formulários sequenciais estouram o limite da edge function.
