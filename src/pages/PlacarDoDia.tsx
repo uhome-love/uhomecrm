@@ -7,12 +7,16 @@ const DEFAULT_META = 20;
 const EQUIPES = [
   { nome: "Bruno Schuler", cor: "#3350E6", corClara: "#EFF6FF", corBorda: "#1D4ED8", emoji: "💙", id: "bruno" },
   { nome: "Gabriel", cor: "#16A34A", corClara: "#F0FDF4", corBorda: "#15803D", emoji: "💚", id: "gabriel" },
+  { nome: "Junior Padilha", cor: "#EA580C", corClara: "#FFF7ED", corBorda: "#C2410C", emoji: "🧡", id: "junior" },
 ];
 
 const GERENTES = [
   { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", equipe: "bruno" },
   { user_id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", equipe: "gabriel" },
+  { user_id: "7a270cc1-a457-4a02-8a62-462ba5a98937", equipe: "junior" },
 ];
+
+const emptyPorEquipe = () => Object.fromEntries(EQUIPES.map(e => [e.id, []]));
 
 function formatTime(d: Date) {
   return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Sao_Paulo" });
