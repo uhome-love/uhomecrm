@@ -1,76 +1,78 @@
-## Objetivo
+# Limpeza do menu CEO + Performance dinâmica
 
-Criar uma área única — **Central de Usuários** (`/central-usuarios`) — para gestão completa de usuários do CRM, substituindo a gestão hoje espalhada em 3 telas (`/admin`, `/backoffice/cadastros`, `/meu-time`). Cada perfil enxerga conforme sua hierarquia:
+## Parte 1 — Limpar o menu lateral do CEO (só o menu, sem apagar código)
 
-- **Gerente** → apenas a própria equipe.
-- **Diretora (Gabrielle)** → as duas equipes (via mapeamento `diretoria_equipes`).
-- **CEO (admin)** → todas as equipes.
+Edição apenas em `src/components/layout/Sidebar.tsx`, grupo `admin`. As rotas e páginas continuam acessíveis por URL (reversível e seguro). Itens removidos do menu do CEO:
 
-## Escopo de acesso
+- **Uso de Páginas** (`/admin/uso-paginas`)
+- **Ingestão de Leads** (`/admin/ingestao`)
+- **Cadastros** (`/backoffice/cadastros`) — segue disponível no menu do Backoffice, então nada quebra
+- **Integração Jetimob** (`/integracao`)
+- **WhatsApp Inbox** (`/whatsapp`) — removido do menu do CEO
+- **Meu WhatsApp** (`/configuracoes/whatsapp`) — removido do menu do CEO
 
-```text
-Gerente   → team_members onde gerente_id = ele
-Diretora  → equipes dos gerentes em diretoria_equipes (diretor_auth_id = ela)
-CEO/admin → todos
+Mantém-se **Gestão WhatsApp** (`/gestor/whatsapp-dashboard`), que é o painel gerencial e não se confunde com o inbox.
+
+Observação: nada será deletado fisicamente agora (você escolheu "só tirar do menu"). A remoção definitiva de código fica para uma "Quality Sprint" futura.
+
+## Parte 2 — Admin → migrar para a Central de Usuários
+
+Hoje a página **Admin** (`/admin`) concentra: gestão de papéis (roles), vínculo do `jetimob_user_id`, chave da API 360dialog (WhatsApp), reindexação do Typesense e criação de usuário. A criação/edição de usuário já vive na **Central de Usuários**.
+
+Plano:
+- Adicionar à Central de Usuários uma aba **"Ferramentas de Sistema"** (visível só para `admin`) com: gestão de papéis por usuário, edição do `jetimob_user_id`, configuração da chave 360dialog e botão de reindexação do Typesense.
+- Remover o item **Admin** do menu do CEO (rota `/admin` permanece acessível por enquanto, como segurança).
+- Remover **Cadastros** do menu do CEO (a edição cadastral já existe na Central de Usuários e no Backoffice).
+
+Resultado: o CEO passa a ter um único ponto de gestão de pessoas + sistema → **Central de Usuários**.
+
+## Parte 3 — Performance (sugestão de refatoração)
+
+Decisão sua: **Placar do Dia continua separado** (vai para a TV, tela cheia). O que falta é uma visão **dinâmica interna ao CRM** para corretor, gerente, diretor e CEO.
+
+Proposta: transformar a atual **Rankings** num hub **"Performance"** com 3 abas, adaptando o conteúdo ao papel de quem acessa:
+
+```
+Performance
+├── Visão Geral (KPIs ao vivo + metas)
+│     cards animados: VGV assinado, visitas, negócios, leads
+│     barras de progresso vs meta, variação vs período anterior
+├── Ranking (já existe: presenças, pipeline, visitas, negócios, oferta ativa)
+│     + pódio animado top 3, badges de evolução (subiu/desceu posição)
+└── Meu desempenho / Equipe (1:1)
+      corretor: o próprio; gerente/diretor: a(s) equipe(s); CEO: tudo
 ```
 
-## O que cada um pode fazer
+Escopo por papel:
+- **Corretor**: vê apenas o próprio desempenho e sua posição no ranking.
+- **Gerente**: vê a própria equipe.
+- **Diretora (Gabrielle)**: vê as equipes de `diretoria_equipes`.
+- **CEO**: vê todas as equipes.
 
-| Ação | Gerente (própria equipe) | Diretora (2 equipes) | CEO |
-|---|---|---|---|
-| Criar corretor + editar dados | ✅ | ✅ | ✅ |
-| Trocar senha | ✅ | ✅ | ✅ |
-| Inativar (bloqueia login + repassa dados) | ✅ | ✅ | ✅ |
-| Excluir (com repasse de dados) | ✅ | ✅ | ✅ |
-| Gerenciar papéis / criar gerentes | ❌ | ❌ | ✅ |
+Elementos "dinâmicos" propostos (internos, não-TV):
+- Atualização ao vivo (realtime) dos números do dia.
+- Pódio animado e indicadores de subida/queda de posição.
+- Comparativo vs período anterior (setas e %).
+- Filtro de período já existente (hoje/semana/mês/personalizado).
 
-Destino de repasse: **CEO/Diretora** podem escolher qualquer corretor; **Gerente** só corretores da própria equipe.
+Reaproveita os componentes `RankingPresencasLeads`, `RankingPipelineLeads`, `RankingVisitas`, `RankingNegocios`, `RankingOfertaAtiva` e a camada de KPIs (`useKPIs`, `metricsService`).
 
-## Regras de Inativar e Excluir
+## Direção visual da nova Performance
 
-**Inativar** = bloqueia o login no CRM, marca `profiles.ativo = false` e `team_members.status = 'inativo'`, e **na hora pede para quem repassar** leads do pipeline, negócios, tarefas e visitas futuras. Dados históricos preservados.
+- Cards com micro-animações de contagem (count-up) e barras de progresso com brilho suave.
+- Pódio com destaque dourado/prata/bronze para top 3; demais em lista compacta.
+- Realtime sutil (atualização sem recarregar; sem confete — confete fica no Placar/TV).
+- Mantém o design system atual (Off-white/Deep Slate, highlight Indigo `#4969FF`, radius 12px). Sem novas fontes.
 
-**Excluir** = sempre abre o fluxo "o que fazer com os dados": exige escolher um corretor destino e repassa **leads do pipeline, negócios, tarefas e visitas** para ele antes de remover o usuário. Dados pessoais sem dono (scripts, conquistas, etc.) são removidos. Não exclui ninguém sem definir o repasse.
+## Limpezas adicionais sugeridas (para você decidir depois)
 
-## Telas / Fluxo (frontend)
+- **Escala diária** (`/escala-diaria`): é o controle de presença/disponibilidade da equipe validado pelo gerente. Se a presença já é capturada de outra forma, pode virar uma aba dentro de "Meu time" em vez de item de menu próprio.
+- Consolidar **Central Relatórios** e a nova **Performance** para evitar sobreposição (Central Relatórios é mais analítico/PDF; Performance é operacional/ao vivo).
+- Após validar, agendar a "Quality Sprint" para deletar de fato o código de WhatsApp Inbox / Meu WhatsApp / Jetimob / Admin que ficarem órfãos.
 
-Nova página `CentralUsuariosPage`:
-- Cabeçalho com busca + filtro por equipe (visível só para diretora/CEO) + botão "Adicionar usuário".
-- Lista em cards/tabela por equipe: nome, papel, email, telefone, CPF, CRECI, ID Jetimob, status (Ativo/Inativo), pendências de cadastro.
-- Ações por usuário: **Editar dados**, **Trocar senha**, **Inativar/Reativar**, **Excluir**.
-- **Dialog de repasse** reutilizável (usado em Inativar e Excluir): lista de corretores destino respeitando o escopo, checkboxes do que repassar (Leads / Negócios / Tarefas+Visitas), confirmação explícita.
-- Diálogo de criação com: nome, email, senha, telefone, CPF, CRECI, ID Jetimob e (só CEO) papel + gerente da equipe.
+## Notas técnicas
 
-Integração de navegação:
-- Adicionar `/central-usuarios` ao `pageRegistry` e à sidebar, roles `["gestor", "admin"]`.
-- `/meu-time` passa a abrir o dialog de criação da central (ou link direto), evitando código duplicado.
-- `/admin` (AdminPanel) mantém apenas ferramentas de sistema (360dialog, Typesense); a parte de usuários passa a apontar para a central.
-- `/backoffice/cadastros` continua para o backoffice, mas a edição de dados cadastrais passa a existir também na central.
-
-## Backend
-
-### Edge function `create-broker-user` (estender)
-- **Escopo de permissão**: resolver o viewer (admin / diretora via `diretoria_equipes` / gerente) e validar que o `target_user_id` está numa equipe permitida em toda ação. Validar também que o `reassign_to` está no escopo permitido.
-- Novas ações:
-  - `inactivate_user`: banir login (`auth.admin.updateUserById` com `ban_duration`), `profiles.ativo=false`, `team_members.status='inativo'`, e repassar dados para `reassign_to`.
-  - `reactivate_user`: remover ban, `ativo=true`, `status='ativo'`.
-  - `delete_user` (reescrever): receber `reassign_to` obrigatório; **repassar** em vez de apagar:
-    - `pipeline_leads.corretor_id` → novo corretor
-    - `negocios` (corretor_id = profiles.id e gerente_id = auth) → novo corretor
-    - `pipeline_tarefas` / `tarefas` / `visitas` → novo corretor
-    - `oferta_ativa_leads` em atendimento → liberado/repassado
-    - só então remover dados pessoais (scripts, conquistas, briefings) + roles + profile + auth user.
-
-### Função SQL (security definer)
-`list_manageable_users(viewer)` retornando, conforme o escopo do viewer: user_id, nome, email, telefone, cpf, creci, jetimob_user_id, role, equipe, gerente_nome, ativo, status. Usada pela nova página (evita lógica de escopo no client).
-
-## Detalhes técnicos
-
-- Repasse considera o mapeamento de IDs (algumas tabelas usam `profiles.id`, outras `auth.users.id`) — resolver o profile do destino antes de atualizar (mesmo padrão já usado no `delete_user` atual).
-- Ban de login via `ban_duration: "876000h"` (inativar) e `"none"` (reativar).
-- Migration para `list_manageable_users` com `GRANT EXECUTE ... TO authenticated` e checagem interna de papéis.
-- Sem novos secrets; usa o `SUPABASE_SERVICE_ROLE_KEY` já existente na função.
-
-## Fora de escopo
-- Não altera regras de roleta, comissões ou pipeline além do repasse de `corretor_id`.
-- Não cria um novo `app_role` "diretor" — a diretora continua identificada por `diretoria_equipes` + papel `gestor`.
+- Parte 1 e o ajuste de menu da Parte 2 são edições só em `Sidebar.tsx` (sem migração de banco).
+- A aba "Ferramentas de Sistema" reusa as RPCs já existentes (`list_profiles_admin_with_jetimob`, gestão de `user_roles`, reindex Typesense, config 360dialog) — sem novas tabelas.
+- A Performance reusa hooks/serviços existentes; nenhuma mudança de schema é necessária. Realtime via canais do Supabase nas tabelas já usadas (`negocios`, `visitas`, `pipeline_leads`).
+- Tudo respeita escopo por papel via `diretoria_equipes` + `team_members`.
