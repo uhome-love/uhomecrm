@@ -405,7 +405,7 @@ function EditUserDialog({
   const [form, setForm] = useState({ nome: "", email: "", telefone: "", cpf: "", creci: "", jetimob: "" });
   const [saving, setSaving] = useState(false);
 
-  useMemo(() => {
+  useEffect(() => {
     if (editing) {
       setForm({
         nome: editing.nome || "", email: editing.email || "", telefone: editing.telefone || "",
