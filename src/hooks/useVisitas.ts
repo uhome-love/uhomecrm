@@ -234,43 +234,39 @@ export function useVisitas(filters?: {
     }
 
     if (isManagerUser && corretorId !== user.id) {
-      let teamMemberQuery = supabase
+      // Para gestores não-admin: autorizar via resolve_managed_brokers (inclui
+      // hierarquia de diretoria — diretora vê equipes do Gabriel e do Bruno).
+      if (!isAdmin) {
+        const { data: managed } = await supabase.rpc("resolve_managed_brokers", { _gestor: user.id });
+        const managedIds = new Set((managed || []).map((m: { user_id: string }) => m.user_id));
+        if (!managedIds.has(corretorId)) {
+          console.error("[createVisita] corretor_id não autorizado para o gestor", {
+            requestedCorretorId: corretorId,
+            authUserId: user.id,
+          });
+          toast.error("Selecione um corretor válido das suas equipes.");
+          return null;
+        }
+      }
+
+      // Resolver o gerente DIRETO do corretor (Gabriel/Bruno), não forçar user.id.
+      const { data: teamMember } = await supabase
         .from("team_members")
         .select("user_id, gerente_id")
         .eq("user_id", corretorId)
         .eq("status", "ativo")
-        .limit(1);
+        .limit(1)
+        .maybeSingle();
 
-      if (!isAdmin) {
-        teamMemberQuery = teamMemberQuery.eq("gerente_id", user.id);
-      }
-
-      const { data: teamMember, error: teamMemberError } = await teamMemberQuery.maybeSingle();
-
-      if (teamMemberError || !teamMember) {
-        console.error("[createVisita] corretor_id não autorizado para o gestor", {
-          requestedCorretorId: corretorId,
-          authUserId: user.id,
-          error: teamMemberError,
+      gerenteId = teamMember?.gerente_id || gerenteId || null;
+      if (!gerenteId) {
+        console.warn("[createVisita] gerente_id não encontrado em team_members", {
+          corretor_id: corretorId,
+          user_id: user.id,
         });
-        toast.error("Selecione um corretor válido da sua equipe.");
-        return null;
       }
-
-      if (isAdmin) {
-        gerenteId = teamMember.gerente_id || gerenteId || null;
-        if (!gerenteId) {
-          console.warn("[createVisita] gerente_id não encontrado em team_members (admin path)", {
-            corretor_id: corretorId,
-            user_id: user.id,
-          });
-        }
-      } else {
-        gerenteId = user.id;
-      }
-    }
-
-    if (isGestor && !isAdmin) {
+    } else if (isGestor && !isAdmin) {
+      // Gestor agendando para si mesmo
       gerenteId = user.id;
     }
 
