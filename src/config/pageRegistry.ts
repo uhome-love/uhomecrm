@@ -85,10 +85,8 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   imoveis: lazyRetry(() => import("@/pages/ImoveisShell")),
   "busca-leads": lazyRetry(() => import("@/pages/BuscaLeads")),
   configuracoes: lazyRetry(() => import("@/pages/Configuracoes")),
-  "config-whatsapp": lazyRetry(() => import("@/pages/ConfiguracoesWhatsApp")),
   
   notificacoes: lazyRetry(() => import("@/pages/Notificacoes")),
-  whatsapp: lazyRetry(() => import("@/pages/WhatsAppInbox")),
   marketing: lazyRetry(() => import("@/pages/MarketingDashboard")),
   auditoria: lazyRetry(() => import("@/pages/AuditDashboard")),
   admin: lazyRetry(() => import("@/pages/AdminPanel")),
