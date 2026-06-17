@@ -281,6 +281,33 @@ export default function CentralUsuariosPage() {
   );
 }
 
+// Wraps the user-management UI. For admins, exposes an extra "Ferramentas de Sistema"
+// tab that reuses the existing AdminPanel (roles, Jetimob ID, 360dialog key, Typesense reindex).
+function UsuariosTabsWrapper({ isAdmin, children }: { isAdmin: boolean; children: React.ReactNode }) {
+  if (!isAdmin) return <>{children}</>;
+  return (
+    <Tabs defaultValue="usuarios" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="usuarios" className="gap-2">
+          <Users className="h-4 w-4" /> Usuários
+        </TabsTrigger>
+        <TabsTrigger value="sistema" className="gap-2">
+          <Wrench className="h-4 w-4" /> Ferramentas de Sistema
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="usuarios" className="space-y-6 mt-0">
+        {children}
+      </TabsContent>
+      <TabsContent value="sistema" className="mt-0">
+        <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+          <AdminPanel />
+        </Suspense>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+
 function Row({ icon, value, empty }: { icon: React.ReactNode; value: string | null; empty: string }) {
   return (
     <div className="flex items-center gap-2">
