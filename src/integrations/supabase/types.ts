@@ -10946,6 +10946,24 @@ export type Database = {
         Args: { p_pipeline_lead_id: string }
         Returns: boolean
       }
+      list_manageable_users: {
+        Args: never
+        Returns: {
+          ativo: boolean
+          cpf: string
+          creci: string
+          email: string
+          equipe: string
+          gerente_id: string
+          gerente_nome: string
+          jetimob_user_id: string
+          nome: string
+          role: string
+          status: string
+          telefone: string
+          user_id: string
+        }[]
+      }
       list_profiles_admin: {
         Args: never
         Returns: {

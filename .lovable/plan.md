@@ -1,43 +1,76 @@
 ## Objetivo
-Garantir que a Gabrielle, como gestora diretora, tenha acesso completo às duas equipes (Gabriel e Bruno) em todas as visões: agenda de visitas, pipeline de leads e pipeline de negócios.
 
-## Diagnóstico (o que já funciona x o que falta)
+Criar uma área única — **Central de Usuários** (`/central-usuarios`) — para gestão completa de usuários do CRM, substituindo a gestão hoje espalhada em 3 telas (`/admin`, `/backoffice/cadastros`, `/meu-time`). Cada perfil enxerga conforme sua hierarquia:
 
-A hierarquia de diretoria já está corretamente configurada:
-- `diretoria_equipes`: Gabrielle é diretora de Gabriel e Bruno.
-- `resolve_managed_brokers(Gabrielle)` retorna os 29 corretores ativos das duas equipes.
+- **Gerente** → apenas a própria equipe.
+- **Diretora (Gabrielle)** → as duas equipes (via mapeamento `diretoria_equipes`).
+- **CEO (admin)** → todas as equipes.
 
-Visões já corrigidas em sessões anteriores (nada a fazer):
-- **Pipeline de leads** — a policy de `pipeline_leads` usa `is_lead_in_my_team()`, que já chama `resolve_managed_brokers`. Cobre as duas equipes.
-- **Pipeline de negócios** — `can_access_negocio` e a policy de `negocios` já usam `resolve_managed_brokers`. Dashboard (`get_dashboard_gerente_v4_dia`) também já usa o time resolvido.
-
-Lacuna encontrada:
-- **Agenda de visitas** — as policies de leitura da tabela `visitas` para gestor só enxergam a equipe DIRETA (`gerente_id = auth.uid()` e `team_members` com `gerente_id = auth.uid()`). Não usam a hierarquia de diretoria, então a Gabrielle NÃO vê as visitas das equipes do Gabriel e do Bruno.
-- **Criação/edição de visita** (`useVisitas.createVisita`) — a validação restringe o gestor a corretores cujo `gerente_id = user.id`. Uma diretora não consegue agendar/editar visita para um corretor das equipes geridas.
-
-## Mudanças
-
-### 1. RLS de leitura de `visitas` (migration)
-Adicionar uma policy de SELECT para diretoria, espelhando o padrão já usado em leads/negócios:
+## Escopo de acesso
 
 ```text
-CREATE POLICY "Diretores can view managed teams visitas"
-ON public.visitas FOR SELECT
-USING (corretor_id IN (SELECT user_id FROM public.resolve_managed_brokers(auth.uid())));
+Gerente   → team_members onde gerente_id = ele
+Diretora  → equipes dos gerentes em diretoria_equipes (diretor_auth_id = ela)
+CEO/admin → todos
 ```
 
-Com isso a Gabrielle passa a ver, na Agenda de Visitas e nos cards do dashboard, as visitas das duas equipes. As policies atuais (equipe direta, corretor próprio, parcerias) permanecem intactas — a nova é aditiva.
+## O que cada um pode fazer
 
-### 2. Criação/edição de visita para times geridos (`src/hooks/useVisitas.ts`)
-Ajustar a validação de `createVisita` para que um gestor diretor possa agendar para qualquer corretor das equipes geridas:
-- Trocar a checagem `team_members.gerente_id = user.id` por uma validação baseada em `resolve_managed_brokers(user.id)` (RPC) para autorizar o `corretor_id`.
-- Definir `gerente_id` da visita como o `gerente_id` real do corretor em `team_members` (gerente direto: Gabriel ou Bruno), em vez de forçar `user.id`. Isso mantém a atribuição correta da visita ao gerente direto e ainda fica visível para a diretora via a policy do item 1.
+| Ação | Gerente (própria equipe) | Diretora (2 equipes) | CEO |
+|---|---|---|---|
+| Criar corretor + editar dados | ✅ | ✅ | ✅ |
+| Trocar senha | ✅ | ✅ | ✅ |
+| Inativar (bloqueia login + repassa dados) | ✅ | ✅ | ✅ |
+| Excluir (com repasse de dados) | ✅ | ✅ | ✅ |
+| Gerenciar papéis / criar gerentes | ❌ | ❌ | ✅ |
 
-### 3. Verificação
-- Confirmar via consulta que a Gabrielle passa a contar visitas das duas equipes.
-- Validar no preview: Agenda de Visitas (filtro "Meu time"), pipeline de leads e pipeline de negócios mostrando ambas as equipes.
-- Conferir que nada vaza para fora das equipes geridas (sem Taynah, sem corretores de outros gestores).
+Destino de repasse: **CEO/Diretora** podem escolher qualquer corretor; **Gerente** só corretores da própria equipe.
 
-## Observações
-- Não haverá criação de dados nem alteração de VGV; são ajustes de visibilidade/permissão e de fluxo de criação de visita.
-- Migration apenas DDL (1 policy), dentro das regras de limite diário.
+## Regras de Inativar e Excluir
+
+**Inativar** = bloqueia o login no CRM, marca `profiles.ativo = false` e `team_members.status = 'inativo'`, e **na hora pede para quem repassar** leads do pipeline, negócios, tarefas e visitas futuras. Dados históricos preservados.
+
+**Excluir** = sempre abre o fluxo "o que fazer com os dados": exige escolher um corretor destino e repassa **leads do pipeline, negócios, tarefas e visitas** para ele antes de remover o usuário. Dados pessoais sem dono (scripts, conquistas, etc.) são removidos. Não exclui ninguém sem definir o repasse.
+
+## Telas / Fluxo (frontend)
+
+Nova página `CentralUsuariosPage`:
+- Cabeçalho com busca + filtro por equipe (visível só para diretora/CEO) + botão "Adicionar usuário".
+- Lista em cards/tabela por equipe: nome, papel, email, telefone, CPF, CRECI, ID Jetimob, status (Ativo/Inativo), pendências de cadastro.
+- Ações por usuário: **Editar dados**, **Trocar senha**, **Inativar/Reativar**, **Excluir**.
+- **Dialog de repasse** reutilizável (usado em Inativar e Excluir): lista de corretores destino respeitando o escopo, checkboxes do que repassar (Leads / Negócios / Tarefas+Visitas), confirmação explícita.
+- Diálogo de criação com: nome, email, senha, telefone, CPF, CRECI, ID Jetimob e (só CEO) papel + gerente da equipe.
+
+Integração de navegação:
+- Adicionar `/central-usuarios` ao `pageRegistry` e à sidebar, roles `["gestor", "admin"]`.
+- `/meu-time` passa a abrir o dialog de criação da central (ou link direto), evitando código duplicado.
+- `/admin` (AdminPanel) mantém apenas ferramentas de sistema (360dialog, Typesense); a parte de usuários passa a apontar para a central.
+- `/backoffice/cadastros` continua para o backoffice, mas a edição de dados cadastrais passa a existir também na central.
+
+## Backend
+
+### Edge function `create-broker-user` (estender)
+- **Escopo de permissão**: resolver o viewer (admin / diretora via `diretoria_equipes` / gerente) e validar que o `target_user_id` está numa equipe permitida em toda ação. Validar também que o `reassign_to` está no escopo permitido.
+- Novas ações:
+  - `inactivate_user`: banir login (`auth.admin.updateUserById` com `ban_duration`), `profiles.ativo=false`, `team_members.status='inativo'`, e repassar dados para `reassign_to`.
+  - `reactivate_user`: remover ban, `ativo=true`, `status='ativo'`.
+  - `delete_user` (reescrever): receber `reassign_to` obrigatório; **repassar** em vez de apagar:
+    - `pipeline_leads.corretor_id` → novo corretor
+    - `negocios` (corretor_id = profiles.id e gerente_id = auth) → novo corretor
+    - `pipeline_tarefas` / `tarefas` / `visitas` → novo corretor
+    - `oferta_ativa_leads` em atendimento → liberado/repassado
+    - só então remover dados pessoais (scripts, conquistas, briefings) + roles + profile + auth user.
+
+### Função SQL (security definer)
+`list_manageable_users(viewer)` retornando, conforme o escopo do viewer: user_id, nome, email, telefone, cpf, creci, jetimob_user_id, role, equipe, gerente_nome, ativo, status. Usada pela nova página (evita lógica de escopo no client).
+
+## Detalhes técnicos
+
+- Repasse considera o mapeamento de IDs (algumas tabelas usam `profiles.id`, outras `auth.users.id`) — resolver o profile do destino antes de atualizar (mesmo padrão já usado no `delete_user` atual).
+- Ban de login via `ban_duration: "876000h"` (inativar) e `"none"` (reativar).
+- Migration para `list_manageable_users` com `GRANT EXECUTE ... TO authenticated` e checagem interna de papéis.
+- Sem novos secrets; usa o `SUPABASE_SERVICE_ROLE_KEY` já existente na função.
+
+## Fora de escopo
+- Não altera regras de roleta, comissões ou pipeline além do repasse de `corretor_id`.
+- Não cria um novo `app_role` "diretor" — a diretora continua identificada por `diretoria_equipes` + papel `gestor`.
