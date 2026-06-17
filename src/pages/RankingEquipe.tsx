@@ -275,6 +275,7 @@ export default function RankingEquipe() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
       >
+        {activeTab === "visao" && <RankingVisaoGeral filters={filters} currentUserId={user?.id} />}
         {activeTab === "presencas" && <RankingPresencasLeads filters={filters} currentUserId={user?.id} />}
         {activeTab === "pipeline" && <RankingPipelineLeads filters={filters} currentUserId={user?.id} />}
         {activeTab === "visitas" && <RankingVisitas filters={filters} currentUserId={user?.id} />}
