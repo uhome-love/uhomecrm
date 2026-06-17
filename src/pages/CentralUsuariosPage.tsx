@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -21,8 +22,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Loader2, Search, Users, CreditCard, Mail, BadgeCheck, Phone, Pencil, Save,
-  Trash2, UsersRound, UserPlus, MoreVertical, KeyRound, UserX, UserCheck, ShieldAlert,
+  Trash2, UsersRound, UserPlus, MoreVertical, KeyRound, UserX, UserCheck, ShieldAlert, Wrench,
 } from "lucide-react";
+
+const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 
 type ManagedUser = {
   user_id: string;
