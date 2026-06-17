@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Star, ChevronLeft, ChevronRight, CalendarDays, Users, ClipboardList, Eye, Briefcase, Download, PhoneCall } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight, CalendarDays, Users, ClipboardList, Eye, Briefcase, Download, PhoneCall, LayoutGrid } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { fmtMoney } from "@/lib/fmtMoney";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import RankingFilters from "@/components/ranking/v2/RankingFilters";
+import RankingVisaoGeral from "@/components/ranking/v2/RankingVisaoGeral";
 import RankingPresencasLeads from "@/components/ranking/v2/RankingPresencasLeads";
 import RankingPipelineLeads from "@/components/ranking/v2/RankingPipelineLeads";
 import RankingVisitas from "@/components/ranking/v2/RankingVisitas";
@@ -22,13 +23,13 @@ import { exportRankingsPdf } from "@/lib/exportRankingsPdf";
 import { supabase } from "@/integrations/supabase/client";
 
 type Period = "hoje" | "semana" | "mes" | "personalizado";
-type TabKey = "presencas" | "pipeline" | "visitas" | "negocios" | "oferta_ativa";
+type TabKey = "visao" | "presencas" | "pipeline" | "visitas" | "negocios" | "oferta_ativa";
 
 export default function RankingEquipe() {
   const { user } = useAuthUser();
   const { isAdmin, isGestor } = useUserRole();
   const [period, setPeriod] = useState<Period>("mes");
-  const [activeTab, setActiveTab] = useState<TabKey>("presencas");
+  const [activeTab, setActiveTab] = useState<TabKey>("visao");
   const [offset, setOffset] = useState(0);
   const [customRange, setCustomRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -97,12 +98,14 @@ export default function RankingEquipe() {
   const filters = { ...dateRange, equipeId };
 
   const tabs = [
+    { key: "visao" as const, label: "Visão Geral", icon: LayoutGrid, color: "bg-primary" },
     { key: "presencas" as const, label: "Presenças & Leads", icon: Users, color: "bg-blue-600" },
     { key: "pipeline" as const, label: "Pipeline de Leads", icon: ClipboardList, color: "bg-purple-600" },
     { key: "visitas" as const, label: "Visitas", icon: Eye, color: "bg-amber-600" },
     { key: "negocios" as const, label: "Pipeline de Negócios", icon: Briefcase, color: "bg-emerald-600" },
     { key: "oferta_ativa" as const, label: "Oferta Ativa", icon: PhoneCall, color: "bg-rose-600" },
   ];
+
 
   const [exporting, setExporting] = useState(false);
   const fmtBRL = (n: number) => fmtMoney(n, "short");
@@ -170,8 +173,8 @@ export default function RankingEquipe() {
   return (
     <div className="bg-background dark:bg-[#0e1525] p-6 max-w-6xl mx-auto space-y-4 -m-6 min-h-full">
       <PageHeader
-        title="Rankings"
-        subtitle="Performance da equipe · Presenças, Pipeline, Visitas e Negócios"
+        title="Performance"
+        subtitle="Visão geral, rankings e desempenho da equipe ao vivo"
         icon={<Star size={18} strokeWidth={1.5} />}
         tabs={[
           { label: "Hoje", value: "hoje" },
@@ -272,6 +275,7 @@ export default function RankingEquipe() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
       >
+        {activeTab === "visao" && <RankingVisaoGeral filters={filters} currentUserId={user?.id} />}
         {activeTab === "presencas" && <RankingPresencasLeads filters={filters} currentUserId={user?.id} />}
         {activeTab === "pipeline" && <RankingPipelineLeads filters={filters} currentUserId={user?.id} />}
         {activeTab === "visitas" && <RankingVisitas filters={filters} currentUserId={user?.id} />}

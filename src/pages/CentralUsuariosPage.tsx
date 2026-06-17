@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -21,8 +22,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Loader2, Search, Users, CreditCard, Mail, BadgeCheck, Phone, Pencil, Save,
-  Trash2, UsersRound, UserPlus, MoreVertical, KeyRound, UserX, UserCheck, ShieldAlert,
+  Trash2, UsersRound, UserPlus, MoreVertical, KeyRound, UserX, UserCheck, ShieldAlert, Wrench,
 } from "lucide-react";
+
+const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 
 type ManagedUser = {
   user_id: string;
@@ -130,12 +133,13 @@ export default function CentralUsuariosPage() {
             Crie, edite, inative e exclua usuários do CRM. Ao remover um corretor, escolha para quem repassar os dados.
           </p>
         </div>
+      </div>
+
+      <UsuariosTabsWrapper isAdmin={isAdmin}>
+      <div className="flex flex-wrap gap-3">
         <Button onClick={() => setCreateOpen(true)} className="gap-2">
           <UserPlus className="h-4 w-4" /> Adicionar usuário
         </Button>
-      </div>
-
-      <div className="flex flex-wrap gap-3">
         <div className="relative max-w-md flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -255,6 +259,9 @@ export default function CentralUsuariosPage() {
       {filtered.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">Nenhum usuário encontrado.</div>
       )}
+      </UsuariosTabsWrapper>
+
+
 
       <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} isAdmin={isAdmin} onDone={refresh} />
 
@@ -273,6 +280,33 @@ export default function CentralUsuariosPage() {
     </div>
   );
 }
+
+// Wraps the user-management UI. For admins, exposes an extra "Ferramentas de Sistema"
+// tab that reuses the existing AdminPanel (roles, Jetimob ID, 360dialog key, Typesense reindex).
+function UsuariosTabsWrapper({ isAdmin, children }: { isAdmin: boolean; children: React.ReactNode }) {
+  if (!isAdmin) return <>{children}</>;
+  return (
+    <Tabs defaultValue="usuarios" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="usuarios" className="gap-2">
+          <Users className="h-4 w-4" /> Usuários
+        </TabsTrigger>
+        <TabsTrigger value="sistema" className="gap-2">
+          <Wrench className="h-4 w-4" /> Ferramentas de Sistema
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="usuarios" className="space-y-6 mt-0">
+        {children}
+      </TabsContent>
+      <TabsContent value="sistema" className="mt-0">
+        <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+          <AdminPanel />
+        </Suspense>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
 
 function Row({ icon, value, empty }: { icon: React.ReactNode; value: string | null; empty: string }) {
   return (

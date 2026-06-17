@@ -50,7 +50,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
         { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2     size={15} strokeWidth={1.5} /> },
-        { label: "WhatsApp Inbox",     path: "/whatsapp",              icon: <MessageSquare size={15} strokeWidth={1.5} /> },
         { label: "Gestão WhatsApp",    path: "/gestor/whatsapp-dashboard", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
       ],
     },
@@ -77,7 +76,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Performance",
       items: [
-        { label: "Rankings",           path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
+        { label: "Performance",        path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
         { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
         { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Star         size={15} strokeWidth={1.5} /> },
       ],
@@ -93,13 +92,8 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Operações",
       items: [
         { label: "Escala diária",      path: "/escala-diaria",     icon: <Clock        size={15} strokeWidth={1.5} /> },
-        { label: "Integração Jetimob", path: "/integracao",        icon: <Layers       size={15} strokeWidth={1.5} /> },
         { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "Cadastros",          path: "/backoffice/cadastros", icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Usuários",           path: "/central-usuarios",  icon: <UsersRound   size={15} strokeWidth={1.5} /> },
-        { label: "Admin",              path: "/admin",             icon: <Users        size={15} strokeWidth={1.5} /> },
-        { label: "Ingestão de Leads",  path: "/admin/ingestao",    icon: <Activity     size={15} strokeWidth={1.5} /> },
-        { label: "Uso de Páginas",     path: "/admin/uso-paginas", icon: <Activity     size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -108,7 +102,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "HOMI CEO",           path: "/homi-ceo",          icon: <Bot          size={15} strokeWidth={1.5} /> },
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Base HOMI",          path: "/homi/base-conhecimento", icon: <BookOpen     size={15} strokeWidth={1.5} /> },
-        { label: "Meu WhatsApp",       path: "/configuracoes/whatsapp", icon: <Smartphone  size={15} strokeWidth={1.5} /> },
         { label: "Integrações",        path: "/integracoes",       icon: <Plug         size={15} strokeWidth={1.5} /> },
       ],
     },
@@ -147,7 +140,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Performance",
       items: [
-        { label: "Rankings",           path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
+        { label: "Performance",        path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
         { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
       ],
     },
@@ -199,7 +192,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Crescimento",
       items: [
         { label: "Progresso",          path: "/progresso",         icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Rankings",           path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
+        { label: "Performance",        path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
         { label: "Meu relatório",      path: "/central-relatorios", icon: <BarChart2    size={15} strokeWidth={1.5} /> },
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
         { label: "Scripts",            path: "/scripts",           icon: <Lightbulb    size={15} strokeWidth={1.5} /> },
