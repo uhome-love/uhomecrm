@@ -98,12 +98,14 @@ export default function RankingEquipe() {
   const filters = { ...dateRange, equipeId };
 
   const tabs = [
+    { key: "visao" as const, label: "Visão Geral", icon: LayoutGrid, color: "bg-primary" },
     { key: "presencas" as const, label: "Presenças & Leads", icon: Users, color: "bg-blue-600" },
     { key: "pipeline" as const, label: "Pipeline de Leads", icon: ClipboardList, color: "bg-purple-600" },
     { key: "visitas" as const, label: "Visitas", icon: Eye, color: "bg-amber-600" },
     { key: "negocios" as const, label: "Pipeline de Negócios", icon: Briefcase, color: "bg-emerald-600" },
     { key: "oferta_ativa" as const, label: "Oferta Ativa", icon: PhoneCall, color: "bg-rose-600" },
   ];
+
 
   const [exporting, setExporting] = useState(false);
   const fmtBRL = (n: number) => fmtMoney(n, "short");
