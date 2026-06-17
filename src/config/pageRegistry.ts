@@ -169,7 +169,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/integracoes":           { key: "integracoes",          label: "Integrações",         icon: "Plug" },
   
   "/notificacoes":          { key: "notificacoes",         label: "Notificações",        icon: "BellRing" },
-  "/whatsapp":              { key: "whatsapp",             label: "WhatsApp",            icon: "MessageSquare", roles: ["corretor", "gestor", "admin"], noPadding: true },
   "/marketing":             { key: "marketing",            label: "Marketing",           icon: "Zap",           roles: ["admin"] },
   "/auditoria":             { key: "auditoria",            label: "Auditoria",           icon: "ShieldCheck",   roles: ["admin"] },
   "/admin":                 { key: "admin",                label: "Admin",               icon: "Users",         roles: ["admin"] },
