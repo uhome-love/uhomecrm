@@ -133,12 +133,13 @@ export default function CentralUsuariosPage() {
             Crie, edite, inative e exclua usuários do CRM. Ao remover um corretor, escolha para quem repassar os dados.
           </p>
         </div>
+      </div>
+
+      <UsuariosTabsWrapper isAdmin={isAdmin}>
+      <div className="flex flex-wrap gap-3">
         <Button onClick={() => setCreateOpen(true)} className="gap-2">
           <UserPlus className="h-4 w-4" /> Adicionar usuário
         </Button>
-      </div>
-
-      <div className="flex flex-wrap gap-3">
         <div className="relative max-w-md flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
