@@ -326,7 +326,9 @@ export default function Sidebar({
 
   const baseGroups = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
   const showCorretorMode = role === "gestor" && !!userId && CORRETOR_MODE_GESTORES.includes(userId);
-  const rawGroups = showCorretorMode ? [...baseGroups, MODO_CORRETOR_GROUP] : baseGroups;
+  const rawGroups = showCorretorMode
+    ? [baseGroups[0], MODO_CORRETOR_GROUP, ...baseGroups.slice(1)]
+    : baseGroups;
   const groups = rawGroups.map(g => ({
     ...g,
     items: g.items.map(item =>
