@@ -564,7 +564,7 @@ export default function PlacarDoDia() {
                 </div>
               ) : (
                 ultimasVisitas.map((v, i) => {
-                  const corBolinha = v.equipe === "bruno" ? "#3350E6" : v.equipe === "gabriel" ? "#16A34A" : "#666";
+                  const corBolinha = EQUIPES.find(e => e.id === v.equipe)?.cor || "#666";
                   return (
                     <div
                       key={`${v.corretor}-${v.hora}-${i}`}
