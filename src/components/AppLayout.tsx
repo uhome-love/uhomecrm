@@ -146,6 +146,7 @@ export default function AppLayout() {
         <div className="flex h-screen overflow-hidden w-full bg-[#f0f0f5] dark:bg-background">
           <Sidebar
               role={sidebarRole}
+              userId={user?.id}
               userName={nome || user?.email?.split("@")[0] || "Usuário"}
               userRole={cargoLabel}
               userInitials={userInitials}

@@ -7,12 +7,16 @@ const DEFAULT_META = 20;
 const EQUIPES = [
   { nome: "Bruno Schuler", cor: "#3350E6", corClara: "#EFF6FF", corBorda: "#1D4ED8", emoji: "💙", id: "bruno" },
   { nome: "Gabriel", cor: "#16A34A", corClara: "#F0FDF4", corBorda: "#15803D", emoji: "💚", id: "gabriel" },
+  { nome: "Junior Padilha", cor: "#EA580C", corClara: "#FFF7ED", corBorda: "#C2410C", emoji: "🧡", id: "junior" },
 ];
 
 const GERENTES = [
   { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", equipe: "bruno" },
   { user_id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", equipe: "gabriel" },
+  { user_id: "7a270cc1-a457-4a02-8a62-462ba5a98937", equipe: "junior" },
 ];
+
+const emptyPorEquipe = () => Object.fromEntries(EQUIPES.map(e => [e.id, []]));
 
 function formatTime(d: Date) {
   return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Sao_Paulo" });
@@ -112,7 +116,7 @@ function Confetti({ active }) {
 }
 
 export default function PlacarDoDia() {
-  const [dados, setDados] = useState({ bruno: [], gabriel: [] });
+  const [dados, setDados] = useState(emptyPorEquipe());
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -170,7 +174,7 @@ export default function PlacarDoDia() {
       const membros = (payload as any)?.membros ?? [];
       const todasVisitas = (payload as any)?.visitas ?? [];
 
-      const equipeIds: Record<string, string[]> = { bruno: [], gabriel: [] };
+      const equipeIds: Record<string, string[]> = emptyPorEquipe();
       const nomeMap: Record<string, string> = {};
       membros.forEach((m: any) => {
         const gerente = GERENTES.find(g => g.user_id === m.gerente_id);
@@ -186,7 +190,7 @@ export default function PlacarDoDia() {
         }
       });
 
-      const novosDados = { bruno: [], gabriel: [] };
+      const novosDados = emptyPorEquipe();
       const ultimaPorEquipe = {};
       for (const [key, userIds] of Object.entries(equipeIds)) {
         const visitasEquipe = todasVisitas.filter(v => userIds.includes(v.corretor_id));
@@ -265,12 +269,9 @@ export default function PlacarDoDia() {
     };
   }, [atualizarTudo]);
 
-  const totais = {
-    bruno: dados.bruno.length,
-    gabriel: dados.gabriel.length,
-  };
+  const totais = Object.fromEntries(EQUIPES.map(e => [e.id, (dados[e.id] || []).length]));
 
-  const totalGeral = totais.bruno + totais.gabriel;
+  const totalGeral = EQUIPES.reduce((sum, e) => sum + (totais[e.id] || 0), 0);
   const metaGeralAtingida = totalGeral >= meta;
 
   const medalhas = ["🥇", "🥈", "🥉"];
@@ -563,7 +564,7 @@ export default function PlacarDoDia() {
                 </div>
               ) : (
                 ultimasVisitas.map((v, i) => {
-                  const corBolinha = v.equipe === "bruno" ? "#3350E6" : v.equipe === "gabriel" ? "#16A34A" : "#666";
+                  const corBolinha = EQUIPES.find(e => e.id === v.equipe)?.cor || "#666";
                   return (
                     <div
                       key={`${v.corretor}-${v.hora}-${i}`}

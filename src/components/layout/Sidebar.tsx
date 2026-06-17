@@ -262,8 +262,25 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
 
 // ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 
+// Gestores que também operam como corretor (se credenciam na roleta, recebem
+// e aceitam leads). Enquanto a equipe é pequena, eles veem o grupo "Modo
+// Corretor". Ao crescer, basta remover o auth_id daqui.
+const CORRETOR_MODE_GESTORES: string[] = [
+  "7a270cc1-a457-4a02-8a62-462ba5a98937", // Junior Padilha
+];
+
+const MODO_CORRETOR_GROUP: NavGroup = {
+  title: "Modo Corretor",
+  items: [
+    { label: "Minha rotina",       path: "/corretor",          icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
+    { label: "Aceite de leads",    path: "/aceite",            icon: <UserCheck    size={15} strokeWidth={1.5} /> },
+    { label: "Oferta ativa (corretor)", path: "/corretor/call", icon: <Phone      size={15} strokeWidth={1.5} /> },
+  ],
+};
+
 interface SidebarProps {
   role?: UserRole;
+  userId?: string;
   userName?: string;
   userRole?: string;
   userInitials?: string;
@@ -274,6 +291,7 @@ interface SidebarProps {
 
 export default function Sidebar({
   role = "admin",
+  userId,
   userName = "Lucas Sarmento",
   userRole = "CEO · Admin",
   userInitials = "LS",
@@ -305,7 +323,9 @@ export default function Sidebar({
     return () => window.removeEventListener("storage", handler);
   }, [isManagerRole]);
 
-  const rawGroups = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
+  const baseGroups = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
+  const showCorretorMode = role === "gestor" && !!userId && CORRETOR_MODE_GESTORES.includes(userId);
+  const rawGroups = showCorretorMode ? [...baseGroups, MODO_CORRETOR_GROUP] : baseGroups;
   const groups = rawGroups.map(g => ({
     ...g,
     items: g.items.map(item =>

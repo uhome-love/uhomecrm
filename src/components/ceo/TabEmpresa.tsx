@@ -7,6 +7,7 @@ import { cn, formatBRLCompact } from "@/lib/utils";
 const GERENTES = [
   { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", nome: "Bruno Schuler", cor: "#3350E6", equipe: "bruno" },
   { user_id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", nome: "Gabriel", cor: "#16A34A", equipe: "gabriel" },
+  { user_id: "7a270cc1-a457-4a02-8a62-462ba5a98937", nome: "Junior Padilha", cor: "#EA580C", equipe: "junior" },
 ];
 
 type EmpPeriod = "hoje" | "semana" | "mes" | "30dias";
