@@ -365,13 +365,9 @@ export default function GestaoWhatsAppDashboard() {
                   return (
                     <tr
                       key={cm.profileId}
-                      className="border-t hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() =>
-                        navigate("/whatsapp", {
-                          state: { selectedCorretorId: cm.profileId },
-                        })
-                      }
+                      className="border-t transition-colors"
                     >
+
                       <td className="px-4 py-3 flex items-center gap-3">
                         <span className="text-sm">{statusIcon}</span>
                         <Avatar className="h-7 w-7">
@@ -469,20 +465,8 @@ export default function GestaoWhatsAppDashboard() {
                     Esperando há {formatDuration(a.esperandoMin)}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-indigo-600 hover:text-indigo-800 shrink-0"
-                  onClick={() =>
-                    navigate("/whatsapp", {
-                      state: { selectedCorretorId: a.corretorProfileId, selectedLeadId: a.leadId },
-                    })
-                  }
-                >
-                  Ver conversa
-                  <ChevronRight size={12} />
-                </Button>
               </div>
+
             ))}
           </div>
         )}
