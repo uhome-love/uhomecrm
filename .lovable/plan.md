@@ -1,41 +1,31 @@
-# Perfil de Gerente — Junior Padilha (pacote único, verificado)
+# Liberar visão dupla (Gerente + Corretor) para Junior Padilha
 
-Junior Padilha vira gerente da Uhome espelhando Bruno/Gabriel (que já têm `gestor`+`corretor`), **mas** com uma diferença: ele precisa continuar operando como corretor (se credenciar na roleta, receber e aceitar leads, tarefas, visitas) enquanto tem a visão de gerente. A auditoria mostrou que quase tudo já é dinâmico — o único ponto de quebra é a **navegação**, que mostra o menu de um único papel.
+## Contexto
+Junior já tem os papéis `gestor` + `corretor` no banco e o auth ID dele (`7a270cc1-…`) já está no allowlist `CORRETOR_MODE_GESTORES` em `Sidebar.tsx`. O grupo "Modo Corretor" já existe, mas:
+- Está com **Minha rotina** e **Oferta ativa (corretor)** — falta **Central de tarefas**.
+- A alteração precisa estar efetivamente aplicada/publicada para aparecer no menu dele (na tela atual ainda só aparece a visão de gerente).
 
-## Resultado da auditoria (o que JÁ funciona sozinho)
-- **Pipeline de leads (visão time)** — `usePipeline` resolve a equipe do gestor por `team_members.gerente_id` dinamicamente. ✓
-- **Pipeline de negócios** — `useNegocios` usa a RPC `resolve_managed_brokers` (lê `team_members`). ✓
-- **Visitas** — `useEquipesDisponiveis` lê `team_members`. ✓
-- **Dashboard do gerente (V4)** + **aba Equipes (CEO)** — RPCs dinâmicas por `team_members`. ✓
-- **Credenciar / receber leads** — `credenciar_na_roleta` e a distribuição são *role-agnostic* (validam pipeline, não papel). As rotas `/corretor`, `/aceite`, `/corretor/call` **não têm guard de papel** → acessíveis. ✓
+Bruno e Gabriel **não** entram nesse allowlist, então só o Junior vê esses itens.
 
-## PONTO DE QUEBRA (precisa correção)
-**Menu lateral mostra o nav de UM papel só** (`AppLayout` define `sidebarRole`: admin > rh > gestor > corretor). Como Junior será `gestor`, ele recebe o menu de gestor — que **não tem**: "Minha rotina" (`/corretor`, onde fica a barra de auto-credenciamento na roleta), "Aceite de leads" (`/aceite`) e "Oferta ativa" do corretor (`/corretor/call`). Sem esses itens ele não consegue se credenciar nem aceitar os leads que recebe. As páginas existem e são acessíveis por URL, só faltam no menu.
+## Mudança
 
-## Plano de execução
+### `src/components/layout/Sidebar.tsx`
+Atualizar o `MODO_CORRETOR_GROUP` para incluir os 3 acessos pedidos:
 
-### Parte 1 — Dados (sem migração de schema)
-1. Adicionar papel `gestor` ao Junior (`user_roles`), mantendo o `corretor`.
-2. Criar auto-vínculo em `team_members`: `gerente_id = user_id = 7a270cc1-…`, `equipe = "Junior"`, `status = "ativo"` → faz o pipeline pessoal dele aparecer na visão de equipe.
-3. Mover **Adriana Kaiser** (`a5b6ca08-…`) da equipe do Gabriel para a do Junior (atualizar `gerente_id` e `equipe`).
+```text
+Modo Corretor
+├── Minha rotina         → /corretor
+├── Central de tarefas   → /minhas-tarefas   (NOVO)
+├── Aceite de leads      → /aceite           (manter)
+└── Oferta ativa         → /corretor/call
+```
 
-### Parte 2 — Navegação híbrida (correção do ponto de quebra)
-4. Em `src/components/layout/Sidebar.tsx`: adicionar um grupo **"Modo Corretor"** no nav de gestor, exibido apenas para gestores que também atuam como corretor, restrito por uma **allowlist de auth_ids** (inicialmente só o Junior) — assim o menu do Bruno/Gabriel não muda. Itens: **Minha rotina** (`/corretor`), **Aceite de leads** (`/aceite`), **Oferta ativa** (`/corretor/call`).
-   - `AppLayout` passa a flag/allowlist ao `Sidebar`.
-   - Quando a equipe do Junior crescer, basta removê-lo da allowlist e ele deixa de ter o modo corretor.
+Adiciona o item "Central de tarefas" apontando para `/minhas-tarefas` (mesma rota usada no menu do corretor) com o ícone `ListTodo`.
 
-### Parte 3 — Listas hardcoded de gerentes (cor laranja `#EA580C`)
-5. `src/components/pipeline/header/PipelineGestorSelect.tsx` → incluir Junior em `GERENTES_REAIS` (também alimenta `PipelineScopeBadge` e `PipelineKanban`).
-6. `src/components/pipeline/equipes/gestorTheme.ts` → tema laranja para o auth_id do Junior.
-7. `src/components/ceo/TabEmpresa.tsx` → adicionar Junior à lista `GERENTES` (cor `#EA580C`, equipe "junior").
-8. `src/pages/PlacarDoDia.tsx` → adicionar Junior à lista `GERENTES` (equipe "junior") → entra no placar da TV e no ranking de equipes.
+## Resultado
+- Junior continua com todo o menu de Gerente (Dashboard, Meu time, Pipeline, etc.) e ganha o bloco "Modo Corretor" no fim da sidebar com: Minha rotina, Central de tarefas, Aceite de leads e Oferta ativa.
+- Nenhuma mudança de banco é necessária (papéis e team_members já configurados).
+- Apenas frontend; gating restrito ao Junior via allowlist existente.
 
-## Observações
-- **Metas**: a visão de gerente mostra metas zeradas até o Junior (ou o CEO) definir em `ceo_metas_mensais` pelo modal "Editar metas" do dashboard. Não quebra nada — apenas valor inicial 0.
-- IDs canônicos: `team_members.gerente_id` e `user_roles.user_id` = `auth.users.id`.
-
-## Verificação ao final
-- Login do Junior: vê dashboard de gerente + grupo "Modo Corretor" (credenciar na roleta, aceitar leads, oferta ativa).
-- Pipeline de leads/negócios, visitas e central de tarefas mostram leads dele + da Adriana.
-- Filtro "por gestor" (CEO), aba Equipes, TabEmpresa e Placar da TV listam "Junior Padilha" em laranja.
-- Junior consegue se credenciar e receber um lead de teste pela roleta.
+## Observação técnica
+A condição que renderiza o grupo (`role === "gestor" && userId ∈ CORRETOR_MODE_GESTORES`) já está correta e validada no banco. Após aplicar, basta recarregar/publicar para o grupo aparecer.
