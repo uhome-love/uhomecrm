@@ -71,8 +71,8 @@ export function useWhatsAppNotifications() {
             description: preview,
             duration: 5000,
             action: {
-              label: "Responder",
-              onClick: () => navigate(`/whatsapp?lead=${msg.lead_id}`),
+              label: "Abrir lead",
+              onClick: () => navigate(`/pipeline-leads?lead=${msg.lead_id}`),
             },
           });
         }
