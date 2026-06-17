@@ -116,7 +116,7 @@ function Confetti({ active }) {
 }
 
 export default function PlacarDoDia() {
-  const [dados, setDados] = useState({ bruno: [], gabriel: [] });
+  const [dados, setDados] = useState(emptyPorEquipe());
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
