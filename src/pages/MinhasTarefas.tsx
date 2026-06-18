@@ -850,50 +850,36 @@ export default function MinhasTarefas() {
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ClipboardList className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Minhas Tarefas</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <ClipboardList className="h-6 w-6 text-primary shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Minhas Tarefas</h1>
             <p className="text-sm text-muted-foreground">Organize seu dia e nunca perca um follow-up</p>
           </div>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setShowTipoSelector(true)}>
+        <Button size="sm" className="gap-1.5 self-start sm:self-auto shrink-0" onClick={() => setShowTipoSelector(true)}>
           <Plus className="h-4 w-4" /> Nova Tarefa
         </Button>
       </div>
 
       {/* Category tabs: Leads vs Negócios */}
-      <div className="flex gap-2">
-        <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("todas"); }}>
+      <div className="flex gap-2 flex-wrap">
+        <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" aria-pressed={categoria === "leads"} className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("todas"); }}>
           🎯 Tarefas de Leads
           <Badge variant="secondary" className="ml-1 text-xs">{tarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
-        <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("todas"); }}>
+        <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" aria-pressed={categoria === "negocios"} className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("todas"); }}>
           💼 Tarefas de Negócios
           <Badge variant="secondary" className="ml-1 text-xs">{negociosTarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
       </div>
 
-      {/* Summary */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-        <span>📊 <strong className="text-foreground">Total pendentes:</strong> {pendentes.length}</span>
-        <span>·</span>
-        <span><strong className="text-destructive">Atrasadas:</strong> {atrasadasTarefas.length}</span>
-        <span>·</span>
-        <span><strong className="text-foreground">Hoje:</strong> {hoje.length}</span>
-        <span>·</span>
-        <span><strong className="text-foreground">Amanhã:</strong> {amanha.length}</span>
-        <span>·</span>
-        <span><strong className="text-foreground">Semana:</strong> {semana.length}</span>
-        {categoria === "leads" && (<><span>·</span><span><strong className="text-amber-600">Desatualizados:</strong> {desatualizados.length}</span></>)}
-      </div>
-
       {/* Tabs */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap" role="tablist" aria-label="Filtrar tarefas por período">
         {tabs.map(tab => {
           const btn = (
-            <Button key={tab.key} variant={activeTab === tab.key ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
+            <Button key={tab.key} role="tab" aria-selected={activeTab === tab.key} variant={activeTab === tab.key ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
               {tab.label}
               <Badge variant="secondary" className="ml-1 text-xs">{tab.count}</Badge>
             </Button>
