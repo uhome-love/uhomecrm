@@ -67,7 +67,7 @@ const STATUS_PILL_COLORS: Record<string, string> = {
   realizada: "bg-success-500/15 text-success-500 border-success-500/30",
   reagendada: "bg-[#f97316]/15 text-[#f97316] border-[#f97316]/30",
   no_show: "bg-danger-500/15 text-danger-500 border-danger-500/30",
-  cancelada: "bg-[#71717a]/15 text-[#71717a] border-[#71717a]/30",
+  cancelada: "bg-neutral-500/15 text-neutral-500 border-neutral-500/30",
 };
 
 const STATUS_DOT_COLORS: Record<string, string> = {
@@ -76,7 +76,7 @@ const STATUS_DOT_COLORS: Record<string, string> = {
   realizada: "bg-success-500",
   reagendada: "bg-[#f97316]",
   no_show: "bg-danger-500",
-  cancelada: "bg-[#71717a]",
+  cancelada: "bg-neutral-500",
 };
 
 /* ═══════ Mini week calendar ═══════ */
@@ -102,7 +102,7 @@ function MiniWeekCalendar({
       let dotColor = "bg-transparent";
       if (hasRealizada) dotColor = "bg-success-500";
       else if (hasMarcada) dotColor = "bg-warning-500";
-      else if (dayVisitas.length > 0) dotColor = "bg-[#a1a1aa]";
+      else if (dayVisitas.length > 0) dotColor = "bg-muted-foreground";
       return { date: d, key, dayVisitas, dotColor, count: dayVisitas.length };
     });
   }, [from, visitas]);
@@ -122,19 +122,19 @@ function MiniWeekCalendar({
               "flex flex-col items-center gap-0.5 py-2 px-1 rounded-[10px] transition-all",
               today && !active && "bg-primary/5",
               active && "bg-primary/10 ring-1 ring-primary/30",
-              !today && !active && "hover:bg-[#f7f7fb] dark:hover:bg-white/5"
+              !today && !active && "hover:bg-muted dark:hover:bg-white/5"
             )}
           >
-            <span className="text-[10px] font-medium text-[#a1a1aa]">{DAY_NAMES[i]}</span>
+            <span className="text-[10px] font-medium text-muted-foreground">{DAY_NAMES[i]}</span>
             <span className={cn(
               "text-[14px] font-bold w-7 h-7 flex items-center justify-center rounded-full",
-              today ? "bg-primary text-white" : "text-[#0a0a0a] dark:text-[#fafafa]"
+              today ? "bg-primary text-white" : "text-foreground"
             )}>
               {format(d.date, "d")}
             </span>
             <div className={cn("w-1.5 h-1.5 rounded-full", d.dotColor)} />
             {d.count > 0 && (
-              <span className="text-[9px] text-[#a1a1aa] font-medium">{d.count}</span>
+              <span className="text-[9px] text-muted-foreground font-medium">{d.count}</span>
             )}
           </button>
         );
@@ -171,18 +171,18 @@ function VisitaCompactCard({
       className={cn(
         "flex items-center gap-2 px-3 py-2 rounded-[10px] border transition-all cursor-pointer group",
         isColleague
-          ? "bg-[#f7f7fb]/60 dark:bg-white/3 border-[#e8e8f0]/60 dark:border-white/5"
-          : "bg-white dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/8",
+          ? "bg-muted/60 dark:bg-white/3 border-border/60 dark:border-white/5"
+          : "bg-card border-border",
         isOverdue && "border-danger-500/40 bg-danger-500/[0.03]",
         "hover:border-primary/30"
       )}
       onClick={() => onEdit(visita)}
     >
       {/* Status dot */}
-      <div className={cn("w-2 h-2 rounded-full shrink-0", STATUS_DOT_COLORS[visita.status] || "bg-[#a1a1aa]")} />
+      <div className={cn("w-2 h-2 rounded-full shrink-0", STATUS_DOT_COLORS[visita.status] || "bg-muted-foreground")} />
 
       {/* Time */}
-      <span className="text-[12px] font-mono font-semibold text-[#0a0a0a] dark:text-[#fafafa] w-[42px] shrink-0">
+      <span className="text-[12px] font-mono font-semibold text-foreground w-[42px] shrink-0">
         {visita.hora_visita ? visita.hora_visita.slice(0, 5) : "—"}
       </span>
 
@@ -191,19 +191,19 @@ function VisitaCompactCard({
         <div className="flex items-center gap-2 min-w-0">
           <span className={cn(
             "text-[12px] font-semibold truncate min-w-0",
-            isDone && visita.status !== "realizada" ? "text-[#a1a1aa] line-through" : isDone ? "text-[#a1a1aa]" : "text-[#0a0a0a] dark:text-[#fafafa]"
+            isDone && visita.status !== "realizada" ? "text-muted-foreground line-through" : isDone ? "text-muted-foreground" : "text-foreground"
           )}>
             {visita.nome_cliente}
           </span>
           {visita.empreendimento && (
-            <span className="text-[11px] text-[#a1a1aa] truncate hidden md:block max-w-[140px]">
+            <span className="text-[11px] text-muted-foreground truncate hidden md:block max-w-[140px]">
               {visita.empreendimento}
             </span>
           )}
           {showCorretor && visita.corretor_nome && (
             <span className={cn(
               "text-[11px] font-medium truncate hidden sm:block max-w-[100px]",
-              isColleague ? "text-primary" : "text-[#71717a]"
+              isColleague ? "text-primary" : "text-neutral-500"
             )}>
               {visita.corretor_nome.split(" ")[0]}
             </span>
@@ -218,10 +218,10 @@ function VisitaCompactCard({
         {(visita.empreendimento || (showCorretor && visita.corretor_nome) || isOverdue) && (
           <div className="flex items-center gap-2 sm:hidden min-w-0">
             {visita.empreendimento && (
-              <span className="text-[10px] text-[#a1a1aa] truncate">{visita.empreendimento}</span>
+              <span className="text-[10px] text-muted-foreground truncate">{visita.empreendimento}</span>
             )}
             {showCorretor && visita.corretor_nome && (
-              <span className={cn("text-[10px] font-medium truncate", isColleague ? "text-primary" : "text-[#71717a]")}>
+              <span className={cn("text-[10px] font-medium truncate", isColleague ? "text-primary" : "text-neutral-500")}>
                 {visita.corretor_nome.split(" ")[0]}
               </span>
             )}
@@ -235,7 +235,7 @@ function VisitaCompactCard({
       {/* Status pill */}
       <span className={cn(
         "text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 hidden sm:inline",
-        STATUS_PILL_COLORS[visita.status] || "text-[#71717a] bg-[#f7f7fb] border-[#e8e8f0]"
+        STATUS_PILL_COLORS[visita.status] || "text-neutral-500 bg-muted border-border"
       )}>
         {STATUS_LABELS[visita.status]}
       </span>
@@ -309,16 +309,16 @@ function DayGroup({
       <div className="flex items-center gap-2 px-1 py-1.5">
         <span className={cn(
           "text-[13px] font-bold tracking-[-0.2px]",
-          today ? "text-primary" : "text-[#0a0a0a] dark:text-[#fafafa]"
+          today ? "text-primary" : "text-foreground"
         )}>
           {dayLabel}
         </span>
-        <span className="text-[12px] text-[#a1a1aa]">· {dateLabel}</span>
+        <span className="text-[12px] text-muted-foreground">· {dateLabel}</span>
         {today && (
           <span className="text-[10px] font-bold bg-primary text-white px-2 py-0.5 rounded-full">HOJE</span>
         )}
         <div className="flex-1" />
-        <span className="text-[11px] text-[#a1a1aa]">
+        <span className="text-[11px] text-muted-foreground">
           {visitas.length} visita{visitas.length !== 1 ? "s" : ""}
           {realizadas > 0 && (
             <span className="text-success-500 font-semibold ml-1">· {realizadas} realizada{realizadas !== 1 ? "s" : ""}</span>
@@ -587,45 +587,77 @@ export default function AgendaVisitas() {
   );
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
+    <div className="bg-background p-6 -m-6 min-h-full space-y-4">
 
-      {/* ═══════ HEADER: Title + Search + Toggle + Nova Visita ═══════ */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
-          <CalendarDays size={13} strokeWidth={1.5} className="text-white" />
-        </div>
-        <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#0a0a0a] dark:text-[#fafafa]">
-          Agenda de visitas
-        </h1>
+      {/* ═══════ HEADER ═══════ */}
+      <div className="space-y-2">
+        {/* Row 1: título + ações primárias */}
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
+            <CalendarDays size={13} strokeWidth={1.5} className="text-white" />
+          </div>
+          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-foreground">
+            Agenda de visitas
+          </h1>
 
-        {/* Search */}
-        <div className="relative flex-1 max-w-[260px]">
-          <Search size={13} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa]" />
-          <input
-            placeholder="Buscar cliente, empreend. ou corretor..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="text-[12px] pl-8 pr-3 h-[32px] w-full bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] focus:border-primary transition-all outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
-          />
-          {searchTerm && (
-            <button onClick={() => setSearchTerm("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#a1a1aa] hover:text-[#71717a]">
-              <X size={12} />
+          <div className="flex-1" />
+
+          {/* Google Calendar — texto some no mobile */}
+          {integration?.connected ? (
+            <button
+              onClick={() => disconnect()}
+              disabled={disconnecting}
+              title={`Conectado: ${integration.email}`}
+              className="h-[32px] px-2.5 sm:px-3 bg-success-500/10 hover:bg-success-500/20 text-success-500 border border-success-500/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            >
+              <Link2 size={12} /> <span className="hidden sm:inline">Agenda conectada</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => connect()}
+              disabled={connecting}
+              title="Vincular Google Agenda"
+              className="h-[32px] px-2.5 sm:px-3 bg-white dark:bg-white/5 hover:bg-primary/5 text-primary border border-primary/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            >
+              <Link2Off size={12} /> <span className="hidden sm:inline">{connecting ? "Conectando…" : "Vincular Google Agenda"}</span>
             </button>
           )}
+
+          {/* Nova Visita */}
+          <button
+            onClick={() => setShowTypeSelector(true)}
+            className="h-[32px] px-3 sm:px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors shrink-0"
+          >
+            <Plus size={13} strokeWidth={2} /> <span className="hidden sm:inline">Nova Visita</span><span className="sm:hidden">Nova</span>
+          </button>
         </div>
 
-        <div className="flex-1" />
+        {/* Row 2: busca + filtros */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[160px] max-w-[280px]">
+            <Search size={13} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              placeholder="Buscar cliente, empreend. ou corretor..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="text-[12px] pl-8 pr-3 h-[32px] w-full bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] focus:border-primary transition-all outline-none text-foreground placeholder:text-muted-foreground"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-neutral-500">
+                <X size={12} />
+              </button>
+            )}
+          </div>
 
-        {/* Visibility toggle */}
-        {(isAdmin || isGestor || true) && (
-          <div className="flex items-center gap-0.5 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] p-0.5">
+          {/* Visibility toggle */}
+          <div className="flex items-center gap-0.5 bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] p-0.5 shrink-0">
             <button
               onClick={() => setShowOnlyMine(true)}
               className={cn(
                 "text-[11px] font-medium px-2.5 py-1 rounded-[6px] transition-all flex items-center gap-1",
                 showOnlyMine
                   ? "bg-primary text-white"
-                  : "text-[#71717a] hover:text-[#0a0a0a] dark:hover:text-white"
+                  : "text-neutral-500 hover:text-foreground dark:hover:text-white"
               )}
             >
               <User size={11} /> Só minhas
@@ -636,75 +668,47 @@ export default function AgendaVisitas() {
                 "text-[11px] font-medium px-2.5 py-1 rounded-[6px] transition-all flex items-center gap-1",
                 !showOnlyMine
                   ? "bg-primary text-white"
-                  : "text-[#71717a] hover:text-[#0a0a0a] dark:hover:text-white"
+                  : "text-neutral-500 hover:text-foreground dark:hover:text-white"
               )}
             >
               <Users size={11} /> {isAdmin || isGestor ? "Meu time" : "Time"}
             </button>
           </div>
-        )}
 
-        {/* Filtro de Equipe (CEO/Admin/Gestor) */}
-        {(isAdmin || isGestor) && !showOnlyMine && equipesDisponiveis.length > 1 && (
-          <div className="relative">
-            <select
-              value={equipeFilter || ""}
-              onChange={(e) => setEquipeFilter(e.target.value || null)}
-              className={cn(
-                "appearance-none text-[11px] font-medium h-[28px] pl-7 pr-7 rounded-[8px] border outline-none cursor-pointer transition-all",
-                equipeFilter
-                  ? "bg-primary/10 border-primary/30 text-primary"
-                  : "bg-white dark:bg-white/5 border-[#e8e8f0] dark:border-white/10 text-[#71717a] hover:text-[#0a0a0a] dark:hover:text-white"
-              )}
-              title="Filtrar por equipe"
+          {/* Filtro de Equipe (CEO/Admin/Gestor) */}
+          {(isAdmin || isGestor) && !showOnlyMine && equipesDisponiveis.length > 1 && (
+            <div className="relative shrink-0">
+              <select
+                value={equipeFilter || ""}
+                onChange={(e) => setEquipeFilter(e.target.value || null)}
+                className={cn(
+                  "appearance-none text-[11px] font-medium h-[28px] pl-7 pr-7 rounded-[8px] border outline-none cursor-pointer transition-all",
+                  equipeFilter
+                    ? "bg-primary/10 border-primary/30 text-primary"
+                    : "bg-white dark:bg-white/5 border-border dark:border-white/10 text-neutral-500 hover:text-foreground dark:hover:text-white"
+                )}
+                title="Filtrar por equipe"
+              >
+                <option value="">Todas as equipes</option>
+                {equipesDisponiveis.map((eq) => (
+                  <option key={eq.nome} value={eq.nome}>{eq.nome} ({eq.total})</option>
+                ))}
+              </select>
+              <Users size={11} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
+              <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
+            </div>
+          )}
+
+          {/* Cobrar (discrete) */}
+          {isAdmin && pendingVisitas.length > 0 && (
+            <button
+              onClick={() => setShowCobranca(true)}
+              className="text-[11px] text-danger-500 hover:bg-danger-50 px-2 py-1 rounded-[6px] transition-colors shrink-0"
             >
-              <option value="">Todas as equipes</option>
-              {equipesDisponiveis.map((eq) => (
-                <option key={eq.nome} value={eq.nome}>{eq.nome} ({eq.total})</option>
-              ))}
-            </select>
-            <Users size={11} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
-            <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
-          </div>
-        )}
-
-        {/* Cobrar (discrete) */}
-        {isAdmin && pendingVisitas.length > 0 && (
-          <button
-            onClick={() => setShowCobranca(true)}
-            className="text-[11px] text-danger-500 hover:bg-[#fef2f2] px-2 py-1 rounded-[6px] transition-colors"
-          >
-            {pendingVisitas.length} pendente{pendingVisitas.length !== 1 ? "s" : ""}
-          </button>
-        )}
-
-        {/* Google Calendar */}
-        {integration?.connected ? (
-          <button
-            onClick={() => disconnect()}
-            disabled={disconnecting}
-            title={`Conectado: ${integration.email}`}
-            className="h-[32px] px-3 bg-success-500/10 hover:bg-success-500/20 text-success-500 border border-success-500/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          >
-            <Link2 size={12} /> Agenda conectada
-          </button>
-        ) : (
-          <button
-            onClick={() => connect()}
-            disabled={connecting}
-            className="h-[32px] px-3 bg-white dark:bg-white/5 hover:bg-primary/5 text-primary border border-primary/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          >
-            <Link2Off size={12} /> {connecting ? "Conectando…" : "Vincular Google Agenda"}
-          </button>
-        )}
-
-        {/* Nova Visita */}
-        <button
-          onClick={() => setShowTypeSelector(true)}
-          className="h-[32px] px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors"
-        >
-          <Plus size={13} strokeWidth={2} /> Nova Visita
-        </button>
+              {pendingVisitas.length} pendente{pendingVisitas.length !== 1 ? "s" : ""}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ═══════ KPIs ═══════ */}
@@ -719,14 +723,14 @@ export default function AgendaVisitas() {
           const isStatic = kpi.key === "taxa" || kpi.key === "criadas";
           const isActive = kpiFilter === kpi.key;
           const cardClass = cn(
-            "bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 border-l-[3px] rounded-[10px] p-3 text-left transition-all",
+            "bg-card border border-border border-l-[3px] rounded-[10px] p-3 text-left transition-all",
             kpi.border,
-            !isStatic && "cursor-pointer hover:border-[#d4d4d8] dark:hover:border-white/15",
+            !isStatic && "cursor-pointer hover:border-neutral-300 dark:hover:border-white/15",
             isActive && "ring-2 ring-primary/30 bg-primary/[0.02]"
           );
           const inner = (
             <>
-              <p className="text-[10px] font-medium text-[#a1a1aa] uppercase tracking-wide">{kpi.label}</p>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{kpi.label}</p>
               <p className={cn("text-[22px] font-[800] leading-none mt-1 tracking-[-0.5px]", kpi.color)}>{kpi.value}</p>
             </>
           );
@@ -762,9 +766,9 @@ export default function AgendaVisitas() {
             </span>
           )}
           {searchTerm && (
-            <span className="text-[11px] bg-[#71717a]/10 text-[#71717a] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <span className="text-[11px] bg-neutral-500/10 text-neutral-500 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
               Busca: "{searchTerm}"
-              <button onClick={() => setSearchTerm("")} className="hover:text-[#0a0a0a]"><X size={10} /></button>
+              <button onClick={() => setSearchTerm("")} className="hover:text-foreground"><X size={10} /></button>
             </span>
           )}
           <button
@@ -786,13 +790,13 @@ export default function AgendaVisitas() {
               "px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-all",
               period === p.key
                 ? "bg-primary text-white"
-                : "text-[#71717a] bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 hover:text-[#0a0a0a] dark:hover:text-white"
+                : "text-neutral-500 bg-white dark:bg-white/5 border border-border dark:border-white/10 hover:text-foreground dark:hover:text-white"
             )}
           >
             {p.label}
           </button>
         ))}
-        <span className="text-[11px] text-[#a1a1aa] ml-2">
+        <span className="text-[11px] text-muted-foreground ml-2">
           {dateRange.from === dateRange.to
             ? format(new Date(dateRange.from + "T12:00:00"), "dd/MM/yyyy")
             : `${format(new Date(dateRange.from + "T12:00:00"), "dd/MM")} — ${format(new Date(dateRange.to + "T12:00:00"), "dd/MM")}`
@@ -804,21 +808,21 @@ export default function AgendaVisitas() {
       {period === "personalizado" && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <label className="text-[12px] font-medium text-[#71717a]">De:</label>
+            <label className="text-[12px] font-medium text-neutral-500">De:</label>
             <input
               type="date"
               value={customFrom}
               max={customTo || undefined}
               onChange={e => setCustomFrom(e.target.value)}
-              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-primary text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] outline-none focus:border-primary text-foreground transition-all"
             />
-            <label className="text-[12px] font-medium text-[#71717a]">Até:</label>
+            <label className="text-[12px] font-medium text-neutral-500">Até:</label>
             <input
               type="date"
               value={customTo}
               min={customFrom || undefined}
               onChange={e => setCustomTo(e.target.value)}
-              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-primary text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] outline-none focus:border-primary text-foreground transition-all"
             />
             <button
               disabled={!customFrom || !customTo || !!customError}
@@ -827,7 +831,7 @@ export default function AgendaVisitas() {
                 "h-[32px] px-4 text-[12px] font-semibold rounded-[8px] transition-all",
                 customFrom && customTo && !customError
                   ? "bg-primary hover:bg-primary-600 text-white"
-                  : "bg-[#e8e8f0] dark:bg-white/10 text-[#a1a1aa] cursor-not-allowed"
+                  : "bg-border dark:bg-white/10 text-muted-foreground cursor-not-allowed"
               )}
             >
               Aplicar
@@ -839,7 +843,7 @@ export default function AgendaVisitas() {
         </div>
       )}
       {showWeekCalendar && (
-        <div className="bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 rounded-[12px] p-3">
+        <div className="bg-card border border-border rounded-[12px] p-3">
           <MiniWeekCalendar
             from={calendarFrom}
             visitas={visitas}
@@ -855,9 +859,9 @@ export default function AgendaVisitas() {
           <div className="space-y-4">
             {[0, 1].map(g => (
               <div key={g} className="space-y-1">
-                <div className="h-4 w-40 rounded bg-[#e8e8f0] dark:bg-white/10 animate-pulse mb-2" />
+                <div className="h-4 w-40 rounded bg-border dark:bg-white/10 animate-pulse mb-2" />
                 {[0, 1, 2].map(c => (
-                  <div key={c} className="h-[44px] rounded-[10px] bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 animate-pulse" />
+                  <div key={c} className="h-[44px] rounded-[10px] bg-card border border-border animate-pulse" />
                 ))}
               </div>
             ))}
