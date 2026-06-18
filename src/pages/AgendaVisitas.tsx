@@ -350,10 +350,12 @@ function WeekBoard({
   from,
   visitas,
   onEdit,
+  showCorretor,
 }: {
   from: string;
   visitas: Visita[];
   onEdit: (v: Visita) => void;
+  showCorretor: boolean;
 }) {
   const days = useMemo(() => {
     const start = new Date(from + "T12:00:00");
@@ -418,6 +420,9 @@ function WeekBoard({
                         </span>
                         {v.empreendimento && (
                           <span className="text-[9px] text-muted-foreground truncate">{v.empreendimento}</span>
+                        )}
+                        {showCorretor && v.corretor_nome && (
+                          <span className="text-[9px] font-medium text-primary truncate">{v.corretor_nome.split(" ")[0]}</span>
                         )}
                       </button>
                     );
@@ -989,7 +994,7 @@ export default function AgendaVisitas() {
             description="As visitas agendadas aparecerão aqui organizadas por dia"
           />
         ) : viewMode === "semana" ? (
-          <WeekBoard from={calendarFrom} visitas={filtered} onEdit={handleEdit} />
+          <WeekBoard from={calendarFrom} visitas={filtered} onEdit={handleEdit} showCorretor={showCorretor} />
         ) : (
           dayGroups.map(([dateStr, dayVisitas]) => (
             <DayGroup
