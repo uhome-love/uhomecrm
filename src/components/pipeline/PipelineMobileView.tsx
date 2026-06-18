@@ -192,11 +192,14 @@ const PipelineMobileView = memo(function PipelineMobileView({
           }}
         >
           {stageLeads.length === 0 && (
-            <div style={{
-              display: "flex", flexDirection: "column", alignItems: "center",
-              justifyContent: "center", padding: "48px 0",
-              color: "#94A3B8", fontSize: 13, fontWeight: 500,
-            }}>
+            <div
+              className="text-muted-foreground"
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                justifyContent: "center", padding: "48px 0",
+                fontSize: 13, fontWeight: 500,
+              }}
+            >
               <span style={{ fontSize: 32, marginBottom: 8 }}>📭</span>
               Nenhum lead nesta etapa
             </div>
