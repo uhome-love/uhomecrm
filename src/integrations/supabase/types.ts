@@ -4790,6 +4790,7 @@ export type Database = {
           data_assinatura: string | null
           documentacao_situacao: string | null
           empreendimento: string | null
+          equipe_gerente_auth_id: string | null
           fase: string | null
           fase_changed_at: string | null
           gerente_id: string | null
@@ -4825,6 +4826,7 @@ export type Database = {
           data_assinatura?: string | null
           documentacao_situacao?: string | null
           empreendimento?: string | null
+          equipe_gerente_auth_id?: string | null
           fase?: string | null
           fase_changed_at?: string | null
           gerente_id?: string | null
@@ -4860,6 +4862,7 @@ export type Database = {
           data_assinatura?: string | null
           documentacao_situacao?: string | null
           empreendimento?: string | null
+          equipe_gerente_auth_id?: string | null
           fase?: string | null
           fase_changed_at?: string | null
           gerente_id?: string | null

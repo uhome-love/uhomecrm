@@ -1,37 +1,84 @@
-# Plano: reduzir o custo diário do Cloud (sem quebrar nada)
+# Corrigir VGV de Vendas Assinadas por Equipe
 
-O custo alto não vem de mais uso e sim de **3 consultas que rodam milhões de vezes fazendo varredura completa de tabela** (full scan). A correção é adicionar **índices** no banco — uma mudança aditiva e segura: não altera dados, não altera regras de acesso (RLS), não muda nenhuma tela nem comportamento. As consultas continuam retornando exatamente o mesmo resultado, só que muito mais rápido e barato.
+## Princípio central (não pode ser violado)
 
-## O que está custando caro hoje
+**O corretor NUNCA perde VGV.** O VGV assinado consolidado do corretor (no ano, no período) continua exatamente o mesmo. O que muda é **só a equipe a que aquele VGV é creditado**, para não misturar resultados de equipe.
 
-| Consulta | Chamadas | Tempo total | Causa |
-|---|---|---|---|
-| Busca por telefone em `oferta_ativa_leads` (3 ILIKE) | 417 mil | ~121 h | Sem índice → varre a tabela toda |
-| Busca por telefone simples em `oferta_ativa_leads` | 126 mil | ~55 h | Mesmo problema |
-| Tarefas por lead+status em `pipeline_tarefas` | 1,4 milhão | ~58 h | Falta índice composto |
-| `v_user_partner_leads` (parcerias) | 5,3 milhões | ~21 h | Chamada com muita frequência |
+> Exemplo: Larissa fez R$ 1 milhão. Ela **continua com R$ 1 milhão** consolidado dela. Porém esse R$ 1 milhão foi feito **pela Equipe Gabrielle** e **não pode somar na Equipe Bruno**, mesmo a Larissa estando hoje no Bruno.
 
-## Mudanças (somente índices — aditivas e reversíveis)
+E a **Equipe Junior começa com 0** de VGV (o histórico do Junior-corretor e da Adri fica na Equipe Gabriel).
 
-### 1. Índice de busca por telefone (`oferta_ativa_leads`)
-Criar índices trigram (GIN) nas colunas usadas nas buscas `ILIKE %...%`: `telefone`, `telefone_normalizado` e `telefone2`. Isso elimina a varredura completa nas duas consultas mais caras da lista (juntas ~176 h/mês). Requer a extensão `pg_trgm` (padrão do Postgres, só habilitar).
+## Problema (diagnóstico confirmado no banco)
 
-### 2. Índice composto em `pipeline_tarefas`
-Criar índice em `(pipeline_lead_id, status, vence_em, hora_vencimento)` — exatamente o padrão da 3ª consulta mais cara (filtra por lead + status e ordena por vencimento). Acaba com os 145 ms médios por chamada.
+Hoje o VGV de equipe é calculado **sempre pela equipe atual** (`team_members` status `ativo`). Não existe histórico de equipe. Resultado:
 
-### 3. Reduzir chamadas de `v_user_partner_leads`
-A view de parcerias é consultada na carga do pipeline e em outras telas. Como é uma view, o ganho maior vem de **reduzir a frequência das chamadas no frontend** (cache/menos polling) em vez de só indexar. Proponho, nesta etapa, apenas **investigar e ajustar o cache** dessa chamada em `usePipeline` sem mudar o resultado exibido — e só aplicar se for comprovadamente seguro. Se houver qualquer risco de quebrar a lógica de parcerias, deixo de fora.
+- Larissa, Matheus Pasin, Luiza Clós, Halime, Thalia Pereira foram pro Bruno → **todo o VGV histórico delas migrou pro Bruno**.
+- Thalia de Oliveira, Leo Dorneles, Jéssica França, Flávio foram pro Gabriel → **VGV histórico migrou pro Gabriel**.
+- Adri foi pro Junior → VGV histórico dela migraria pro Junior.
+- A **Equipe Gabrielle sumiu** dos cálculos (ela não é mais gerente ativa).
 
-## Ordem de execução
-1. Migração 1: habilitar `pg_trgm` + índices trigram em `oferta_ativa_leads`.
-2. Migração 2: índice composto em `pipeline_tarefas`.
-3. Validar com `EXPLAIN` que os índices estão sendo usados e reconferir as consultas lentas.
-4. (Opcional, com cautela) ajustar cache de `v_user_partner_leads` no frontend.
+A coluna `negocios.gerente_id` existe mas está **inconfiável** (mistura id de perfil do gerente, id do próprio corretor e nulos), então não serve de "foto" sem ser refeita.
 
-## Detalhes técnicos
-- Índices via `CREATE INDEX` dentro do migration tool (sem `CONCURRENTLY`, que não roda em transação de migração). As tabelas são pequenas/médias, então a criação é rápida.
-- Nenhuma coluna, tabela, policy ou dado é alterado — risco operacional mínimo e totalmente reversível (`DROP INDEX`).
-- Respeitando a regra de no máx. 2 migrações/dia em horário comercial: as duas migrações de índice cabem nesse limite.
+## Regra de negócio acordada
 
-## Resultado esperado
-Queda expressiva no tempo de compute e no egress dessas consultas, permitindo manter a instância **Large** com folga (ou avaliar **Medium** depois). Sem nenhuma mudança visível para os usuários do CRM.
+- **Corte: 17/06/2026.** Tudo assinado **até 17/06 (inclusive)** = equipe antiga. A partir de **18/06** = equipe nova.
+- Ex-corretores da Gabrielle: vendas ≤ 17/06 → **Equipe Gabrielle**; ≥ 18/06 → equipe nova (Bruno ou Gabriel).
+- Adri + Junior (como corretor): vendas ≤ 17/06 → **Equipe Gabriel**; Equipe Junior começa do zero a partir de 18/06.
+- **VGV do corretor permanece intacto** (consolidado individual não muda nunca). Só muda o **agrupamento por equipe**.
+- **Equipe Gabrielle = inativa porém visível** com o resultado histórico preservado.
+- Nunca somar VGV da Gabrielle no Bruno/Gabriel.
+
+## Solução
+
+Criar uma **"foto" confiável da equipe dona da venda**, gravada em cada negócio, e passar os cálculos de VGV **assinado de equipe** a usar essa foto (em vez da equipe atual). O VGV **por corretor** continua somando pelo corretor (`auth_user_id`), sem alteração nenhuma. VGV de pipeline ativo (negócio em andamento) continua na equipe atual — o corretor trabalha hoje sob o novo gerente.
+
+### Fase 1 — Banco: coluna snapshot + automação (migration)
+
+- Adicionar coluna `negocios.equipe_gerente_auth_id` (uuid, referência lógica a auth.users) = gerente dono do VGV **de equipe** daquela venda.
+- Criar trigger: quando um negócio vira `vendido` / ganha `data_assinatura`, grava automaticamente `equipe_gerente_auth_id` = gerente **atual** do corretor (via `team_members`), se ainda estiver vazio. Resolve todas as vendas futuras sem intervenção.
+
+### Fase 2 — Backfill das vendas existentes (operação de dados)
+
+Preencher `equipe_gerente_auth_id` em todas as vendas existentes (`vendido`/com `data_assinatura`) pela regra:
+
+1. Corretor ex-Gabrielle **e** `data_assinatura ≤ 2026-06-17` → **Gabrielle**.
+2. Adri ou Junior **e** `data_assinatura ≤ 2026-06-17` → **Gabriel**.
+3. Caso contrário → gerente **atual** do corretor (cobre quem não mudou e vendas pós-corte).
+
+> Importante: o backfill **só altera a etiqueta de equipe** do negócio. O `auth_user_id` (corretor) não é tocado — por isso o consolidado individual do corretor permanece idêntico.
+
+### Fase 3 — Cálculos de VGV assinado por equipe
+
+Ajustar as duas fontes que somam VGV por equipe para agruparem o **assinado** por `equipe_gerente_auth_id` (e não pela equipe atual). O VGV individual do corretor permanece como está.
+
+- **RPC `get_pipeline_equipes_overview`** (tela Equipes do CEO): `vgv_assinado_mes` passa a vir do snapshot. Gerentes inativos com VGV no período (ex.: Gabrielle) aparecem como **equipe inativa** com o histórico preservado.
+- **Hook `useCeoData.ts`** (rankings, dashboards, relatórios por período): o VGV assinado **por equipe** passa a agrupar pelo snapshot; inclui gerentes inativos (Gabrielle) quando há VGV no período. O **VGV por corretor permanece idêntico** (continua por `auth_user_id`).
+
+### Fase 4 — Validação
+
+- A soma do VGV assinado **da empresa não muda** (só a distribuição entre equipes).
+- Cada corretor mantém **o mesmo VGV consolidado** de antes (ex.: Larissa continua com seu total).
+- Equipe Gabrielle aparece com o histórico; Bruno/Gabriel **não** recebem o histórico dos ex-Gabrielle; **Equipe Junior = 0** e Junior mantém o VGV pessoal; Adri histórica fica no Gabriel.
+
+## Detalhes técnicos (IDs canônicos)
+
+Gerentes (auth.users.id):
+- Gabrielle: `7882d73e-ff5c-4b23-9b08-2adeadcd1800`
+- Bruno: `fb61ecda-5c4b-49d7-bda7-ccf9b589da07`
+- Gabriel: `b3a1c3a4-f109-40ae-b5d4-15eff3a541ab`
+- Junior: `7a270cc1-a457-4a02-8a62-462ba5a98937`
+
+Ex-Gabrielle → Bruno: Larissa `6a4e1647`, Matheus Pasin `00a26f80`, Luiza Clós `aa95eb95`, Halime `9f3e6b46`, Thalia Pereira `4f29bb9d`.
+Ex-Gabrielle → Gabriel: Thalia de Oliveira `c882b90d`, Leo Dorneles `c5eaf4f8`, Jéssica França `c988f004`, Flávio Dias `8981d8c6`.
+Gabriel histórico: Adri `a5b6ca08`, Junior-corretor `7a270cc1`.
+
+Corte: `data_assinatura <= '2026-06-17'`.
+
+Observações:
+- O snapshot é uma etiqueta **de equipe**; o vínculo corretor↔venda (`auth_user_id`) não muda → consolidado individual preservado.
+- Não mexo na coluna antiga `gerente_id` (evito quebrar dependências); a foto fica numa coluna nova e limpa.
+- `v_kpi_negocios` não expõe gerente; a atribuição de equipe é feita no consumidor (RPC/hook), então o split de parceria continua intacto.
+- Migrations respeitam a janela (máx 2/dia, 08–19h BRT). Coluna+trigger = 1 migration; backfill = operação de dados (sem migration).
+
+## Fora de escopo (alternativa futura)
+Tabela de histórico de equipe (`team_members_history`) daria atribuição "as-of" genérica para qualquer métrica, mas é bem mais pesada. O snapshot por venda resolve exatamente o pedido (VGV assinado de equipe) com muito menos risco.
