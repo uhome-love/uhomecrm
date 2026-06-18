@@ -10,7 +10,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { GERENTES_REAIS } from "@/components/pipeline/header/PipelineGestorSelect";
+import { GERENTES_REAIS } from "@/components/pipeline/header/gerentesReais";
 
 export interface GestorOption {
   id: string;
