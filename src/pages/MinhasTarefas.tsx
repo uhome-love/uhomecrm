@@ -1047,7 +1047,7 @@ export default function MinhasTarefas() {
 
                 {/* Right: prazo + actions */}
                 <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap lg:justify-end shrink-0">
-                  <span className={cn("text-[11px] font-medium px-2 py-1 rounded-full flex items-center gap-1 whitespace-nowrap", `text-${prazoTone.split(" ")[0]}`, prazoTone.split(" ")[1])}>
+                  <span className={cn("text-[11px] font-medium px-2 py-1 rounded-full flex items-center gap-1 whitespace-nowrap", prazoTone)}>
                     <Clock className="h-3 w-3" />
                     {isConcluida ? (
                       tarefa.concluida_em ? `Concluída ${format(new Date(tarefa.concluida_em), "dd/MM HH:mm", { locale: ptBR })}` : "Concluída"
