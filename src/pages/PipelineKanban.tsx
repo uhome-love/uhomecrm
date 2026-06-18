@@ -131,6 +131,7 @@ export default function PipelineKanban() {
     if (activeTab !== null) return;
     try {
       window.localStorage.removeItem("uhome:pipeline-mode:admin");
+      window.localStorage.removeItem("uhome:pipeline-mode:diretor");
       window.localStorage.removeItem("uhome:pipeline-mode:gestor");
       window.localStorage.removeItem("uhome:pipeline-mode:corretor");
       window.localStorage.removeItem("uhome:pipeline-mode:migrated-v2");
