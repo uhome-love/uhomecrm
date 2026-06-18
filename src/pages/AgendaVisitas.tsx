@@ -334,6 +334,11 @@ export default function AgendaVisitas() {
   const [scrollToDay, setScrollToDay] = useState<string | null>(null);
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  // Applied custom range — só aplica ao clicar "Aplicar" (evita refetch a cada tecla)
+  const [appliedCustom, setAppliedCustom] = useState<{ from: string; to: string } | null>(null);
+  const customError = customFrom && customTo && customFrom > customTo
+    ? "A data inicial não pode ser maior que a final."
+    : null;
 
   // Dialogs
   const [showTypeSelector, setShowTypeSelector] = useState(false);
