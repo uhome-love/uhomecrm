@@ -350,10 +350,12 @@ function WeekBoard({
   from,
   visitas,
   onEdit,
+  showCorretor,
 }: {
   from: string;
   visitas: Visita[];
   onEdit: (v: Visita) => void;
+  showCorretor: boolean;
 }) {
   const days = useMemo(() => {
     const start = new Date(from + "T12:00:00");
