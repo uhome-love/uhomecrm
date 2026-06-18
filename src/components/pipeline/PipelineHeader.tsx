@@ -110,7 +110,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     filteredLeadsCount, displayedClientStatusCounts, campaignTagCounts, campaignTags,
     pipelineStages, pipelineSegmentos, pipelineLeads, corretorNomes, corretorOptions,
     visitaLeadIds, focusLeadsCount, filaCeoCount, filaCeoNovosCount, filaCeoRedistCount,
-    isAdmin, isGestor, canAdd,
+    isAdmin, isDiretor = false, isGestor, canAdd,
     filters, setFilters, corretorFilter, setCorretorFilter,
     campaignTagFilter, setCampaignTagFilter,
     clientStatusFilter, setClientStatusFilter,
