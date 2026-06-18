@@ -162,6 +162,10 @@ function VisitaCompactCard({
   onReabrir: (id: string) => void;
 }) {
   const isDone = visita.status === "realizada" || visita.status === "cancelada" || visita.status === "no_show";
+  // Vencida sem desfecho: data passada e ainda marcada/confirmada
+  const isOverdue = !isDone &&
+    (visita.status === "marcada" || visita.status === "confirmada") &&
+    isBefore(new Date(visita.data_visita + "T23:59:59"), startOfDay(new Date()));
   return (
     <div
       className={cn(
@@ -169,6 +173,7 @@ function VisitaCompactCard({
         isColleague
           ? "bg-[#f7f7fb]/60 dark:bg-white/3 border-[#e8e8f0]/60 dark:border-white/5"
           : "bg-white dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/8",
+        isOverdue && "border-[#ef4444]/40 bg-[#ef4444]/[0.03]",
         "hover:border-[#4969FF]/30"
       )}
       onClick={() => onEdit(visita)}
@@ -181,48 +186,68 @@ function VisitaCompactCard({
         {visita.hora_visita ? visita.hora_visita.slice(0, 5) : "—"}
       </span>
 
-      {/* Client name */}
-      <span className={cn(
-        "text-[12px] font-semibold truncate min-w-0",
-        isDone && visita.status !== "realizada" ? "text-[#a1a1aa] line-through" : isDone ? "text-[#a1a1aa]" : "text-[#0a0a0a] dark:text-[#fafafa]"
-      )}>
-        {visita.nome_cliente}
-      </span>
-
-      {/* Empreendimento */}
-      {visita.empreendimento && (
-        <span className="text-[11px] text-[#a1a1aa] truncate hidden md:block max-w-[140px]">
-          {visita.empreendimento}
-        </span>
-      )}
-
-      {/* Corretor name (team mode) */}
-      {showCorretor && visita.corretor_nome && (
-        <span className={cn(
-          "text-[11px] font-medium truncate hidden sm:block max-w-[100px]",
-          isColleague ? "text-[#4969FF]" : "text-[#71717a]"
-        )}>
-          {visita.corretor_nome.split(" ")[0]}
-        </span>
-      )}
-
-      <div className="flex-1" />
+      {/* Text block — uma linha no desktop, duas no mobile */}
+      <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={cn(
+            "text-[12px] font-semibold truncate min-w-0",
+            isDone && visita.status !== "realizada" ? "text-[#a1a1aa] line-through" : isDone ? "text-[#a1a1aa]" : "text-[#0a0a0a] dark:text-[#fafafa]"
+          )}>
+            {visita.nome_cliente}
+          </span>
+          {visita.empreendimento && (
+            <span className="text-[11px] text-[#a1a1aa] truncate hidden md:block max-w-[140px]">
+              {visita.empreendimento}
+            </span>
+          )}
+          {showCorretor && visita.corretor_nome && (
+            <span className={cn(
+              "text-[11px] font-medium truncate hidden sm:block max-w-[100px]",
+              isColleague ? "text-[#4969FF]" : "text-[#71717a]"
+            )}>
+              {visita.corretor_nome.split(" ")[0]}
+            </span>
+          )}
+          {isOverdue && (
+            <span className="text-[9px] font-bold text-[#ef4444] bg-[#ef4444]/10 px-1.5 py-0.5 rounded-full shrink-0 hidden sm:inline">
+              VENCIDA
+            </span>
+          )}
+        </div>
+        {/* Linha de meta no mobile */}
+        {(visita.empreendimento || (showCorretor && visita.corretor_nome) || isOverdue) && (
+          <div className="flex items-center gap-2 sm:hidden min-w-0">
+            {visita.empreendimento && (
+              <span className="text-[10px] text-[#a1a1aa] truncate">{visita.empreendimento}</span>
+            )}
+            {showCorretor && visita.corretor_nome && (
+              <span className={cn("text-[10px] font-medium truncate", isColleague ? "text-[#4969FF]" : "text-[#71717a]")}>
+                {visita.corretor_nome.split(" ")[0]}
+              </span>
+            )}
+            {isOverdue && (
+              <span className="text-[9px] font-bold text-[#ef4444] shrink-0">VENCIDA</span>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Status pill */}
       <span className={cn(
-        "text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0",
+        "text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 hidden sm:inline",
         STATUS_PILL_COLORS[visita.status] || "text-[#71717a] bg-[#f7f7fb] border-[#e8e8f0]"
       )}>
         {STATUS_LABELS[visita.status]}
       </span>
 
-      {/* Quick actions — sempre disponíveis para permitir correção de status */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      {/* Quick actions — sempre visíveis em touch, hover no desktop */}
+      <div className="flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
         {visita.status !== "realizada" && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkRealizada(visita); }}
-            className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#10b981]/10 text-[#10b981] transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#10b981]/10 text-[#10b981] transition-colors"
             title="Marcar como Realizada"
+            aria-label="Marcar como Realizada"
           >
             <Check size={14} strokeWidth={2.5} />
           </button>
@@ -230,8 +255,9 @@ function VisitaCompactCard({
         {visita.status !== "no_show" && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkNoShow(visita.id); }}
-            className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#ef4444]/10 text-[#ef4444] transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#ef4444]/10 text-[#ef4444] transition-colors"
             title="Marcar como No-show"
+            aria-label="Marcar como No-show"
           >
             <XCircle size={14} strokeWidth={2} />
           </button>
@@ -239,8 +265,9 @@ function VisitaCompactCard({
         {isDone && (
           <button
             onClick={(e) => { e.stopPropagation(); onReabrir(visita.id); }}
-            className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#4969FF]/10 text-[#4969FF] transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#4969FF]/10 text-[#4969FF] transition-colors"
             title="Reabrir visita (voltar para Marcada)"
+            aria-label="Reabrir visita"
           >
             <RotateCcw size={13} strokeWidth={2.2} />
           </button>
@@ -334,6 +361,11 @@ export default function AgendaVisitas() {
   const [scrollToDay, setScrollToDay] = useState<string | null>(null);
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  // Applied custom range — só aplica ao clicar "Aplicar" (evita refetch a cada tecla)
+  const [appliedCustom, setAppliedCustom] = useState<{ from: string; to: string } | null>(null);
+  const customError = customFrom && customTo && customFrom > customTo
+    ? "A data inicial não pode ser maior que a final."
+    : null;
 
   // Dialogs
   const [showTypeSelector, setShowTypeSelector] = useState(false);
@@ -344,12 +376,23 @@ export default function AgendaVisitas() {
   const [showCobranca, setShowCobranca] = useState(false);
 
   // Data
-  const dateRange = useMemo(() => getDateRange(period, customFrom, customTo), [period, customFrom, customTo]);
+  const dateRange = useMemo(
+    () => getDateRange(period, appliedCustom?.from, appliedCustom?.to),
+    [period, appliedCustom]
+  );
   const { visitas: rawVisitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas({
     startDate: dateRange.from,
     endDate: dateRange.to,
   });
-  const { visitas: allVisitas } = useVisitas();
+  // Janela reduzida (30 dias atrás → hoje) só para calcular pendentes/cobrança — evita puxar base inteira
+  const pendingRange = useMemo(() => {
+    const today = startOfDay(new Date());
+    return {
+      from: format(addDays(today, -30), "yyyy-MM-dd"),
+      to: format(today, "yyyy-MM-dd"),
+    };
+  }, []);
+  const { visitas: allVisitas } = useVisitas({ startDate: pendingRange.from, endDate: pendingRange.to });
 
   // Sync URL
   useEffect(() => {
@@ -460,7 +503,9 @@ export default function AgendaVisitas() {
     const marcadas = kpiBase.filter(v => ["marcada", "confirmada", "reagendada"].includes(v.status)).length;
     const realizadas = kpiBase.filter(v => v.status === "realizada").length;
     const noShow = kpiBase.filter(v => v.status === "no_show").length;
-    const taxa = marcadas + realizadas > 0 ? Math.round((realizadas / (marcadas + realizadas)) * 100) : 0;
+    // Taxa de comparecimento: das visitas com desfecho (realizada ou no-show), quantas compareceram
+    const comDesfecho = realizadas + noShow;
+    const taxa = comDesfecho > 0 ? Math.round((realizadas / comDesfecho) * 100) : 0;
     return { marcadas, realizadas, noShow, taxa };
   }, [kpiBase]);
 
@@ -534,7 +579,12 @@ export default function AgendaVisitas() {
   }, [resultadoVisita, updateVisita, updateStatus]);
 
   const showCorretor = isAdmin || isGestor || !showOnlyMine;
-  const showWeekCalendar = period === "semana" || period === "proxima-semana";
+  const showWeekCalendar = period === "hoje" || period === "semana" || period === "proxima-semana";
+  // Âncora do mini-calendário: início da semana que contém a data inicial do período
+  const calendarFrom = useMemo(
+    () => format(startOfWeek(new Date(dateRange.from + "T12:00:00"), { weekStartsOn: 1 }), "yyyy-MM-dd"),
+    [dateRange.from]
+  );
 
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
@@ -664,25 +714,33 @@ export default function AgendaVisitas() {
           { key: "marcadas", label: "Marcadas", value: kpis.marcadas, color: "text-[#f59e0b]", border: "border-l-[#f59e0b]" },
           { key: "realizadas", label: "Realizadas", value: kpis.realizadas, color: "text-[#10b981]", border: "border-l-[#10b981]" },
           { key: "no_show", label: "No-show", value: kpis.noShow, color: "text-[#ef4444]", border: "border-l-[#ef4444]" },
-          { key: "taxa", label: "Taxa realização", value: `${kpis.taxa}%`, color: "text-[#4969FF]", border: "border-l-[#4969FF]" },
+          { key: "taxa", label: "Taxa comparecimento", value: `${kpis.taxa}%`, color: "text-[#4969FF]", border: "border-l-[#4969FF]" },
         ].map(kpi => {
           const isStatic = kpi.key === "taxa" || kpi.key === "criadas";
+          const isActive = kpiFilter === kpi.key;
+          const cardClass = cn(
+            "bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 border-l-[3px] rounded-[10px] p-3 text-left transition-all",
+            kpi.border,
+            !isStatic && "cursor-pointer hover:border-[#d4d4d8] dark:hover:border-white/15",
+            isActive && "ring-2 ring-[#4969FF]/30 bg-[#4969FF]/[0.02]"
+          );
+          const inner = (
+            <>
+              <p className="text-[10px] font-medium text-[#a1a1aa] uppercase tracking-wide">{kpi.label}</p>
+              <p className={cn("text-[22px] font-[800] leading-none mt-1 tracking-[-0.5px]", kpi.color)}>{kpi.value}</p>
+            </>
+          );
+          if (isStatic) {
+            return <div key={kpi.key} className={cardClass}>{inner}</div>;
+          }
           return (
             <button
               key={kpi.key}
-              onClick={() => {
-                if (isStatic) return;
-                setKpiFilter(kpiFilter === kpi.key ? null : kpi.key);
-              }}
-              className={cn(
-                "bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 border-l-[3px] rounded-[10px] p-3 text-left transition-all",
-                kpi.border,
-                !isStatic && "cursor-pointer hover:border-[#d4d4d8] dark:hover:border-white/15",
-                kpiFilter === kpi.key && "ring-2 ring-[#4969FF]/30 bg-[#4969FF]/[0.02]"
-              )}
+              aria-pressed={isActive}
+              onClick={() => setKpiFilter(isActive ? null : kpi.key)}
+              className={cardClass}
             >
-              <p className="text-[10px] font-medium text-[#a1a1aa] uppercase tracking-wide">{kpi.label}</p>
-              <p className={cn("text-[22px] font-[800] leading-none mt-1 tracking-[-0.5px]", kpi.color)}>{kpi.value}</p>
+              {inner}
             </button>
           );
         })}
@@ -744,47 +802,49 @@ export default function AgendaVisitas() {
 
       {/* ═══════ CUSTOM DATE RANGE ═══════ */}
       {period === "personalizado" && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <label className="text-[12px] font-medium text-[#71717a]">De:</label>
-          <input
-            type="date"
-            value={customFrom}
-            onChange={e => setCustomFrom(e.target.value)}
-            className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
-          />
-          <label className="text-[12px] font-medium text-[#71717a]">Até:</label>
-          <input
-            type="date"
-            value={customTo}
-            onChange={e => setCustomTo(e.target.value)}
-            className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
-          />
-          <button
-            disabled={!customFrom || !customTo}
-            onClick={() => {
-              if (customFrom && customTo) {
-                // Force re-computation by toggling period
-                setPeriod("hoje");
-                setTimeout(() => setPeriod("personalizado"), 0);
-              }
-            }}
-            className={cn(
-              "h-[32px] px-4 text-[12px] font-semibold rounded-[8px] transition-all",
-              customFrom && customTo
-                ? "bg-[#4969FF] hover:bg-[#3350E6] text-white"
-                : "bg-[#e8e8f0] text-[#a1a1aa] cursor-not-allowed"
-            )}
-          >
-            Aplicar
-          </button>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="text-[12px] font-medium text-[#71717a]">De:</label>
+            <input
+              type="date"
+              value={customFrom}
+              max={customTo || undefined}
+              onChange={e => setCustomFrom(e.target.value)}
+              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+            />
+            <label className="text-[12px] font-medium text-[#71717a]">Até:</label>
+            <input
+              type="date"
+              value={customTo}
+              min={customFrom || undefined}
+              onChange={e => setCustomTo(e.target.value)}
+              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+            />
+            <button
+              disabled={!customFrom || !customTo || !!customError}
+              onClick={() => setAppliedCustom({ from: customFrom, to: customTo })}
+              className={cn(
+                "h-[32px] px-4 text-[12px] font-semibold rounded-[8px] transition-all",
+                customFrom && customTo && !customError
+                  ? "bg-[#4969FF] hover:bg-[#3350E6] text-white"
+                  : "bg-[#e8e8f0] dark:bg-white/10 text-[#a1a1aa] cursor-not-allowed"
+              )}
+            >
+              Aplicar
+            </button>
+          </div>
+          {customError && (
+            <p className="text-[11px] text-[#ef4444] px-1">{customError}</p>
+          )}
         </div>
       )}
       {showWeekCalendar && (
         <div className="bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 rounded-[12px] p-3">
           <MiniWeekCalendar
-            from={dateRange.from}
+            from={calendarFrom}
             visitas={visitas}
             onDayClick={(day) => setScrollToDay(day)}
+            activeDayRef={period === "hoje" ? dateRange.from : undefined}
           />
         </div>
       )}
@@ -792,7 +852,16 @@ export default function AgendaVisitas() {
       {/* ═══════ DAY LIST ═══════ */}
       <div className="space-y-4">
         {isLoading ? (
-          <p className="text-sm text-[#a1a1aa] text-center py-8">Carregando...</p>
+          <div className="space-y-4">
+            {[0, 1].map(g => (
+              <div key={g} className="space-y-1">
+                <div className="h-4 w-40 rounded bg-[#e8e8f0] dark:bg-white/10 animate-pulse mb-2" />
+                {[0, 1, 2].map(c => (
+                  <div key={c} className="h-[44px] rounded-[10px] bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 animate-pulse" />
+                ))}
+              </div>
+            ))}
+          </div>
         ) : dayGroups.length === 0 ? (
           <EmptyState
             icon={<CalendarDays size={22} strokeWidth={1.5} />}
