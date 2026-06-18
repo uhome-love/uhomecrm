@@ -112,10 +112,10 @@ export default function PipelineKanban() {
   // Bug-fix: aguardar useUserRole resolver antes de inicializar/persistir
   // (sem isso, a primeira render usa roleKey="corretor" e persiste "kanban"
   //  na chave do admin/gestor — eternamente sobrescrevendo o default).
-  const roleKey: "admin" | "gestor" | "corretor" = isAdmin ? "admin" : isGestor ? "gestor" : "corretor";
+  const roleKey: "admin" | "diretor" | "gestor" | "corretor" = isAdmin ? "admin" : isDiretor ? "diretor" : isGestor ? "gestor" : "corretor";
   const tabStorageKey = `uhome:pipeline-mode:${roleKey}`;
-  const defaultTabForRole = isAdmin ? "equipes" : isGestor ? "time" : "kanban";
-  const allowedTabsForRole: string[] = isAdmin
+  const defaultTabForRole = isCeoView ? "equipes" : isGestor ? "time" : "kanban";
+  const allowedTabsForRole: string[] = isCeoView
     ? ["equipes", "kanban", "inteligencia"]
     : isGestor
     ? ["time", "kanban", "inteligencia"]
