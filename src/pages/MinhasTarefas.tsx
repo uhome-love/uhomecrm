@@ -993,6 +993,7 @@ export default function MinhasTarefas() {
                 </div>
               </Card>
             ))}
+            </div>
           </div>
         )
       ) : filteredTarefas.length === 0 ? (
