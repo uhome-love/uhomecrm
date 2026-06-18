@@ -4,6 +4,10 @@ import CardMinimal from "./CardMinimal";
 import NegocioCriadoColumn from "./NegocioCriadoColumn";
 import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ChevronLeft, ChevronRight, AlignLeft, Trash2, Loader2 } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
 import { PIPELINE_STAGE_EMOJIS, PIPELINE_STAGE_COLORS, PIPELINE_STAGE_BG } from "@/lib/celebrations";
