@@ -953,6 +953,25 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           onCancel={handleTransitionCancel}
         />
       )}
+
+      {/* Confirmação de limpeza dos descartados */}
+      <AlertDialog open={sweepConfirmOpen} onOpenChange={setSweepConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Limpar descartados?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso envia apenas os leads já na etapa Descarte para a Oferta Ativa
+              e os remove do pipeline visível. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSweepDescartados}>
+              Confirmar limpeza
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
