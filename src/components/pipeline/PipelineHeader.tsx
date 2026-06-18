@@ -51,6 +51,7 @@ export interface PipelineHeaderProps {
 
   // Role flags
   isAdmin: boolean;
+  isDiretor?: boolean;
   isGestor: boolean;
   canAdd: boolean;
 
