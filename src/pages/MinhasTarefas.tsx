@@ -1226,7 +1226,7 @@ export default function MinhasTarefas() {
       {/* Nova Tarefa de Negócio dialog */}
       <Dialog open={showNovaTarefaNegocio} onOpenChange={setShowNovaTarefaNegocio}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-amber-600" /> Nova Tarefa de Negócio</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-warning-600" /> Nova Tarefa de Negócio</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Negócio *</label>
