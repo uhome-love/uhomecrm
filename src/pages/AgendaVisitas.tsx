@@ -589,36 +589,68 @@ export default function AgendaVisitas() {
   return (
     <div className="bg-background p-6 -m-6 min-h-full space-y-4">
 
-      {/* ═══════ HEADER: Title + Search + Toggle + Nova Visita ═══════ */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
-          <CalendarDays size={13} strokeWidth={1.5} className="text-white" />
-        </div>
-        <h1 className="text-[16px] font-bold tracking-[-0.3px] text-foreground">
-          Agenda de visitas
-        </h1>
+      {/* ═══════ HEADER ═══════ */}
+      <div className="space-y-2">
+        {/* Row 1: título + ações primárias */}
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
+            <CalendarDays size={13} strokeWidth={1.5} className="text-white" />
+          </div>
+          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-foreground">
+            Agenda de visitas
+          </h1>
 
-        {/* Search */}
-        <div className="relative flex-1 max-w-[260px]">
-          <Search size={13} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            placeholder="Buscar cliente, empreend. ou corretor..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="text-[12px] pl-8 pr-3 h-[32px] w-full bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] focus:border-primary transition-all outline-none text-foreground placeholder:text-muted-foreground"
-          />
-          {searchTerm && (
-            <button onClick={() => setSearchTerm("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-neutral-500">
-              <X size={12} />
+          <div className="flex-1" />
+
+          {/* Google Calendar — texto some no mobile */}
+          {integration?.connected ? (
+            <button
+              onClick={() => disconnect()}
+              disabled={disconnecting}
+              title={`Conectado: ${integration.email}`}
+              className="h-[32px] px-2.5 sm:px-3 bg-success-500/10 hover:bg-success-500/20 text-success-500 border border-success-500/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            >
+              <Link2 size={12} /> <span className="hidden sm:inline">Agenda conectada</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => connect()}
+              disabled={connecting}
+              title="Vincular Google Agenda"
+              className="h-[32px] px-2.5 sm:px-3 bg-white dark:bg-white/5 hover:bg-primary/5 text-primary border border-primary/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            >
+              <Link2Off size={12} /> <span className="hidden sm:inline">{connecting ? "Conectando…" : "Vincular Google Agenda"}</span>
             </button>
           )}
+
+          {/* Nova Visita */}
+          <button
+            onClick={() => setShowTypeSelector(true)}
+            className="h-[32px] px-3 sm:px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors shrink-0"
+          >
+            <Plus size={13} strokeWidth={2} /> <span className="hidden sm:inline">Nova Visita</span><span className="sm:hidden">Nova</span>
+          </button>
         </div>
 
-        <div className="flex-1" />
+        {/* Row 2: busca + filtros */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[160px] max-w-[280px]">
+            <Search size={13} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              placeholder="Buscar cliente, empreend. ou corretor..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="text-[12px] pl-8 pr-3 h-[32px] w-full bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] focus:border-primary transition-all outline-none text-foreground placeholder:text-muted-foreground"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-neutral-500">
+                <X size={12} />
+              </button>
+            )}
+          </div>
 
-        {/* Visibility toggle */}
-        {(isAdmin || isGestor || true) && (
-          <div className="flex items-center gap-0.5 bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] p-0.5">
+          {/* Visibility toggle */}
+          <div className="flex items-center gap-0.5 bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] p-0.5 shrink-0">
             <button
               onClick={() => setShowOnlyMine(true)}
               className={cn(
@@ -642,69 +674,41 @@ export default function AgendaVisitas() {
               <Users size={11} /> {isAdmin || isGestor ? "Meu time" : "Time"}
             </button>
           </div>
-        )}
 
-        {/* Filtro de Equipe (CEO/Admin/Gestor) */}
-        {(isAdmin || isGestor) && !showOnlyMine && equipesDisponiveis.length > 1 && (
-          <div className="relative">
-            <select
-              value={equipeFilter || ""}
-              onChange={(e) => setEquipeFilter(e.target.value || null)}
-              className={cn(
-                "appearance-none text-[11px] font-medium h-[28px] pl-7 pr-7 rounded-[8px] border outline-none cursor-pointer transition-all",
-                equipeFilter
-                  ? "bg-primary/10 border-primary/30 text-primary"
-                  : "bg-white dark:bg-white/5 border-border dark:border-white/10 text-neutral-500 hover:text-foreground dark:hover:text-white"
-              )}
-              title="Filtrar por equipe"
+          {/* Filtro de Equipe (CEO/Admin/Gestor) */}
+          {(isAdmin || isGestor) && !showOnlyMine && equipesDisponiveis.length > 1 && (
+            <div className="relative shrink-0">
+              <select
+                value={equipeFilter || ""}
+                onChange={(e) => setEquipeFilter(e.target.value || null)}
+                className={cn(
+                  "appearance-none text-[11px] font-medium h-[28px] pl-7 pr-7 rounded-[8px] border outline-none cursor-pointer transition-all",
+                  equipeFilter
+                    ? "bg-primary/10 border-primary/30 text-primary"
+                    : "bg-white dark:bg-white/5 border-border dark:border-white/10 text-neutral-500 hover:text-foreground dark:hover:text-white"
+                )}
+                title="Filtrar por equipe"
+              >
+                <option value="">Todas as equipes</option>
+                {equipesDisponiveis.map((eq) => (
+                  <option key={eq.nome} value={eq.nome}>{eq.nome} ({eq.total})</option>
+                ))}
+              </select>
+              <Users size={11} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
+              <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
+            </div>
+          )}
+
+          {/* Cobrar (discrete) */}
+          {isAdmin && pendingVisitas.length > 0 && (
+            <button
+              onClick={() => setShowCobranca(true)}
+              className="text-[11px] text-danger-500 hover:bg-danger-50 px-2 py-1 rounded-[6px] transition-colors shrink-0"
             >
-              <option value="">Todas as equipes</option>
-              {equipesDisponiveis.map((eq) => (
-                <option key={eq.nome} value={eq.nome}>{eq.nome} ({eq.total})</option>
-              ))}
-            </select>
-            <Users size={11} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
-            <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-current" />
-          </div>
-        )}
-
-        {/* Cobrar (discrete) */}
-        {isAdmin && pendingVisitas.length > 0 && (
-          <button
-            onClick={() => setShowCobranca(true)}
-            className="text-[11px] text-danger-500 hover:bg-danger-50 px-2 py-1 rounded-[6px] transition-colors"
-          >
-            {pendingVisitas.length} pendente{pendingVisitas.length !== 1 ? "s" : ""}
-          </button>
-        )}
-
-        {/* Google Calendar */}
-        {integration?.connected ? (
-          <button
-            onClick={() => disconnect()}
-            disabled={disconnecting}
-            title={`Conectado: ${integration.email}`}
-            className="h-[32px] px-3 bg-success-500/10 hover:bg-success-500/20 text-success-500 border border-success-500/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          >
-            <Link2 size={12} /> Agenda conectada
-          </button>
-        ) : (
-          <button
-            onClick={() => connect()}
-            disabled={connecting}
-            className="h-[32px] px-3 bg-white dark:bg-white/5 hover:bg-primary/5 text-primary border border-primary/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          >
-            <Link2Off size={12} /> {connecting ? "Conectando…" : "Vincular Google Agenda"}
-          </button>
-        )}
-
-        {/* Nova Visita */}
-        <button
-          onClick={() => setShowTypeSelector(true)}
-          className="h-[32px] px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors"
-        >
-          <Plus size={13} strokeWidth={2} /> Nova Visita
-        </button>
+              {pendingVisitas.length} pendente{pendingVisitas.length !== 1 ? "s" : ""}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ═══════ KPIs ═══════ */}
