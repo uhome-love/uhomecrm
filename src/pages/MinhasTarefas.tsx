@@ -927,7 +927,7 @@ export default function MinhasTarefas() {
 
       {/* Task list */}
       {(isLoading || isLoadingNegocios || isLoadingOwnedLeads || isLoadingOwnedLeadTaskMap) ? (
-        <div className="space-y-3">
+        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">files
           {[0, 1, 2].map(i => (
             <Card key={i} className="p-4 border-l-[3px] border-l-muted">
               <div className="flex gap-3 animate-pulse">
