@@ -579,7 +579,12 @@ export default function AgendaVisitas() {
   }, [resultadoVisita, updateVisita, updateStatus]);
 
   const showCorretor = isAdmin || isGestor || !showOnlyMine;
-  const showWeekCalendar = period === "semana" || period === "proxima-semana";
+  const showWeekCalendar = period === "hoje" || period === "semana" || period === "proxima-semana";
+  // Âncora do mini-calendário: início da semana que contém a data inicial do período
+  const calendarFrom = useMemo(
+    () => format(startOfWeek(new Date(dateRange.from + "T12:00:00"), { weekStartsOn: 1 }), "yyyy-MM-dd"),
+    [dateRange.from]
+  );
 
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
