@@ -1240,9 +1240,9 @@ export default function MinhasTarefas() {
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="Buscar negócio..." value={negocioSearch} onChange={e => setNegocioSearch(e.target.value)} className="pl-8" />
                   {searchNegocios.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                    <div role="listbox" aria-label="Resultados da busca de negócio" className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto">
                       {searchNegocios.map((n: any) => (
-                        <button key={n.id} className="w-full px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => {
+                        <button key={n.id} type="button" role="option" aria-selected={false} className="w-full px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none" onClick={() => {
                           setSelectedNegocioId(n.id);
                           setSelectedNegocioNome(n.nome_cliente || "Sem nome");
                           setNegocioSearch("");
