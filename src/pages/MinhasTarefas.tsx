@@ -876,7 +876,7 @@ export default function MinhasTarefas() {
   ];
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 space-y-5">
       <PageHeader
         title="Minhas Tarefas"
         subtitle="Organize seu dia e nunca perca um follow-up"
@@ -927,7 +927,7 @@ export default function MinhasTarefas() {
 
       {/* Task list */}
       {(isLoading || isLoadingNegocios || isLoadingOwnedLeads || isLoadingOwnedLeadTaskMap) ? (
-        <div className="space-y-3">
+        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
           {[0, 1, 2].map(i => (
             <Card key={i} className="p-4 border-l-[3px] border-l-muted">
               <div className="flex gap-3 animate-pulse">
@@ -947,10 +947,11 @@ export default function MinhasTarefas() {
             <p className="text-muted-foreground">🎉 Todos os seus leads ativos têm tarefa criada!</p>
           </Card>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
               🟡 Leads ativos sem nenhuma tarefa pendente. Crie um follow-up pra não perder o contato.
             </p>
+            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
             {desatualizados.map(lead => (
               <Card key={lead.id} className="p-3 border-l-[3px] border-l-warning-500 bg-warning-500/5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -992,6 +993,7 @@ export default function MinhasTarefas() {
                 </div>
               </Card>
             ))}
+            </div>
           </div>
         )
       ) : filteredTarefas.length === 0 ? (
@@ -999,7 +1001,7 @@ export default function MinhasTarefas() {
           <p className="text-muted-foreground">🎉 Nenhuma tarefa {activeTab === "atrasadas" ? "atrasada" : activeTab === "concluidas" ? "concluída recente" : "para este período"}!</p>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
           {filteredTarefas.map(tarefa => {
             const isOverdue = tarefa.vence_em && isBefore(parseDateBRT(tarefa.vence_em), todayStart) && tarefa.status === "pendente";
             const isConcluida = tarefa.status === "concluida";
