@@ -947,10 +947,11 @@ export default function MinhasTarefas() {
             <p className="text-muted-foreground">🎉 Todos os seus leads ativos têm tarefa criada!</p>
           </Card>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
               🟡 Leads ativos sem nenhuma tarefa pendente. Crie um follow-up pra não perder o contato.
             </p>
+            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
             {desatualizados.map(lead => (
               <Card key={lead.id} className="p-3 border-l-[3px] border-l-warning-500 bg-warning-500/5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
