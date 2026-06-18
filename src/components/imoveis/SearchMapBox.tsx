@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Navigation, Search, Bed, Maximize, ToggleLeft, ToggleRight, PenTool, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
-const MAPBOX_TOKEN = "pk.eyJ1IjoibHVjYXN1aG9tZSIsImEiOiJjbW16c2l2dmUwYmxsMnJwdDI2bGxrazBkIn0.B4dp727gJlQQIWTci7GpFQ";
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
 const CLUSTER_MAX_ZOOM = 15;
