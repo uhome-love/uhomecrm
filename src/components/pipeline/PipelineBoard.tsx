@@ -838,8 +838,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     </span>
                     {stage.tipo === "descarte" && stageLeads.length > 0 && (isGestor || isAdmin) && (
                       <button
-                        onClick={handleSweepDescartados}
+                        onClick={() => setSweepConfirmOpen(true)}
                         disabled={isSweeping}
+                        aria-label="Limpar descartados e enviar para Oferta Ativa"
                         title="Limpar descartados → Oferta Ativa"
                         className="ml-1 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                         style={{ fontSize: 11 }}
