@@ -850,50 +850,36 @@ export default function MinhasTarefas() {
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ClipboardList className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Minhas Tarefas</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <ClipboardList className="h-6 w-6 text-primary shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Minhas Tarefas</h1>
             <p className="text-sm text-muted-foreground">Organize seu dia e nunca perca um follow-up</p>
           </div>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setShowTipoSelector(true)}>
+        <Button size="sm" className="gap-1.5 self-start sm:self-auto shrink-0" onClick={() => setShowTipoSelector(true)}>
           <Plus className="h-4 w-4" /> Nova Tarefa
         </Button>
       </div>
 
       {/* Category tabs: Leads vs Negócios */}
-      <div className="flex gap-2">
-        <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("todas"); }}>
+      <div className="flex gap-2 flex-wrap">
+        <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" aria-pressed={categoria === "leads"} className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("todas"); }}>
           🎯 Tarefas de Leads
           <Badge variant="secondary" className="ml-1 text-xs">{tarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
-        <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("todas"); }}>
+        <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" aria-pressed={categoria === "negocios"} className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("todas"); }}>
           💼 Tarefas de Negócios
           <Badge variant="secondary" className="ml-1 text-xs">{negociosTarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
       </div>
 
-      {/* Summary */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-        <span>📊 <strong className="text-foreground">Total pendentes:</strong> {pendentes.length}</span>
-        <span>·</span>
-        <span><strong className="text-destructive">Atrasadas:</strong> {atrasadasTarefas.length}</span>
-        <span>·</span>
-        <span><strong className="text-foreground">Hoje:</strong> {hoje.length}</span>
-        <span>·</span>
-        <span><strong className="text-foreground">Amanhã:</strong> {amanha.length}</span>
-        <span>·</span>
-        <span><strong className="text-foreground">Semana:</strong> {semana.length}</span>
-        {categoria === "leads" && (<><span>·</span><span><strong className="text-amber-600">Desatualizados:</strong> {desatualizados.length}</span></>)}
-      </div>
-
       {/* Tabs */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap" role="tablist" aria-label="Filtrar tarefas por período">
         {tabs.map(tab => {
           const btn = (
-            <Button key={tab.key} variant={activeTab === tab.key ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
+            <Button key={tab.key} role="tab" aria-selected={activeTab === tab.key} variant={activeTab === tab.key ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
               {tab.label}
               <Badge variant="secondary" className="ml-1 text-xs">{tab.count}</Badge>
             </Button>
@@ -926,7 +912,7 @@ export default function MinhasTarefas() {
               🟡 Leads ativos sem nenhuma tarefa pendente. Crie um follow-up pra não perder o contato.
             </p>
             {desatualizados.map(lead => (
-              <Card key={lead.id} className="p-3 border-l-[3px] border-l-amber-400 bg-amber-500/5">
+              <Card key={lead.id} className="p-3 border-l-[3px] border-l-warning-500 bg-warning-500/5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="min-w-0 flex-1">
                     <button
@@ -979,11 +965,12 @@ export default function MinhasTarefas() {
             const isConcluida = tarefa.status === "concluida";
             return (
               <Card key={tarefa.id} className={`p-4 border-l-[3px] ${
-                isConcluida ? "border-l-green-500 bg-green-500/5 opacity-70" :
-                isOverdue ? "border-l-red-500 bg-red-500/5" :
-                tarefa.vence_em && isToday(parseDateBRT(tarefa.vence_em)) ? "border-l-yellow-500 bg-yellow-500/5" :
+                isConcluida ? "border-l-success-500 bg-success-500/5 opacity-70" :
+                isOverdue ? "border-l-destructive bg-destructive/5" :
+                tarefa.vence_em && isToday(parseDateBRT(tarefa.vence_em)) ? "border-l-warning-500 bg-warning-500/5" :
                 "border-l-muted-foreground/40"
               }`}>
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
@@ -1147,9 +1134,9 @@ export default function MinhasTarefas() {
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="Buscar lead..." value={leadSearch} onChange={e => setLeadSearch(e.target.value)} className="pl-8" />
                   {searchLeads.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                    <div role="listbox" aria-label="Resultados da busca de lead" className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto">
                       {searchLeads.map(l => (
-                        <button key={l.id} className="w-full px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => {
+                        <button key={l.id} type="button" role="option" aria-selected={false} className="w-full px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none" onClick={() => {
                           setSelectedLeadId(l.id);
                           setSelectedLeadNome(l.nome);
                           setLeadSearch("");
@@ -1210,8 +1197,9 @@ export default function MinhasTarefas() {
               onClick={() => { setShowTipoSelector(false); setShowNovaTarefa(true); }}
               className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border/60 bg-card hover:border-primary hover:bg-primary/5 transition-all group"
             >
-              <div className="h-14 w-14 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                <Target className="h-7 w-7 text-blue-600" />
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <Target className="h-7 w-7 text-primary" />
+
               </div>
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">Tarefa de Lead</p>
@@ -1222,8 +1210,9 @@ export default function MinhasTarefas() {
               onClick={() => { setShowTipoSelector(false); setShowNovaTarefaNegocio(true); }}
               className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border/60 bg-card hover:border-primary hover:bg-primary/5 transition-all group"
             >
-              <div className="h-14 w-14 rounded-2xl bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
-                <Briefcase className="h-7 w-7 text-amber-600" />
+              <div className="h-14 w-14 rounded-2xl bg-warning-500/10 flex items-center justify-center group-hover:bg-warning-500/20 transition-colors">
+                <Briefcase className="h-7 w-7 text-warning-700" />
+
               </div>
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">Tarefa de Negócio</p>
@@ -1237,7 +1226,7 @@ export default function MinhasTarefas() {
       {/* Nova Tarefa de Negócio dialog */}
       <Dialog open={showNovaTarefaNegocio} onOpenChange={setShowNovaTarefaNegocio}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-amber-600" /> Nova Tarefa de Negócio</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-warning-700" /> Nova Tarefa de Negócio</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Negócio *</label>
@@ -1251,9 +1240,9 @@ export default function MinhasTarefas() {
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="Buscar negócio..." value={negocioSearch} onChange={e => setNegocioSearch(e.target.value)} className="pl-8" />
                   {searchNegocios.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                    <div role="listbox" aria-label="Resultados da busca de negócio" className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto">
                       {searchNegocios.map((n: any) => (
-                        <button key={n.id} className="w-full px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => {
+                        <button key={n.id} type="button" role="option" aria-selected={false} className="w-full px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none" onClick={() => {
                           setSelectedNegocioId(n.id);
                           setSelectedNegocioNome(n.nome_cliente || "Sem nome");
                           setNegocioSearch("");
