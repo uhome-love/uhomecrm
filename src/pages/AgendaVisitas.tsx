@@ -62,20 +62,20 @@ const PERIOD_OPTIONS: { key: Period; label: string }[] = [
 ];
 
 const STATUS_PILL_COLORS: Record<string, string> = {
-  marcada: "bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30",
-  confirmada: "bg-[#4969FF]/15 text-[#4969FF] border-[#4969FF]/30",
-  realizada: "bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30",
+  marcada: "bg-warning-500/15 text-warning-500 border-warning-500/30",
+  confirmada: "bg-primary/15 text-primary border-primary/30",
+  realizada: "bg-success-500/15 text-success-500 border-success-500/30",
   reagendada: "bg-[#f97316]/15 text-[#f97316] border-[#f97316]/30",
-  no_show: "bg-[#ef4444]/15 text-[#ef4444] border-[#ef4444]/30",
+  no_show: "bg-danger-500/15 text-danger-500 border-danger-500/30",
   cancelada: "bg-[#71717a]/15 text-[#71717a] border-[#71717a]/30",
 };
 
 const STATUS_DOT_COLORS: Record<string, string> = {
-  marcada: "bg-[#f59e0b]",
-  confirmada: "bg-[#4969FF]",
-  realizada: "bg-[#10b981]",
+  marcada: "bg-warning-500",
+  confirmada: "bg-primary",
+  realizada: "bg-success-500",
   reagendada: "bg-[#f97316]",
-  no_show: "bg-[#ef4444]",
+  no_show: "bg-danger-500",
   cancelada: "bg-[#71717a]",
 };
 
@@ -100,8 +100,8 @@ function MiniWeekCalendar({
       const hasRealizada = dayVisitas.some(v => v.status === "realizada");
       const hasMarcada = dayVisitas.some(v => ["marcada", "confirmada", "reagendada"].includes(v.status));
       let dotColor = "bg-transparent";
-      if (hasRealizada) dotColor = "bg-[#10b981]";
-      else if (hasMarcada) dotColor = "bg-[#f59e0b]";
+      if (hasRealizada) dotColor = "bg-success-500";
+      else if (hasMarcada) dotColor = "bg-warning-500";
       else if (dayVisitas.length > 0) dotColor = "bg-[#a1a1aa]";
       return { date: d, key, dayVisitas, dotColor, count: dayVisitas.length };
     });
@@ -120,15 +120,15 @@ function MiniWeekCalendar({
             onClick={() => onDayClick(d.key)}
             className={cn(
               "flex flex-col items-center gap-0.5 py-2 px-1 rounded-[10px] transition-all",
-              today && !active && "bg-[#4969FF]/5",
-              active && "bg-[#4969FF]/10 ring-1 ring-[#4969FF]/30",
+              today && !active && "bg-primary/5",
+              active && "bg-primary/10 ring-1 ring-primary/30",
               !today && !active && "hover:bg-[#f7f7fb] dark:hover:bg-white/5"
             )}
           >
             <span className="text-[10px] font-medium text-[#a1a1aa]">{DAY_NAMES[i]}</span>
             <span className={cn(
               "text-[14px] font-bold w-7 h-7 flex items-center justify-center rounded-full",
-              today ? "bg-[#4969FF] text-white" : "text-[#0a0a0a] dark:text-[#fafafa]"
+              today ? "bg-primary text-white" : "text-[#0a0a0a] dark:text-[#fafafa]"
             )}>
               {format(d.date, "d")}
             </span>
@@ -173,8 +173,8 @@ function VisitaCompactCard({
         isColleague
           ? "bg-[#f7f7fb]/60 dark:bg-white/3 border-[#e8e8f0]/60 dark:border-white/5"
           : "bg-white dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/8",
-        isOverdue && "border-[#ef4444]/40 bg-[#ef4444]/[0.03]",
-        "hover:border-[#4969FF]/30"
+        isOverdue && "border-danger-500/40 bg-danger-500/[0.03]",
+        "hover:border-primary/30"
       )}
       onClick={() => onEdit(visita)}
     >
@@ -203,13 +203,13 @@ function VisitaCompactCard({
           {showCorretor && visita.corretor_nome && (
             <span className={cn(
               "text-[11px] font-medium truncate hidden sm:block max-w-[100px]",
-              isColleague ? "text-[#4969FF]" : "text-[#71717a]"
+              isColleague ? "text-primary" : "text-[#71717a]"
             )}>
               {visita.corretor_nome.split(" ")[0]}
             </span>
           )}
           {isOverdue && (
-            <span className="text-[9px] font-bold text-[#ef4444] bg-[#ef4444]/10 px-1.5 py-0.5 rounded-full shrink-0 hidden sm:inline">
+            <span className="text-[9px] font-bold text-danger-500 bg-danger-500/10 px-1.5 py-0.5 rounded-full shrink-0 hidden sm:inline">
               VENCIDA
             </span>
           )}
@@ -221,12 +221,12 @@ function VisitaCompactCard({
               <span className="text-[10px] text-[#a1a1aa] truncate">{visita.empreendimento}</span>
             )}
             {showCorretor && visita.corretor_nome && (
-              <span className={cn("text-[10px] font-medium truncate", isColleague ? "text-[#4969FF]" : "text-[#71717a]")}>
+              <span className={cn("text-[10px] font-medium truncate", isColleague ? "text-primary" : "text-[#71717a]")}>
                 {visita.corretor_nome.split(" ")[0]}
               </span>
             )}
             {isOverdue && (
-              <span className="text-[9px] font-bold text-[#ef4444] shrink-0">VENCIDA</span>
+              <span className="text-[9px] font-bold text-danger-500 shrink-0">VENCIDA</span>
             )}
           </div>
         )}
@@ -245,7 +245,7 @@ function VisitaCompactCard({
         {visita.status !== "realizada" && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkRealizada(visita); }}
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#10b981]/10 text-[#10b981] transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-success-500/10 text-success-500 transition-colors"
             title="Marcar como Realizada"
             aria-label="Marcar como Realizada"
           >
@@ -255,7 +255,7 @@ function VisitaCompactCard({
         {visita.status !== "no_show" && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkNoShow(visita.id); }}
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#ef4444]/10 text-[#ef4444] transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-danger-500/10 text-danger-500 transition-colors"
             title="Marcar como No-show"
             aria-label="Marcar como No-show"
           >
@@ -265,7 +265,7 @@ function VisitaCompactCard({
         {isDone && (
           <button
             onClick={(e) => { e.stopPropagation(); onReabrir(visita.id); }}
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#4969FF]/10 text-[#4969FF] transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-primary/10 text-primary transition-colors"
             title="Reabrir visita (voltar para Marcada)"
             aria-label="Reabrir visita"
           >
@@ -309,19 +309,19 @@ function DayGroup({
       <div className="flex items-center gap-2 px-1 py-1.5">
         <span className={cn(
           "text-[13px] font-bold tracking-[-0.2px]",
-          today ? "text-[#4969FF]" : "text-[#0a0a0a] dark:text-[#fafafa]"
+          today ? "text-primary" : "text-[#0a0a0a] dark:text-[#fafafa]"
         )}>
           {dayLabel}
         </span>
         <span className="text-[12px] text-[#a1a1aa]">· {dateLabel}</span>
         {today && (
-          <span className="text-[10px] font-bold bg-[#4969FF] text-white px-2 py-0.5 rounded-full">HOJE</span>
+          <span className="text-[10px] font-bold bg-primary text-white px-2 py-0.5 rounded-full">HOJE</span>
         )}
         <div className="flex-1" />
         <span className="text-[11px] text-[#a1a1aa]">
           {visitas.length} visita{visitas.length !== 1 ? "s" : ""}
           {realizadas > 0 && (
-            <span className="text-[#10b981] font-semibold ml-1">· {realizadas} realizada{realizadas !== 1 ? "s" : ""}</span>
+            <span className="text-success-500 font-semibold ml-1">· {realizadas} realizada{realizadas !== 1 ? "s" : ""}</span>
           )}
         </span>
       </div>
@@ -591,7 +591,7 @@ export default function AgendaVisitas() {
 
       {/* ═══════ HEADER: Title + Search + Toggle + Nova Visita ═══════ */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
           <CalendarDays size={13} strokeWidth={1.5} className="text-white" />
         </div>
         <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#0a0a0a] dark:text-[#fafafa]">
@@ -605,7 +605,7 @@ export default function AgendaVisitas() {
             placeholder="Buscar cliente, empreend. ou corretor..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="text-[12px] pl-8 pr-3 h-[32px] w-full bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] focus:border-[#4969FF] transition-all outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
+            className="text-[12px] pl-8 pr-3 h-[32px] w-full bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] focus:border-primary transition-all outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
           />
           {searchTerm && (
             <button onClick={() => setSearchTerm("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#a1a1aa] hover:text-[#71717a]">
@@ -624,7 +624,7 @@ export default function AgendaVisitas() {
               className={cn(
                 "text-[11px] font-medium px-2.5 py-1 rounded-[6px] transition-all flex items-center gap-1",
                 showOnlyMine
-                  ? "bg-[#4969FF] text-white"
+                  ? "bg-primary text-white"
                   : "text-[#71717a] hover:text-[#0a0a0a] dark:hover:text-white"
               )}
             >
@@ -635,7 +635,7 @@ export default function AgendaVisitas() {
               className={cn(
                 "text-[11px] font-medium px-2.5 py-1 rounded-[6px] transition-all flex items-center gap-1",
                 !showOnlyMine
-                  ? "bg-[#4969FF] text-white"
+                  ? "bg-primary text-white"
                   : "text-[#71717a] hover:text-[#0a0a0a] dark:hover:text-white"
               )}
             >
@@ -653,7 +653,7 @@ export default function AgendaVisitas() {
               className={cn(
                 "appearance-none text-[11px] font-medium h-[28px] pl-7 pr-7 rounded-[8px] border outline-none cursor-pointer transition-all",
                 equipeFilter
-                  ? "bg-[#4969FF]/10 border-[#4969FF]/30 text-[#4969FF]"
+                  ? "bg-primary/10 border-primary/30 text-primary"
                   : "bg-white dark:bg-white/5 border-[#e8e8f0] dark:border-white/10 text-[#71717a] hover:text-[#0a0a0a] dark:hover:text-white"
               )}
               title="Filtrar por equipe"
@@ -672,7 +672,7 @@ export default function AgendaVisitas() {
         {isAdmin && pendingVisitas.length > 0 && (
           <button
             onClick={() => setShowCobranca(true)}
-            className="text-[11px] text-[#ef4444] hover:bg-[#fef2f2] px-2 py-1 rounded-[6px] transition-colors"
+            className="text-[11px] text-danger-500 hover:bg-[#fef2f2] px-2 py-1 rounded-[6px] transition-colors"
           >
             {pendingVisitas.length} pendente{pendingVisitas.length !== 1 ? "s" : ""}
           </button>
@@ -684,7 +684,7 @@ export default function AgendaVisitas() {
             onClick={() => disconnect()}
             disabled={disconnecting}
             title={`Conectado: ${integration.email}`}
-            className="h-[32px] px-3 bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            className="h-[32px] px-3 bg-success-500/10 hover:bg-success-500/20 text-success-500 border border-success-500/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
           >
             <Link2 size={12} /> Agenda conectada
           </button>
@@ -692,7 +692,7 @@ export default function AgendaVisitas() {
           <button
             onClick={() => connect()}
             disabled={connecting}
-            className="h-[32px] px-3 bg-white dark:bg-white/5 hover:bg-[#4969FF]/5 text-[#4969FF] border border-[#4969FF]/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            className="h-[32px] px-3 bg-white dark:bg-white/5 hover:bg-primary/5 text-primary border border-primary/30 text-[11px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
           >
             <Link2Off size={12} /> {connecting ? "Conectando…" : "Vincular Google Agenda"}
           </button>
@@ -701,7 +701,7 @@ export default function AgendaVisitas() {
         {/* Nova Visita */}
         <button
           onClick={() => setShowTypeSelector(true)}
-          className="h-[32px] px-4 bg-[#4969FF] hover:bg-[#3350E6] text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors"
+          className="h-[32px] px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors"
         >
           <Plus size={13} strokeWidth={2} /> Nova Visita
         </button>
@@ -711,10 +711,10 @@ export default function AgendaVisitas() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         {[
           { key: "criadas", label: "Criadas", value: kpiBase.length, color: "text-[#6366f1]", border: "border-l-[#6366f1]" },
-          { key: "marcadas", label: "Marcadas", value: kpis.marcadas, color: "text-[#f59e0b]", border: "border-l-[#f59e0b]" },
-          { key: "realizadas", label: "Realizadas", value: kpis.realizadas, color: "text-[#10b981]", border: "border-l-[#10b981]" },
-          { key: "no_show", label: "No-show", value: kpis.noShow, color: "text-[#ef4444]", border: "border-l-[#ef4444]" },
-          { key: "taxa", label: "Taxa comparecimento", value: `${kpis.taxa}%`, color: "text-[#4969FF]", border: "border-l-[#4969FF]" },
+          { key: "marcadas", label: "Marcadas", value: kpis.marcadas, color: "text-warning-500", border: "border-l-warning-500" },
+          { key: "realizadas", label: "Realizadas", value: kpis.realizadas, color: "text-success-500", border: "border-l-success-500" },
+          { key: "no_show", label: "No-show", value: kpis.noShow, color: "text-danger-500", border: "border-l-danger-500" },
+          { key: "taxa", label: "Taxa comparecimento", value: `${kpis.taxa}%`, color: "text-primary", border: "border-l-primary" },
         ].map(kpi => {
           const isStatic = kpi.key === "taxa" || kpi.key === "criadas";
           const isActive = kpiFilter === kpi.key;
@@ -722,7 +722,7 @@ export default function AgendaVisitas() {
             "bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 border-l-[3px] rounded-[10px] p-3 text-left transition-all",
             kpi.border,
             !isStatic && "cursor-pointer hover:border-[#d4d4d8] dark:hover:border-white/15",
-            isActive && "ring-2 ring-[#4969FF]/30 bg-[#4969FF]/[0.02]"
+            isActive && "ring-2 ring-primary/30 bg-primary/[0.02]"
           );
           const inner = (
             <>
@@ -750,15 +750,15 @@ export default function AgendaVisitas() {
       {(kpiFilter || searchTerm || equipeFilter) && (
         <div className="flex items-center gap-2 flex-wrap">
           {kpiFilter && (
-            <span className="text-[11px] bg-[#4969FF]/10 text-[#4969FF] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
               Filtro: {kpiFilter === "marcadas" ? "Marcadas" : kpiFilter === "realizadas" ? "Realizadas" : "No-show"}
-              <button onClick={() => setKpiFilter(null)} className="hover:text-[#3350E6]"><X size={10} /></button>
+              <button onClick={() => setKpiFilter(null)} className="hover:text-primary-600"><X size={10} /></button>
             </span>
           )}
           {equipeFilter && (
-            <span className="text-[11px] bg-[#4969FF]/10 text-[#4969FF] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
               Equipe: {equipeFilter}
-              <button onClick={() => setEquipeFilter(null)} className="hover:text-[#3350E6]"><X size={10} /></button>
+              <button onClick={() => setEquipeFilter(null)} className="hover:text-primary-600"><X size={10} /></button>
             </span>
           )}
           {searchTerm && (
@@ -769,7 +769,7 @@ export default function AgendaVisitas() {
           )}
           <button
             onClick={() => { setKpiFilter(null); setSearchTerm(""); setEquipeFilter(null); }}
-            className="text-[11px] text-[#ef4444] hover:underline"
+            className="text-[11px] text-danger-500 hover:underline"
           >
             Limpar tudo
           </button>
@@ -785,7 +785,7 @@ export default function AgendaVisitas() {
             className={cn(
               "px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-all",
               period === p.key
-                ? "bg-[#4969FF] text-white"
+                ? "bg-primary text-white"
                 : "text-[#71717a] bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 hover:text-[#0a0a0a] dark:hover:text-white"
             )}
           >
@@ -810,7 +810,7 @@ export default function AgendaVisitas() {
               value={customFrom}
               max={customTo || undefined}
               onChange={e => setCustomFrom(e.target.value)}
-              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-primary text-[#0a0a0a] dark:text-[#fafafa] transition-all"
             />
             <label className="text-[12px] font-medium text-[#71717a]">Até:</label>
             <input
@@ -818,7 +818,7 @@ export default function AgendaVisitas() {
               value={customTo}
               min={customFrom || undefined}
               onChange={e => setCustomTo(e.target.value)}
-              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-primary text-[#0a0a0a] dark:text-[#fafafa] transition-all"
             />
             <button
               disabled={!customFrom || !customTo || !!customError}
@@ -826,7 +826,7 @@ export default function AgendaVisitas() {
               className={cn(
                 "h-[32px] px-4 text-[12px] font-semibold rounded-[8px] transition-all",
                 customFrom && customTo && !customError
-                  ? "bg-[#4969FF] hover:bg-[#3350E6] text-white"
+                  ? "bg-primary hover:bg-primary-600 text-white"
                   : "bg-[#e8e8f0] dark:bg-white/10 text-[#a1a1aa] cursor-not-allowed"
               )}
             >
@@ -834,7 +834,7 @@ export default function AgendaVisitas() {
             </button>
           </div>
           {customError && (
-            <p className="text-[11px] text-[#ef4444] px-1">{customError}</p>
+            <p className="text-[11px] text-danger-500 px-1">{customError}</p>
           )}
         </div>
       )}
