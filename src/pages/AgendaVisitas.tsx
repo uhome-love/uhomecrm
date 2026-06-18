@@ -421,6 +421,9 @@ function WeekBoard({
                         {v.empreendimento && (
                           <span className="text-[9px] text-muted-foreground truncate">{v.empreendimento}</span>
                         )}
+                        {showCorretor && v.corretor_nome && (
+                          <span className="text-[9px] font-medium text-primary truncate">{v.corretor_nome.split(" ")[0]}</span>
+                        )}
                       </button>
                     );
                   })
