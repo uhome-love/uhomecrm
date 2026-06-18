@@ -912,7 +912,7 @@ export default function MinhasTarefas() {
               🟡 Leads ativos sem nenhuma tarefa pendente. Crie um follow-up pra não perder o contato.
             </p>
             {desatualizados.map(lead => (
-              <Card key={lead.id} className="p-3 border-l-[3px] border-l-amber-400 bg-amber-500/5">
+              <Card key={lead.id} className="p-3 border-l-[3px] border-l-warning-500 bg-warning-500/5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="min-w-0 flex-1">
                     <button
