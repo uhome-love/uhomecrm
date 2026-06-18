@@ -988,6 +988,8 @@ export default function AgendaVisitas() {
             title="Nenhuma visita neste período"
             description="As visitas agendadas aparecerão aqui organizadas por dia"
           />
+        ) : viewMode === "semana" ? (
+          <WeekBoard from={calendarFrom} visitas={filtered} onEdit={handleEdit} />
         ) : (
           dayGroups.map(([dateStr, dayVisitas]) => (
             <DayGroup
