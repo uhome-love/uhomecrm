@@ -255,3 +255,46 @@ export function isTaskHigherPriority(candidate: ProximaTarefa, current: ProximaT
   }
   return false;
 }
+
+// ─────────────────────────────────────────────────────────────────
+// getLeadStatusFilter + LeadClientStatus + TIPO_LABELS + toValidDateFromYMD
+// Migrados de CardStatusLine.tsx (Quality Sprint, Jun/2026). CardStatusLine
+// foi deletado; estes símbolos são a fonte canônica de classificação de
+// status de lead/tarefa no Pipeline e na Central de Tarefas.
+// ─────────────────────────────────────────────────────────────────
+
+export const TIPO_LABELS: Record<string, string> = {
+  follow_up: "Follow-up", ligar: "Ligar", whatsapp: "WhatsApp",
+  enviar_proposta: "Proposta", enviar_material: "Material",
+  marcar_visita: "Visita", confirmar_visita: "Confirmar visita",
+  retornar_cliente: "Retornar", outro: "Tarefa",
+};
+
+export function toValidDateFromYMD(value: string | null | undefined): Date | null {
+  return _toValidDateFromYMD(value);
+}
+
+export type LeadClientStatus = "em_dia" | "desatualizado" | "tarefa_atrasada";
+
+export function getLeadStatusFilter(
+  lead: PipelineLead,
+  proximaTarefa: ProximaTarefa | null,
+  stageTipo?: string,
+): LeadClientStatus {
+  // Leads descartados não são considerados atrasados/desatualizados
+  if (stageTipo === "descarte") return "em_dia";
+  // Leads com negócio criado (negocio_id) são sempre considerados "em dia"
+  if ((lead as any).negocio_id) return "em_dia";
+
+  // Sem tarefa pendente real (pipeline_tarefas): não usar fallback para
+  // lead.data_proxima_acao — esse campo legado costuma ficar desatualizado
+  // (não é zerado ao concluir tarefa) e gerava falsos "🔴 Atrasado".
+  if (!proximaTarefa?.vence_em) {
+    if (proximaTarefa?.tipo) return "em_dia";
+    return "desatualizado";
+  }
+
+  // Regra canônica única de classificação — ver src/lib/taskBuckets.ts.
+  const { isOverdue } = classifyTask(proximaTarefa);
+  return isOverdue ? "tarefa_atrasada" : "em_dia";
+}
