@@ -1008,7 +1008,7 @@ export default function MinhasTarefas() {
             const isToday_ = tarefa.vence_em && isToday(parseDateBRT(tarefa.vence_em));
             const isConcluida = tarefa.status === "concluida";
             const tv = tipoVisual(tarefa.tipo);
-            const prazoTone = isConcluida ? "success-700 bg-success-500/10" : isOverdue ? "destructive bg-destructive/10" : isToday_ ? "warning-700 bg-warning-500/10" : "muted-foreground bg-muted";
+            const prazoTone = isConcluida ? "text-success-700 bg-success-500/10" : isOverdue ? "text-destructive bg-destructive/10" : isToday_ ? "text-warning-700 bg-warning-500/10" : "text-muted-foreground bg-muted";
             return (
               <div key={tarefa.id} className={cn(
                 "relative flex flex-col lg:flex-row lg:items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/40",
