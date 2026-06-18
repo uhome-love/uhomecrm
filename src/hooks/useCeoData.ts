@@ -173,7 +173,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     
     // Fetch split-attributed deals from canonical view
     // assinado/vendido by data_assinatura, proposta/negociacao/documentacao by data_criacao
-    let negAssinadoQuery = supabase.from("v_kpi_negocios").select("id, auth_user_id, vgv_efetivo, fase, fator_split, is_parceria, pipeline_lead_id")
+    let negAssinadoQuery = supabase.from("v_kpi_negocios").select("id, auth_user_id, vgv_efetivo, fase, fator_split, is_parceria, pipeline_lead_id, equipe_gerente_auth_id")
       .in("fase", ["assinado", "vendido"])
       .gte("data_assinatura", dateRange.start)
       .lte("data_assinatura", dateRange.end);
@@ -188,7 +188,12 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
 
     // Build VGV per gerente and assign to corretores using auth_user_id directly
     // v_kpi_negocios already handles partnership splits — no manual parceriaMap needed
-    const pdnByGerente = new Map<string, { gerado: number; assinado: number; propostas_count: number }>();
+    // NOTE: VGV ASSINADO de EQUIPE é agrupado pela EQUIPE DONA DA VENDA (snapshot
+    // equipe_gerente_auth_id), não pela equipe atual do corretor. O VGV por CORRETOR
+    // permanece intacto (somado por auth_user_id).
+    const pdnByGerente = new Map<string, { gerado: number; propostas_count: number }>();
+    // VGV assinado por equipe dona da venda (snapshot) — inclui equipes inativas (ex.: Gabrielle)
+    const assinadoByEquipe = new Map<string, number>();
     
     // Track unique deal IDs per gerente to count propostas correctly (avoid double-counting split deals)
     const gerenteDealIds = new Map<string, Set<string>>();
@@ -196,15 +201,22 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     for (const p of pdns) {
       const authUserId = p.auth_user_id;
       if (!authUserId) continue;
-      
+
+      const fase = p.fase || "";
+      const vgv = Number(p.vgv_efetivo || 0);
+
+      // Gerente-level ASSINADO pela equipe dona da venda (independente da equipe atual)
+      if (fase === "assinado" || fase === "vendido") {
+        const eqId = (p as any).equipe_gerente_auth_id as string | null;
+        if (eqId) assinadoByEquipe.set(eqId, (assinadoByEquipe.get(eqId) || 0) + vgv);
+      }
+
       const agg = corretorAggMap.get(authUserId);
       if (!agg) continue;
       
       const gId = agg.gerente_id;
-      const fase = p.fase || "";
-      const vgv = Number(p.vgv_efetivo || 0);
 
-      // Assign split-aware VGV directly to corretor
+      // Assign split-aware VGV directly to corretor (VGV do corretor preservado)
       if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") {
         agg.real_vgv_gerado += vgv;
       }
@@ -212,8 +224,8 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
         agg.real_vgv_assinado += vgv;
       }
 
-      // Aggregate at gerente level
-      const curr = pdnByGerente.get(gId) || { gerado: 0, assinado: 0, propostas_count: 0 };
+      // Aggregate gerado + propostas at gerente level (equipe atual)
+      const curr = pdnByGerente.get(gId) || { gerado: 0, propostas_count: 0 };
       if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") {
         curr.gerado += vgv;
         // Count unique deals for propostas (partnership deals appear twice in view)
@@ -224,7 +236,6 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
           curr.propostas_count++;
         }
       }
-      if (fase === "assinado" || fase === "vendido") curr.assinado += vgv;
       pdnByGerente.set(gId, curr);
     }
 
@@ -234,15 +245,31 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
 
     // Set VGV + Propostas totals on gerente level from PDN
     for (const gId of gerenteIdsAll) {
-      const pdn = pdnByGerente.get(gId) || { gerado: 0, assinado: 0, propostas_count: 0 };
+      const pdn = pdnByGerente.get(gId) || { gerado: 0, propostas_count: 0 };
       const g = gerenteMap.get(gId);
       if (g) {
         g.totals.real_vgv_gerado = pdn.gerado;
-        g.totals.real_vgv_assinado = pdn.assinado;
+        // VGV assinado pela equipe dona da venda (snapshot)
+        g.totals.real_vgv_assinado = assinadoByEquipe.get(gId) || 0;
         g.totals.meta_vgv_assinado = (metaVgvMap.get(gId) || 0) as number;
         // Override checkpoint propostas with PDN count (single source of truth)
         g.totals.real_propostas = pdn.propostas_count;
       }
+    }
+
+    // Equipes INATIVAS com VGV assinado no período (ex.: Equipe Gabrielle) — preservar resultado
+    for (const [eqId, vgvAssinado] of assinadoByEquipe) {
+      if (gerenteMap.has(eqId)) continue;
+      gerenteMap.set(eqId, {
+        gerente_id: eqId,
+        gerente_nome: (profileMap.get(eqId) as string) || "Equipe inativa",
+        corretores: [],
+        totals: {
+          meta_ligacoes: 0, real_ligacoes: 0, meta_visitas_marcadas: 0, real_visitas_marcadas: 0,
+          meta_visitas_realizadas: 0, real_visitas_realizadas: 0, meta_propostas: 0, real_propostas: 0,
+          meta_vgv_gerado: 0, real_vgv_gerado: 0, meta_vgv_assinado: 0, real_vgv_assinado: vgvAssinado, score: 0,
+        },
+      });
     }
 
     // Calc scores and assign to gerentes
