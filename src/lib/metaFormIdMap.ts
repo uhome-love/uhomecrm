@@ -34,6 +34,8 @@ export const META_FORM_ID_MAP: Record<string, string> = {
   "1581836316228994": "Alto Lindóia",
   "1575975843886888": "Alto Lindóia",
   "4369342313310610": "Lake Eyre",
+  // Mapeamento por NOME de formulário (Meta envia form_name) → empreendimento limpo
+  "Uhome - Ápice - Bairro Las Casas": "Ápice Las Casas",
 };
 
 /**

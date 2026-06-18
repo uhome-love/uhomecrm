@@ -350,6 +350,8 @@ Deno.serve(async (req) => {
       "924855113517986": "Las Casas (Video Gabrielle)",
       "966583865699014": "Orygem (Vídeo Lucas)",
       "1253040266458947": "Casa Tua",
+      // Mapeamento por NOME de formulário (Meta envia form_name) → empreendimento limpo
+      "Uhome - Ápice - Bairro Las Casas": "Ápice Las Casas",
     };
 
     // Resolve form name from ID map, then fallback to raw ID
