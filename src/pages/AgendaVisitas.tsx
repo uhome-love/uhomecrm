@@ -349,12 +349,23 @@ export default function AgendaVisitas() {
   const [showCobranca, setShowCobranca] = useState(false);
 
   // Data
-  const dateRange = useMemo(() => getDateRange(period, customFrom, customTo), [period, customFrom, customTo]);
+  const dateRange = useMemo(
+    () => getDateRange(period, appliedCustom?.from, appliedCustom?.to),
+    [period, appliedCustom]
+  );
   const { visitas: rawVisitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas({
     startDate: dateRange.from,
     endDate: dateRange.to,
   });
-  const { visitas: allVisitas } = useVisitas();
+  // Janela reduzida (30 dias atrás → hoje) só para calcular pendentes/cobrança — evita puxar base inteira
+  const pendingRange = useMemo(() => {
+    const today = startOfDay(new Date());
+    return {
+      from: format(addDays(today, -30), "yyyy-MM-dd"),
+      to: format(today, "yyyy-MM-dd"),
+    };
+  }, []);
+  const { visitas: allVisitas } = useVisitas({ startDate: pendingRange.from, endDate: pendingRange.to });
 
   // Sync URL
   useEffect(() => {
