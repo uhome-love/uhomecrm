@@ -16,7 +16,7 @@
  * Consumido por:
  *   - src/hooks/useCorretorKpisCarteira.ts (Dashboard /corretor)
  *   - src/pages/MinhasTarefas.tsx (Central de Tarefas)
- *   - src/components/pipeline/CardStatusLine.tsx (Pipeline)
+ *   - src/lib/taskQueryUtils.ts (Pipeline + Central de Tarefas)
  */
 import { todayBRT, nowBRT, BRT_TIMEZONE } from "./brtTime";
 
