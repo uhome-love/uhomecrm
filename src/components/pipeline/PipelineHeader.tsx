@@ -281,7 +281,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
       {/* ── TABLET HEADER (md to lg) ── */}
       <div className="hidden md:block lg:hidden">
         <div className="flex items-center gap-2 h-12 px-4 border-b border-slate-200 dark:border-gray-700">
-          <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
+          <span className="text-sm font-bold text-foreground">Pipeline</span>
           <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeadsCount}</span>
 
           <div className="flex-1" />
