@@ -476,7 +476,9 @@ export default function AgendaVisitas() {
     const marcadas = kpiBase.filter(v => ["marcada", "confirmada", "reagendada"].includes(v.status)).length;
     const realizadas = kpiBase.filter(v => v.status === "realizada").length;
     const noShow = kpiBase.filter(v => v.status === "no_show").length;
-    const taxa = marcadas + realizadas > 0 ? Math.round((realizadas / (marcadas + realizadas)) * 100) : 0;
+    // Taxa de comparecimento: das visitas com desfecho (realizada ou no-show), quantas compareceram
+    const comDesfecho = realizadas + noShow;
+    const taxa = comDesfecho > 0 ? Math.round((realizadas / comDesfecho) * 100) : 0;
     return { marcadas, realizadas, noShow, taxa };
   }, [kpiBase]);
 
