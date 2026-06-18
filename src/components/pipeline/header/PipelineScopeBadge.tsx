@@ -8,6 +8,7 @@
  *   • CEO filtrado   → "Time {Nome} · N · filtrado por CEO"
  */
 import { GERENTES_REAIS } from "./PipelineGestorSelect";
+import { useGestoresPipeline } from "@/hooks/useGestoresPipeline";
 
 export interface PipelineScopeBadgeProps {
   isAdmin: boolean;
