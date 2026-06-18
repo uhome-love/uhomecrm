@@ -71,11 +71,14 @@ export default function PipelineKanban() {
   // Filtro CEO por gestor (Fase 1) — declarado ANTES de usePipeline para que
   // possamos passar scopeCorretorIds e empurrar o filtro pra query do server.
   const [gestorFilter, setGestorFilter] = useState<string>("todos");
-  const { isGestor, isAdmin, isCorretor, loading: roleLoading, roles } = useUserRole();
+  const { isGestor, isAdmin, isDiretor, isCorretor, loading: roleLoading, roles } = useUserRole();
+  // Diretoria enxerga o escritório inteiro, como o CEO (visão de oversight).
+  // isCeoView unifica admin (CEO) + diretor para escopo e visões globais.
+  const isCeoView = isAdmin || isDiretor;
   const { data: gestorTeamUserIds } = useQuery({
     queryKey: ["pipeline-gestor-team", gestorFilter],
     queryFn: async () => {
-      if (!isAdmin || gestorFilter === "todos") return null;
+      if (!isCeoView || gestorFilter === "todos") return null;
       const { data } = await supabase
         .from("team_members")
         .select("user_id")
@@ -83,7 +86,7 @@ export default function PipelineKanban() {
         .eq("status", "ativo");
       return new Set((data || []).map((r: any) => r.user_id).filter(Boolean) as string[]);
     },
-    enabled: isAdmin && gestorFilter !== "todos",
+    enabled: isCeoView && gestorFilter !== "todos",
     staleTime: 5 * 60 * 1000,
   });
   // Quando CEO escolhe um gestor específico, materializa array pra passar
