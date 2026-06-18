@@ -94,6 +94,32 @@ function formatPhone(phone: string) {
   return phone;
 }
 
+const TIPO_VISUAL: Record<string, { Icon: typeof Phone; cls: string }> = {
+  follow_up: { Icon: RefreshCw, cls: "bg-primary/10 text-primary" },
+  ligar: { Icon: Phone, cls: "bg-success-500/10 text-success-700" },
+  ligacao: { Icon: Phone, cls: "bg-success-500/10 text-success-700" },
+  whatsapp: { Icon: MessageCircle, cls: "bg-success-500/10 text-success-700" },
+  enviar_proposta: { Icon: FileText, cls: "bg-primary/10 text-primary" },
+  proposta: { Icon: FileText, cls: "bg-primary/10 text-primary" },
+  enviar_material: { Icon: Send, cls: "bg-primary/10 text-primary" },
+  marcar_visita: { Icon: Calendar, cls: "bg-warning-500/10 text-warning-700" },
+  visita: { Icon: Calendar, cls: "bg-warning-500/10 text-warning-700" },
+  confirmar_visita: { Icon: CheckCircle2, cls: "bg-success-500/10 text-success-700" },
+  retornar_cliente: { Icon: CornerUpLeft, cls: "bg-primary/10 text-primary" },
+  outro: { Icon: ClipboardList, cls: "bg-muted text-muted-foreground" },
+};
+
+function tipoVisual(tipo: string) {
+  return TIPO_VISUAL[tipo] || { Icon: ClipboardList, cls: "bg-muted text-muted-foreground" };
+}
+
+function toneBadgeClass(tone?: "destructive" | "warning" | "success") {
+  if (tone === "destructive") return "bg-destructive/10 text-destructive";
+  if (tone === "warning") return "bg-warning-500/15 text-warning-700";
+  if (tone === "success") return "bg-success-500/15 text-success-700";
+  return "";
+}
+
 function openWhatsApp(phone: string) {
   const digits = phone.replace(/\D/g, "");
   const full = digits.startsWith("55") ? digits : `55${digits}`;
