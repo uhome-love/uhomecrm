@@ -841,9 +841,10 @@ export default function AgendaVisitas() {
       {showWeekCalendar && (
         <div className="bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 rounded-[12px] p-3">
           <MiniWeekCalendar
-            from={dateRange.from}
+            from={calendarFrom}
             visitas={visitas}
             onDayClick={(day) => setScrollToDay(day)}
+            activeDayRef={period === "hoje" ? dateRange.from : undefined}
           />
         </div>
       )}
