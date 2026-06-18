@@ -846,7 +846,16 @@ export default function AgendaVisitas() {
       {/* ═══════ DAY LIST ═══════ */}
       <div className="space-y-4">
         {isLoading ? (
-          <p className="text-sm text-[#a1a1aa] text-center py-8">Carregando...</p>
+          <div className="space-y-4">
+            {[0, 1].map(g => (
+              <div key={g} className="space-y-1">
+                <div className="h-4 w-40 rounded bg-[#e8e8f0] dark:bg-white/10 animate-pulse mb-2" />
+                {[0, 1, 2].map(c => (
+                  <div key={c} className="h-[44px] rounded-[10px] bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 animate-pulse" />
+                ))}
+              </div>
+            ))}
+          </div>
         ) : dayGroups.length === 0 ? (
           <EmptyState
             icon={<CalendarDays size={22} strokeWidth={1.5} />}
