@@ -35,6 +35,7 @@ export interface EquipesGestor {
   vgv_pipeline_ativo: number;
   meta_vgv: number | null;
   meta_pct: number | null;
+  equipe_inativa?: boolean;
   corretores: EquipesCorretor[];
 }
 
