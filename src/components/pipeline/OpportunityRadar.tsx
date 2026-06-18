@@ -36,9 +36,9 @@ interface RadarLead {
 
 const SEGMENTOS_MAP: Record<string, { badge: string; cor: string }> = {
   "Open Bosque": { badge: "S1 · MCMV", cor: "#16A34A" },
-  "Orygem": { badge: "S2 · Médio-Alto", cor: "#3350E6" },
-  "Las Casas": { badge: "S2 · Médio-Alto", cor: "#3350E6" },
-  "Casa Tua": { badge: "S2 · Médio-Alto", cor: "#3350E6" },
+  "Orygem": { badge: "S2 · Médio-Alto", cor: "hsl(var(--primary-600))" },
+  "Las Casas": { badge: "S2 · Médio-Alto", cor: "hsl(var(--primary-600))" },
+  "Casa Tua": { badge: "S2 · Médio-Alto", cor: "hsl(var(--primary-600))" },
   "Lake Eyre": { badge: "S3 · Alto Padrão", cor: "#7C3AED" },
   "Casa Bastian": { badge: "S4 · Investimento", cor: "#B45309" },
   "Shift": { badge: "S4 · Investimento", cor: "#B45309" },

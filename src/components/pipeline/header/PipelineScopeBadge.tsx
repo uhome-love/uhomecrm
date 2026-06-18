@@ -11,6 +11,7 @@ import { GERENTES_REAIS } from "./PipelineGestorSelect";
 
 export interface PipelineScopeBadgeProps {
   isAdmin: boolean;
+  isDiretor?: boolean;
   isGestor: boolean;
   filteredCount: number;
   gestorFilter?: string; // "todos" ou gerente_id
@@ -18,16 +19,19 @@ export interface PipelineScopeBadgeProps {
 
 export default function PipelineScopeBadge({
   isAdmin,
+  isDiretor = false,
   isGestor,
   filteredCount,
   gestorFilter = "todos",
 }: PipelineScopeBadgeProps) {
   let label: string;
   let accent: string;
-  if (isAdmin) {
+  // Diretoria e CEO têm visão de escritório; o rótulo diferencia o contexto.
+  if (isAdmin || isDiretor) {
+    const scopeName = isDiretor && !isAdmin ? "Diretoria" : "CEO";
     if (gestorFilter && gestorFilter !== "todos") {
       const g = GERENTES_REAIS.find((x) => x.id === gestorFilter);
-      label = `Time ${g?.apelido ?? "Gestor"} · ${filteredCount} · filtrado por CEO`;
+      label = `Time ${g?.apelido ?? "Gestor"} · ${filteredCount} · filtrado por ${scopeName}`;
     } else {
       label = `Escritório · ${filteredCount} leads`;
     }

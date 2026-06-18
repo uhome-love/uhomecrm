@@ -79,7 +79,7 @@ function getAvgTimeLabel(leads: PipelineLead[]) {
 
 // Confetti for Visita Realizada
 function spawnConfetti() {
-  const colors = ["#F59E0B", "#10B981", "#4969FF", "#FFFFFF"];
+  const colors = ["hsl(var(--warning-500))", "hsl(var(--success-500))", "hsl(var(--primary))", "#FFFFFF"];
   const container = document.createElement("div");
   container.style.cssText = "position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden";
   document.body.appendChild(container);
@@ -709,7 +709,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
             >
               {emoji && <span style={{ fontSize: 12 }}>{emoji}</span>}
               <span>{stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}</span>
-              <span style={{ fontWeight: 700, color: "#4969FF", marginLeft: 2 }}>
+              <span style={{ fontWeight: 700, color: "hsl(var(--primary))", marginLeft: 2 }}>
                 {stageLeads.length}
               </span>
             </button>
@@ -809,7 +809,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     boxShadow: isDragOver ? "0 4px 16px rgba(34,197,94,0.12)" : "0 1px 2px rgba(0,0,0,0.04)",
                     marginBottom: 8,
                     animation: isFlashing ? "columnFlash 0.6s ease-out" : undefined,
-                    ["--flash-color" as any]: "#4969FF",
+                    ["--flash-color" as any]: "hsl(var(--primary))",
                     transition: "all 0.2s ease",
                   }}
                 >
@@ -828,7 +828,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     </span>
                     <span style={{
                       fontSize: 13, fontWeight: 700,
-                      color: isDragOver ? "#16a34a" : "#4969FF",
+                      color: isDragOver ? "#16a34a" : "hsl(var(--primary))",
                       background: isDragOver ? "rgba(34,197,94,0.12)" : undefined,
                       borderRadius: isDragOver ? 6 : undefined,
                       padding: isDragOver ? "0 6px" : undefined,
@@ -856,7 +856,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   }}>
                     <div style={{
                       height: "100%", borderRadius: 100,
-                      background: "#4969FF",
+                      background: "hsl(var(--primary))",
                       width: `${progressPct}%`,
                       transition: "width 0.3s ease",
                     }} />
@@ -879,7 +879,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                         </span>
                       )}
                       {alerts.semCorretor > 0 && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "#4969FF" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "hsl(var(--primary))" }}>
                           👤{alerts.semCorretor}
                         </span>
                       )}

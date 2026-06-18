@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export type AppRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
+export type AppRole = "admin" | "diretor" | "gestor" | "corretor" | "backoffice" | "rh";
 
 const STORAGE_PREFIX = "uhome:roles:";
 
@@ -90,7 +90,9 @@ export function useUserRole() {
     [roles]
   );
 
-  const isGestor = hasRole("gestor") || hasRole("admin");
+  const isDiretor = hasRole("diretor");
+  // Diretoria tem acesso de gestão (e mais) — conta como gestor para features de gestão.
+  const isGestor = hasRole("gestor") || hasRole("admin") || isDiretor;
   const isCorretor = hasRole("corretor");
   const isAdmin = hasRole("admin");
   const isBackoffice = hasRole("backoffice");
@@ -107,6 +109,7 @@ export function useUserRole() {
     isGestor,
     isCorretor,
     isAdmin,
+    isDiretor,
     isBackoffice,
     isRh,
   };

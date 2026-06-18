@@ -290,7 +290,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
                   onClick={() => { setShowFreeText(!showFreeText); setEditingIdx(null); }}
                   style={{
                     display: "flex", alignItems: "center", gap: 4,
-                    fontSize: 11, fontWeight: 600, color: showFreeText ? "#64748b" : "#4969FF",
+                    fontSize: 11, fontWeight: 600, color: showFreeText ? "#64748b" : "hsl(var(--primary))",
                     background: "none", border: "none", cursor: "pointer",
                   }}
                 >
@@ -364,7 +364,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
                         style={{
                           display: "flex", alignItems: "center", gap: 3,
                           fontSize: 10, fontWeight: 600,
-                          color: editingIdx === i ? "#4969FF" : "#94a3b8",
+                          color: editingIdx === i ? "hsl(var(--primary))" : "#94a3b8",
                           background: "none", border: "none", cursor: "pointer",
                         }}
                       >
@@ -507,7 +507,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
                 disabled={saving}
                 style={{
                   padding: "8px 20px", borderRadius: 8, border: "none",
-                  background: "#4969FF", fontSize: 12, fontWeight: 600, color: "#fff",
+                  background: "hsl(var(--primary))", fontSize: 12, fontWeight: 600, color: "#fff",
                   cursor: saving ? "wait" : "pointer", opacity: saving ? 0.7 : 1,
                 }}
               >

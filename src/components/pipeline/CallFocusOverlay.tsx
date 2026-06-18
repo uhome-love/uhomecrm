@@ -251,13 +251,13 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
                 <span
                   className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
                   style={{
-                    background: isDone ? "#EAF3DE" : isCurrent ? "#4969FF" : "hsl(var(--muted))",
+                    background: isDone ? "#EAF3DE" : isCurrent ? "hsl(var(--primary))" : "hsl(var(--muted))",
                     color: isDone ? "#3B6D11" : isCurrent ? "#fff" : "hsl(var(--muted-foreground))",
                   }}
                 >
                   {isDone ? "✓" : step.num}
                 </span>
-                <span className="text-[11px] font-medium" style={{ color: isDone ? "#3B6D11" : isCurrent ? "#4969FF" : "hsl(var(--muted-foreground))" }}>
+                <span className="text-[11px] font-medium" style={{ color: isDone ? "#3B6D11" : isCurrent ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))" }}>
                   {step.label}
                 </span>
               </div>
@@ -344,7 +344,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
                     onClick={() => setTarefaTipo(tipo)}
                     className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
                     style={{
-                      background: tarefaTipo === tipo ? "#4969FF" : "hsl(var(--muted))",
+                      background: tarefaTipo === tipo ? "hsl(var(--primary))" : "hsl(var(--muted))",
                       color: tarefaTipo === tipo ? "#fff" : "hsl(var(--foreground))",
                     }}
                   >
@@ -382,7 +382,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
                     border: novaEtapaSelecionada === etapa.tipo ? "1px solid #4969FF" : "1px solid hsl(var(--border))",
                   }}
                 >
-                  <div className="w-3 h-3 rounded-full shrink-0" style={{ background: novaEtapaSelecionada === etapa.tipo ? "#4969FF" : "#ccc" }} />
+                  <div className="w-3 h-3 rounded-full shrink-0" style={{ background: novaEtapaSelecionada === etapa.tipo ? "hsl(var(--primary))" : "#ccc" }} />
                   <div className="flex-1">
                     <p className="text-sm font-medium">{etapa.nome}</p>
                     <p className="text-[10px] text-muted-foreground">{STAGE_LABELS[etapa.tipo] || ""}</p>

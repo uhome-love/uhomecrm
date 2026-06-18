@@ -117,8 +117,6 @@ const PipelineMobileView = memo(function PipelineMobileView({
         ref={tabsRef}
         style={{
           display: "flex",
-          background: "#fff",
-          borderBottom: "1px solid #e8e8f0",
           overflowX: "auto",
           WebkitOverflowScrolling: "touch",
           scrollbarWidth: "none",
@@ -128,7 +126,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
           top: 0,
           zIndex: 35,
         }}
-        className="scrollbar-none"
+        className="scrollbar-none bg-card border-b border-border"
       >
         {stages.map(stage => {
           const isActive = stage.id === activeStageId;
@@ -139,29 +137,28 @@ const PipelineMobileView = memo(function PipelineMobileView({
               key={stage.id}
               data-stage-id={stage.id}
               onClick={() => setActiveStageId(stage.id)}
+              className={[
+                "flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer bg-transparent border-0 transition-all",
+                "border-b-2",
+                isActive
+                  ? "text-foreground border-primary"
+                  : "text-muted-foreground border-transparent",
+              ].join(" ")}
               style={{
-                display: "flex", alignItems: "center", gap: 4,
                 padding: "7px 10px",
-                whiteSpace: "nowrap",
                 fontSize: 11, fontWeight: 600,
-                color: isActive ? "#0a0a0a" : "#71717a",
-                cursor: "pointer", flexShrink: 0,
-                transition: "all 0.15s",
-                background: "transparent", border: "none",
-                borderBottomStyle: "solid",
-                borderBottomWidth: 2,
-                borderBottomColor: isActive ? "#4969FF" : "transparent",
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
             >
               <span style={{ fontSize: 12 }}>{emoji}</span>
               {stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
-              <span style={{
-                fontSize: 10, fontWeight: 700,
-                padding: "1px 6px", borderRadius: 100,
-                background: isActive ? "rgba(79,70,229,0.1)" : "#f0f0f5",
-                color: isActive ? "#4969FF" : "#71717a",
-              }}>
+              <span
+                className={isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}
+                style={{
+                  fontSize: 10, fontWeight: 700,
+                  padding: "1px 6px", borderRadius: 100,
+                }}
+              >
                 {count}
               </span>
             </button>
@@ -195,11 +192,14 @@ const PipelineMobileView = memo(function PipelineMobileView({
           }}
         >
           {stageLeads.length === 0 && (
-            <div style={{
-              display: "flex", flexDirection: "column", alignItems: "center",
-              justifyContent: "center", padding: "48px 0",
-              color: "#94A3B8", fontSize: 13, fontWeight: 500,
-            }}>
+            <div
+              className="text-muted-foreground"
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                justifyContent: "center", padding: "48px 0",
+                fontSize: 13, fontWeight: 500,
+              }}
+            >
               <span style={{ fontSize: 32, marginBottom: 8 }}>📭</span>
               Nenhum lead nesta etapa
             </div>
@@ -222,9 +222,10 @@ const PipelineMobileView = memo(function PipelineMobileView({
           {hasMore && (
             <button
               onClick={() => setVisibleCount(prev => Math.min(prev + LOAD_BATCH, stageLeads.length))}
+              className="text-muted-foreground"
               style={{
                 width: "100%", padding: "10px 0",
-                fontSize: 12, fontWeight: 600, color: "#64748B",
+                fontSize: 12, fontWeight: 600,
                 background: "none", border: "none", cursor: "pointer",
               }}
             >

@@ -34,7 +34,7 @@ const ACTIVE_BY_VARIANT: Record<CorretorSelectVariant, string> = {
   tablet:
     "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300",
   desktop:
-    "border-[#4969FF] bg-[#4969FF]/5 dark:bg-[#4969FF]/10 text-[#4969FF]",
+    "border-primary bg-primary/5 dark:bg-primary/10 text-primary",
 };
 
 const IDLE_BY_VARIANT: Record<CorretorSelectVariant, string> = {

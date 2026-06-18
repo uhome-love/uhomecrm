@@ -71,11 +71,14 @@ export default function PipelineKanban() {
   // Filtro CEO por gestor (Fase 1) — declarado ANTES de usePipeline para que
   // possamos passar scopeCorretorIds e empurrar o filtro pra query do server.
   const [gestorFilter, setGestorFilter] = useState<string>("todos");
-  const { isGestor, isAdmin, isCorretor, loading: roleLoading, roles } = useUserRole();
+  const { isGestor, isAdmin, isDiretor, isCorretor, loading: roleLoading, roles } = useUserRole();
+  // Diretoria enxerga o escritório inteiro, como o CEO (visão de oversight).
+  // isCeoView unifica admin (CEO) + diretor para escopo e visões globais.
+  const isCeoView = isAdmin || isDiretor;
   const { data: gestorTeamUserIds } = useQuery({
     queryKey: ["pipeline-gestor-team", gestorFilter],
     queryFn: async () => {
-      if (!isAdmin || gestorFilter === "todos") return null;
+      if (!isCeoView || gestorFilter === "todos") return null;
       const { data } = await supabase
         .from("team_members")
         .select("user_id")
@@ -83,16 +86,16 @@ export default function PipelineKanban() {
         .eq("status", "ativo");
       return new Set((data || []).map((r: any) => r.user_id).filter(Boolean) as string[]);
     },
-    enabled: isAdmin && gestorFilter !== "todos",
+    enabled: isCeoView && gestorFilter !== "todos",
     staleTime: 5 * 60 * 1000,
   });
   // Quando CEO escolhe um gestor específico, materializa array pra passar
   // como scope server-side ao usePipeline. Mantém key estável (sort+join).
   const pipelineScopeCorretorIds = useMemo<string[] | null>(() => {
-    if (!isAdmin || gestorFilter === "todos") return null;
+    if (!isCeoView || gestorFilter === "todos") return null;
     if (!gestorTeamUserIds) return []; // ainda carregando lista → não traz nada
     return Array.from(gestorTeamUserIds);
-  }, [isAdmin, gestorFilter, gestorTeamUserIds]);
+  }, [isCeoView, gestorFilter, gestorTeamUserIds]);
   const pipeline = usePipeline("leads", { scopeCorretorIds: pipelineScopeCorretorIds, realtime: !(isAdmin || isGestor) });
   const { user: authUser, loading: authLoading } = useAuth();
   // Bug-fix Bug 3: useUserRole retorna loading=false enquanto useAuth ainda
@@ -109,10 +112,10 @@ export default function PipelineKanban() {
   // Bug-fix: aguardar useUserRole resolver antes de inicializar/persistir
   // (sem isso, a primeira render usa roleKey="corretor" e persiste "kanban"
   //  na chave do admin/gestor — eternamente sobrescrevendo o default).
-  const roleKey: "admin" | "gestor" | "corretor" = isAdmin ? "admin" : isGestor ? "gestor" : "corretor";
+  const roleKey: "admin" | "diretor" | "gestor" | "corretor" = isAdmin ? "admin" : isDiretor ? "diretor" : isGestor ? "gestor" : "corretor";
   const tabStorageKey = `uhome:pipeline-mode:${roleKey}`;
-  const defaultTabForRole = isAdmin ? "equipes" : isGestor ? "time" : "kanban";
-  const allowedTabsForRole: string[] = isAdmin
+  const defaultTabForRole = isCeoView ? "equipes" : isGestor ? "time" : "kanban";
+  const allowedTabsForRole: string[] = isCeoView
     ? ["equipes", "kanban", "inteligencia"]
     : isGestor
     ? ["time", "kanban", "inteligencia"]
@@ -128,6 +131,7 @@ export default function PipelineKanban() {
     if (activeTab !== null) return;
     try {
       window.localStorage.removeItem("uhome:pipeline-mode:admin");
+      window.localStorage.removeItem("uhome:pipeline-mode:diretor");
       window.localStorage.removeItem("uhome:pipeline-mode:gestor");
       window.localStorage.removeItem("uhome:pipeline-mode:corretor");
       window.localStorage.removeItem("uhome:pipeline-mode:migrated-v2");
@@ -313,8 +317,8 @@ export default function PipelineKanban() {
     if (filaCeoFilter) {
       result = result.filter(l => !l.corretor_id);
     }
-    // Fase 1: filtro CEO por gestor — restringe ao time do gestor selecionado.
-    if (isAdmin && gestorFilter !== "todos" && gestorTeamUserIds) {
+    // Fase 1: filtro CEO/Diretoria por gestor — restringe ao time do gestor selecionado.
+    if (isCeoView && gestorFilter !== "todos" && gestorTeamUserIds) {
       result = result.filter(l => l.corretor_id && gestorTeamUserIds.has(l.corretor_id));
     }
     if (corretorFilter && corretorFilter !== "all") {
@@ -335,7 +339,7 @@ export default function PipelineKanban() {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isAdmin, gestorFilter, gestorTeamUserIds, minhaCarteira, authUser?.id]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isCeoView, gestorFilter, gestorTeamUserIds, minhaCarteira, authUser?.id]);
 
   const filteredLeads = useMemo(() => {
     const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
@@ -547,7 +551,8 @@ export default function PipelineKanban() {
         filaCeoCount={filaCeoCount}
         filaCeoNovosCount={filaCeoNovosCount}
         filaCeoRedistCount={filaCeoRedistCount}
-        isAdmin={isAdmin}
+        isAdmin={isCeoView}
+        isDiretor={isDiretor}
         isGestor={isGestor}
         canAdd={canAdd}
         filters={filters}
@@ -593,14 +598,14 @@ export default function PipelineKanban() {
             <button
               type="button"
               onClick={() => setMinhaCarteira(false)}
-              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${!minhaCarteira ? "bg-[#4969FF] text-white" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
             >
               Equipe
             </button>
             <button
               type="button"
               onClick={() => setMinhaCarteira(true)}
-              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${minhaCarteira ? "bg-[#4969FF] text-white" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
             >
               Minha carteira
             </button>

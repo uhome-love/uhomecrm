@@ -135,7 +135,7 @@ export default function FocusEmptyState({
             />
             <FocusSuggestionCard
               icon={AlertTriangle}
-              iconColor="#F59E0B"
+              iconColor="hsl(var(--warning-500))"
               iconBg="rgba(245,158,11,0.12)"
               title="Leads sem tarefa"
               description="Organize sua carteira. Defina o próximo passo desses leads."
@@ -156,7 +156,7 @@ export default function FocusEmptyState({
           </Button>
           <Button
             onClick={onClose}
-            style={{ background: allEmpty ? "#4969FF" : "rgba(255,255,255,0.08)", color: "#fff" }}
+            style={{ background: allEmpty ? "hsl(var(--primary))" : "rgba(255,255,255,0.08)", color: "#fff" }}
             className="hover:opacity-90"
           >
             Sair do Modo Foco

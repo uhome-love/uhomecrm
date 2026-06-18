@@ -47,7 +47,7 @@ interface BadgeDef {
 
 const BADGES: BadgeDef[] = [
   { key: "em_dia",     label: "em dia",     color: "#047857", dotColor: "#22c55e", bgActive: "rgba(34,197,94,0.12)",  bgIdle: "transparent" },
-  { key: "sem_tarefa", label: "sem tarefa", color: "#B45309", dotColor: "#F59E0B", bgActive: "rgba(245,158,11,0.12)", bgIdle: "transparent" },
+  { key: "sem_tarefa", label: "sem tarefa", color: "#B45309", dotColor: "hsl(var(--warning-500))", bgActive: "rgba(245,158,11,0.12)", bgIdle: "transparent" },
   { key: "atrasado",   label: "atrasado",   color: "#DC2626", dotColor: "#DC2626", bgActive: "rgba(220,38,38,0.12)",  bgIdle: "transparent" },
   { key: "negocios",   label: "negócios",   color: "#1D4ED8", dotColor: "#3B82F6", bgActive: "rgba(59,130,246,0.12)", bgIdle: "transparent" },
 ];

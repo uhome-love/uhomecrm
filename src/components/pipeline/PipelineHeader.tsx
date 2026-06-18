@@ -51,6 +51,7 @@ export interface PipelineHeaderProps {
 
   // Role flags
   isAdmin: boolean;
+  isDiretor?: boolean;
   isGestor: boolean;
   canAdd: boolean;
 
@@ -109,7 +110,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     filteredLeadsCount, displayedClientStatusCounts, campaignTagCounts, campaignTags,
     pipelineStages, pipelineSegmentos, pipelineLeads, corretorNomes, corretorOptions,
     visitaLeadIds, focusLeadsCount, filaCeoCount, filaCeoNovosCount, filaCeoRedistCount,
-    isAdmin, isGestor, canAdd,
+    isAdmin, isDiretor = false, isGestor, canAdd,
     filters, setFilters, corretorFilter, setCorretorFilter,
     campaignTagFilter, setCampaignTagFilter,
     clientStatusFilter, setClientStatusFilter,
@@ -153,7 +154,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
       <div className="md:hidden">
         {/* Line 1: Title + filters + novo */}
         <div className="flex items-center gap-2 h-[46px] px-3">
-          <div className="h-6 w-6 rounded-md bg-[#4969FF] flex items-center justify-center shrink-0">
+          <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center shrink-0">
             <LayoutGrid className="h-3 w-3 text-white" />
           </div>
           <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
@@ -200,7 +201,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           {canAdd && activeTab === "kanban" && (
             <button
               onClick={() => setAddOpen(true)}
-              className="bg-[#4969FF] hover:bg-[#3350E6] text-white rounded-[7px] px-2.5 py-[5px] font-bold text-xs border-none cursor-pointer whitespace-nowrap"
+              className="bg-primary hover:bg-primary-600 text-white rounded-[7px] px-2.5 py-[5px] font-bold text-xs border-none cursor-pointer whitespace-nowrap"
             >
               + Novo
             </button>
@@ -435,7 +436,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         {/* Line 1 — Title + Pílulas + Actions (compacto) */}
         <div className="flex items-center flex-nowrap min-h-12 py-1.5 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
           <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
             </div>
             <span className="text-[15px] font-bold text-[#0a0a0a] dark:text-white tracking-tight whitespace-nowrap">
@@ -444,6 +445,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeadsCount} leads</span>
             <PipelineScopeBadge
               isAdmin={isAdmin}
+              isDiretor={isDiretor}
               isGestor={isGestor}
               filteredCount={filteredLeadsCount}
               gestorFilter={gestorFilter}
@@ -489,7 +491,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 placeholder="Buscar lead, telefone, empreendimento..."
                 value={filters.search}
                 onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="w-full outline-none h-9 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-[#4969FF] dark:focus:border-[#4969FF]"
+                className="w-full outline-none h-9 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-primary dark:focus:border-primary"
               />
               {filters.search && (
                 <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -519,7 +521,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             {canAdd && activeTab === "kanban" && (
               <button
                 onClick={() => setAddOpen(true)}
-                className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-9 px-3.5 bg-[#4969FF] hover:bg-[#3350E6] text-white rounded-lg font-semibold text-xs border-none cursor-pointer"
+                className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-9 px-3.5 bg-primary hover:bg-primary-600 text-white rounded-lg font-semibold text-xs border-none cursor-pointer"
               >
                 <Plus size={13} strokeWidth={2} /> Novo Lead
               </button>
@@ -535,7 +537,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs border-none cursor-pointer ${
                 activeTab === tab.key
-                  ? "bg-[#4969FF] text-white font-semibold"
+                  ? "bg-primary text-white font-semibold"
                   : "bg-transparent text-[#71717a] dark:text-[#a1a1aa] font-medium"
               }`}
             >
@@ -577,7 +579,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
               className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs font-medium border-none cursor-pointer ${
                 selectionMode
-                  ? "bg-[#4969FF] text-white"
+                  ? "bg-primary text-white"
                   : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
               }`}
             >
@@ -594,7 +596,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 onClick={() => setFilaCeoFilter(f => !f)}
                 className={`shrink-0 flex items-center gap-1 transition-colors h-[22px] px-1.5 rounded-md text-[10px] font-bold cursor-pointer border ${
                   filaCeoFilter
-                    ? "bg-[#4969FF]/10 text-[#4969FF] border-[#4969FF]"
+                    ? "bg-primary/10 text-primary border-primary"
                     : "bg-transparent text-[#a1a1aa] dark:text-[#52525b] border-[#e8e8f0] dark:border-white/[0.07]"
                 }`}
               >
@@ -661,7 +663,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             </span>
             <button
               onClick={clearAllFilters}
-              className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-[#ef4444] bg-transparent border-none cursor-pointer"
+              className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-danger-500 bg-transparent border-none cursor-pointer"
             >
               <X size={10} strokeWidth={1.5} /> Limpar todos
             </button>
