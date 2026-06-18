@@ -222,9 +222,10 @@ const PipelineMobileView = memo(function PipelineMobileView({
           {hasMore && (
             <button
               onClick={() => setVisibleCount(prev => Math.min(prev + LOAD_BATCH, stageLeads.length))}
+              className="text-muted-foreground"
               style={{
                 width: "100%", padding: "10px 0",
-                fontSize: 12, fontWeight: 600, color: "#64748B",
+                fontSize: 12, fontWeight: 600,
                 background: "none", border: "none", cursor: "pointer",
               }}
             >
