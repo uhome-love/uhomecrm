@@ -8,6 +8,38 @@ const corsHeaders = {
 
 const COLLECTION_NAME = "imoveis";
 
+// Whitelist of fields any caller may reference in query_by / filter_by / sort_by / facet_by.
+// Prevents filter-expression injection and schema enumeration by anonymous callers.
+const ALLOWED_FIELDS = new Set<string>([
+  // search fields
+  "titulo", "empreendimento", "bairro", "endereco", "codigo", "construtora",
+  "descricao_resumida", "tipo",
+  // filter / sort fields
+  "valor_locacao", "valor_venda", "dormitorios", "suites", "vagas",
+  "area_privativa", "em_obras", "status", "is_uhome", "cidade",
+  "data_atualizacao", "_text_match",
+]);
+
+const MAX_PER_PAGE = 50;
+
+/** Extract every field referenced before a ":" (filter_by / sort_by syntax). */
+function fieldsFromExpr(expr: string): string[] {
+  const matches = expr.matchAll(/([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g);
+  return [...matches].map((m) => m[1]);
+}
+
+/** Extract comma-separated field names (query_by / facet_by syntax). */
+function fieldsFromList(list: string): string[] {
+  return list.split(",").map((f) => f.trim()).filter(Boolean);
+}
+
+function validateFields(fields: string[]): string | null {
+  for (const f of fields) {
+    if (!ALLOWED_FIELDS.has(f)) return f;
+  }
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -37,6 +69,24 @@ serve(async (req) => {
       autocomplete = false,
     } = body;
 
+    // ── Field whitelist validation (reject injection / schema probing) ──
+    const referenced: string[] = [
+      ...fieldsFromList(String(query_by)),
+      ...fieldsFromList(String(facet_by)),
+      ...fieldsFromExpr(String(filter_by)),
+      ...fieldsFromExpr(String(sort_by)),
+    ];
+    const bad = validateFields(referenced);
+    if (bad) {
+      return new Response(
+        JSON.stringify({ error: `Campo de busca não permitido: ${bad}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Cap per_page server-side to prevent bulk extraction
+    const safePerPage = Math.min(Math.max(parseInt(String(per_page), 10) || 24, 1), MAX_PER_PAGE);
+
     let searchPath: string;
 
     if (autocomplete) {
@@ -57,7 +107,7 @@ serve(async (req) => {
       const params = new URLSearchParams({
         q: String(q),
         query_by,
-        per_page: String(per_page),
+        per_page: String(safePerPage),
         page: String(page),
         num_typos: String(num_typos),
         prefix: String(prefix),
@@ -76,7 +126,7 @@ serve(async (req) => {
     }
 
     const url = `https://${TYPESENSE_HOST}${searchPath}`;
-    console.log("[typesense-search] Request:", { host: TYPESENSE_HOST, collection: COLLECTION_NAME, filter_by, q, page, per_page });
+    console.log("[typesense-search] Request:", { host: TYPESENSE_HOST, collection: COLLECTION_NAME, filter_by, q, page, per_page: safePerPage });
     const resp = await fetch(url, {
       headers: {
         "X-TYPESENSE-API-KEY": TYPESENSE_SEARCH_API_KEY,
@@ -120,7 +170,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       data: hits,
       total: data.found || 0,
-      totalPages: Math.ceil((data.found || 0) / per_page),
+      totalPages: Math.ceil((data.found || 0) / safePerPage),
       page: data.page || page,
       search_time_ms: data.search_time_ms,
       facet_counts: data.facet_counts || [],

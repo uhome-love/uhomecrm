@@ -11,8 +11,19 @@ const LOGO_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAr2ElEQVR4nO1
 
 // ─── Dados fixos (nunca alterar) ───────────────────────────────────────────────
 const UHOME = { cnpj: "37.900.790/0001-71", creci: "25.682J", endereco: "avenida João Wallig, n° 573, loja 01" };
-const LUCAS = { nome: "LUCAS SOUTO DE MORAES SARMENTO", cpf: "863.851.860-91", rg: "9098653034", creci: "58516", email: "lucas@uhome.imb.br" };
-const GABRIELLE = { nome: "GABRIELLE RODRIGUES", cpf: "032.416.160-37", rg: "3098226875", email: "gabrielle@uhome.imb.br", endereco: "Rua Ariovaldo Pinheiro 177 apto 1201, Passo d'Areia, Porto Alegre, RS" };
+// Dados sensíveis de funcionários (CPF, RG, endereço) carregados de segredos do backend.
+// Configure os segredos INTERMEDIACAO_LUCAS_JSON e INTERMEDIACAO_GABRIELLE_JSON.
+function loadPessoa(envName: string): Record<string, string> {
+  const raw = Deno.env.get(envName);
+  if (!raw) throw new Error(`Configuração ausente: segredo ${envName} não definido.`);
+  try {
+    return JSON.parse(raw) as Record<string, string>;
+  } catch {
+    throw new Error(`Configuração inválida: segredo ${envName} não é um JSON válido.`);
+  }
+}
+const LUCAS = loadPessoa("INTERMEDIACAO_LUCAS_JSON");
+const GABRIELLE = loadPessoa("INTERMEDIACAO_GABRIELLE_JSON");
 const TEST1 = { nome: "Gabriel Vieira", email: "gabriel.uhome@gmail.com" };
 const TEST2 = { nome: "Carolina de Camargo Madruga", email: "carolina@uhome.com.br" };
 
