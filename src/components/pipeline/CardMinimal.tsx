@@ -7,9 +7,9 @@
 // Visual:
 //   • Borda esquerda 4px colorida pelo status da tarefa
 //     - vermelho   → tarefa atrasada
-//     - âmbar      → tarefa para hoje
-//     - emerald    → tarefa futura
-//     - slate      → sem tarefa pendente
+//     - emerald    → tarefa para hoje ou futura (em dia)
+//     - âmbar      → sem tarefa pendente (precisa definir)
+//     - sky        → convertido / zinc → descarte
 //   • Linha 1: Nome do lead (truncate)
 //   • Linha 2: Empreendimento (truncate, opcional)
 //   • Linha 3: Próxima ação humanizada (formatNextAction)
@@ -207,25 +207,37 @@ const CardMinimal = memo(function CardMinimal({
     [lead.flag_status, stage?.tipo]
   );
 
+  const handleOpen = () => {
+    trackPipelineEvent("pipeline_card_clicked", {
+      lead_id: lead.id,
+      stage_id: lead.stage_id,
+      corretor_id: lead.corretor_id,
+      stage: stage?.tipo ?? stage?.nome,
+      status,
+    });
+    onClick();
+  };
+
   return (
     <div
       draggable
+      role="button"
+      tabIndex={0}
+      aria-label={`Abrir lead ${lead.nome || "sem nome"}`}
       onDragStart={() => { setIsDragging(true); onDragStart(); }}
       onDragEnd={() => setIsDragging(false)}
-      onClick={() => {
-        trackPipelineEvent("pipeline_card_clicked", {
-          lead_id: lead.id,
-          stage_id: lead.stage_id,
-          corretor_id: lead.corretor_id,
-          stage: stage?.tipo ?? stage?.nome,
-          status,
-        });
-        onClick();
+      onClick={handleOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleOpen();
+        }
       }}
       data-dragging={isDragging || undefined}
       className={[
         "group relative cursor-pointer rounded-xl shadow-sm hover:shadow-md transition-all",
         "px-3 py-2.5 pl-4 hover:-translate-y-px",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
         parceiroNome
           ? "bg-purple-50/40 dark:bg-purple-950/20 border border-purple-300/70 dark:border-purple-700/60 ring-1 ring-purple-400/50 hover:border-purple-400"
           : "bg-card border border-border/60 hover:border-border",
