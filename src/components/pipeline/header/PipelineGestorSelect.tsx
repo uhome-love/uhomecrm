@@ -1,14 +1,12 @@
 /**
  * PipelineGestorSelect — Filtro "por gestor" exclusivo do CEO/Admin.
  *
- * Fase 1 do refactor das visões Gestor/CEO. Restringe o Pipeline aos corretores
- * do gestor selecionado. Lista hardcoded enquanto há apenas 3 gerentes reais.
- *
- * TODO Quality Sprint: refatorar pra buscar dinamicamente de team_members
- * distinct gerente_id quando 4º gerente for contratado.
- * Hardcoded hoje pra simplicidade — escala manual por enquanto.
+ * Lista de gestores agora é DINÂMICA (useGestoresPipeline): busca os gerentes
+ * reais de team_members + nomes de profiles. A constante GERENTES_REAIS é mantida
+ * apenas como fallback estático (usada pelo hook e por gestorTheme/ScopeBadge).
  */
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useGestoresPipeline } from "@/hooks/useGestoresPipeline";
 
 export const GERENTES_REAIS = [
   { id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", nome: "Bruno Schuler", apelido: "Bruno" },
