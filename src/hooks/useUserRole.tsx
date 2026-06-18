@@ -109,6 +109,7 @@ export function useUserRole() {
     isGestor,
     isCorretor,
     isAdmin,
+    isDiretor,
     isBackoffice,
     isRh,
   };
