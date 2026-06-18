@@ -6,12 +6,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow, isBefore, startOfDay, endOfWeek, addDays, addHours } from "date-fns";
-import { dateToBRT, parseDateBRT } from "@/lib/utils";
+import { dateToBRT, parseDateBRT, cn } from "@/lib/utils";
 import { fetchInBatchesWithRetry, normalizeQueryError, runQueryWithRetry } from "@/lib/taskQueryUtils";
 import { classifyTask } from "@/lib/taskBuckets";
 import { ptBR } from "date-fns/locale";
-import { Phone, MessageCircle, CheckCircle2, Clock, Calendar, Building2, User, ClipboardList, Plus, Search, Pencil, BookOpen, Target, Briefcase } from "lucide-react";
+import { Phone, MessageCircle, CheckCircle2, Clock, Calendar, Building2, User, ClipboardList, Plus, Search, Pencil, BookOpen, Target, Briefcase, FileText, Send, RefreshCw, CornerUpLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -91,6 +92,32 @@ function formatPhone(phone: string) {
   const d = phone.replace(/\D/g, "");
   if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   return phone;
+}
+
+const TIPO_VISUAL: Record<string, { Icon: typeof Phone; cls: string }> = {
+  follow_up: { Icon: RefreshCw, cls: "bg-primary/10 text-primary" },
+  ligar: { Icon: Phone, cls: "bg-success-500/10 text-success-700" },
+  ligacao: { Icon: Phone, cls: "bg-success-500/10 text-success-700" },
+  whatsapp: { Icon: MessageCircle, cls: "bg-success-500/10 text-success-700" },
+  enviar_proposta: { Icon: FileText, cls: "bg-primary/10 text-primary" },
+  proposta: { Icon: FileText, cls: "bg-primary/10 text-primary" },
+  enviar_material: { Icon: Send, cls: "bg-primary/10 text-primary" },
+  marcar_visita: { Icon: Calendar, cls: "bg-warning-500/10 text-warning-700" },
+  visita: { Icon: Calendar, cls: "bg-warning-500/10 text-warning-700" },
+  confirmar_visita: { Icon: CheckCircle2, cls: "bg-success-500/10 text-success-700" },
+  retornar_cliente: { Icon: CornerUpLeft, cls: "bg-primary/10 text-primary" },
+  outro: { Icon: ClipboardList, cls: "bg-muted text-muted-foreground" },
+};
+
+function tipoVisual(tipo: string) {
+  return TIPO_VISUAL[tipo] || { Icon: ClipboardList, cls: "bg-muted text-muted-foreground" };
+}
+
+function toneBadgeClass(tone?: "destructive" | "warning" | "success") {
+  if (tone === "destructive") return "bg-destructive/10 text-destructive";
+  if (tone === "warning") return "bg-warning-500/15 text-warning-700";
+  if (tone === "success") return "bg-success-500/15 text-success-700";
+  return "";
 }
 
 function openWhatsApp(phone: string) {
@@ -838,39 +865,38 @@ export default function MinhasTarefas() {
     invalidateTaskQueries(queryClient, null);
   };
 
-  const tabs: { key: TabFilter; label: string; count: number }[] = [
-    { key: "todas", label: "📋 Todas", count: pendentes.length },
-    { key: "atrasadas", label: "🔴 Atrasadas", count: atrasadasTarefas.length },
-    { key: "hoje", label: "📅 Hoje", count: hoje.length },
-    { key: "amanha", label: "📅 Amanhã", count: amanha.length },
-    { key: "semana", label: "📅 Semana", count: semana.length },
-    ...(categoria === "leads" ? [{ key: "desatualizados" as TabFilter, label: "🟡 Desatualizados", count: desatualizados.length }] : []),
-    { key: "concluidas", label: "✅ Concluídas", count: concluidas.length },
+  const tabs: { key: TabFilter; label: string; count: number; tone?: "destructive" | "warning" | "success" }[] = [
+    { key: "todas", label: "Todas", count: pendentes.length },
+    { key: "atrasadas", label: "Atrasadas", count: atrasadasTarefas.length, tone: "destructive" },
+    { key: "hoje", label: "Hoje", count: hoje.length, tone: "warning" },
+    { key: "amanha", label: "Amanhã", count: amanha.length },
+    { key: "semana", label: "Semana", count: semana.length },
+    ...(categoria === "leads" ? [{ key: "desatualizados" as TabFilter, label: "Desatualizados", count: desatualizados.length, tone: "warning" as const }] : []),
+    { key: "concluidas", label: "Concluídas", count: concluidas.length, tone: "success" },
   ];
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          <ClipboardList className="h-6 w-6 text-primary shrink-0" />
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Minhas Tarefas</h1>
-            <p className="text-sm text-muted-foreground">Organize seu dia e nunca perca um follow-up</p>
-          </div>
-        </div>
-        <Button size="sm" className="gap-1.5 self-start sm:self-auto shrink-0" onClick={() => setShowTipoSelector(true)}>
-          <Plus className="h-4 w-4" /> Nova Tarefa
-        </Button>
-      </div>
+      <PageHeader
+        title="Minhas Tarefas"
+        subtitle="Organize seu dia e nunca perca um follow-up"
+        icon={<ClipboardList className="h-5 w-5" />}
+        className="mb-0"
+        actions={
+          <Button size="sm" className="gap-1.5" onClick={() => setShowTipoSelector(true)}>
+            <Plus className="h-4 w-4" /> Nova Tarefa
+          </Button>
+        }
+      />
 
       {/* Category tabs: Leads vs Negócios */}
       <div className="flex gap-2 flex-wrap">
         <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" aria-pressed={categoria === "leads"} className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("todas"); }}>
-          🎯 Tarefas de Leads
+          <Target className="h-4 w-4" /> Tarefas de Leads
           <Badge variant="secondary" className="ml-1 text-xs">{tarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
         <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" aria-pressed={categoria === "negocios"} className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("todas"); }}>
-          💼 Tarefas de Negócios
+          <Briefcase className="h-4 w-4" /> Tarefas de Negócios
           <Badge variant="secondary" className="ml-1 text-xs">{negociosTarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
       </div>
@@ -878,10 +904,11 @@ export default function MinhasTarefas() {
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap" role="tablist" aria-label="Filtrar tarefas por período">
         {tabs.map(tab => {
+          const isActive = activeTab === tab.key;
           const btn = (
-            <Button key={tab.key} role="tab" aria-selected={activeTab === tab.key} variant={activeTab === tab.key ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
+            <Button key={tab.key} role="tab" aria-selected={isActive} variant={isActive ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
               {tab.label}
-              <Badge variant="secondary" className="ml-1 text-xs">{tab.count}</Badge>
+              <Badge variant="secondary" className={cn("ml-1 text-xs", !isActive && toneBadgeClass(tab.tone))}>{tab.count}</Badge>
             </Button>
           );
           if (tab.key === "desatualizados") {
@@ -900,7 +927,20 @@ export default function MinhasTarefas() {
 
       {/* Task list */}
       {(isLoading || isLoadingNegocios || isLoadingOwnedLeads || isLoadingOwnedLeadTaskMap) ? (
-        <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+        <div className="space-y-3">
+          {[0, 1, 2].map(i => (
+            <Card key={i} className="p-4 border-l-[3px] border-l-muted">
+              <div className="flex gap-3 animate-pulse">
+                <div className="shrink-0 h-9 w-9 rounded-full bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-32 bg-muted rounded" />
+                  <div className="h-4 w-48 bg-muted rounded" />
+                  <div className="h-3 w-40 bg-muted rounded" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : activeTab === "desatualizados" ? (
         desatualizados.length === 0 ? (
           <Card className="p-8 text-center">
@@ -963,15 +1003,20 @@ export default function MinhasTarefas() {
           {filteredTarefas.map(tarefa => {
             const isOverdue = tarefa.vence_em && isBefore(parseDateBRT(tarefa.vence_em), todayStart) && tarefa.status === "pendente";
             const isConcluida = tarefa.status === "concluida";
+            const tv = tipoVisual(tarefa.tipo);
             return (
-              <Card key={tarefa.id} className={`p-4 border-l-[3px] ${
+              <Card key={tarefa.id} className={cn("p-4 border-l-[3px] transition-all hover:shadow-md",
                 isConcluida ? "border-l-success-500 bg-success-500/5 opacity-70" :
                 isOverdue ? "border-l-destructive bg-destructive/5" :
                 tarefa.vence_em && isToday(parseDateBRT(tarefa.vence_em)) ? "border-l-warning-500 bg-warning-500/5" :
                 "border-l-muted-foreground/40"
-              }`}>
+              )}>
 
-                <div className="space-y-2">
+                <div className="flex gap-3">
+                  <div className={cn("shrink-0 h-9 w-9 rounded-full flex items-center justify-center", tv.cls)}>
+                    <tv.Icon className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       {isOverdue && <Badge variant="destructive" className="text-[10px]">ATRASADA</Badge>}
@@ -989,7 +1034,7 @@ export default function MinhasTarefas() {
                         )}
                       </span>
                       <Badge variant="outline" className="text-xs">
-                        {TIPO_EMOJI[tarefa.tipo] || "📋"} {TIPO_LABELS[tarefa.tipo] || tarefa.tipo}
+                        {TIPO_LABELS[tarefa.tipo] || tarefa.tipo}
                       </Badge>
                     </div>
                   </div>
@@ -1052,6 +1097,7 @@ export default function MinhasTarefas() {
                     }}>
                       <Plus className="h-3.5 w-3.5" /> Nova Tarefa
                     </Button>
+                  </div>
                   </div>
                 </div>
               </Card>
