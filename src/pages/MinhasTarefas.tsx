@@ -876,7 +876,7 @@ export default function MinhasTarefas() {
   ];
 
   return (
-    <div className="p-4 md:p-6 space-y-5">files
+    <div className="p-4 md:p-6 space-y-5">
       <PageHeader
         title="Minhas Tarefas"
         subtitle="Organize seu dia e nunca perca um follow-up"
