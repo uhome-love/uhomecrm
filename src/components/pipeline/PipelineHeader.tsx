@@ -444,7 +444,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
             </div>
-            <span className="text-[15px] font-bold text-[#0a0a0a] dark:text-white tracking-tight whitespace-nowrap">
+            <span className="text-[15px] font-bold text-foreground tracking-tight whitespace-nowrap">
               Pipeline
             </span>
             <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeadsCount} leads</span>
