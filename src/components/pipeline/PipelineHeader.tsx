@@ -575,6 +575,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
+            aria-label="Atualizar pipeline"
             className="shrink-0 flex items-center justify-center transition-colors w-7 h-7 rounded-[7px] text-[#a1a1aa] dark:text-[#52525b] bg-transparent border-none cursor-pointer"
           >
             <RefreshCw size={12} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
