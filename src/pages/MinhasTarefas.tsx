@@ -951,51 +951,50 @@ export default function MinhasTarefas() {
             <p className="text-xs text-muted-foreground">
               🟡 Leads ativos sem nenhuma tarefa pendente. Crie um follow-up pra não perder o contato.
             </p>
-            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="rounded-[12px] border divide-y overflow-hidden">
             {desatualizados.map(lead => (
-              <Card key={lead.id} className="p-3 border-l-[3px] border-l-warning-500 bg-warning-500/5">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="min-w-0 flex-1">
-                    <button
-                      onClick={() => navigate(`/pipeline-leads?lead=${lead.id}`)}
-                      className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1"
-                    >
-                      <User className="h-3.5 w-3.5" /> {lead.nome || "Sem nome"}
-                    </button>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
-                      {lead.empreendimento && (<span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{lead.empreendimento}</span>)}
-                      {lead.telefone && <span>{formatPhone(lead.telefone)}</span>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {lead.telefone && (
-                      <>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => window.open(`tel:${lead.telefone}`, "_self")}>
-                          <Phone className="h-3.5 w-3.5" /> Ligar
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => openWhatsApp(lead.telefone!)}>
-                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-                        </Button>
-                      </>
-                    )}
-                    <Button size="sm" className="h-8 text-xs gap-1" onClick={() => {
-                      setSelectedLeadId(lead.id);
-                      setSelectedLeadNome(lead.nome || "Lead");
-                      setNovoTipo("follow_up");
-                      setNovoData(dateToBRT(new Date()));
-                      setNovoHora("10:00");
-                      setNovoObs("");
-                      setShowNovaTarefa(true);
-                    }}>
-                      <Plus className="h-3.5 w-3.5" /> Criar Tarefa
-                    </Button>
+              <div key={lead.id} className="flex flex-col lg:flex-row lg:items-center gap-3 px-3 py-2.5 border-l-[3px] border-l-warning-500 transition-colors hover:bg-muted/40">
+                <div className="min-w-0 flex-1">
+                  <button
+                    onClick={() => navigate(`/pipeline-leads?lead=${lead.id}`)}
+                    className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1 truncate"
+                  >
+                    <User className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{lead.nome || "Sem nome"}</span>
+                  </button>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                    {lead.empreendimento && (<span className="flex items-center gap-1 truncate"><Building2 className="h-3 w-3 shrink-0" /><span className="truncate">{lead.empreendimento}</span></span>)}
+                    {lead.telefone && <span className="shrink-0">{formatPhone(lead.telefone)}</span>}
                   </div>
                 </div>
-              </Card>
+                <div className="flex items-center gap-1 flex-wrap shrink-0 lg:justify-end">
+                  {lead.telefone && (
+                    <>
+                      <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => window.open(`tel:${lead.telefone}`, "_self")}>
+                        <Phone className="h-3.5 w-3.5" /> Ligar
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => openWhatsApp(lead.telefone!)}>
+                        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                      </Button>
+                    </>
+                  )}
+                  <Button size="sm" className="h-8 text-xs gap-1" onClick={() => {
+                    setSelectedLeadId(lead.id);
+                    setSelectedLeadNome(lead.nome || "Lead");
+                    setNovoTipo("follow_up");
+                    setNovoData(dateToBRT(new Date()));
+                    setNovoHora("10:00");
+                    setNovoObs("");
+                    setShowNovaTarefa(true);
+                  }}>
+                    <Plus className="h-3.5 w-3.5" /> Criar Tarefa
+                  </Button>
+                </div>
+              </div>
             ))}
             </div>
           </div>
         )
+
       ) : filteredTarefas.length === 0 ? (
         <Card className="p-8 text-center">
           <p className="text-muted-foreground">🎉 Nenhuma tarefa {activeTab === "atrasadas" ? "atrasada" : activeTab === "concluidas" ? "concluída recente" : "para este período"}!</p>
