@@ -173,7 +173,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     
     // Fetch split-attributed deals from canonical view
     // assinado/vendido by data_assinatura, proposta/negociacao/documentacao by data_criacao
-    let negAssinadoQuery = supabase.from("v_kpi_negocios").select("id, auth_user_id, vgv_efetivo, fase, fator_split, is_parceria, pipeline_lead_id")
+    let negAssinadoQuery = supabase.from("v_kpi_negocios").select("id, auth_user_id, vgv_efetivo, fase, fator_split, is_parceria, pipeline_lead_id, equipe_gerente_auth_id")
       .in("fase", ["assinado", "vendido"])
       .gte("data_assinatura", dateRange.start)
       .lte("data_assinatura", dateRange.end);
