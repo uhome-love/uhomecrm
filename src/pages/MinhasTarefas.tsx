@@ -865,39 +865,38 @@ export default function MinhasTarefas() {
     invalidateTaskQueries(queryClient, null);
   };
 
-  const tabs: { key: TabFilter; label: string; count: number }[] = [
-    { key: "todas", label: "📋 Todas", count: pendentes.length },
-    { key: "atrasadas", label: "🔴 Atrasadas", count: atrasadasTarefas.length },
-    { key: "hoje", label: "📅 Hoje", count: hoje.length },
-    { key: "amanha", label: "📅 Amanhã", count: amanha.length },
-    { key: "semana", label: "📅 Semana", count: semana.length },
-    ...(categoria === "leads" ? [{ key: "desatualizados" as TabFilter, label: "🟡 Desatualizados", count: desatualizados.length }] : []),
-    { key: "concluidas", label: "✅ Concluídas", count: concluidas.length },
+  const tabs: { key: TabFilter; label: string; count: number; tone?: "destructive" | "warning" | "success" }[] = [
+    { key: "todas", label: "Todas", count: pendentes.length },
+    { key: "atrasadas", label: "Atrasadas", count: atrasadasTarefas.length, tone: "destructive" },
+    { key: "hoje", label: "Hoje", count: hoje.length, tone: "warning" },
+    { key: "amanha", label: "Amanhã", count: amanha.length },
+    { key: "semana", label: "Semana", count: semana.length },
+    ...(categoria === "leads" ? [{ key: "desatualizados" as TabFilter, label: "Desatualizados", count: desatualizados.length, tone: "warning" as const }] : []),
+    { key: "concluidas", label: "Concluídas", count: concluidas.length, tone: "success" },
   ];
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          <ClipboardList className="h-6 w-6 text-primary shrink-0" />
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Minhas Tarefas</h1>
-            <p className="text-sm text-muted-foreground">Organize seu dia e nunca perca um follow-up</p>
-          </div>
-        </div>
-        <Button size="sm" className="gap-1.5 self-start sm:self-auto shrink-0" onClick={() => setShowTipoSelector(true)}>
-          <Plus className="h-4 w-4" /> Nova Tarefa
-        </Button>
-      </div>
+      <PageHeader
+        title="Minhas Tarefas"
+        subtitle="Organize seu dia e nunca perca um follow-up"
+        icon={<ClipboardList className="h-5 w-5" />}
+        className="mb-0"
+        actions={
+          <Button size="sm" className="gap-1.5" onClick={() => setShowTipoSelector(true)}>
+            <Plus className="h-4 w-4" /> Nova Tarefa
+          </Button>
+        }
+      />
 
       {/* Category tabs: Leads vs Negócios */}
       <div className="flex gap-2 flex-wrap">
         <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" aria-pressed={categoria === "leads"} className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("todas"); }}>
-          🎯 Tarefas de Leads
+          <Target className="h-4 w-4" /> Tarefas de Leads
           <Badge variant="secondary" className="ml-1 text-xs">{tarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
         <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" aria-pressed={categoria === "negocios"} className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("todas"); }}>
-          💼 Tarefas de Negócios
+          <Briefcase className="h-4 w-4" /> Tarefas de Negócios
           <Badge variant="secondary" className="ml-1 text-xs">{negociosTarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
       </div>
@@ -905,10 +904,11 @@ export default function MinhasTarefas() {
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap" role="tablist" aria-label="Filtrar tarefas por período">
         {tabs.map(tab => {
+          const isActive = activeTab === tab.key;
           const btn = (
-            <Button key={tab.key} role="tab" aria-selected={activeTab === tab.key} variant={activeTab === tab.key ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
+            <Button key={tab.key} role="tab" aria-selected={isActive} variant={isActive ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
               {tab.label}
-              <Badge variant="secondary" className="ml-1 text-xs">{tab.count}</Badge>
+              <Badge variant="secondary" className={cn("ml-1 text-xs", !isActive && toneBadgeClass(tab.tone))}>{tab.count}</Badge>
             </Button>
           );
           if (tab.key === "desatualizados") {
