@@ -445,6 +445,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeadsCount} leads</span>
             <PipelineScopeBadge
               isAdmin={isAdmin}
+              isDiretor={isDiretor}
               isGestor={isGestor}
               filteredCount={filteredLeadsCount}
               gestorFilter={gestorFilter}
