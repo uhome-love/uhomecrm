@@ -157,7 +157,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center shrink-0">
             <LayoutGrid className="h-3 w-3 text-white" />
           </div>
-          <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
+          <span className="text-[15px] font-bold text-foreground">Pipeline</span>
           <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeadsCount}</span>
           <div className="flex-1" />
 
