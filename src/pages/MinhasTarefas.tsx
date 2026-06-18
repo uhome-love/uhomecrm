@@ -928,20 +928,19 @@ export default function MinhasTarefas() {
 
       {/* Task list */}
       {(isLoading || isLoadingNegocios || isLoadingOwnedLeads || isLoadingOwnedLeadTaskMap) ? (
-        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-          {[0, 1, 2].map(i => (
-            <Card key={i} className="p-4 border-l-[3px] border-l-muted">
-              <div className="flex gap-3 animate-pulse">
-                <div className="shrink-0 h-9 w-9 rounded-full bg-muted" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 w-32 bg-muted rounded" />
-                  <div className="h-4 w-48 bg-muted rounded" />
-                  <div className="h-3 w-40 bg-muted rounded" />
-                </div>
+        <div className="rounded-[12px] border divide-y overflow-hidden">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-3 px-3 py-2.5 border-l-[3px] border-l-muted animate-pulse">
+              <div className="shrink-0 h-9 w-9 rounded-full bg-muted" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3.5 w-40 bg-muted rounded" />
+                <div className="h-3 w-56 bg-muted rounded" />
               </div>
-            </Card>
+              <div className="h-7 w-24 bg-muted rounded-full hidden lg:block" />
+            </div>
           ))}
         </div>
+
       ) : activeTab === "desatualizados" ? (
         desatualizados.length === 0 ? (
           <Card className="p-8 text-center">
@@ -952,117 +951,112 @@ export default function MinhasTarefas() {
             <p className="text-xs text-muted-foreground">
               🟡 Leads ativos sem nenhuma tarefa pendente. Crie um follow-up pra não perder o contato.
             </p>
-            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="rounded-[12px] border divide-y overflow-hidden">
             {desatualizados.map(lead => (
-              <Card key={lead.id} className="p-3 border-l-[3px] border-l-warning-500 bg-warning-500/5">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="min-w-0 flex-1">
-                    <button
-                      onClick={() => navigate(`/pipeline-leads?lead=${lead.id}`)}
-                      className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1"
-                    >
-                      <User className="h-3.5 w-3.5" /> {lead.nome || "Sem nome"}
-                    </button>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
-                      {lead.empreendimento && (<span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{lead.empreendimento}</span>)}
-                      {lead.telefone && <span>{formatPhone(lead.telefone)}</span>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {lead.telefone && (
-                      <>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => window.open(`tel:${lead.telefone}`, "_self")}>
-                          <Phone className="h-3.5 w-3.5" /> Ligar
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => openWhatsApp(lead.telefone!)}>
-                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-                        </Button>
-                      </>
-                    )}
-                    <Button size="sm" className="h-8 text-xs gap-1" onClick={() => {
-                      setSelectedLeadId(lead.id);
-                      setSelectedLeadNome(lead.nome || "Lead");
-                      setNovoTipo("follow_up");
-                      setNovoData(dateToBRT(new Date()));
-                      setNovoHora("10:00");
-                      setNovoObs("");
-                      setShowNovaTarefa(true);
-                    }}>
-                      <Plus className="h-3.5 w-3.5" /> Criar Tarefa
-                    </Button>
+              <div key={lead.id} className="flex flex-col lg:flex-row lg:items-center gap-3 px-3 py-2.5 border-l-[3px] border-l-warning-500 transition-colors hover:bg-muted/40">
+                <div className="min-w-0 flex-1">
+                  <button
+                    onClick={() => navigate(`/pipeline-leads?lead=${lead.id}`)}
+                    className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1 truncate"
+                  >
+                    <User className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{lead.nome || "Sem nome"}</span>
+                  </button>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                    {lead.empreendimento && (<span className="flex items-center gap-1 truncate"><Building2 className="h-3 w-3 shrink-0" /><span className="truncate">{lead.empreendimento}</span></span>)}
+                    {lead.telefone && <span className="shrink-0">{formatPhone(lead.telefone)}</span>}
                   </div>
                 </div>
-              </Card>
+                <div className="flex items-center gap-1 flex-wrap shrink-0 lg:justify-end">
+                  {lead.telefone && (
+                    <>
+                      <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => window.open(`tel:${lead.telefone}`, "_self")}>
+                        <Phone className="h-3.5 w-3.5" /> Ligar
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => openWhatsApp(lead.telefone!)}>
+                        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                      </Button>
+                    </>
+                  )}
+                  <Button size="sm" className="h-8 text-xs gap-1" onClick={() => {
+                    setSelectedLeadId(lead.id);
+                    setSelectedLeadNome(lead.nome || "Lead");
+                    setNovoTipo("follow_up");
+                    setNovoData(dateToBRT(new Date()));
+                    setNovoHora("10:00");
+                    setNovoObs("");
+                    setShowNovaTarefa(true);
+                  }}>
+                    <Plus className="h-3.5 w-3.5" /> Criar Tarefa
+                  </Button>
+                </div>
+              </div>
             ))}
             </div>
           </div>
         )
+
       ) : filteredTarefas.length === 0 ? (
         <Card className="p-8 text-center">
           <p className="text-muted-foreground">🎉 Nenhuma tarefa {activeTab === "atrasadas" ? "atrasada" : activeTab === "concluidas" ? "concluída recente" : "para este período"}!</p>
         </Card>
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="rounded-[12px] border divide-y overflow-hidden">
           {filteredTarefas.map(tarefa => {
             const isOverdue = tarefa.vence_em && isBefore(parseDateBRT(tarefa.vence_em), todayStart) && tarefa.status === "pendente";
+            const isToday_ = tarefa.vence_em && isToday(parseDateBRT(tarefa.vence_em));
             const isConcluida = tarefa.status === "concluida";
             const tv = tipoVisual(tarefa.tipo);
+            const prazoTone = isConcluida ? "text-success-700 bg-success-500/10" : isOverdue ? "text-destructive bg-destructive/10" : isToday_ ? "text-warning-700 bg-warning-500/10" : "text-muted-foreground bg-muted";
             return (
-              <Card key={tarefa.id} className={cn("p-4 border-l-[3px] transition-all hover:shadow-md",
-                isConcluida ? "border-l-success-500 bg-success-500/5 opacity-70" :
-                isOverdue ? "border-l-destructive bg-destructive/5" :
-                tarefa.vence_em && isToday(parseDateBRT(tarefa.vence_em)) ? "border-l-warning-500 bg-warning-500/5" :
-                "border-l-muted-foreground/40"
+              <div key={tarefa.id} className={cn(
+                "relative flex flex-col lg:flex-row lg:items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/40",
+                "border-l-[3px]",
+                isConcluida ? "border-l-success-500 opacity-70" :
+                isOverdue ? "border-l-destructive" :
+                isToday_ ? "border-l-warning-500" :
+                "border-l-transparent"
               )}>
-
-                <div className="flex gap-3">
+                {/* Left: type icon + identity */}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className={cn("shrink-0 h-9 w-9 rounded-full flex items-center justify-center", tv.cls)}>
                     <tv.Icon className="h-4 w-4" />
                   </div>
-                  <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      {isOverdue && <Badge variant="destructive" className="text-[10px]">ATRASADA</Badge>}
-                      <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {isConcluida ? (
-                          tarefa.concluida_em
-                            ? `Concluída ${format(new Date(tarefa.concluida_em), "dd/MM HH:mm", { locale: ptBR })}`
-                            : "Concluída"
-                        ) : (
-                          <>
-                            {tarefa.vence_em ? format(parseDateBRT(tarefa.vence_em), "dd/MM", { locale: ptBR }) : "Sem data"}
-                            {tarefa.hora_vencimento && ` ${tarefa.hora_vencimento.slice(0, 5)}`}
-                          </>
-                        )}
-                      </span>
-                      <Badge variant="outline" className="text-xs">
-                        {TIPO_LABELS[tarefa.tipo] || tarefa.tipo}
-                      </Badge>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button onClick={() => {
+                        if (categoria === "negocios") { navigate("/pipeline-negocios"); }
+                        else { navigate(`/pipeline-leads?lead=${tarefa.pipeline_lead_id}`); }
+                      }} className="text-sm font-semibold text-foreground hover:text-primary transition-colors truncate flex items-center gap-1">
+                        <User className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{tarefa.lead_nome || (categoria === "negocios" ? "Negócio" : "Lead")}</span>
+                      </button>
+                      {isOverdue && <Badge variant="destructive" className="text-[10px] shrink-0">ATRASADA</Badge>}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 min-w-0">
+                      <Badge variant="outline" className="text-[10px] px-1.5 shrink-0">{TIPO_LABELS[tarefa.tipo] || tarefa.tipo}</Badge>
+                      {tarefa.lead_empreendimento && (
+                        <span className="flex items-center gap-1 truncate"><Building2 className="h-3 w-3 shrink-0" /><span className="truncate">{tarefa.lead_empreendimento}</span></span>
+                      )}
+                      {tarefa.lead_telefone && <span className="shrink-0 hidden sm:inline">{formatPhone(tarefa.lead_telefone)}</span>}
+                      {tarefa.descricao && <span className="italic truncate hidden md:inline">📝 "{tarefa.descricao}"</span>}
                     </div>
                   </div>
+                </div>
 
-                  <button onClick={() => {
-                    if (categoria === "negocios") {
-                      navigate("/pipeline-negocios");
-                    } else {
-                      navigate(`/pipeline-leads?lead=${tarefa.pipeline_lead_id}`);
-                    }
-                  }} className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1">
-                    <User className="h-3.5 w-3.5" />
-                    {tarefa.lead_nome || (categoria === "negocios" ? "Negócio" : "Lead")}
-                  </button>
-
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    {tarefa.lead_empreendimento && (
-                      <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{tarefa.lead_empreendimento}</span>
+                {/* Right: prazo + actions */}
+                <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap lg:justify-end shrink-0">
+                  <span className={cn("text-[11px] font-medium px-2 py-1 rounded-full flex items-center gap-1 whitespace-nowrap", prazoTone)}>
+                    <Clock className="h-3 w-3" />
+                    {isConcluida ? (
+                      tarefa.concluida_em ? `Concluída ${format(new Date(tarefa.concluida_em), "dd/MM HH:mm", { locale: ptBR })}` : "Concluída"
+                    ) : (
+                      <>
+                        {tarefa.vence_em ? format(parseDateBRT(tarefa.vence_em), "dd/MM", { locale: ptBR }) : "Sem data"}
+                        {tarefa.hora_vencimento && ` ${tarefa.hora_vencimento.slice(0, 5)}`}
+                      </>
                     )}
-                    {tarefa.lead_telefone && <span>{formatPhone(tarefa.lead_telefone)}</span>}
-                  </div>
-
-                  {tarefa.descricao && <p className="text-xs text-muted-foreground italic">📝 "{tarefa.descricao}"</p>}
-
-                  <div className="flex items-center gap-1 pt-1 flex-wrap">
+                  </span>
+                  <div className="flex items-center gap-0.5 flex-wrap">
                     {!isConcluida && tarefa.lead_telefone && (
                       <>
                         <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => window.open(`tel:${tarefa.lead_telefone}`, "_self")}>
@@ -1101,13 +1095,13 @@ export default function MinhasTarefas() {
                       <Plus className="h-3.5 w-3.5" /> Nova Tarefa
                     </Button>
                   </div>
-                  </div>
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>
       )}
+
 
       {/* Adiar dialog */}
       <Dialog open={!!adiarId} onOpenChange={() => setAdiarId(null)}>
