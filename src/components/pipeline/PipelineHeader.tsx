@@ -216,19 +216,21 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <input
               ref={mobileSearchRef}
               type="text"
+              aria-label="Buscar lead por nome, telefone ou empreendimento"
               placeholder="Buscar lead por nome, telefone..."
               value={filters.search}
               onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-              className="flex-1 bg-transparent text-xs text-slate-800 dark:text-slate-100 outline-none h-7"
+              className="flex-1 bg-transparent text-xs text-foreground outline-none h-8"
             />
             <button
               onClick={() => {
                 setFilters(f => ({ ...f, search: "" }));
                 setMobileSearchOpen(false);
               }}
-              className="bg-transparent border-none cursor-pointer p-0.5"
+              aria-label="Limpar busca"
+              className="bg-transparent border-none cursor-pointer flex items-center justify-center w-8 h-8 shrink-0"
             >
-              <X className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+              <X className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             </button>
           </div>
         )}
