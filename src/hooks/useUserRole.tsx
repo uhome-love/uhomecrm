@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export type AppRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
+export type AppRole = "admin" | "diretor" | "gestor" | "corretor" | "backoffice" | "rh";
 
 const STORAGE_PREFIX = "uhome:roles:";
 
