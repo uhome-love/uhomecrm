@@ -58,7 +58,7 @@ function ctaStyleForState(state: FocusState): { bg: string; bgHover: string; tex
       return { bg: "#DC2626", bgHover: "#B91C1C", text: "#FFFFFF", shadow: "0 8px 24px -8px rgba(220,38,38,0.55)" };
     case "para_hoje":
       // Âmbar com texto escuro #1F2937 (slate-800) — contraste AA (ratio 9.4).
-      return { bg: "#F59E0B", bgHover: "#D97706", text: "#1F2937", shadow: "0 8px 24px -8px rgba(245,158,11,0.55)" };
+      return { bg: "hsl(var(--warning-500))", bgHover: "#D97706", text: "#1F2937", shadow: "0 8px 24px -8px rgba(245,158,11,0.55)" };
     case "em_dia_proximo":
     case "sem_direcao":
     default:

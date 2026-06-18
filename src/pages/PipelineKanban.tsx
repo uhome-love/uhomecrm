@@ -598,14 +598,14 @@ export default function PipelineKanban() {
             <button
               type="button"
               onClick={() => setMinhaCarteira(false)}
-              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${!minhaCarteira ? "bg-[#4969FF] text-white" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
             >
               Equipe
             </button>
             <button
               type="button"
               onClick={() => setMinhaCarteira(true)}
-              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${minhaCarteira ? "bg-[#4969FF] text-white" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
             >
               Minha carteira
             </button>

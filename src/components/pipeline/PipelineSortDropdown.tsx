@@ -64,7 +64,7 @@ export function PipelineSortDropdown({ value, onChange }: Props) {
         <button
           type="button"
           title="Ordenar leads"
-          className="shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa] hover:border-[#4969FF] hover:text-[#4969FF] transition-colors cursor-pointer whitespace-nowrap"
+          className="shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa] hover:border-primary hover:text-primary transition-colors cursor-pointer whitespace-nowrap"
         >
           <ArrowUpDown className="h-4 w-4" />
           <span>

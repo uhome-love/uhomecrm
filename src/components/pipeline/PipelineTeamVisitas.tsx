@@ -141,14 +141,14 @@ export default function PipelineTeamVisitas() {
           ? <ChevronDown className="h-3 w-3 text-[#a1a1aa]" />
           : <ChevronRight className="h-3 w-3 text-[#a1a1aa]" />
         }
-        <CalendarDays className="h-3.5 w-3.5 text-[#4969FF]" />
+        <CalendarDays className="h-3.5 w-3.5 text-primary" />
         <span style={{ fontSize: 12, fontWeight: 700, color: "#0a0a0a", letterSpacing: "-0.2px" }}>
           Visitas da Equipe
         </span>
         <span
           className="flex items-center justify-center rounded-full"
           style={{
-            fontSize: 10, fontWeight: 700, color: "#4969FF",
+            fontSize: 10, fontWeight: 700, color: "hsl(var(--primary))",
             background: "#4969FF/8", minWidth: 20, height: 18,
             padding: "0 6px",
           }}
@@ -160,7 +160,7 @@ export default function PipelineTeamVisitas() {
             className="rounded-full"
             style={{
               fontSize: 9, fontWeight: 700, color: "#fff",
-              background: "#10b981", padding: "1px 6px",
+              background: "hsl(var(--success-500))", padding: "1px 6px",
             }}
           >
             {todayCount} hoje
@@ -188,7 +188,7 @@ export default function PipelineTeamVisitas() {
                     className="capitalize"
                     style={{
                       fontSize: 11, fontWeight: 700,
-                      color: dayIsToday ? "#4969FF" : "#52525b",
+                      color: dayIsToday ? "hsl(var(--primary))" : "#52525b",
                     }}
                   >
                     {getDayLabel(date)}
@@ -215,7 +215,7 @@ export default function PipelineTeamVisitas() {
 
                     <span
                       className="truncate"
-                      style={{ fontSize: 11, fontWeight: 600, color: "#4969FF", maxWidth: 90 }}
+                      style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--primary))", maxWidth: 90 }}
                       title={v.corretor_nome}
                     >
                       {(v.corretor_nome || "").split(" ")[0]}

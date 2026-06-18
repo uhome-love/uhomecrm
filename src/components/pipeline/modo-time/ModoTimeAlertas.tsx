@@ -30,7 +30,7 @@ export default function ModoTimeAlertas({ alertas, onActionClick }: Props) {
           <div className="text-xs font-medium text-[#0A0E1A] leading-tight mb-0.5">
             {alerta.texto}
           </div>
-          <div className="text-[10px] text-[#4969FF] font-semibold">Ver detalhes →</div>
+          <div className="text-[10px] text-primary font-semibold">Ver detalhes →</div>
         </button>
       ))}
     </div>

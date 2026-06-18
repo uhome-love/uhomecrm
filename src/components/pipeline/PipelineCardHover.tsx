@@ -41,13 +41,13 @@ function getCalcTemp(lead: PipelineLead): CalcTemp {
   const isIndicacao = (lead.origem || "").toLowerCase().includes("indicaç") || (lead.origem || "").toLowerCase().includes("indicac");
 
   if (hours < 2 || isIndicacao) {
-    return { emoji: "🔥", label: "Quente", bg: "bg-[#EF4444]/15", border: "border-[#EF4444]/30", text: "text-[#EF4444]" };
+    return { emoji: "🔥", label: "Quente", bg: "bg-danger-500/15", border: "border-danger-500/30", text: "text-danger-500" };
   }
   if (hours < 24) {
-    return { emoji: "🟡", label: "Morno", bg: "bg-[#F59E0B]/15", border: "border-[#F59E0B]/30", text: "text-[#F59E0B]" };
+    return { emoji: "🟡", label: "Morno", bg: "bg-warning-500/15", border: "border-warning-500/30", text: "text-warning-500" };
   }
   if (hours < 72) {
-    return { emoji: "🔵", label: "Frio", bg: "bg-[#4969FF]/15", border: "border-[#4969FF]/30", text: "text-[#4969FF]" };
+    return { emoji: "🔵", label: "Frio", bg: "bg-primary/15", border: "border-primary/30", text: "text-primary" };
   }
   return { emoji: "❄️", label: "Gelado", bg: "bg-[#6B7280]/15", border: "border-[#6B7280]/30", text: "text-[#6B7280]" };
 }

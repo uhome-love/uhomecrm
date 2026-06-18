@@ -57,7 +57,7 @@ export default function ModoTimeRow({ row, onClick }: Props) {
               className="w-8 h-8 rounded-full object-cover flex-shrink-0"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#4969FF] to-[#3B52CC] text-white text-[10px] font-semibold flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-[#3B52CC] text-white text-[10px] font-semibold flex items-center justify-center flex-shrink-0">
               {getInitials(row.nome)}
             </div>
           )}

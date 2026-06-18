@@ -79,7 +79,7 @@ export default function ModoTimeTabela({ rows, onRowClick }: Props) {
                     key={col.key}
                     onClick={() => toggleSort(col.key)}
                     className={`px-4 py-3 text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors ${
-                      active ? "text-[#4969FF]" : "text-neutral-500 hover:text-neutral-700"
+                      active ? "text-primary" : "text-neutral-500 hover:text-neutral-700"
                     } ${col.align === "right" ? "text-right" : "text-left"}`}
                   >
                     <span
