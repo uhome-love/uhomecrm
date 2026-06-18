@@ -7,9 +7,9 @@
 // Visual:
 //   • Borda esquerda 4px colorida pelo status da tarefa
 //     - vermelho   → tarefa atrasada
-//     - âmbar      → tarefa para hoje
-//     - emerald    → tarefa futura
-//     - slate      → sem tarefa pendente
+//     - emerald    → tarefa para hoje ou futura (em dia)
+//     - âmbar      → sem tarefa pendente (precisa definir)
+//     - sky        → convertido / zinc → descarte
 //   • Linha 1: Nome do lead (truncate)
 //   • Linha 2: Empreendimento (truncate, opcional)
 //   • Linha 3: Próxima ação humanizada (formatNextAction)
