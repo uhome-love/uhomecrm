@@ -247,6 +247,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               : null
             }
             onChange={(key) => {
+              // Evita conflito silencioso com o filtro de status do Sheet avançado.
+              setFilters(f => (f.statusLead ? { ...f, statusLead: "" } : f));
               if (key === "negocios") {
                 setNegociosFilter(true);
                 setClientStatusFilter("todos");
