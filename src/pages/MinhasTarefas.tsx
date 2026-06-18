@@ -965,11 +965,12 @@ export default function MinhasTarefas() {
             const isConcluida = tarefa.status === "concluida";
             return (
               <Card key={tarefa.id} className={`p-4 border-l-[3px] ${
-                isConcluida ? "border-l-green-500 bg-green-500/5 opacity-70" :
-                isOverdue ? "border-l-red-500 bg-red-500/5" :
-                tarefa.vence_em && isToday(parseDateBRT(tarefa.vence_em)) ? "border-l-yellow-500 bg-yellow-500/5" :
+                isConcluida ? "border-l-success-500 bg-success-500/5 opacity-70" :
+                isOverdue ? "border-l-destructive bg-destructive/5" :
+                tarefa.vence_em && isToday(parseDateBRT(tarefa.vence_em)) ? "border-l-warning-500 bg-warning-500/5" :
                 "border-l-muted-foreground/40"
               }`}>
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
