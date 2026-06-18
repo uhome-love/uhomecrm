@@ -132,6 +132,15 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
             onMouseLeave={(e) => {
               if (!isActive) e.currentTarget.style.background = b.bgIdle;
             }}
+            onFocus={(e) => {
+              if (!isActive) e.currentTarget.style.background = b.bgActive;
+              e.currentTarget.style.outline = "2px solid hsl(var(--ring))";
+              e.currentTarget.style.outlineOffset = "2px";
+            }}
+            onBlur={(e) => {
+              if (!isActive) e.currentTarget.style.background = b.bgIdle;
+              e.currentTarget.style.outline = "none";
+            }}
           >
             <span
               aria-hidden
