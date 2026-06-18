@@ -92,10 +92,10 @@ export default function PipelineKanban() {
   // Quando CEO escolhe um gestor específico, materializa array pra passar
   // como scope server-side ao usePipeline. Mantém key estável (sort+join).
   const pipelineScopeCorretorIds = useMemo<string[] | null>(() => {
-    if (!isAdmin || gestorFilter === "todos") return null;
+    if (!isCeoView || gestorFilter === "todos") return null;
     if (!gestorTeamUserIds) return []; // ainda carregando lista → não traz nada
     return Array.from(gestorTeamUserIds);
-  }, [isAdmin, gestorFilter, gestorTeamUserIds]);
+  }, [isCeoView, gestorFilter, gestorTeamUserIds]);
   const pipeline = usePipeline("leads", { scopeCorretorIds: pipelineScopeCorretorIds, realtime: !(isAdmin || isGestor) });
   const { user: authUser, loading: authLoading } = useAuth();
   // Bug-fix Bug 3: useUserRole retorna loading=false enquanto useAuth ainda
