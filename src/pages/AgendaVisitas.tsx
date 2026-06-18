@@ -234,7 +234,7 @@ function VisitaCompactCard({
 
       {/* Status pill */}
       <span className={cn(
-        "text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 hidden xs:inline",
+        "text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 hidden sm:inline",
         STATUS_PILL_COLORS[visita.status] || "text-[#71717a] bg-[#f7f7fb] border-[#e8e8f0]"
       )}>
         {STATUS_LABELS[visita.status]}
