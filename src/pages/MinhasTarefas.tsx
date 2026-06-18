@@ -1003,15 +1003,20 @@ export default function MinhasTarefas() {
           {filteredTarefas.map(tarefa => {
             const isOverdue = tarefa.vence_em && isBefore(parseDateBRT(tarefa.vence_em), todayStart) && tarefa.status === "pendente";
             const isConcluida = tarefa.status === "concluida";
+            const tv = tipoVisual(tarefa.tipo);
             return (
-              <Card key={tarefa.id} className={`p-4 border-l-[3px] ${
+              <Card key={tarefa.id} className={cn("p-4 border-l-[3px] transition-all hover:shadow-md",
                 isConcluida ? "border-l-success-500 bg-success-500/5 opacity-70" :
                 isOverdue ? "border-l-destructive bg-destructive/5" :
                 tarefa.vence_em && isToday(parseDateBRT(tarefa.vence_em)) ? "border-l-warning-500 bg-warning-500/5" :
                 "border-l-muted-foreground/40"
-              }`}>
+              )}>
 
-                <div className="space-y-2">
+                <div className="flex gap-3">
+                  <div className={cn("shrink-0 h-9 w-9 rounded-full flex items-center justify-center", tv.cls)}>
+                    <tv.Icon className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       {isOverdue && <Badge variant="destructive" className="text-[10px]">ATRASADA</Badge>}
