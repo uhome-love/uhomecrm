@@ -1134,9 +1134,9 @@ export default function MinhasTarefas() {
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="Buscar lead..." value={leadSearch} onChange={e => setLeadSearch(e.target.value)} className="pl-8" />
                   {searchLeads.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                    <div role="listbox" aria-label="Resultados da busca de lead" className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto">
                       {searchLeads.map(l => (
-                        <button key={l.id} className="w-full px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => {
+                        <button key={l.id} type="button" role="option" aria-selected={false} className="w-full px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none" onClick={() => {
                           setSelectedLeadId(l.id);
                           setSelectedLeadNome(l.nome);
                           setLeadSearch("");
