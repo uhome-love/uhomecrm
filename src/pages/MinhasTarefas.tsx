@@ -1197,8 +1197,9 @@ export default function MinhasTarefas() {
               onClick={() => { setShowTipoSelector(false); setShowNovaTarefa(true); }}
               className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border/60 bg-card hover:border-primary hover:bg-primary/5 transition-all group"
             >
-              <div className="h-14 w-14 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                <Target className="h-7 w-7 text-blue-600" />
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <Target className="h-7 w-7 text-primary" />
+
               </div>
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">Tarefa de Lead</p>
