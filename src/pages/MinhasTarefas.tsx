@@ -928,20 +928,19 @@ export default function MinhasTarefas() {
 
       {/* Task list */}
       {(isLoading || isLoadingNegocios || isLoadingOwnedLeads || isLoadingOwnedLeadTaskMap) ? (
-        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-          {[0, 1, 2].map(i => (
-            <Card key={i} className="p-4 border-l-[3px] border-l-muted">
-              <div className="flex gap-3 animate-pulse">
-                <div className="shrink-0 h-9 w-9 rounded-full bg-muted" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 w-32 bg-muted rounded" />
-                  <div className="h-4 w-48 bg-muted rounded" />
-                  <div className="h-3 w-40 bg-muted rounded" />
-                </div>
+        <div className="rounded-[12px] border divide-y overflow-hidden">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-3 px-3 py-2.5 border-l-[3px] border-l-muted animate-pulse">
+              <div className="shrink-0 h-9 w-9 rounded-full bg-muted" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3.5 w-40 bg-muted rounded" />
+                <div className="h-3 w-56 bg-muted rounded" />
               </div>
-            </Card>
+              <div className="h-7 w-24 bg-muted rounded-full hidden lg:block" />
+            </div>
           ))}
         </div>
+
       ) : activeTab === "desatualizados" ? (
         desatualizados.length === 0 ? (
           <Card className="p-8 text-center">
