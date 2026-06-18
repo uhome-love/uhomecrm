@@ -345,6 +345,93 @@ function DayGroup({
   );
 }
 
+/* ═══════ Week board (visão semanal por colunas) ═══════ */
+function WeekBoard({
+  from,
+  visitas,
+  onEdit,
+}: {
+  from: string;
+  visitas: Visita[];
+  onEdit: (v: Visita) => void;
+}) {
+  const days = useMemo(() => {
+    const start = new Date(from + "T12:00:00");
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(start, i);
+      const key = format(d, "yyyy-MM-dd");
+      const dayVisitas = visitas
+        .filter(v => v.data_visita === key)
+        .sort((a, b) => (a.hora_visita || "99:99").localeCompare(b.hora_visita || "99:99"));
+      return { date: d, key, dayVisitas };
+    });
+  }, [from, visitas]);
+
+  const DAY_NAMES = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+
+  return (
+    <div className="overflow-x-auto pb-2">
+      <div className="grid grid-cols-7 gap-2 min-w-[860px]">
+        {days.map((d, i) => {
+          const today = isToday(d.date);
+          return (
+            <div key={d.key} className="flex flex-col min-w-0">
+              {/* Column header */}
+              <div className={cn(
+                "flex items-center justify-between px-2 py-1.5 rounded-t-[10px] border border-b-0",
+                today ? "bg-primary/10 border-primary/30" : "bg-card border-border"
+              )}>
+                <span className={cn("text-[11px] font-bold", today ? "text-primary" : "text-foreground")}>
+                  {DAY_NAMES[i]} {format(d.date, "dd")}
+                </span>
+                {d.dayVisitas.length > 0 && (
+                  <span className="text-[10px] font-medium text-muted-foreground">{d.dayVisitas.length}</span>
+                )}
+              </div>
+              {/* Column body */}
+              <div className={cn(
+                "flex-1 space-y-1 p-1.5 rounded-b-[10px] border min-h-[120px]",
+                today ? "bg-primary/[0.03] border-primary/30" : "bg-background border-border"
+              )}>
+                {d.dayVisitas.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground/60 text-center pt-3">—</p>
+                ) : (
+                  d.dayVisitas.map(v => {
+                    const isDone = v.status === "realizada" || v.status === "cancelada" || v.status === "no_show";
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => onEdit(v)}
+                        className="w-full text-left px-2 py-1.5 rounded-[8px] border bg-card border-border hover:border-primary/40 transition-colors flex flex-col gap-0.5"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", STATUS_DOT_COLORS[v.status] || "bg-muted-foreground")} />
+                          <span className="text-[10px] font-mono font-semibold text-foreground">
+                            {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
+                          </span>
+                        </div>
+                        <span className={cn(
+                          "text-[11px] font-semibold truncate",
+                          isDone && v.status !== "realizada" ? "text-muted-foreground line-through" : isDone ? "text-muted-foreground" : "text-foreground"
+                        )}>
+                          {v.nome_cliente}
+                        </span>
+                        {v.empreendimento && (
+                          <span className="text-[9px] text-muted-foreground truncate">{v.empreendimento}</span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ═══════ MAIN PAGE ═══════ */
 export default function AgendaVisitas() {
   const { isAdmin, isGestor } = useUserRole();
