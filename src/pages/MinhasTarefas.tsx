@@ -1211,7 +1211,7 @@ export default function MinhasTarefas() {
               className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border/60 bg-card hover:border-primary hover:bg-primary/5 transition-all group"
             >
               <div className="h-14 w-14 rounded-2xl bg-warning-500/10 flex items-center justify-center group-hover:bg-warning-500/20 transition-colors">
-                <Briefcase className="h-7 w-7 text-warning-600" />
+                <Briefcase className="h-7 w-7 text-warning-700" />
 
               </div>
               <div className="text-center">
@@ -1226,7 +1226,7 @@ export default function MinhasTarefas() {
       {/* Nova Tarefa de Negócio dialog */}
       <Dialog open={showNovaTarefaNegocio} onOpenChange={setShowNovaTarefaNegocio}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-warning-600" /> Nova Tarefa de Negócio</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-warning-700" /> Nova Tarefa de Negócio</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Negócio *</label>
