@@ -1,4 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
+import type { PipelineLead } from "@/hooks/usePipeline";
+import { classifyTask } from "@/lib/taskBuckets";
 
 /**
  * Fonte única de verdade para invalidação de cache de tarefas.
