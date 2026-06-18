@@ -446,6 +446,7 @@ export default function AgendaVisitas() {
   const [kpiFilter, setKpiFilter] = useState<string | null>(searchParams.get("status") || null);
   const [equipeFilter, setEquipeFilter] = useState<string | null>(searchParams.get("equipe") || null);
   const [scrollToDay, setScrollToDay] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"lista" | "semana">("lista");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   // Applied custom range — só aplica ao clicar "Aplicar" (evita refetch a cada tecla)
