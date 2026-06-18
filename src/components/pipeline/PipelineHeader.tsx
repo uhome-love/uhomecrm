@@ -493,13 +493,14 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <div className="relative w-[200px] xl:w-[260px]">
               <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
               <input
+                aria-label="Buscar lead, telefone ou empreendimento"
                 placeholder="Buscar lead, telefone, empreendimento..."
                 value={filters.search}
                 onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
                 className="w-full outline-none h-9 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-primary dark:focus:border-primary"
               />
               {filters.search && (
-                <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <button aria-label="Limpar busca" onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
                   <X className="h-3 w-3 text-[#a1a1aa] dark:text-[#52525b]" />
                 </button>
               )}
