@@ -1210,8 +1210,9 @@ export default function MinhasTarefas() {
               onClick={() => { setShowTipoSelector(false); setShowNovaTarefaNegocio(true); }}
               className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border/60 bg-card hover:border-primary hover:bg-primary/5 transition-all group"
             >
-              <div className="h-14 w-14 rounded-2xl bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
-                <Briefcase className="h-7 w-7 text-amber-600" />
+              <div className="h-14 w-14 rounded-2xl bg-warning-500/10 flex items-center justify-center group-hover:bg-warning-500/20 transition-colors">
+                <Briefcase className="h-7 w-7 text-warning-600" />
+
               </div>
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">Tarefa de Negócio</p>
