@@ -90,7 +90,9 @@ export function useUserRole() {
     [roles]
   );
 
-  const isGestor = hasRole("gestor") || hasRole("admin");
+  const isDiretor = hasRole("diretor");
+  // Diretoria tem acesso de gestão (e mais) — conta como gestor para features de gestão.
+  const isGestor = hasRole("gestor") || hasRole("admin") || isDiretor;
   const isCorretor = hasRole("corretor");
   const isAdmin = hasRole("admin");
   const isBackoffice = hasRole("backoffice");
