@@ -270,9 +270,10 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="w-6 h-6 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer shrink-0"
+            aria-label="Atualizar pipeline"
+            className="w-8 h-8 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer shrink-0"
           >
-            <RefreshCw className={`h-3 w-3 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
