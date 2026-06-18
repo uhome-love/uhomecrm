@@ -550,7 +550,8 @@ export default function PipelineKanban() {
         filaCeoCount={filaCeoCount}
         filaCeoNovosCount={filaCeoNovosCount}
         filaCeoRedistCount={filaCeoRedistCount}
-        isAdmin={isAdmin}
+        isAdmin={isCeoView}
+        isDiretor={isDiretor}
         isGestor={isGestor}
         canAdd={canAdd}
         filters={filters}
