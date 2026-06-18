@@ -99,6 +99,8 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
             key={b.key}
             type="button"
             onClick={() => handleClick(b.key)}
+            aria-pressed={isActive}
+            aria-label={`Filtrar por ${b.label}: ${count} ${count === 1 ? "lead" : "leads"}${isActive ? " (ativo)" : ""}`}
             title={
               b.key === "em_dia"
                 ? "Leads em dia (inclui tarefas pra hoje que ainda não venceram)"
@@ -129,6 +131,15 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
             }}
             onMouseLeave={(e) => {
               if (!isActive) e.currentTarget.style.background = b.bgIdle;
+            }}
+            onFocus={(e) => {
+              if (!isActive) e.currentTarget.style.background = b.bgActive;
+              e.currentTarget.style.outline = "2px solid hsl(var(--ring))";
+              e.currentTarget.style.outlineOffset = "2px";
+            }}
+            onBlur={(e) => {
+              if (!isActive) e.currentTarget.style.background = b.bgIdle;
+              e.currentTarget.style.outline = "none";
             }}
           >
             <span

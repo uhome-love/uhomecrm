@@ -157,7 +157,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center shrink-0">
             <LayoutGrid className="h-3 w-3 text-white" />
           </div>
-          <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
+          <span className="text-[15px] font-bold text-foreground">Pipeline</span>
           <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeadsCount}</span>
           <div className="flex-1" />
 
@@ -190,9 +190,11 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               setMobileSearchOpen(v => !v);
               setTimeout(() => mobileSearchRef.current?.focus(), 100);
             }}
-            className="relative w-6 h-6 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
+            aria-label="Buscar leads"
+            aria-expanded={mobileSearchOpen}
+            className="relative w-8 h-8 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
           >
-            <Search className="h-3 w-3 text-slate-500 dark:text-slate-400" />
+            <Search className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
             {filters.search && (
               <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
             )}
@@ -214,19 +216,21 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <input
               ref={mobileSearchRef}
               type="text"
+              aria-label="Buscar lead por nome, telefone ou empreendimento"
               placeholder="Buscar lead por nome, telefone..."
               value={filters.search}
               onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-              className="flex-1 bg-transparent text-xs text-slate-800 dark:text-slate-100 outline-none h-7"
+              className="flex-1 bg-transparent text-xs text-foreground outline-none h-8"
             />
             <button
               onClick={() => {
                 setFilters(f => ({ ...f, search: "" }));
                 setMobileSearchOpen(false);
               }}
-              className="bg-transparent border-none cursor-pointer p-0.5"
+              aria-label="Limpar busca"
+              className="bg-transparent border-none cursor-pointer flex items-center justify-center w-8 h-8 shrink-0"
             >
-              <X className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+              <X className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             </button>
           </div>
         )}
@@ -243,6 +247,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               : null
             }
             onChange={(key) => {
+              // Evita conflito silencioso com o filtro de status do Sheet avançado.
+              setFilters(f => (f.statusLead ? { ...f, statusLead: "" } : f));
               if (key === "negocios") {
                 setNegociosFilter(true);
                 setClientStatusFilter("todos");
@@ -266,9 +272,10 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="w-6 h-6 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer shrink-0"
+            aria-label="Atualizar pipeline"
+            className="w-8 h-8 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer shrink-0"
           >
-            <RefreshCw className={`h-3 w-3 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
@@ -276,7 +283,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
       {/* ── TABLET HEADER (md to lg) ── */}
       <div className="hidden md:block lg:hidden">
         <div className="flex items-center gap-2 h-12 px-4 border-b border-slate-200 dark:border-gray-700">
-          <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
+          <span className="text-sm font-bold text-foreground">Pipeline</span>
           <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeadsCount}</span>
 
           <div className="flex-1" />
@@ -439,7 +446,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
             </div>
-            <span className="text-[15px] font-bold text-[#0a0a0a] dark:text-white tracking-tight whitespace-nowrap">
+            <span className="text-[15px] font-bold text-foreground tracking-tight whitespace-nowrap">
               Pipeline
             </span>
             <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeadsCount} leads</span>
@@ -488,13 +495,14 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <div className="relative w-[200px] xl:w-[260px]">
               <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
               <input
+                aria-label="Buscar lead, telefone ou empreendimento"
                 placeholder="Buscar lead, telefone, empreendimento..."
                 value={filters.search}
                 onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
                 className="w-full outline-none h-9 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-primary dark:focus:border-primary"
               />
               {filters.search && (
-                <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <button aria-label="Limpar busca" onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
                   <X className="h-3 w-3 text-[#a1a1aa] dark:text-[#52525b]" />
                 </button>
               )}
@@ -569,6 +577,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
+            aria-label="Atualizar pipeline"
             className="shrink-0 flex items-center justify-center transition-colors w-7 h-7 rounded-[7px] text-[#a1a1aa] dark:text-[#52525b] bg-transparent border-none cursor-pointer"
           >
             <RefreshCw size={12} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
@@ -637,6 +646,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 : null
               }
               onChange={(key) => {
+                // Evita conflito silencioso com o filtro de status do Sheet avançado.
+                setFilters(f => (f.statusLead ? { ...f, statusLead: "" } : f));
                 if (key === "negocios") {
                   setNegociosFilter(true);
                   setClientStatusFilter("todos");

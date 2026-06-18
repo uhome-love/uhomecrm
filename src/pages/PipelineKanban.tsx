@@ -360,7 +360,14 @@ export default function PipelineKanban() {
   // dos corretor_id dos leads em escopo, deduplicando por nome.
   const corretorOptions = useMemo(() => {
     const ids = new Set<string>();
-    pipeline.leads.forEach(l => { if (l.corretor_id) ids.add(l.corretor_id); });
+    pipeline.leads.forEach(l => {
+      if (!l.corretor_id) return;
+      // Quando o CEO/Diretoria filtra por um gestor, o dropdown de corretor
+      // deve listar apenas corretores daquele time (evita nomes que nunca
+      // aparecem nos cards).
+      if (isCeoView && gestorFilter !== "todos" && gestorTeamUserIds && !gestorTeamUserIds.has(l.corretor_id)) return;
+      ids.add(l.corretor_id);
+    });
     const byName = new Map<string, string>();
     ids.forEach(id => {
       const nome = pipeline.corretorNomes[id];
@@ -369,7 +376,7 @@ export default function PipelineKanban() {
     return [...byName.entries()]
       .map(([nome, id]) => [id, nome] as [string, string])
       .sort((a, b) => a[1].localeCompare(b[1]));
-  }, [pipeline.leads, pipeline.corretorNomes]);
+  }, [pipeline.leads, pipeline.corretorNomes, isCeoView, gestorFilter, gestorTeamUserIds]);
 
   const filaCeoCount = useMemo(() =>
     pipeline.leads.filter(l => !l.corretor_id).length,

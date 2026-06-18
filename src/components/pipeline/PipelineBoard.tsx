@@ -4,6 +4,10 @@ import CardMinimal from "./CardMinimal";
 import NegocioCriadoColumn from "./NegocioCriadoColumn";
 import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ChevronLeft, ChevronRight, AlignLeft, Trash2, Loader2 } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
 import { PIPELINE_STAGE_EMOJIS, PIPELINE_STAGE_COLORS, PIPELINE_STAGE_BG } from "@/lib/celebrations";
@@ -234,14 +238,10 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
   // Sweep descartados state
   const [isSweeping, setIsSweeping] = useState(false);
+  const [sweepConfirmOpen, setSweepConfirmOpen] = useState(false);
   const handleSweepDescartados = useCallback(async () => {
     if (isSweeping) return;
-
-    const confirmed = window.confirm(
-      "Confirmar limpeza dos descartados?\n\nIsso envia apenas os leads já na etapa Descarte para Oferta Ativa e os remove do pipeline visível."
-    );
-    if (!confirmed) return;
-
+    setSweepConfirmOpen(false);
     setIsSweeping(true);
     try {
       const { data, error } = await supabase.functions.invoke("sweep-descartados");
@@ -838,8 +838,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     </span>
                     {stage.tipo === "descarte" && stageLeads.length > 0 && (isGestor || isAdmin) && (
                       <button
-                        onClick={handleSweepDescartados}
+                        onClick={() => setSweepConfirmOpen(true)}
                         disabled={isSweeping}
+                        aria-label="Limpar descartados e enviar para Oferta Ativa"
                         title="Limpar descartados → Oferta Ativa"
                         className="ml-1 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                         style={{ fontSize: 11 }}
@@ -952,6 +953,25 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           onCancel={handleTransitionCancel}
         />
       )}
+
+      {/* Confirmação de limpeza dos descartados */}
+      <AlertDialog open={sweepConfirmOpen} onOpenChange={setSweepConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Limpar descartados?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso envia apenas os leads já na etapa Descarte para a Oferta Ativa
+              e os remove do pipeline visível. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSweepDescartados}>
+              Confirmar limpeza
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
