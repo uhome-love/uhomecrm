@@ -238,14 +238,10 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
   // Sweep descartados state
   const [isSweeping, setIsSweeping] = useState(false);
+  const [sweepConfirmOpen, setSweepConfirmOpen] = useState(false);
   const handleSweepDescartados = useCallback(async () => {
     if (isSweeping) return;
-
-    const confirmed = window.confirm(
-      "Confirmar limpeza dos descartados?\n\nIsso envia apenas os leads já na etapa Descarte para Oferta Ativa e os remove do pipeline visível."
-    );
-    if (!confirmed) return;
-
+    setSweepConfirmOpen(false);
     setIsSweeping(true);
     try {
       const { data, error } = await supabase.functions.invoke("sweep-descartados");
