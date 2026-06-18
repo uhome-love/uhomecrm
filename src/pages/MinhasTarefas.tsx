@@ -1034,7 +1034,7 @@ export default function MinhasTarefas() {
                         )}
                       </span>
                       <Badge variant="outline" className="text-xs">
-                        {TIPO_EMOJI[tarefa.tipo] || "📋"} {TIPO_LABELS[tarefa.tipo] || tarefa.tipo}
+                        {TIPO_LABELS[tarefa.tipo] || tarefa.tipo}
                       </Badge>
                     </div>
                   </div>
