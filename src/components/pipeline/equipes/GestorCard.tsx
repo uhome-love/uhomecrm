@@ -50,6 +50,11 @@ export default function GestorCard({ gestor, expanded, onToggle, children }: Pro
             <span className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
               {gestor.nome ?? "—"}
             </span>
+            {gestor.equipe_inativa && (
+              <span className="shrink-0 rounded-full bg-slate-200 dark:bg-gray-700 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Inativa
+              </span>
+            )}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400">
             {gestor.qtd_corretores} corretores
