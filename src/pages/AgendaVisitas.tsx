@@ -868,8 +868,8 @@ export default function AgendaVisitas() {
         </div>
       )}
 
-      {/* ═══════ PERIOD PILLS ═══════ */}
-      <div className="flex items-center gap-1">
+      {/* ═══════ PERIOD PILLS + VIEW TOGGLE ═══════ */}
+      <div className="flex items-center gap-1 flex-wrap">
         {PERIOD_OPTIONS.map(p => (
           <button
             key={p.key}
@@ -890,6 +890,34 @@ export default function AgendaVisitas() {
             : `${format(new Date(dateRange.from + "T12:00:00"), "dd/MM")} — ${format(new Date(dateRange.to + "T12:00:00"), "dd/MM")}`
           }
         </span>
+
+        <div className="flex-1" />
+
+        {/* Visão: Lista | Semana */}
+        <div className="flex items-center gap-0.5 bg-white dark:bg-white/5 border border-border dark:border-white/10 rounded-[8px] p-0.5">
+          <button
+            onClick={() => setViewMode("lista")}
+            title="Visão em lista"
+            aria-pressed={viewMode === "lista"}
+            className={cn(
+              "text-[11px] font-medium px-2 py-1 rounded-[6px] transition-all flex items-center gap-1",
+              viewMode === "lista" ? "bg-primary text-white" : "text-neutral-500 hover:text-foreground dark:hover:text-white"
+            )}
+          >
+            <List size={12} /> <span className="hidden sm:inline">Lista</span>
+          </button>
+          <button
+            onClick={() => setViewMode("semana")}
+            title="Visão semanal"
+            aria-pressed={viewMode === "semana"}
+            className={cn(
+              "text-[11px] font-medium px-2 py-1 rounded-[6px] transition-all flex items-center gap-1",
+              viewMode === "semana" ? "bg-primary text-white" : "text-neutral-500 hover:text-foreground dark:hover:text-white"
+            )}
+          >
+            <Columns3 size={12} /> <span className="hidden sm:inline">Semana</span>
+          </button>
+        </div>
       </div>
 
       {/* ═══════ CUSTOM DATE RANGE ═══════ */}
