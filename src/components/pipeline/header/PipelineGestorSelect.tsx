@@ -7,12 +7,9 @@
  */
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGestoresPipeline } from "@/hooks/useGestoresPipeline";
+import { GERENTES_REAIS } from "./gerentesReais";
 
-export const GERENTES_REAIS = [
-  { id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", nome: "Bruno Schuler", apelido: "Bruno" },
-  { id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", nome: "Gabriel Vieira", apelido: "Gabriel" },
-  { id: "7a270cc1-a457-4a02-8a62-462ba5a98937", nome: "Junior Padilha", apelido: "Junior" },
-] as const;
+export { GERENTES_REAIS };
 
 export type GestorFilterValue = "todos" | (typeof GERENTES_REAIS)[number]["id"];
 
