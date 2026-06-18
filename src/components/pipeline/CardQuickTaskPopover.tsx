@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { TIPO_LABELS } from "./CardStatusLine";
+import { TIPO_LABELS } from "@/lib/taskQueryUtils";
 
 const CARD_QUICK_TASK_TYPES = [
   { value: "ligar", label: "Ligar", emoji: "📞" },
