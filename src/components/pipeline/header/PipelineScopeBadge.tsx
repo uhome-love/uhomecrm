@@ -7,7 +7,8 @@
  *   • CEO sem filtro → "Escritório · N leads"
  *   • CEO filtrado   → "Time {Nome} · N · filtrado por CEO"
  */
-import { GERENTES_REAIS } from "./PipelineGestorSelect";
+import { GERENTES_REAIS } from "./gerentesReais";
+import { useGestoresPipeline } from "@/hooks/useGestoresPipeline";
 
 export interface PipelineScopeBadgeProps {
   isAdmin: boolean;
@@ -24,14 +25,17 @@ export default function PipelineScopeBadge({
   filteredCount,
   gestorFilter = "todos",
 }: PipelineScopeBadgeProps) {
+  const { data: gestores } = useGestoresPipeline(isAdmin || isDiretor);
   let label: string;
   let accent: string;
   // Diretoria e CEO têm visão de escritório; o rótulo diferencia o contexto.
   if (isAdmin || isDiretor) {
     const scopeName = isDiretor && !isAdmin ? "Diretoria" : "CEO";
     if (gestorFilter && gestorFilter !== "todos") {
-      const g = GERENTES_REAIS.find((x) => x.id === gestorFilter);
-      label = `Time ${g?.apelido ?? "Gestor"} · ${filteredCount} · filtrado por ${scopeName}`;
+      const dyn = gestores?.find((x) => x.id === gestorFilter);
+      const fallback = GERENTES_REAIS.find((x) => x.id === gestorFilter);
+      const apelido = dyn?.apelido ?? fallback?.apelido ?? "Gestor";
+      label = `Time ${apelido} · ${filteredCount} · filtrado por ${scopeName}`;
     } else {
       label = `Escritório · ${filteredCount} leads`;
     }

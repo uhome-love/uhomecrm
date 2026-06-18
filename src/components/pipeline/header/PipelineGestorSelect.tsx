@@ -1,20 +1,15 @@
 /**
  * PipelineGestorSelect — Filtro "por gestor" exclusivo do CEO/Admin.
  *
- * Fase 1 do refactor das visões Gestor/CEO. Restringe o Pipeline aos corretores
- * do gestor selecionado. Lista hardcoded enquanto há apenas 3 gerentes reais.
- *
- * TODO Quality Sprint: refatorar pra buscar dinamicamente de team_members
- * distinct gerente_id quando 4º gerente for contratado.
- * Hardcoded hoje pra simplicidade — escala manual por enquanto.
+ * Lista de gestores agora é DINÂMICA (useGestoresPipeline): busca os gerentes
+ * reais de team_members + nomes de profiles. A constante GERENTES_REAIS é mantida
+ * apenas como fallback estático (usada pelo hook e por gestorTheme/ScopeBadge).
  */
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useGestoresPipeline } from "@/hooks/useGestoresPipeline";
+import { GERENTES_REAIS } from "./gerentesReais";
 
-export const GERENTES_REAIS = [
-  { id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", nome: "Bruno Schuler", apelido: "Bruno" },
-  { id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", nome: "Gabriel Vieira", apelido: "Gabriel" },
-  { id: "7a270cc1-a457-4a02-8a62-462ba5a98937", nome: "Junior Padilha", apelido: "Junior" },
-] as const;
+export { GERENTES_REAIS };
 
 export type GestorFilterValue = "todos" | (typeof GERENTES_REAIS)[number]["id"];
 
@@ -29,6 +24,8 @@ export default function PipelineGestorSelect({
   onChange,
   variant = "desktop",
 }: PipelineGestorSelectProps) {
+  const { data: gestores } = useGestoresPipeline();
+  const lista = gestores && gestores.length > 0 ? gestores : GERENTES_REAIS;
   const active = value !== "todos";
   const triggerCls =
     variant === "compact"
@@ -45,12 +42,12 @@ export default function PipelineGestorSelect({
 
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className={triggerCls}>
+      <SelectTrigger className={triggerCls} aria-label="Filtrar por gestor">
         <SelectValue placeholder="Filtrar por gestor" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="todos">Todos gestores</SelectItem>
-        {GERENTES_REAIS.map((g) => (
+        {lista.map((g) => (
           <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
         ))}
       </SelectContent>
