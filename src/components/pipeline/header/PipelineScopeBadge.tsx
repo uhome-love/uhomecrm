@@ -7,7 +7,7 @@
  *   • CEO sem filtro → "Escritório · N leads"
  *   • CEO filtrado   → "Time {Nome} · N · filtrado por CEO"
  */
-import { GERENTES_REAIS } from "./PipelineGestorSelect";
+import { GERENTES_REAIS } from "./gerentesReais";
 import { useGestoresPipeline } from "@/hooks/useGestoresPipeline";
 
 export interface PipelineScopeBadgeProps {
