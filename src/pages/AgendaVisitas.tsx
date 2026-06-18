@@ -162,6 +162,10 @@ function VisitaCompactCard({
   onReabrir: (id: string) => void;
 }) {
   const isDone = visita.status === "realizada" || visita.status === "cancelada" || visita.status === "no_show";
+  // Vencida sem desfecho: data passada e ainda marcada/confirmada
+  const isOverdue = !isDone &&
+    (visita.status === "marcada" || visita.status === "confirmada") &&
+    isBefore(new Date(visita.data_visita + "T23:59:59"), startOfDay(new Date()));
   return (
     <div
       className={cn(
@@ -169,6 +173,7 @@ function VisitaCompactCard({
         isColleague
           ? "bg-[#f7f7fb]/60 dark:bg-white/3 border-[#e8e8f0]/60 dark:border-white/5"
           : "bg-white dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/8",
+        isOverdue && "border-[#ef4444]/40 bg-[#ef4444]/[0.03]",
         "hover:border-[#4969FF]/30"
       )}
       onClick={() => onEdit(visita)}
@@ -181,48 +186,68 @@ function VisitaCompactCard({
         {visita.hora_visita ? visita.hora_visita.slice(0, 5) : "—"}
       </span>
 
-      {/* Client name */}
-      <span className={cn(
-        "text-[12px] font-semibold truncate min-w-0",
-        isDone && visita.status !== "realizada" ? "text-[#a1a1aa] line-through" : isDone ? "text-[#a1a1aa]" : "text-[#0a0a0a] dark:text-[#fafafa]"
-      )}>
-        {visita.nome_cliente}
-      </span>
-
-      {/* Empreendimento */}
-      {visita.empreendimento && (
-        <span className="text-[11px] text-[#a1a1aa] truncate hidden md:block max-w-[140px]">
-          {visita.empreendimento}
-        </span>
-      )}
-
-      {/* Corretor name (team mode) */}
-      {showCorretor && visita.corretor_nome && (
-        <span className={cn(
-          "text-[11px] font-medium truncate hidden sm:block max-w-[100px]",
-          isColleague ? "text-[#4969FF]" : "text-[#71717a]"
-        )}>
-          {visita.corretor_nome.split(" ")[0]}
-        </span>
-      )}
-
-      <div className="flex-1" />
+      {/* Text block — uma linha no desktop, duas no mobile */}
+      <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={cn(
+            "text-[12px] font-semibold truncate min-w-0",
+            isDone && visita.status !== "realizada" ? "text-[#a1a1aa] line-through" : isDone ? "text-[#a1a1aa]" : "text-[#0a0a0a] dark:text-[#fafafa]"
+          )}>
+            {visita.nome_cliente}
+          </span>
+          {visita.empreendimento && (
+            <span className="text-[11px] text-[#a1a1aa] truncate hidden md:block max-w-[140px]">
+              {visita.empreendimento}
+            </span>
+          )}
+          {showCorretor && visita.corretor_nome && (
+            <span className={cn(
+              "text-[11px] font-medium truncate hidden sm:block max-w-[100px]",
+              isColleague ? "text-[#4969FF]" : "text-[#71717a]"
+            )}>
+              {visita.corretor_nome.split(" ")[0]}
+            </span>
+          )}
+          {isOverdue && (
+            <span className="text-[9px] font-bold text-[#ef4444] bg-[#ef4444]/10 px-1.5 py-0.5 rounded-full shrink-0 hidden sm:inline">
+              VENCIDA
+            </span>
+          )}
+        </div>
+        {/* Linha de meta no mobile */}
+        {(visita.empreendimento || (showCorretor && visita.corretor_nome) || isOverdue) && (
+          <div className="flex items-center gap-2 sm:hidden min-w-0">
+            {visita.empreendimento && (
+              <span className="text-[10px] text-[#a1a1aa] truncate">{visita.empreendimento}</span>
+            )}
+            {showCorretor && visita.corretor_nome && (
+              <span className={cn("text-[10px] font-medium truncate", isColleague ? "text-[#4969FF]" : "text-[#71717a]")}>
+                {visita.corretor_nome.split(" ")[0]}
+              </span>
+            )}
+            {isOverdue && (
+              <span className="text-[9px] font-bold text-[#ef4444] shrink-0">VENCIDA</span>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Status pill */}
       <span className={cn(
-        "text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0",
+        "text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 hidden xs:inline",
         STATUS_PILL_COLORS[visita.status] || "text-[#71717a] bg-[#f7f7fb] border-[#e8e8f0]"
       )}>
         {STATUS_LABELS[visita.status]}
       </span>
 
-      {/* Quick actions — sempre disponíveis para permitir correção de status */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      {/* Quick actions — sempre visíveis em touch, hover no desktop */}
+      <div className="flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
         {visita.status !== "realizada" && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkRealizada(visita); }}
-            className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#10b981]/10 text-[#10b981] transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#10b981]/10 text-[#10b981] transition-colors"
             title="Marcar como Realizada"
+            aria-label="Marcar como Realizada"
           >
             <Check size={14} strokeWidth={2.5} />
           </button>
@@ -230,8 +255,9 @@ function VisitaCompactCard({
         {visita.status !== "no_show" && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkNoShow(visita.id); }}
-            className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#ef4444]/10 text-[#ef4444] transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#ef4444]/10 text-[#ef4444] transition-colors"
             title="Marcar como No-show"
+            aria-label="Marcar como No-show"
           >
             <XCircle size={14} strokeWidth={2} />
           </button>
@@ -239,8 +265,9 @@ function VisitaCompactCard({
         {isDone && (
           <button
             onClick={(e) => { e.stopPropagation(); onReabrir(visita.id); }}
-            className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#4969FF]/10 text-[#4969FF] transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#4969FF]/10 text-[#4969FF] transition-colors"
             title="Reabrir visita (voltar para Marcada)"
+            aria-label="Reabrir visita"
           >
             <RotateCcw size={13} strokeWidth={2.2} />
           </button>
