@@ -27,6 +27,8 @@ export default function PipelineGestorSelect({
   onChange,
   variant = "desktop",
 }: PipelineGestorSelectProps) {
+  const { data: gestores } = useGestoresPipeline();
+  const lista = gestores && gestores.length > 0 ? gestores : GERENTES_REAIS;
   const active = value !== "todos";
   const triggerCls =
     variant === "compact"
@@ -43,12 +45,12 @@ export default function PipelineGestorSelect({
 
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className={triggerCls}>
+      <SelectTrigger className={triggerCls} aria-label="Filtrar por gestor">
         <SelectValue placeholder="Filtrar por gestor" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="todos">Todos gestores</SelectItem>
-        {GERENTES_REAIS.map((g) => (
+        {lista.map((g) => (
           <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
         ))}
       </SelectContent>
