@@ -1098,6 +1098,7 @@ export default function MinhasTarefas() {
                       <Plus className="h-3.5 w-3.5" /> Nova Tarefa
                     </Button>
                   </div>
+                  </div>
                 </div>
               </Card>
             );
