@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, ClipboardList, AlertTriangle } from "lucide-react";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { differenceInHours } from "date-fns";
-import { getLeadStatusFilter, type ProximaTarefa } from "@/components/pipeline/CardStatusLine";
+import { getLeadStatusFilter, type ProximaTarefa } from "@/lib/taskQueryUtils";
 import { useNavigate } from "react-router-dom";
 
 interface Props {

@@ -16,7 +16,7 @@ import PipelineAdvancedFilters, { type PipelineFilters } from "@/components/pipe
 import PipelineFiltroBadges, { type PipelineFiltroKey } from "@/components/pipeline/PipelineFiltroBadges";
 import { PipelineSortDropdown } from "@/components/pipeline/PipelineSortDropdown";
 import type { PipelineSortOrder } from "@/lib/pipelineSortOrder";
-import type { LeadClientStatus } from "@/components/pipeline/CardStatusLine";
+import type { LeadClientStatus } from "@/lib/taskQueryUtils";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 import PipelineCorretorSelect from "@/components/pipeline/header/PipelineCorretorSelect";
 import PipelineGestorSelect from "@/components/pipeline/header/PipelineGestorSelect";

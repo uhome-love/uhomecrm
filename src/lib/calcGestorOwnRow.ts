@@ -13,7 +13,7 @@
  */
 import type { PipelineLead } from "@/hooks/usePipeline";
 import type { TimeAgregadoRow } from "@/hooks/useTimeAgregado";
-import { getLeadStatusFilter, type ProximaTarefa } from "@/components/pipeline/CardStatusLine";
+import { getLeadStatusFilter, type ProximaTarefa } from "@/lib/taskQueryUtils";
 
 const EXCLUDED_TIPOS = new Set(["descarte", "convertido", "venda", "contrato_gerado"]);
 
