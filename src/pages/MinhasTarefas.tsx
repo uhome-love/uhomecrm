@@ -927,7 +927,20 @@ export default function MinhasTarefas() {
 
       {/* Task list */}
       {(isLoading || isLoadingNegocios || isLoadingOwnedLeads || isLoadingOwnedLeadTaskMap) ? (
-        <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+        <div className="space-y-3">
+          {[0, 1, 2].map(i => (
+            <Card key={i} className="p-4 border-l-[3px] border-l-muted">
+              <div className="flex gap-3 animate-pulse">
+                <div className="shrink-0 h-9 w-9 rounded-full bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-32 bg-muted rounded" />
+                  <div className="h-4 w-48 bg-muted rounded" />
+                  <div className="h-3 w-40 bg-muted rounded" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : activeTab === "desatualizados" ? (
         desatualizados.length === 0 ? (
           <Card className="p-8 text-center">
