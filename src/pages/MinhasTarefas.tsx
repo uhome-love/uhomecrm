@@ -890,25 +890,25 @@ export default function MinhasTarefas() {
       />
 
       {/* Category tabs: Leads vs Negócios */}
-      <div className="flex gap-2 flex-wrap">
-        <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" aria-pressed={categoria === "leads"} className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("todas"); }}>
-          <Target className="h-4 w-4" /> Tarefas de Leads
-          <Badge variant="secondary" className="ml-1 text-xs">{tarefas.filter(t => t.status === "pendente").length}</Badge>
+      <div className="flex gap-1 p-0.5 rounded-[10px] border bg-muted/40 w-fit max-w-full overflow-x-auto">
+        <Button variant={categoria === "leads" ? "default" : "ghost"} size="sm" aria-pressed={categoria === "leads"} className="h-8 text-xs gap-1.5 shrink-0" onClick={() => { setCategoria("leads"); setActiveTab("todas"); }}>
+          <Target className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Tarefas de </span>Leads
+          <Badge variant="secondary" className="ml-0.5 text-[10px] px-1.5">{tarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
-        <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" aria-pressed={categoria === "negocios"} className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("todas"); }}>
-          <Briefcase className="h-4 w-4" /> Tarefas de Negócios
-          <Badge variant="secondary" className="ml-1 text-xs">{negociosTarefas.filter(t => t.status === "pendente").length}</Badge>
+        <Button variant={categoria === "negocios" ? "default" : "ghost"} size="sm" aria-pressed={categoria === "negocios"} className="h-8 text-xs gap-1.5 shrink-0" onClick={() => { setCategoria("negocios"); setActiveTab("todas"); }}>
+          <Briefcase className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Tarefas de </span>Negócios
+          <Badge variant="secondary" className="ml-0.5 text-[10px] px-1.5">{negociosTarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 flex-wrap" role="tablist" aria-label="Filtrar tarefas por período">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible" role="tablist" aria-label="Filtrar tarefas por período">
         {tabs.map(tab => {
           const isActive = activeTab === tab.key;
           const btn = (
-            <Button key={tab.key} role="tab" aria-selected={isActive} variant={isActive ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => setActiveTab(tab.key)}>
+            <Button key={tab.key} role="tab" aria-selected={isActive} variant={isActive ? "default" : "outline"} size="sm" className="h-8 text-xs gap-1.5 shrink-0" onClick={() => setActiveTab(tab.key)}>
               {tab.label}
-              <Badge variant="secondary" className={cn("ml-1 text-xs", !isActive && toneBadgeClass(tab.tone))}>{tab.count}</Badge>
+              <Badge variant="secondary" className={cn("ml-0.5 text-[10px] px-1.5", !isActive && toneBadgeClass(tab.tone))}>{tab.count}</Badge>
             </Button>
           );
           if (tab.key === "desatualizados") {
@@ -924,6 +924,7 @@ export default function MinhasTarefas() {
           return btn;
         })}
       </div>
+
 
       {/* Task list */}
       {(isLoading || isLoadingNegocios || isLoadingOwnedLeads || isLoadingOwnedLeadTaskMap) ? (
