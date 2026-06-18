@@ -760,39 +760,40 @@ export default function AgendaVisitas() {
 
       {/* ═══════ CUSTOM DATE RANGE ═══════ */}
       {period === "personalizado" && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <label className="text-[12px] font-medium text-[#71717a]">De:</label>
-          <input
-            type="date"
-            value={customFrom}
-            onChange={e => setCustomFrom(e.target.value)}
-            className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
-          />
-          <label className="text-[12px] font-medium text-[#71717a]">Até:</label>
-          <input
-            type="date"
-            value={customTo}
-            onChange={e => setCustomTo(e.target.value)}
-            className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
-          />
-          <button
-            disabled={!customFrom || !customTo}
-            onClick={() => {
-              if (customFrom && customTo) {
-                // Force re-computation by toggling period
-                setPeriod("hoje");
-                setTimeout(() => setPeriod("personalizado"), 0);
-              }
-            }}
-            className={cn(
-              "h-[32px] px-4 text-[12px] font-semibold rounded-[8px] transition-all",
-              customFrom && customTo
-                ? "bg-[#4969FF] hover:bg-[#3350E6] text-white"
-                : "bg-[#e8e8f0] text-[#a1a1aa] cursor-not-allowed"
-            )}
-          >
-            Aplicar
-          </button>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="text-[12px] font-medium text-[#71717a]">De:</label>
+            <input
+              type="date"
+              value={customFrom}
+              max={customTo || undefined}
+              onChange={e => setCustomFrom(e.target.value)}
+              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+            />
+            <label className="text-[12px] font-medium text-[#71717a]">Até:</label>
+            <input
+              type="date"
+              value={customTo}
+              min={customFrom || undefined}
+              onChange={e => setCustomTo(e.target.value)}
+              className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4969FF] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+            />
+            <button
+              disabled={!customFrom || !customTo || !!customError}
+              onClick={() => setAppliedCustom({ from: customFrom, to: customTo })}
+              className={cn(
+                "h-[32px] px-4 text-[12px] font-semibold rounded-[8px] transition-all",
+                customFrom && customTo && !customError
+                  ? "bg-[#4969FF] hover:bg-[#3350E6] text-white"
+                  : "bg-[#e8e8f0] dark:bg-white/10 text-[#a1a1aa] cursor-not-allowed"
+              )}
+            >
+              Aplicar
+            </button>
+          </div>
+          {customError && (
+            <p className="text-[11px] text-[#ef4444] px-1">{customError}</p>
+          )}
         </div>
       )}
       {showWeekCalendar && (
