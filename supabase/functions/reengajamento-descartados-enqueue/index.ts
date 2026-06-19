@@ -303,8 +303,9 @@ Deno.serve(async (req) => {
           .not("telefone", "is", null);
         if (!includeArchivedCustom) q = q.eq("arquivado", false);
         if (tipoFilter === "reengajavel") {
-          q = q.neq("tipo_descarte", "definitivo")
-               .not("reengajamento_status", "in", `(${RESPONDEU_NAO.join(",")})`);
+          // NULL-safe: leads sem tipo_descarte/status (nunca contatados) SÃO reengajáveis
+          q = q.or("tipo_descarte.is.null,tipo_descarte.neq.definitivo")
+               .or(`reengajamento_status.is.null,reengajamento_status.not.in.(${RESPONDEU_NAO.join(",")})`);
         } else if (tipoFilter === "definitivo") {
           q = q.eq("tipo_descarte", "definitivo");
         }
