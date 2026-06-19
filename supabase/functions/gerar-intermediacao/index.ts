@@ -187,7 +187,7 @@ function tabelaZemo(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"
   const n = parcelas.length;
   const dataSize = n > 5 ? 14 : 16; // 7pt para muitas parcelas, 8pt no caso comum
   // Colunas fixas mais estreitas liberam espaço para as parcelas quando há muitas.
-  const credorW = n > 5 ? 1600 : 1800, pagW = n > 5 ? 900 : 1200, valorW = 1600;
+  const credorW = n > 5 ? 1400 : 1800, pagW = n > 5 ? 800 : 1200, valorW = n > 5 ? 1200 : 1600;
   const parcelaW = Math.floor((9026 - credorW - pagW - valorW) / n);
   const columnWidths = [credorW, pagW, valorW, ...parcelas.map(() => parcelaW)];
   const tableWidth = columnWidths.reduce((s, w) => s + w, 0);
