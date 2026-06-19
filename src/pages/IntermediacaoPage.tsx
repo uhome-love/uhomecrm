@@ -11,6 +11,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Plus, Trash2, FileSignature, Loader2, Download, Search } from "lucide-react";
 
@@ -564,6 +569,7 @@ function HistoricoTab() {
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
   const [baixando, setBaixando] = useState<string | null>(null);
+  const [apagando, setApagando] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -603,6 +609,23 @@ function HistoricoTab() {
       toast.error("Não foi possível gerar o link de download.");
     } finally {
       setBaixando(null);
+    }
+  };
+
+  const apagar = async (r: IntermediacaoRegistro) => {
+    setApagando(r.id);
+    try {
+      if (r.arquivo_path) {
+        await supabase.storage.from("intermediacoes").remove([r.arquivo_path]);
+      }
+      const { error } = await supabase.from("intermediacoes").delete().eq("id", r.id);
+      if (error) throw error;
+      setRegistros((prev) => prev.filter((x) => x.id !== r.id));
+      toast.success("Intermediação apagada.");
+    } catch {
+      toast.error("Não foi possível apagar a intermediação.");
+    } finally {
+      setApagando(null);
     }
   };
 
@@ -654,19 +677,55 @@ function HistoricoTab() {
                     <TableCell className="text-right text-sm whitespace-nowrap">{brl(r.valor_comissao)}</TableCell>
                     <TableCell className="text-sm">{(r.corretores ?? []).join(", ")}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => baixar(r)}
-                        disabled={baixando === r.id}
-                      >
-                        {baixando === r.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Download className="h-4 w-4" />
-                        )}
-                        <span className="ml-1">Download</span>
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => baixar(r)}
+                          disabled={baixando === r.id}
+                        >
+                          {baixando === r.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
+                          <span className="ml-1">Download</span>
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              disabled={apagando === r.id}
+                            >
+                              {apagando === r.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Apagar intermediação?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação remove permanentemente o registro de{" "}
+                                <strong>{r.comprador_nome}</strong> e o documento gerado. Não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => apagar(r)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Apagar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
