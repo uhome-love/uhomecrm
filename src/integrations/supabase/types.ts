@@ -3303,6 +3303,51 @@ export type Database = {
         }
         Relationships: []
       }
+      intermediacoes: {
+        Row: {
+          arquivo_path: string
+          comprador_nome: string
+          corretores: string[]
+          created_at: string
+          created_by: string
+          empreendimento: string
+          filename: string
+          id: string
+          tipo_pessoa: string
+          unidade: string
+          valor_comissao: number
+          vgv: number
+        }
+        Insert: {
+          arquivo_path: string
+          comprador_nome: string
+          corretores: string[]
+          created_at?: string
+          created_by: string
+          empreendimento: string
+          filename: string
+          id?: string
+          tipo_pessoa: string
+          unidade: string
+          valor_comissao: number
+          vgv: number
+        }
+        Update: {
+          arquivo_path?: string
+          comprador_nome?: string
+          corretores?: string[]
+          created_at?: string
+          created_by?: string
+          empreendimento?: string
+          filename?: string
+          id?: string
+          tipo_pessoa?: string
+          unidade?: string
+          valor_comissao?: number
+          vgv?: number
+        }
+        Relationships: []
+      }
       jetimob_campaign_map: {
         Row: {
           campaign_id: string

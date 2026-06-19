@@ -387,6 +387,46 @@ Deno.serve(async (req) => {
     const nomeRef = body.comprador.tipoPessoa === "PJ" ? body.comprador.razaoSocial : body.comprador.nomeCompleto;
     const filename = `intermediacao_${slug(nomeParaArquivo(body.comprador.tipoPessoa, nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
 
+    // Histórico (best-effort): grava arquivo no Storage e metadados na tabela.
+    // Qualquer falha aqui NÃO bloqueia a geração/download do documento.
+    try {
+      const intermediacaoId = crypto.randomUUID();
+      const ano = new Date().getFullYear();
+      // Path único usando o id da intermediação como prefixo curto (upsert:false evita sobrescrita).
+      // O filename "bonito" é preservado no metadado para o download.
+      const storageName = `${intermediacaoId.slice(0, 8)}_${filename}`;
+      const arquivoPath = `${ano}/${storageName}`;
+
+      const compradorNome = body.comprador.tipoPessoa === "PJ"
+        ? `${body.comprador.razaoSocial} / ${body.comprador.socioAdmin}`
+        : body.comprador.nomeCompleto;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("intermediacoes")
+        .upload(arquivoPath, new Uint8Array(buffer), {
+          contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          upsert: false,
+        });
+      if (uploadErr) throw uploadErr;
+
+      const { error: insertErr } = await supabase.from("intermediacoes").insert({
+        id: intermediacaoId,
+        created_by: userId,
+        comprador_nome: compradorNome,
+        tipo_pessoa: body.comprador.tipoPessoa,
+        empreendimento: body.imovel.empreendimento,
+        unidade: body.imovel.unidade,
+        vgv: body.imovel.vgv,
+        valor_comissao: body.comissao.valorTotal,
+        corretores: body.corretores.map((c) => c.nome),
+        arquivo_path: arquivoPath,
+        filename,
+      });
+      if (insertErr) throw insertErr;
+    } catch (histErr) {
+      console.error("[gerar-intermediacao] Falha ao salvar histórico (ignorada):", histErr);
+    }
+
     return new Response(JSON.stringify({ filename, base64 }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
