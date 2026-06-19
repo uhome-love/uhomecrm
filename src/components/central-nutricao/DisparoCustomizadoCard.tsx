@@ -739,9 +739,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                 <span className={`text-right font-mono ${includeArchived ? "text-muted-foreground" : "text-rose-600"}`}>
                   {includeArchived ? preview.funil.arquivados : `−${preview.funil.arquivados}`}
                 </span>
-                {dedupMode === "cooldown" && typeof preview.funil.em_cooldown === "number" && (
+                {typeof preview.funil.em_cooldown === "number" && preview.funil.em_cooldown > 0 && (
                   <>
-                    <span className="text-muted-foreground">— Em cooldown (recebem disparo em {preview.funil.cooldown_dias}d)</span>
+                    <span className="text-muted-foreground">— Em cooldown (já receberam disparo nos últimos {preview.funil.cooldown_dias}d)</span>
                     <span className="text-right font-mono text-amber-600">−{preview.funil.em_cooldown}</span>
                   </>
                 )}
