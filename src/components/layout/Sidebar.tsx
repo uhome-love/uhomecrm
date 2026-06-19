@@ -70,7 +70,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
-        { label: "Histórico interm.",  path: "/intermediacao/historico", icon: <FileSignature size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -135,7 +134,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
-        { label: "Histórico interm.",  path: "/intermediacao/historico", icon: <FileSignature size={15} strokeWidth={1.5} /> },
       ],
     },
     {
