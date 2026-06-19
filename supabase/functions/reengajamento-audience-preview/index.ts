@@ -203,8 +203,8 @@ Deno.serve(async (req) => {
         .select("id", { count: "exact", head: true })
         .eq("stage_id", STAGE_DESCARTE_ID)
         .not("telefone", "is", null)
-        .neq("tipo_descarte", "definitivo")
-        .not("reengajamento_status", "in", `(${RESPONDEU_NAO_STATUSES.join(",")})`)
+        .or("tipo_descarte.is.null,tipo_descarte.neq.definitivo")
+        .or(`reengajamento_status.is.null,reengajamento_status.not.in.(${RESPONDEU_NAO_STATUSES.join(",")})`)
         .not("reengajamento_enviado_at", "is", null)
         .gte("reengajamento_enviado_at", cooldownCutoff)
       ).count ?? 0) : 0;
