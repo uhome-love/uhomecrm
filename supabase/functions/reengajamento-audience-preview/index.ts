@@ -96,8 +96,9 @@ Deno.serve(async (req) => {
           .not("telefone", "is", null);
         const tipo = audience.tipo_descarte || "reengajavel";
         if (tipo === "reengajavel") {
-          q = q.neq("tipo_descarte", "definitivo")
-               .not("reengajamento_status", "in", `(${RESPONDEU_NAO_STATUSES.join(",")})`);
+          // NULL-safe: leads sem tipo_descarte/status (nunca contatados) SÃO reengajáveis
+          q = q.or("tipo_descarte.is.null,tipo_descarte.neq.definitivo")
+               .or(`reengajamento_status.is.null,reengajamento_status.not.in.(${RESPONDEU_NAO_STATUSES.join(",")})`);
         } else if (tipo === "definitivo") {
           q = q.eq("tipo_descarte", "definitivo");
         }
@@ -202,8 +203,8 @@ Deno.serve(async (req) => {
         .select("id", { count: "exact", head: true })
         .eq("stage_id", STAGE_DESCARTE_ID)
         .not("telefone", "is", null)
-        .neq("tipo_descarte", "definitivo")
-        .not("reengajamento_status", "in", `(${RESPONDEU_NAO_STATUSES.join(",")})`)
+        .or("tipo_descarte.is.null,tipo_descarte.neq.definitivo")
+        .or(`reengajamento_status.is.null,reengajamento_status.not.in.(${RESPONDEU_NAO_STATUSES.join(",")})`)
         .not("reengajamento_enviado_at", "is", null)
         .gte("reengajamento_enviado_at", cooldownCutoff)
       ).count ?? 0) : 0;
@@ -218,8 +219,9 @@ Deno.serve(async (req) => {
       // Inativados (respondeu não / definitivo) SEMPRE excluídos quando tipo = reengajavel
       const tipo = audience.tipo_descarte || "reengajavel";
       if (tipo === "reengajavel") {
-        q = q.neq("tipo_descarte", "definitivo")
-             .not("reengajamento_status", "in", `(${RESPONDEU_NAO_STATUSES.join(",")})`);
+        // NULL-safe: leads sem tipo_descarte/status (nunca contatados) SÃO reengajáveis
+        q = q.or("tipo_descarte.is.null,tipo_descarte.neq.definitivo")
+             .or(`reengajamento_status.is.null,reengajamento_status.not.in.(${RESPONDEU_NAO_STATUSES.join(",")})`);
       } else if (tipo === "definitivo") {
         q = q.eq("tipo_descarte", "definitivo");
       }
