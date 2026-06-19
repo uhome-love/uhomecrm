@@ -145,21 +145,19 @@ export default function IntermediacaoPage() {
   const [dataContrato, setDataContrato] = useState(hoje);
 
   const [gerando, setGerando] = useState(false);
+  const [carregandoCorretores, setCarregandoCorretores] = useState(true);
 
-  // Carregar corretores
+  // Carregar corretores (via RPC SECURITY DEFINER — contorna RLS de user_roles p/ gestores)
   useEffect(() => {
     (async () => {
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "corretor");
-      const ids = [...new Set((roles ?? []).map((r) => r.user_id).filter(Boolean))] as string[];
-      if (ids.length === 0) return;
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("user_id, nome, cpf, email, creci")
-        .in("user_id", ids);
-      const opts = (profs ?? [])
+      setCarregandoCorretores(true);
+      const { data, error } = await supabase.rpc("get_corretores_intermediacao");
+      if (error) {
+        toast.error("Erro ao carregar corretores: " + error.message);
+        setCarregandoCorretores(false);
+        return;
+      }
+      const opts = (data ?? [])
         .filter((p) => p.nome)
         .map((p) => ({
           user_id: p.user_id as string,
@@ -170,6 +168,7 @@ export default function IntermediacaoPage() {
         }))
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
       setOpcoesCorretores(opts);
+      setCarregandoCorretores(false);
     })();
   }, []);
 
