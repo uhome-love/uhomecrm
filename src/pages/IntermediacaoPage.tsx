@@ -369,10 +369,18 @@ export default function IntermediacaoPage() {
           {/* Corretor 1 */}
           <div className="space-y-3">
             <Label className="font-medium">Corretor 1</Label>
-            <Select value={corretor1.user_id} onValueChange={(v) => selecionarCorretor(v, setCorretor1)}>
-              <SelectTrigger><SelectValue placeholder="Buscar corretor..." /></SelectTrigger>
+            <Select value={corretor1.user_id} onValueChange={(v) => selecionarCorretor(v, setCorretor1)} disabled={carregandoCorretores}>
+              <SelectTrigger>
+                <SelectValue placeholder={carregandoCorretores ? "Carregando corretores..." : "Buscar corretor..."} />
+              </SelectTrigger>
               <SelectContent>
-                {opcoesCorretores.map((o) => <SelectItem key={o.user_id} value={o.user_id}>{o.nome}</SelectItem>)}
+                {opcoesCorretores.length === 0 ? (
+                  <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                    {carregandoCorretores ? "Carregando..." : "Nenhum corretor encontrado"}
+                  </div>
+                ) : (
+                  opcoesCorretores.map((o) => <SelectItem key={o.user_id} value={o.user_id}>{o.nome}</SelectItem>)
+                )}
               </SelectContent>
             </Select>
             <div className="grid sm:grid-cols-4 gap-3">
