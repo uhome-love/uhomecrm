@@ -134,7 +134,7 @@ const cabecalho = () => {
     const bytes = Uint8Array.from(atob(LOGO_BASE64), (c) => c.charCodeAt(0));
     return new Paragraph({
       alignment: AlignmentType.CENTER, spacing: { after: 240 },
-      children: [new ImageRun({ type: "png", data: bytes, transformation: { width: 110, height: 110 } })],
+      children: [new ImageRun({ type: "png", data: bytes, transformation: { width: 220, height: 60 } })],
     });
   }
   // TODO: substituir por ImageRun com logo real
