@@ -13,6 +13,15 @@ const corsHeaders = {
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 const MAX_RUN_MS = 140_000;
 
+async function interruptibleDelay(ms: number, shouldStop: () => Promise<boolean>): Promise<boolean> {
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    if (await shouldStop()) return true;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(2000, deadline - Date.now())));
+  }
+  return false;
+}
+
 function nowBRT(): Date {
   const d = new Date();
   return new Date(d.getTime() - 3 * 60 * 60 * 1000);
@@ -484,6 +493,29 @@ Deno.serve(async (req) => {
     let stopReason: string | null = null;
     let consecutiveMetaQualityFails = 0;
 
+    const shouldStopNow = async () => {
+      const [{ data: runState }, { data: liveCfg }] = await Promise.all([
+        supabase.from("reengajamento_dispatch_runs").select("cancel_requested").eq("id", runId).maybeSingle(),
+        supabase.from("reengajamento_config").select("paused, enabled").eq("id", cfg.id).maybeSingle(),
+      ]);
+      if (runState?.cancel_requested) {
+        stopReason = "Parado pelo usuário";
+        await updateRun({ status: "cancelled", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+        return true;
+      }
+      if (liveCfg?.paused) {
+        stopReason = "Pausado pelo usuário";
+        await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+        return true;
+      }
+      if (!liveCfg?.enabled && !force) {
+        stopReason = "Disparo desativado";
+        await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+        return true;
+      }
+      return false;
+    };
+
     const isMetaQualityBlock = (msg: string) => {
       const m = (msg || "").toLowerCase();
       return m.includes("ecosystem engagement")
@@ -528,15 +560,9 @@ Deno.serve(async (req) => {
     };
 
     for (const lead of leads || []) {
-      // Parar (encerra a campanha) — checagem por run
-      {
-        const { data: runState } = await supabase
-          .from("reengajamento_dispatch_runs").select("cancel_requested").eq("id", runId).maybeSingle();
-        if (runState?.cancel_requested) {
-          stopReason = "Parado pelo usuário";
-          await updateRun({ status: "cancelled", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
-          return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "cancelled", cancelled: true, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
+      if (await shouldStopNow()) {
+        const cancelled = stopReason === "Parado pelo usuário";
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (Date.now() - startedAt > MAX_RUN_MS) {
         // Encadeia automaticamente um próximo run para continuar de onde parou
@@ -559,19 +585,6 @@ Deno.serve(async (req) => {
         }
 
         return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "batch_continued", canal, continuation: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
-      const { data: liveCfg } = await supabase
-        .from("reengajamento_config").select("paused, enabled").eq("id", cfg.id).maybeSingle();
-      if (liveCfg?.paused) {
-        stopReason = "Pausado pelo usuário";
-        await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
-        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "paused", paused: true, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      if (!liveCfg?.enabled && !force) {
-        stopReason = "Disparo desativado";
-        await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
-        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "disabled", canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       const phone = normalizePhone(lead.telefone || "");
