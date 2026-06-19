@@ -63,6 +63,19 @@ const dataExtenso = (iso: string) => { const [y, m, d] = iso.split("-").map(Numb
 const primeiroNome = (s: string) => s.trim().split(/\s+/)[0] ?? "";
 const sobrenome = (s: string) => { const p = s.trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] ?? ""; };
 const slug = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "").trim();
+// Nome de referência para o arquivo: PJ usa a 1ª palavra significativa da Razão Social
+// (ignorando sufixos societários); PF mantém o sobrenome (última palavra).
+function nomeParaArquivo(tipoPessoa: "PF" | "PJ", nomeOuRazao: string): string {
+  if (tipoPessoa === "PJ") {
+    const limpo = nomeOuRazao
+      .replace(/\b(LTDA\.?|S\/?A\.?|EIRELI|ME|EPP|EMPREENDIMENTOS?|HOLDING)\b/gi, "")
+      .trim();
+    const primeira = limpo.split(/\s+/).filter(Boolean)[0] || "Empresa";
+    return primeira.replace(/[^a-zA-Z0-9]/g, "");
+  }
+  const partes = nomeOuRazao.trim().split(/\s+/);
+  return partes[partes.length - 1];
+}
 function bufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = "";
