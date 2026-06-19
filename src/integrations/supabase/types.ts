@@ -10627,6 +10627,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_corretores_intermediacao: {
+        Args: never
+        Returns: {
+          cpf: string
+          creci: string
+          email: string
+          nome: string
+          user_id: string
+        }[]
+      }
       get_dashboard_gerente: {
         Args: { p_gestor_id: string; p_periodo?: string }
         Returns: Json
