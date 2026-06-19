@@ -145,21 +145,19 @@ export default function IntermediacaoPage() {
   const [dataContrato, setDataContrato] = useState(hoje);
 
   const [gerando, setGerando] = useState(false);
+  const [carregandoCorretores, setCarregandoCorretores] = useState(true);
 
-  // Carregar corretores
+  // Carregar corretores (via RPC SECURITY DEFINER — contorna RLS de user_roles p/ gestores)
   useEffect(() => {
     (async () => {
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "corretor");
-      const ids = [...new Set((roles ?? []).map((r) => r.user_id).filter(Boolean))] as string[];
-      if (ids.length === 0) return;
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("user_id, nome, cpf, email, creci")
-        .in("user_id", ids);
-      const opts = (profs ?? [])
+      setCarregandoCorretores(true);
+      const { data, error } = await supabase.rpc("get_corretores_intermediacao");
+      if (error) {
+        toast.error("Erro ao carregar corretores: " + error.message);
+        setCarregandoCorretores(false);
+        return;
+      }
+      const opts = (data ?? [])
         .filter((p) => p.nome)
         .map((p) => ({
           user_id: p.user_id as string,
@@ -170,6 +168,7 @@ export default function IntermediacaoPage() {
         }))
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
       setOpcoesCorretores(opts);
+      setCarregandoCorretores(false);
     })();
   }, []);
 
@@ -370,10 +369,18 @@ export default function IntermediacaoPage() {
           {/* Corretor 1 */}
           <div className="space-y-3">
             <Label className="font-medium">Corretor 1</Label>
-            <Select value={corretor1.user_id} onValueChange={(v) => selecionarCorretor(v, setCorretor1)}>
-              <SelectTrigger><SelectValue placeholder="Buscar corretor..." /></SelectTrigger>
+            <Select value={corretor1.user_id} onValueChange={(v) => selecionarCorretor(v, setCorretor1)} disabled={carregandoCorretores}>
+              <SelectTrigger>
+                <SelectValue placeholder={carregandoCorretores ? "Carregando corretores..." : "Buscar corretor..."} />
+              </SelectTrigger>
               <SelectContent>
-                {opcoesCorretores.map((o) => <SelectItem key={o.user_id} value={o.user_id}>{o.nome}</SelectItem>)}
+                {opcoesCorretores.length === 0 ? (
+                  <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                    {carregandoCorretores ? "Carregando..." : "Nenhum corretor encontrado"}
+                  </div>
+                ) : (
+                  opcoesCorretores.map((o) => <SelectItem key={o.user_id} value={o.user_id}>{o.nome}</SelectItem>)
+                )}
               </SelectContent>
             </Select>
             <div className="grid sm:grid-cols-4 gap-3">
@@ -397,10 +404,18 @@ export default function IntermediacaoPage() {
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
-              <Select value={corretor2.user_id} onValueChange={(v) => selecionarCorretor(v, setCorretor2)}>
-                <SelectTrigger><SelectValue placeholder="Buscar corretor..." /></SelectTrigger>
+              <Select value={corretor2.user_id} onValueChange={(v) => selecionarCorretor(v, setCorretor2)} disabled={carregandoCorretores}>
+                <SelectTrigger>
+                  <SelectValue placeholder={carregandoCorretores ? "Carregando corretores..." : "Buscar corretor..."} />
+                </SelectTrigger>
                 <SelectContent>
-                  {opcoesCorretores.map((o) => <SelectItem key={o.user_id} value={o.user_id}>{o.nome}</SelectItem>)}
+                  {opcoesCorretores.length === 0 ? (
+                    <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                      {carregandoCorretores ? "Carregando..." : "Nenhum corretor encontrado"}
+                    </div>
+                  ) : (
+                    opcoesCorretores.map((o) => <SelectItem key={o.user_id} value={o.user_id}>{o.nome}</SelectItem>)
+                  )}
                 </SelectContent>
               </Select>
               <div className="grid sm:grid-cols-4 gap-3">
