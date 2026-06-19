@@ -305,13 +305,13 @@ export default function IntermediacaoPage() {
 
           {tipoPessoa === "PJ" ? (
             <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Razão Social</Label><Input value={razaoSocial} onChange={(e) => setRazaoSocial(e.target.value)} /></div>
-              <div className="space-y-2"><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} /></div>
-              <div className="space-y-2 sm:col-span-2"><Label>Nome do sócio-administrador</Label><Input value={socioAdmin} onChange={(e) => setSocioAdmin(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Razão Social</Label><Input value={razaoSocial} onChange={(e) => setRazaoSocial(e.target.value)} placeholder="Ex: Empresa Exemplo LTDA." /></div>
+              <div className="space-y-2"><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="00.000.000/0001-00" /></div>
+              <div className="space-y-2 sm:col-span-2"><Label>Nome do sócio-administrador</Label><Input value={socioAdmin} onChange={(e) => setSocioAdmin(e.target.value)} placeholder="Ex: Carlos Souza" /></div>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2 sm:col-span-2"><Label>Nome completo</Label><Input value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} /></div>
+              <div className="space-y-2 sm:col-span-2"><Label>Nome completo</Label><Input value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} placeholder="Ex: João da Silva Souza" /></div>
               <div className="space-y-2">
                 <Label>Gênero</Label>
                 <Select value={genero} onValueChange={setGenero}>
@@ -322,7 +322,7 @@ export default function IntermediacaoPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2"><Label>Profissão</Label><Input value={profissao} onChange={(e) => setProfissao(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Profissão</Label><Input value={profissao} onChange={(e) => setProfissao(e.target.value)} placeholder="Ex: Engenheiro" /></div>
               <div className="space-y-2">
                 <Label>Estado civil</Label>
                 <Select value={estadoCivil} onValueChange={setEstadoCivil}>
@@ -343,11 +343,11 @@ export default function IntermediacaoPage() {
           )}
 
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(e.target.value)} /></div>
-            <div className="space-y-2"><Label>RG</Label><Input value={rg} onChange={(e) => setRg(e.target.value)} /></div>
-            <div className="space-y-2"><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} /></div>
-            <div className="space-y-2"><Label>E-mail</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-            <div className="space-y-2 sm:col-span-2"><Label>Endereço completo</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Rua, nº, complemento, bairro, cidade/UF, CEP" /></div>
+            <div className="space-y-2"><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00" /></div>
+            <div className="space-y-2"><Label>RG</Label><Input value={rg} onChange={(e) => setRg(e.target.value)} placeholder="0000000000" /></div>
+            <div className="space-y-2"><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(51) 99999-9999" /></div>
+            <div className="space-y-2"><Label>E-mail</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@email.com" /></div>
+            <div className="space-y-2 sm:col-span-2"><Label>Endereço completo</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Rua Exemplo, nº 123, Bairro, Porto Alegre/RS, CEP 90000-000" /></div>
           </div>
         </CardContent>
       </Card>
@@ -356,9 +356,9 @@ export default function IntermediacaoPage() {
       <Card>
         <CardHeader><CardTitle className="text-base">Imóvel</CardTitle></CardHeader>
         <CardContent className="grid sm:grid-cols-3 gap-4">
-          <div className="space-y-2 sm:col-span-2"><Label>Empreendimento</Label><Input value={empreendimento} onChange={(e) => setEmpreendimento(e.target.value)} /></div>
-          <div className="space-y-2"><Label>Unidade</Label><Input value={unidade} onChange={(e) => setUnidade(e.target.value)} /></div>
-          <div className="space-y-2 sm:col-span-3"><Label>VGV (valor do imóvel)</Label><Input value={vgv} onChange={(e) => setVgv(e.target.value)} placeholder="Ex.: 508721,35" /></div>
+          <div className="space-y-2 sm:col-span-2"><Label>Empreendimento</Label><Input value={empreendimento} onChange={(e) => setEmpreendimento(e.target.value)} placeholder="Ex: Shift Torre Residencial" /></div>
+          <div className="space-y-2"><Label>Unidade</Label><Input value={unidade} onChange={(e) => setUnidade(e.target.value)} placeholder="Ex: 1107" /></div>
+          <div className="space-y-2 sm:col-span-3"><Label>VGV (valor do imóvel)</Label><Input value={vgv} onChange={(e) => setVgv(e.target.value)} placeholder="R$ 000.000,00" /></div>
         </CardContent>
       </Card>
 
@@ -384,9 +384,9 @@ export default function IntermediacaoPage() {
               </SelectContent>
             </Select>
             <div className="grid sm:grid-cols-4 gap-3">
-              <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={corretor1.cpf} onChange={(e) => setCorretor1({ ...corretor1, cpf: e.target.value })} /></div>
-              <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={corretor1.rg} onChange={(e) => setCorretor1({ ...corretor1, rg: e.target.value })} /></div>
-              <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={corretor1.email} onChange={(e) => setCorretor1({ ...corretor1, email: e.target.value })} /></div>
+              <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={corretor1.cpf} onChange={(e) => setCorretor1({ ...corretor1, cpf: e.target.value })} placeholder="000.000.000-00" /></div>
+              <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={corretor1.rg} onChange={(e) => setCorretor1({ ...corretor1, rg: e.target.value })} placeholder="0000000000" /></div>
+              <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={corretor1.email} onChange={(e) => setCorretor1({ ...corretor1, email: e.target.value })} placeholder="nome@uhome.imb.br" /></div>
               <div className="space-y-1"><Label className="text-xs">% Comissão</Label><Input value={corretor1.percentual} onChange={(e) => setCorretor1({ ...corretor1, percentual: e.target.value })} /></div>
             </div>
           </div>
@@ -419,9 +419,9 @@ export default function IntermediacaoPage() {
                 </SelectContent>
               </Select>
               <div className="grid sm:grid-cols-4 gap-3">
-                <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={corretor2.cpf} onChange={(e) => setCorretor2({ ...corretor2, cpf: e.target.value })} /></div>
-                <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={corretor2.rg} onChange={(e) => setCorretor2({ ...corretor2, rg: e.target.value })} /></div>
-                <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={corretor2.email} onChange={(e) => setCorretor2({ ...corretor2, email: e.target.value })} /></div>
+                <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={corretor2.cpf} onChange={(e) => setCorretor2({ ...corretor2, cpf: e.target.value })} placeholder="000.000.000-00" /></div>
+                <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={corretor2.rg} onChange={(e) => setCorretor2({ ...corretor2, rg: e.target.value })} placeholder="0000000000" /></div>
+                <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={corretor2.email} onChange={(e) => setCorretor2({ ...corretor2, email: e.target.value })} placeholder="nome@uhome.imb.br" /></div>
                 <div className="space-y-1"><Label className="text-xs">% Comissão</Label><Input value={corretor2.percentual} onChange={(e) => setCorretor2({ ...corretor2, percentual: e.target.value })} /></div>
               </div>
             </div>
@@ -434,7 +434,7 @@ export default function IntermediacaoPage() {
         <CardHeader><CardTitle className="text-base">Comissão</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid sm:grid-cols-4 gap-4">
-            <div className="space-y-2"><Label>Valor total da corretagem</Label><Input value={valorTotal} onChange={(e) => setValorTotal(e.target.value)} placeholder="Ex.: 25436,07" /></div>
+            <div className="space-y-2"><Label>Valor total da corretagem</Label><Input value={valorTotal} onChange={(e) => setValorTotal(e.target.value)} placeholder="R$ 00.000,00" /></div>
             <div className="space-y-2"><Label>% Gabrielle</Label><Input value={pctGabrielle} onChange={(e) => setPctGabrielle(e.target.value)} /></div>
             <div className="space-y-2"><Label>% Diretoria</Label><Input value={pctDiretoria} onChange={(e) => setPctDiretoria(e.target.value)} /></div>
             <div className="space-y-2"><Label>% UHome (auto)</Label><Input value={`${round2(pctUhome)}%`} readOnly disabled /></div>
@@ -448,7 +448,7 @@ export default function IntermediacaoPage() {
             {parcelas.map((p, i) => (
               <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
                 <div className="space-y-1"><Label className="text-xs">Vencimento</Label><Input type="date" value={p.vencimento} onChange={(e) => updateParcela(i, "vencimento", e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Valor</Label><Input value={p.valor} onChange={(e) => updateParcela(i, "valor", e.target.value)} placeholder="Ex.: 5000,00" /></div>
+                <div className="space-y-1"><Label className="text-xs">Valor</Label><Input value={p.valor} onChange={(e) => updateParcela(i, "valor", e.target.value)} placeholder="R$ 0.000,00" /></div>
                 <Button variant="ghost" size="icon" onClick={() => removeParcela(i)} disabled={parcelas.length === 1}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))}
