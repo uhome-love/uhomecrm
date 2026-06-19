@@ -219,8 +219,10 @@ Deno.serve(async (req) => {
       // Inativados (respondeu não / definitivo) SEMPRE excluídos quando tipo = reengajavel
       const tipo = audience.tipo_descarte || "reengajavel";
       if (tipo === "reengajavel") {
-        q = q.neq("tipo_descarte", "definitivo")
-             .not("reengajamento_status", "in", `(${RESPONDEU_NAO_STATUSES.join(",")})`);
+        // NULL-safe: leads sem tipo_descarte/status (nunca contatados) SÃO reengajáveis
+        q = q.or("tipo_descarte.is.null,tipo_descarte.neq.definitivo")
+             .not("reengajamento_status", "in", `(${RESPONDEU_NAO_STATUSES.join(",")})`)
+             .or(`reengajamento_status.is.null,reengajamento_status.not.in.(${RESPONDEU_NAO_STATUSES.join(",")})`);
       } else if (tipo === "definitivo") {
         q = q.eq("tipo_descarte", "definitivo");
       }
