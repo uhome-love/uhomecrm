@@ -612,6 +612,23 @@ function HistoricoTab() {
     }
   };
 
+  const apagar = async (r: IntermediacaoRegistro) => {
+    setApagando(r.id);
+    try {
+      if (r.arquivo_path) {
+        await supabase.storage.from("intermediacoes").remove([r.arquivo_path]);
+      }
+      const { error } = await supabase.from("intermediacoes").delete().eq("id", r.id);
+      if (error) throw error;
+      setRegistros((prev) => prev.filter((x) => x.id !== r.id));
+      toast.success("Intermediação apagada.");
+    } catch {
+      toast.error("Não foi possível apagar a intermediação.");
+    } finally {
+      setApagando(null);
+    }
+  };
+
   return (
     <Card>
       <CardContent className="p-4 space-y-4">
