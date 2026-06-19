@@ -569,6 +569,7 @@ function HistoricoTab() {
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
   const [baixando, setBaixando] = useState<string | null>(null);
+  const [apagando, setApagando] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
