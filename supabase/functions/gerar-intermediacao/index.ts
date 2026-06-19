@@ -130,13 +130,13 @@ const cabecalho = () => {
 
 const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" };
 const borders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
-const tcell = (text: string, opts: { bold?: boolean; fill?: string; width?: number } = {}) =>
+const tcell = (text: string, opts: { bold?: boolean; fill?: string; width?: number; size?: number } = {}) =>
   new TableCell({
     borders,
     width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
     shading: opts.fill ? { fill: opts.fill, type: ShadingType.CLEAR, color: "auto" } : undefined,
     margins: { top: 40, bottom: 40, left: 80, right: 80 },
-    children: [new Paragraph({ children: [new TextRun({ text, bold: opts.bold, size: 16 })] })],
+    children: [new Paragraph({ children: [new TextRun({ text, bold: opts.bold, size: opts.size ?? 16 })] })],
   });
 
 function tabelaComissao(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"]["parcelas"]) {
