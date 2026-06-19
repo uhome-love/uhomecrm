@@ -735,7 +735,10 @@ Deno.serve(async (req) => {
         // - Meta: rápido (rate limit Meta é altíssimo) — 1-3s só pra não estourar nada
         // - Evolution: 60-180s + pausa longa a cada N envios
         if (canal === "meta") {
-          await new Promise(r => setTimeout(r, 1500 + Math.random() * 1500));
+          if (await interruptibleDelay(1500 + Math.random() * 1500, shouldStopNow)) {
+            const cancelled = stopReason === "Parado pelo usuário";
+            return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
         } else {
           const isLongPause = sent > 0 && sent % pausaA === 0;
           const ms = isLongPause
@@ -746,7 +749,10 @@ Deno.serve(async (req) => {
               lead_id: lead.id, run_id: runId, tipo: "pausa_longa", detalhe: `${Math.round(ms/1000)}s após ${sent} envios`,
             });
           }
-          await new Promise(r => setTimeout(r, ms));
+          if (await interruptibleDelay(ms, shouldStopNow)) {
+            const cancelled = stopReason === "Parado pelo usuário";
+            return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
         }
       } catch (e) {
         failed++;
