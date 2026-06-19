@@ -248,7 +248,8 @@ function qualificacaoContratados(corretores: Body["corretores"]): TextRun[] {
   runs.push(new TextRun(", "));
   corretores.forEach((c) => {
     runs.push(new TextRun({ text: `${c.nome.toUpperCase()}`, bold: true }));
-    runs.push(new TextRun(`, inscrito(a) no CPF: ${c.cpf}, RG: ${c.rg}, endereço eletrônico: ${c.email}, `));
+    const rgTrecho = c.rg && c.rg.trim() ? `RG: ${c.rg.trim()}, ` : "";
+    runs.push(new TextRun(`, inscrito(a) no CPF: ${c.cpf}, ${rgTrecho}endereço eletrônico: ${c.email}, `));
   });
   runs.push(new TextRun({ text: GABRIELLE.nome, bold: true }));
   runs.push(new TextRun(`, inscrita no CPF: ${GABRIELLE.cpf}, endereço eletrônico: ${GABRIELLE.email}, residente e domiciliada na ${GABRIELLE.endereco} e `));
