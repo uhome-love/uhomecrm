@@ -1,34 +1,28 @@
 ## Objetivo
-Fazer a página **Intermediação** (`/intermediacao`) puxar corretamente a lista de corretores para gestores (hoje só funciona para admin) e endurecer o carregamento.
+Transferir **Douglas Costa** da equipe do **Gabriel Vieira** para a equipe do **Junior Padilha**.
 
-## Causa raiz
-A página lê `user_roles` direto:
-```ts
-supabase.from("user_roles").select("user_id").eq("role","corretor")
+## Situação atual (verificada no banco)
+- Douglas Costa (`team_members.id` = `b23bb4f2-...`, user_id `70b93b6e-...`)
+  - `gerente_id` = Gabriel Vieira (`b3a1c3a4-...`)
+  - `equipe` = "Gabriel"
+- Destino: Junior Padilha (`gerente_id` = `7a270cc1-...`, equipe "Junior")
+
+A tabela `team_members` é a fonte canônica única da relação gestor↔corretor, então é o único registro que precisa mudar. Os leads, negócios e demais dados do Douglas continuam vinculados a ele (pelo `corretor_id`/`user_id` dele) — eles automaticamente passam a aparecer sob o Junior porque a visão de equipe lê de `team_members`.
+
+## Mudança
+Atualizar a linha do Douglas em `team_members`:
+- `gerente_id` → `7a270cc1-a457-4a02-8a62-462ba5a98937` (Junior Padilha)
+- `equipe` → "Junior"
+
+```sql
+UPDATE team_members
+SET gerente_id = '7a270cc1-a457-4a02-8a62-462ba5a98937',
+    equipe = 'Junior'
+WHERE id = 'b23bb4f2-45d6-4646-8da6-7a7dba2dc697';
 ```
-O RLS de `user_roles` só permite `admin` (todas) ou o próprio usuário (a sua). Um **gestor não consegue ler as roles dos outros**, então a lista vem vazia e o `<Select>` de corretores fica sem opções.
-
-## Mudanças propostas
-
-### 1. Nova RPC `SECURITY DEFINER` (migration)
-`public.get_corretores_intermediacao()` retorna `user_id, nome, cpf, email, creci` de todos os usuários com role `corretor`, ordenado por nome. `SECURITY DEFINER` + `set search_path = public`, `GRANT EXECUTE` para `authenticated`. Internamente valida que o chamador é `admin` ou `gestor` via `has_role(auth.uid(), ...)` (mesma regra da edge function), retornando vazio caso contrário.
-
-### 2. `src/pages/IntermediacaoPage.tsx`
-- Trocar o `useEffect` de carregamento por `supabase.rpc("get_corretores_intermediacao")`.
-- Adicionar estado `carregandoCorretores` + tratamento de erro com `toast.error`.
-- Mostrar "Nenhum corretor encontrado" / spinner no `<Select>` quando vazio ou carregando.
-- Regenerar tipos do Supabase para a nova RPC.
-
-## Fora de escopo (anotado, não implementar agora sem confirmação)
-- Persistir o contrato gerado em tabela/storage.
-- Trazer RG e % de comissão do cadastro (campos não existem em `profiles`).
-- Usar CRECI no documento.
-- Revisar o credor fixo "Gabrielle Rodrigues" à luz da reorganização de equipes.
 
 ## Validação
-- Logar/testar como gestor: confirmar que os 33 corretores aparecem no Select.
-- Gerar um `.docx` de teste e confirmar download.
+- Reconsultar `team_members` para confirmar que Douglas aparece sob Junior.
+- Confirmar na tela de Equipes que o Douglas (e seus leads/negócios) agora aparece no time do Junior e saiu do time do Gabriel.
 
-## Detalhes técnicos
-- 1 migration (RPC + grant). Respeitar janela de migrations (máx 2/dia, 08–19h BRT).
-- Edge function `gerar-intermediacao` permanece inalterada (já valida admin/gestor).
+Nenhuma alteração de código é necessária — é apenas uma mudança de dado.
