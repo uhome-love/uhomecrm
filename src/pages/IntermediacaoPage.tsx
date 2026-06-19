@@ -10,8 +10,9 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, FileSignature, Loader2 } from "lucide-react";
+import { Plus, Trash2, FileSignature, Loader2, Download, Search } from "lucide-react";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface CorretorOption {
