@@ -22,6 +22,7 @@ type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before
 // Para um novo template, basta adicionar o nome → URL pública aqui (ou colar a URL no campo do card).
 const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
   casatua_junho25k: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-junho25k.png",
+  casatua_eventosabado: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-eventosabado.png",
 };
 
 
