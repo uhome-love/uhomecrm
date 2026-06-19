@@ -287,6 +287,15 @@ export default function IntermediacaoPage() {
         </div>
       </header>
 
+      <Tabs defaultValue="gerar" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="gerar">Gerar Intermediação</TabsTrigger>
+          <TabsTrigger value="historico">Histórico</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="gerar" className="space-y-6">
+
+
       {/* Comprador */}
       <Card>
         <CardHeader><CardTitle className="text-base">Comprador (Contratante)</CardTitle></CardHeader>
