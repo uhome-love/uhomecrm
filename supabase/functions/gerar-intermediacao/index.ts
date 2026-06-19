@@ -63,6 +63,19 @@ const dataExtenso = (iso: string) => { const [y, m, d] = iso.split("-").map(Numb
 const primeiroNome = (s: string) => s.trim().split(/\s+/)[0] ?? "";
 const sobrenome = (s: string) => { const p = s.trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] ?? ""; };
 const slug = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "").trim();
+// Nome de referência para o arquivo: PJ usa a 1ª palavra significativa da Razão Social
+// (ignorando sufixos societários); PF mantém o sobrenome (última palavra).
+function nomeParaArquivo(tipoPessoa: "PF" | "PJ", nomeOuRazao: string): string {
+  if (tipoPessoa === "PJ") {
+    const limpo = nomeOuRazao
+      .replace(/\b(LTDA\.?|S\/?A\.?|EIRELI|ME|EPP|EMPREENDIMENTOS?|HOLDING)\b/gi, "")
+      .trim();
+    const primeira = limpo.split(/\s+/).filter(Boolean)[0] || "Empresa";
+    return primeira.replace(/[^a-zA-Z0-9]/g, "");
+  }
+  const partes = nomeOuRazao.trim().split(/\s+/);
+  return partes[partes.length - 1];
+}
 function bufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = "";
@@ -130,17 +143,18 @@ const cabecalho = () => {
 
 const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" };
 const borders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
-const tcell = (text: string, opts: { bold?: boolean; fill?: string; width?: number } = {}) =>
+const tcell = (text: string, opts: { bold?: boolean; fill?: string; width?: number; size?: number } = {}) =>
   new TableCell({
     borders,
     width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
     shading: opts.fill ? { fill: opts.fill, type: ShadingType.CLEAR, color: "auto" } : undefined,
     margins: { top: 40, bottom: 40, left: 80, right: 80 },
-    children: [new Paragraph({ children: [new TextRun({ text, bold: opts.bold, size: 16 })] })],
+    children: [new Paragraph({ children: [new TextRun({ text, bold: opts.bold, size: opts.size ?? 16 })] })],
   });
 
 function tabelaComissao(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"]["parcelas"]) {
   const n = parcelas.length;
+  const dataSize = n > 5 ? 14 : 16; // 7pt para muitas parcelas, 8pt no caso comum
   const credorW = 1800, valorW = 1600;
   const parcelaW = Math.floor((9026 - credorW - valorW) / n);
   const columnWidths = [credorW, valorW, ...parcelas.map(() => parcelaW)];
@@ -155,15 +169,15 @@ function tabelaComissao(calc: ReturnType<typeof calcular>, parcelas: Body["comis
   });
   const rows = calc.credores.map((c) =>
     new TableRow({ children: [
-      tcell(c.nome, { width: credorW }),
-      tcell(brl(c.total), { width: valorW }),
-      ...c.parcelas.map((v) => tcell(brl(v), { width: parcelaW })),
+      tcell(c.nome, { width: credorW, size: dataSize }),
+      tcell(brl(c.total), { width: valorW, size: dataSize }),
+      ...c.parcelas.map((v) => tcell(brl(v), { width: parcelaW, size: dataSize })),
     ] }));
   const totalRow = new TableRow({
     children: [
-      tcell("Total", { bold: true, fill: "F4F4F4", width: credorW }),
-      tcell(brl(calc.totalGeral), { bold: true, fill: "F4F4F4", width: valorW }),
-      ...calc.totalLinha.map((v) => tcell(brl(v), { bold: true, fill: "F4F4F4", width: parcelaW })),
+      tcell("Total", { bold: true, fill: "F4F4F4", width: credorW, size: dataSize }),
+      tcell(brl(calc.totalGeral), { bold: true, fill: "F4F4F4", width: valorW, size: dataSize }),
+      ...calc.totalLinha.map((v) => tcell(brl(v), { bold: true, fill: "F4F4F4", width: parcelaW, size: dataSize })),
     ],
   });
   return new Table({ width: { size: tableWidth, type: WidthType.DXA }, columnWidths, rows: [header, ...rows, totalRow] });
@@ -171,7 +185,9 @@ function tabelaComissao(calc: ReturnType<typeof calcular>, parcelas: Body["comis
 
 function tabelaZemo(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"]["parcelas"]) {
   const n = parcelas.length;
-  const credorW = 1800, pagW = 1200, valorW = 1600;
+  const dataSize = n > 5 ? 14 : 16; // 7pt para muitas parcelas, 8pt no caso comum
+  // Colunas fixas mais estreitas liberam espaço para as parcelas quando há muitas.
+  const credorW = n > 5 ? 1600 : 1800, pagW = n > 5 ? 900 : 1200, valorW = 1600;
   const parcelaW = Math.floor((9026 - credorW - pagW - valorW) / n);
   const columnWidths = [credorW, pagW, valorW, ...parcelas.map(() => parcelaW)];
   const tableWidth = columnWidths.reduce((s, w) => s + w, 0);
@@ -186,10 +202,10 @@ function tabelaZemo(calc: ReturnType<typeof calcular>, parcelas: Body["comissao"
   });
   const row = new TableRow({
     children: [
-      tcell("ZemoBank", { width: credorW }),
-      tcell("Pix ou Boleto", { width: pagW }),
-      tcell(brl(calc.zemo.total), { width: valorW }),
-      ...calc.zemo.parcelas.map((v) => tcell(brl(v), { width: parcelaW })),
+      tcell("ZemoBank", { width: credorW, size: dataSize }),
+      tcell("Pix ou Boleto", { width: pagW, size: dataSize }),
+      tcell(brl(calc.zemo.total), { width: valorW, size: dataSize }),
+      ...calc.zemo.parcelas.map((v) => tcell(brl(v), { width: parcelaW, size: dataSize })),
     ],
   });
   return new Table({ width: { size: tableWidth, type: WidthType.DXA }, columnWidths, rows: [header, row] });
@@ -366,7 +382,7 @@ Deno.serve(async (req) => {
     const base64 = bufferToBase64(buffer);
 
     const nomeRef = body.comprador.tipoPessoa === "PJ" ? body.comprador.razaoSocial : body.comprador.nomeCompleto;
-    const filename = `intermediacao_${slug(sobrenome(nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
+    const filename = `intermediacao_${slug(nomeParaArquivo(body.comprador.tipoPessoa, nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
 
     return new Response(JSON.stringify({ filename, base64 }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
