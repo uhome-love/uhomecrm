@@ -522,12 +522,159 @@ export default function IntermediacaoPage() {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end pb-10">
-        <Button onClick={handleGerar} disabled={gerando} style={{ backgroundColor: ACCENT }} className="text-white hover:opacity-90">
-          {gerando ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSignature className="h-4 w-4 mr-2" />}
-          Gerar Intermediação
-        </Button>
-      </div>
+          <div className="flex justify-end pb-10">
+            <Button onClick={handleGerar} disabled={gerando} style={{ backgroundColor: ACCENT }} className="text-white hover:opacity-90">
+              {gerando ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSignature className="h-4 w-4 mr-2" />}
+              Gerar Intermediação
+            </Button>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="historico">
+          <HistoricoTab />
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+// ─── Aba Histórico ──────────────────────────────────────────────────────────────
+interface IntermediacaoRegistro {
+  id: string;
+  created_at: string;
+  comprador_nome: string;
+  tipo_pessoa: string;
+  empreendimento: string;
+  unidade: string;
+  vgv: number;
+  valor_comissao: number;
+  corretores: string[];
+  arquivo_path: string;
+  filename: string;
+}
+
+const fmtDataHist = (iso: string) =>
+  new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  });
+
+function HistoricoTab() {
+  const [registros, setRegistros] = useState<IntermediacaoRegistro[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busca, setBusca] = useState("");
+  const [baixando, setBaixando] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("intermediacoes")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        toast.error("Erro ao carregar o histórico.");
+      } else {
+        setRegistros((data ?? []) as IntermediacaoRegistro[]);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const filtrados = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    if (!q) return registros;
+    return registros.filter(
+      (r) =>
+        r.comprador_nome.toLowerCase().includes(q) ||
+        r.empreendimento.toLowerCase().includes(q),
+    );
+  }, [registros, busca]);
+
+  const baixar = async (r: IntermediacaoRegistro) => {
+    setBaixando(r.id);
+    try {
+      const { data, error } = await supabase.storage
+        .from("intermediacoes")
+        .createSignedUrl(r.arquivo_path, 300);
+      if (error || !data?.signedUrl) throw error ?? new Error("URL não gerada");
+      window.open(data.signedUrl, "_blank");
+    } catch {
+      toast.error("Não foi possível gerar o link de download.");
+    } finally {
+      setBaixando(null);
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-4">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por comprador ou empreendimento..."
+            className="pl-8"
+          />
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...
+          </div>
+        ) : filtrados.length === 0 ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            Nenhuma intermediação encontrada.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Comprador</TableHead>
+                  <TableHead>Empreendimento / Unidade</TableHead>
+                  <TableHead className="text-right">VGV</TableHead>
+                  <TableHead className="text-right">Comissão</TableHead>
+                  <TableHead>Corretores</TableHead>
+                  <TableHead className="text-right">Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtrados.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="whitespace-nowrap text-sm">{fmtDataHist(r.created_at)}</TableCell>
+                    <TableCell className="text-sm font-medium">{r.comprador_nome}</TableCell>
+                    <TableCell className="text-sm">
+                      {r.empreendimento}
+                      <span className="text-muted-foreground"> / {r.unidade}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-sm whitespace-nowrap">{brl(r.vgv)}</TableCell>
+                    <TableCell className="text-right text-sm whitespace-nowrap">{brl(r.valor_comissao)}</TableCell>
+                    <TableCell className="text-sm">{(r.corretores ?? []).join(", ")}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => baixar(r)}
+                        disabled={baixando === r.id}
+                      >
+                        {baixando === r.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                        <span className="ml-1">Download</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
