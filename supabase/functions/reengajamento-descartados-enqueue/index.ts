@@ -11,7 +11,7 @@ const corsHeaders = {
 };
 
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
-const MAX_RUN_MS = 140_000;
+const MAX_RUN_MS = 110_000;
 
 async function interruptibleDelay(ms: number, shouldStop: () => Promise<boolean>): Promise<boolean> {
   const deadline = Date.now() + ms;
