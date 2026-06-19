@@ -8,7 +8,7 @@ import { Loader2, Pause, Square } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 
-const STALE_RUNNING_MS = 15 * 60 * 1000;
+const STALE_RUNNING_MS = 4 * 60 * 1000;
 
 /**
  * Banner global que aparece em qualquer aba da Central de Reengajamento
