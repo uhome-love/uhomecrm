@@ -478,6 +478,7 @@ export default function ReengajamentoTab() {
       running:   { lbl: "▶️ Em andamento", cls: "bg-blue-100 text-blue-800" },
       completed: { lbl: "✅ Concluído",    cls: "bg-green-100 text-green-800" },
       paused:    { lbl: "⏸️ Pausado",     cls: "bg-amber-100 text-amber-800" },
+      cancelled: { lbl: "⏹️ Parado",      cls: "bg-rose-100 text-rose-800" },
       timeout:   { lbl: "⏱️ Tempo limite",cls: "bg-orange-100 text-orange-800" },
       error:     { lbl: "❌ Erro",         cls: "bg-red-100 text-red-800" },
     };

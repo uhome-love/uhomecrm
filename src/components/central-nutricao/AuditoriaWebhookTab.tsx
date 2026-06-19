@@ -435,6 +435,8 @@ export default function AuditoriaWebhookTab() {
                             running: "bg-blue-50 text-blue-700",
                             completed: "bg-emerald-50 text-emerald-700",
                             paused: "bg-amber-50 text-amber-700",
+                            cancelled: "bg-rose-50 text-rose-700",
+                            timeout: "bg-orange-50 text-orange-700",
                             failed: "bg-red-50 text-red-700",
                           };
                           const hasIssue = run.status !== "running" && (run.enviados ?? 0) === 0 && (run.falhas ?? 0) > 0;
