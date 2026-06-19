@@ -382,7 +382,7 @@ Deno.serve(async (req) => {
     const base64 = bufferToBase64(buffer);
 
     const nomeRef = body.comprador.tipoPessoa === "PJ" ? body.comprador.razaoSocial : body.comprador.nomeCompleto;
-    const filename = `intermediacao_${slug(sobrenome(nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
+    const filename = `intermediacao_${slug(nomeParaArquivo(body.comprador.tipoPessoa, nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
 
     return new Response(JSON.stringify({ filename, base64 }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
