@@ -15,6 +15,8 @@ import { Loader2, Send, RefreshCw, MessageCircle, XCircle, Wifi, WifiOff, QrCode
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 
+const STALE_RUNNING_MS = 15 * 60 * 1000;
+
 export default function ReengajamentoTab() {
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
@@ -44,6 +46,18 @@ export default function ReengajamentoTab() {
         .order("started_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      if (data?.started_at && Date.now() - new Date(data.started_at).getTime() > STALE_RUNNING_MS) {
+        await supabase
+          .from("reengajamento_dispatch_runs" as any)
+          .update({
+            status: "timeout",
+            finished_at: new Date().toISOString(),
+            motivo_parada: "Encerrado automaticamente: execução antiga ficou travada sem resposta da função",
+          })
+          .eq("id", data.id);
+        qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
+        return null;
+      }
       return data as any;
     },
     refetchInterval: 2000,
@@ -316,8 +330,23 @@ export default function ReengajamentoTab() {
     if (!cfg?.id) return;
     try {
       await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
+      if (activeRun?.id) {
+        await supabase
+          .from("reengajamento_dispatch_runs" as any)
+          .update({
+            status: "paused",
+            finished_at: new Date().toISOString(),
+            motivo_parada: "Pausado pelo usuário",
+            enviados: activeRun.enviados || 0,
+            falhas: activeRun.falhas || 0,
+            ignorados: activeRun.ignorados || 0,
+          })
+          .eq("id", activeRun.id);
+      }
       toast.info("⏸️ Pausa solicitada — para após a mensagem atual");
       qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
+      qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
+      qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
     } catch (e: any) {
       toast.error("Erro ao pausar: " + e.message);
     }
@@ -449,6 +478,7 @@ export default function ReengajamentoTab() {
       running:   { lbl: "▶️ Em andamento", cls: "bg-blue-100 text-blue-800" },
       completed: { lbl: "✅ Concluído",    cls: "bg-green-100 text-green-800" },
       paused:    { lbl: "⏸️ Pausado",     cls: "bg-amber-100 text-amber-800" },
+      cancelled: { lbl: "⏹️ Parado",      cls: "bg-rose-100 text-rose-800" },
       timeout:   { lbl: "⏱️ Tempo limite",cls: "bg-orange-100 text-orange-800" },
       error:     { lbl: "❌ Erro",         cls: "bg-red-100 text-red-800" },
     };
