@@ -779,19 +779,12 @@ async function handleUnknownReply(
       return;
     }
 
-    // Found in pipeline → set window + notify corretor
+    // Found in pipeline → set window (sem notificar corretor)
+    // Removido: notificação "respondeu WhatsApp" gerava falsos positivos
+    // (auto-respostas de WhatsApp Business eram interpretadas como lead reengajado).
+    // O registro fica na timeline/observações do lead, sem push ao corretor.
     const windowUntil = await setConversationWindow(supabase, lead.id);
 
-    if (lead.corretor_id) {
-      await supabase.from("notifications").insert({
-        user_id: lead.corretor_id,
-        titulo: `📩 ${lead.nome || "Lead"} respondeu WhatsApp`,
-        mensagem: `"${msgText.slice(0, 100)}". ✅ Janela 24h aberta — pode enviar mensagem livre. Entre em contato agora!`,
-        tipo: "lead_reengajado",
-        categoria: "leads",
-        dados: { pipeline_lead_id: lead.id, tipo_interesse: "whatsapp_reply", janela_24h: windowUntil },
-      });
-    }
 
     await supabase.from("pipeline_atividades").insert({
       pipeline_lead_id: lead.id,
