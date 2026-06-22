@@ -1,52 +1,31 @@
 ## Objetivo
 
-Deixar o novo template de reengajamento **`atrio_lancamento`** pronto para disparo na Central de Disparos, com a imagem de cabeçalho hospedada e vinculada automaticamente.
+Deixar o **VIVID TERRACE** pronto para entrar em campanha, roleta de leads e disparo Meta, classificado como **S5 - Produto Foco**.
 
-O template já está **aprovado/ativo no Meta**, então ele já aparece sozinho na lista de templates do `DisparoCustomizadoCard` (puxada via `meta-templates-list`). Falta apenas: (1) hospedar a imagem do header e (2) mapear o template → imagem.
+Dados informados:
+- Código Jetimob: **58498-UH**
+- Campanha Meta: **4076**
+- Segmento: **S5 - Produto Foco**
 
----
+## Situação atual
 
-## 1. Hospedar a imagem do cabeçalho
+- Não existe nenhum registro de "Vivid Terrace" (só existe um "Terrace" antigo no segmento S2 - Médio Padrão, que não será tocado).
+- A campanha 4076 ainda não está mapeada.
+- O segmento "S5 - Produto Foco" já existe na roleta (`id 5311aaaa-...-005`) — mesmo segmento usado hoje pelo Casa Tua.
 
-A imagem enviada (peça "269 MIL — Lançamento na Orla do Guaíba") será enviada para o bucket público **`campaign-images`**, seguindo o padrão das demais campanhas:
+## O que será feito (inserção de dados, sem mudança de estrutura)
 
-```text
-campaign-images/reengajamento/atrio-lancamento.png
-```
+1. **Mapeamento da campanha Meta** (`jetimob_campaign_map`):
+   - campaign_id `4076` → empreendimento "Vivid Terrace", segmento "Produto Foco", nota com o código do imóvel `58498-UH`.
+   - Isso garante que os leads vindos do disparo/anúncio Meta da campanha 4076 entrem identificados como Vivid Terrace.
 
-Mesmo bucket/pasta das imagens `casatua-*` já existentes, mantendo o padrão de URL pública usado hoje.
+2. **Campanha da roleta** (`roleta_campanhas`):
+   - empreendimento "Vivid Terrace" → segmento_id `S5 - Produto Foco`, ativo = true.
+   - Esta é a fonte de verdade do segmento: garante que os leads sejam distribuídos no rodízio de Produto Foco.
 
-## 2. Vincular a imagem ao template
+Com esses dois registros, a entrada de leads (roleta) e o disparo/captura Meta ficam apontando para o segmento correto. O empreendimento aparecerá automaticamente nos fluxos que leem essas tabelas.
 
-No `src/components/central-nutricao/DisparoCustomizadoCard.tsx`, adicionar a entrada no mapa `TEMPLATE_HEADER_IMAGES`:
+## Observação técnica
 
-```ts
-const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
-  casatua_junho25k: "...",
-  casatua_eventosabado: "...",
-  atrio_lancamento: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/atrio-lancamento.png",
-};
-```
-
-Com isso, ao selecionar o template `atrio_lancamento` no card, o campo de imagem do header é preenchido automaticamente (e a URL é enviada como `header_image_url` no disparo).
-
----
-
-## Como ficará o fluxo de disparo (sem mudança no fluxo já existente)
-
-1. Central de Disparos → card "Disparo Customizado", canal **Meta**.
-2. Selecionar o público (ex.: Descartados / reengajáveis) + período + dedup.
-3. Selecionar o template **atrio_lancamento** → imagem do header já preenchida.
-4. A variável `{{1}}` (nome) continua sendo preenchida pela função de enqueue, como nos demais templates.
-5. Preview → confirmar contagem → Disparar.
-
-O roteamento de respostas (SIM → Fila do CEO / NÃO → inativa) já é o comportamento padrão de reengajamento e continua valendo.
-
----
-
-## Arquivos / ações
-
-- **Storage:** upload de `atrio-lancamento.png` no bucket `campaign-images` (pasta `reengajamento`).
-- **`src/components/central-nutricao/DisparoCustomizadoCard.tsx`:** +1 linha no mapa `TEMPLATE_HEADER_IMAGES`.
-
-Sem migrations, sem mudança de edge function, sem alteração de lógica de público/dedup/roteamento.
+- O nome do empreendimento será gravado idêntico ("Vivid Terrace") nas duas tabelas para que a resolução de segmento (que cruza `jetimob_campaign_map` → `roleta_campanhas` pelo nome) funcione.
+- `pipeline_segmentos` não possui um item "Produto Foco" (mesmo caso do Casa Tua hoje); o segmento operacional vem da `roleta_campanhas`, então nada precisa mudar lá. Caso você queira que "Produto Foco" também vire um segmento próprio no pipeline (em vez de cair como sem-segmento), posso incluir — me avise.
