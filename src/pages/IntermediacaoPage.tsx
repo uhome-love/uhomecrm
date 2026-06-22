@@ -218,10 +218,37 @@ export default function IntermediacaoPage() {
     );
   }, [corretor1, corretor2, usarCorretor2, valorTotal, pctGabrielle, pctDiretoria, parcelas]);
 
-  const pctUhome = useMemo(() => {
+  const somaPercentuais = useMemo(() => {
     const somaCorr = num(corretor1.percentual) + (usarCorretor2 ? num(corretor2.percentual) : 0);
-    return Math.max(0, 100 - somaCorr - num(pctGabrielle) - num(pctDiretoria));
+    return somaCorr + num(pctGabrielle) + num(pctDiretoria);
   }, [corretor1, corretor2, usarCorretor2, pctGabrielle, pctDiretoria]);
+
+  const pctUhome = useMemo(() => Math.max(0, 100 - somaPercentuais), [somaPercentuais]);
+  const pctExcedido = somaPercentuais > 100 + 1e-9;
+
+  // Aviso quando a soma das parcelas diverge do valor total da corretagem.
+  const somaParcelas = useMemo(
+    () => round2(parcelas.reduce((s, p) => s + num(p.valor), 0)),
+    [parcelas],
+  );
+  const parcelasDivergem = num(valorTotal) > 0 && Math.abs(somaParcelas - num(valorTotal)) > 0.01;
+
+  // Atalhos de preenchimento de testemunhas: Carolina + corretores/gerentes carregados.
+  const opcoesTestemunha = useMemo<Testemunha[]>(() => {
+    const lista: Testemunha[] = [{ ...CAROLINA }];
+    opcoesCorretores.forEach((o) => {
+      if (o.nome) lista.push({ nome: o.nome, email: o.email ?? "" });
+    });
+    return lista;
+  }, [opcoesCorretores]);
+
+  const preencherTestemunha = (
+    nome: string,
+    setter: React.Dispatch<React.SetStateAction<Testemunha>>,
+  ) => {
+    const op = opcoesTestemunha.find((o) => o.nome === nome);
+    if (op) setter({ nome: op.nome, email: op.email });
+  };
 
   const addParcela = () => setParcelas((p) => [...p, { vencimento: "", valor: "" }]);
   const removeParcela = (i: number) =>
