@@ -42,6 +42,14 @@ interface Parcela {
   valor: string;      // numérico
 }
 
+interface Testemunha {
+  nome: string;
+  email: string;
+}
+
+// Testemunha fixa disponível como atalho de preenchimento.
+const CAROLINA: Testemunha = { nome: "Carolina de Camargo Madruga", email: "carolina@uhome.com.br" };
+
 // ─── Helpers de cálculo (replicado na edge function) ───────────────────────────
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const num = (v: string) => {
@@ -99,12 +107,10 @@ function calcularCredores(
     round2(credores.reduce((s, c) => s + c.parcelas[i], 0)),
   );
 
-  const zemoCredores = credores.filter((c) => !c.isUhome);
+  // ZemoBank recebe o total da corretagem (todos os credores, inclusive a UHome).
   const zemo = {
-    total: round2(zemoCredores.reduce((s, c) => s + c.total, 0)),
-    parcelas: parcelas.map((_, i) =>
-      round2(zemoCredores.reduce((s, c) => s + c.parcelas[i], 0)),
-    ),
+    total: round2(credores.reduce((s, c) => s + c.total, 0)),
+    parcelas: totalLinha,
   };
 
   return { credores, totalLinha, zemo };
@@ -149,6 +155,10 @@ export default function IntermediacaoPage() {
   // Data do contrato
   const hoje = new Date().toISOString().slice(0, 10);
   const [dataContrato, setDataContrato] = useState(hoje);
+
+  // Testemunhas (Testemunha 2 já vem com Carolina pré-preenchida)
+  const [testemunha1, setTestemunha1] = useState<Testemunha>({ nome: "", email: "" });
+  const [testemunha2, setTestemunha2] = useState<Testemunha>({ ...CAROLINA });
 
   const [gerando, setGerando] = useState(false);
   const [carregandoCorretores, setCarregandoCorretores] = useState(true);
@@ -208,10 +218,37 @@ export default function IntermediacaoPage() {
     );
   }, [corretor1, corretor2, usarCorretor2, valorTotal, pctGabrielle, pctDiretoria, parcelas]);
 
-  const pctUhome = useMemo(() => {
+  const somaPercentuais = useMemo(() => {
     const somaCorr = num(corretor1.percentual) + (usarCorretor2 ? num(corretor2.percentual) : 0);
-    return Math.max(0, 100 - somaCorr - num(pctGabrielle) - num(pctDiretoria));
+    return somaCorr + num(pctGabrielle) + num(pctDiretoria);
   }, [corretor1, corretor2, usarCorretor2, pctGabrielle, pctDiretoria]);
+
+  const pctUhome = useMemo(() => Math.max(0, 100 - somaPercentuais), [somaPercentuais]);
+  const pctExcedido = somaPercentuais > 100 + 1e-9;
+
+  // Aviso quando a soma das parcelas diverge do valor total da corretagem.
+  const somaParcelas = useMemo(
+    () => round2(parcelas.reduce((s, p) => s + num(p.valor), 0)),
+    [parcelas],
+  );
+  const parcelasDivergem = num(valorTotal) > 0 && Math.abs(somaParcelas - num(valorTotal)) > 0.01;
+
+  // Atalhos de preenchimento de testemunhas: Carolina + corretores/gerentes carregados.
+  const opcoesTestemunha = useMemo<Testemunha[]>(() => {
+    const lista: Testemunha[] = [{ ...CAROLINA }];
+    opcoesCorretores.forEach((o) => {
+      if (o.nome) lista.push({ nome: o.nome, email: o.email ?? "" });
+    });
+    return lista;
+  }, [opcoesCorretores]);
+
+  const preencherTestemunha = (
+    nome: string,
+    setter: React.Dispatch<React.SetStateAction<Testemunha>>,
+  ) => {
+    const op = opcoesTestemunha.find((o) => o.nome === nome);
+    if (op) setter({ nome: op.nome, email: op.email });
+  };
 
   const addParcela = () => setParcelas((p) => [...p, { vencimento: "", valor: "" }]);
   const removeParcela = (i: number) =>
@@ -226,15 +263,32 @@ export default function IntermediacaoPage() {
     if (!empreendimento.trim() || !unidade.trim()) return toast.error("Informe empreendimento e unidade.");
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
     if (num(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
+    if (pctExcedido) return toast.error("A soma dos percentuais (corretores + Gabrielle + Diretoria) ultrapassa 100%.");
     if (parcelas.some((p) => !p.vencimento || num(p.valor) <= 0)) return toast.error("Preencha todas as parcelas (vencimento e valor).");
+    if (!testemunha1.nome.trim() || !testemunha1.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 1.");
+    if (!testemunha2.nome.trim() || !testemunha2.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 2.");
+
+    // Aviso não bloqueante: parcelas divergem do valor total.
+    if (parcelasDivergem) {
+      toast.warning(`Atenção: a soma das parcelas (${brl(somaParcelas)}) difere do valor total (${brl(num(valorTotal))}).`);
+    }
+
+    // Comprador: envia apenas os campos do tipo selecionado.
+    const comprador = tipoPessoa === "PJ"
+      ? {
+          tipoPessoa, razaoSocial, cnpj, socioAdmin,
+          nomeCompleto: "", genero: "", profissao: "", estadoCivil: "", regimeBens: "",
+          cpf, rg, telefone, email, endereco,
+        }
+      : {
+          tipoPessoa, razaoSocial: "", cnpj: "", socioAdmin: "",
+          nomeCompleto, genero, profissao, estadoCivil,
+          regimeBens: estadoCivil === "casado(a)" ? regimeBens : "",
+          cpf, rg, telefone, email, endereco,
+        };
 
     const payload = {
-      comprador: {
-        tipoPessoa,
-        razaoSocial, cnpj, socioAdmin,
-        nomeCompleto, genero, profissao, estadoCivil, regimeBens,
-        cpf, rg, telefone, email, endereco,
-      },
+      comprador,
       imovel: { empreendimento, unidade, vgv: num(vgv) },
       corretores: [
         { nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
@@ -248,8 +302,13 @@ export default function IntermediacaoPage() {
         pctDiretoria: num(pctDiretoria),
         parcelas: parcelas.map((p) => ({ vencimento: p.vencimento, valor: num(p.valor) })),
       },
+      testemunhas: [
+        { nome: testemunha1.nome.trim(), email: testemunha1.email.trim() },
+        { nome: testemunha2.nome.trim(), email: testemunha2.email.trim() },
+      ],
       dataContrato,
     };
+
 
     setGerando(true);
     try {
@@ -454,6 +513,11 @@ export default function IntermediacaoPage() {
             <div className="space-y-2"><Label>% Diretoria</Label><Input value={pctDiretoria} onChange={(e) => setPctDiretoria(e.target.value)} /></div>
             <div className="space-y-2"><Label>% UHome (auto)</Label><Input value={`${round2(pctUhome)}%`} readOnly disabled /></div>
           </div>
+          {pctExcedido && (
+            <p className="text-sm font-medium text-destructive">
+              A soma dos percentuais (corretores + Gabrielle + Diretoria = {round2(somaPercentuais)}%) ultrapassa 100%.
+            </p>
+          )}
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -467,11 +531,45 @@ export default function IntermediacaoPage() {
                 <Button variant="ghost" size="icon" onClick={() => removeParcela(i)} disabled={parcelas.length === 1}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))}
+            {parcelasDivergem && (
+              <p className="text-sm font-medium text-amber-600">
+                A soma das parcelas ({brl(somaParcelas)}) difere do valor total da corretagem ({brl(num(valorTotal))}).
+              </p>
+            )}
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2"><Label>Data do contrato</Label><Input type="date" value={dataContrato} onChange={(e) => setDataContrato(e.target.value)} /></div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Testemunhas */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Testemunhas</CardTitle></CardHeader>
+        <CardContent className="space-y-5">
+          {[
+            { label: "Testemunha 1", value: testemunha1, setter: setTestemunha1 },
+            { label: "Testemunha 2", value: testemunha2, setter: setTestemunha2 },
+          ].map(({ label, value, setter }) => (
+            <div key={label} className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <Label className="font-medium">{label}</Label>
+                <Select value="" onValueChange={(v) => preencherTestemunha(v, setter)} disabled={carregandoCorretores}>
+                  <SelectTrigger className="w-56"><SelectValue placeholder="Preencher rapidamente..." /></SelectTrigger>
+                  <SelectContent>
+                    {opcoesTestemunha.map((o) => (
+                      <SelectItem key={o.nome} value={o.nome}>{o.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Nome</Label><Input value={value.nome} onChange={(e) => setter({ ...value, nome: e.target.value })} placeholder="Ex: Carolina de Camargo Madruga" /></div>
+                <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={value.email} onChange={(e) => setter({ ...value, email: e.target.value })} placeholder="nome@uhome.com.br" /></div>
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
