@@ -49,6 +49,7 @@ const BodySchema = z.object({
     pctGabrielle: z.number().min(0), pctDiretoria: z.number().min(0),
     parcelas: z.array(ParcelaSchema).min(1),
   }),
+  testemunhas: z.array(z.object({ nome: z.string().default(""), email: z.string().default("") })).default([]),
   dataContrato: z.string().min(1),
 });
 
