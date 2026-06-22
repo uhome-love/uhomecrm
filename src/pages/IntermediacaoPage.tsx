@@ -156,6 +156,10 @@ export default function IntermediacaoPage() {
   const hoje = new Date().toISOString().slice(0, 10);
   const [dataContrato, setDataContrato] = useState(hoje);
 
+  // Testemunhas (Testemunha 2 já vem com Carolina pré-preenchida)
+  const [testemunha1, setTestemunha1] = useState<Testemunha>({ nome: "", email: "" });
+  const [testemunha2, setTestemunha2] = useState<Testemunha>({ ...CAROLINA });
+
   const [gerando, setGerando] = useState(false);
   const [carregandoCorretores, setCarregandoCorretores] = useState(true);
 
