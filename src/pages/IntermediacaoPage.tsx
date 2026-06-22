@@ -531,11 +531,45 @@ export default function IntermediacaoPage() {
                 <Button variant="ghost" size="icon" onClick={() => removeParcela(i)} disabled={parcelas.length === 1}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))}
+            {parcelasDivergem && (
+              <p className="text-sm font-medium text-amber-600">
+                A soma das parcelas ({brl(somaParcelas)}) difere do valor total da corretagem ({brl(num(valorTotal))}).
+              </p>
+            )}
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2"><Label>Data do contrato</Label><Input type="date" value={dataContrato} onChange={(e) => setDataContrato(e.target.value)} /></div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Testemunhas */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Testemunhas</CardTitle></CardHeader>
+        <CardContent className="space-y-5">
+          {[
+            { label: "Testemunha 1", value: testemunha1, setter: setTestemunha1 },
+            { label: "Testemunha 2", value: testemunha2, setter: setTestemunha2 },
+          ].map(({ label, value, setter }) => (
+            <div key={label} className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <Label className="font-medium">{label}</Label>
+                <Select value="" onValueChange={(v) => preencherTestemunha(v, setter)} disabled={carregandoCorretores}>
+                  <SelectTrigger className="w-56"><SelectValue placeholder="Preencher rapidamente..." /></SelectTrigger>
+                  <SelectContent>
+                    {opcoesTestemunha.map((o) => (
+                      <SelectItem key={o.nome} value={o.nome}>{o.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Nome</Label><Input value={value.nome} onChange={(e) => setter({ ...value, nome: e.target.value })} placeholder="Ex: Carolina de Camargo Madruga" /></div>
+                <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={value.email} onChange={(e) => setter({ ...value, email: e.target.value })} placeholder="nome@uhome.com.br" /></div>
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
