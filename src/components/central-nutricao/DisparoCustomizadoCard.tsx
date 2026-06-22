@@ -23,6 +23,7 @@ type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before
 const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
   casatua_junho25k: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-junho25k.png",
   casatua_eventosabado: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-eventosabado.png",
+  atrio_lancamento: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/atrio-lancamento.png",
 };
 
 
