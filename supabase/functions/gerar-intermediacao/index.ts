@@ -329,10 +329,14 @@ async function montarDoc(b: Body): Promise<Document> {
   children.push(assinaturaLabel("IMOBILIÁRIA UHOME NEGÓCIOS IMOBILIÁRIOS"));
 
   children.push(new Paragraph({ spacing: { before: 240, after: 120 }, children: [new TextRun({ text: "Testemunhas:", bold: true })] }));
+  const t1 = b.testemunhas?.[0];
+  const t2 = b.testemunhas?.[1];
+  const testemunha1 = { nome: t1?.nome?.trim() || TEST1.nome, email: t1?.email?.trim() || TEST1.email };
+  const testemunha2 = { nome: t2?.nome?.trim() || TEST2.nome, email: t2?.email?.trim() || TEST2.email };
   children.push(assinatura("", ""));
-  children.push(new Paragraph({ children: [new TextRun(`01. Nome: ${TEST1.nome} — E-mail: ${TEST1.email}`)] }));
+  children.push(new Paragraph({ children: [new TextRun(`01. Nome: ${testemunha1.nome} — E-mail: ${testemunha1.email}`)] }));
   children.push(assinatura("", ""));
-  children.push(new Paragraph({ children: [new TextRun(`02. Nome: ${TEST2.nome} — E-mail: ${TEST2.email}`)] }));
+  children.push(new Paragraph({ children: [new TextRun(`02. Nome: ${testemunha2.nome} — E-mail: ${testemunha2.email}`)] }));
 
   return new Document({
     styles: { default: { document: { run: { font: "Arial", size: 20 } } } },
