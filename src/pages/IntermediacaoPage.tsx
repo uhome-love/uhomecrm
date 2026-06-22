@@ -513,6 +513,11 @@ export default function IntermediacaoPage() {
             <div className="space-y-2"><Label>% Diretoria</Label><Input value={pctDiretoria} onChange={(e) => setPctDiretoria(e.target.value)} /></div>
             <div className="space-y-2"><Label>% UHome (auto)</Label><Input value={`${round2(pctUhome)}%`} readOnly disabled /></div>
           </div>
+          {pctExcedido && (
+            <p className="text-sm font-medium text-destructive">
+              A soma dos percentuais (corretores + Gabrielle + Diretoria = {round2(somaPercentuais)}%) ultrapassa 100%.
+            </p>
+          )}
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
