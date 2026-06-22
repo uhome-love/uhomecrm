@@ -42,6 +42,14 @@ interface Parcela {
   valor: string;      // numérico
 }
 
+interface Testemunha {
+  nome: string;
+  email: string;
+}
+
+// Testemunha fixa disponível como atalho de preenchimento.
+const CAROLINA: Testemunha = { nome: "Carolina de Camargo Madruga", email: "carolina@uhome.com.br" };
+
 // ─── Helpers de cálculo (replicado na edge function) ───────────────────────────
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const num = (v: string) => {
