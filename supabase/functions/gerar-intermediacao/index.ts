@@ -114,11 +114,8 @@ function calcular(b: Body) {
 
   const totalLinha = valoresParcelas.map((_, i) => round2(credores.reduce((s, c) => s + c.parcelas[i], 0)));
   const totalGeral = round2(credores.reduce((s, c) => s + c.total, 0));
-  const zemoCred = credores.filter((c) => !c.isUhome);
-  const zemo = {
-    total: round2(zemoCred.reduce((s, c) => s + c.total, 0)),
-    parcelas: valoresParcelas.map((_, i) => round2(zemoCred.reduce((s, c) => s + c.parcelas[i], 0))),
-  };
+  // ZemoBank recebe o total da corretagem (todos os credores, inclusive a UHome).
+  const zemo = { total: totalGeral, parcelas: totalLinha };
   return { credores, totalLinha, totalGeral, zemo };
 }
 
