@@ -263,15 +263,32 @@ export default function IntermediacaoPage() {
     if (!empreendimento.trim() || !unidade.trim()) return toast.error("Informe empreendimento e unidade.");
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
     if (num(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
+    if (pctExcedido) return toast.error("A soma dos percentuais (corretores + Gabrielle + Diretoria) ultrapassa 100%.");
     if (parcelas.some((p) => !p.vencimento || num(p.valor) <= 0)) return toast.error("Preencha todas as parcelas (vencimento e valor).");
+    if (!testemunha1.nome.trim() || !testemunha1.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 1.");
+    if (!testemunha2.nome.trim() || !testemunha2.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 2.");
+
+    // Aviso não bloqueante: parcelas divergem do valor total.
+    if (parcelasDivergem) {
+      toast.warning(`Atenção: a soma das parcelas (${brl(somaParcelas)}) difere do valor total (${brl(num(valorTotal))}).`);
+    }
+
+    // Comprador: envia apenas os campos do tipo selecionado.
+    const comprador = tipoPessoa === "PJ"
+      ? {
+          tipoPessoa, razaoSocial, cnpj, socioAdmin,
+          nomeCompleto: "", genero: "", profissao: "", estadoCivil: "", regimeBens: "",
+          cpf, rg, telefone, email, endereco,
+        }
+      : {
+          tipoPessoa, razaoSocial: "", cnpj: "", socioAdmin: "",
+          nomeCompleto, genero, profissao, estadoCivil,
+          regimeBens: estadoCivil === "casado(a)" ? regimeBens : "",
+          cpf, rg, telefone, email, endereco,
+        };
 
     const payload = {
-      comprador: {
-        tipoPessoa,
-        razaoSocial, cnpj, socioAdmin,
-        nomeCompleto, genero, profissao, estadoCivil, regimeBens,
-        cpf, rg, telefone, email, endereco,
-      },
+      comprador,
       imovel: { empreendimento, unidade, vgv: num(vgv) },
       corretores: [
         { nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
@@ -285,8 +302,13 @@ export default function IntermediacaoPage() {
         pctDiretoria: num(pctDiretoria),
         parcelas: parcelas.map((p) => ({ vencimento: p.vencimento, valor: num(p.valor) })),
       },
+      testemunhas: [
+        { nome: testemunha1.nome.trim(), email: testemunha1.email.trim() },
+        { nome: testemunha2.nome.trim(), email: testemunha2.email.trim() },
+      ],
       dataContrato,
     };
+
 
     setGerando(true);
     try {
