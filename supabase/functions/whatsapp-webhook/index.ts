@@ -604,10 +604,14 @@ Deno.serve(async (req) => {
                   const tplName = metaDispatch.template_name || "reengajamento";
                   // ID efetivo do lead no pipeline (pode mudar se a origem for Oferta Ativa)
                   let effectiveLeadId = metaDispatch.lead_id;
+                  // Quando o lead já está ATIVO no pipeline, respeitamos a exclusividade:
+                  // não vai pra Fila do CEO, mantém com o corretor atual.
+                  let alreadyActive = false;
+                  let activeCorretorId: string | null = currentLead?.corretor_id || null;
                   try {
                     if (!currentLead) {
                       // Lead não existe no pipeline → veio de uma lista de Oferta Ativa.
-                      // Cria/reaproveita um pipeline_lead na Fila do CEO a partir da Oferta Ativa.
+                      // A RPC SEMPRE verifica antes se o telefone já existe no pipeline ativo.
                       const { data: oaRes, error: oaErr } = await supabase.rpc("reativar_oferta_ativa_para_fila_ceo", {
                         p_oa_lead_id: metaDispatch.lead_id,
                         p_template_name: tplName,
@@ -615,7 +619,9 @@ Deno.serve(async (req) => {
                       if (oaErr) throw oaErr;
                       const newId = (oaRes as any)?.pipeline_lead_id;
                       if (newId) effectiveLeadId = newId;
-                      console.log(`🔥 Oferta Ativa lead ${metaDispatch.lead_id} → pipeline ${effectiveLeadId} (template=${tplName}) → Fila do CEO`);
+                      alreadyActive = !!(oaRes as any)?.already_active;
+                      if (alreadyActive) activeCorretorId = (oaRes as any)?.corretor_id || null;
+                      console.log(`🔥 Oferta Ativa lead ${metaDispatch.lead_id} → pipeline ${effectiveLeadId} (template=${tplName}) ${alreadyActive ? "JÁ ATIVO — mantido com corretor" : "→ Fila do CEO"}`);
                     } else {
                       const { error: filaErr } = await supabase.rpc("reativar_lead_para_fila_ceo", {
                         p_lead_id: metaDispatch.lead_id,
@@ -626,6 +632,22 @@ Deno.serve(async (req) => {
                     }
                   } catch (e) {
                     console.error("rpc reativar (fila CEO) error:", e);
+                  }
+
+                  // Caso o lead já estivesse ATIVO no pipeline: a RPC já registrou a atividade
+                  // e manteve o corretor. Apenas notifica o corretor atual e segue.
+                  if (alreadyActive) {
+                    if (activeCorretorId) {
+                      await supabase.from("notifications").insert({
+                        user_id: activeCorretorId,
+                        titulo: `🔥 Lead respondeu SIM ao disparo (já é seu)`,
+                        mensagem: `Lead respondeu SIM ao template "${tplName}". Já está ativo no seu pipeline — entre em contato agora!`,
+                        tipo: "lead_reengajado",
+                        categoria: "leads",
+                        dados: { pipeline_lead_id: effectiveLeadId, template: tplName, audience_source: audSrc, route: "pipeline_ativo_keep" },
+                      });
+                    }
+                    continue;
                   }
 
                   // Atividade na timeline registrando o reengajamento
@@ -660,6 +682,7 @@ Deno.serve(async (req) => {
                     console.error("notify CEO fila error:", e);
                   }
                   continue;
+
                 } else if (buttonResp === "sim" && justNotifyCorretor) {
                   // Pipeline ativo / visita amanhã — não move stage, não chama roleta. Só marca interesse + notifica corretor atual.
                   await supabase.from("pipeline_leads").update({
