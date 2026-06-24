@@ -602,26 +602,42 @@ Deno.serve(async (req) => {
                 // Reativa lead se respondeu SIM E origem permite reengajamento → SEMPRE Fila do CEO
                 if (buttonResp === "sim" && routeToRoleta) {
                   const tplName = metaDispatch.template_name || "reengajamento";
+                  // ID efetivo do lead no pipeline (pode mudar se a origem for Oferta Ativa)
+                  let effectiveLeadId = metaDispatch.lead_id;
                   try {
-                    const { error: filaErr } = await supabase.rpc("reativar_lead_para_fila_ceo", {
-                      p_lead_id: metaDispatch.lead_id,
-                      p_template_name: tplName,
-                    });
-                    if (filaErr) throw filaErr;
-                    console.log(`🔥 Lead ${metaDispatch.lead_id} reengajado (template=${tplName}) → Fila do CEO`);
+                    if (!currentLead) {
+                      // Lead não existe no pipeline → veio de uma lista de Oferta Ativa.
+                      // Cria/reaproveita um pipeline_lead na Fila do CEO a partir da Oferta Ativa.
+                      const { data: oaRes, error: oaErr } = await supabase.rpc("reativar_oferta_ativa_para_fila_ceo", {
+                        p_oa_lead_id: metaDispatch.lead_id,
+                        p_template_name: tplName,
+                      });
+                      if (oaErr) throw oaErr;
+                      const newId = (oaRes as any)?.pipeline_lead_id;
+                      if (newId) effectiveLeadId = newId;
+                      console.log(`🔥 Oferta Ativa lead ${metaDispatch.lead_id} → pipeline ${effectiveLeadId} (template=${tplName}) → Fila do CEO`);
+                    } else {
+                      const { error: filaErr } = await supabase.rpc("reativar_lead_para_fila_ceo", {
+                        p_lead_id: metaDispatch.lead_id,
+                        p_template_name: tplName,
+                      });
+                      if (filaErr) throw filaErr;
+                      console.log(`🔥 Lead ${metaDispatch.lead_id} reengajado (template=${tplName}) → Fila do CEO`);
+                    }
                   } catch (e) {
-                    console.error("rpc reativar_lead_para_fila_ceo error:", e);
+                    console.error("rpc reativar (fila CEO) error:", e);
                   }
 
                   // Atividade na timeline registrando o reengajamento
                   await supabase.from("pipeline_atividades").insert({
-                    pipeline_lead_id: metaDispatch.lead_id,
+                    pipeline_lead_id: effectiveLeadId,
                     tipo: "whatsapp",
                     titulo: `🔥 Lead reengajado pelo template "${tplName}" → Fila do CEO`,
                     descricao: `Lead respondeu SIM ("${(buttonId ? buttonTitle : mensagemTexto).slice(0, 120)}") ao disparo do template "${tplName}". Reativado e enviado para a Fila do CEO para distribuição manual.`,
                     data: new Date().toISOString().slice(0, 10),
                     status: "concluida",
                   });
+
 
                   // Notifica admins/CEO sobre novo lead reengajado na fila
                   try {
@@ -637,7 +653,7 @@ Deno.serve(async (req) => {
                         mensagem: `${leadNome} respondeu SIM ao template "${tplName}" e está na Fila do CEO aguardando distribuição manual.`,
                         tipo: "lead_reengajado",
                         categoria: "leads",
-                        dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "fila_ceo" },
+                        dados: { pipeline_lead_id: effectiveLeadId, template: tplName, audience_source: audSrc, route: "fila_ceo" },
                       });
                     }
                   } catch (e) {
