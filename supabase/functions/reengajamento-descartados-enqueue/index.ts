@@ -774,6 +774,18 @@ Deno.serve(async (req) => {
             lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[meta:${metaTemplate}] ${phone}`,
           });
           sent++;
+
+          // Guarda de qualidade por taxa de entrega — checa a cada 25 envios
+          if (sent % 25 === 0) {
+            const qReason = await checkDeliveryQuality();
+            if (qReason) {
+              stopReason = qReason;
+              await supabase.from("reengajamento_config").update({ paused: true, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+              await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
+              await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: qReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+              return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+          }
         } else {
           // EVOLUTION com spintax
           const text = pickVariant(evoVariantes, evoTemplate, firstName);
