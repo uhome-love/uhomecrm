@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2, Send, RefreshCw, MessageCircle, XCircle, Wifi, WifiOff, QrCode, Play, Pause, AlertCircle, CheckCircle2, Shield, Zap, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
+import CentralInteligenciaPanel from "./CentralInteligenciaPanel";
 
 const STALE_RUNNING_MS = 15 * 60 * 1000;
 
@@ -509,6 +510,9 @@ export default function ReengajamentoTab() {
 
   return (
     <div className="space-y-4">
+      {/* 🧠 Painel inteligente: saúde do número + melhor lista */}
+      <CentralInteligenciaPanel />
+
       {/* 🚨 Banner de saúde do template Meta */}
       {metaHealth && metaHealth.qualityHits >= 3 && (
         <Card className="border-red-400 bg-red-50 dark:bg-red-950/30">

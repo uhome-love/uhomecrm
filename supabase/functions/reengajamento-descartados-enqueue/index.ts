@@ -351,13 +351,13 @@ Deno.serve(async (req) => {
       ? bodyDailyLimitOverride
       : (isCustomAudience && Number(bodyAudience?.limit) > 0 ? Number(bodyAudience.limit) : cfg.daily_limit);
 
-    let leads: Array<{ id: string; nome: string; telefone: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" }> = [];
+    let leads: Array<{ id: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" }> = [];
 
     if (isCustomAudience) {
       const dedupMode = String(bodyAudience.dedup_mode || "exclude_sent");
       const dedupLookbackDays = Math.max(1, Number(bodyAudience.dedup_lookback_days || 30));
       const dedupSince = new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString();
-      type Lead = { id: string; nome: string; telefone: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" };
+      type Lead = { id: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" };
       const last8 = (raw: string | null): string => {
         const d = (raw || "").replace(/\D/g, "");
         return d.length >= 8 ? d.slice(-8) : d;
@@ -371,7 +371,7 @@ Deno.serve(async (req) => {
         const RESPONDEU_NAO = ["respondeu_nao", "respondeu_nao_wave2", "bloqueado", "telefone_invalido"];
         let q: any = supabase
           .from("pipeline_leads")
-          .select("id, nome, telefone, reengajamento_enviado_at")
+          .select("id, nome, telefone, email, reengajamento_enviado_at")
           .eq("stage_id", STAGE_DESCARTE_ID)
           .not("telefone", "is", null);
         if (!includeArchivedCustom) q = q.eq("arquivado", false);
@@ -397,7 +397,7 @@ Deno.serve(async (req) => {
         }
         const { data, error } = await q.order("stage_changed_at", { ascending: false }).limit(cap);
         if (error) throw error;
-        return (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" }));
+        return (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" }));
       };
 
       const dedupViaEventos = async (cand: Lead[], sourceKey: string): Promise<Lead[]> => {
@@ -424,7 +424,7 @@ Deno.serve(async (req) => {
         if (stageIds.length === 0) throw new Error("audience.stage_ids vazio");
         let q = supabase
           .from("pipeline_leads")
-          .select("id, nome, telefone")
+          .select("id, nome, telefone, email")
           .in("stage_id", stageIds)
           .eq("arquivado", false)
           .not("telefone", "is", null);
@@ -433,7 +433,7 @@ Deno.serve(async (req) => {
         if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
         const { data, error } = await q.order("created_at", { ascending: false }).limit(cap);
         if (error) throw error;
-        const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" as const }));
+        const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" as const }));
         return dedupViaEventos(cand, `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`);
       };
 
@@ -444,7 +444,7 @@ Deno.serve(async (req) => {
         if (listaIds.length === 0) throw new Error("audience.lista_id ou lista_ids obrigatório");
         let q = supabase
           .from("oferta_ativa_leads")
-          .select("id, nome, telefone")
+          .select("id, nome, telefone, email")
           .in("lista_id", listaIds)
           .not("telefone", "is", null);
         if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
@@ -452,7 +452,7 @@ Deno.serve(async (req) => {
         if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
         const { data, error } = await q.order("created_at", { ascending: false }).limit(cap);
         if (error) throw error;
-        const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, ref: "oferta_ativa_lead" as const }));
+        const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead" as const }));
         return dedupViaEventos(cand, `oferta_ativa:${listaIds.slice().sort().join(",")}`);
       };
 
@@ -488,7 +488,7 @@ Deno.serve(async (req) => {
       // === Fluxo legado: descartados reengajáveis ===
       let leadsQuery = supabase
         .from("pipeline_leads")
-        .select("id, nome, telefone, tipo_descarte, stage_changed_at, reengajamento_enviado_at")
+        .select("id, nome, telefone, email, tipo_descarte, stage_changed_at, reengajamento_enviado_at")
         .eq("stage_id", STAGE_DESCARTE_ID)
         .eq("tipo_descarte", "reengajavel")
         .not("telefone", "is", null);
@@ -516,7 +516,7 @@ Deno.serve(async (req) => {
         .order("stage_changed_at", { ascending: false })
         .limit(effectiveLimit);
       if (leadsErr) throw leadsErr;
-      leads = (legacyLeads || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" }));
+      leads = (legacyLeads || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" }));
     }
 
     // ── Supressão automática (só Meta): remove números que já falharam por
@@ -554,7 +554,80 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── GUARDA DE EXCLUSIVIDADE DO PIPELINE (crítico, todos os canais) ──
+    // Nunca dispara para quem é lead ATIVO no pipeline (telefone OU e-mail).
+    // Checagem em tempo de disparo: cobre quem virou lead ativo depois de entrar na lista.
+    let pipelineAtivosRemovidos = 0;
+    const last8Of = (raw: string | null | undefined): string => {
+      const d = (raw || "").replace(/\D/g, "");
+      return d.length >= 8 ? d.slice(-8) : d;
+    };
+    if (leads.length > 0) {
+      const phoneSet = new Set<string>();
+      const emailSet = new Set<string>();
+      let pf = 0;
+      const PG = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data: pa, error: paErr } = await supabase
+          .from("v_pipeline_ativo_contatos")
+          .select("telefone_last8, email")
+          .range(pf, pf + PG - 1);
+        if (paErr) { console.error("v_pipeline_ativo_contatos error:", paErr.message); break; }
+        if (!pa || pa.length === 0) break;
+        for (const r of pa) {
+          if (r.telefone_last8) phoneSet.add(String(r.telefone_last8));
+          if (r.email) emailSet.add(String(r.email).toLowerCase());
+        }
+        if (pa.length < PG) break;
+        pf += PG;
+      }
+      if (phoneSet.size > 0 || emailSet.size > 0) {
+        const before = leads.length;
+        leads = leads.filter((l) => {
+          const ph = last8Of(l.telefone);
+          const em = (l.email || "").trim().toLowerCase();
+          if (ph && phoneSet.has(ph)) return false;
+          if (em && emailSet.has(em)) return false;
+          return true;
+        });
+        pipelineAtivosRemovidos = before - leads.length;
+        console.log(`Guarda pipeline ativo: ${pipelineAtivosRemovidos} removidos de ${before}`);
+      }
+    }
+
+    // ── GOVERNADOR DE FREQUÊNCIA POR DESTINATÁRIO (anti-131049) ──
+    // Pula quem recebeu QUALQUER marketing (reengajamento + campanhas) nos últimos N dias.
+    let frequenciaRemovidos = 0;
+    const freqCooldownDias = Math.max(0, Number((cfg as any).freq_cooldown_dias ?? 14));
+    if (canal === "meta" && freqCooldownDias > 0 && leads.length > 0) {
+      const freqCutoff = new Date(Date.now() - freqCooldownDias * 24 * 3600 * 1000).toISOString();
+      const recentSet = new Set<string>();
+      let ff = 0;
+      const PG = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data: fr, error: frErr } = await supabase
+          .from("v_ultimo_marketing_por_telefone")
+          .select("last8, ultimo_envio")
+          .gt("ultimo_envio", freqCutoff)
+          .range(ff, ff + PG - 1);
+        if (frErr) { console.error("v_ultimo_marketing error:", frErr.message); break; }
+        if (!fr || fr.length === 0) break;
+        for (const r of fr) recentSet.add(String(r.last8));
+        if (fr.length < PG) break;
+        ff += PG;
+      }
+      if (recentSet.size > 0) {
+        const before = leads.length;
+        leads = leads.filter((l) => !recentSet.has(last8Of(l.telefone)));
+        frequenciaRemovidos = before - leads.length;
+        console.log(`Governador de frequência (${freqCooldownDias}d): ${frequenciaRemovidos} removidos de ${before}`);
+      }
+    }
+
     const totalAlvo = leads.length;
+
 
     const { data: runRow } = await supabase
       .from("reengajamento_dispatch_runs")
@@ -569,9 +642,11 @@ Deno.serve(async (req) => {
       .single();
     runId = runRow?.id ?? null;
 
+    const exclusoes = { suprimidos: supressosRemovidos, pipeline_ativo: pipelineAtivosRemovidos, frequencia: frequenciaRemovidos };
     if (totalAlvo === 0) {
-      await updateRun({ status: "completed", finished_at: new Date().toISOString(), motivo_parada: "Nenhum lead elegível encontrado" });
-      return new Response(JSON.stringify({ run_id: runId, sent: 0, total: 0, reason: "no_leads", canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const motivo = `Nenhum lead elegível. Removidos: ${pipelineAtivosRemovidos} ativos no pipeline, ${frequenciaRemovidos} por frequência, ${supressosRemovidos} suprimidos.`;
+      await updateRun({ status: "completed", finished_at: new Date().toISOString(), motivo_parada: motivo });
+      return new Response(JSON.stringify({ run_id: runId, sent: 0, total: 0, reason: "no_leads", canal, exclusoes }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (canal === "evolution") {

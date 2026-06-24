@@ -195,12 +195,14 @@ Deno.serve(async (req) => {
               const isExperiment = code === "130472" || /experiment/i.test(title);
 
               if (recipient && last8 && (isOptOut || isUndeliverable || isEcosystem || isExperiment)) {
-                let suprimirAte: string | null = null; // null = permanente
-                let motivo = title || "Falha Meta";
-                if (isEcosystem) { suprimirAte = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(); motivo = "Throttle qualidade Meta (131049)"; }
-                else if (isExperiment) { suprimirAte = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(); motivo = "Número em experimento Meta (130472)"; }
-                else if (isUndeliverable) { motivo = "Número indisponível no WhatsApp (131026)"; }
-                else if (isOptOut) { motivo = "Recusou marketing (opt-out)"; }
+                // Parâmetros de retry/cooldown configuráveis
+                const { data: cfgRetry } = await supabase
+                  .from("reengajamento_config")
+                  .select("retry_131049_dias, retry_max_tentativas")
+                  .limit(1)
+                  .maybeSingle();
+                const retryDias = Math.max(1, Number((cfgRetry as any)?.retry_131049_dias ?? 5));
+                const retryMax = Math.max(1, Number((cfgRetry as any)?.retry_max_tentativas ?? 3));
 
                 // Resolve template para auditoria
                 const { data: disp } = await supabase
@@ -211,22 +213,51 @@ Deno.serve(async (req) => {
 
                 const { data: existing } = await supabase
                   .from("meta_supressao")
-                  .select("id, ocorrencias")
+                  .select("id, ocorrencias, suprimir_ate")
                   .eq("telefone_last8", last8)
                   .maybeSingle();
 
+                const newOcorr = (existing?.ocorrencias || 0) + 1;
+                const jaPermanente = existing && existing.suprimir_ate === null;
+
+                // Define código/motivo/janela conforme o tipo de falha
+                let suprimirAte: string | null = null; // null = permanente
+                let motivo = title || "Falha Meta";
+                let codigoSup = code || null;
+                if (isUndeliverable) { motivo = "Número indisponível no WhatsApp (131026)"; codigoSup = "undeliverable"; }
+                else if (isOptOut) { motivo = "Recusou marketing (opt-out)"; codigoSup = "opt_out"; }
+                else if (isEcosystem) {
+                  // 131049 NÃO é descarte: retry agendado até esgotar tentativas → aí permanente.
+                  codigoSup = "throttle_131049";
+                  if (newOcorr >= retryMax) {
+                    suprimirAte = null;
+                    motivo = `Throttle Meta 131049 — descartado após ${newOcorr} tentativas`;
+                  } else {
+                    suprimirAte = new Date(Date.now() + retryDias * 24 * 3600 * 1000).toISOString();
+                    motivo = `Throttle Meta 131049 — retry agendado (tentativa ${newOcorr}/${retryMax})`;
+                  }
+                }
+                else if (isExperiment) {
+                  codigoSup = "experiment_130472";
+                  suprimirAte = new Date(Date.now() + retryDias * 24 * 3600 * 1000).toISOString();
+                  motivo = "Número em experimento Meta (130472) — retry agendado";
+                }
+
                 if (existing) {
+                  // Nunca rebaixa um bloqueio permanente para cooldown
+                  const finalSuprimirAte = jaPermanente ? null : suprimirAte;
                   await supabase.from("meta_supressao").update({
-                    codigo: code || null,
-                    motivo,
+                    codigo: codigoSup,
+                    motivo: jaPermanente ? (existing as any).motivo ?? motivo : motivo,
                     template_name: disp?.template_name || null,
-                    suprimir_ate: suprimirAte, // permanente sobrescreve qualquer cooldown
-                    ocorrencias: (existing.ocorrencias || 1) + 1,
+                    suprimir_ate: finalSuprimirAte,
+                    ocorrencias: newOcorr,
                   }).eq("id", existing.id);
                 } else {
                   await supabase.from("meta_supressao").insert({
-                    telefone: recipient, telefone_last8: last8, codigo: code || null,
+                    telefone: recipient, telefone_last8: last8, codigo: codigoSup,
                     motivo, template_name: disp?.template_name || null, suprimir_ate: suprimirAte,
+                    ocorrencias: 1,
                   });
                 }
               }
