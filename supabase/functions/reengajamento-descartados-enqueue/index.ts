@@ -278,6 +278,8 @@ Deno.serve(async (req) => {
     // Validações por canal
     let evoUrl = "", evoKey = "";
     let metaPhoneId = "", metaToken = "", metaTemplate = "", metaLang = "pt_BR";
+    let metaHeaderImageUrl: string | undefined;
+    let metaHeaderMediaId: string | undefined;
     // Imagem de header por disparo (override): cada template pode ter sua própria imagem fixa.
     const overrideHeaderImg = (bodyAudience?.header_image_url && String(bodyAudience.header_image_url).trim()) || "";
     if (canal === "evolution") {
