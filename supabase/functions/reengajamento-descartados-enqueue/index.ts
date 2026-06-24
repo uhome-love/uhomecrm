@@ -847,10 +847,10 @@ Deno.serve(async (req) => {
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
 
         // Delays:
-        // - Meta: rápido (rate limit Meta é altíssimo) — 1-3s só pra não estourar nada
+        // - Meta: cadência mais humana (3-6s) para proteger qualidade do número
         // - Evolution: 60-180s + pausa longa a cada N envios
         if (canal === "meta") {
-          if (await interruptibleDelay(1500 + Math.random() * 1500, shouldStopNow)) {
+          if (await interruptibleDelay(3000 + Math.random() * 3000, shouldStopNow)) {
             const cancelled = stopReason === "Parado pelo usuário";
             return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
