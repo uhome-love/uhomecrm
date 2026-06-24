@@ -1,0 +1,1 @@
+ALTER TABLE public.reengajamento_config ADD COLUMN IF NOT EXISTS guard_reset_at timestamptz;
