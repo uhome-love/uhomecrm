@@ -664,8 +664,24 @@ Deno.serve(async (req) => {
       return null;
     };
 
+    const checkMetaCooldown = async (): Promise<string | null> => {
+      if (canal !== "meta" || !metaTemplate) return null;
+      const since = new Date(Date.now() - META_GUARD_COOLDOWN_HOURS * 3600 * 1000).toISOString();
+      const { count: qualityFails } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("id", { count: "exact", head: true })
+        .eq("template_name", metaTemplate)
+        .gte("created_at", since)
+        .eq("status", "failed")
+        .or("error_text.ilike.%131049%,error_text.ilike.%healthy ecosystem%");
+      if ((qualityFails || 0) >= META_GUARD_QUALITY_FAILS) {
+        return `Auto-pausa preventiva: o template "${metaTemplate}" teve ${qualityFails} bloqueios 131049 nas últimas ${META_GUARD_COOLDOWN_HOURS}h. A Meta recomenda aguardar pelo menos 24h antes de tentar novamente; continuar agora tende a falhar e piorar a reputação do número.`;
+      }
+      return null;
+    };
+
     if (canal === "meta") {
-      const preflightQualityReason = await checkDeliveryQuality();
+      const preflightQualityReason = (await checkMetaCooldown()) || (await checkDeliveryQuality());
       if (preflightQualityReason) {
         const reason = await pauseMetaForQuality(preflightQualityReason);
         return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_cooldown", motivo: reason, canal }), {
