@@ -603,7 +603,6 @@ Deno.serve(async (req) => {
     let consecutiveMetaQualityFails = 0;
 
     const pauseMetaForQuality = async (reason: string) => {
-      const until = new Date(Date.now() + META_GUARD_COOLDOWN_HOURS * 3600 * 1000).toISOString();
       const reasonWithCooldown = `${reason} Retomada sugerida após ${META_GUARD_COOLDOWN_HOURS}h; a Meta recomenda aguardar pelo menos 24h para erro 131049.`;
       await supabase.from("reengajamento_config").update({
         paused: true,
@@ -870,7 +869,7 @@ Deno.serve(async (req) => {
             if (qReason) {
               stopReason = await pauseMetaForQuality(qReason);
               await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
-              await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: qReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+              await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
               return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }
           }
