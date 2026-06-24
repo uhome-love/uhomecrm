@@ -8,6 +8,54 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const META_GUARD_COOLDOWN_HOURS = 24;
+const META_GUARD_QUALITY_FAILS = 8;
+
+async function uploadMetaMediaFromUrl(phoneNumberId: string, accessToken: string, imageUrl: string): Promise<string | null> {
+  try {
+    const imgResp = await fetch(imageUrl);
+    if (!imgResp.ok) return null;
+    const contentType = imgResp.headers.get("content-type") || "image/jpeg";
+    const bytes = new Uint8Array(await imgResp.arrayBuffer());
+    const form = new FormData();
+    form.append("messaging_product", "whatsapp");
+    form.append("file", new Blob([bytes], { type: contentType }), `header.${contentType.includes("png") ? "png" : "jpg"}`);
+    const up = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form,
+    });
+    const data = await up.json().catch(() => ({}));
+    if (!up.ok) {
+      console.error("uploadMetaMediaFromUrl failed:", JSON.stringify(data).slice(0, 300));
+      return null;
+    }
+    return data?.id || null;
+  } catch (e) {
+    console.error("uploadMetaMediaFromUrl error:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
+function isMetaQualityBlockText(msg: string) {
+  const m = (msg || "").toLowerCase();
+  return m.includes("healthy ecosystem")
+    || m.includes("ecosystem engagement")
+    || m.includes("template paused")
+    || m.includes("template is paused")
+    || m.includes("part of an experiment")
+    || m.includes("131049")
+    || m.includes("131050")
+    || m.includes("132015")
+    || m.includes("132016")
+    || m.includes("quality rating");
+}
+
+function last8(raw: string | null | undefined) {
+  const d = String(raw || "").replace(/\D/g, "");
+  return d.length >= 8 ? d.slice(-8) : d;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
