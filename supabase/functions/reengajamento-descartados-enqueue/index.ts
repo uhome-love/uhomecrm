@@ -485,6 +485,41 @@ Deno.serve(async (req) => {
       leads = (legacyLeads || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" }));
     }
 
+    // ── Supressão automática (só Meta): remove números que já falharam por
+    // bloqueio de qualidade / opt-out / indisponível, evitando queimar a reputação do número.
+    let supressosRemovidos = 0;
+    if (canal === "meta" && leads.length > 0) {
+      const nowIso = new Date().toISOString();
+      const supressSet = new Set<string>();
+      let from = 0;
+      const PAGE = 1000;
+      // paginar supressões ativas (permanente OR cooldown ainda vigente)
+      // deslint: loop controlado por tamanho de página
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data: sup, error: supErr } = await supabase
+          .from("meta_supressao")
+          .select("telefone_last8, suprimir_ate")
+          .or(`suprimir_ate.is.null,suprimir_ate.gt.${nowIso}`)
+          .range(from, from + PAGE - 1);
+        if (supErr) { console.error("meta_supressao fetch error:", supErr.message); break; }
+        if (!sup || sup.length === 0) break;
+        for (const s of sup) supressSet.add(String(s.telefone_last8));
+        if (sup.length < PAGE) break;
+        from += PAGE;
+      }
+      if (supressSet.size > 0) {
+        const last8 = (raw: string | null): string => {
+          const d = (raw || "").replace(/\D/g, "");
+          return d.length >= 8 ? d.slice(-8) : d;
+        };
+        const before = leads.length;
+        leads = leads.filter((l) => !supressSet.has(last8(l.telefone)));
+        supressosRemovidos = before - leads.length;
+        console.log(`Supressão Meta: ${supressosRemovidos} removidos de ${before} (lista ativa: ${supressSet.size})`);
+      }
+    }
+
     const totalAlvo = leads.length;
 
     const { data: runRow } = await supabase
