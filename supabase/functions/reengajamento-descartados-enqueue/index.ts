@@ -112,16 +112,46 @@ async function validateNumberEvolution(evoUrl: string, evoKey: string, instance:
   } catch { return true; }
 }
 
+// Faz upload da imagem de header UMA vez para a Meta e retorna um media id reutilizável.
+// Elimina o "Media upload error" causado pela Meta refazer o fetch do link a cada envio.
+async function uploadMetaMediaFromUrl(phoneNumberId: string, accessToken: string, imageUrl: string): Promise<string | null> {
+  try {
+    const imgResp = await fetch(imageUrl);
+    if (!imgResp.ok) return null;
+    const contentType = imgResp.headers.get("content-type") || "image/jpeg";
+    const bytes = new Uint8Array(await imgResp.arrayBuffer());
+    const form = new FormData();
+    form.append("messaging_product", "whatsapp");
+    form.append("file", new Blob([bytes], { type: contentType }), `header.${contentType.includes("png") ? "png" : "jpg"}`);
+    const up = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form,
+    });
+    const data = await up.json().catch(() => ({}));
+    if (!up.ok) {
+      console.error("uploadMetaMediaFromUrl failed:", JSON.stringify(data).slice(0, 300));
+      return null;
+    }
+    return data?.id || null;
+  } catch (e) {
+    console.error("uploadMetaMediaFromUrl error:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 async function sendMetaTemplate(params: {
-  phoneNumberId: string; accessToken: string; to: string; templateName: string; lang: string; nome: string; headerImageUrl?: string;
+  phoneNumberId: string; accessToken: string; to: string; templateName: string; lang: string; nome: string; headerImageUrl?: string; headerMediaId?: string;
 }): Promise<{ ok: boolean; wamid?: string; error?: string }> {
   const url = `https://graph.facebook.com/v21.0/${params.phoneNumberId}/messages`;
   const buildBody = (withHeader: boolean) => {
     const components: any[] = [];
-    if (withHeader && params.headerImageUrl) {
+    if (withHeader && (params.headerMediaId || params.headerImageUrl)) {
+      // Preferir media id (upload único) ao link (refetch por envio = "Media upload error")
+      const image = params.headerMediaId ? { id: params.headerMediaId } : { link: params.headerImageUrl };
       components.push({
         type: "header",
-        parameters: [{ type: "image", image: { link: params.headerImageUrl } }],
+        parameters: [{ type: "image", image }],
       });
     }
     components.push({ type: "body", parameters: [{ type: "text", text: params.nome }] });
@@ -144,7 +174,7 @@ async function sendMetaTemplate(params: {
   try {
     let resp = await post(true);
     // Auto-retry sem header quando o template não tem header component (Meta #132018)
-    if (!resp.ok && params.headerImageUrl) {
+    if (!resp.ok && (params.headerImageUrl || params.headerMediaId)) {
       const errStr = JSON.stringify(resp.data);
       if (/132018|does not contain (title|header) component|no parameters allowed/i.test(errStr)) {
         resp = await post(false);
@@ -248,6 +278,8 @@ Deno.serve(async (req) => {
     // Validações por canal
     let evoUrl = "", evoKey = "";
     let metaPhoneId = "", metaToken = "", metaTemplate = "", metaLang = "pt_BR";
+    let metaHeaderImageUrl: string | undefined;
+    let metaHeaderMediaId: string | undefined;
     // Imagem de header por disparo (override): cada template pode ter sua própria imagem fixa.
     const overrideHeaderImg = (bodyAudience?.header_image_url && String(bodyAudience.header_image_url).trim()) || "";
     if (canal === "evolution") {
@@ -265,6 +297,12 @@ Deno.serve(async (req) => {
       metaTemplate = overrideTpl || String((wave === 2 ? cfg.meta_template_name_2 : cfg.meta_template_name) || "");
       metaLang = overrideLang || String(cfg.meta_template_language || "pt_BR");
       if (!metaTemplate) throw new Error(wave === 2 ? "meta_template_name_2 não configurado" : "meta_template_name não configurado");
+      // Imagem de header: resolve uma vez e faz upload UMA vez para obter media id reutilizável.
+      metaHeaderImageUrl = overrideHeaderImg || String((wave === 2 ? cfg.meta_header_image_url_2 : cfg.meta_header_image_url) || "").trim() || undefined;
+      if (metaHeaderImageUrl) {
+        metaHeaderMediaId = (await uploadMetaMediaFromUrl(metaPhoneId, metaToken, metaHeaderImageUrl)) || undefined;
+        console.log(`Meta header media: ${metaHeaderMediaId ? `id=${metaHeaderMediaId}` : "upload falhou, fallback para link"}`);
+      }
     }
 
     // Mensagens (Evolution) e variantes — selecionar pela onda
@@ -447,6 +485,41 @@ Deno.serve(async (req) => {
       leads = (legacyLeads || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" }));
     }
 
+    // ── Supressão automática (só Meta): remove números que já falharam por
+    // bloqueio de qualidade / opt-out / indisponível, evitando queimar a reputação do número.
+    let supressosRemovidos = 0;
+    if (canal === "meta" && leads.length > 0) {
+      const nowIso = new Date().toISOString();
+      const supressSet = new Set<string>();
+      let from = 0;
+      const PAGE = 1000;
+      // paginar supressões ativas (permanente OR cooldown ainda vigente)
+      // deslint: loop controlado por tamanho de página
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data: sup, error: supErr } = await supabase
+          .from("meta_supressao")
+          .select("telefone_last8, suprimir_ate")
+          .or(`suprimir_ate.is.null,suprimir_ate.gt.${nowIso}`)
+          .range(from, from + PAGE - 1);
+        if (supErr) { console.error("meta_supressao fetch error:", supErr.message); break; }
+        if (!sup || sup.length === 0) break;
+        for (const s of sup) supressSet.add(String(s.telefone_last8));
+        if (sup.length < PAGE) break;
+        from += PAGE;
+      }
+      if (supressSet.size > 0) {
+        const last8 = (raw: string | null): string => {
+          const d = (raw || "").replace(/\D/g, "");
+          return d.length >= 8 ? d.slice(-8) : d;
+        };
+        const before = leads.length;
+        leads = leads.filter((l) => !supressSet.has(last8(l.telefone)));
+        supressosRemovidos = before - leads.length;
+        console.log(`Supressão Meta: ${supressosRemovidos} removidos de ${before} (lista ativa: ${supressSet.size})`);
+      }
+    }
+
     const totalAlvo = leads.length;
 
     const { data: runRow } = await supabase
@@ -529,6 +602,33 @@ Deno.serve(async (req) => {
         || m.includes("(#131049)")
         || m.includes("(#131050)")
         || m.includes("quality rating");
+    };
+
+    // 🛑 Guarda de qualidade por TAXA DE ENTREGA (via webhook).
+    // O erro 131049 ("healthy ecosystem engagement") chega DEPOIS do envio (status sent ok),
+    // então só dá pra detectá-lo olhando delivered/read x failed reportados pelo webhook.
+    // Se a taxa de falha recente estourar o limite, pausa para a qualidade do número recuperar.
+    const DELIVERY_GUARD_MIN_SAMPLE = 40;   // mínimo de mensagens já resolvidas pelo webhook
+    const DELIVERY_GUARD_FAIL_RATIO = 0.6;  // >60% de falha = pausa
+    const checkDeliveryQuality = async (): Promise<string | null> => {
+      const since = new Date(Date.now() - 45 * 60 * 1000).toISOString(); // últimos 45min
+      const base = supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true })
+        .eq("template_name", metaTemplate).gte("created_at", since);
+      const [failedRes, deliveredRes, readRes, respRes] = await Promise.all([
+        base.eq("status", "failed"),
+        supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "delivered"),
+        supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "read"),
+        supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "responded"),
+      ]);
+      const failedN = failedRes.count || 0;
+      const okN = (deliveredRes.count || 0) + (readRes.count || 0) + (respRes.count || 0);
+      const resolved = failedN + okN;
+      if (resolved < DELIVERY_GUARD_MIN_SAMPLE) return null;
+      const ratio = failedN / resolved;
+      if (ratio >= DELIVERY_GUARD_FAIL_RATIO) {
+        return `Auto-pausa por qualidade: taxa de falha de entrega em ${(ratio * 100).toFixed(0)}% (${failedN} falhas / ${resolved} resolvidas) no template "${metaTemplate}" nos últimos 45min. A Meta está derrubando as mensagens (131049). Pausado para proteger a reputação do número.`;
+      }
+      return null;
     };
 
     // Patches por onda (helpers)
@@ -627,10 +727,10 @@ Deno.serve(async (req) => {
 
       try {
         if (canal === "meta") {
-          const headerImageUrl = overrideHeaderImg || String((wave === 2 ? cfg.meta_header_image_url_2 : cfg.meta_header_image_url) || "").trim() || undefined;
           const r = await sendMetaTemplate({
             phoneNumberId: metaPhoneId, accessToken: metaToken, to: phone,
-            templateName: metaTemplate, lang: metaLang, nome: firstName, headerImageUrl,
+            templateName: metaTemplate, lang: metaLang, nome: firstName,
+            headerImageUrl: metaHeaderImageUrl, headerMediaId: metaHeaderMediaId,
           });
           if (!r.ok) {
             failed++;
@@ -674,6 +774,18 @@ Deno.serve(async (req) => {
             lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[meta:${metaTemplate}] ${phone}`,
           });
           sent++;
+
+          // Guarda de qualidade por taxa de entrega — checa a cada 25 envios
+          if (sent % 25 === 0) {
+            const qReason = await checkDeliveryQuality();
+            if (qReason) {
+              stopReason = qReason;
+              await supabase.from("reengajamento_config").update({ paused: true, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+              await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
+              await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: qReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+              return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+          }
         } else {
           // EVOLUTION com spintax
           const text = pickVariant(evoVariantes, evoTemplate, firstName);
@@ -735,10 +847,10 @@ Deno.serve(async (req) => {
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
 
         // Delays:
-        // - Meta: rápido (rate limit Meta é altíssimo) — 1-3s só pra não estourar nada
+        // - Meta: cadência mais humana (3-6s) para proteger qualidade do número
         // - Evolution: 60-180s + pausa longa a cada N envios
         if (canal === "meta") {
-          if (await interruptibleDelay(1500 + Math.random() * 1500, shouldStopNow)) {
+          if (await interruptibleDelay(3000 + Math.random() * 3000, shouldStopNow)) {
             const cancelled = stopReason === "Parado pelo usuário";
             return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }

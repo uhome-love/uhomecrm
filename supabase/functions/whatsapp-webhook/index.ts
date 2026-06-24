@@ -178,6 +178,60 @@ Deno.serve(async (req) => {
                 .eq("wamid", waMessageId);
             }
 
+            // ── Lista de supressão automática (proteção de qualidade do número) ──
+            // 131049 = "healthy ecosystem engagement" (throttle Meta) → cooldown 30d
+            // 131026 = "Message undeliverable" (número sem WhatsApp) → permanente
+            // 131050 = recipient parou de receber marketing (opt-out) → permanente
+            // 130472 = "User's number is part of an experiment" → cooldown 7d
+            if (statusType === "failed") {
+              const errObj = status?.errors?.[0] || {};
+              const code = String(errObj?.code ?? "");
+              const title = String(errObj?.title || errObj?.message || "");
+              const recipient = String(status?.recipient_id || "").replace(/\D/g, "");
+              const last8 = recipient.length >= 8 ? recipient.slice(-8) : recipient;
+              const isOptOut = /stop receiving marketing|opt[\s-]?out/i.test(title) || code === "131050";
+              const isUndeliverable = code === "131026" || /undeliverable/i.test(title);
+              const isEcosystem = code === "131049" || /healthy ecosystem/i.test(title);
+              const isExperiment = code === "130472" || /experiment/i.test(title);
+
+              if (recipient && last8 && (isOptOut || isUndeliverable || isEcosystem || isExperiment)) {
+                let suprimirAte: string | null = null; // null = permanente
+                let motivo = title || "Falha Meta";
+                if (isEcosystem) { suprimirAte = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(); motivo = "Throttle qualidade Meta (131049)"; }
+                else if (isExperiment) { suprimirAte = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(); motivo = "Número em experimento Meta (130472)"; }
+                else if (isUndeliverable) { motivo = "Número indisponível no WhatsApp (131026)"; }
+                else if (isOptOut) { motivo = "Recusou marketing (opt-out)"; }
+
+                // Resolve template para auditoria
+                const { data: disp } = await supabase
+                  .from("reengajamento_meta_disparos")
+                  .select("template_name")
+                  .eq("wamid", waMessageId)
+                  .maybeSingle();
+
+                const { data: existing } = await supabase
+                  .from("meta_supressao")
+                  .select("id, ocorrencias")
+                  .eq("telefone_last8", last8)
+                  .maybeSingle();
+
+                if (existing) {
+                  await supabase.from("meta_supressao").update({
+                    codigo: code || null,
+                    motivo,
+                    template_name: disp?.template_name || null,
+                    suprimir_ate: suprimirAte, // permanente sobrescreve qualquer cooldown
+                    ocorrencias: (existing.ocorrencias || 1) + 1,
+                  }).eq("id", existing.id);
+                } else {
+                  await supabase.from("meta_supressao").insert({
+                    telefone: recipient, telefone_last8: last8, codigo: code || null,
+                    motivo, template_name: disp?.template_name || null, suprimir_ate: suprimirAte,
+                  });
+                }
+              }
+            }
+
             // Notify orchestrator on read
             if (statusType === "read") {
               const { data: sendRecord } = await supabase
