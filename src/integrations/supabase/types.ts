@@ -7760,6 +7760,7 @@ export type Database = {
           dias_semana: number[]
           enabled: boolean
           evolution_instance: string
+          freq_cooldown_dias: number
           horario_fim: string
           horario_inicio: string
           id: string
@@ -7780,8 +7781,12 @@ export type Database = {
           paused_at_brt: string | null
           paused_reason: string | null
           paused_until_release: boolean
+          retry_131049_dias: number
+          retry_max_tentativas: number
           updated_at: string
           validar_numero: boolean
+          warmup_incremento_pct: number
+          warmup_inicial: number
           wave2_min_dias_apos_wave1: number | null
         }
         Insert: {
@@ -7792,6 +7797,7 @@ export type Database = {
           dias_semana?: number[]
           enabled?: boolean
           evolution_instance?: string
+          freq_cooldown_dias?: number
           horario_fim?: string
           horario_inicio?: string
           id?: string
@@ -7812,8 +7818,12 @@ export type Database = {
           paused_at_brt?: string | null
           paused_reason?: string | null
           paused_until_release?: boolean
+          retry_131049_dias?: number
+          retry_max_tentativas?: number
           updated_at?: string
           validar_numero?: boolean
+          warmup_incremento_pct?: number
+          warmup_inicial?: number
           wave2_min_dias_apos_wave1?: number | null
         }
         Update: {
@@ -7824,6 +7834,7 @@ export type Database = {
           dias_semana?: number[]
           enabled?: boolean
           evolution_instance?: string
+          freq_cooldown_dias?: number
           horario_fim?: string
           horario_inicio?: string
           id?: string
@@ -7844,8 +7855,12 @@ export type Database = {
           paused_at_brt?: string | null
           paused_reason?: string | null
           paused_until_release?: boolean
+          retry_131049_dias?: number
+          retry_max_tentativas?: number
           updated_at?: string
           validar_numero?: boolean
+          warmup_incremento_pct?: number
+          warmup_inicial?: number
           wave2_min_dias_apos_wave1?: number | null
         }
         Relationships: []
@@ -10313,6 +10328,13 @@ export type Database = {
         }
         Relationships: []
       }
+      v_pipeline_ativo_contatos: {
+        Row: {
+          email: string | null
+          telefone_last8: string | null
+        }
+        Relationships: []
+      }
       v_pipeline_parcerias_visual: {
         Row: {
           corretor_parceiro_id: string | null
@@ -10350,6 +10372,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_ultimo_marketing_por_telefone: {
+        Row: {
+          last8: string | null
+          ultimo_envio: string | null
+        }
+        Relationships: []
       }
       v_user_partner_leads: {
         Row: {
@@ -11159,6 +11188,19 @@ export type Database = {
       redistribuir_leads_pendentes: {
         Args: { p_segmento_id?: string }
         Returns: Json
+      }
+      reengajamento_deliverability_listas: {
+        Args: never
+        Returns: {
+          bloqueados: number
+          em_cooldown: number
+          empreendimento: string
+          limpos: number
+          lista_id: string
+          nome: string
+          pipeline_ativos: number
+          total: number
+        }[]
       }
       reengajamento_resumo_hoje: { Args: never; Returns: Json }
       rejeitar_lead: {

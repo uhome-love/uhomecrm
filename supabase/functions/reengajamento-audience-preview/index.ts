@@ -45,6 +45,44 @@ function audienceKey(a: Audience): string {
 
 const RESPONDEU_NAO_STATUSES = ["respondeu_nao", "respondeu_nao_wave2", "bloqueado", "telefone_invalido"];
 
+const last8Of = (raw: string | null | undefined): string => {
+  const d = (raw || "").replace(/\D/g, "");
+  return d.length >= 8 ? d.slice(-8) : d;
+};
+
+// Carrega os conjuntos de exclusão (pipeline ativo + frequência recente) para estimativa fiel.
+async function loadGuardSets(supabase: any, freqCooldownDias: number) {
+  const phoneSet = new Set<string>();
+  const emailSet = new Set<string>();
+  const recentSet = new Set<string>();
+  const PG = 1000;
+  let pf = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data, error } = await supabase.from("v_pipeline_ativo_contatos").select("telefone_last8, email").range(pf, pf + PG - 1);
+    if (error || !data || data.length === 0) break;
+    for (const r of data) {
+      if (r.telefone_last8) phoneSet.add(String(r.telefone_last8));
+      if (r.email) emailSet.add(String(r.email).toLowerCase());
+    }
+    if (data.length < PG) break;
+    pf += PG;
+  }
+  if (freqCooldownDias > 0) {
+    const cutoff = new Date(Date.now() - freqCooldownDias * 24 * 3600 * 1000).toISOString();
+    let ff = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { data, error } = await supabase.from("v_ultimo_marketing_por_telefone").select("last8").gt("ultimo_envio", cutoff).range(ff, ff + PG - 1);
+      if (error || !data || data.length === 0) break;
+      for (const r of data) recentSet.add(String(r.last8));
+      if (data.length < PG) break;
+      ff += PG;
+    }
+  }
+  return { phoneSet, emailSet, recentSet };
+}
+
 async function exactCount(supabase: any, build: () => any): Promise<number> {
   const { count } = await build().select("id", { count: "exact", head: true });
   return count ?? 0;
@@ -144,7 +182,17 @@ Deno.serve(async (req) => {
           merged.push(l);
         }
       }
-      const finalLeads = merged.slice(0, limit);
+      // Guarda de pipeline ativo + frequência (estimativa fiel ao disparo real)
+      const isMeta = (audience.canal || "meta") === "meta";
+      const { phoneSet, emailSet, recentSet } = await loadGuardSets(supabase, isMeta ? 14 : 0);
+      let removidosPipeline = 0, removidosFrequencia = 0;
+      const guarded = merged.filter((l) => {
+        const ph = last8Of(l.telefone);
+        if ((ph && phoneSet.has(ph)) || (emailSet.size && (l as any).email && emailSet.has(String((l as any).email).toLowerCase()))) { removidosPipeline++; return false; }
+        if (isMeta && ph && recentSet.has(ph)) { removidosFrequencia++; return false; }
+        return true;
+      });
+      const finalLeads = guarded.slice(0, limit);
       return new Response(JSON.stringify({
         count: finalLeads.length,
         count_pre_dedup: totalBruto,
@@ -155,6 +203,8 @@ Deno.serve(async (req) => {
           por_fonte: porFonte,
           total_bruto: totalBruto,
           duplicados_removidos: totalBruto - merged.length,
+          removidos_pipeline_ativo: removidosPipeline,
+          removidos_frequencia: removidosFrequencia,
           elegiveis: finalLeads.length,
         },
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
