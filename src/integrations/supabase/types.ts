@@ -7761,6 +7761,7 @@ export type Database = {
           enabled: boolean
           evolution_instance: string
           freq_cooldown_dias: number
+          guard_reset_at: string | null
           horario_fim: string
           horario_inicio: string
           id: string
@@ -7798,6 +7799,7 @@ export type Database = {
           enabled?: boolean
           evolution_instance?: string
           freq_cooldown_dias?: number
+          guard_reset_at?: string | null
           horario_fim?: string
           horario_inicio?: string
           id?: string
@@ -7835,6 +7837,7 @@ export type Database = {
           enabled?: boolean
           evolution_instance?: string
           freq_cooldown_dias?: number
+          guard_reset_at?: string | null
           horario_fim?: string
           horario_inicio?: string
           id?: string

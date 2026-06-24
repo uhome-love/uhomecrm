@@ -741,7 +741,15 @@ Deno.serve(async (req) => {
 
     const checkMetaCooldown = async (): Promise<string | null> => {
       if (canal !== "meta" || !metaTemplate) return null;
-      const since = new Date(Date.now() - META_GUARD_COOLDOWN_HOURS * 3600 * 1000).toISOString();
+      // Janela base de 24h, mas nunca antes de uma "liberação consciente" feita por um gestor.
+      // Ao liberar manualmente (guard_reset_at), o histórico anterior — ex.: bloqueios de uma
+      // base fria/super-contatada — deixa de barrar o disparo do mesmo template para listas novas.
+      // O guard AO VIVO (15min, checkDeliveryQuality) continua ativo e pausa se os envios
+      // frescos começarem a falhar de verdade.
+      const baseSince = Date.now() - META_GUARD_COOLDOWN_HOURS * 3600 * 1000;
+      const resetAtRaw = (cfg as any).guard_reset_at;
+      const resetMs = resetAtRaw ? new Date(resetAtRaw).getTime() : 0;
+      const since = new Date(Math.max(baseSince, resetMs || 0)).toISOString();
       const { count: qualityFails } = await supabase
         .from("reengajamento_meta_disparos")
         .select("id", { count: "exact", head: true })
