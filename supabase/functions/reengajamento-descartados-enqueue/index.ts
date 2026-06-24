@@ -112,16 +112,46 @@ async function validateNumberEvolution(evoUrl: string, evoKey: string, instance:
   } catch { return true; }
 }
 
+// Faz upload da imagem de header UMA vez para a Meta e retorna um media id reutilizável.
+// Elimina o "Media upload error" causado pela Meta refazer o fetch do link a cada envio.
+async function uploadMetaMediaFromUrl(phoneNumberId: string, accessToken: string, imageUrl: string): Promise<string | null> {
+  try {
+    const imgResp = await fetch(imageUrl);
+    if (!imgResp.ok) return null;
+    const contentType = imgResp.headers.get("content-type") || "image/jpeg";
+    const bytes = new Uint8Array(await imgResp.arrayBuffer());
+    const form = new FormData();
+    form.append("messaging_product", "whatsapp");
+    form.append("file", new Blob([bytes], { type: contentType }), `header.${contentType.includes("png") ? "png" : "jpg"}`);
+    const up = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form,
+    });
+    const data = await up.json().catch(() => ({}));
+    if (!up.ok) {
+      console.error("uploadMetaMediaFromUrl failed:", JSON.stringify(data).slice(0, 300));
+      return null;
+    }
+    return data?.id || null;
+  } catch (e) {
+    console.error("uploadMetaMediaFromUrl error:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 async function sendMetaTemplate(params: {
-  phoneNumberId: string; accessToken: string; to: string; templateName: string; lang: string; nome: string; headerImageUrl?: string;
+  phoneNumberId: string; accessToken: string; to: string; templateName: string; lang: string; nome: string; headerImageUrl?: string; headerMediaId?: string;
 }): Promise<{ ok: boolean; wamid?: string; error?: string }> {
   const url = `https://graph.facebook.com/v21.0/${params.phoneNumberId}/messages`;
   const buildBody = (withHeader: boolean) => {
     const components: any[] = [];
-    if (withHeader && params.headerImageUrl) {
+    if (withHeader && (params.headerMediaId || params.headerImageUrl)) {
+      // Preferir media id (upload único) ao link (refetch por envio = "Media upload error")
+      const image = params.headerMediaId ? { id: params.headerMediaId } : { link: params.headerImageUrl };
       components.push({
         type: "header",
-        parameters: [{ type: "image", image: { link: params.headerImageUrl } }],
+        parameters: [{ type: "image", image }],
       });
     }
     components.push({ type: "body", parameters: [{ type: "text", text: params.nome }] });
@@ -144,7 +174,7 @@ async function sendMetaTemplate(params: {
   try {
     let resp = await post(true);
     // Auto-retry sem header quando o template não tem header component (Meta #132018)
-    if (!resp.ok && params.headerImageUrl) {
+    if (!resp.ok && (params.headerImageUrl || params.headerMediaId)) {
       const errStr = JSON.stringify(resp.data);
       if (/132018|does not contain (title|header) component|no parameters allowed/i.test(errStr)) {
         resp = await post(false);
