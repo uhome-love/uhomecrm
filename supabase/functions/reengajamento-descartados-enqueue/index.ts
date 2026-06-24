@@ -604,6 +604,33 @@ Deno.serve(async (req) => {
         || m.includes("quality rating");
     };
 
+    // 🛑 Guarda de qualidade por TAXA DE ENTREGA (via webhook).
+    // O erro 131049 ("healthy ecosystem engagement") chega DEPOIS do envio (status sent ok),
+    // então só dá pra detectá-lo olhando delivered/read x failed reportados pelo webhook.
+    // Se a taxa de falha recente estourar o limite, pausa para a qualidade do número recuperar.
+    const DELIVERY_GUARD_MIN_SAMPLE = 40;   // mínimo de mensagens já resolvidas pelo webhook
+    const DELIVERY_GUARD_FAIL_RATIO = 0.6;  // >60% de falha = pausa
+    const checkDeliveryQuality = async (): Promise<string | null> => {
+      const since = new Date(Date.now() - 45 * 60 * 1000).toISOString(); // últimos 45min
+      const base = supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true })
+        .eq("template_name", metaTemplate).gte("created_at", since);
+      const [failedRes, deliveredRes, readRes, respRes] = await Promise.all([
+        base.eq("status", "failed"),
+        supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "delivered"),
+        supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "read"),
+        supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "responded"),
+      ]);
+      const failedN = failedRes.count || 0;
+      const okN = (deliveredRes.count || 0) + (readRes.count || 0) + (respRes.count || 0);
+      const resolved = failedN + okN;
+      if (resolved < DELIVERY_GUARD_MIN_SAMPLE) return null;
+      const ratio = failedN / resolved;
+      if (ratio >= DELIVERY_GUARD_FAIL_RATIO) {
+        return `Auto-pausa por qualidade: taxa de falha de entrega em ${(ratio * 100).toFixed(0)}% (${failedN} falhas / ${resolved} resolvidas) no template "${metaTemplate}" nos últimos 45min. A Meta está derrubando as mensagens (131049). Pausado para proteger a reputação do número.`;
+      }
+      return null;
+    };
+
     // Patches por onda (helpers)
     const sentStatus = wave === 2 ? "enviado_wave2" : "enviado";
     const markSentPatch = () => {
