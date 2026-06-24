@@ -11163,6 +11163,10 @@ export type Database = {
         Args: { p_lead_id: string; p_template_name?: string }
         Returns: Json
       }
+      reativar_oferta_ativa_para_fila_ceo: {
+        Args: { p_oa_lead_id: string; p_template_name?: string }
+        Returns: Json
+      }
       recalc_oportunidade_score: {
         Args: { p_lead_id: string }
         Returns: number
