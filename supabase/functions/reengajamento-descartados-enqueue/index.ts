@@ -369,7 +369,7 @@ Deno.serve(async (req) => {
         const cooldownDias = Math.max(0, Number(bodyAudience.cooldown_dias ?? 7));
         const cooldownCutoff = new Date(Date.now() - cooldownDias * 24 * 3600 * 1000).toISOString();
         const RESPONDEU_NAO = ["respondeu_nao", "respondeu_nao_wave2", "bloqueado", "telefone_invalido"];
-        let q = supabase
+        let q: any = supabase
           .from("pipeline_leads")
           .select("id, nome, telefone, reengajamento_enviado_at")
           .eq("stage_id", STAGE_DESCARTE_ID)
