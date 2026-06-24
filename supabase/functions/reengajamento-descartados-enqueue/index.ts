@@ -748,6 +748,25 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Guarda WABA histórica: opt-out, descarte definitivo e bombardeio por telefone/template.
+      if (canal === "meta") {
+        const { data: allowedData, error: allowedErr } = await supabase.rpc("check_send_allowed" as any, {
+          p_lead_id: lead.ref === "pipeline_lead" ? lead.id : null,
+          p_phone: phone,
+          p_template: metaTemplate,
+        });
+        const allowed = (allowedData as any)?.allowed !== false;
+        if (!allowedErr && !allowed) {
+          const reason = String((allowedData as any)?.reason || "Bloqueado por guarda WABA");
+          await insertEvento({
+            lead_id: lead.id, run_id: runId, tipo: "ignorado_guard_waba", detalhe: reason.slice(0, 500),
+          });
+          skipped++;
+          await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
+          continue;
+        }
+      }
+
       // Validação prévia (só Evolution)
       if (canal === "evolution" && cfg.validar_numero) {
         const exists = await validateNumberEvolution(evoUrl, evoKey, cfg.evolution_instance, phone);
@@ -779,6 +798,34 @@ Deno.serve(async (req) => {
             failed++;
             const errMsg = `${lead.nome}: ${r.error}`;
             errs.push(errMsg);
+            if (isMetaQualityBlockText(r.error || "")) {
+              const last8 = phone.slice(-8);
+              const code = (r.error || "").match(/13\d{4}/)?.[0] || null;
+              const suprimirAte = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+              const { data: existingSup } = await supabase
+                .from("meta_supressao")
+                .select("id, ocorrencias")
+                .eq("telefone_last8", last8)
+                .maybeSingle();
+              if (existingSup?.id) {
+                await supabase.from("meta_supressao").update({
+                  codigo: code,
+                  motivo: "Falha síncrona de qualidade Meta",
+                  template_name: metaTemplate,
+                  suprimir_ate: suprimirAte,
+                  ocorrencias: (existingSup.ocorrencias || 1) + 1,
+                }).eq("id", existingSup.id);
+              } else {
+                await supabase.from("meta_supressao").insert({
+                  telefone: phone,
+                  telefone_last8: last8,
+                  codigo: code,
+                  motivo: "Falha síncrona de qualidade Meta",
+                  template_name: metaTemplate,
+                  suprimir_ate: suprimirAte,
+                });
+              }
+            }
             await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
