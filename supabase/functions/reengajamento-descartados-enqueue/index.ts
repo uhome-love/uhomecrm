@@ -388,8 +388,8 @@ Deno.serve(async (req) => {
         if (dedupMode === "exclude_sent") {
           q = q.is("reengajamento_enviado_at", null);
         } else if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
-          const sentBeforeQuery = q.not("reengajamento_enviado_at", "is", null);
-          q = sentBeforeQuery.lte("reengajamento_enviado_at", String(bodyAudience.dedup_cutoff));
+          q = q.not("reengajamento_enviado_at", "is", null)
+               .filter("reengajamento_enviado_at", "lte", String(bodyAudience.dedup_cutoff));
         } else if (dedupMode === "include_all") {
           // sem filtro
         } else if (cooldownDias > 0) {
