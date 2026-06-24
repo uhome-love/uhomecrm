@@ -297,6 +297,12 @@ Deno.serve(async (req) => {
       metaTemplate = overrideTpl || String((wave === 2 ? cfg.meta_template_name_2 : cfg.meta_template_name) || "");
       metaLang = overrideLang || String(cfg.meta_template_language || "pt_BR");
       if (!metaTemplate) throw new Error(wave === 2 ? "meta_template_name_2 não configurado" : "meta_template_name não configurado");
+      // Imagem de header: resolve uma vez e faz upload UMA vez para obter media id reutilizável.
+      metaHeaderImageUrl = overrideHeaderImg || String((wave === 2 ? cfg.meta_header_image_url_2 : cfg.meta_header_image_url) || "").trim() || undefined;
+      if (metaHeaderImageUrl) {
+        metaHeaderMediaId = (await uploadMetaMediaFromUrl(metaPhoneId, metaToken, metaHeaderImageUrl)) || undefined;
+        console.log(`Meta header media: ${metaHeaderMediaId ? `id=${metaHeaderMediaId}` : "upload falhou, fallback para link"}`);
+      }
     }
 
     // Mensagens (Evolution) e variantes — selecionar pela onda
