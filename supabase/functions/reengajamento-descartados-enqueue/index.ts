@@ -665,10 +665,10 @@ Deno.serve(async (req) => {
 
       try {
         if (canal === "meta") {
-          const headerImageUrl = overrideHeaderImg || String((wave === 2 ? cfg.meta_header_image_url_2 : cfg.meta_header_image_url) || "").trim() || undefined;
           const r = await sendMetaTemplate({
             phoneNumberId: metaPhoneId, accessToken: metaToken, to: phone,
-            templateName: metaTemplate, lang: metaLang, nome: firstName, headerImageUrl,
+            templateName: metaTemplate, lang: metaLang, nome: firstName,
+            headerImageUrl: metaHeaderImageUrl, headerMediaId: metaHeaderMediaId,
           });
           if (!r.ok) {
             failed++;
