@@ -221,6 +221,37 @@ serve(async (req) => {
             continue;
           }
 
+          const phoneLast8 = last8(phone);
+          if (phoneLast8) {
+            const nowIso = new Date().toISOString();
+            const { data: supressed } = await supabase
+              .from("meta_supressao")
+              .select("motivo")
+              .eq("telefone_last8", phoneLast8)
+              .or(`suprimir_ate.is.null,suprimir_ate.gt.${nowIso}`)
+              .maybeSingle();
+            if (supressed) {
+              await supabase
+                .from("whatsapp_campaign_sends")
+                .update({ status_envio: "skipped", error_message: `Suprimido Meta: ${supressed.motivo || "bloqueio ativo"}` })
+                .eq("id", send.id);
+              continue;
+            }
+          }
+
+          const { data: allowedData, error: allowedErr } = await supabase.rpc("check_send_allowed" as any, {
+            p_lead_id: send.pipeline_lead_id || null,
+            p_phone: phone,
+            p_template: batch.template_name,
+          });
+          if (!allowedErr && (allowedData as any)?.allowed === false) {
+            await supabase
+              .from("whatsapp_campaign_sends")
+              .update({ status_envio: "skipped", error_message: `Guarda WABA: ${(allowedData as any)?.reason || "bloqueio ativo"}` })
+              .eq("id", send.id);
+            continue;
+          }
+
           // Build template body
           const templateBody: any = {
             messaging_product: "whatsapp",
@@ -328,7 +359,6 @@ serve(async (req) => {
           } else {
             const errMsg = waResult?.error?.message || "Unknown WhatsApp error";
             const errCode = waResult?.error?.code ? String(waResult.error.code) : null;
-            const phoneLast8 = last8(phone);
             if (phoneLast8 && (isMetaQualityBlockText(errMsg) || ["131049", "131050", "132015", "132016"].includes(errCode || ""))) {
               const { data: existingSup } = await supabase
                 .from("meta_supressao")
