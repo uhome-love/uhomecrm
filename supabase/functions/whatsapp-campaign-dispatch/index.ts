@@ -105,6 +105,34 @@ serve(async (req) => {
         });
       }
 
+      const params = batch.template_params || {};
+
+      // Preflight anti-cascata: se a Meta já bloqueou este template nas últimas 24h,
+      // não tenta insistir — erro 131049 tende a repetir e piorar a reputação do número.
+      const sinceCooldown = new Date(Date.now() - META_GUARD_COOLDOWN_HOURS * 3600 * 1000).toISOString();
+      const { count: recentQualityFails } = await supabase
+        .from("whatsapp_campaign_sends")
+        .select("id", { count: "exact", head: true })
+        .eq("batch_id", batch_id)
+        .gte("created_at", sinceCooldown)
+        .eq("status_envio", "failed")
+        .or("error_message.ilike.%131049%,error_message.ilike.%healthy ecosystem%,error_message.ilike.%132015%,error_message.ilike.%132016%");
+      if ((recentQualityFails || 0) >= META_GUARD_QUALITY_FAILS) {
+        const reason = `Auto-pausa Meta: ${recentQualityFails} bloqueios de qualidade/131049 nas últimas 24h. Aguardando recuperação da reputação do número antes de continuar.`;
+        await supabase
+          .from("whatsapp_campaign_batches")
+          .update({ status: "paused", error_message: reason, updated_at: new Date().toISOString() })
+          .eq("id", batch_id);
+        return new Response(JSON.stringify({ paused: true, reason: "meta_quality_cooldown", motivo: reason }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let headerMediaId: string | null = null;
+      if (params.header_image_url) {
+        headerMediaId = await uploadMetaMediaFromUrl(PHONE_NUMBER_ID, WHATSAPP_TOKEN, String(params.header_image_url));
+      }
+
       // === RATE LIMITING (anti-spam Meta policy) ===
       // Daily cap por número WhatsApp: 250 envios/dia
       const DAILY_CAP = 250;
@@ -206,14 +234,14 @@ serve(async (req) => {
           };
 
           // Add components
-          const params = batch.template_params || {};
           const components: any[] = [];
 
           // Header image
           if (params.header_image_url) {
+            const image = headerMediaId ? { id: headerMediaId } : { link: params.header_image_url };
             components.push({
               type: "header",
-              parameters: [{ type: "image", image: { link: params.header_image_url } }],
+              parameters: [{ type: "image", image }],
             });
           }
 
@@ -299,6 +327,34 @@ serve(async (req) => {
             sentCount++;
           } else {
             const errMsg = waResult?.error?.message || "Unknown WhatsApp error";
+            const errCode = waResult?.error?.code ? String(waResult.error.code) : null;
+            const phoneLast8 = last8(phone);
+            if (phoneLast8 && (isMetaQualityBlockText(errMsg) || ["131049", "131050", "132015", "132016"].includes(errCode || ""))) {
+              const { data: existingSup } = await supabase
+                .from("meta_supressao")
+                .select("id, ocorrencias")
+                .eq("telefone_last8", phoneLast8)
+                .maybeSingle();
+              const suprimirAte = errCode === "131050" ? null : new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+              if (existingSup?.id) {
+                await supabase.from("meta_supressao").update({
+                  codigo: errCode,
+                  motivo: isMetaQualityBlockText(errMsg) ? "Falha de qualidade Meta" : errMsg,
+                  template_name: batch.template_name,
+                  suprimir_ate: suprimirAte,
+                  ocorrencias: (existingSup.ocorrencias || 1) + 1,
+                }).eq("id", existingSup.id);
+              } else {
+                await supabase.from("meta_supressao").insert({
+                  telefone: phone,
+                  telefone_last8: phoneLast8,
+                  codigo: errCode,
+                  motivo: isMetaQualityBlockText(errMsg) ? "Falha de qualidade Meta" : errMsg,
+                  template_name: batch.template_name,
+                  suprimir_ate: suprimirAte,
+                });
+              }
+            }
             await supabase
               .from("whatsapp_campaign_sends")
               .update({
