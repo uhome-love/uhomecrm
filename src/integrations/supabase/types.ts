@@ -4827,6 +4827,45 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_supressao: {
+        Row: {
+          codigo: string | null
+          created_at: string
+          id: string
+          motivo: string
+          ocorrencias: number
+          suprimir_ate: string | null
+          telefone: string
+          telefone_last8: string
+          template_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          codigo?: string | null
+          created_at?: string
+          id?: string
+          motivo: string
+          ocorrencias?: number
+          suprimir_ate?: string | null
+          telefone: string
+          telefone_last8: string
+          template_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          codigo?: string | null
+          created_at?: string
+          id?: string
+          motivo?: string
+          ocorrencias?: number
+          suprimir_ate?: string | null
+          telefone?: string
+          telefone_last8?: string
+          template_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       negocios: {
         Row: {
           auth_user_id: string | null
