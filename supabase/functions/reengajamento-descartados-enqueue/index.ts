@@ -293,6 +293,15 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ skipped: true, reason: "out_of_window" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if ((cfg as any).paused_until_release) {
+      return new Response(JSON.stringify({
+        skipped: true,
+        paused: true,
+        reason: "locked_quality_pause",
+        motivo: (cfg as any).paused_reason || "Pausa de qualidade ativa",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (force) {
       await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
     }
@@ -775,11 +784,10 @@ Deno.serve(async (req) => {
             });
 
             // 🛑 Auto-pause: se 5+ falhas consecutivas com sinais de bloqueio Meta (template pausado / qualidade)
-            if (isMetaQualityBlock(r.error || "")) {
+            if (isMetaQualityBlockText(r.error || "")) {
               consecutiveMetaQualityFails++;
               if (consecutiveMetaQualityFails >= 5) {
-                stopReason = `Auto-pausa: template "${metaTemplate}" provavelmente pausado pela Meta (${consecutiveMetaQualityFails} falhas consecutivas: "${(r.error || "").slice(0, 120)}"). Verifique o WhatsApp Manager.`;
-                await supabase.from("reengajamento_config").update({ paused: true, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+                stopReason = await pauseMetaForQuality(`Auto-pausa: template "${metaTemplate}" provavelmente pausado/limitado pela Meta (${consecutiveMetaQualityFails} falhas consecutivas: "${(r.error || "").slice(0, 120)}").`);
                 await insertEvento({
                   lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
                 });
@@ -809,12 +817,11 @@ Deno.serve(async (req) => {
           });
           sent++;
 
-          // Guarda de qualidade por taxa de entrega — checa a cada 25 envios
-          if (sent % 25 === 0) {
+          // Guarda de qualidade por taxa de entrega — checa cedo e entre continuações
+          if (sent % 5 === 0) {
             const qReason = await checkDeliveryQuality();
             if (qReason) {
-              stopReason = qReason;
-              await supabase.from("reengajamento_config").update({ paused: true, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+              stopReason = await pauseMetaForQuality(qReason);
               await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
               await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: qReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
               return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -881,10 +888,10 @@ Deno.serve(async (req) => {
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
 
         // Delays:
-        // - Meta: cadência mais humana (3-6s) para proteger qualidade do número
+        // - Meta: cadência conservadora (12-30s) para base fria e proteção anti-131049
         // - Evolution: 60-180s + pausa longa a cada N envios
         if (canal === "meta") {
-          if (await interruptibleDelay(3000 + Math.random() * 3000, shouldStopNow)) {
+          if (await interruptibleDelay(META_DELAY_MIN_MS + Math.random() * (META_DELAY_MAX_MS - META_DELAY_MIN_MS), shouldStopNow)) {
             const cancelled = stopReason === "Parado pelo usuário";
             return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
