@@ -388,7 +388,8 @@ Deno.serve(async (req) => {
         if (dedupMode === "exclude_sent") {
           q = q.is("reengajamento_enviado_at", null);
         } else if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
-          q = q.not("reengajamento_enviado_at", "is", null).lte("reengajamento_enviado_at", String(bodyAudience.dedup_cutoff));
+          const sentBeforeQuery = q.not("reengajamento_enviado_at", "is", null);
+          q = sentBeforeQuery.lte("reengajamento_enviado_at", String(bodyAudience.dedup_cutoff));
         } else if (dedupMode === "include_all") {
           // sem filtro
         } else if (cooldownDias > 0) {
@@ -916,7 +917,9 @@ Deno.serve(async (req) => {
             await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
             continue;
           }
-          const messageId = result?.key?.id || result?.messageId || crypto.randomUUID();
+          const resultObj = result && typeof result === "object" ? result as Record<string, unknown> : {};
+          const resultKey = resultObj.key && typeof resultObj.key === "object" ? resultObj.key as Record<string, unknown> : {};
+          const messageId = String(resultKey.id || resultObj.messageId || crypto.randomUUID());
           if (canTouchPipelineLead(lead)) {
             await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
             await supabase.from("whatsapp_mensagens").insert({
