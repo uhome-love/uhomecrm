@@ -653,7 +653,7 @@ Deno.serve(async (req) => {
                         mensagem: `${leadNome} respondeu SIM ao template "${tplName}" e está na Fila do CEO aguardando distribuição manual.`,
                         tipo: "lead_reengajado",
                         categoria: "leads",
-                        dados: { pipeline_lead_id: metaDispatch.lead_id, template: tplName, audience_source: audSrc, route: "fila_ceo" },
+                        dados: { pipeline_lead_id: effectiveLeadId, template: tplName, audience_source: audSrc, route: "fila_ceo" },
                       });
                     }
                   } catch (e) {
