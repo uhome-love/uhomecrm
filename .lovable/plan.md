@@ -1,31 +1,65 @@
-## Objetivo
+## Contexto
 
-Deixar o **VIVID TERRACE** pronto para entrar em campanha, roleta de leads e disparo Meta, classificado como **S5 - Produto Foco**.
+Disparos Meta começam bem e depois "falham tudo" (ex.: 265 enviados → 36 entregues → 2 cliques). A causa raiz tem **dois componentes**:
 
-Dados informados:
-- Código Jetimob: **58498-UH**
-- Campanha Meta: **4076**
-- Segmento: **S5 - Produto Foco**
+1. **Throttle da Meta (cód. 131049 — "healthy ecosystem engagement"):** 14.904 falhas. É *pacing dinâmico* por qualidade/frequência. Em base descartada (fria), o índice de não-lidos/bloqueios sobe, a qualidade do número cai e a Meta passa a **derrubar uma fração crescente** das mensagens — daí o efeito "cascata" de começar bem e degradar.
+2. **Bug nosso — "Media upload error":** 1.478 falhas. Enviamos a imagem do header como `link` a cada mensagem; quando o proxy `api.uhomesales.com` fica lento/retorna não-200, a Meta falha o envio.
 
-## Situação atual
+Como a base é descartada (fria) por natureza, não dá para "esquentar" a audiência — então a estratégia é **proteger a qualidade do número e parar de gastar disparo com números que já recusam**, além de eliminar o bug da imagem.
 
-- Não existe nenhum registro de "Vivid Terrace" (só existe um "Terrace" antigo no segmento S2 - Médio Padrão, que não será tocado).
-- A campanha 4076 ainda não está mapeada.
-- O segmento "S5 - Produto Foco" já existe na roleta (`id 5311aaaa-...-005`) — mesmo segmento usado hoje pelo Casa Tua.
+## O que será feito (pacote completo, priorizando entrega)
 
-## O que será feito (inserção de dados, sem mudança de estrutura)
+### 1. Eliminar "Media upload error" — usar media handle da Meta
+- Em vez de `image: { link: url }` a cada envio, subir a imagem **uma vez** via Resumable Upload API da Meta e reutilizar o `header_handle` em todos os envios do lote.
+- Implementação: helper que, no início do lote, verifica se já existe handle válido para a imagem; se não, faz upload e cacheia (na config do batch). Fallback para `link` só se o upload falhar.
+- Impacto esperado: zera os ~1.478 "Media upload error".
 
-1. **Mapeamento da campanha Meta** (`jetimob_campaign_map`):
-   - campaign_id `4076` → empreendimento "Vivid Terrace", segmento "Produto Foco", nota com o código do imóvel `58498-UH`.
-   - Isso garante que os leads vindos do disparo/anúncio Meta da campanha 4076 entrem identificados como Vivid Terrace.
+### 2. Lista de supressão automática por código de falha
+- Toda falha com código **131049, 131026 (undeliverable), opt-out e 131050 (experiment)** alimenta uma tabela `meta_supressao` (telefone normalizado + código + data).
+- Antes de cada lote, o dispatcher **exclui** números presentes na supressão (com janela: opt-out/undeliverable = permanente; 131049/experiment = cooldown de X dias).
+- Impacto: para de re-disparar para quem recusa, o que hoje afunda a qualidade a cada nova campanha.
 
-2. **Campanha da roleta** (`roleta_campanhas`):
-   - empreendimento "Vivid Terrace" → segmento_id `S5 - Produto Foco`, ativo = true.
-   - Esta é a fonte de verdade do segmento: garante que os leads sejam distribuídos no rodízio de Produto Foco.
+### 3. Proteção de qualidade — auto-pausa por taxa de entrega
+- O dispatcher passa a calcular a **taxa de entrega móvel** (entregues / enviados) dos últimos N envios via webhook de status.
+- Se a taxa cair abaixo de um limiar (ex.: <40% nas últimas 50 confirmações), **auto-pausa** o batch e registra o motivo, para a qualidade do número recuperar em vez de continuar queimando.
+- Banner/aviso no painel de Disparos quando pausado por qualidade.
 
-Com esses dois registros, a entrada de leads (roleta) e o disparo/captura Meta ficam apontando para o segmento correto. O empreendimento aparecerá automaticamente nos fluxos que leem essas tabelas.
+### 4. Cadência mais lenta + volume diário menor + ramp-up
+- Reduzir cap diário e aumentar o intervalo entre envios; iniciar cada campanha com volume menor e subir gradualmente (warm-up) para não dar pico que derruba qualidade.
+- Parâmetros configuráveis (sem hardcode espalhado).
 
-## Observação técnica
+### 5. Monitoramento de qualidade do número (WABA)
+- Edge function que consulta o **quality rating / messaging tier** do número via Graph API e expõe no painel; alerta quando sai de verde.
 
-- O nome do empreendimento será gravado idêntico ("Vivid Terrace") nas duas tabelas para que a resolução de segmento (que cruza `jetimob_campaign_map` → `roleta_campanhas` pelo nome) funcione.
-- `pipeline_segmentos` não possui um item "Produto Foco" (mesmo caso do Casa Tua hoje); o segmento operacional vem da `roleta_campanhas`, então nada precisa mudar lá. Caso você queira que "Produto Foco" também vire um segmento próprio no pipeline (em vez de cair como sem-segmento), posso incluir — me avise.
+## Detalhes técnicos
+
+```text
+whatsapp-campaign-dispatch (refatorado)
+  ├─ início do lote: garante header_handle (upload resumável 1x) ──► cache no batch
+  ├─ monta audiência ──► filtra contra public.meta_supressao
+  ├─ envia com cadência maior + cap diário menor + ramp-up
+  ├─ a cada envio: grava status; webhook atualiza delivered/failed
+  └─ guarda de qualidade: taxa entrega móvel < limiar → pausa batch
+
+whatsapp-webhook (status handler)
+  └─ em failed: classifica código → insere/atualiza meta_supressao
+
+nova tabela: public.meta_supressao
+  - telefone (normalizado), codigo, motivo, suprimir_ate (null = permanente)
+
+nova edge function: meta-number-quality
+  - lê quality rating / messaging limit tier do número
+```
+
+### Tabela `meta_supressao` (migração)
+- `telefone` (text, normalizado), `codigo` (text), `motivo` (text), `template_name` (text), `suprimir_ate` (timestamptz null), timestamps.
+- RLS: leitura admin/gestor; escrita via service_role (edge functions).
+
+## O que NÃO será feito
+- Priorização de base engajada (a base é descartada por definição).
+- Mudança de conteúdo/aprovação de template (fora do escopo técnico de entrega).
+
+## Validação
+- Disparo de teste pequeno após a correção da imagem para confirmar 0 "Media upload error".
+- Conferir que números suprimidos são pulados no lote seguinte.
+- Acompanhar taxa de entrega móvel e a auto-pausa em ação.
