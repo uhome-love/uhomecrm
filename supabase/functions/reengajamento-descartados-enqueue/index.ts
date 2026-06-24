@@ -14,6 +14,15 @@ const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 // Encadeia o próximo lote bem antes do limite de wall-clock da plataforma (~150s),
 // evitando que a função seja morta no meio e deixe o run travado em "running".
 const MAX_RUN_MS = 55_000;
+// Meta marketing em base fria: priorizar reputação/entrega, não velocidade.
+const META_DELAY_MIN_MS = 12_000;
+const META_DELAY_MAX_MS = 30_000;
+const META_GUARD_RECENT_MINUTES = 15;
+const META_GUARD_COOLDOWN_HOURS = 24;
+const META_GUARD_MIN_RESOLVED = 20;
+const META_GUARD_QUALITY_FAILS = 8;
+const META_GUARD_FAIL_RATIO = 0.35;
+const META_GUARD_HARD_FAIL_RATIO = 0.50;
 
 async function interruptibleDelay(ms: number, shouldStop: () => Promise<boolean>): Promise<boolean> {
   const deadline = Date.now() + ms;
@@ -53,6 +62,21 @@ function normalizePhone(raw: string): string | null {
   }
   if (p.length < 12 || p.length > 13) return null;
   return p;
+}
+
+function isMetaQualityBlockText(msg: string) {
+  const m = (msg || "").toLowerCase();
+  return m.includes("healthy ecosystem")
+    || m.includes("ecosystem engagement")
+    || m.includes("template is paused")
+    || m.includes("template paused")
+    || m.includes("template was paused")
+    || m.includes("part of an experiment")
+    || m.includes("131049")
+    || m.includes("131050")
+    || m.includes("132015")
+    || m.includes("132016")
+    || m.includes("quality rating");
 }
 
 function pickVariant(variants: string[], fallback: string, nome: string): string {
