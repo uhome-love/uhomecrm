@@ -244,6 +244,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       supabase.functions.invoke(fn, { body }).then(({ data, error }) => {
         if (error) toast.error("Erro: " + error.message);
         else if ((data as { reason?: string })?.reason === "no_leads") toast.info("Nenhum lead elegível");
+        else if (["meta_quality_cooldown", "locked_quality_pause"].includes(String((data as { reason?: string })?.reason || ""))) {
+          toast.error("⛔ Meta pausou por qualidade: " + String((data as { motivo?: string })?.motivo || "aguarde a recuperação antes de retomar"));
+        }
         onFired?.();
       });
       toast.success(`🚀 Disparo iniciado para ${preview.count} leads`);

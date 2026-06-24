@@ -14,6 +14,15 @@ const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 // Encadeia o próximo lote bem antes do limite de wall-clock da plataforma (~150s),
 // evitando que a função seja morta no meio e deixe o run travado em "running".
 const MAX_RUN_MS = 55_000;
+// Meta marketing em base fria: priorizar reputação/entrega, não velocidade.
+const META_DELAY_MIN_MS = 12_000;
+const META_DELAY_MAX_MS = 30_000;
+const META_GUARD_RECENT_MINUTES = 15;
+const META_GUARD_COOLDOWN_HOURS = 24;
+const META_GUARD_MIN_RESOLVED = 20;
+const META_GUARD_QUALITY_FAILS = 8;
+const META_GUARD_FAIL_RATIO = 0.35;
+const META_GUARD_HARD_FAIL_RATIO = 0.50;
 
 async function interruptibleDelay(ms: number, shouldStop: () => Promise<boolean>): Promise<boolean> {
   const deadline = Date.now() + ms;
@@ -53,6 +62,21 @@ function normalizePhone(raw: string): string | null {
   }
   if (p.length < 12 || p.length > 13) return null;
   return p;
+}
+
+function isMetaQualityBlockText(msg: string) {
+  const m = (msg || "").toLowerCase();
+  return m.includes("healthy ecosystem")
+    || m.includes("ecosystem engagement")
+    || m.includes("template is paused")
+    || m.includes("template paused")
+    || m.includes("template was paused")
+    || m.includes("part of an experiment")
+    || m.includes("131049")
+    || m.includes("131050")
+    || m.includes("132015")
+    || m.includes("132016")
+    || m.includes("quality rating");
 }
 
 function pickVariant(variants: string[], fallback: string, nome: string): string {
@@ -269,6 +293,15 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ skipped: true, reason: "out_of_window" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if ((cfg as any).paused_until_release) {
+      return new Response(JSON.stringify({
+        skipped: true,
+        paused: true,
+        reason: "locked_quality_pause",
+        motivo: (cfg as any).paused_reason || "Pausa de qualidade ativa",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (force) {
       await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
     }
@@ -336,7 +369,7 @@ Deno.serve(async (req) => {
         const cooldownDias = Math.max(0, Number(bodyAudience.cooldown_dias ?? 7));
         const cooldownCutoff = new Date(Date.now() - cooldownDias * 24 * 3600 * 1000).toISOString();
         const RESPONDEU_NAO = ["respondeu_nao", "respondeu_nao_wave2", "bloqueado", "telefone_invalido"];
-        let q = supabase
+        let q: any = supabase
           .from("pipeline_leads")
           .select("id, nome, telefone, reengajamento_enviado_at")
           .eq("stage_id", STAGE_DESCARTE_ID)
@@ -355,7 +388,8 @@ Deno.serve(async (req) => {
         if (dedupMode === "exclude_sent") {
           q = q.is("reengajamento_enviado_at", null);
         } else if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
-          q = q.not("reengajamento_enviado_at", "is", null).lte("reengajamento_enviado_at", String(bodyAudience.dedup_cutoff));
+          q = q.not("reengajamento_enviado_at", "is", null)
+               .filter("reengajamento_enviado_at", "lte", String(bodyAudience.dedup_cutoff));
         } else if (dedupMode === "include_all") {
           // sem filtro
         } else if (cooldownDias > 0) {
@@ -569,6 +603,18 @@ Deno.serve(async (req) => {
     let stopReason: string | null = null;
     let consecutiveMetaQualityFails = 0;
 
+    const pauseMetaForQuality = async (reason: string) => {
+      const reasonWithCooldown = `${reason} Retomada sugerida após ${META_GUARD_COOLDOWN_HOURS}h; a Meta recomenda aguardar pelo menos 24h para erro 131049.`;
+      await supabase.from("reengajamento_config").update({
+        paused: true,
+        paused_until_release: true,
+        paused_reason: reasonWithCooldown.slice(0, 500),
+        paused_at_brt: nowBRT().toISOString().replace("Z", ""),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", cfg.id);
+      return reasonWithCooldown;
+    };
+
     const shouldStopNow = async () => {
       const [{ data: runState }, { data: liveCfg }] = await Promise.all([
         supabase.from("reengajamento_dispatch_runs").select("cancel_requested").eq("id", runId).maybeSingle(),
@@ -592,44 +638,57 @@ Deno.serve(async (req) => {
       return false;
     };
 
-    const isMetaQualityBlock = (msg: string) => {
-      const m = (msg || "").toLowerCase();
-      return m.includes("ecosystem engagement")
-        || m.includes("template is paused")
-        || m.includes("template paused")
-        || m.includes("template was paused")
-        || m.includes("part of an experiment")
-        || m.includes("(#131049)")
-        || m.includes("(#131050)")
-        || m.includes("quality rating");
-    };
-
-    // 🛑 Guarda de qualidade por TAXA DE ENTREGA (via webhook).
+    // 🛑 Guarda de qualidade por TAXA DE ENTREGA (via webhook), GLOBAL entre continuações.
     // O erro 131049 ("healthy ecosystem engagement") chega DEPOIS do envio (status sent ok),
     // então só dá pra detectá-lo olhando delivered/read x failed reportados pelo webhook.
-    // Se a taxa de falha recente estourar o limite, pausa para a qualidade do número recuperar.
-    const DELIVERY_GUARD_MIN_SAMPLE = 40;   // mínimo de mensagens já resolvidas pelo webhook
-    const DELIVERY_GUARD_FAIL_RATIO = 0.6;  // >60% de falha = pausa
+    // Se o bloco começar, pausa cedo para não transformar 30 falhas em 300+ falhas.
     const checkDeliveryQuality = async (): Promise<string | null> => {
-      const since = new Date(Date.now() - 45 * 60 * 1000).toISOString(); // últimos 45min
-      const base = supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true })
-        .eq("template_name", metaTemplate).gte("created_at", since);
-      const [failedRes, deliveredRes, readRes, respRes] = await Promise.all([
-        base.eq("status", "failed"),
+      if (canal !== "meta" || !metaTemplate) return null;
+      const since = new Date(Date.now() - META_GUARD_RECENT_MINUTES * 60 * 1000).toISOString();
+      const [failedRes, deliveredRes, readRes, respRes, qualityFailRes] = await Promise.all([
+        supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "failed"),
         supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "delivered"),
         supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "read"),
         supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "responded"),
+        supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "failed").or("error_text.ilike.%131049%,error_text.ilike.%healthy ecosystem%,error_text.ilike.%131050%,error_text.ilike.%132015%,error_text.ilike.%132016%"),
       ]);
       const failedN = failedRes.count || 0;
+      const qualityFailN = qualityFailRes.count || 0;
       const okN = (deliveredRes.count || 0) + (readRes.count || 0) + (respRes.count || 0);
       const resolved = failedN + okN;
-      if (resolved < DELIVERY_GUARD_MIN_SAMPLE) return null;
+      if (resolved < META_GUARD_MIN_RESOLVED) return null;
       const ratio = failedN / resolved;
-      if (ratio >= DELIVERY_GUARD_FAIL_RATIO) {
-        return `Auto-pausa por qualidade: taxa de falha de entrega em ${(ratio * 100).toFixed(0)}% (${failedN} falhas / ${resolved} resolvidas) no template "${metaTemplate}" nos últimos 45min. A Meta está derrubando as mensagens (131049). Pausado para proteger a reputação do número.`;
+      if ((qualityFailN >= META_GUARD_QUALITY_FAILS && ratio >= META_GUARD_FAIL_RATIO) || ratio >= META_GUARD_HARD_FAIL_RATIO) {
+        return `Auto-pausa por qualidade: ${(ratio * 100).toFixed(0)}% de falha recente (${failedN} falhas / ${resolved} resolvidas, ${qualityFailN} bloqueios Meta) no template "${metaTemplate}" nos últimos ${META_GUARD_RECENT_MINUTES}min. A Meta iniciou pacing/limite 131049; continuar agora queimaria a reputação do número.`;
       }
       return null;
     };
+
+    const checkMetaCooldown = async (): Promise<string | null> => {
+      if (canal !== "meta" || !metaTemplate) return null;
+      const since = new Date(Date.now() - META_GUARD_COOLDOWN_HOURS * 3600 * 1000).toISOString();
+      const { count: qualityFails } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("id", { count: "exact", head: true })
+        .eq("template_name", metaTemplate)
+        .gte("created_at", since)
+        .eq("status", "failed")
+        .or("error_text.ilike.%131049%,error_text.ilike.%healthy ecosystem%");
+      if ((qualityFails || 0) >= META_GUARD_QUALITY_FAILS) {
+        return `Auto-pausa preventiva: o template "${metaTemplate}" teve ${qualityFails} bloqueios 131049 nas últimas ${META_GUARD_COOLDOWN_HOURS}h. A Meta recomenda aguardar pelo menos 24h antes de tentar novamente; continuar agora tende a falhar e piorar a reputação do número.`;
+      }
+      return null;
+    };
+
+    if (canal === "meta") {
+      const preflightQualityReason = (await checkMetaCooldown()) || (await checkDeliveryQuality());
+      if (preflightQualityReason) {
+        const reason = await pauseMetaForQuality(preflightQualityReason);
+        return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_cooldown", motivo: reason, canal }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     // Patches por onda (helpers)
     const sentStatus = wave === 2 ? "enviado_wave2" : "enviado";
@@ -705,6 +764,25 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Guarda WABA histórica: opt-out, descarte definitivo e bombardeio por telefone/template.
+      if (canal === "meta") {
+        const { data: allowedData, error: allowedErr } = await supabase.rpc("check_send_allowed" as any, {
+          p_lead_id: lead.ref === "pipeline_lead" ? lead.id : null,
+          p_phone: phone,
+          p_template: metaTemplate,
+        });
+        const allowed = (allowedData as any)?.allowed !== false;
+        if (!allowedErr && !allowed) {
+          const reason = String((allowedData as any)?.reason || "Bloqueado por guarda WABA");
+          await insertEvento({
+            lead_id: lead.id, run_id: runId, tipo: "ignorado_guard_waba", detalhe: reason.slice(0, 500),
+          });
+          skipped++;
+          await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
+          continue;
+        }
+      }
+
       // Validação prévia (só Evolution)
       if (canal === "evolution" && cfg.validar_numero) {
         const exists = await validateNumberEvolution(evoUrl, evoKey, cfg.evolution_instance, phone);
@@ -736,16 +814,43 @@ Deno.serve(async (req) => {
             failed++;
             const errMsg = `${lead.nome}: ${r.error}`;
             errs.push(errMsg);
+            if (isMetaQualityBlockText(r.error || "")) {
+              const last8 = phone.slice(-8);
+              const code = (r.error || "").match(/13\d{4}/)?.[0] || null;
+              const suprimirAte = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+              const { data: existingSup } = await supabase
+                .from("meta_supressao")
+                .select("id, ocorrencias")
+                .eq("telefone_last8", last8)
+                .maybeSingle();
+              if (existingSup?.id) {
+                await supabase.from("meta_supressao").update({
+                  codigo: code,
+                  motivo: "Falha síncrona de qualidade Meta",
+                  template_name: metaTemplate,
+                  suprimir_ate: suprimirAte,
+                  ocorrencias: (existingSup.ocorrencias || 1) + 1,
+                }).eq("id", existingSup.id);
+              } else {
+                await supabase.from("meta_supressao").insert({
+                  telefone: phone,
+                  telefone_last8: last8,
+                  codigo: code,
+                  motivo: "Falha síncrona de qualidade Meta",
+                  template_name: metaTemplate,
+                  suprimir_ate: suprimirAte,
+                });
+              }
+            }
             await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
 
             // 🛑 Auto-pause: se 5+ falhas consecutivas com sinais de bloqueio Meta (template pausado / qualidade)
-            if (isMetaQualityBlock(r.error || "")) {
+            if (isMetaQualityBlockText(r.error || "")) {
               consecutiveMetaQualityFails++;
               if (consecutiveMetaQualityFails >= 5) {
-                stopReason = `Auto-pausa: template "${metaTemplate}" provavelmente pausado pela Meta (${consecutiveMetaQualityFails} falhas consecutivas: "${(r.error || "").slice(0, 120)}"). Verifique o WhatsApp Manager.`;
-                await supabase.from("reengajamento_config").update({ paused: true, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+                stopReason = await pauseMetaForQuality(`Auto-pausa: template "${metaTemplate}" provavelmente pausado/limitado pela Meta (${consecutiveMetaQualityFails} falhas consecutivas: "${(r.error || "").slice(0, 120)}").`);
                 await insertEvento({
                   lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
                 });
@@ -775,14 +880,13 @@ Deno.serve(async (req) => {
           });
           sent++;
 
-          // Guarda de qualidade por taxa de entrega — checa a cada 25 envios
-          if (sent % 25 === 0) {
+          // Guarda de qualidade por taxa de entrega — checa cedo e entre continuações
+          if (sent % 5 === 0) {
             const qReason = await checkDeliveryQuality();
             if (qReason) {
-              stopReason = qReason;
-              await supabase.from("reengajamento_config").update({ paused: true, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+              stopReason = await pauseMetaForQuality(qReason);
               await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
-              await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: qReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+              await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
               return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }
           }
@@ -829,7 +933,9 @@ Deno.serve(async (req) => {
             await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
             continue;
           }
-          const messageId = result?.key?.id || result?.messageId || crypto.randomUUID();
+          const resultObj = result && typeof result === "object" ? result as Record<string, unknown> : {};
+          const resultKey = resultObj.key && typeof resultObj.key === "object" ? resultObj.key as Record<string, unknown> : {};
+          const messageId = String(resultKey.id || resultObj.messageId || crypto.randomUUID());
           if (canTouchPipelineLead(lead)) {
             await supabase.from("pipeline_leads").update(markSentPatch()).eq("id", lead.id);
             await supabase.from("whatsapp_mensagens").insert({
@@ -847,10 +953,10 @@ Deno.serve(async (req) => {
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
 
         // Delays:
-        // - Meta: cadência mais humana (3-6s) para proteger qualidade do número
+        // - Meta: cadência conservadora (12-30s) para base fria e proteção anti-131049
         // - Evolution: 60-180s + pausa longa a cada N envios
         if (canal === "meta") {
-          if (await interruptibleDelay(3000 + Math.random() * 3000, shouldStopNow)) {
+          if (await interruptibleDelay(META_DELAY_MIN_MS + Math.random() * (META_DELAY_MAX_MS - META_DELAY_MIN_MS), shouldStopNow)) {
             const cancelled = stopReason === "Parado pelo usuário";
             return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }

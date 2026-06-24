@@ -8,6 +8,54 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const META_GUARD_COOLDOWN_HOURS = 24;
+const META_GUARD_QUALITY_FAILS = 8;
+
+async function uploadMetaMediaFromUrl(phoneNumberId: string, accessToken: string, imageUrl: string): Promise<string | null> {
+  try {
+    const imgResp = await fetch(imageUrl);
+    if (!imgResp.ok) return null;
+    const contentType = imgResp.headers.get("content-type") || "image/jpeg";
+    const bytes = new Uint8Array(await imgResp.arrayBuffer());
+    const form = new FormData();
+    form.append("messaging_product", "whatsapp");
+    form.append("file", new Blob([bytes], { type: contentType }), `header.${contentType.includes("png") ? "png" : "jpg"}`);
+    const up = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form,
+    });
+    const data = await up.json().catch(() => ({}));
+    if (!up.ok) {
+      console.error("uploadMetaMediaFromUrl failed:", JSON.stringify(data).slice(0, 300));
+      return null;
+    }
+    return data?.id || null;
+  } catch (e) {
+    console.error("uploadMetaMediaFromUrl error:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
+function isMetaQualityBlockText(msg: string) {
+  const m = (msg || "").toLowerCase();
+  return m.includes("healthy ecosystem")
+    || m.includes("ecosystem engagement")
+    || m.includes("template paused")
+    || m.includes("template is paused")
+    || m.includes("part of an experiment")
+    || m.includes("131049")
+    || m.includes("131050")
+    || m.includes("132015")
+    || m.includes("132016")
+    || m.includes("quality rating");
+}
+
+function last8(raw: string | null | undefined) {
+  const d = String(raw || "").replace(/\D/g, "");
+  return d.length >= 8 ? d.slice(-8) : d;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -55,6 +103,34 @@ serve(async (req) => {
         return new Response(JSON.stringify({ stopped: true, reason: batch.status }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      const params = batch.template_params || {};
+
+      // Preflight anti-cascata: se a Meta já bloqueou este template nas últimas 24h,
+      // não tenta insistir — erro 131049 tende a repetir e piorar a reputação do número.
+      const sinceCooldown = new Date(Date.now() - META_GUARD_COOLDOWN_HOURS * 3600 * 1000).toISOString();
+      const { count: recentQualityFails } = await supabase
+        .from("whatsapp_campaign_sends")
+        .select("id", { count: "exact", head: true })
+        .eq("batch_id", batch_id)
+        .gte("created_at", sinceCooldown)
+        .eq("status_envio", "failed")
+        .or("error_message.ilike.%131049%,error_message.ilike.%healthy ecosystem%,error_message.ilike.%132015%,error_message.ilike.%132016%");
+      if ((recentQualityFails || 0) >= META_GUARD_QUALITY_FAILS) {
+        const reason = `Auto-pausa Meta: ${recentQualityFails} bloqueios de qualidade/131049 nas últimas 24h. Aguardando recuperação da reputação do número antes de continuar.`;
+        await supabase
+          .from("whatsapp_campaign_batches")
+          .update({ status: "paused", error_message: reason, updated_at: new Date().toISOString() })
+          .eq("id", batch_id);
+        return new Response(JSON.stringify({ paused: true, reason: "meta_quality_cooldown", motivo: reason }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let headerMediaId: string | null = null;
+      if (params.header_image_url) {
+        headerMediaId = await uploadMetaMediaFromUrl(PHONE_NUMBER_ID, WHATSAPP_TOKEN, String(params.header_image_url));
       }
 
       // === RATE LIMITING (anti-spam Meta policy) ===
@@ -145,6 +221,37 @@ serve(async (req) => {
             continue;
           }
 
+          const phoneLast8 = last8(phone);
+          if (phoneLast8) {
+            const nowIso = new Date().toISOString();
+            const { data: supressed } = await supabase
+              .from("meta_supressao")
+              .select("motivo")
+              .eq("telefone_last8", phoneLast8)
+              .or(`suprimir_ate.is.null,suprimir_ate.gt.${nowIso}`)
+              .maybeSingle();
+            if (supressed) {
+              await supabase
+                .from("whatsapp_campaign_sends")
+                .update({ status_envio: "skipped", error_message: `Suprimido Meta: ${supressed.motivo || "bloqueio ativo"}` })
+                .eq("id", send.id);
+              continue;
+            }
+          }
+
+          const { data: allowedData, error: allowedErr } = await supabase.rpc("check_send_allowed" as any, {
+            p_lead_id: send.pipeline_lead_id || null,
+            p_phone: phone,
+            p_template: batch.template_name,
+          });
+          if (!allowedErr && (allowedData as any)?.allowed === false) {
+            await supabase
+              .from("whatsapp_campaign_sends")
+              .update({ status_envio: "skipped", error_message: `Guarda WABA: ${(allowedData as any)?.reason || "bloqueio ativo"}` })
+              .eq("id", send.id);
+            continue;
+          }
+
           // Build template body
           const templateBody: any = {
             messaging_product: "whatsapp",
@@ -158,14 +265,14 @@ serve(async (req) => {
           };
 
           // Add components
-          const params = batch.template_params || {};
           const components: any[] = [];
 
           // Header image
           if (params.header_image_url) {
+            const image = headerMediaId ? { id: headerMediaId } : { link: params.header_image_url };
             components.push({
               type: "header",
-              parameters: [{ type: "image", image: { link: params.header_image_url } }],
+              parameters: [{ type: "image", image }],
             });
           }
 
@@ -251,6 +358,33 @@ serve(async (req) => {
             sentCount++;
           } else {
             const errMsg = waResult?.error?.message || "Unknown WhatsApp error";
+            const errCode = waResult?.error?.code ? String(waResult.error.code) : null;
+            if (phoneLast8 && (isMetaQualityBlockText(errMsg) || ["131049", "131050", "132015", "132016"].includes(errCode || ""))) {
+              const { data: existingSup } = await supabase
+                .from("meta_supressao")
+                .select("id, ocorrencias")
+                .eq("telefone_last8", phoneLast8)
+                .maybeSingle();
+              const suprimirAte = errCode === "131050" ? null : new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+              if (existingSup?.id) {
+                await supabase.from("meta_supressao").update({
+                  codigo: errCode,
+                  motivo: isMetaQualityBlockText(errMsg) ? "Falha de qualidade Meta" : errMsg,
+                  template_name: batch.template_name,
+                  suprimir_ate: suprimirAte,
+                  ocorrencias: (existingSup.ocorrencias || 1) + 1,
+                }).eq("id", existingSup.id);
+              } else {
+                await supabase.from("meta_supressao").insert({
+                  telefone: phone,
+                  telefone_last8: phoneLast8,
+                  codigo: errCode,
+                  motivo: isMetaQualityBlockText(errMsg) ? "Falha de qualidade Meta" : errMsg,
+                  template_name: batch.template_name,
+                  suprimir_ate: suprimirAte,
+                });
+              }
+            }
             await supabase
               .from("whatsapp_campaign_sends")
               .update({
