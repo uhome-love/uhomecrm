@@ -727,19 +727,60 @@ Deno.serve(async (req) => {
 
     totalAlvo = leads.length;
 
-
-    const { data: runRow } = await supabase
-      .from("reengajamento_dispatch_runs")
-      .insert({
+    if (bodyRunId) {
+      runId = bodyRunId;
+      await updateRun({
         status: "running",
-        total_alvo: totalAlvo,
-        iniciado_por: iniciadoPor,
-        audience_source: isCustomAudience ? audSource : null,
-        audience_payload: isCustomAudience ? bodyAudience : null,
-      } as any)
-      .select("id")
-      .single();
-    runId = runRow?.id ?? null;
+        finished_at: null,
+        motivo_parada: "Retomando fila pendente em micro-lotes",
+        cancel_requested: false,
+      } as any);
+    } else {
+      const { data: runRow } = await supabase
+        .from("reengajamento_dispatch_runs")
+        .insert({
+          status: "running",
+          total_alvo: totalAlvo,
+          iniciado_por: iniciadoPor,
+          audience_source: isCustomAudience ? audSource : null,
+          audience_payload: isCustomAudience ? bodyAudience : null,
+        } as any)
+        .select("id")
+        .single();
+      runId = runRow?.id ?? null;
+
+      if (runId && totalAlvo > 0) {
+        const queueRows = leads
+          .map((lead) => {
+            const phone = normalizePhone(lead.telefone || "");
+            const last8 = last8Of(phone || lead.telefone);
+            if (!last8) return null;
+            return {
+              run_id: runId,
+              lead_id: lead.id,
+              lead_ref: lead.ref,
+              nome: lead.nome,
+              telefone: lead.telefone,
+              email: lead.email || null,
+              phone_normalized: phone,
+              phone_last8: last8,
+              template_name: canal === "meta" ? metaTemplate : null,
+              template_language: canal === "meta" ? metaLang : null,
+              audience_source: audienceSourceCanonical,
+              status: phone ? "pending" : "skipped",
+              error_text: phone ? null : "telefone inválido",
+              processed_at: phone ? null : new Date().toISOString(),
+            };
+          })
+          .filter(Boolean);
+        for (let i = 0; i < queueRows.length; i += 500) {
+          const { error: queueErr } = await supabase
+            .from("reengajamento_dispatch_queue")
+            .insert(queueRows.slice(i, i + 500) as any);
+          if (queueErr) throw queueErr;
+        }
+      }
+    }
 
     const exclusoes = { suprimidos: supressosRemovidos, pipeline_ativo: pipelineAtivosRemovidos, frequencia: frequenciaRemovidos };
     if (totalAlvo === 0) {
