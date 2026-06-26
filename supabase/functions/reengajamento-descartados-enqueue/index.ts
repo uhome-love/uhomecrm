@@ -1071,6 +1071,13 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (Date.now() - startedAt > MAX_RUN_MS) {
+        if (usingPersistentQueue) {
+          await releaseProcessingQueue();
+          const restantes = Math.max(0, totalAlvo - sent - failed - skipped);
+          stopReason = `Micro-lote concluído (${sent}/${totalAlvo}). Retomando automaticamente os ${restantes} pendentes da fila...`;
+          await scheduleQueueContinuation(stopReason);
+          return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "queue_batch_continued", canal, continuation: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         // Encadeia automaticamente um próximo run para continuar de onde parou
         // (a query já exclui leads com reengajamento_enviado_at preenchido).
         const restantes = totalAlvo - sent - failed - skipped;
