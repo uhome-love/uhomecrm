@@ -1022,8 +1022,51 @@ Deno.serve(async (req) => {
       } as any);
     };
 
+    const updateQueueItem = async (lead: { queue_id?: string }, status: string, errorText?: string | null) => {
+      if (!lead.queue_id) return;
+      await supabase
+        .from("reengajamento_dispatch_queue")
+        .update({
+          status,
+          error_text: errorText ? String(errorText).slice(0, 500) : null,
+          processed_at: new Date().toISOString(),
+          locked_at: null,
+        } as any)
+        .eq("id", lead.queue_id);
+    };
+
+    const releaseProcessingQueue = async () => {
+      if (!runId) return;
+      await supabase
+        .from("reengajamento_dispatch_queue")
+        .update({ status: "pending", locked_at: null } as any)
+        .eq("run_id", runId)
+        .eq("status", "processing");
+    };
+
+    const scheduleQueueContinuation = async (motivo: string) => {
+      if (!runId) return false;
+      await updateRun({ status: "running", finished_at: null, motivo_parada: motivo, enviados: sent, falhas: failed, ignorados: skipped } as any);
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const continuation = fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ force: true, run_id: runId }),
+        }).catch((err) => console.error("Falha ao retomar fila persistente:", err));
+        const edgeRuntime = (globalThis as any).EdgeRuntime;
+        if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(continuation);
+        return true;
+      } catch (chainErr) {
+        console.error("Erro ao agendar continuação da fila:", chainErr);
+        return false;
+      }
+    };
+
     for (const lead of leads || []) {
       if (await shouldStopNow()) {
+        await releaseProcessingQueue();
         const cancelled = stopReason === "Parado pelo usuário";
         return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
