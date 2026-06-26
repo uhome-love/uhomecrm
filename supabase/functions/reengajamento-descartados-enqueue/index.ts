@@ -1255,11 +1255,15 @@ Deno.serve(async (req) => {
           if (sent % 5 === 0) {
             const qReason = await checkDeliveryQuality();
             if (qReason) {
-              stopReason = await pauseMetaForQuality(qReason);
-              await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
-              await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
-              await releaseProcessingQueue();
-              return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              await insertEvento({ lead_id: lead.id, run_id: runId, tipo: usingPersistentQueue ? "modo_lento_meta" : "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
+              if (usingPersistentQueue) {
+                await updateRun({ status: "running", motivo_parada: `Modo lento por qualidade Meta: ${qReason}`.slice(0, 500), enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) } as any);
+              } else {
+                stopReason = await pauseMetaForQuality(qReason);
+                await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+                await releaseProcessingQueue();
+                return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              }
             }
           }
         } else {
