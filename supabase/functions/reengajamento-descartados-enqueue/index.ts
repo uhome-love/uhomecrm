@@ -424,8 +424,12 @@ Deno.serve(async (req) => {
       : (isCustomAudience && Number(bodyAudience?.limit) > 0 ? Number(bodyAudience.limit) : cfg.daily_limit);
 
     let leads: Array<{ id: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" }> = [];
+    let supressosRemovidos = 0;
+    let pipelineAtivosRemovidos = 0;
+    let frequenciaRemovidos = 0;
+    let totalAlvo = 0;
 
-    if (isCustomAudience) {
+    if (!bodyRunId && isCustomAudience) {
       const dedupMode = String(bodyAudience.dedup_mode || "exclude_sent");
       const dedupLookbackDays = Math.max(1, Number(bodyAudience.dedup_lookback_days || 30));
       const dedupSince = new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString();
@@ -586,7 +590,7 @@ Deno.serve(async (req) => {
         }
         leads = merged;
       }
-    } else {
+    } else if (!bodyRunId) {
       // === Fluxo legado: descartados reengajáveis ===
       let leadsQuery = supabase
         .from("pipeline_leads")
@@ -623,8 +627,7 @@ Deno.serve(async (req) => {
 
     // ── Supressão automática (só Meta): remove números que já falharam por
     // bloqueio de qualidade / opt-out / indisponível, evitando queimar a reputação do número.
-    let supressosRemovidos = 0;
-    if (canal === "meta" && leads.length > 0) {
+    if (!bodyRunId && canal === "meta" && leads.length > 0) {
       const nowIso = new Date().toISOString();
       const supressSet = new Set<string>();
       let from = 0;
@@ -659,12 +662,7 @@ Deno.serve(async (req) => {
     // ── GUARDA DE EXCLUSIVIDADE DO PIPELINE (crítico, todos os canais) ──
     // Nunca dispara para quem é lead ATIVO no pipeline (telefone OU e-mail).
     // Checagem em tempo de disparo: cobre quem virou lead ativo depois de entrar na lista.
-    let pipelineAtivosRemovidos = 0;
-    const last8Of = (raw: string | null | undefined): string => {
-      const d = (raw || "").replace(/\D/g, "");
-      return d.length >= 8 ? d.slice(-8) : d;
-    };
-    if (leads.length > 0) {
+    if (!bodyRunId && leads.length > 0) {
       const phoneSet = new Set<string>();
       const emailSet = new Set<string>();
       let pf = 0;
@@ -700,9 +698,8 @@ Deno.serve(async (req) => {
 
     // ── GOVERNADOR DE FREQUÊNCIA POR DESTINATÁRIO (anti-131049) ──
     // Pula quem recebeu QUALQUER marketing (reengajamento + campanhas) nos últimos N dias.
-    let frequenciaRemovidos = 0;
     const freqCooldownDias = Math.max(0, Number((cfg as any).freq_cooldown_dias ?? 14));
-    if (canal === "meta" && freqCooldownDias > 0 && leads.length > 0) {
+    if (!bodyRunId && canal === "meta" && freqCooldownDias > 0 && leads.length > 0) {
       const freqCutoff = new Date(Date.now() - freqCooldownDias * 24 * 3600 * 1000).toISOString();
       const recentSet = new Set<string>();
       let ff = 0;
@@ -728,7 +725,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const totalAlvo = leads.length;
+    totalAlvo = leads.length;
 
 
     const { data: runRow } = await supabase
