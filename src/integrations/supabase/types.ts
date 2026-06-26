@@ -7868,6 +7868,83 @@ export type Database = {
         }
         Relationships: []
       }
+      reengajamento_dispatch_queue: {
+        Row: {
+          attempts: number
+          audience_source: string | null
+          created_at: string
+          email: string | null
+          error_text: string | null
+          id: string
+          lead_id: string | null
+          lead_ref: string
+          locked_at: string | null
+          nome: string | null
+          phone_last8: string
+          phone_normalized: string | null
+          processed_at: string | null
+          run_id: string
+          status: string
+          telefone: string | null
+          template_language: string | null
+          template_name: string | null
+          updated_at: string
+          wamid: string | null
+        }
+        Insert: {
+          attempts?: number
+          audience_source?: string | null
+          created_at?: string
+          email?: string | null
+          error_text?: string | null
+          id?: string
+          lead_id?: string | null
+          lead_ref: string
+          locked_at?: string | null
+          nome?: string | null
+          phone_last8: string
+          phone_normalized?: string | null
+          processed_at?: string | null
+          run_id: string
+          status?: string
+          telefone?: string | null
+          template_language?: string | null
+          template_name?: string | null
+          updated_at?: string
+          wamid?: string | null
+        }
+        Update: {
+          attempts?: number
+          audience_source?: string | null
+          created_at?: string
+          email?: string | null
+          error_text?: string | null
+          id?: string
+          lead_id?: string | null
+          lead_ref?: string
+          locked_at?: string | null
+          nome?: string | null
+          phone_last8?: string
+          phone_normalized?: string | null
+          processed_at?: string | null
+          run_id?: string
+          status?: string
+          telefone?: string | null
+          template_language?: string | null
+          template_name?: string | null
+          updated_at?: string
+          wamid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reengajamento_dispatch_queue_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "reengajamento_dispatch_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reengajamento_dispatch_runs: {
         Row: {
           audience_payload: Json | null

@@ -18,6 +18,43 @@ import CentralInteligenciaPanel from "./CentralInteligenciaPanel";
 
 const STALE_RUNNING_MS = 15 * 60 * 1000;
 
+async function recoverOrTimeoutStaleRun(data: any, qc: ReturnType<typeof useQueryClient>) {
+  const { count } = await supabase
+    .from("reengajamento_dispatch_queue" as any)
+    .select("id", { count: "exact", head: true })
+    .eq("run_id", data.id)
+    .in("status", ["pending", "processing"]);
+
+  if ((count || 0) > 0) {
+    await supabase
+      .from("reengajamento_dispatch_runs" as any)
+      .update({
+        started_at: new Date().toISOString(),
+        finished_at: null,
+        status: "running",
+        motivo_parada: `Fila persistente ativa: ${(count || 0)} pendentes. Retomada automática acionada.`,
+      })
+      .eq("id", data.id);
+
+    supabase.functions.invoke("reengajamento-descartados-enqueue", {
+      body: { force: true, run_id: data.id, iniciado_por: "auto_resume_ui" },
+    });
+
+    return data;
+  }
+
+  await supabase
+    .from("reengajamento_dispatch_runs" as any)
+    .update({
+      status: "timeout",
+      finished_at: new Date().toISOString(),
+      motivo_parada: "Encerrado automaticamente: execução antiga ficou travada sem fila pendente",
+    })
+    .eq("id", data.id);
+  qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
+  return null;
+}
+
 export default function ReengajamentoTab() {
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
@@ -48,16 +85,7 @@ export default function ReengajamentoTab() {
         .limit(1)
         .maybeSingle();
       if (data?.started_at && Date.now() - new Date(data.started_at).getTime() > STALE_RUNNING_MS) {
-        await supabase
-          .from("reengajamento_dispatch_runs" as any)
-          .update({
-            status: "timeout",
-            finished_at: new Date().toISOString(),
-            motivo_parada: "Encerrado automaticamente: execução antiga ficou travada sem resposta da função",
-          })
-          .eq("id", data.id);
-        qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
-        return null;
+        return recoverOrTimeoutStaleRun(data, qc);
       }
       return data as any;
     },

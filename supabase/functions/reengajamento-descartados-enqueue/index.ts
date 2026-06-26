@@ -24,6 +24,9 @@ const META_GUARD_MIN_RESOLVED = 20;
 const META_GUARD_QUALITY_FAILS = 8;
 const META_GUARD_FAIL_RATIO = 0.35;
 const META_GUARD_HARD_FAIL_RATIO = 0.50;
+const META_QUEUE_BATCH_SIZE = 3;
+const EVOLUTION_QUEUE_BATCH_SIZE = 5;
+const QUEUE_STALE_MINUTES = 6;
 
 async function interruptibleDelay(ms: number, shouldStop: () => Promise<boolean>): Promise<boolean> {
   const deadline = Date.now() + ms;
@@ -68,6 +71,11 @@ function normalizePhone(raw: string): string | null {
 function normalizeInitiator(raw: string): string {
   const value = String(raw || "manual_custom").replace(/(_continuacao)+$/g, "");
   return value.length > 80 ? value.slice(0, 80) : value;
+}
+
+function last8Of(raw: string | null | undefined): string {
+  const d = (raw || "").replace(/\D/g, "");
+  return d.length >= 8 ? d.slice(-8) : d;
 }
 
 function isMetaQualityBlockText(msg: string) {
@@ -238,6 +246,7 @@ Deno.serve(async (req) => {
   let bodyIncludeArchived = false;
   let bodyDailyLimitOverride: number | null = null;
   let bodyAudience: any = null;
+  let bodyRunId: string | null = null;
   try {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
@@ -251,29 +260,39 @@ Deno.serve(async (req) => {
       bodyIncludeArchived = !!(b as any)?.include_archived;
       if ((b as any)?.daily_limit_override) bodyDailyLimitOverride = Number((b as any).daily_limit_override);
       if ((b as any)?.audience && typeof (b as any).audience === "object") bodyAudience = (b as any).audience;
+      if ((b as any)?.run_id) bodyRunId = String((b as any).run_id);
     }
   } catch { /* ignore */ }
 
   // Fontes: aceita `sources: string[]` (combinado) ou `source` único (compat).
-  const sourcesArr: string[] = (Array.isArray(bodyAudience?.sources) && bodyAudience.sources.length)
-    ? bodyAudience.sources.map(String)
-    : (bodyAudience?.source ? [String(bodyAudience.source)] : []);
-  const isCustomAudience = sourcesArr.length > 0;
-  const isCombined = sourcesArr.length > 1;
-  const primarySource = sourcesArr[0] || "";
   const singleSourceKey = (src: string): string =>
     src === "descartados"
       ? `descartados:${bodyAudience.tipo_descarte || "reengajavel"}`
       : src === "oferta_ativa_lista"
         ? `oferta_ativa:${(((bodyAudience.lista_ids && bodyAudience.lista_ids.length) ? bodyAudience.lista_ids : (bodyAudience.lista_id ? [bodyAudience.lista_id] : [])) as string[]).slice().sort().join(",") || "?"}`
         : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`;
-  const audSource: string = isCustomAudience
-    ? (isCombined ? `combo:${sourcesArr.slice().sort().join("+")}` : singleSourceKey(primarySource))
-    : "";
-  // Canonical source for routing on reply (column audience_source in reengajamento_meta_disparos)
-  const audienceSourceCanonical: string = isCustomAudience
-    ? (isCombined ? "combo" : primarySource)
-    : "legacy";
+  let sourcesArr: string[] = [];
+  let isCustomAudience = false;
+  let isCombined = false;
+  let primarySource = "";
+  let audSource = "";
+  let audienceSourceCanonical = "legacy";
+  const refreshAudienceContext = () => {
+    sourcesArr = (Array.isArray(bodyAudience?.sources) && bodyAudience.sources.length)
+      ? bodyAudience.sources.map(String)
+      : (bodyAudience?.source ? [String(bodyAudience.source)] : []);
+    isCustomAudience = sourcesArr.length > 0;
+    isCombined = sourcesArr.length > 1;
+    primarySource = sourcesArr[0] || "";
+    audSource = isCustomAudience
+      ? (isCombined ? `combo:${sourcesArr.slice().sort().join("+")}` : singleSourceKey(primarySource))
+      : "";
+    // Canonical source for routing on reply (column audience_source in reengajamento_meta_disparos)
+    audienceSourceCanonical = isCustomAudience
+      ? (isCombined ? "combo" : primarySource)
+      : "legacy";
+  };
+  refreshAudienceContext();
 
   const url = new URL(req.url);
   const force = bodyForce || url.searchParams.get("force") === "1";
@@ -297,6 +316,7 @@ Deno.serve(async (req) => {
         motivo_parada: "Encerrado automaticamente: execução antiga ficou travada sem resposta da função",
       } as any)
       .eq("status", "running")
+      .neq("id", bodyRunId || "00000000-0000-0000-0000-000000000000")
       .lt("started_at", new Date(Date.now() - STALE_RUNNING_MINUTES * 60 * 1000).toISOString());
 
     const { data: cfg } = await supabase.from("reengajamento_config").select("*").limit(1).maybeSingle();
@@ -309,7 +329,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ skipped: true, reason: "out_of_window" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if ((cfg as any).paused_until_release) {
+    if (bodyRunId) {
+      const { data: existingRun, error: existingRunErr } = await supabase
+        .from("reengajamento_dispatch_runs")
+        .select("id, audience_payload, iniciado_por, status")
+        .eq("id", bodyRunId)
+        .maybeSingle();
+      if (existingRunErr || !existingRun) {
+        return new Response(JSON.stringify({ error: "run_not_found", run_id: bodyRunId }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      bodyAudience = (existingRun as any).audience_payload || bodyAudience;
+      iniciadoPor = normalizeInitiator(String((existingRun as any).iniciado_por || iniciadoPor));
+      refreshAudienceContext();
+    }
+
+    if ((cfg as any).paused_until_release && !force) {
       return new Response(JSON.stringify({
         skipped: true,
         paused: true,
@@ -319,7 +353,13 @@ Deno.serve(async (req) => {
     }
 
     if (force) {
-      await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
+      await supabase.from("reengajamento_config").update({
+        paused: false,
+        paused_until_release: false,
+        paused_reason: null,
+        guard_reset_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", cfg.id);
     }
 
     const { data: activeRuns } = await supabase
@@ -327,6 +367,7 @@ Deno.serve(async (req) => {
       .select("id, started_at, enviados, falhas, ignorados")
       .eq("status", "running")
       .gte("started_at", new Date(Date.now() - STALE_RUNNING_MINUTES * 60 * 1000).toISOString())
+      .neq("id", bodyRunId || "00000000-0000-0000-0000-000000000000")
       .order("started_at", { ascending: false })
       .limit(1);
     if (activeRuns && activeRuns.length > 0) {
@@ -383,9 +424,16 @@ Deno.serve(async (req) => {
       ? bodyDailyLimitOverride
       : (isCustomAudience && Number(bodyAudience?.limit) > 0 ? Number(bodyAudience.limit) : cfg.daily_limit);
 
-    let leads: Array<{ id: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" }> = [];
+    let leads: Array<{ id: string; queue_id?: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" }> = [];
+    let supressosRemovidos = 0;
+    let pipelineAtivosRemovidos = 0;
+    let frequenciaRemovidos = 0;
+    let totalAlvo = 0;
+    let initialSent = 0;
+    let initialFailed = 0;
+    let initialSkipped = 0;
 
-    if (isCustomAudience) {
+    if (!bodyRunId && isCustomAudience) {
       const dedupMode = String(bodyAudience.dedup_mode || "exclude_sent");
       const dedupLookbackDays = Math.max(1, Number(bodyAudience.dedup_lookback_days || 30));
       const dedupSince = new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString();
@@ -546,7 +594,7 @@ Deno.serve(async (req) => {
         }
         leads = merged;
       }
-    } else {
+    } else if (!bodyRunId) {
       // === Fluxo legado: descartados reengajáveis ===
       let leadsQuery = supabase
         .from("pipeline_leads")
@@ -583,8 +631,7 @@ Deno.serve(async (req) => {
 
     // ── Supressão automática (só Meta): remove números que já falharam por
     // bloqueio de qualidade / opt-out / indisponível, evitando queimar a reputação do número.
-    let supressosRemovidos = 0;
-    if (canal === "meta" && leads.length > 0) {
+    if (!bodyRunId && canal === "meta" && leads.length > 0) {
       const nowIso = new Date().toISOString();
       const supressSet = new Set<string>();
       let from = 0;
@@ -619,12 +666,7 @@ Deno.serve(async (req) => {
     // ── GUARDA DE EXCLUSIVIDADE DO PIPELINE (crítico, todos os canais) ──
     // Nunca dispara para quem é lead ATIVO no pipeline (telefone OU e-mail).
     // Checagem em tempo de disparo: cobre quem virou lead ativo depois de entrar na lista.
-    let pipelineAtivosRemovidos = 0;
-    const last8Of = (raw: string | null | undefined): string => {
-      const d = (raw || "").replace(/\D/g, "");
-      return d.length >= 8 ? d.slice(-8) : d;
-    };
-    if (leads.length > 0) {
+    if (!bodyRunId && leads.length > 0) {
       const phoneSet = new Set<string>();
       const emailSet = new Set<string>();
       let pf = 0;
@@ -660,9 +702,8 @@ Deno.serve(async (req) => {
 
     // ── GOVERNADOR DE FREQUÊNCIA POR DESTINATÁRIO (anti-131049) ──
     // Pula quem recebeu QUALQUER marketing (reengajamento + campanhas) nos últimos N dias.
-    let frequenciaRemovidos = 0;
     const freqCooldownDias = Math.max(0, Number((cfg as any).freq_cooldown_dias ?? 14));
-    if (canal === "meta" && freqCooldownDias > 0 && leads.length > 0) {
+    if (!bodyRunId && canal === "meta" && freqCooldownDias > 0 && leads.length > 0) {
       const freqCutoff = new Date(Date.now() - freqCooldownDias * 24 * 3600 * 1000).toISOString();
       const recentSet = new Set<string>();
       let ff = 0;
@@ -688,23 +729,135 @@ Deno.serve(async (req) => {
       }
     }
 
-    const totalAlvo = leads.length;
+    totalAlvo = leads.length;
 
-
-    const { data: runRow } = await supabase
-      .from("reengajamento_dispatch_runs")
-      .insert({
+    if (bodyRunId) {
+      runId = bodyRunId;
+      await updateRun({
         status: "running",
-        total_alvo: totalAlvo,
-        iniciado_por: iniciadoPor,
-        audience_source: isCustomAudience ? audSource : null,
-        audience_payload: isCustomAudience ? bodyAudience : null,
-      } as any)
-      .select("id")
-      .single();
-    runId = runRow?.id ?? null;
+        started_at: new Date().toISOString(),
+        finished_at: null,
+        motivo_parada: "Retomando fila pendente em micro-lotes",
+        cancel_requested: false,
+      } as any);
+    } else {
+      const { data: runRow } = await supabase
+        .from("reengajamento_dispatch_runs")
+        .insert({
+          status: "running",
+          total_alvo: totalAlvo,
+          iniciado_por: iniciadoPor,
+          audience_source: isCustomAudience ? audSource : null,
+          audience_payload: isCustomAudience ? bodyAudience : null,
+        } as any)
+        .select("id")
+        .single();
+      runId = runRow?.id ?? null;
+
+      if (runId && totalAlvo > 0) {
+        const queueSeen = new Set<string>();
+        const queueRows = leads
+          .map((lead) => {
+            const phone = normalizePhone(lead.telefone || "");
+            const last8 = last8Of(phone || lead.telefone);
+            if (!last8) return null;
+            const dedupeKey = `${last8}:${canal === "meta" ? metaTemplate : "evolution"}`;
+            if (queueSeen.has(dedupeKey)) return null;
+            queueSeen.add(dedupeKey);
+            return {
+              run_id: runId,
+              lead_id: lead.id,
+              lead_ref: lead.ref,
+              nome: lead.nome,
+              telefone: lead.telefone,
+              email: lead.email || null,
+              phone_normalized: phone,
+              phone_last8: last8,
+              template_name: canal === "meta" ? metaTemplate : null,
+              template_language: canal === "meta" ? metaLang : null,
+              audience_source: audienceSourceCanonical,
+              status: phone ? "pending" : "skipped",
+              error_text: phone ? null : "telefone inválido",
+              processed_at: phone ? null : new Date().toISOString(),
+            };
+          })
+          .filter(Boolean);
+        for (let i = 0; i < queueRows.length; i += 500) {
+          const { error: queueErr } = await supabase
+            .from("reengajamento_dispatch_queue")
+            .insert(queueRows.slice(i, i + 500) as any);
+          if (queueErr) throw queueErr;
+        }
+      }
+    }
 
     const exclusoes = { suprimidos: supressosRemovidos, pipeline_ativo: pipelineAtivosRemovidos, frequencia: frequenciaRemovidos };
+    const usingPersistentQueue = !!runId;
+
+    if (usingPersistentQueue) {
+      await supabase
+        .from("reengajamento_dispatch_queue")
+        .update({ status: "pending", locked_at: null } as any)
+        .eq("run_id", runId)
+        .eq("status", "processing")
+        .lt("locked_at", new Date(Date.now() - QUEUE_STALE_MINUTES * 60 * 1000).toISOString());
+
+      const [{ count: queueTotal }, { count: sentCount }, { count: failedCount }, { count: skippedCount }, { count: pendingCount }, { count: processingCount }] = await Promise.all([
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId),
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId).eq("status", "sent"),
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId).eq("status", "failed"),
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId).in("status", ["skipped", "suppressed", "cancelled"]),
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId).eq("status", "pending"),
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId).eq("status", "processing"),
+      ]);
+
+      totalAlvo = queueTotal || totalAlvo;
+      initialSent = sentCount || 0;
+      initialFailed = failedCount || 0;
+      initialSkipped = skippedCount || 0;
+      await updateRun({ total_alvo: totalAlvo, enviados: initialSent, falhas: initialFailed, ignorados: initialSkipped } as any);
+
+      if ((pendingCount || 0) === 0 && (processingCount || 0) === 0) {
+        const finalFailed = failedCount || 0;
+        const finalSent = sentCount || 0;
+        const finalSkipped = skippedCount || 0;
+        const finalStatus = finalFailed > 0 && finalSent === 0 ? "error" : "completed";
+        const finalReason = finalStatus === "error"
+          ? `Fila encerrada com falhas via ${canal} (${finalSent}/${totalAlvo} enviados, ${finalFailed} falhas)`
+          : `Fila concluída via ${canal} (${finalSent}/${totalAlvo} enviados${finalFailed > 0 ? `, ${finalFailed} falhas` : ""})`;
+        await updateRun({ status: finalStatus, finished_at: new Date().toISOString(), motivo_parada: finalReason, enviados: finalSent, falhas: finalFailed, ignorados: finalSkipped });
+        return new Response(JSON.stringify({ run_id: runId, sent: finalSent, failed: finalFailed, skipped: finalSkipped, total: totalAlvo, reason: finalStatus, canal, queue_done: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const batchSize = canal === "meta" ? META_QUEUE_BATCH_SIZE : EVOLUTION_QUEUE_BATCH_SIZE;
+      const { data: queueBatch, error: queueBatchErr } = await supabase
+        .from("reengajamento_dispatch_queue")
+        .select("id, lead_id, lead_ref, nome, telefone, email, phone_normalized, phone_last8")
+        .eq("run_id", runId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: true })
+        .limit(batchSize);
+      if (queueBatchErr) throw queueBatchErr;
+      const queueIds = (queueBatch || []).map((q: any) => q.id);
+      if (queueIds.length > 0) {
+        await supabase
+          .from("reengajamento_dispatch_queue")
+          .update({ status: "processing", locked_at: new Date().toISOString(), attempts: 1 } as any)
+          .in("id", queueIds)
+          .eq("status", "pending");
+      }
+      leads = (queueBatch || []).map((q: any) => ({
+        id: q.lead_id,
+        queue_id: q.id,
+        nome: q.nome,
+        telefone: q.phone_normalized || q.telefone,
+        email: q.email,
+        ref: q.lead_ref,
+      }));
+    }
+
     if (totalAlvo === 0) {
       const motivo = `Nenhum lead elegível. Removidos: ${pipelineAtivosRemovidos} ativos no pipeline, ${frequenciaRemovidos} por frequência, ${supressosRemovidos} suprimidos.`;
       await updateRun({ status: "completed", finished_at: new Date().toISOString(), motivo_parada: motivo });
@@ -736,7 +889,7 @@ Deno.serve(async (req) => {
     const pausaMin = Math.max(30, Number(cfg.pausa_longa_min_seconds || 180));
     const pausaMax = Math.max(pausaMin, Number(cfg.pausa_longa_max_seconds || 480));
 
-    let sent = 0, failed = 0, skipped = 0;
+    let sent = initialSent, failed = initialFailed, skipped = initialSkipped;
     let stopReason: string | null = null;
     let consecutiveMetaQualityFails = 0;
 
@@ -828,6 +981,16 @@ Deno.serve(async (req) => {
     if (canal === "meta") {
       const preflightQualityReason = (await checkMetaCooldown()) || (await checkDeliveryQuality());
       if (preflightQualityReason) {
+        if (usingPersistentQueue) {
+          await updateRun({
+            status: "running",
+            finished_at: null,
+            motivo_parada: `Modo lento por qualidade Meta: ${preflightQualityReason}`.slice(0, 500),
+            enviados: sent,
+            falhas: failed,
+            ignorados: skipped,
+          } as any);
+        } else {
         const reason = await pauseMetaForQuality(preflightQualityReason);
         await updateRun({
           status: "paused",
@@ -841,6 +1004,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_cooldown", motivo: reason, canal }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+        }
       }
     }
 
@@ -875,12 +1039,62 @@ Deno.serve(async (req) => {
       } as any);
     };
 
+    const updateQueueItem = async (lead: { queue_id?: string }, status: string, errorText?: string | null) => {
+      if (!lead.queue_id) return;
+      await supabase
+        .from("reengajamento_dispatch_queue")
+        .update({
+          status,
+          error_text: errorText ? String(errorText).slice(0, 500) : null,
+          processed_at: new Date().toISOString(),
+          locked_at: null,
+        } as any)
+        .eq("id", lead.queue_id);
+    };
+
+    const releaseProcessingQueue = async () => {
+      if (!runId) return;
+      await supabase
+        .from("reengajamento_dispatch_queue")
+        .update({ status: "pending", locked_at: null } as any)
+        .eq("run_id", runId)
+        .eq("status", "processing");
+    };
+
+    const scheduleQueueContinuation = async (motivo: string) => {
+      if (!runId) return false;
+      await updateRun({ status: "running", finished_at: null, motivo_parada: motivo, enviados: sent, falhas: failed, ignorados: skipped } as any);
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const continuation = fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ force: true, run_id: runId }),
+        }).catch((err) => console.error("Falha ao retomar fila persistente:", err));
+        const edgeRuntime = (globalThis as any).EdgeRuntime;
+        if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(continuation);
+        return true;
+      } catch (chainErr) {
+        console.error("Erro ao agendar continuação da fila:", chainErr);
+        return false;
+      }
+    };
+
     for (const lead of leads || []) {
       if (await shouldStopNow()) {
+        await releaseProcessingQueue();
         const cancelled = stopReason === "Parado pelo usuário";
         return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (Date.now() - startedAt > MAX_RUN_MS) {
+        if (usingPersistentQueue) {
+          await releaseProcessingQueue();
+          const restantes = Math.max(0, totalAlvo - sent - failed - skipped);
+          stopReason = `Micro-lote concluído (${sent}/${totalAlvo}). Retomando automaticamente os ${restantes} pendentes da fila...`;
+          await scheduleQueueContinuation(stopReason);
+          return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "queue_batch_continued", canal, continuation: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         // Encadeia automaticamente um próximo run para continuar de onde parou
         // (a query já exclui leads com reengajamento_enviado_at preenchido).
         const restantes = totalAlvo - sent - failed - skipped;
@@ -917,6 +1131,7 @@ Deno.serve(async (req) => {
           lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: lead.telefone,
         });
         skipped++;
+        await updateQueueItem(lead, "skipped", "telefone inválido");
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
         continue;
       }
@@ -935,6 +1150,7 @@ Deno.serve(async (req) => {
             lead_id: lead.id, run_id: runId, tipo: "ignorado_guard_waba", detalhe: reason.slice(0, 500),
           });
           skipped++;
+          await updateQueueItem(lead, "suppressed", reason);
           await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
           continue;
         }
@@ -953,6 +1169,7 @@ Deno.serve(async (req) => {
             lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: `${phone} sem WhatsApp`,
           });
           skipped++;
+          await updateQueueItem(lead, "skipped", "sem WhatsApp");
           await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
           continue;
         }
@@ -1002,6 +1219,7 @@ Deno.serve(async (req) => {
             await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
+            await updateQueueItem(lead, "failed", errMsg);
 
             // 🛑 Auto-pause: se 5+ falhas consecutivas com sinais de bloqueio Meta (template pausado / qualidade)
             if (isMetaQualityBlockText(r.error || "")) {
@@ -1012,6 +1230,7 @@ Deno.serve(async (req) => {
                   lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
                 });
                 await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+                await releaseProcessingQueue();
                 return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_meta_quality", paused: true, canal, motivo: stopReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
               }
             } else {
@@ -1035,16 +1254,22 @@ Deno.serve(async (req) => {
           await insertEvento({
             lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[meta:${metaTemplate}] ${phone}`,
           });
+          await updateQueueItem(lead, "sent", null);
           sent++;
 
           // Guarda de qualidade por taxa de entrega — checa cedo e entre continuações
           if (sent % 5 === 0) {
             const qReason = await checkDeliveryQuality();
             if (qReason) {
-              stopReason = await pauseMetaForQuality(qReason);
-              await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
-              await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
-              return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              await insertEvento({ lead_id: lead.id, run_id: runId, tipo: usingPersistentQueue ? "modo_lento_meta" : "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
+              if (usingPersistentQueue) {
+                await updateRun({ status: "running", motivo_parada: `Modo lento por qualidade Meta: ${qReason}`.slice(0, 500), enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) } as any);
+              } else {
+                stopReason = await pauseMetaForQuality(qReason);
+                await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+                await releaseProcessingQueue();
+                return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              }
             }
           }
         } else {
@@ -1065,6 +1290,7 @@ Deno.serve(async (req) => {
               await insertEvento({
                 lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: `${lead.nome}: ${payloadText}`.slice(0, 500),
               });
+              await updateQueueItem(lead, "failed", payloadText);
               await updateRun({
                 status: "error",
                 finished_at: new Date().toISOString(),
@@ -1076,6 +1302,7 @@ Deno.serve(async (req) => {
                 ultimo_lead_id: lead.id,
                 ultimo_lead_nome: lead.nome,
               });
+              await releaseProcessingQueue();
               return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "evolution_unavailable", error: reason, canal }), {
                 status: 502,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1087,6 +1314,7 @@ Deno.serve(async (req) => {
             await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
+            await updateQueueItem(lead, "failed", errMsg);
             await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
             continue;
           }
@@ -1104,6 +1332,7 @@ Deno.serve(async (req) => {
           await insertEvento({
             lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[evo] ${phone} :: ${text.slice(0, 80)}`,
           });
+          await updateQueueItem(lead, "sent", null);
           sent++;
         }
 
@@ -1114,6 +1343,7 @@ Deno.serve(async (req) => {
         // - Evolution: 60-180s + pausa longa a cada N envios
         if (canal === "meta") {
           if (await interruptibleDelay(META_DELAY_MIN_MS + Math.random() * (META_DELAY_MAX_MS - META_DELAY_MIN_MS), shouldStopNow)) {
+            await releaseProcessingQueue();
             const cancelled = stopReason === "Parado pelo usuário";
             return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
@@ -1128,6 +1358,7 @@ Deno.serve(async (req) => {
             });
           }
           if (await interruptibleDelay(ms, shouldStopNow)) {
+            await releaseProcessingQueue();
             const cancelled = stopReason === "Parado pelo usuário";
             return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
@@ -1139,7 +1370,23 @@ Deno.serve(async (req) => {
         await insertEvento({
           lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
         });
+        await updateQueueItem(lead, "failed", errMsg);
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
+      }
+    }
+
+    if (usingPersistentQueue) {
+      const { count: pendingAfter } = await supabase
+        .from("reengajamento_dispatch_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("run_id", runId)
+        .eq("status", "pending");
+      if ((pendingAfter || 0) > 0) {
+        const motivo = `Micro-lote concluído (${sent}/${totalAlvo}). Retomando automaticamente ${pendingAfter} pendentes da fila.`;
+        await scheduleQueueContinuation(motivo);
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "queue_batch_continued", canal, continuation: true, pending: pendingAfter }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
