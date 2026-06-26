@@ -423,7 +423,7 @@ Deno.serve(async (req) => {
       ? bodyDailyLimitOverride
       : (isCustomAudience && Number(bodyAudience?.limit) > 0 ? Number(bodyAudience.limit) : cfg.daily_limit);
 
-    let leads: Array<{ id: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" }> = [];
+    let leads: Array<{ id: string; queue_id?: string; nome: string; telefone: string | null; email?: string | null; ref: "pipeline_lead" | "oferta_ativa_lead" }> = [];
     let supressosRemovidos = 0;
     let pipelineAtivosRemovidos = 0;
     let frequenciaRemovidos = 0;
