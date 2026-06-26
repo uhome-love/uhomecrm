@@ -246,6 +246,7 @@ Deno.serve(async (req) => {
   let bodyIncludeArchived = false;
   let bodyDailyLimitOverride: number | null = null;
   let bodyAudience: any = null;
+  let bodyRunId: string | null = null;
   try {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
@@ -259,29 +260,39 @@ Deno.serve(async (req) => {
       bodyIncludeArchived = !!(b as any)?.include_archived;
       if ((b as any)?.daily_limit_override) bodyDailyLimitOverride = Number((b as any).daily_limit_override);
       if ((b as any)?.audience && typeof (b as any).audience === "object") bodyAudience = (b as any).audience;
+      if ((b as any)?.run_id) bodyRunId = String((b as any).run_id);
     }
   } catch { /* ignore */ }
 
   // Fontes: aceita `sources: string[]` (combinado) ou `source` único (compat).
-  const sourcesArr: string[] = (Array.isArray(bodyAudience?.sources) && bodyAudience.sources.length)
-    ? bodyAudience.sources.map(String)
-    : (bodyAudience?.source ? [String(bodyAudience.source)] : []);
-  const isCustomAudience = sourcesArr.length > 0;
-  const isCombined = sourcesArr.length > 1;
-  const primarySource = sourcesArr[0] || "";
   const singleSourceKey = (src: string): string =>
     src === "descartados"
       ? `descartados:${bodyAudience.tipo_descarte || "reengajavel"}`
       : src === "oferta_ativa_lista"
         ? `oferta_ativa:${(((bodyAudience.lista_ids && bodyAudience.lista_ids.length) ? bodyAudience.lista_ids : (bodyAudience.lista_id ? [bodyAudience.lista_id] : [])) as string[]).slice().sort().join(",") || "?"}`
         : `pipeline:${(bodyAudience.stage_ids || []).slice().sort().join(",")}`;
-  const audSource: string = isCustomAudience
-    ? (isCombined ? `combo:${sourcesArr.slice().sort().join("+")}` : singleSourceKey(primarySource))
-    : "";
-  // Canonical source for routing on reply (column audience_source in reengajamento_meta_disparos)
-  const audienceSourceCanonical: string = isCustomAudience
-    ? (isCombined ? "combo" : primarySource)
-    : "legacy";
+  let sourcesArr: string[] = [];
+  let isCustomAudience = false;
+  let isCombined = false;
+  let primarySource = "";
+  let audSource = "";
+  let audienceSourceCanonical = "legacy";
+  const refreshAudienceContext = () => {
+    sourcesArr = (Array.isArray(bodyAudience?.sources) && bodyAudience.sources.length)
+      ? bodyAudience.sources.map(String)
+      : (bodyAudience?.source ? [String(bodyAudience.source)] : []);
+    isCustomAudience = sourcesArr.length > 0;
+    isCombined = sourcesArr.length > 1;
+    primarySource = sourcesArr[0] || "";
+    audSource = isCustomAudience
+      ? (isCombined ? `combo:${sourcesArr.slice().sort().join("+")}` : singleSourceKey(primarySource))
+      : "";
+    // Canonical source for routing on reply (column audience_source in reengajamento_meta_disparos)
+    audienceSourceCanonical = isCustomAudience
+      ? (isCombined ? "combo" : primarySource)
+      : "legacy";
+  };
+  refreshAudienceContext();
 
   const url = new URL(req.url);
   const force = bodyForce || url.searchParams.get("force") === "1";
