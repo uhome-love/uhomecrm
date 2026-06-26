@@ -975,6 +975,16 @@ Deno.serve(async (req) => {
     if (canal === "meta") {
       const preflightQualityReason = (await checkMetaCooldown()) || (await checkDeliveryQuality());
       if (preflightQualityReason) {
+        if (usingPersistentQueue) {
+          await updateRun({
+            status: "running",
+            finished_at: null,
+            motivo_parada: `Modo lento por qualidade Meta: ${preflightQualityReason}`.slice(0, 500),
+            enviados: sent,
+            falhas: failed,
+            ignorados: skipped,
+          } as any);
+        } else {
         const reason = await pauseMetaForQuality(preflightQualityReason);
         await updateRun({
           status: "paused",
@@ -988,6 +998,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_cooldown", motivo: reason, canal }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+        }
       }
     }
 
