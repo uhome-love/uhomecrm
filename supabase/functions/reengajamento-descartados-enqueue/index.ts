@@ -328,7 +328,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ skipped: true, reason: "out_of_window" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if ((cfg as any).paused_until_release) {
+    if (bodyRunId) {
+      const { data: existingRun, error: existingRunErr } = await supabase
+        .from("reengajamento_dispatch_runs")
+        .select("id, audience_payload, iniciado_por, status")
+        .eq("id", bodyRunId)
+        .maybeSingle();
+      if (existingRunErr || !existingRun) {
+        return new Response(JSON.stringify({ error: "run_not_found", run_id: bodyRunId }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      bodyAudience = (existingRun as any).audience_payload || bodyAudience;
+      iniciadoPor = normalizeInitiator(String((existingRun as any).iniciado_por || iniciadoPor));
+      refreshAudienceContext();
+    }
+
+    if ((cfg as any).paused_until_release && !force) {
       return new Response(JSON.stringify({
         skipped: true,
         paused: true,
@@ -338,7 +352,13 @@ Deno.serve(async (req) => {
     }
 
     if (force) {
-      await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
+      await supabase.from("reengajamento_config").update({
+        paused: false,
+        paused_until_release: false,
+        paused_reason: null,
+        guard_reset_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", cfg.id);
     }
 
     const { data: activeRuns } = await supabase
@@ -346,6 +366,7 @@ Deno.serve(async (req) => {
       .select("id, started_at, enviados, falhas, ignorados")
       .eq("status", "running")
       .gte("started_at", new Date(Date.now() - STALE_RUNNING_MINUTES * 60 * 1000).toISOString())
+      .neq("id", bodyRunId || "00000000-0000-0000-0000-000000000000")
       .order("started_at", { ascending: false })
       .limit(1);
     if (activeRuns && activeRuns.length > 0) {
