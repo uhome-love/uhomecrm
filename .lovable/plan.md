@@ -1,27 +1,54 @@
-Diagnóstico encontrado:
+Diagnóstico atual
+- Não há run `running` agora: o disparo não está continuando.
+- A central travou por `paused=true` e `paused_until_release=true`.
+- O motivo foi o guard de qualidade do Meta: nas últimas 2h houve 52 entregues, 24 lidos, 2 respondidos, mas também 8 falhas de “healthy ecosystem engagement” e 6 “Message undeliverable”.
+- O modelo atual ainda é frágil: cada lote roda dentro da Edge Function por até ~110s e tenta chamar uma continuação. Quando o guard pausa ou a continuação cai, o disparo deixa de avançar.
 
-- A central está travada por `paused=true` e `paused_until_release=true` depois de 8 falhas Meta 131049 no template `vividterrace2`.
-- Existe 1 run preso em `running` há mais de 2h (`e5f52ccb...`) com 0 envios, bloqueando a visualização/retomada.
-- Nas últimas 12h o template `vividterrace2` teve 112 eventos: 92 enviados/entregues/lidos/respondidos, 20 falhas e 7 respostas. Ou seja, ele performou, mas bateu o guard de qualidade.
-- O bug estrutural é que a continuação automática cria novos runs a cada ~55s e a cada continuação recalcula a audiência inteira. Em lista da Oferta Ativa, como os leads enviados não são marcados no próprio lead, a função fica dependendo só de eventos/dedup e pode gerar muitos micro-runs, até uma continuação cair no preflight de qualidade e ficar presa/travada.
+Plano de correção
 
-Plano de correção e retomada:
+1. Destravar de forma controlada
+- Encerrar qualquer run parado/pausado da retomada atual com motivo explícito.
+- Liberar `reengajamento_config` apenas para voltar a operar, sem apagar o histórico de falhas.
+- Retomar com limite conservador, não com 3000 de uma vez, para evitar novo bloqueio imediato da Meta.
 
-1. Limpar o bloqueio operacional atual
-   - Encerrar o run preso como `timeout` com motivo claro.
-   - Liberar `reengajamento_config`: `paused=false`, `paused_until_release=false`, limpar `paused_reason` e atualizar `guard_reset_at` para agora.
+2. Parar de depender de “continuação em cadeia”
+- Criar uma fila persistente de destinatários por disparo.
+- No início do disparo, calcular a audiência uma vez e gravar os destinatários pendentes.
+- Cada chamada da função processa poucos pendentes e termina rápido.
+- Se a função cair, o próximo acionamento continua do próximo pendente, sem recalcular público inteiro e sem perder o estado.
 
-2. Corrigir a função de disparo para não travar novamente
-   - Em `reengajamento-descartados-enqueue`, antes de iniciar um novo run, auto-encerrar qualquer run `running` antigo acima de 4 minutos.
-   - Quando o preflight de qualidade bloquear antes de criar/enviarem leads, registrar/encerrar o run corretamente em vez de deixar `running` sem progresso.
-   - Na continuação automática, limitar/normalizar o texto de `iniciado_por` para não crescer infinitamente com `_continuacao_continuacao...`.
-   - Para público `oferta_ativa_lista`, reforçar dedup por `reengajamento_meta_disparos`/eventos para o mesmo telefone e template, evitando reenviar quem já foi tentado no ciclo recente.
+3. Criar um worker idempotente e retomável
+- Adaptar `reengajamento-descartados-enqueue` para:
+  - criar o run e popular a fila quando for um novo disparo;
+  - processar apenas um lote pequeno por chamada;
+  - marcar cada item como `sent`, `failed`, `skipped` ou `suppressed`;
+  - não reenviar o mesmo telefone/template se já houver item processado;
+  - usar trava single-flight por run, evitando dois workers simultâneos.
 
-3. Ajustar a UX para refletir o estado real
-   - Em `LiveDispatchBanner`, manter o auto-timeout visual coerente com o backend para sumir com runs mortos.
-   - Em `DisparoCustomizadoCard`, ao receber resposta de pausa/qualidade da função, mostrar o motivo real e não dar falsa sensação de “disparo iniciado” quando a função recusou.
+4. Trocar a pausa por “modo throttled” quando o template ainda entrega bem
+- Manter pausa forte quando houver bloqueio grave.
+- Para casos como agora, onde há entregas/leitura mas também 131049, reduzir automaticamente cadência e tamanho do lote em vez de travar tudo.
+- Critério proposto:
+  - 131049 recente com entrega ainda saudável: continuar em micro-lotes lentos.
+  - falha acima de limite crítico ou template pausado/rejeitado: pausar até liberação.
 
-4. Retomar o disparo das últimas 12h com segurança
-   - Reinvocar `reengajamento-descartados-enqueue` usando o mesmo `audience_payload` do run das 12h (`vividterrace2`, mesmas 5 listas da Oferta Ativa, limite 3000), após o reset.
-   - Manter os guards ativos: supressão Meta, pipeline ativo, frequência e auto-pausa por qualidade.
-   - Validar depois: 0 runs presos, config liberada, novo run criado/andando ou finalizado com motivo explícito.
+5. Ajustar a interface da Central
+- Mostrar estado real: “rodando”, “em modo lento”, “pausado por Meta”, “aguardando próxima leva” ou “concluído”.
+- O botão de disparo deve permitir “Retomar fila pendente” quando houver run pausado com destinatários pendentes.
+- O toast deve diferenciar bloqueio real da Meta de pausa preventiva do nosso guard.
+
+6. Validar antes de retomar em volume
+- Conferir que existe 0 run preso.
+- Conferir quantos destinatários pendentes/limpos restam da seleção atual.
+- Rodar uma retomada pequena e confirmar criação/avanço da fila.
+- Só depois liberar a continuidade automática em micro-lotes.
+
+Arquivos/áreas afetadas
+- Edge Function `reengajamento-descartados-enqueue`.
+- UI `DisparoCustomizadoCard.tsx` e possivelmente `LiveDispatchBanner.tsx` para status/retomada.
+- Banco: nova tabela de fila de envio do reengajamento com permissões para o backend e leitura autenticada para acompanhamento.
+
+Resultado esperado
+- O disparo não fica mais “travado” por timeout/continuação perdida.
+- Se a Meta limitar temporariamente, a central reduz velocidade em vez de morrer silenciosamente.
+- A retomada passa a ser segura: continua dos pendentes, sem duplicar envios e sem recalcular a lista toda.
