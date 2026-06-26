@@ -13,7 +13,8 @@ const corsHeaders = {
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 // Encadeia o próximo lote bem antes do limite de wall-clock da plataforma (~150s),
 // evitando que a função seja morta no meio e deixe o run travado em "running".
-const MAX_RUN_MS = 55_000;
+const MAX_RUN_MS = 110_000;
+const STALE_RUNNING_MINUTES = 4;
 // Meta marketing em base fria: priorizar reputação/entrega, não velocidade.
 const META_DELAY_MIN_MS = 12_000;
 const META_DELAY_MAX_MS = 30_000;
@@ -62,6 +63,11 @@ function normalizePhone(raw: string): string | null {
   }
   if (p.length < 12 || p.length > 13) return null;
   return p;
+}
+
+function normalizeInitiator(raw: string): string {
+  const value = String(raw || "manual_custom").replace(/(_continuacao)+$/g, "");
+  return value.length > 80 ? value.slice(0, 80) : value;
 }
 
 function isMetaQualityBlockText(msg: string) {
@@ -236,7 +242,7 @@ Deno.serve(async (req) => {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
       bodyForce = !!(b as any)?.force;
-      if ((b as any)?.iniciado_por) iniciadoPor = String((b as any).iniciado_por);
+      if ((b as any)?.iniciado_por) iniciadoPor = normalizeInitiator(String((b as any).iniciado_por));
       else if (bodyForce) iniciadoPor = "manual";
       if ((b as any)?.wave) bodyWave = Number((b as any).wave);
       if ((b as any)?.min_dias_override !== undefined && (b as any)?.min_dias_override !== null) {
@@ -283,6 +289,16 @@ Deno.serve(async (req) => {
   };
 
   try {
+    await supabase
+      .from("reengajamento_dispatch_runs")
+      .update({
+        status: "timeout",
+        finished_at: new Date().toISOString(),
+        motivo_parada: "Encerrado automaticamente: execução antiga ficou travada sem resposta da função",
+      } as any)
+      .eq("status", "running")
+      .lt("started_at", new Date(Date.now() - STALE_RUNNING_MINUTES * 60 * 1000).toISOString());
+
     const { data: cfg } = await supabase.from("reengajamento_config").select("*").limit(1).maybeSingle();
     if (!cfg) return new Response(JSON.stringify({ error: "no config" }), { status: 500, headers: corsHeaders });
 
@@ -304,6 +320,22 @@ Deno.serve(async (req) => {
 
     if (force) {
       await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
+    }
+
+    const { data: activeRuns } = await supabase
+      .from("reengajamento_dispatch_runs")
+      .select("id, started_at, enviados, falhas, ignorados")
+      .eq("status", "running")
+      .gte("started_at", new Date(Date.now() - STALE_RUNNING_MINUTES * 60 * 1000).toISOString())
+      .order("started_at", { ascending: false })
+      .limit(1);
+    if (activeRuns && activeRuns.length > 0) {
+      return new Response(JSON.stringify({
+        skipped: true,
+        reason: "active_run_in_progress",
+        active_run_id: activeRuns[0].id,
+        message: "Já existe um disparo em andamento; esta chamada foi ignorada para evitar duplicidade.",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const canal: "meta" | "evolution" = (cfg.canal === "meta") ? "meta" : "evolution";
@@ -419,6 +451,35 @@ Deno.serve(async (req) => {
         return cand;
       };
 
+      const dedupOfertaViaMetaTemplate = async (cand: Lead[]): Promise<Lead[]> => {
+        if (canal !== "meta" || !metaTemplate || dedupMode === "include_all" || cand.length === 0) return cand;
+        const phonesSent = new Set<string>();
+        let mf = 0;
+        const PG = 1000;
+        while (true) {
+          const { data: rows, error: rowsErr } = await supabase
+            .from("reengajamento_meta_disparos")
+            .select("phone")
+            .eq("template_name", metaTemplate)
+            .gte("created_at", dedupSince)
+            .not("phone", "is", null)
+            .range(mf, mf + PG - 1);
+          if (rowsErr) { console.error("dedup meta disparos error:", rowsErr.message); break; }
+          if (!rows || rows.length === 0) break;
+          for (const row of rows) {
+            const key = last8(String((row as any).phone || ""));
+            if (key) phonesSent.add(key);
+          }
+          if (rows.length < PG) break;
+          mf += PG;
+        }
+        if (phonesSent.size === 0) return cand;
+        const before = cand.length;
+        const filtered = cand.filter((lead) => !phonesSent.has(last8(lead.telefone)));
+        console.log(`Dedup Meta template ${metaTemplate}: ${before - filtered.length} oferta ativa removidos por tentativa recente`);
+        return filtered;
+      };
+
       const fetchPipelineAtivo = async (cap: number): Promise<Lead[]> => {
         const stageIds: string[] = (bodyAudience.stage_ids || []).filter(Boolean);
         if (stageIds.length === 0) throw new Error("audience.stage_ids vazio");
@@ -453,7 +514,8 @@ Deno.serve(async (req) => {
         const { data, error } = await q.order("created_at", { ascending: false }).limit(cap);
         if (error) throw error;
         const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead" as const }));
-        return dedupViaEventos(cand, `oferta_ativa:${listaIds.slice().sort().join(",")}`);
+        const byEventos = await dedupViaEventos(cand, `oferta_ativa:${listaIds.slice().sort().join(",")}`);
+        return dedupOfertaViaMetaTemplate(byEventos);
       };
 
       const fetchForSource = async (src: string, cap: number): Promise<Lead[]> => {
@@ -767,6 +829,15 @@ Deno.serve(async (req) => {
       const preflightQualityReason = (await checkMetaCooldown()) || (await checkDeliveryQuality());
       if (preflightQualityReason) {
         const reason = await pauseMetaForQuality(preflightQualityReason);
+        await updateRun({
+          status: "paused",
+          finished_at: new Date().toISOString(),
+          motivo_parada: reason,
+          enviados: sent,
+          falhas: failed,
+          ignorados: skipped,
+          erros: errs.slice(-20),
+        });
         return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_cooldown", motivo: reason, canal }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -819,12 +890,15 @@ Deno.serve(async (req) => {
         try {
           const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
           const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-          // fire-and-forget: dispara próximo lote sem bloquear esta resposta
-          fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
+          // Mantém a requisição de continuação viva mesmo após retornar a resposta atual.
+          // Sem waitUntil, o runtime pode cancelar o fetch em background e interromper a cadeia.
+          const continuation = fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
             method: "POST",
             headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ force: true, wave, iniciado_por: `${iniciadoPor}_continuacao`, min_dias_override: bodyMinDiasOverride, include_archived: bodyIncludeArchived, daily_limit_override: bodyDailyLimitOverride, audience: bodyAudience || undefined }),
+            body: JSON.stringify({ force: true, wave, iniciado_por: `${normalizeInitiator(iniciadoPor)}_continuacao`, min_dias_override: bodyMinDiasOverride, include_archived: bodyIncludeArchived, daily_limit_override: bodyDailyLimitOverride, audience: bodyAudience || undefined }),
           }).catch((err) => console.error("Falha ao encadear próximo lote:", err));
+          const edgeRuntime = (globalThis as any).EdgeRuntime;
+          if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(continuation);
         } catch (chainErr) {
           console.error("Erro ao agendar continuação:", chainErr);
         }
