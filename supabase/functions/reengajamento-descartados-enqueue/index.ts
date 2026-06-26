@@ -753,11 +753,15 @@ Deno.serve(async (req) => {
       runId = runRow?.id ?? null;
 
       if (runId && totalAlvo > 0) {
+        const queueSeen = new Set<string>();
         const queueRows = leads
           .map((lead) => {
             const phone = normalizePhone(lead.telefone || "");
             const last8 = last8Of(phone || lead.telefone);
             if (!last8) return null;
+            const dedupeKey = `${last8}:${canal === "meta" ? metaTemplate : "evolution"}`;
+            if (queueSeen.has(dedupeKey)) return null;
+            queueSeen.add(dedupeKey);
             return {
               run_id: runId,
               lead_id: lead.id,
