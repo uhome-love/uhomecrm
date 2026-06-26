@@ -316,6 +316,7 @@ Deno.serve(async (req) => {
         motivo_parada: "Encerrado automaticamente: execução antiga ficou travada sem resposta da função",
       } as any)
       .eq("status", "running")
+      .neq("id", bodyRunId || "00000000-0000-0000-0000-000000000000")
       .lt("started_at", new Date(Date.now() - STALE_RUNNING_MINUTES * 60 * 1000).toISOString());
 
     const { data: cfg } = await supabase.from("reengajamento_config").select("*").limit(1).maybeSingle();
