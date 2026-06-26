@@ -24,6 +24,9 @@ const META_GUARD_MIN_RESOLVED = 20;
 const META_GUARD_QUALITY_FAILS = 8;
 const META_GUARD_FAIL_RATIO = 0.35;
 const META_GUARD_HARD_FAIL_RATIO = 0.50;
+const META_QUEUE_BATCH_SIZE = 3;
+const EVOLUTION_QUEUE_BATCH_SIZE = 5;
+const QUEUE_STALE_MINUTES = 6;
 
 async function interruptibleDelay(ms: number, shouldStop: () => Promise<boolean>): Promise<boolean> {
   const deadline = Date.now() + ms;
@@ -68,6 +71,11 @@ function normalizePhone(raw: string): string | null {
 function normalizeInitiator(raw: string): string {
   const value = String(raw || "manual_custom").replace(/(_continuacao)+$/g, "");
   return value.length > 80 ? value.slice(0, 80) : value;
+}
+
+function last8Of(raw: string | null | undefined): string {
+  const d = (raw || "").replace(/\D/g, "");
+  return d.length >= 8 ? d.slice(-8) : d;
 }
 
 function isMetaQualityBlockText(msg: string) {
