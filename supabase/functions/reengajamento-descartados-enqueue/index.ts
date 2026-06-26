@@ -435,6 +435,35 @@ Deno.serve(async (req) => {
         return cand;
       };
 
+      const dedupOfertaViaMetaTemplate = async (cand: Lead[]): Promise<Lead[]> => {
+        if (canal !== "meta" || !metaTemplate || dedupMode === "include_all" || cand.length === 0) return cand;
+        const phonesSent = new Set<string>();
+        let mf = 0;
+        const PG = 1000;
+        while (true) {
+          const { data: rows, error: rowsErr } = await supabase
+            .from("reengajamento_meta_disparos")
+            .select("phone")
+            .eq("template_name", metaTemplate)
+            .gte("created_at", dedupSince)
+            .not("phone", "is", null)
+            .range(mf, mf + PG - 1);
+          if (rowsErr) { console.error("dedup meta disparos error:", rowsErr.message); break; }
+          if (!rows || rows.length === 0) break;
+          for (const row of rows) {
+            const key = last8(String((row as any).phone || ""));
+            if (key) phonesSent.add(key);
+          }
+          if (rows.length < PG) break;
+          mf += PG;
+        }
+        if (phonesSent.size === 0) return cand;
+        const before = cand.length;
+        const filtered = cand.filter((lead) => !phonesSent.has(last8(lead.telefone)));
+        console.log(`Dedup Meta template ${metaTemplate}: ${before - filtered.length} oferta ativa removidos por tentativa recente`);
+        return filtered;
+      };
+
       const fetchPipelineAtivo = async (cap: number): Promise<Lead[]> => {
         const stageIds: string[] = (bodyAudience.stage_ids || []).filter(Boolean);
         if (stageIds.length === 0) throw new Error("audience.stage_ids vazio");
@@ -469,7 +498,8 @@ Deno.serve(async (req) => {
         const { data, error } = await q.order("created_at", { ascending: false }).limit(cap);
         if (error) throw error;
         const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead" as const }));
-        return dedupViaEventos(cand, `oferta_ativa:${listaIds.slice().sort().join(",")}`);
+        const byEventos = await dedupViaEventos(cand, `oferta_ativa:${listaIds.slice().sort().join(",")}`);
+        return dedupOfertaViaMetaTemplate(byEventos);
       };
 
       const fetchForSource = async (src: string, cap: number): Promise<Lead[]> => {
