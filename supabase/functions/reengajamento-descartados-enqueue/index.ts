@@ -1114,6 +1114,7 @@ Deno.serve(async (req) => {
           lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: lead.telefone,
         });
         skipped++;
+        await updateQueueItem(lead, "skipped", "telefone inválido");
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
         continue;
       }
@@ -1132,6 +1133,7 @@ Deno.serve(async (req) => {
             lead_id: lead.id, run_id: runId, tipo: "ignorado_guard_waba", detalhe: reason.slice(0, 500),
           });
           skipped++;
+          await updateQueueItem(lead, "suppressed", reason);
           await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
           continue;
         }
@@ -1150,6 +1152,7 @@ Deno.serve(async (req) => {
             lead_id: lead.id, run_id: runId, tipo: "telefone_invalido", detalhe: `${phone} sem WhatsApp`,
           });
           skipped++;
+          await updateQueueItem(lead, "skipped", "sem WhatsApp");
           await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
           continue;
         }
@@ -1199,6 +1202,7 @@ Deno.serve(async (req) => {
             await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
+            await updateQueueItem(lead, "failed", errMsg);
 
             // 🛑 Auto-pause: se 5+ falhas consecutivas com sinais de bloqueio Meta (template pausado / qualidade)
             if (isMetaQualityBlockText(r.error || "")) {
@@ -1209,6 +1213,7 @@ Deno.serve(async (req) => {
                   lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
                 });
                 await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+                await releaseProcessingQueue();
                 return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_meta_quality", paused: true, canal, motivo: stopReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
               }
             } else {
@@ -1232,6 +1237,7 @@ Deno.serve(async (req) => {
           await insertEvento({
             lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[meta:${metaTemplate}] ${phone}`,
           });
+          await updateQueueItem(lead, "sent", null);
           sent++;
 
           // Guarda de qualidade por taxa de entrega — checa cedo e entre continuações
@@ -1241,6 +1247,7 @@ Deno.serve(async (req) => {
               stopReason = await pauseMetaForQuality(qReason);
               await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
               await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+              await releaseProcessingQueue();
               return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }
           }
@@ -1262,6 +1269,7 @@ Deno.serve(async (req) => {
               await insertEvento({
                 lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: `${lead.nome}: ${payloadText}`.slice(0, 500),
               });
+              await updateQueueItem(lead, "failed", payloadText);
               await updateRun({
                 status: "error",
                 finished_at: new Date().toISOString(),
@@ -1273,6 +1281,7 @@ Deno.serve(async (req) => {
                 ultimo_lead_id: lead.id,
                 ultimo_lead_nome: lead.nome,
               });
+              await releaseProcessingQueue();
               return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "evolution_unavailable", error: reason, canal }), {
                 status: 502,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1284,6 +1293,7 @@ Deno.serve(async (req) => {
             await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
+            await updateQueueItem(lead, "failed", errMsg);
             await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
             continue;
           }
@@ -1301,6 +1311,7 @@ Deno.serve(async (req) => {
           await insertEvento({
             lead_id: lead.id, run_id: runId, tipo: "enviado", detalhe: `[evo] ${phone} :: ${text.slice(0, 80)}`,
           });
+          await updateQueueItem(lead, "sent", null);
           sent++;
         }
 
