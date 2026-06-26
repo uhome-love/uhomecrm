@@ -783,6 +783,69 @@ Deno.serve(async (req) => {
     }
 
     const exclusoes = { suprimidos: supressosRemovidos, pipeline_ativo: pipelineAtivosRemovidos, frequencia: frequenciaRemovidos };
+    const usingPersistentQueue = !!runId;
+
+    if (usingPersistentQueue) {
+      await supabase
+        .from("reengajamento_dispatch_queue")
+        .update({ status: "pending", locked_at: null } as any)
+        .eq("run_id", runId)
+        .eq("status", "processing")
+        .lt("locked_at", new Date(Date.now() - QUEUE_STALE_MINUTES * 60 * 1000).toISOString());
+
+      const [{ count: queueTotal }, { count: sentCount }, { count: failedCount }, { count: skippedCount }, { count: pendingCount }, { count: processingCount }] = await Promise.all([
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId),
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId).eq("status", "sent"),
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId).eq("status", "failed"),
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId).in("status", ["skipped", "suppressed", "cancelled"]),
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId).eq("status", "pending"),
+        supabase.from("reengajamento_dispatch_queue").select("id", { count: "exact", head: true }).eq("run_id", runId).eq("status", "processing"),
+      ]);
+
+      totalAlvo = queueTotal || totalAlvo;
+      await updateRun({ total_alvo: totalAlvo, enviados: sentCount || 0, falhas: failedCount || 0, ignorados: skippedCount || 0 } as any);
+
+      if ((pendingCount || 0) === 0 && (processingCount || 0) === 0) {
+        const finalFailed = failedCount || 0;
+        const finalSent = sentCount || 0;
+        const finalSkipped = skippedCount || 0;
+        const finalStatus = finalFailed > 0 && finalSent === 0 ? "error" : "completed";
+        const finalReason = finalStatus === "error"
+          ? `Fila encerrada com falhas via ${canal} (${finalSent}/${totalAlvo} enviados, ${finalFailed} falhas)`
+          : `Fila concluída via ${canal} (${finalSent}/${totalAlvo} enviados${finalFailed > 0 ? `, ${finalFailed} falhas` : ""})`;
+        await updateRun({ status: finalStatus, finished_at: new Date().toISOString(), motivo_parada: finalReason, enviados: finalSent, falhas: finalFailed, ignorados: finalSkipped });
+        return new Response(JSON.stringify({ run_id: runId, sent: finalSent, failed: finalFailed, skipped: finalSkipped, total: totalAlvo, reason: finalStatus, canal, queue_done: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const batchSize = canal === "meta" ? META_QUEUE_BATCH_SIZE : EVOLUTION_QUEUE_BATCH_SIZE;
+      const { data: queueBatch, error: queueBatchErr } = await supabase
+        .from("reengajamento_dispatch_queue")
+        .select("id, lead_id, lead_ref, nome, telefone, email, phone_normalized, phone_last8")
+        .eq("run_id", runId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: true })
+        .limit(batchSize);
+      if (queueBatchErr) throw queueBatchErr;
+      const queueIds = (queueBatch || []).map((q: any) => q.id);
+      if (queueIds.length > 0) {
+        await supabase
+          .from("reengajamento_dispatch_queue")
+          .update({ status: "processing", locked_at: new Date().toISOString(), attempts: 1 } as any)
+          .in("id", queueIds)
+          .eq("status", "pending");
+      }
+      leads = (queueBatch || []).map((q: any) => ({
+        id: q.lead_id,
+        queue_id: q.id,
+        nome: q.nome,
+        telefone: q.phone_normalized || q.telefone,
+        email: q.email,
+        ref: q.lead_ref,
+      }));
+    }
+
     if (totalAlvo === 0) {
       const motivo = `Nenhum lead elegível. Removidos: ${pipelineAtivosRemovidos} ativos no pipeline, ${frequenciaRemovidos} por frequência, ${supressosRemovidos} suprimidos.`;
       await updateRun({ status: "completed", finished_at: new Date().toISOString(), motivo_parada: motivo });
