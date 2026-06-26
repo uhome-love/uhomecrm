@@ -322,6 +322,22 @@ Deno.serve(async (req) => {
       await supabase.from("reengajamento_config").update({ paused: false }).eq("id", cfg.id);
     }
 
+    const { data: activeRuns } = await supabase
+      .from("reengajamento_dispatch_runs")
+      .select("id, started_at, enviados, falhas, ignorados")
+      .eq("status", "running")
+      .gte("started_at", new Date(Date.now() - STALE_RUNNING_MINUTES * 60 * 1000).toISOString())
+      .order("started_at", { ascending: false })
+      .limit(1);
+    if (activeRuns && activeRuns.length > 0) {
+      return new Response(JSON.stringify({
+        skipped: true,
+        reason: "active_run_in_progress",
+        active_run_id: activeRuns[0].id,
+        message: "Já existe um disparo em andamento; esta chamada foi ignorada para evitar duplicidade.",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const canal: "meta" | "evolution" = (cfg.canal === "meta") ? "meta" : "evolution";
 
     // Validações por canal
