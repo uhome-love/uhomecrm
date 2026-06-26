@@ -13,7 +13,7 @@ const corsHeaders = {
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 // Encadeia o próximo lote bem antes do limite de wall-clock da plataforma (~150s),
 // evitando que a função seja morta no meio e deixe o run travado em "running".
-const MAX_RUN_MS = 55_000;
+const MAX_RUN_MS = 110_000;
 const STALE_RUNNING_MINUTES = 4;
 // Meta marketing em base fria: priorizar reputação/entrega, não velocidade.
 const META_DELAY_MIN_MS = 12_000;
@@ -874,12 +874,15 @@ Deno.serve(async (req) => {
         try {
           const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
           const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-          // fire-and-forget: dispara próximo lote sem bloquear esta resposta
-          fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
+          // Mantém a requisição de continuação viva mesmo após retornar a resposta atual.
+          // Sem waitUntil, o runtime pode cancelar o fetch em background e interromper a cadeia.
+          const continuation = fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
             method: "POST",
             headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
             body: JSON.stringify({ force: true, wave, iniciado_por: `${normalizeInitiator(iniciadoPor)}_continuacao`, min_dias_override: bodyMinDiasOverride, include_archived: bodyIncludeArchived, daily_limit_override: bodyDailyLimitOverride, audience: bodyAudience || undefined }),
           }).catch((err) => console.error("Falha ao encadear próximo lote:", err));
+          const edgeRuntime = (globalThis as any).EdgeRuntime;
+          if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(continuation);
         } catch (chainErr) {
           console.error("Erro ao agendar continuação:", chainErr);
         }
