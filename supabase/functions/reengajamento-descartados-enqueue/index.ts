@@ -1322,6 +1322,7 @@ Deno.serve(async (req) => {
         // - Evolution: 60-180s + pausa longa a cada N envios
         if (canal === "meta") {
           if (await interruptibleDelay(META_DELAY_MIN_MS + Math.random() * (META_DELAY_MAX_MS - META_DELAY_MIN_MS), shouldStopNow)) {
+            await releaseProcessingQueue();
             const cancelled = stopReason === "Parado pelo usuário";
             return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
@@ -1336,6 +1337,7 @@ Deno.serve(async (req) => {
             });
           }
           if (await interruptibleDelay(ms, shouldStopNow)) {
+            await releaseProcessingQueue();
             const cancelled = stopReason === "Parado pelo usuário";
             return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
@@ -1347,7 +1349,23 @@ Deno.serve(async (req) => {
         await insertEvento({
           lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
         });
+        await updateQueueItem(lead, "failed", errMsg);
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
+      }
+    }
+
+    if (usingPersistentQueue) {
+      const { count: pendingAfter } = await supabase
+        .from("reengajamento_dispatch_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("run_id", runId)
+        .eq("status", "pending");
+      if ((pendingAfter || 0) > 0) {
+        const motivo = `Micro-lote concluído (${sent}/${totalAlvo}). Retomando automaticamente ${pendingAfter} pendentes da fila.`;
+        await scheduleQueueContinuation(motivo);
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "queue_batch_continued", canal, continuation: true, pending: pendingAfter }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
