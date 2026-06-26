@@ -428,6 +428,9 @@ Deno.serve(async (req) => {
     let pipelineAtivosRemovidos = 0;
     let frequenciaRemovidos = 0;
     let totalAlvo = 0;
+    let initialSent = 0;
+    let initialFailed = 0;
+    let initialSkipped = 0;
 
     if (!bodyRunId && isCustomAudience) {
       const dedupMode = String(bodyAudience.dedup_mode || "exclude_sent");
@@ -803,7 +806,10 @@ Deno.serve(async (req) => {
       ]);
 
       totalAlvo = queueTotal || totalAlvo;
-      await updateRun({ total_alvo: totalAlvo, enviados: sentCount || 0, falhas: failedCount || 0, ignorados: skippedCount || 0 } as any);
+      initialSent = sentCount || 0;
+      initialFailed = failedCount || 0;
+      initialSkipped = skippedCount || 0;
+      await updateRun({ total_alvo: totalAlvo, enviados: initialSent, falhas: initialFailed, ignorados: initialSkipped } as any);
 
       if ((pendingCount || 0) === 0 && (processingCount || 0) === 0) {
         const finalFailed = failedCount || 0;
@@ -877,7 +883,7 @@ Deno.serve(async (req) => {
     const pausaMin = Math.max(30, Number(cfg.pausa_longa_min_seconds || 180));
     const pausaMax = Math.max(pausaMin, Number(cfg.pausa_longa_max_seconds || 480));
 
-    let sent = 0, failed = 0, skipped = 0;
+    let sent = initialSent, failed = initialFailed, skipped = initialSkipped;
     let stopReason: string | null = null;
     let consecutiveMetaQualityFails = 0;
 
