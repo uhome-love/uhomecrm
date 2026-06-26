@@ -734,6 +734,7 @@ Deno.serve(async (req) => {
       runId = bodyRunId;
       await updateRun({
         status: "running",
+        started_at: new Date().toISOString(),
         finished_at: null,
         motivo_parada: "Retomando fila pendente em micro-lotes",
         cancel_requested: false,
