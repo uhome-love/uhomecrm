@@ -241,16 +241,22 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         ? { force: true, audience: buildAudience() }
         : { force: true, iniciado_por: "manual_custom", audience: buildAudience() };
 
-      supabase.functions.invoke(fn, { body }).then(({ data, error }) => {
-        if (error) toast.error("Erro: " + error.message);
-        else if ((data as { reason?: string })?.reason === "no_leads") toast.info("Nenhum lead elegível");
-        else if (["meta_quality_cooldown", "locked_quality_pause"].includes(String((data as { reason?: string })?.reason || ""))) {
-          toast.error("⛔ Meta pausou por qualidade: " + String((data as { motivo?: string })?.motivo || "aguarde a recuperação antes de retomar"));
-        }
-        onFired?.();
-      });
+      const { data, error } = await supabase.functions.invoke(fn, { body });
+      if (error) throw error;
+      const resp = data as { reason?: string; motivo?: string; error?: string; run_id?: string } | null;
+      const reason = String(resp?.reason || "");
+      if (reason === "no_leads") {
+        toast.info("Nenhum lead elegível após os filtros de segurança");
+        return;
+      }
+      if (["meta_quality_cooldown", "locked_quality_pause", "auto_paused_meta_quality", "auto_paused_delivery_quality"].includes(reason)) {
+        toast.error("⛔ Meta pausou por qualidade: " + String(resp?.motivo || "aguarde a recuperação antes de retomar"));
+        return;
+      }
+      if (resp?.error) throw new Error(resp.error);
       toast.success(`🚀 Disparo iniciado para ${preview.count} leads`);
       setPreview(null);
+      onFired?.();
     } catch (e) {
       toast.error("Erro: " + (e instanceof Error ? e.message : String(e)));
     } finally {

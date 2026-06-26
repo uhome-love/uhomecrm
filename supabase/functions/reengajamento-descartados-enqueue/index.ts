@@ -14,6 +14,7 @@ const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 // Encadeia o próximo lote bem antes do limite de wall-clock da plataforma (~150s),
 // evitando que a função seja morta no meio e deixe o run travado em "running".
 const MAX_RUN_MS = 55_000;
+const STALE_RUNNING_MINUTES = 4;
 // Meta marketing em base fria: priorizar reputação/entrega, não velocidade.
 const META_DELAY_MIN_MS = 12_000;
 const META_DELAY_MAX_MS = 30_000;
@@ -62,6 +63,11 @@ function normalizePhone(raw: string): string | null {
   }
   if (p.length < 12 || p.length > 13) return null;
   return p;
+}
+
+function normalizeInitiator(raw: string): string {
+  const value = String(raw || "manual_custom").replace(/(_continuacao)+$/g, "");
+  return value.length > 80 ? value.slice(0, 80) : value;
 }
 
 function isMetaQualityBlockText(msg: string) {
@@ -236,7 +242,7 @@ Deno.serve(async (req) => {
     if (req.method === "POST") {
       const b = await req.clone().json().catch(() => ({}));
       bodyForce = !!(b as any)?.force;
-      if ((b as any)?.iniciado_por) iniciadoPor = String((b as any).iniciado_por);
+      if ((b as any)?.iniciado_por) iniciadoPor = normalizeInitiator(String((b as any).iniciado_por));
       else if (bodyForce) iniciadoPor = "manual";
       if ((b as any)?.wave) bodyWave = Number((b as any).wave);
       if ((b as any)?.min_dias_override !== undefined && (b as any)?.min_dias_override !== null) {
@@ -283,6 +289,16 @@ Deno.serve(async (req) => {
   };
 
   try {
+    await supabase
+      .from("reengajamento_dispatch_runs")
+      .update({
+        status: "timeout",
+        finished_at: new Date().toISOString(),
+        motivo_parada: "Encerrado automaticamente: execução antiga ficou travada sem resposta da função",
+      } as any)
+      .eq("status", "running")
+      .lt("started_at", new Date(Date.now() - STALE_RUNNING_MINUTES * 60 * 1000).toISOString());
+
     const { data: cfg } = await supabase.from("reengajamento_config").select("*").limit(1).maybeSingle();
     if (!cfg) return new Response(JSON.stringify({ error: "no config" }), { status: 500, headers: corsHeaders });
 
@@ -767,6 +783,15 @@ Deno.serve(async (req) => {
       const preflightQualityReason = (await checkMetaCooldown()) || (await checkDeliveryQuality());
       if (preflightQualityReason) {
         const reason = await pauseMetaForQuality(preflightQualityReason);
+        await updateRun({
+          status: "paused",
+          finished_at: new Date().toISOString(),
+          motivo_parada: reason,
+          enviados: sent,
+          falhas: failed,
+          ignorados: skipped,
+          erros: errs.slice(-20),
+        });
         return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_cooldown", motivo: reason, canal }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -823,7 +848,7 @@ Deno.serve(async (req) => {
           fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
             method: "POST",
             headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ force: true, wave, iniciado_por: `${iniciadoPor}_continuacao`, min_dias_override: bodyMinDiasOverride, include_archived: bodyIncludeArchived, daily_limit_override: bodyDailyLimitOverride, audience: bodyAudience || undefined }),
+            body: JSON.stringify({ force: true, wave, iniciado_por: `${normalizeInitiator(iniciadoPor)}_continuacao`, min_dias_override: bodyMinDiasOverride, include_archived: bodyIncludeArchived, daily_limit_override: bodyDailyLimitOverride, audience: bodyAudience || undefined }),
           }).catch((err) => console.error("Falha ao encadear próximo lote:", err));
         } catch (chainErr) {
           console.error("Erro ao agendar continuação:", chainErr);
