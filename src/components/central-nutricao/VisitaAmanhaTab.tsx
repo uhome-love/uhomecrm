@@ -46,7 +46,7 @@ export default function VisitaAmanhaTab() {
       });
       return counts;
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 
   const { data: recentes } = useQuery({
