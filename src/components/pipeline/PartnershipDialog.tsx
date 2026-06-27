@@ -1,5 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,8 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, Loader2, UserPlus, Handshake } from "lucide-react";
-import { useLeadParcerias, useCreateParceria } from "@/hooks/useParcerias";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Users, Loader2, UserPlus, Handshake, Trash2 } from "lucide-react";
+import { useLeadParcerias, useCreateParceria, useDeleteParceria } from "@/hooks/useParcerias";
 
 interface Props {
   open: boolean;
