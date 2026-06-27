@@ -182,7 +182,7 @@ export default function ReengajamentoTab() {
       }
       return leads.map((l: any) => ({ ...l, ultimaResposta: respostasMap[l.id] || null }));
     },
-    refetchInterval: 5000,
+    refetchInterval: dispatchActive ? 10000 : 30000,
   });
 
   // 🛡️ Saúde do template Meta — detecta bloqueios sistemáticos
