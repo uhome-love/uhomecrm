@@ -187,6 +187,31 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={!!parceriaToDelete} onOpenChange={(o) => !o && setParceriaToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover parceria?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A parceria com <strong>{parceriaToDelete?.nome}</strong> será removida deste lead. O lead
+              ficará apenas com o corretor principal. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-danger-500 text-white hover:bg-danger-700"
+              onClick={async () => {
+                if (!parceriaToDelete) return;
+                await deleteMutation.mutateAsync({ parceriaId: parceriaToDelete.id, leadId });
+                setParceriaToDelete(null);
+              }}
+            >
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
