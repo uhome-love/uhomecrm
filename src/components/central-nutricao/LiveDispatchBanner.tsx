@@ -69,7 +69,7 @@ export default function LiveDispatchBanner() {
       }
       return data as any;
     },
-    refetchInterval: 2000,
+    refetchInterval: (query) => (query.state.data ? 3000 : 15000),
   });
 
   const { data: cfg } = useQuery({
