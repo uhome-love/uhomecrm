@@ -121,7 +121,7 @@ export default function ReengajamentoTab() {
         .limit(10);
       return (data || []) as any[];
     },
-    refetchInterval: 5000,
+    refetchInterval: dispatchActive ? 8000 : 30000,
   });
 
   const { data: kpis } = useQuery({
