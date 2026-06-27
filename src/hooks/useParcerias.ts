@@ -141,3 +141,31 @@ export function useCreateParceria() {
     },
   });
 }
+
+// ── 4) Delete partnership mutation ──
+interface DeleteParceriaInput {
+  parceriaId: string;
+  leadId: string;
+}
+
+export function useDeleteParceria() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: DeleteParceriaInput) => {
+      const { error } = await supabase
+        .from("pipeline_parcerias")
+        .delete()
+        .eq("id", input.parceriaId);
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Parceria removida");
+      queryClient.invalidateQueries({ queryKey: parceriaKeys.lead(variables.leadId) });
+      queryClient.invalidateQueries({ queryKey: parceriaKeys.map() });
+    },
+    onError: () => {
+      toast.error("Erro ao remover parceria");
+    },
+  });
+}
