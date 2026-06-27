@@ -67,13 +67,14 @@ export default function ReengajamentoTab() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 4000,
+    refetchInterval: 15000,
   });
 
   const [draft, setDraft] = useState<any>(null);
   const local = draft ?? cfg ?? {};
 
-  // Execução ativa (running) — polling a cada 2s para feedback ao vivo
+  // Execução ativa (running) — polling rápido só quando há disparo em andamento,
+  // lento (15s) quando ocioso para detectar o início de um novo disparo.
   const { data: activeRun } = useQuery({
     queryKey: ["reengajamento-active-run"],
     queryFn: async () => {
@@ -89,8 +90,9 @@ export default function ReengajamentoTab() {
       }
       return data as any;
     },
-    refetchInterval: 2000,
+    refetchInterval: (query) => (query.state.data ? 3000 : 15000),
   });
+  const dispatchActive = !!activeRun;
 
   // Blacklist de templates (FIX B)
   const { data: blockedTemplates } = useQuery({
