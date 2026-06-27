@@ -1,5 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,8 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, Loader2, UserPlus, Handshake } from "lucide-react";
-import { useLeadParcerias, useCreateParceria } from "@/hooks/useParcerias";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Users, Loader2, UserPlus, Handshake, Trash2 } from "lucide-react";
+import { useLeadParcerias, useCreateParceria, useDeleteParceria } from "@/hooks/useParcerias";
 
 interface Props {
   open: boolean;
@@ -25,9 +36,13 @@ interface TeamMember {
 
 export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome, corretorPrincipalId }: Props) {
   const { user } = useAuth();
+  const { isGestor, isAdmin, isDiretor } = useUserRole();
   const [corretores, setCorretores] = useState<TeamMember[]>([]);
   const [parceiro, setParceiro] = useState("");
   const [motivo, setMotivo] = useState("");
+  const [parceriaToDelete, setParceriaToDelete] = useState<{ id: string; nome: string } | null>(null);
+
+  const canManageAll = isGestor || isAdmin || isDiretor;
 
   const excludedUserId = useMemo(() => corretorPrincipalId || user?.id || null, [corretorPrincipalId, user?.id]);
 
@@ -36,6 +51,7 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
 
   // React Query: create mutation
   const createMutation = useCreateParceria();
+  const deleteMutation = useDeleteParceria();
 
   // Load team members (still imperative — not partnership data)
   useEffect(() => {
@@ -99,6 +115,10 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
               <Label className="text-xs text-muted-foreground">Parcerias existentes</Label>
               {existingPartnerships.map((p) => {
                 const parceiroNome = corretores.find((c) => c.user_id === p.corretor_parceiro_id)?.nome || "Corretor";
+                const canDelete =
+                  canManageAll ||
+                  p.corretor_principal_id === user?.id ||
+                  p.criado_por === user?.id;
                 return (
                   <div key={p.id} className="flex items-center gap-2 text-xs bg-accent/50 rounded px-2 py-1.5">
                     <UserPlus className="h-3 w-3 text-primary" />
@@ -106,6 +126,17 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
                     <Badge variant="secondary" className="text-[10px] ml-auto">
                       {p.divisao_principal}/{p.divisao_parceiro}
                     </Badge>
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-danger-500 hover:text-danger-700 hover:bg-danger-500/10"
+                        onClick={() => setParceriaToDelete({ id: p.id, nome: parceiroNome })}
+                        title="Remover parceria"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 );
               })}
@@ -156,6 +187,31 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={!!parceriaToDelete} onOpenChange={(o) => !o && setParceriaToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover parceria?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A parceria com <strong>{parceriaToDelete?.nome}</strong> será removida deste lead. O lead
+              ficará apenas com o corretor principal. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-danger-500 text-white hover:bg-danger-700"
+              onClick={async () => {
+                if (!parceriaToDelete) return;
+                await deleteMutation.mutateAsync({ parceriaId: parceriaToDelete.id, leadId });
+                setParceriaToDelete(null);
+              }}
+            >
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
