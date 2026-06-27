@@ -18,8 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Users, Loader2, UserPlus, Handshake, Trash2 } from "lucide-react";
-import { useLeadParcerias, useCreateParceria, useDeleteParceria } from "@/hooks/useParcerias";
+import { Users, Loader2, UserPlus, Handshake, Trash2, Pencil } from "lucide-react";
+import { useLeadParcerias, useCreateParceria, useUpdateParceria, useDeleteParceria } from "@/hooks/useParcerias";
 
 interface Props {
   open: boolean;
@@ -40,6 +40,7 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
   const [corretores, setCorretores] = useState<TeamMember[]>([]);
   const [parceiro, setParceiro] = useState("");
   const [motivo, setMotivo] = useState("");
+  const [editingParceriaId, setEditingParceriaId] = useState<string | null>(null);
   const [parceriaToDelete, setParceriaToDelete] = useState<{ id: string; nome: string } | null>(null);
 
   const canManageAll = isGestor || isAdmin || isDiretor;
@@ -51,6 +52,7 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
 
   // React Query: create mutation
   const createMutation = useCreateParceria();
+  const updateMutation = useUpdateParceria();
   const deleteMutation = useDeleteParceria();
 
   // Load team members (still imperative — not partnership data)
@@ -79,8 +81,26 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
     })();
   }, [open, excludedUserId]);
 
+  const resetForm = () => {
+    setParceiro("");
+    setMotivo("");
+    setEditingParceriaId(null);
+  };
+
   const handleSave = async () => {
     if (!parceiro || !user) return;
+
+    if (editingParceriaId) {
+      await updateMutation.mutateAsync({
+        parceriaId: editingParceriaId,
+        leadId,
+        corretorParceiroId: parceiro,
+        motivo: motivo || undefined,
+      });
+      resetForm();
+      return;
+    }
+
     await createMutation.mutateAsync({
       leadId,
       corretorPrincipalId: corretorPrincipalId || user.id,
@@ -88,12 +108,22 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
       motivo: motivo || undefined,
     });
     onOpenChange(false);
-    setParceiro("");
-    setMotivo("");
+    resetForm();
+  };
+
+  const handleEdit = (parceria: typeof existingPartnerships[number]) => {
+    setEditingParceriaId(parceria.id);
+    setParceiro(parceria.corretor_parceiro_id);
+    setMotivo(parceria.motivo || "");
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) resetForm();
+    onOpenChange(nextOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
@@ -115,27 +145,40 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
               <Label className="text-xs text-muted-foreground">Parcerias existentes</Label>
               {existingPartnerships.map((p) => {
                 const parceiroNome = corretores.find((c) => c.user_id === p.corretor_parceiro_id)?.nome || "Corretor";
-                const canDelete =
+                const canManage =
                   canManageAll ||
                   p.corretor_principal_id === user?.id ||
                   p.criado_por === user?.id;
                 return (
-                  <div key={p.id} className="flex items-center gap-2 text-xs bg-accent/50 rounded px-2 py-1.5">
-                    <UserPlus className="h-3 w-3 text-primary" />
-                    <span>{parceiroNome}</span>
-                    <Badge variant="secondary" className="text-[10px] ml-auto">
-                      {p.divisao_principal}/{p.divisao_parceiro}
-                    </Badge>
-                    {canDelete && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-danger-500 hover:text-danger-700 hover:bg-danger-500/10"
-                        onClick={() => setParceriaToDelete({ id: p.id, nome: parceiroNome })}
-                        title="Remover parceria"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                  <div key={p.id} className="flex flex-col gap-2 rounded-md bg-accent/50 p-2 text-xs sm:flex-row sm:items-center">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <UserPlus className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      <span className="truncate text-sm font-medium text-foreground">{parceiroNome}</span>
+                      <Badge variant="secondary" className="ml-auto shrink-0 text-[10px]">
+                        {p.divisao_principal}/{p.divisao_parceiro}
+                      </Badge>
+                    </div>
+                    {canManage && (
+                      <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2 text-xs"
+                          onClick={() => handleEdit(p)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-8 px-2 text-xs"
+                          onClick={() => setParceriaToDelete({ id: p.id, nome: parceiroNome })}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Apagar
+                        </Button>
+                      </div>
                     )}
                   </div>
                 );
@@ -177,13 +220,22 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={!parceiro || createMutation.isPending} className="gap-1.5">
-            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Handshake className="h-4 w-4" />}
-            Registrar Parceria
+          {editingParceriaId && (
+            <Button variant="ghost" onClick={resetForm} disabled={updateMutation.isPending}>
+              Cancelar edição
+            </Button>
+          )}
+          <Button
+            onClick={handleSave}
+            disabled={!parceiro || createMutation.isPending || updateMutation.isPending}
+            className="gap-1.5"
+          >
+            {createMutation.isPending || updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Handshake className="h-4 w-4" />}
+            {editingParceriaId ? "Salvar edição" : "Registrar Parceria"}
           </Button>
         </DialogFooter>
       </DialogContent>
