@@ -43,7 +43,7 @@ export function useCampanhaAtrioFlag() {
         .eq("flag_name", "campanha_atrio_enabled").maybeSingle();
       return data ?? { flag_value: false, reason: null, updated_at: null };
     },
-    refetchInterval: 5000,
+    refetchInterval: 20000,
   });
 }
 
@@ -56,7 +56,7 @@ export function useAtrioControle() {
       if (error) throw error;
       return (data || []) as OndaControle[];
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 }
 
@@ -69,7 +69,7 @@ export function useAtrioRespostas() {
       if (error) throw error;
       return (data || []) as AtrioResposta[];
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 }
 

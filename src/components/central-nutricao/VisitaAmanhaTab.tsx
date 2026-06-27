@@ -46,7 +46,7 @@ export default function VisitaAmanhaTab() {
       });
       return counts;
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 
   const { data: recentes } = useQuery({
@@ -79,7 +79,7 @@ export default function VisitaAmanhaTab() {
         corretor_nome: corretorMap[r.pipeline_leads?.corretor_id] || null,
       }));
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 
   const recentesFiltrados = useMemo(() => {

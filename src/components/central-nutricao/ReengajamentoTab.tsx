@@ -67,13 +67,14 @@ export default function ReengajamentoTab() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 4000,
+    refetchInterval: 15000,
   });
 
   const [draft, setDraft] = useState<any>(null);
   const local = draft ?? cfg ?? {};
 
-  // Execução ativa (running) — polling a cada 2s para feedback ao vivo
+  // Execução ativa (running) — polling rápido só quando há disparo em andamento,
+  // lento (15s) quando ocioso para detectar o início de um novo disparo.
   const { data: activeRun } = useQuery({
     queryKey: ["reengajamento-active-run"],
     queryFn: async () => {
@@ -89,8 +90,9 @@ export default function ReengajamentoTab() {
       }
       return data as any;
     },
-    refetchInterval: 2000,
+    refetchInterval: (query) => (query.state.data ? 3000 : 15000),
   });
+  const dispatchActive = !!activeRun;
 
   // Blacklist de templates (FIX B)
   const { data: blockedTemplates } = useQuery({
@@ -119,7 +121,7 @@ export default function ReengajamentoTab() {
         .limit(10);
       return (data || []) as any[];
     },
-    refetchInterval: 5000,
+    refetchInterval: dispatchActive ? 8000 : 30000,
   });
 
   const { data: kpis } = useQuery({
@@ -148,7 +150,7 @@ export default function ReengajamentoTab() {
         reativados: reativadosCount,
       };
     },
-    refetchInterval: 5000,
+    refetchInterval: dispatchActive ? 10000 : 60000,
   });
 
   const { data: ultimos = [] } = useQuery({
@@ -180,7 +182,7 @@ export default function ReengajamentoTab() {
       }
       return leads.map((l: any) => ({ ...l, ultimaResposta: respostasMap[l.id] || null }));
     },
-    refetchInterval: 5000,
+    refetchInterval: dispatchActive ? 10000 : 30000,
   });
 
   // 🛡️ Saúde do template Meta — detecta bloqueios sistemáticos
@@ -211,7 +213,7 @@ export default function ReengajamentoTab() {
       const lastFail = rows.find((r) => r.status === "failed");
       return { total, failed, qualityHits, failRate: failed / total, lastError: lastFail?.error_text || null, template: lastFail?.template_name || null };
     },
-    refetchInterval: 15000,
+    refetchInterval: dispatchActive ? 15000 : 60000,
   });
 
   async function reativarManual(leadId: string, nome: string) {
