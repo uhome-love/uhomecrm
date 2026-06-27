@@ -213,7 +213,7 @@ export default function ReengajamentoTab() {
       const lastFail = rows.find((r) => r.status === "failed");
       return { total, failed, qualityHits, failRate: failed / total, lastError: lastFail?.error_text || null, template: lastFail?.template_name || null };
     },
-    refetchInterval: 15000,
+    refetchInterval: dispatchActive ? 15000 : 60000,
   });
 
   async function reativarManual(leadId: string, nome: string) {
