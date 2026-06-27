@@ -1221,10 +1221,11 @@ Deno.serve(async (req) => {
             });
             await updateQueueItem(lead, "failed", errMsg);
 
-            // 🛑 Auto-pause: se 5+ falhas consecutivas com sinais de bloqueio Meta (template pausado / qualidade)
+            // 🛑 Auto-pause: só trava se falhar SEM PARAR (15+ falhas consecutivas com bloqueio Meta).
+            // Enquanto estiver enviando mais do que falhando, segue (modo lento cuida do pacing).
             if (isMetaQualityBlockText(r.error || "")) {
               consecutiveMetaQualityFails++;
-              if (consecutiveMetaQualityFails >= 5) {
+              if (consecutiveMetaQualityFails >= 15) {
                 stopReason = await pauseMetaForQuality(`Auto-pausa: template "${metaTemplate}" provavelmente pausado/limitado pela Meta (${consecutiveMetaQualityFails} falhas consecutivas: "${(r.error || "").slice(0, 120)}").`);
                 await insertEvento({
                   lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
