@@ -4,6 +4,8 @@
  * - useParceriasMap(): loads the visual map (lead_id → parceiro_nome) used by Kanban badges
  * - useLeadParcerias(leadId): loads full partnership rows for a specific lead
  * - useCreateParceria(): mutation to register a new partnership
+ * - useUpdateParceria(): mutation to change the partner broker / reason
+ * - useDeleteParceria(): mutation to remove a partnership
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -143,6 +145,47 @@ export function useCreateParceria() {
 }
 
 // ── 4) Delete partnership mutation ──
+interface UpdateParceriaInput {
+  parceriaId: string;
+  leadId: string;
+  corretorParceiroId: string;
+  motivo?: string;
+}
+
+export function useUpdateParceria() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: UpdateParceriaInput) => {
+      const { error } = await supabase
+        .from("pipeline_parcerias")
+        .update({
+          corretor_parceiro_id: input.corretorParceiroId,
+          motivo: input.motivo || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", input.parceriaId);
+      if (error) {
+        if (error.code === "23505") throw new Error("duplicate");
+        throw error;
+      }
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Parceria atualizada");
+      queryClient.invalidateQueries({ queryKey: parceriaKeys.lead(variables.leadId) });
+      queryClient.invalidateQueries({ queryKey: parceriaKeys.map() });
+    },
+    onError: (err: Error) => {
+      if (err.message === "duplicate") {
+        toast.error("Este corretor já está em parceria neste lead");
+      } else {
+        toast.error("Erro ao editar parceria");
+      }
+    },
+  });
+}
+
+// ── 5) Delete partnership mutation ──
 interface DeleteParceriaInput {
   parceriaId: string;
   leadId: string;
