@@ -36,9 +36,13 @@ interface TeamMember {
 
 export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome, corretorPrincipalId }: Props) {
   const { user } = useAuth();
+  const { isGestor, isAdmin, isDiretor } = useUserRole();
   const [corretores, setCorretores] = useState<TeamMember[]>([]);
   const [parceiro, setParceiro] = useState("");
   const [motivo, setMotivo] = useState("");
+  const [parceriaToDelete, setParceriaToDelete] = useState<{ id: string; nome: string } | null>(null);
+
+  const canManageAll = isGestor || isAdmin || isDiretor;
 
   const excludedUserId = useMemo(() => corretorPrincipalId || user?.id || null, [corretorPrincipalId, user?.id]);
 
@@ -47,6 +51,7 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
 
   // React Query: create mutation
   const createMutation = useCreateParceria();
+  const deleteMutation = useDeleteParceria();
 
   // Load team members (still imperative — not partnership data)
   useEffect(() => {
