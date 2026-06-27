@@ -82,7 +82,7 @@ export default function LiveDispatchBanner() {
         .maybeSingle();
       return data as any;
     },
-    refetchInterval: 4000,
+    refetchInterval: 15000,
   });
 
   if (!activeRun) return null;
