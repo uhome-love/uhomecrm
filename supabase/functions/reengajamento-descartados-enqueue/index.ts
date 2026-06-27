@@ -20,10 +20,10 @@ const META_DELAY_MIN_MS = 12_000;
 const META_DELAY_MAX_MS = 30_000;
 const META_GUARD_RECENT_MINUTES = 15;
 const META_GUARD_COOLDOWN_HOURS = 24;
-const META_GUARD_MIN_RESOLVED = 20;
-const META_GUARD_QUALITY_FAILS = 8;
-const META_GUARD_FAIL_RATIO = 0.35;
-const META_GUARD_HARD_FAIL_RATIO = 0.50;
+const META_GUARD_MIN_RESOLVED = 30;
+const META_GUARD_QUALITY_FAILS = 20;
+const META_GUARD_FAIL_RATIO = 0.70;
+const META_GUARD_HARD_FAIL_RATIO = 0.85;
 const META_QUEUE_BATCH_SIZE = 3;
 const EVOLUTION_QUEUE_BATCH_SIZE = 5;
 const QUEUE_STALE_MINUTES = 6;
@@ -1221,10 +1221,11 @@ Deno.serve(async (req) => {
             });
             await updateQueueItem(lead, "failed", errMsg);
 
-            // 🛑 Auto-pause: se 5+ falhas consecutivas com sinais de bloqueio Meta (template pausado / qualidade)
+            // 🛑 Auto-pause: só trava se falhar SEM PARAR (15+ falhas consecutivas com bloqueio Meta).
+            // Enquanto estiver enviando mais do que falhando, segue (modo lento cuida do pacing).
             if (isMetaQualityBlockText(r.error || "")) {
               consecutiveMetaQualityFails++;
-              if (consecutiveMetaQualityFails >= 5) {
+              if (consecutiveMetaQualityFails >= 15) {
                 stopReason = await pauseMetaForQuality(`Auto-pausa: template "${metaTemplate}" provavelmente pausado/limitado pela Meta (${consecutiveMetaQualityFails} falhas consecutivas: "${(r.error || "").slice(0, 120)}").`);
                 await insertEvento({
                   lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
