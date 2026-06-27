@@ -56,7 +56,7 @@ export function useAtrioControle() {
       if (error) throw error;
       return (data || []) as OndaControle[];
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 }
 
