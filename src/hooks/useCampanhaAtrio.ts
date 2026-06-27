@@ -69,7 +69,7 @@ export function useAtrioRespostas() {
       if (error) throw error;
       return (data || []) as AtrioResposta[];
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 }
 
