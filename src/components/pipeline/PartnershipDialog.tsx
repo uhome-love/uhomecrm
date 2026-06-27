@@ -115,6 +115,10 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
               <Label className="text-xs text-muted-foreground">Parcerias existentes</Label>
               {existingPartnerships.map((p) => {
                 const parceiroNome = corretores.find((c) => c.user_id === p.corretor_parceiro_id)?.nome || "Corretor";
+                const canDelete =
+                  canManageAll ||
+                  p.corretor_principal_id === user?.id ||
+                  p.criado_por === user?.id;
                 return (
                   <div key={p.id} className="flex items-center gap-2 text-xs bg-accent/50 rounded px-2 py-1.5">
                     <UserPlus className="h-3 w-3 text-primary" />
@@ -122,6 +126,17 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
                     <Badge variant="secondary" className="text-[10px] ml-auto">
                       {p.divisao_principal}/{p.divisao_parceiro}
                     </Badge>
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-danger-500 hover:text-danger-700 hover:bg-danger-500/10"
+                        onClick={() => setParceriaToDelete({ id: p.id, nome: parceiroNome })}
+                        title="Remover parceria"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 );
               })}
