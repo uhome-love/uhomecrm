@@ -43,7 +43,7 @@ export function useCampanhaAtrioFlag() {
         .eq("flag_name", "campanha_atrio_enabled").maybeSingle();
       return data ?? { flag_value: false, reason: null, updated_at: null };
     },
-    refetchInterval: 5000,
+    refetchInterval: 20000,
   });
 }
 
