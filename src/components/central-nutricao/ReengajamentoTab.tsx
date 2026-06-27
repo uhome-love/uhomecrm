@@ -150,7 +150,7 @@ export default function ReengajamentoTab() {
         reativados: reativadosCount,
       };
     },
-    refetchInterval: 5000,
+    refetchInterval: dispatchActive ? 10000 : 60000,
   });
 
   const { data: ultimos = [] } = useQuery({
