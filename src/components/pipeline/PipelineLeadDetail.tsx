@@ -27,7 +27,7 @@ import {
   Plus, CheckCircle2, AlertTriangle, ChevronRight,
   FileText, ChevronDown, ClipboardList,
   Flame, Snowflake, Sun, Brain, TrendingUp,
-  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil
+  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil, MessageCircle
 } from "lucide-react";
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
 import DrawerLeadHeader from "./drawer/DrawerLeadHeader";
