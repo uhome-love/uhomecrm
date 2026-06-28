@@ -20,6 +20,7 @@ import { usePipelineLeadData } from "@/hooks/usePipelineLeadData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useHomi } from "@/contexts/HomiContext";
 
 import {
   Phone, Mail, Calendar, MapPin, Loader2,
