@@ -759,37 +759,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           )}
 
           <div className="flex-1" />
-
-          {/* Pílulas Em dia / Sem tarefa / Atrasado / Negócios */}
-          <div className="shrink-0">
-            <PipelineFiltroBadges
-              counts={pillCounts}
-              active={
-                negociosFilter ? "negocios"
-                : clientStatusFilter === "em_dia" ? "em_dia"
-                : clientStatusFilter === "desatualizado" ? "sem_tarefa"
-                : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
-                : null
-              }
-              onChange={(key) => {
-                // Evita conflito silencioso com o filtro de status do Sheet avançado.
-                setFilters(f => (f.statusLead ? { ...f, statusLead: "" } : f));
-                if (key === "negocios") {
-                  setNegociosFilter(true);
-                  setClientStatusFilter("todos");
-                  return;
-                }
-                setNegociosFilter(false);
-                const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
-                  em_dia: "em_dia",
-                  sem_tarefa: "desatualizado",
-                  atrasado: "tarefa_atrasada",
-                };
-                setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
-              }}
-            />
-          </div>
         </div>
+
 
       </div>
 
