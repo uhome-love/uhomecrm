@@ -311,20 +311,28 @@ const CardMinimal = memo(function CardMinimal({
             >
               {ACTION_ICON[actionType]}
             </span>
-            <span
-              className={`flex-1 min-w-0 truncate text-[11.5px] ${
-                isAtrasada ? "text-red-600" : "text-muted-foreground"
-              }`}
-            >
-              <strong
-                className={`font-semibold ${
-                  isAtrasada ? "text-red-600" : "text-foreground"
+            {status === "sem" ? (
+              <span className="flex-1 min-w-0 truncate text-[11.5px] text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-1">
+                <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-500/15 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide">
+                  ⚠ Definir tarefa
+                </span>
+              </span>
+            ) : (
+              <span
+                className={`flex-1 min-w-0 truncate text-[11.5px] ${
+                  isAtrasada ? "text-red-600" : "text-muted-foreground"
                 }`}
               >
-                {ACTION_LABEL[actionType]}
-              </strong>{" "}
-              {actionWhen}
-            </span>
+                <strong
+                  className={`font-semibold ${
+                    isAtrasada ? "text-red-600" : "text-foreground"
+                  }`}
+                >
+                  {ACTION_LABEL[actionType]}
+                </strong>{" "}
+                {actionWhen}
+              </span>
+            )}
             {diasLabel && (
               <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
                 {diasLabel}
@@ -333,6 +341,7 @@ const CardMinimal = memo(function CardMinimal({
           </div>
         </>
       )}
+
 
       {/* Rodapé: corretor / parceria — só aparece quando houver dado */}
       {(corretorNome || parceiroNome) && (
