@@ -793,10 +793,14 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   width: `${getColumnWidth()}px`,
                   scrollSnapAlign: "start",
                   animation: `pipelineFadeUp 0.35s cubic-bezier(0.25,0.46,0.45,0.94) ${colIdx * 0.05}s both`,
-                  transition: isDragOver ? "all 0.2s ease" : undefined,
-                  background: isDragOver ? "rgba(34,197,94,0.04)" : undefined,
-                  borderRadius: isDragOver ? 10 : undefined,
+                  transition: "all 0.2s ease",
+                  background: isDragOver ? "rgba(34,197,94,0.06)" : undefined,
+                  borderRadius: isDragOver ? 12 : undefined,
+                  outline: isDragOver ? "2px dashed rgba(34,197,94,0.5)" : undefined,
+                  outlineOffset: isDragOver ? "2px" : undefined,
+                  boxShadow: isDragOver ? "0 8px 24px rgba(34,197,94,0.12)" : undefined,
                 }}
+
                 onDragOver={(e) => handleDragOver(e, stage.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.id)}
