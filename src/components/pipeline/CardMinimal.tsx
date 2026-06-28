@@ -235,8 +235,8 @@ const CardMinimal = memo(function CardMinimal({
       }}
       data-dragging={isDragging || undefined}
       className={[
-        "group relative cursor-pointer rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out",
-        "px-3 py-2.5 pl-4 hover:-translate-y-px active:scale-[0.985] active:shadow-sm motion-reduce:transition-none motion-reduce:active:scale-100",
+        "group relative cursor-pointer rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ease-out",
+        "px-3.5 py-3 pl-4 hover:-translate-y-px active:scale-[0.985] active:shadow-sm motion-reduce:transition-none motion-reduce:active:scale-100",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
         parceiroNome
           ? "bg-purple-50/40 dark:bg-purple-950/20 border border-purple-300/70 dark:border-purple-700/60 ring-1 ring-purple-400/50 hover:border-purple-400"
@@ -260,7 +260,7 @@ const CardMinimal = memo(function CardMinimal({
                 🤝 Parceria
               </span>
             )}
-            <div className="flex-1 min-w-0 text-[13.5px] font-semibold text-foreground tracking-tight leading-tight truncate">
+            <div className="flex-1 min-w-0 text-[14px] font-semibold text-foreground tracking-tight leading-tight truncate">
               {lead.nome || "Sem nome"}
             </div>
             {substatus && (
@@ -311,20 +311,28 @@ const CardMinimal = memo(function CardMinimal({
             >
               {ACTION_ICON[actionType]}
             </span>
-            <span
-              className={`flex-1 min-w-0 truncate text-[11.5px] ${
-                isAtrasada ? "text-red-600" : "text-muted-foreground"
-              }`}
-            >
-              <strong
-                className={`font-semibold ${
-                  isAtrasada ? "text-red-600" : "text-foreground"
+            {status === "sem" ? (
+              <span className="flex-1 min-w-0 truncate text-[11.5px] text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-1">
+                <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-500/15 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide">
+                  ⚠ Definir tarefa
+                </span>
+              </span>
+            ) : (
+              <span
+                className={`flex-1 min-w-0 truncate text-[11.5px] ${
+                  isAtrasada ? "text-red-600" : "text-muted-foreground"
                 }`}
               >
-                {ACTION_LABEL[actionType]}
-              </strong>{" "}
-              {actionWhen}
-            </span>
+                <strong
+                  className={`font-semibold ${
+                    isAtrasada ? "text-red-600" : "text-foreground"
+                  }`}
+                >
+                  {ACTION_LABEL[actionType]}
+                </strong>{" "}
+                {actionWhen}
+              </span>
+            )}
             {diasLabel && (
               <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
                 {diasLabel}
@@ -333,6 +341,7 @@ const CardMinimal = memo(function CardMinimal({
           </div>
         </>
       )}
+
 
       {/* Rodapé: corretor / parceria — só aparece quando houver dado */}
       {(corretorNome || parceiroNome) && (

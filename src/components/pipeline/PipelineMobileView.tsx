@@ -187,7 +187,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
           style={{
             flex: 1, minHeight: 0, overflowY: "auto",
             display: "flex", flexDirection: "column", gap: 6,
-            padding: "8px 12px 80px",
+            padding: "8px 12px max(6rem, calc(env(safe-area-inset-bottom) + 5rem))",
             WebkitOverflowScrolling: "touch",
           }}
         >

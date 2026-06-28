@@ -595,11 +595,14 @@ export default function PipelineKanban() {
         setSortOrder={setSortOrder}
         gestorFilter={gestorFilter}
         setGestorFilter={setGestorFilter}
+        canToggleCarteira={isGestor || isAdmin}
+        minhaCarteira={minhaCarteira}
+        setMinhaCarteira={setMinhaCarteira}
       />
 
 
       {/* Toggle "Minha carteira / Equipe" — gestor e admin, somente no Kanban */}
-      {(isGestor || isAdmin) && activeTab === "kanban" && (
+      {(isGestor || isAdmin) && activeTab === "kanban" && !isMobile && (
         <div className="flex items-center gap-1 shrink-0" style={{ padding: "8px 28px 0" }}>
           <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
             <button
