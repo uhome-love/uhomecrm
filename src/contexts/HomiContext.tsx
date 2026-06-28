@@ -314,6 +314,8 @@ const NOOP_CONTEXT: HomiContextType = {
   userName: "",
   knowledgeSource: null,
   conversationId: null,
+  launcherHidden: false,
+  setLauncherHidden: () => {},
 };
 
 // Throttled warning: max 3 unique callers, then suppress
