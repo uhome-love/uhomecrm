@@ -628,6 +628,27 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             </button>
           ))}
 
+          {/* Toggle Equipe / Minha carteira — integrado às abas (gestor/admin, só Kanban) */}
+          {canToggleCarteira && setMinhaCarteira && activeTab === "kanban" && (
+            <div className="inline-flex shrink-0 rounded-[7px] border border-[#e8e8f0] dark:border-white/[0.07] bg-card p-0.5 ml-1">
+              <button
+                type="button"
+                onClick={() => setMinhaCarteira(false)}
+                className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-[#71717a] dark:text-[#a1a1aa] hover:text-foreground"}`}
+              >
+                Equipe
+              </button>
+              <button
+                type="button"
+                onClick={() => setMinhaCarteira(true)}
+                className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-[#71717a] dark:text-[#a1a1aa] hover:text-foreground"}`}
+              >
+                Minha carteira
+              </button>
+            </div>
+          )}
+
+
           {activeTab === "inteligencia" && (
             <div className="flex items-center bg-[#f0f0f5] dark:bg-gray-800 rounded-[7px] p-0.5 ml-0.5">
               {[
