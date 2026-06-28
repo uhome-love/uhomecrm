@@ -204,8 +204,12 @@ const PipelineMobileView = memo(function PipelineMobileView({
               Nenhum lead nesta etapa
             </div>
           )}
-          {visibleLeads.map(lead => (
-            <div key={lead.id} style={{ width: "100%" }}>
+          {visibleLeads.map((lead, idx) => (
+            <div
+              key={lead.id}
+              className="animate-fade-in motion-reduce:animate-none"
+              style={{ width: "100%", animationDelay: `${Math.min(idx, 8) * 25}ms` }}
+            >
               <CardMinimal
                 lead={lead}
                 stage={activeStage}
