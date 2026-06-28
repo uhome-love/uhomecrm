@@ -20,6 +20,7 @@ import { usePipelineLeadData } from "@/hooks/usePipelineLeadData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useHomi } from "@/contexts/HomiContext";
 
 import {
   Phone, Mail, Calendar, MapPin, Loader2,
@@ -91,6 +92,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   useEffect(() => {
     setActiveTab(isMobile ? "info" : "historico");
   }, [lead.id, isMobile]);
+
+  const { setLauncherHidden } = useHomi();
+  // Hide the global floating HOMI launcher while the fullscreen lead drawer is open on mobile,
+  // so it doesn't overlap the fixed bottom action bar.
+  useEffect(() => {
+    if (isMobile && open) {
+      setLauncherHidden(true);
+      return () => setLauncherHidden(false);
+    }
+  }, [isMobile, open, setLauncherHidden]);
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -666,8 +677,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         </DrawerTimeline>
         </div>
 
-        {/* ════════════ BARRA DE AÇÃO FIXA (mobile) — sempre acessível em qualquer aba ════════════ */}
-        {isMobile && !homiOpen && (
+        {/* ════════════ BARRA DE AÇÃO FIXA (mobile) — Histórico/Tarefas/Visitas (aba Info já tem a grade de ações) ════════════ */}
+        {isMobile && !homiOpen && activeTab !== "info" && (
           <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-t border-border/50 bg-card/95 backdrop-blur-sm pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_-8px_hsl(var(--foreground)/0.18)] animate-fade-in motion-reduce:animate-none">
             <button
               onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}

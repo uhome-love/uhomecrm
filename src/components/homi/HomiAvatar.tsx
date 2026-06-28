@@ -29,7 +29,7 @@ function loadSavedPosition() {
 }
 
 function HomiAvatarInner() {
-  const { isOpen, toggleHomi, unseenCount, isLoading } = useHomi();
+  const { isOpen, toggleHomi, unseenCount, isLoading, launcherHidden } = useHomi();
   const { pathname } = useLocation();
   const defaultPos = { x: window.innerWidth - BUTTON_SIZE - SNAP_MARGIN, y: window.innerHeight - BUTTON_SIZE - SNAP_MARGIN };
   const [position, setPosition] = useState(() => loadSavedPosition() || defaultPos);
@@ -89,7 +89,7 @@ function HomiAvatarInner() {
     }
   }, [position, toggleHomi]);
 
-  if (isOpen || pathname === "/imoveis") return null;
+  if (isOpen || launcherHidden || pathname === "/imoveis") return null;
 
   return (
     <div

@@ -168,7 +168,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
 
       {/* Cards List — Negócio Criado usa coluna especializada */}
       {activeStage?.tipo === "convertido" ? (
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-20 pt-2">
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-[max(5rem,calc(env(safe-area-inset-bottom)+4rem))] pt-2">
           <NegocioCriadoColumn
             stageLeads={stageLeads}
             stage={activeStage}

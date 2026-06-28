@@ -57,6 +57,10 @@ interface HomiContextType {
 
   // Conversation persistence
   conversationId: string | null;
+
+  // Floating launcher visibility (hidden while a fullscreen drawer is open on mobile)
+  launcherHidden: boolean;
+  setLauncherHidden: (hidden: boolean) => void;
 }
 
 const HomiContext = createContext<HomiContextType | null>(null);
@@ -73,6 +77,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [launcherHidden, setLauncherHidden] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [alerts, setAlerts] = useState<ProactiveAlert[]>([]);
@@ -283,6 +288,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       currentPage, homiRole, userName,
       knowledgeSource,
       conversationId,
+      launcherHidden, setLauncherHidden,
     }}>
       {children}
     </HomiContext.Provider>
@@ -308,6 +314,8 @@ const NOOP_CONTEXT: HomiContextType = {
   userName: "",
   knowledgeSource: null,
   conversationId: null,
+  launcherHidden: false,
+  setLauncherHidden: () => {},
 };
 
 // Throttled warning: max 3 unique callers, then suppress
