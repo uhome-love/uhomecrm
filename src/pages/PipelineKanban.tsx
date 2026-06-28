@@ -608,6 +608,10 @@ export default function PipelineKanban() {
 
       {hasAnyFilter && !(isMobile && activeTab === "kanban") && (
         <div className="flex items-center gap-1 flex-wrap shrink-0" style={{ padding: "6px 28px 0" }}>
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mr-1">
+            Filtros ativos
+          </span>
+
           {filters.temperaturas.length > 0 && (
             <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
               Temp ×
