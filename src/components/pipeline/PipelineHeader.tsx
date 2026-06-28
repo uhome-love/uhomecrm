@@ -318,6 +318,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <RefreshCw className={`h-3.5 w-3.5 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
+        )}
       </div>
 
       {/* ── TABLET HEADER (md to lg) ── */}
