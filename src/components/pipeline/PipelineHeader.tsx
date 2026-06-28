@@ -210,6 +210,45 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           )}
         </div>
 
+        {/* Tab switcher mobile — paridade com desktop (Kanban / Inteligência / Modo Time / Equipes) */}
+        {roleTabs.length > 1 && (
+          <div className="flex items-center gap-1 px-3 py-1.5 overflow-x-auto scrollbar-none border-b border-slate-200 dark:border-gray-700">
+            {roleTabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1 shrink-0 transition-colors h-8 px-3 rounded-full text-[11px] font-semibold border-none cursor-pointer ${
+                  activeTab === tab.key
+                    ? "bg-primary text-white"
+                    : "bg-slate-100 dark:bg-gray-800 text-[#71717a] dark:text-[#a1a1aa]"
+                }`}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+            {activeTab === "inteligencia" && (
+              <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-full p-0.5 ml-0.5 shrink-0">
+                {[
+                  { key: "funil", icon: <BarChart3 className="h-3 w-3 inline mr-1" />, label: "Funil" },
+                  { key: "radar", icon: <Radar className="h-3 w-3 inline mr-1" />, label: "Radar" },
+                ].map(v => (
+                  <button
+                    key={v.key}
+                    onClick={() => setIntelView(v.key as "funil" | "radar")}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border-none cursor-pointer ${
+                      intelView === v.key
+                        ? "bg-white dark:bg-gray-700 text-[#0a0a0a] dark:text-white"
+                        : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
+                    }`}
+                  >
+                    {v.icon}{v.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {(mobileSearchOpen || filters.search) && (
           <div className="flex items-center gap-2 px-3 py-1.5 animate-fade-in border-b border-slate-200 dark:border-gray-700">
             <Search className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
@@ -235,7 +274,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         )}
 
-        {/* Line 2 mobile: pílulas unificadas Dashboard↔Pipeline */}
+        {/* Line 2 mobile: pílulas unificadas Dashboard↔Pipeline (somente Kanban) */}
+        {activeTab === "kanban" && (
         <div className="flex items-center gap-2 px-3 pb-2 border-b border-slate-200 dark:border-gray-700 overflow-x-auto">
           <PipelineFiltroBadges
             counts={pillCounts}
@@ -278,6 +318,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             <RefreshCw className={`h-3.5 w-3.5 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
+        )}
       </div>
 
       {/* ── TABLET HEADER (md to lg) ── */}
