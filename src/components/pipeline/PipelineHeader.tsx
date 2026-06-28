@@ -103,6 +103,11 @@ export interface PipelineHeaderProps {
   // Bug-fix Pílulas: contagens calculadas client-side em PipelineKanban
   // a partir dos leads em escopo (corretor/gestor/CEO com ou sem filtro).
   pillCounts?: { em_dia: number; sem_tarefa: number; atrasado: number; negocios: number };
+
+  // Toggle Equipe / Minha carteira — integrado na linha de pílulas no mobile.
+  canToggleCarteira?: boolean;
+  minhaCarteira?: boolean;
+  setMinhaCarteira?: (v: boolean) => void;
 }
 
 export default function PipelineHeader(props: PipelineHeaderProps) {
