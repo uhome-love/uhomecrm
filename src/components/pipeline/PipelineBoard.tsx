@@ -811,7 +811,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   style={{
                     background: "hsl(var(--pipeline-column-bg))",
                     border: isDragOver ? "1px solid #22c55e" : "1px solid hsl(var(--pipeline-column-border))",
-                    borderRadius: 10,
+                    borderRadius: 12,
                     padding: "10px 12px",
                     boxShadow: isDragOver ? "0 4px 16px rgba(34,197,94,0.12)" : "0 1px 2px rgba(0,0,0,0.04)",
                     marginBottom: 8,
