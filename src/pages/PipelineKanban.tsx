@@ -595,6 +595,9 @@ export default function PipelineKanban() {
         setSortOrder={setSortOrder}
         gestorFilter={gestorFilter}
         setGestorFilter={setGestorFilter}
+        canToggleCarteira={isGestor || isAdmin}
+        minhaCarteira={minhaCarteira}
+        setMinhaCarteira={setMinhaCarteira}
       />
 
 
