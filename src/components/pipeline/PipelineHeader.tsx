@@ -259,7 +259,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         )}
 
         {(activeTab === "kanban" || mobileSearchOpen || filters.search) && (
-          <div className="flex items-center gap-2 px-3 py-1.5 animate-fade-in border-b border-slate-200 dark:border-gray-700">
+          <div className="flex items-center gap-2 px-3 py-1.5 animate-fade-in">
             <Search className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
             <input
               ref={mobileSearchRef}
