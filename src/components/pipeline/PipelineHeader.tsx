@@ -513,10 +513,11 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         </div>
       </div>
 
-      {/* ── DESKTOP HEADER (lg+) ── */}
+      {/* ── DESKTOP HEADER (lg+) — Command Bar unificada ── */}
       <div className="hidden lg:block">
-        {/* Line 1 — Title + Pílulas + Actions (compacto) */}
-        <div className="flex items-center flex-nowrap min-h-12 py-1.5 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
+        {/* Linha 1 — Identidade · Navegação · Ações primárias */}
+        <div className="flex items-center flex-nowrap min-h-12 py-1.5 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-3">
+          {/* Identidade */}
           <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
             <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
               <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
@@ -534,57 +535,72 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             />
           </div>
 
-          {/* Pílulas movidas para linha 2 (ver abaixo) */}
+          {/* Divisor identidade ↔ navegação */}
+          <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0" />
 
+          {/* Navegação (abas) */}
+          <div className="flex items-center gap-1 min-w-0 flex-shrink overflow-x-auto scrollbar-none">
+            {roleTabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 shrink-0 transition-colors h-8 px-3 rounded-[7px] text-xs border-none cursor-pointer ${
+                  activeTab === tab.key
+                    ? "bg-primary text-white font-semibold shadow-sm"
+                    : "bg-transparent text-[#71717a] dark:text-[#a1a1aa] font-medium hover:text-foreground"
+                }`}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+
+            {/* Toggle Equipe / Minha carteira (gestor/admin, só Kanban) */}
+            {canToggleCarteira && setMinhaCarteira && activeTab === "kanban" && (
+              <div className="inline-flex shrink-0 rounded-[7px] border border-[#e8e8f0] dark:border-white/[0.07] bg-card p-0.5 ml-1">
+                <button
+                  type="button"
+                  onClick={() => setMinhaCarteira(false)}
+                  className={`px-2.5 h-7 text-[11px] font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-[#71717a] dark:text-[#a1a1aa] hover:text-foreground"}`}
+                >
+                  Equipe
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMinhaCarteira(true)}
+                  className={`px-2.5 h-7 text-[11px] font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-[#71717a] dark:text-[#a1a1aa] hover:text-foreground"}`}
+                >
+                  Minha carteira
+                </button>
+              </div>
+            )}
+
+            {/* Toggle Funil / Radar (Inteligência) */}
+            {activeTab === "inteligencia" && (
+              <div className="flex items-center bg-[#f0f0f5] dark:bg-gray-800 rounded-[7px] p-0.5 ml-1 shrink-0">
+                {[
+                  { key: "funil", icon: <BarChart3 className="h-3 w-3 inline mr-1" />, label: "Funil" },
+                  { key: "radar", icon: <Radar className="h-3 w-3 inline mr-1" />, label: "Radar" },
+                ].map(v => (
+                  <button
+                    key={v.key}
+                    onClick={() => setIntelView(v.key as "funil" | "radar")}
+                    className={`px-2 py-[3px] rounded-md text-[11px] font-semibold border-none cursor-pointer ${
+                      intelView === v.key
+                        ? "bg-white dark:bg-gray-700 text-[#0a0a0a] dark:text-white"
+                        : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
+                    }`}
+                  >
+                    {v.icon}{v.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="flex-1" />
 
-          <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
-            {(isAdmin || isGestor) && (
-              <PipelineCorretorSelect
-                value={corretorFilter}
-                onChange={setCorretorFilter}
-                options={corretorOptions}
-                isAdmin={isAdmin}
-                variant="desktop"
-              />
-            )}
-            {isAdmin && setGestorFilter && (
-              <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="desktop" />
-            )}
-
-            {/* Dropdown "Todas as campanhas" removido — filtro disponível em Filtros Avançados */}
-
-
-            <PipelineAdvancedFilters
-              filters={filters}
-              onChange={setFilters}
-              stages={pipelineStages}
-              segmentos={pipelineSegmentos}
-              leads={pipelineLeads}
-              corretorNomes={corretorNomes}
-              isManager={isGestor || isAdmin}
-              visitaLeadIds={visitaLeadIds}
-            />
-
-            <div className="relative w-[200px] xl:w-[260px]">
-              <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
-              <input
-                aria-label="Buscar lead, telefone ou empreendimento"
-                placeholder="Buscar lead, telefone, empreendimento..."
-                value={filters.search}
-                onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="w-full outline-none h-9 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-primary dark:focus:border-primary"
-              />
-              {filters.search && (
-                <button aria-label="Limpar busca" onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
-                  <X className="h-3 w-3 text-[#a1a1aa] dark:text-[#52525b]" />
-                </button>
-              )}
-            </div>
-
-            <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
-
+          {/* Ações primárias */}
+          <div className="flex items-center gap-1.5 shrink-0">
             {activeTab === "kanban" && (
               <button
                 onClick={() => setFocusModeOpen(true)}
@@ -600,7 +616,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               </button>
             )}
 
-
             {canAdd && activeTab === "kanban" && (
               <button
                 onClick={() => setAddOpen(true)}
@@ -612,80 +627,66 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         </div>
 
-        {/* Line 2 — Tabs + Intel toggle + ações admin */}
-        <div className="flex items-center flex-wrap gap-y-1 min-h-9 py-1 px-6 gap-1">
-          {roleTabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs border-none cursor-pointer ${
-                activeTab === tab.key
-                  ? "bg-primary text-white font-semibold"
-                  : "bg-transparent text-[#71717a] dark:text-[#a1a1aa] font-medium"
-              }`}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-
-          {/* Toggle Equipe / Minha carteira — integrado às abas (gestor/admin, só Kanban) */}
-          {canToggleCarteira && setMinhaCarteira && activeTab === "kanban" && (
-            <div className="inline-flex shrink-0 rounded-[7px] border border-[#e8e8f0] dark:border-white/[0.07] bg-card p-0.5 ml-1">
-              <button
-                type="button"
-                onClick={() => setMinhaCarteira(false)}
-                className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-[#71717a] dark:text-[#a1a1aa] hover:text-foreground"}`}
-              >
-                Equipe
-              </button>
-              <button
-                type="button"
-                onClick={() => setMinhaCarteira(true)}
-                className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-[#71717a] dark:text-[#a1a1aa] hover:text-foreground"}`}
-              >
-                Minha carteira
-              </button>
-            </div>
+        {/* Linha 2 — Controles: escopo · busca · filtros · ordenação · pílulas */}
+        <div className="flex items-center flex-wrap gap-y-1.5 gap-x-2 min-h-11 py-1.5 px-6">
+          {(isAdmin || isGestor) && (
+            <PipelineCorretorSelect
+              value={corretorFilter}
+              onChange={setCorretorFilter}
+              options={corretorOptions}
+              isAdmin={isAdmin}
+              variant="desktop"
+            />
+          )}
+          {isAdmin && setGestorFilter && (
+            <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="desktop" />
           )}
 
+          <PipelineAdvancedFilters
+            filters={filters}
+            onChange={setFilters}
+            stages={pipelineStages}
+            segmentos={pipelineSegmentos}
+            leads={pipelineLeads}
+            corretorNomes={corretorNomes}
+            isManager={isGestor || isAdmin}
+            visitaLeadIds={visitaLeadIds}
+          />
 
-          {activeTab === "inteligencia" && (
-            <div className="flex items-center bg-[#f0f0f5] dark:bg-gray-800 rounded-[7px] p-0.5 ml-0.5">
-              {[
-                { key: "funil", icon: <BarChart3 className="h-3 w-3 inline mr-1" />, label: "Funil" },
-                { key: "radar", icon: <Radar className="h-3 w-3 inline mr-1" />, label: "Radar" },
-              ].map(v => (
-                <button
-                  key={v.key}
-                  onClick={() => setIntelView(v.key as "funil" | "radar")}
-                  className={`px-2 py-[3px] rounded-md text-[11px] font-semibold border-none cursor-pointer ${
-                    intelView === v.key
-                      ? "bg-white dark:bg-gray-700 text-[#0a0a0a] dark:text-white"
-                      : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
-                  }`}
-                >
-                  {v.icon}{v.label}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="relative w-[200px] xl:w-[260px]">
+            <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
+            <input
+              aria-label="Buscar lead, telefone ou empreendimento"
+              placeholder="Buscar lead, telefone, empreendimento..."
+              value={filters.search}
+              onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+              className="w-full outline-none h-9 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-primary dark:focus:border-primary"
+            />
+            {filters.search && (
+              <button aria-label="Limpar busca" onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <X className="h-3 w-3 text-[#a1a1aa] dark:text-[#52525b]" />
+              </button>
+            )}
+          </div>
+
+          <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
 
           <button
             onClick={handleRefresh}
             disabled={refreshing}
             aria-label="Atualizar pipeline"
-            className="shrink-0 flex items-center justify-center transition-colors w-7 h-7 rounded-[7px] text-[#a1a1aa] dark:text-[#52525b] bg-transparent border-none cursor-pointer"
+            className="shrink-0 flex items-center justify-center transition-colors w-9 h-9 rounded-lg text-[#a1a1aa] dark:text-[#52525b] bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] cursor-pointer hover:text-foreground"
           >
-            <RefreshCw size={12} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={13} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
           </button>
 
           {isAdmin && activeTab === "kanban" && (
             <button
               onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
-              className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs font-medium border-none cursor-pointer ${
+              className={`flex items-center gap-1.5 shrink-0 transition-colors h-9 px-3 rounded-lg text-xs font-medium border cursor-pointer ${
                 selectionMode
-                  ? "bg-primary text-white"
-                  : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
+                  ? "bg-primary text-white border-primary"
+                  : "bg-[#f7f7fb] dark:bg-white/[0.04] text-[#71717a] dark:text-[#a1a1aa] border-[#e8e8f0] dark:border-white/[0.07] hover:text-foreground"
               }`}
             >
               {selectionMode ? <CheckSquare size={12} strokeWidth={1.5} /> : <Square size={12} strokeWidth={1.5} />}
@@ -695,11 +696,11 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           {isAdmin && filaCeoCount > 0 && (
             <>
-              <div className="w-px h-4 bg-[#e8e8f0] dark:bg-white/[0.07] mx-1 shrink-0" />
-              <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b]">Fila CEO</span>
+              <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] mx-0.5 shrink-0" />
+              <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] shrink-0">Fila CEO</span>
               <button
                 onClick={() => setFilaCeoFilter(f => !f)}
-                className={`shrink-0 flex items-center gap-1 transition-colors h-[22px] px-1.5 rounded-md text-[10px] font-bold cursor-pointer border ${
+                className={`shrink-0 flex items-center gap-1 transition-colors h-7 px-2 rounded-md text-[10px] font-bold cursor-pointer border ${
                   filaCeoFilter
                     ? "bg-primary/10 text-primary border-primary"
                     : "bg-transparent text-[#a1a1aa] dark:text-[#52525b] border-[#e8e8f0] dark:border-white/[0.07]"
@@ -710,7 +711,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               {filaCeoNovosCount > 0 && (
                 <button
                   onClick={() => openDispatch("novos")}
-                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold border-none cursor-pointer"
+                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold border-none cursor-pointer"
                   title="Distribuir leads novos (Meta, site, ImovelWeb...)"
                 >
                   🆕 Novos <span className="font-bold">{filaCeoNovosCount}</span>
@@ -719,7 +720,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               {filaCeoRedistCount > 0 && (
                 <button
                   onClick={() => openDispatch("redistribuicao")}
-                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold border-none cursor-pointer"
+                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold border-none cursor-pointer"
                   title="Confirmar redistribuição (leads reciclados após 72h)"
                 >
                   🔄 Redistrib. <span className="font-bold">{filaCeoRedistCount}</span>
@@ -730,7 +731,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           <div className="flex-1" />
 
-          {/* Pílulas Em dia/Sem tarefa/Atrasado/Negócios — alinhadas à direita da linha de tabs */}
+          {/* Pílulas Em dia / Sem tarefa / Atrasado / Negócios */}
           <div className="shrink-0">
             <PipelineFiltroBadges
               counts={pillCounts}
@@ -761,11 +762,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         </div>
 
-
-        {/* Line 3 removida — chips de filtros ativos (com "Limpar todos") são
-            renderizados em PipelineKanban como única lista, evitando duplicidade. */}
-
       </div>
+
 
       {/* Vestigial reference for compat — unused state surfaced to keep prop interface stable */}
       {/* displayedClientStatusCounts mantido na interface para futura instrumentação. */}
