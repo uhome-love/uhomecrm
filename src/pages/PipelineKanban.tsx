@@ -667,8 +667,15 @@ export default function PipelineKanban() {
               {clientStatusFilter === "em_dia" ? "✅ Em dia" : clientStatusFilter === "desatualizado" ? "🟡 Desatualizado" : "🔴 Atrasado"} ×
             </Badge>
           )}
+          <button
+            onClick={clearAllFilters}
+            className="ml-1 shrink-0 flex items-center gap-1 text-[10px] font-semibold text-danger-500 bg-transparent border-none cursor-pointer hover:underline"
+          >
+            <X className="h-2.5 w-2.5" /> Limpar todos
+          </button>
         </div>
       )}
+
 
       {/* PipelineManagerActions e PipelineTeamVisitas movidos para Modo Time (Fase 2).
           Imports lazy preservados para reuso. */}
