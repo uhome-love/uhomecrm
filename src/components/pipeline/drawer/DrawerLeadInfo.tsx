@@ -2,17 +2,23 @@
 // DrawerLeadInfo — Coluna esquerda (36%) do Drawer wide v3
 //
 // Estrutura espelha a coluna direita:
-//   [Header fixo (shrink-0)] + [Body scrollável (ScrollArea flex-1)]
+//   [Header fixo (shrink-0)] + [Body scrollável (overflow-y-auto flex-1)]
 //
 // O header fixo (avatar + nome + pílulas + contatos) recebe o mesmo
 // padding-top da TabsList da direita (pt-4 = 16px), garantindo
 // alinhamento visual constante independentemente do scroll.
 //
-// resetKey: ao mudar (ex. lead.id), zera scrollTop do viewport do
-// Radix ScrollArea — evita que o body apareça "começando abaixo"
-// quando o drawer permanece montado entre leads.
+// resetKey: ao mudar (ex. lead.id), zera scrollTop do container de
+// rolagem — evita que o body apareça "começando abaixo" quando o
+// drawer permanece montado entre leads.
+//
+// IMPORTANTE: usamos um container de rolagem nativo (overflow-y-auto)
+// em vez do Radix ScrollArea. O viewport do Radix aplica display:table
+// no wrapper interno, fazendo o conteúdo assumir sua largura preferida
+// (max-content) e transbordar o painel em larguras de laptop
+// (1024–1536px), sendo cortado na divisória. O div nativo com
+// overflow-x-hidden respeita 100% da largura do painel.
 // ─────────────────────────────────────────────────────────────────
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 interface Props {
@@ -23,18 +29,14 @@ interface Props {
 }
 
 export default function DrawerLeadInfo({ children, header, resetKey }: Props) {
-  const asideRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
-    const vp = asideRef.current?.querySelector<HTMLDivElement>(
-      "[data-radix-scroll-area-viewport]"
-    );
-    if (vp) vp.scrollTop = 0;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [resetKey]);
 
   return (
     <aside
-      ref={asideRef}
       className="hidden md:flex flex-col shrink-0 min-w-0 w-full md:w-[36%] md:max-w-[440px] border-r border-border/50 bg-[#fafafa] dark:bg-white/[0.02]"
       data-drawer-pane="info"
     >
@@ -43,11 +45,11 @@ export default function DrawerLeadInfo({ children, header, resetKey }: Props) {
           {header}
         </div>
       )}
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="px-5 py-4 space-y-3">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        <div className="w-full min-w-0 px-5 py-4 space-y-3">
           {children}
         </div>
-      </ScrollArea>
+      </div>
     </aside>
   );
 }
