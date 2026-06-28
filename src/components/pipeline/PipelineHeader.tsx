@@ -129,6 +129,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     sortOrder, setSortOrder,
     gestorFilter = "todos", setGestorFilter,
     pillCounts,
+    canToggleCarteira = false, minhaCarteira = false, setMinhaCarteira,
   } = props;
 
   // Tabs por role (Fase 1):
