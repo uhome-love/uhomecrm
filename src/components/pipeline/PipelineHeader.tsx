@@ -599,6 +599,35 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
           <div className="flex-1" />
 
+          {/* Pílulas de status — Em dia / Sem tarefa / Atrasado / Negócios */}
+          <div className="shrink-0">
+            <PipelineFiltroBadges
+              counts={pillCounts}
+              active={
+                negociosFilter ? "negocios"
+                : clientStatusFilter === "em_dia" ? "em_dia"
+                : clientStatusFilter === "desatualizado" ? "sem_tarefa"
+                : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
+                : null
+              }
+              onChange={(key) => {
+                setFilters(f => (f.statusLead ? { ...f, statusLead: "" } : f));
+                if (key === "negocios") {
+                  setNegociosFilter(true);
+                  setClientStatusFilter("todos");
+                  return;
+                }
+                setNegociosFilter(false);
+                const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
+                  em_dia: "em_dia",
+                  sem_tarefa: "desatualizado",
+                  atrasado: "tarefa_atrasada",
+                };
+                setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
+              }}
+            />
+          </div>
+
           {/* Ações primárias */}
           <div className="flex items-center gap-1.5 shrink-0">
             {activeTab === "kanban" && (
