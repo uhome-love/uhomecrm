@@ -92,6 +92,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     setActiveTab(isMobile ? "info" : "historico");
   }, [lead.id, isMobile]);
 
+  const { setLauncherHidden } = useHomi();
+  // Hide the global floating HOMI launcher while the fullscreen lead drawer is open on mobile,
+  // so it doesn't overlap the fixed bottom action bar.
+  useEffect(() => {
+    if (isMobile && open) {
+      setLauncherHidden(true);
+      return () => setLauncherHidden(false);
+    }
+  }, [isMobile, open, setLauncherHidden]);
+
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [homiOpen, setHomiOpen] = useState(false);
