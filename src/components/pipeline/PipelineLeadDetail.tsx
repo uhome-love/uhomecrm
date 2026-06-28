@@ -668,7 +668,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
         {/* ════════════ BARRA DE AÇÃO FIXA (mobile) — sempre acessível em qualquer aba ════════════ */}
         {isMobile && !homiOpen && (
-          <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-t border-border/50 bg-card/95 backdrop-blur-sm pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-t border-border/50 bg-card/95 backdrop-blur-sm pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_-8px_hsl(var(--foreground)/0.18)] animate-fade-in motion-reduce:animate-none">
             <button
               onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
               disabled={!lead.telefone}
