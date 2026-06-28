@@ -221,7 +221,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
         {/* Tab switcher mobile — paridade com desktop (Kanban / Inteligência / Modo Time / Equipes) */}
         {roleTabs.length > 1 && (
-          <div className="flex items-center gap-1 px-3 py-1.5 overflow-x-auto scrollbar-none border-b border-slate-200 dark:border-gray-700">
+          <div className="flex items-center gap-1 px-3 py-1.5 overflow-x-auto scrollbar-none">
             {roleTabs.map(tab => (
               <button
                 key={tab.key}
