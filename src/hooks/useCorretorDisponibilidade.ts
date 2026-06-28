@@ -7,11 +7,12 @@ import { toast } from "sonner";
 export type DisponibilidadeStatus = "offline" | "na_empresa" | "em_pausa" | "em_visita";
 
 export const SEGMENTOS_OFICIAIS = [
-  { nome: "MCMV / até R$500k", badge: "S1 · MCMV", cor: "#16A34A", empreendimentos: ["Open Bosque"] },
-  { nome: "Médio-Alto Padrão", badge: "S2 · Médio-Alto", cor: "#3350E6", empreendimentos: ["Orygem", "Las Casas", "Casa Tua"] },
-  { nome: "Altíssimo Padrão", badge: "S3 · Alto Padrão", cor: "#7C3AED", empreendimentos: ["Lake Eyre"] },
-  { nome: "Investimento", badge: "S4 · Investimento", cor: "#B45309", empreendimentos: ["Casa Bastian", "Shift"] },
+  { nome: "S1 - Moradia", badge: "S1 · Moradia", cor: "#60A5FA", empreendimentos: ["Open Bosque", "Orygem", "Las Casas", "Apice", "Terrace", "Imovelweb", "Site"] },
+  { nome: "S2 - Investimento", badge: "S2 · Investimento", cor: "#16A34A", empreendimentos: ["Átrio", "Shift", "Casa Bastian"] },
+  { nome: "S3 - Foco", badge: "S3 · Foco", cor: "#F472B6", empreendimentos: ["Casa Tua", "Vivid Terrace"] },
+  { nome: "S4 - Alto Padrão", badge: "S4 · Alto Padrão", cor: "#F0B95A", empreendimentos: ["Lake Eyre"] },
 ] as const;
+
 
 export type SegmentoOficial = (typeof SEGMENTOS_OFICIAIS)[number]["nome"];
 
