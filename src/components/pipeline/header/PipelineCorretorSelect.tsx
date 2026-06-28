@@ -68,7 +68,7 @@ export default function PipelineCorretorSelect({
         <SelectValue placeholder={PLACEHOLDER_BY_VARIANT[variant]} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">{variant === "desktop" ? "Todos os corretores" : "Todos"}</SelectItem>
+        <SelectItem value="all">{variant === "desktop" ? "Corretores (todos)" : "Todos"}</SelectItem>
         {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
         {options.map(([id, nome]) => (
           <SelectItem key={id} value={id}>{nome}</SelectItem>
