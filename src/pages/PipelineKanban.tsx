@@ -601,27 +601,9 @@ export default function PipelineKanban() {
       />
 
 
-      {/* Toggle "Minha carteira / Equipe" — gestor e admin, somente no Kanban */}
-      {(isGestor || isAdmin) && activeTab === "kanban" && !isMobile && (
-        <div className="flex items-center gap-1 shrink-0" style={{ padding: "8px 28px 0" }}>
-          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
-            <button
-              type="button"
-              onClick={() => setMinhaCarteira(false)}
-              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Equipe
-            </button>
-            <button
-              type="button"
-              onClick={() => setMinhaCarteira(true)}
-              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Minha carteira
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Toggle "Minha carteira / Equipe" agora vive no header desktop (Linha 2). */}
+
+
 
 
       {hasAnyFilter && !(isMobile && activeTab === "kanban") && (
