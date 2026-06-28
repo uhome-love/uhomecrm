@@ -185,20 +185,23 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             visitaLeadIds={visitaLeadIds}
           />
 
-          <button
-            onClick={() => {
-              setMobileSearchOpen(v => !v);
-              setTimeout(() => mobileSearchRef.current?.focus(), 100);
-            }}
-            aria-label="Buscar leads"
-            aria-expanded={mobileSearchOpen}
-            className="relative w-8 h-8 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
-          >
-            <Search className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-            {filters.search && (
-              <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
-            )}
-          </button>
+          {activeTab !== "kanban" && (
+            <button
+              onClick={() => {
+                setMobileSearchOpen(v => !v);
+                setTimeout(() => mobileSearchRef.current?.focus(), 100);
+              }}
+              aria-label="Buscar leads"
+              aria-expanded={mobileSearchOpen}
+              className="relative w-8 h-8 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
+            >
+              <Search className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+              {filters.search && (
+                <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
+              )}
+            </button>
+          )}
+
 
           {canAdd && activeTab === "kanban" && (
             <button
@@ -249,7 +252,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         )}
 
-        {(mobileSearchOpen || filters.search) && (
+        {(activeTab === "kanban" || mobileSearchOpen || filters.search) && (
           <div className="flex items-center gap-2 px-3 py-1.5 animate-fade-in border-b border-slate-200 dark:border-gray-700">
             <Search className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
             <input
@@ -261,18 +264,21 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
               className="flex-1 bg-transparent text-xs text-foreground outline-none h-8"
             />
-            <button
-              onClick={() => {
-                setFilters(f => ({ ...f, search: "" }));
-                setMobileSearchOpen(false);
-              }}
-              aria-label="Limpar busca"
-              className="bg-transparent border-none cursor-pointer flex items-center justify-center w-8 h-8 shrink-0"
-            >
-              <X className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-            </button>
+            {filters.search && (
+              <button
+                onClick={() => {
+                  setFilters(f => ({ ...f, search: "" }));
+                  if (activeTab !== "kanban") setMobileSearchOpen(false);
+                }}
+                aria-label="Limpar busca"
+                className="bg-transparent border-none cursor-pointer flex items-center justify-center w-8 h-8 shrink-0"
+              >
+                <X className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+              </button>
+            )}
           </div>
         )}
+
 
         {/* Line 2 mobile: pílulas unificadas Dashboard↔Pipeline (somente Kanban) */}
         {activeTab === "kanban" && (
