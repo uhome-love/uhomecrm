@@ -762,20 +762,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         </div>
 
 
-        {/* Line 3 — Filtros ativos (condicional) */}
-        {hasAnyFilter && (
-          <div className="flex items-center h-7 px-6 gap-2 border-t border-[#e8e8f0]/60 dark:border-white/[0.05]">
-            <span className="text-[10px] uppercase tracking-wide text-[#a1a1aa] dark:text-[#52525b] font-semibold">
-              Filtros ativos
-            </span>
-            <button
-              onClick={clearAllFilters}
-              className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-danger-500 bg-transparent border-none cursor-pointer"
-            >
-              <X size={10} strokeWidth={1.5} /> Limpar todos
-            </button>
-          </div>
-        )}
+        {/* Line 3 removida — chips de filtros ativos (com "Limpar todos") são
+            renderizados em PipelineKanban como única lista, evitando duplicidade. */}
+
       </div>
 
       {/* Vestigial reference for compat — unused state surfaced to keep prop interface stable */}
