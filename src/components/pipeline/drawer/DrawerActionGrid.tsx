@@ -40,7 +40,7 @@ export default function DrawerActionGrid({
             size="sm"
             disabled={a.disabled}
             onClick={a.onClick}
-            className={`h-10 text-xs gap-1.5 rounded-lg justify-start px-3 ${isPrimary ? `${a.primaryColor} shadow-sm` : ""}`}
+            className={`h-10 min-w-0 text-xs gap-1.5 rounded-lg justify-start px-3 ${isPrimary ? `${a.primaryColor} shadow-sm` : ""}`}
           >
             <a.icon className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{a.label}</span>
