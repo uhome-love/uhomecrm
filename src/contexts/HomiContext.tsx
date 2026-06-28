@@ -57,6 +57,10 @@ interface HomiContextType {
 
   // Conversation persistence
   conversationId: string | null;
+
+  // Floating launcher visibility (hidden while a fullscreen drawer is open on mobile)
+  launcherHidden: boolean;
+  setLauncherHidden: (hidden: boolean) => void;
 }
 
 const HomiContext = createContext<HomiContextType | null>(null);
