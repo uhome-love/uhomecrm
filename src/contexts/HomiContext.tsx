@@ -288,6 +288,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       currentPage, homiRole, userName,
       knowledgeSource,
       conversationId,
+      launcherHidden, setLauncherHidden,
     }}>
       {children}
     </HomiContext.Provider>
