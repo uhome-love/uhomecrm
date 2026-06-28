@@ -1,42 +1,50 @@
-# Polimento final — Pipeline Mobile
+# Polimento Visual — Pipeline Mobile
 
-Fiz uma verificação completa no preview mobile (440px), logado como CEO. Testei: header + troca de abas (Kanban / Inteligência / Equipes), busca fixa, pílulas de filtro, lista de cards, e o drawer de lead em tela cheia com a barra de ação fixa. **No geral está funcional e com boa paridade com o desktop.** Encontrei 3 ajustes de acabamento que faltam para ficar "perfeito".
+## Diagnóstico (análise criteriosa do screenshot)
 
-## O que está bom (confirmado no preview)
-- Abas no mobile (Kanban/Inteligência/Equipes) funcionando — gestão pelo celular OK.
-- Busca sempre visível no Kanban, pílulas de status e botão atualizar OK.
-- Lista de cards limpa, com animação de entrada.
-- Drawer de lead abre em tela cheia com abas roláveis e barra de ação fixa.
-- Aba Inteligência (funil/cards) renderiza bem no celular.
+O Pipeline mobile já é funcional, mas o **header consome espaço vertical demais** antes do primeiro card aparecer. Hoje são empilhadas, cada uma com sua própria borda inferior:
 
-## Problemas encontrados (a corrigir)
-
-### 1. Robô HOMI flutuante cobre a barra de ação do lead (bug real)
-Quando o drawer de lead abre no mobile, o lançador flutuante do HOMI (`fixed z-[60]`, canto inferior direito) fica **por cima da barra de ação fixa** do rodapé, escondendo o botão **"+ Tarefa"**. É o ajuste mais importante.
-
-```text
-┌──────────────────────────┐
-│  [ Ligar ] [ WhatsApp ] [+]│  ← "+" fica embaixo do robô HOMI
-└────────────────────────🤖─┘
+```
+1. Título "Pipeline 2214" + filtros + Novo
+2. Pílulas de aba (Equipes / Kanban / Inteligência)
+3. Barra de busca
+4. 4 badges (em dia / sem tarefa / atrasado / negócios) → QUEBRAM EM 2 LINHAS + refresh
+5. Toggle Equipe / Minha carteira
+6. Abas de etapa (Novo Lead / Sem Contato / Contato Iniciado...)
 ```
 
-**Correção:** ocultar o lançador do HOMI enquanto o drawer de lead estiver aberto no mobile (mesmo padrão que o HOMI já usa: ele some quando o painel HOMI abre ou na rota /imoveis).
+Resultado: ~6 faixas com bordas separando, visual "caixa sobre caixa", e os badges quebrando em 2 linhas (no print: "em dia / sem tarefa" em cima, "atrasado / negócios" embaixo) desperdiçam altura e parecem desalinhados. Só sobra espaço para ~1,5 card visível.
 
-### 2. "Ligar" e "WhatsApp" duplicados na aba Info
-Na aba **Info** já existe a grade completa de AÇÕES (Ligar, WhatsApp, Scripts, Anotar, Mais ações). A barra fixa do rodapé repete Ligar/WhatsApp — redundante só nessa aba. Nas abas Histórico/Tarefas/Visitas a barra fixa é essencial (lá não há a grade).
+### Problemas pontuais
+- **Badges quebram linha** — deveriam rolar horizontalmente em linha única.
+- **Excesso de divisórias** — cada faixa tem `border-b`, criando ruído visual.
+- **Toggle Equipe/Minha carteira** ocupa uma faixa inteira só para 2 botões.
+- **Cards** estão corretos mas "secos": a linha "Tarefa definir" e o rodapé do corretor poderiam ter hierarquia/respiro melhores; cards sem tarefa (âmbar) não destacam o CTA "definir".
+- **Robô HOMI** flutua sobre o último card (já há tratamento no drawer, mas na lista ele cobre conteúdo).
 
-**Correção:** manter a barra fixa nas abas Histórico/Tarefas/Visitas e ocultá-la na aba Info (onde a grade já cobre tudo), evitando duplicação e ganhando espaço vertical.
+## Mudanças propostas (apenas frontend / apresentação)
 
-### 3. Pequenos acabamentos visuais
-- Garantir respiro inferior da lista para a barra de navegação inferior não cobrir o último card.
-- Conferir alvos de toque ≥ 40px nos botões pequenos do header (atualizar, busca, filtros).
+### 1. Header mobile mais enxuto (`PipelineHeader.tsx`)
+- **Pílulas em linha única com scroll horizontal**: envolver `PipelineFiltroBadges` num container `overflow-x-auto scrollbar-none` com `flex-nowrap`, impedindo a quebra em 2 linhas. Botão refresh fica fixo (sticky) à direita ou recolhido junto.
+- **Reduzir divisórias**: remover `border-b` redundantes entre faixas consecutivas, deixando no máximo uma divisória sutil antes das abas de etapa. Usar leve diferença de fundo em vez de múltiplas bordas.
+- **Compactar alturas**: revisar paddings verticais (`py-1.5`) das faixas para ganhar ~1 card de altura.
 
-## Escopo técnico (somente frontend/apresentação)
-- `src/components/homi/HomiAvatar.tsx`: ocultar o lançador quando um drawer de lead mobile estiver aberto.
-- `src/contexts/HomiContext.tsx`: adicionar um sinal leve de visibilidade do lançador (`launcherHidden` + setter) reutilizável.
-- `src/components/pipeline/PipelineLeadDetail.tsx`: acionar esse sinal no mount/unmount do drawer (mobile) e ocultar a barra de ação fixa na aba `info`.
-- Sem mudanças em banco, RLS, edge functions ou no desktop. Tudo atrás de `isMobile`.
+### 2. Integrar toggle Equipe / Minha carteira (`PipelineKanban.tsx`)
+- No mobile, mover o toggle Equipe/Minha carteira para a **mesma linha das pílulas de filtro** (alinhado à esquerda, pílulas roláveis à direita) em vez de uma faixa própria, eliminando uma faixa inteira. Em desktop permanece como está.
 
-## Validação
-- Reabrir o drawer no preview mobile e confirmar: barra de ação totalmente visível (sem o robô por cima), botão "+ Tarefa" acessível, sem duplicação na aba Info, e desktop intacto.
-- Typecheck limpo.
+### 3. Refino dos cards (`CardMinimal.tsx`)
+- Melhorar respiro e hierarquia: nome um pouco maior, telefone e linha de ação com espaçamento mais consistente.
+- **Card sem tarefa (âmbar)**: destacar o "definir" com leve realce (cor âmbar no texto + chip discreto) para virar um CTA claro de "precisa de ação".
+- Microinterações já existentes (scale/active) mantidas; apenas refinar sombras e raio para um look mais moderno/cartão flutuante.
+- Manter todos os tokens semânticos (nada de cores hardcoded novas fora do padrão já usado).
+
+### 4. Respiro inferior da lista (`PipelineMobileView.tsx`)
+- Confirmar/ajustar o padding inferior com `safe-area-inset-bottom` para que o último card não fique sob o robô HOMI nem sob a navegação do sistema.
+
+## Fora de escopo
+- Nenhuma mudança de lógica de negócio, queries, filtros ou dados.
+- Tabelas, RLS e edge functions intocadas.
+- Identidade visual mantida (off-white / deep slate, indigo #4969FF, raio 12px) conforme memória do projeto.
+
+## Detalhe técnico
+Arquivos tocados: `PipelineHeader.tsx`, `PipelineKanban.tsx` (apenas bloco do toggle mobile), `CardMinimal.tsx`, `PipelineMobileView.tsx`. Todas as mudanças são de classes Tailwind / estrutura de markup de apresentação. Validação via Playwright em viewport mobile (440px) comparando antes/depois e conferindo que nenhuma faixa quebra layout.
