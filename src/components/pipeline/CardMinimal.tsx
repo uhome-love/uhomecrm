@@ -260,7 +260,7 @@ const CardMinimal = memo(function CardMinimal({
                 🤝 Parceria
               </span>
             )}
-            <div className="flex-1 min-w-0 text-[13.5px] font-semibold text-foreground tracking-tight leading-tight truncate">
+            <div className="flex-1 min-w-0 text-[14px] font-semibold text-foreground tracking-tight leading-tight truncate">
               {lead.nome || "Sem nome"}
             </div>
             {substatus && (
