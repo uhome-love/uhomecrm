@@ -246,7 +246,7 @@ const CardMinimal = memo(function CardMinimal({
         isDragging ? "opacity-60 scale-[0.98] shadow-lg cursor-grabbing" : "",
       ].join(" ")}
     >
-      {/* Header: nome + substatus + 3-dot */}
+      {/* Header: badges + nome + substatus · avatar do corretor + menu ··· */}
       <div className="flex items-start gap-1.5 min-w-0">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -275,21 +275,50 @@ const CardMinimal = memo(function CardMinimal({
             </div>
           )}
         </div>
-        {menuEnabled && (
-          <CardOverflowMenu
-            lead={lead}
-            stages={stages!}
-            onMoveLead={onMoveLead!}
-            onOpenDetail={onClick}
-            onTransferred={onTransferred}
-          />
-        )}
+
+        {/* Dono do lead (avatar) — scan rápido no topo-direito */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          {parceiroNome ? (
+            <div
+              title={`Parceria · ${parceiroNome}`}
+              className="w-[22px] h-[22px] rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0"
+            >
+              <Handshake className="h-3 w-3" />
+            </div>
+          ) : corretorNome ? (
+            corretorAvatarUrl ? (
+              <img
+                src={corretorAvatarUrl}
+                alt={corretorNome}
+                title={corretorNome}
+                className="w-[22px] h-[22px] rounded-full object-cover shrink-0 ring-2 ring-card"
+                loading="lazy"
+              />
+            ) : (
+              <div
+                title={corretorNome}
+                className="w-[22px] h-[22px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[9px] shrink-0 ring-2 ring-card"
+              >
+                {getInitials(corretorNome)}
+              </div>
+            )
+          ) : null}
+          {menuEnabled && (
+            <CardOverflowMenu
+              lead={lead}
+              stages={stages!}
+              onMoveLead={onMoveLead!}
+              onOpenDetail={onClick}
+              onTransferred={onTransferred}
+            />
+          )}
+        </div>
       </div>
 
 
       {/* Telefone com ícone discreto */}
       {telefoneFmt && (
-        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-foreground/80 min-w-0">
+        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-foreground/80 min-w-0">
           <Phone className="h-3 w-3 shrink-0 text-muted-foreground/70" />
           <span className="truncate">{telefoneFmt}</span>
         </div>
@@ -342,38 +371,16 @@ const CardMinimal = memo(function CardMinimal({
         </>
       )}
 
-
-      {/* Rodapé: corretor / parceria — só aparece quando houver dado */}
-      {(corretorNome || parceiroNome) && (
+      {/* Rodapé: nome do parceiro (informação crítica) — corretor já no avatar */}
+      {parceiroNome && (
         <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
-          {parceiroNome ? (
-            <>
-              <Handshake className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
-              <span className="truncate text-[11px] font-semibold text-purple-700 dark:text-purple-300">
-                {parceiroNome}
-              </span>
-            </>
-          ) : (
-            <>
-              {corretorAvatarUrl ? (
-                <img
-                  src={corretorAvatarUrl}
-                  alt={corretorNome || ""}
-                  className="w-[22px] h-[22px] rounded-full object-cover shrink-0"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-[22px] h-[22px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[9px] shrink-0">
-                  {getInitials(corretorNome || "")}
-                </div>
-              )}
-              <span className="truncate text-[11px] font-medium text-foreground/70">
-                {corretorNome}
-              </span>
-            </>
-          )}
+          <Handshake className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
+          <span className="truncate text-[11px] font-semibold text-purple-700 dark:text-purple-300">
+            {parceiroNome}
+          </span>
         </div>
       )}
+
     </div>
   );
 });
