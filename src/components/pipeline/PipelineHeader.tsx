@@ -628,6 +628,27 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             </button>
           ))}
 
+          {/* Toggle Equipe / Minha carteira — integrado às abas (gestor/admin, só Kanban) */}
+          {canToggleCarteira && setMinhaCarteira && activeTab === "kanban" && (
+            <div className="inline-flex shrink-0 rounded-[7px] border border-[#e8e8f0] dark:border-white/[0.07] bg-card p-0.5 ml-1">
+              <button
+                type="button"
+                onClick={() => setMinhaCarteira(false)}
+                className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-[#71717a] dark:text-[#a1a1aa] hover:text-foreground"}`}
+              >
+                Equipe
+              </button>
+              <button
+                type="button"
+                onClick={() => setMinhaCarteira(true)}
+                className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-[#71717a] dark:text-[#a1a1aa] hover:text-foreground"}`}
+              >
+                Minha carteira
+              </button>
+            </div>
+          )}
+
+
           {activeTab === "inteligencia" && (
             <div className="flex items-center bg-[#f0f0f5] dark:bg-gray-800 rounded-[7px] p-0.5 ml-0.5">
               {[
@@ -741,20 +762,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         </div>
 
 
-        {/* Line 3 — Filtros ativos (condicional) */}
-        {hasAnyFilter && (
-          <div className="flex items-center h-7 px-6 gap-2 border-t border-[#e8e8f0]/60 dark:border-white/[0.05]">
-            <span className="text-[10px] uppercase tracking-wide text-[#a1a1aa] dark:text-[#52525b] font-semibold">
-              Filtros ativos
-            </span>
-            <button
-              onClick={clearAllFilters}
-              className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-danger-500 bg-transparent border-none cursor-pointer"
-            >
-              <X size={10} strokeWidth={1.5} /> Limpar todos
-            </button>
-          </div>
-        )}
+        {/* Line 3 removida — chips de filtros ativos (com "Limpar todos") são
+            renderizados em PipelineKanban como única lista, evitando duplicidade. */}
+
       </div>
 
       {/* Vestigial reference for compat — unused state surfaced to keep prop interface stable */}

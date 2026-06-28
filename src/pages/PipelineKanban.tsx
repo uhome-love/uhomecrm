@@ -601,31 +601,17 @@ export default function PipelineKanban() {
       />
 
 
-      {/* Toggle "Minha carteira / Equipe" — gestor e admin, somente no Kanban */}
-      {(isGestor || isAdmin) && activeTab === "kanban" && !isMobile && (
-        <div className="flex items-center gap-1 shrink-0" style={{ padding: "8px 28px 0" }}>
-          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
-            <button
-              type="button"
-              onClick={() => setMinhaCarteira(false)}
-              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Equipe
-            </button>
-            <button
-              type="button"
-              onClick={() => setMinhaCarteira(true)}
-              className={`px-3 h-7 text-xs font-medium rounded-md transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Minha carteira
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Toggle "Minha carteira / Equipe" agora vive no header desktop (Linha 2). */}
+
+
 
 
       {hasAnyFilter && !(isMobile && activeTab === "kanban") && (
         <div className="flex items-center gap-1 flex-wrap shrink-0" style={{ padding: "6px 28px 0" }}>
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mr-1">
+            Filtros ativos
+          </span>
+
           {filters.temperaturas.length > 0 && (
             <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
               Temp ×
@@ -681,8 +667,15 @@ export default function PipelineKanban() {
               {clientStatusFilter === "em_dia" ? "✅ Em dia" : clientStatusFilter === "desatualizado" ? "🟡 Desatualizado" : "🔴 Atrasado"} ×
             </Badge>
           )}
+          <button
+            onClick={clearAllFilters}
+            className="ml-1 shrink-0 flex items-center gap-1 text-[10px] font-semibold text-danger-500 bg-transparent border-none cursor-pointer hover:underline"
+          >
+            <X className="h-2.5 w-2.5" /> Limpar todos
+          </button>
         </div>
       )}
+
 
       {/* PipelineManagerActions e PipelineTeamVisitas movidos para Modo Time (Fase 2).
           Imports lazy preservados para reuso. */}

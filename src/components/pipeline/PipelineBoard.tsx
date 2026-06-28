@@ -685,7 +685,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         }
       `}</style>
 
-      {/* Mini-map nav pills — Stage tabs line 3 */}
+      {/* Mini-map nav pills — índice de navegação discreto entre etapas */}
       <div className="shrink-0 flex items-center gap-1 mb-2 px-0.5 overflow-x-auto scrollbar-none pb-0.5" style={{ paddingTop: 10 }}>
         {visibleStages.map((stage, idx) => {
           const stageLeads = leadsByStage.get(stage.id) || [];
@@ -695,27 +695,30 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
             <button
               key={stage.id}
               onClick={() => scrollToIndex(idx)}
-              className="transition-all"
+              title={stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
+              className="transition-all hover:opacity-100"
               style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "5px 10px", borderRadius: 7, fontSize: 11, fontWeight: 500,
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "3px 9px", borderRadius: 99, fontSize: 11, fontWeight: 500,
                 whiteSpace: "nowrap",
-                background: isActive ? "hsl(var(--pipeline-tab-active-bg))" : "hsl(var(--pipeline-tab-bg))",
-                border: isActive ? "1px solid #4969FF" : "1px solid hsl(var(--pipeline-column-border))",
-                color: isActive ? "hsl(var(--pipeline-text-primary))" : "hsl(var(--pipeline-text-secondary))",
+                background: isActive ? "hsl(var(--primary) / 0.1)" : "transparent",
+                border: isActive ? "1px solid hsl(var(--primary) / 0.4)" : "1px solid transparent",
+                color: isActive ? "hsl(var(--primary))" : "hsl(var(--pipeline-text-muted))",
+                opacity: isActive ? 1 : 0.7,
                 cursor: "pointer",
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
             >
-              {emoji && <span style={{ fontSize: 12 }}>{emoji}</span>}
+              {emoji && <span style={{ fontSize: 11 }}>{emoji}</span>}
               <span>{stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}</span>
-              <span style={{ fontWeight: 700, color: "hsl(var(--primary))", marginLeft: 2 }}>
+              <span style={{ fontWeight: 700, marginLeft: 1 }}>
                 {stageLeads.length}
               </span>
             </button>
           );
         })}
       </div>
+
 
       {/* Kanban scroll area */}
       <div className="relative flex-1 min-h-0">
@@ -790,10 +793,14 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   width: `${getColumnWidth()}px`,
                   scrollSnapAlign: "start",
                   animation: `pipelineFadeUp 0.35s cubic-bezier(0.25,0.46,0.45,0.94) ${colIdx * 0.05}s both`,
-                  transition: isDragOver ? "all 0.2s ease" : undefined,
-                  background: isDragOver ? "rgba(34,197,94,0.04)" : undefined,
-                  borderRadius: isDragOver ? 10 : undefined,
+                  transition: "all 0.2s ease",
+                  background: isDragOver ? "rgba(34,197,94,0.06)" : undefined,
+                  borderRadius: isDragOver ? 12 : undefined,
+                  outline: isDragOver ? "2px dashed rgba(34,197,94,0.5)" : undefined,
+                  outlineOffset: isDragOver ? "2px" : undefined,
+                  boxShadow: isDragOver ? "0 8px 24px rgba(34,197,94,0.12)" : undefined,
                 }}
+
                 onDragOver={(e) => handleDragOver(e, stage.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.id)}
@@ -804,7 +811,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   style={{
                     background: "hsl(var(--pipeline-column-bg))",
                     border: isDragOver ? "1px solid #22c55e" : "1px solid hsl(var(--pipeline-column-border))",
-                    borderRadius: 10,
+                    borderRadius: 12,
                     padding: "10px 12px",
                     boxShadow: isDragOver ? "0 4px 16px rgba(34,197,94,0.12)" : "0 1px 2px rgba(0,0,0,0.04)",
                     marginBottom: 8,
