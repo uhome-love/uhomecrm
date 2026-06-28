@@ -276,34 +276,9 @@ const CardMinimal = memo(function CardMinimal({
           )}
         </div>
 
-        {/* Dono do lead (avatar) — scan rápido no topo-direito */}
-        <div className="flex items-center gap-0.5 shrink-0">
-          {parceiroNome ? (
-            <div
-              title={`Parceria · ${parceiroNome}`}
-              className="w-[22px] h-[22px] rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0"
-            >
-              <Handshake className="h-3 w-3" />
-            </div>
-          ) : corretorNome ? (
-            corretorAvatarUrl ? (
-              <img
-                src={corretorAvatarUrl}
-                alt={corretorNome}
-                title={corretorNome}
-                className="w-[22px] h-[22px] rounded-full object-cover shrink-0 ring-2 ring-card"
-                loading="lazy"
-              />
-            ) : (
-              <div
-                title={corretorNome}
-                className="w-[22px] h-[22px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[9px] shrink-0 ring-2 ring-card"
-              >
-                {getInitials(corretorNome)}
-              </div>
-            )
-          ) : null}
-          {menuEnabled && (
+        {/* Menu ··· */}
+        {menuEnabled && (
+          <div className="shrink-0">
             <CardOverflowMenu
               lead={lead}
               stages={stages!}
@@ -311,8 +286,8 @@ const CardMinimal = memo(function CardMinimal({
               onOpenDetail={onClick}
               onTransferred={onTransferred}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
 
