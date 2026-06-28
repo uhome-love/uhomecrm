@@ -49,7 +49,7 @@ const IDLE_BY_VARIANT: Record<CorretorSelectVariant, string> = {
 const PLACEHOLDER_BY_VARIANT: Record<CorretorSelectVariant, string> = {
   mobile: "Corretor",
   tablet: "Corretores",
-  desktop: "Todos os corretores",
+  desktop: "Corretores",
 };
 
 export default function PipelineCorretorSelect({
