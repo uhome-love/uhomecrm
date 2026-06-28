@@ -89,7 +89,7 @@ function HomiAvatarInner() {
     }
   }, [position, toggleHomi]);
 
-  if (isOpen || pathname === "/imoveis") return null;
+  if (isOpen || launcherHidden || pathname === "/imoveis") return null;
 
   return (
     <div
