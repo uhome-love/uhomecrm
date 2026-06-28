@@ -515,8 +515,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
       {/* ── DESKTOP HEADER (lg+) — Command Bar unificada ── */}
       <div className="hidden lg:block">
-        {/* Linha 1 — Identidade · Navegação · Ações primárias */}
-        <div className="flex items-center flex-nowrap min-h-12 py-1.5 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-3">
+        {/* Linha 1 — Identidade · Navegação · Status · Ações primárias */}
+        <div className="flex items-center flex-wrap gap-y-1.5 min-h-12 py-1.5 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-3">
           {/* Identidade */}
           <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
             <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center shrink-0">
