@@ -138,11 +138,11 @@ const PipelineMobileView = memo(function PipelineMobileView({
               data-stage-id={stage.id}
               onClick={() => setActiveStageId(stage.id)}
               className={[
-                "flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer bg-transparent border-0 transition-all",
+                "flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer bg-transparent border-0 transition-all duration-200 ease-out active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100",
                 "border-b-2",
                 isActive
                   ? "text-foreground border-primary"
-                  : "text-muted-foreground border-transparent",
+                  : "text-muted-foreground border-transparent hover:text-foreground/80",
               ].join(" ")}
               style={{
                 padding: "7px 10px",
