@@ -27,7 +27,7 @@ import {
   Plus, CheckCircle2, AlertTriangle, ChevronRight,
   FileText, ChevronDown, ClipboardList,
   Flame, Snowflake, Sun, Brain, TrendingUp,
-  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil
+  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil, MessageCircle
 } from "lucide-react";
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
 import DrawerLeadHeader from "./drawer/DrawerLeadHeader";
@@ -665,6 +665,35 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         </Tabs>
         </DrawerTimeline>
         </div>
+
+        {/* ════════════ BARRA DE AÇÃO FIXA (mobile) — sempre acessível em qualquer aba ════════════ */}
+        {isMobile && !homiOpen && (
+          <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-t border-border/50 bg-card/95 backdrop-blur-sm pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+            <button
+              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "ligar" }); setIsCallOpen(true); }}
+              disabled={!lead.telefone}
+              className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
+            >
+              <Phone className="h-4 w-4" /> Ligar
+            </button>
+            <button
+              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "whatsapp" }); setIsWhatsAppFlowOpen(true); }}
+              disabled={!lead.telefone}
+              className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-emerald-600 text-white font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
+            >
+              <MessageCircle className="h-4 w-4" /> WhatsApp
+            </button>
+            <button
+              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setNextActionOpen(true); }}
+              aria-label="Nova tarefa"
+              className="shrink-0 flex items-center justify-center h-11 w-11 rounded-xl border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+
+
 
 
         {/* ════════════ HOMI SIDE PANEL ════════════ */}
