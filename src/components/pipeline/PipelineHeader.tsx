@@ -274,7 +274,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         )}
 
-        {/* Line 2 mobile: pílulas unificadas Dashboard↔Pipeline */}
+        {/* Line 2 mobile: pílulas unificadas Dashboard↔Pipeline (somente Kanban) */}
+        {activeTab === "kanban" && (
         <div className="flex items-center gap-2 px-3 pb-2 border-b border-slate-200 dark:border-gray-700 overflow-x-auto">
           <PipelineFiltroBadges
             counts={pillCounts}
