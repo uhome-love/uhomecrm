@@ -1,55 +1,50 @@
-## Auditoria do Pipeline (desktop, logado)
+# Limpeza da barra de topo do Pipeline (desktop)
 
-Conferi em 1024/1280/1366/1440/1600/1920px, com sessão real:
+Objetivo: tirar o aspecto "embolado", liberar espaço e manter 100% das funções, com visual moderno e denso (padrão SaaS premium). Só altera `src/components/pipeline/PipelineHeader.tsx` (bloco desktop `lg+`, linhas ~516-760). Mobile/tablet ficam intactos. Nenhuma mudança de lógica/negócio — só apresentação e reagrupamento dos mesmos controles.
 
-- **Inteligência → Funil**: OK, zero overflow em todas as larguras.
-- **Inteligência → Radar**: OK, zero overflow em todas as larguras.
-- **Drawer de detalhe do lead**: 1 bug de layout a corrigir.
+## O que muda, item por item
 
-## O bug
+### 1. Selects de escopo (corretor / gestor)
+- "Todos os corretores" → rótulo curto **"Corretores"**; "Todos gestores" → **"Gestores"** (quando nenhum selecionado). Quando há seleção, mostra o nome escolhido normalmente.
+- Largura reduzida e fixa, alinhados ao lado esquerdo da linha de controles.
 
-Na coluna esquerda do drawer (`DrawerLeadInfo`, 36% / max 440px), em **viewports de 1024–1536px** o conteúdo transborda o painel e é **cortado na divisória** com a coluna direita (Histórico):
+### 2. Busca
+- Encolhe para um botão/campo compacto: largura menor por padrão (`w-[180px]`), placeholder curto **"Buscar..."**.
+- Mantém ícone de lupa, clear (x) e o atalho de digitação. Sem perder função.
 
-- Botões de ação "WhatsApp"/"Anotar" cortados.
-- Linha de métricas (Tentativas · Na etapa · Últ. contato) cortada.
-- Card de empreendimento e texto da "Próxima ação" cortados.
+### 3. Ordenar
+- Vira dropdown **icon-first**: ícone de ordenação + valor atual curto (ex.: só "Atividade"), sem o prefixo "Ordenar:". Menos largura.
 
-Medições no DOM (getBoundingClientRect):
+### 4. Pílulas de status (Em dia / Sem tarefa / Atrasado / Negócios)
+Ideia escolhida — **cluster segmentado compacto**: um único grupo unido (sem 4 cápsulas soltas com borda), cada item = bolinha colorida + número, e o texto ("em dia", etc.) aparece só no item ativo e em tooltip no hover. Isso reduz a largura em ~60% mantendo leitura rápida e o clique-para-filtrar.
 
 ```text
-viewport  painel(px)  grade-ações(px)   estado
-1280       322          474             corta ~150px
-1366       344          474             corta ~150px
-1440       363          474             corta ~110px
-1600       403          362             OK (cabe)
-1920       440          399             OK (cabe)
+Antes:  ( ● 1.350 em dia ) ( ● 295 sem tarefa ) ( ● 576 atrasado ) ( ● 70 negócios )
+Depois: [ ●1.350 · ●295 · ●576 · ●70 ]   (rótulo só no ativo + tooltip)
 ```
 
-A grade de ações fica "presa" em ~474px independente do painel ser menor — então é clipada pelo `overflow-hidden` do container pai.
+Alternativas consideradas (posso trocar se preferir): (a) manter texto só nas pílulas com contagem relevante; (b) um chip-resumo único "Status ▾" que abre popover com as 4 opções. A recomendada é o cluster segmentado por ser a mais rápida de ler sem clique extra.
 
-### Causa raiz
+### 5. Refresh + Selecionar
+- Saem da linha como botões soltos e entram num **menu de ações "⋯"** (kebab) à direita: "Atualizar" e "Selecionar" (Selecionar só para admin/Kanban). Refresh também pode virar só ícone discreto se preferir mantê-lo visível — recomendo movê-lo para o ⋯ para limpar.
 
-A coluna esquerda usa o **Radix `ScrollArea`**. O viewport interno do Radix aplica `display: table` no wrapper de conteúdo, o que faz o conteúdo assumir sua **largura preferida (max-content ≈ 474px)** em vez de respeitar 100% da largura do painel. Como o painel encolhe abaixo de ~474px (larguras de laptop), o conteúdo vaza e é cortado.
+### 6. Fila CEO
+- O bloco "Fila CEO · Filtrar · 🆕 Novos · 🔄 Redistrib" colapsa num **único botão com badge** (ex.: "Fila CEO ⌄" com a soma pendente) que abre um popover compacto com: toggle Filtrar, botão Novos (com contagem) e botão Redistribuição (com contagem). Mantém todas as ações, mas ocupa 1 botão em vez de 4 elementos.
 
-## Correção
+## Layout final (desktop)
 
-Arquivo único: `src/components/pipeline/drawer/DrawerLeadInfo.tsx`.
+```text
+Linha 1: [▦ Pipeline · 2221 leads · escopo]   ……   [ cluster de status ]   [Modo Foco] [Novo Lead]
+Linha 2: [Corretores▾] [Gestores▾] [+Filtros] [Buscar…]   ……   [Ordenar▾] [Fila CEO ⌄] [⋯]
+```
 
-Trocar o `ScrollArea` do Radix por um container de rolagem nativo que respeita a largura do painel:
+- Espaçamento consistente (`gap-2`), divisores sutis, alturas alinhadas (h-9). Em larguras menores (1280px) tudo continua em 2 linhas sem quebrar, agora com folga.
 
-- Substituir `<ScrollArea className="flex-1 min-h-0">` por um `<div>` com `flex-1 min-h-0 overflow-y-auto overflow-x-hidden`.
-- Garantir que o wrapper interno do conteúdo use `w-full min-w-0` para que botões/grades encolham (em vez de `min-width: auto`).
-- Atualizar o `useLayoutEffect` de `resetKey`: hoje ele zera o scroll buscando `[data-radix-scroll-area-viewport]`; passar a usar um `ref` direto no novo `div` de rolagem (`scrollRef.current.scrollTop = 0`).
-- Remover o import não usado de `ScrollArea`.
+## Detalhes técnicos
+- Arquivo único: `src/components/pipeline/PipelineHeader.tsx`.
+- Reusar componentes existentes (`PipelineCorretorSelect`, `PipelineGestorSelect`, `PipelineSortDropdown`, `PipelineFiltroBadges`) — ajustar props/labels e estilos; o cluster de pílulas é um ajuste visual dentro de `PipelineFiltroBadges` (modo compacto).
+- Popover/menu via componentes shadcn já no projeto (`DropdownMenu`/`Popover`).
+- Sem mudança de estado, handlers ou dados — apenas reorganização visual.
+- Validação: typecheck + screenshots em 1280px, 1600px e 1848px para confirmar nada quebrou.
 
-Resultado esperado: em qualquer largura ≥768px o conteúdo da coluna esquerda encolhe para caber no painel (com `truncate`/`line-clamp` já existentes nos filhos), eliminando o clipping. Rolagem vertical preservada; nada muda no mobile (a coluna esquerda já fica oculta `hidden md:flex`) nem na coluna direita/abas.
-
-## Validação
-
-Após a mudança, reabrir o drawer via Playwright logado em 1024/1280/1440/1920px e confirmar via DOM que `grade.right <= painel.right` (sem clipping) e que a rolagem vertical continua funcional. Typecheck deve passar.
-
-## Escopo
-
-- Não altera Funil, Radar, Kanban, Equipes, nem a coluna direita do drawer.
-- Não toca em backend, RLS, edge functions ou dados.
-- Mudança puramente de apresentação, isolada em `DrawerLeadInfo.tsx`.
+Quer que eu siga com a pílula no formato **cluster segmentado** (recomendado) ou prefere o **chip-resumo "Status ▾"**? Posso ajustar antes de implementar.
