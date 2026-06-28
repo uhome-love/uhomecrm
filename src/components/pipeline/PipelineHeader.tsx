@@ -539,7 +539,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0" />
 
           {/* Navegação (abas) */}
-          <div className="flex items-center gap-1 min-w-0 flex-shrink overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-1 min-w-0 flex-shrink">>
             {roleTabs.map(tab => (
               <button
                 key={tab.key}
