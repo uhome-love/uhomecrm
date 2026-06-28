@@ -185,20 +185,23 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             visitaLeadIds={visitaLeadIds}
           />
 
-          <button
-            onClick={() => {
-              setMobileSearchOpen(v => !v);
-              setTimeout(() => mobileSearchRef.current?.focus(), 100);
-            }}
-            aria-label="Buscar leads"
-            aria-expanded={mobileSearchOpen}
-            className="relative w-8 h-8 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
-          >
-            <Search className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-            {filters.search && (
-              <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
-            )}
-          </button>
+          {activeTab !== "kanban" && (
+            <button
+              onClick={() => {
+                setMobileSearchOpen(v => !v);
+                setTimeout(() => mobileSearchRef.current?.focus(), 100);
+              }}
+              aria-label="Buscar leads"
+              aria-expanded={mobileSearchOpen}
+              className="relative w-8 h-8 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
+            >
+              <Search className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+              {filters.search && (
+                <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
+              )}
+            </button>
+          )}
+
 
           {canAdd && activeTab === "kanban" && (
             <button
