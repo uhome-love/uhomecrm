@@ -286,36 +286,57 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         )}
 
 
-        {/* Line 2 mobile: pílulas unificadas Dashboard↔Pipeline (somente Kanban) */}
+        {/* Line 2 mobile: toggle carteira + pílulas unificadas (somente Kanban) */}
         {activeTab === "kanban" && (
-        <div className="flex items-center gap-2 px-3 pb-2 border-b border-slate-200 dark:border-gray-700 overflow-x-auto">
-          <PipelineFiltroBadges
-            counts={pillCounts}
-            active={
-              negociosFilter ? "negocios"
-              : clientStatusFilter === "em_dia" ? "em_dia"
-              : clientStatusFilter === "desatualizado" ? "sem_tarefa"
-              : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
-              : null
-            }
-            onChange={(key) => {
-              // Evita conflito silencioso com o filtro de status do Sheet avançado.
-              setFilters(f => (f.statusLead ? { ...f, statusLead: "" } : f));
-              if (key === "negocios") {
-                setNegociosFilter(true);
-                setClientStatusFilter("todos");
-                return;
-              }
-              setNegociosFilter(false);
-              const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
-                em_dia: "em_dia",
-                sem_tarefa: "desatualizado",
-                atrasado: "tarefa_atrasada",
-              };
-              setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
-            }}
-          />
-          <div className="flex-1" />
+        <div className="flex items-center gap-2 px-3 pb-2 border-b border-slate-200 dark:border-gray-700">
+          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none">
+            <div className="flex items-center gap-2 w-max">
+              {canToggleCarteira && setMinhaCarteira && (
+                <div className="inline-flex shrink-0 rounded-full border border-border bg-card p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setMinhaCarteira(false)}
+                    className={`px-2.5 h-7 text-[11px] font-semibold rounded-full transition-colors ${!minhaCarteira ? "bg-primary text-white" : "text-muted-foreground"}`}
+                  >
+                    Equipe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMinhaCarteira(true)}
+                    className={`px-2.5 h-7 text-[11px] font-semibold rounded-full transition-colors ${minhaCarteira ? "bg-primary text-white" : "text-muted-foreground"}`}
+                  >
+                    Minha
+                  </button>
+                </div>
+              )}
+              <PipelineFiltroBadges
+                counts={pillCounts}
+                active={
+                  negociosFilter ? "negocios"
+                  : clientStatusFilter === "em_dia" ? "em_dia"
+                  : clientStatusFilter === "desatualizado" ? "sem_tarefa"
+                  : clientStatusFilter === "tarefa_atrasada" ? "atrasado"
+                  : null
+                }
+                onChange={(key) => {
+                  // Evita conflito silencioso com o filtro de status do Sheet avançado.
+                  setFilters(f => (f.statusLead ? { ...f, statusLead: "" } : f));
+                  if (key === "negocios") {
+                    setNegociosFilter(true);
+                    setClientStatusFilter("todos");
+                    return;
+                  }
+                  setNegociosFilter(false);
+                  const map: Record<Exclude<PipelineFiltroKey, "negocios">, ClientStatusFilter> = {
+                    em_dia: "em_dia",
+                    sem_tarefa: "desatualizado",
+                    atrasado: "tarefa_atrasada",
+                  };
+                  setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
+                }}
+              />
+            </div>
+          </div>
           {hasAnyFilter && (
             <button onClick={clearAllFilters} className="text-[10px] font-semibold text-red-600 bg-transparent border-none cursor-pointer shrink-0">
               <X className="h-[10px] w-[10px] inline" /> Limpar
@@ -331,6 +352,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </button>
         </div>
         )}
+
       </div>
 
       {/* ── TABLET HEADER (md to lg) ── */}
