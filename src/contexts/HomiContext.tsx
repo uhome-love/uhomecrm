@@ -77,6 +77,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [launcherHidden, setLauncherHidden] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [alerts, setAlerts] = useState<ProactiveAlert[]>([]);
