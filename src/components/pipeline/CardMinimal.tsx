@@ -276,34 +276,9 @@ const CardMinimal = memo(function CardMinimal({
           )}
         </div>
 
-        {/* Dono do lead (avatar) — scan rápido no topo-direito */}
-        <div className="flex items-center gap-0.5 shrink-0">
-          {parceiroNome ? (
-            <div
-              title={`Parceria · ${parceiroNome}`}
-              className="w-[22px] h-[22px] rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0"
-            >
-              <Handshake className="h-3 w-3" />
-            </div>
-          ) : corretorNome ? (
-            corretorAvatarUrl ? (
-              <img
-                src={corretorAvatarUrl}
-                alt={corretorNome}
-                title={corretorNome}
-                className="w-[22px] h-[22px] rounded-full object-cover shrink-0 ring-2 ring-card"
-                loading="lazy"
-              />
-            ) : (
-              <div
-                title={corretorNome}
-                className="w-[22px] h-[22px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[9px] shrink-0 ring-2 ring-card"
-              >
-                {getInitials(corretorNome)}
-              </div>
-            )
-          ) : null}
-          {menuEnabled && (
+        {/* Menu ··· */}
+        {menuEnabled && (
+          <div className="shrink-0">
             <CardOverflowMenu
               lead={lead}
               stages={stages!}
@@ -311,8 +286,8 @@ const CardMinimal = memo(function CardMinimal({
               onOpenDetail={onClick}
               onTransferred={onTransferred}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
 
@@ -371,13 +346,35 @@ const CardMinimal = memo(function CardMinimal({
         </>
       )}
 
-      {/* Rodapé: nome do parceiro (informação crítica) — corretor já no avatar */}
-      {parceiroNome && (
+      {/* Rodapé: dono do lead (corretor) ou parceria — nome sempre visível */}
+      {(corretorNome || parceiroNome) && (
         <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
-          <Handshake className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
-          <span className="truncate text-[11px] font-semibold text-purple-700 dark:text-purple-300">
-            {parceiroNome}
-          </span>
+          {parceiroNome ? (
+            <>
+              <Handshake className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
+              <span className="truncate text-[11px] font-semibold text-purple-700 dark:text-purple-300">
+                {parceiroNome}
+              </span>
+            </>
+          ) : (
+            <>
+              {corretorAvatarUrl ? (
+                <img
+                  src={corretorAvatarUrl}
+                  alt={corretorNome}
+                  className="w-[18px] h-[18px] rounded-full object-cover shrink-0"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">
+                  {getInitials(corretorNome!)}
+                </div>
+              )}
+              <span className="truncate text-[11px] font-medium text-foreground/80">
+                {corretorNome}
+              </span>
+            </>
+          )}
         </div>
       )}
 
