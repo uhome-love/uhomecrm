@@ -10,12 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-const EMPREENDIMENTOS = [
-  "Alfa", "Orygem", "Las Casas", "Casa Tua", "Lake Eyre", "Open Bosque",
-  "Casa Bastian", "Shift", "Seen Menino Deus", "Me Day",
-  "Alto Lindóia", "Terrace", "Duetto", "Salzburg", "Melnick Day",
-  "Boa Vista Country Club",
-];
+import { EMPREENDIMENTOS } from "@/lib/empreendimentos";
 
 interface Props {
   empreendimento: string;
