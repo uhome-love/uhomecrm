@@ -3,6 +3,7 @@ import type { CentralUrlState } from "@/components/central-v2/useCentralUrlState
 import type { CentralSectionId } from "@/components/central-v2/sections";
 import { GeralView } from "./GeralView";
 import { SectionPipelineLeads } from "./sections/SectionPipelineLeads";
+import { SectionOrigemSegmento } from "./sections/SectionOrigemSegmento";
 import { SectionOA } from "./sections/SectionOA";
 import { SectionVisitas } from "./sections/SectionVisitas";
 import { SectionNegocios } from "./sections/SectionNegocios";
