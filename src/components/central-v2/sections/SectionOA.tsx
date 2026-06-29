@@ -85,7 +85,7 @@ const listaColumns: MiniColumn<ListaRow>[] = [
     key: "total",
     label: "Tentativas",
     align: "right",
-    render: (r) => fmtInt(r.total ?? null),
+    render: (r) => fmtInt(r.tentativas ?? r.total ?? null),
   },
   {
     key: "aproveitados",
