@@ -523,7 +523,7 @@ export default function CorretorCall() {
   // ── ARENA DE LIGAÇÃO ──
 
   return (
-    <div className="arena-bg flex flex-col h-[calc(100vh-3.5rem)] w-full overflow-hidden">
+    <div className="arena-bg flex flex-col h-[calc(100dvh-3.5rem)] w-full overflow-hidden pb-[env(safe-area-inset-bottom)]">
       {/* Arena layers */}
       <div className="arena-floor" />
       <div className="arena-vignette" />
