@@ -179,7 +179,7 @@ export default function AproveitadosPanel() {
       </div>
 
       {/* Lead cards */}
-      {filtered.map(lead => {
+      {filtered.slice(0, visibleCount).map(lead => {
         const plStatus = pipelineStatus[lead.id];
         return (
           <div
