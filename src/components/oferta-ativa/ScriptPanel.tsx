@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,12 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-const EMPREENDIMENTOS = [
-  "Alfa", "Orygem", "Las Casas", "Casa Tua", "Lake Eyre", "Open Bosque",
-  "Casa Bastian", "Shift", "Seen Menino Deus", "Me Day",
-  "Alto Lindóia", "Terrace", "Duetto", "Salzburg", "Melnick Day",
-  "Boa Vista Country Club",
-];
+import { EMPREENDIMENTOS } from "@/lib/empreendimentos";
 
 interface Props {
   empreendimento: string;
@@ -101,15 +96,32 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
     whatsapp: teamScript ? teamScript.titulo : "Script genérico",
   });
 
+  // Tracks whether the corretor manually edited the current script.
+  // While true, we must NOT overwrite their text just because the lead changed.
+  const manualEditRef = useRef(false);
+
+  // Context change (empreendimento / modo / templates / script do time) → reset script.
+  // Esta é uma troca intencional de contexto, então limpamos a edição manual.
   useEffect(() => {
     setScriptLigacao(getDefaultLigacao(scriptMode));
     setScriptWhatsApp(getDefaultWhatsApp());
     setEditingScript(null);
+    manualEditRef.current = false;
     setActiveScriptName({
       ligacao: teamScript ? teamScript.titulo : scriptMode === "personalizado" ? `Script · ${emp}` : "Script genérico",
       whatsapp: teamScript ? teamScript.titulo : "Script genérico",
     });
-  }, [lead?.id, leadName, emp, templates, teamScript, scriptMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emp, templates, teamScript, scriptMode]);
+
+  // Lead change → apenas re-aplica a substituição de variáveis (nome) SE o corretor
+  // não tiver editado manualmente. Assim a edição manual sobrevive à troca de lead.
+  useEffect(() => {
+    if (manualEditRef.current) return;
+    setScriptLigacao(getDefaultLigacao(scriptMode));
+    setScriptWhatsApp(getDefaultWhatsApp());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead?.id, leadName]);
 
   const handleModeSwitch = (mode: "generico" | "personalizado") => {
     setScriptMode(mode);
@@ -269,7 +281,7 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
             {editingScript === s.key ? (
               <Textarea
                 value={s.value}
-                onChange={(e) => s.setValue(e.target.value)}
+                onChange={(e) => { manualEditRef.current = true; s.setValue(e.target.value); }}
                 rows={compact ? 4 : 6}
                 className="text-xs leading-relaxed resize-none font-mono bg-muted/50 border-border"
                 autoFocus

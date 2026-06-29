@@ -13,6 +13,8 @@ const RESULTADO_LABELS: Record<string, { label: string; color: string }> = {
   com_interesse: { label: "Com interesse", color: "bg-emerald-500/10 text-emerald-600" },
   sem_interesse: { label: "Sem interesse", color: "bg-red-500/10 text-red-600" },
   numero_errado: { label: "Número errado", color: "bg-amber-500/10 text-amber-600" },
+  nao_atendeu: { label: "Não atendeu", color: "bg-slate-500/10 text-slate-600" },
+  agendar: { label: "Reagendar", color: "bg-blue-500/10 text-blue-600" },
 };
 
 const CANAL_ICONS: Record<string, React.ReactNode> = {

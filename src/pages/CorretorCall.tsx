@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, Pause, X, ChevronRight, Loader2, Pencil } from "lucide-react";
+import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, X, ChevronRight, Loader2, Pencil } from "lucide-react";
 import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 import ImmersiveScreen from "@/components/immersive/ImmersiveScreen";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
@@ -200,8 +200,9 @@ export default function CorretorCall() {
   // Format estimated time
   const estLabel = w.estMinutes >= 120 ? "2h+" : w.estMinutes >= 60 ? `~${Math.floor(w.estMinutes / 60)}h${(w.estMinutes % 60) > 0 ? (w.estMinutes % 60).toString().padStart(2, "0") : ""}` : `~${w.estMinutes}min`;
 
-  // Streak: only show if genuinely > 0 from activity
-  const streakDays = progress.tentativas > 0 ? 3 : 0; // TODO: compute from DB
+  // Streak: ainda não há fonte real no DB, então não exibimos um valor fabricado.
+  // Mantido em 0 (oculta a UI de streak) até existir cálculo real por dia de atividade.
+  const streakDays = 0;
 
   // Arena particles - must be before any early returns
   const arenaParticles = useMemo(() =>
@@ -494,12 +495,6 @@ export default function CorretorCall() {
           {/* Secondary links */}
           <div className="flex flex-col items-center gap-2 text-sm">
             <button
-              onClick={handleStartSession}
-              className="text-neutral-500 hover:text-white transition-colors"
-            >
-              Escolher leads manualmente →
-            </button>
-            <button
               onClick={() => navigate("/corretor")}
               className="text-neutral-500 hover:text-white transition-colors"
             >
@@ -523,7 +518,7 @@ export default function CorretorCall() {
   // ── ARENA DE LIGAÇÃO ──
 
   return (
-    <div className="arena-bg flex flex-col h-[calc(100vh-3.5rem)] w-full overflow-hidden">
+    <div className="arena-bg flex flex-col h-[calc(100dvh-3.5rem)] w-full overflow-hidden pb-[env(safe-area-inset-bottom)]">
       {/* Arena layers */}
       <div className="arena-floor" />
       <div className="arena-vignette" />
@@ -601,19 +596,11 @@ export default function CorretorCall() {
             <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 variant="ghost" size="sm"
-                className="h-7 gap-1 hover:opacity-80"
-                style={{ fontSize: 12, color: "var(--arena-text-muted)" }}
-                onClick={handleExitArena}
-              >
-                <Pause className="h-3 w-3" /> Pausar
-              </Button>
-              <Button
-                variant="ghost" size="sm"
                 className="h-7 gap-1 text-red-400 hover:bg-red-500/10"
                 style={{ fontSize: 12 }}
                 onClick={handleExitArena}
               >
-                <X className="h-3 w-3" /> Sair
+                <X className="h-3 w-3" /> Encerrar
               </Button>
             </div>
           </div>
@@ -660,7 +647,7 @@ export default function CorretorCall() {
             metaLigacoes: progress.metaLigacoes,
             metaAproveitados: progress.metaAproveitados,
             metaVisitas: progress.metaVisitas,
-            empreendimento: w.queueLeads > 0 ? "Arena de Ligação" : "Arena de Ligação",
+            empreendimento: "Arena de Ligação",
             streak: streakDays,
           }}
           onNewSession={() => {

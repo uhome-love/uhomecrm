@@ -11,14 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const EMPREENDIMENTOS = [
-  "Alfa", "Orygem", "Las Casas", "Casa Tua", "Lake Eyre", "Open Bosque",
-  "Casa Bastian", "Shift", "Seen Menino Deus", "Botanique", "Me Day",
-  "Go Carlos Gomes", "Go Carlos Bosque", "Vista Menino Deus", "Nilo Square",
-  "High Garden Iguatemi", "High Garden Rio Branco", "Vértice", "Essenza Club",
-  "Prime Wish", "Alto Lindóia", "San Andreas", "Supreme", "Boa Vista",
-  "Pontal", "Avulso Canoas",
-];
+import { EMPREENDIMENTOS } from "@/lib/empreendimentos";
 
 interface HomiResponse {
   id: number;

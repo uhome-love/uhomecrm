@@ -40,7 +40,8 @@ export default function OAObservabilityPanel() {
   // Repetition
   const servedPairs = events
     .filter(e => e.event_type === "lead_served")
-    .map(e => `${e.user_id}_${(e as any).lead_id}`);
+    .map(e => `${e.user_id}_${(e as any).lead_id ?? e.metadata?.lead_id ?? ""}`)
+    .filter(p => !p.endsWith("_"));
   const uniqueServed = new Set(servedPairs).size;
   const repeatRate = servedPairs.length > 0 ? Math.round(((servedPairs.length - uniqueServed) / servedPairs.length) * 100) : 0;
 

@@ -4,12 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebounce } from "@/hooks/useDebounce";
 
-const EMPREENDIMENTOS = [
-  "Alfa", "Orygem", "Las Casas", "Casa Tua", "Lake Eyre", "Open Bosque",
-  "Casa Bastian", "Shift", "Seen Menino Deus", "Seen Três Figueiras", "Me Day",
-  "Alto Lindóia", "Terrace", "Duetto", "Salzburg", "Melnick Day",
-  "High Garden Iguatemi", "Boa Vista Country Club",
-];
+import { EMPREENDIMENTOS } from "@/lib/empreendimentos";
 
 interface FichaData {
   entrada: string;

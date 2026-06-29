@@ -48,7 +48,6 @@ const QUICK_FEEDBACKS: Record<string, string[]> = {
     "Sem condições financeiras no momento",
     "Pediu para não ligar mais",
     "Disse que preencheu formulário por engano",
-    "🚫 Retirar do sistema — não quer ser mais contatado",
   ],
   com_interesse: [
     "Muito interessado, quer receber material completo",
@@ -69,6 +68,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   const [resultado, setResultado] = useState<string>("");
   const [feedback, setFeedback] = useState("");
   const [visitaMarcada, setVisitaMarcada] = useState(false);
+  const [retirarDoSistema, setRetirarDoSistema] = useState(false);
   const [interesseTipo, setInteresseTipo] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -78,8 +78,9 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   const [visitaData, setVisitaData] = useState(tomorrowStr);
   const [visitaHora, setVisitaHora] = useState("10:00");
 
-  const RETIRAR_FEEDBACK = "🚫 Retirar do sistema — não quer ser mais contatado";
-  const isRetirar = feedback === RETIRAR_FEEDBACK;
+  // "Retirar do sistema" agora é um estado explícito (checkbox), não mais um
+  // match frágil de string no texto do feedback.
+  const isRetirar = resultado === "sem_interesse" && retirarDoSistema;
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.target instanceof HTMLTextAreaElement) {
@@ -94,6 +95,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
       e.preventDefault();
       setResultado(resultMap[e.key]);
       setFeedback("");
+      setRetirarDoSistema(false);
     }
   }, []);
 
@@ -121,6 +123,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
       setResultado("");
       setFeedback("");
       setVisitaMarcada(false);
+      setRetirarDoSistema(false);
       setInteresseTipo("");
       confirmedRetirar.current = false;
     } catch (err: any) {
@@ -172,7 +175,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
                 return (
                   <button
                     key={r.key}
-                    onClick={() => { setResultado(r.key); setFeedback(QUICK_FEEDBACKS[r.key]?.[0] || ""); setInteresseTipo(""); }}
+                    onClick={() => { setResultado(r.key); setFeedback(QUICK_FEEDBACKS[r.key]?.[0] || ""); setInteresseTipo(""); setRetirarDoSistema(false); }}
                     className={`flex flex-col items-center gap-2 transition-all ${
                       selected ? r.selectedBorder : `border-[var(--arena-card-border)] ${r.hoverBorder}`
                     }`}
@@ -304,6 +307,18 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
             )}
             {resultado === "numero_errado" && (
               <p className="text-[10px] text-red-600 bg-red-500/10 rounded px-2 py-1">Lead removido permanentemente. 0 pts.</p>
+            )}
+            {resultado === "sem_interesse" && (
+              <label className="flex items-start gap-2 rounded-lg px-2.5 py-2 cursor-pointer border border-[var(--arena-card-border)] hover:border-red-500/40 transition-colors">
+                <Checkbox
+                  checked={retirarDoSistema}
+                  onCheckedChange={(c) => setRetirarDoSistema(c === true)}
+                  className="mt-0.5 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                />
+                <span className="text-[11px] leading-snug" style={{ color: "var(--arena-text-muted)" }}>
+                  🚫 <strong>Retirar do sistema</strong> — o lead não quer mais ser contatado e será excluído permanentemente.
+                </span>
+              </label>
             )}
             {resultado === "sem_interesse" && !isRetirar && (
               <p className="text-[10px] text-amber-600 bg-amber-500/10 rounded px-2 py-1">Lead removido da fila. +1 pt.</p>
