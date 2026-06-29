@@ -541,21 +541,23 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           {/* Divisor identidade ↔ navegação */}
           <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0" />
 
-          {/* Navegação (abas) */}
-          <div className="flex items-center gap-1 min-w-0 flex-shrink">
-            {roleTabs.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 shrink-0 transition-colors h-8 px-3 rounded-[7px] text-xs border-none cursor-pointer ${
-                  activeTab === tab.key
-                    ? "bg-primary text-white font-semibold shadow-sm"
-                    : "bg-transparent text-[#71717a] dark:text-[#a1a1aa] font-medium hover:text-foreground"
-                }`}
-              >
-                {tab.icon} {tab.label}
-              </button>
-            ))}
+          {/* Navegação (abas) — segmented control */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
+            <div className="inline-flex items-center gap-0.5 rounded-lg border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] p-1">
+              {roleTabs.map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-3 rounded-md text-xs border-none cursor-pointer ${
+                    activeTab === tab.key
+                      ? "bg-card text-foreground font-semibold shadow-sm"
+                      : "bg-transparent text-[#71717a] dark:text-[#a1a1aa] font-medium hover:text-foreground"
+                  }`}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
 
             {/* Toggle Equipe / Minha carteira (gestor/admin, só Kanban) */}
             {canToggleCarteira && setMinhaCarteira && activeTab === "kanban" && (
@@ -661,32 +663,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         </div>
 
-        {/* Linha 2 — Controles: escopo · busca · filtros · ordenação · pílulas */}
+        {/* Linha 2 — Busca · Filtros · Ordenação · Ações globais */}
         <div className="flex items-center flex-wrap gap-y-1.5 gap-x-2 min-h-11 py-1.5 px-6">
-          {(isAdmin || isGestor) && (
-            <PipelineCorretorSelect
-              value={corretorFilter}
-              onChange={setCorretorFilter}
-              options={corretorOptions}
-              isAdmin={isAdmin}
-              variant="desktop"
-            />
-          )}
-          {isAdmin && setGestorFilter && (
-            <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="desktop" />
-          )}
-
-          <PipelineAdvancedFilters
-            filters={filters}
-            onChange={setFilters}
-            stages={pipelineStages}
-            segmentos={pipelineSegmentos}
-            leads={pipelineLeads}
-            corretorNomes={corretorNomes}
-            isManager={isGestor || isAdmin}
-            visitaLeadIds={visitaLeadIds}
-          />
-
+          {/* Busca */}
           <div className="relative w-[180px] xl:w-[220px]">
             <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
             <input
@@ -703,10 +682,49 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             )}
           </div>
 
+          {/* Divisor busca ↔ filtros */}
+          <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0 mx-0.5" />
+
+          {/* Grupo de filtros */}
+          <div className="flex items-center gap-2">
+            {(isAdmin || isGestor) && (
+              <PipelineCorretorSelect
+                value={corretorFilter}
+                onChange={setCorretorFilter}
+                options={corretorOptions}
+                isAdmin={isAdmin}
+                variant="desktop"
+              />
+            )}
+            {isAdmin && setGestorFilter && (
+              <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="desktop" />
+            )}
+
+            <PipelineAdvancedFilters
+              filters={filters}
+              onChange={setFilters}
+              stages={pipelineStages}
+              segmentos={pipelineSegmentos}
+              leads={pipelineLeads}
+              corretorNomes={corretorNomes}
+              isManager={isGestor || isAdmin}
+              visitaLeadIds={visitaLeadIds}
+            />
+          </div>
+
           <div className="flex-1" />
 
-          <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
+          {/* Ordenação */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-[#a1a1aa] dark:text-[#52525b] hidden xl:inline">Ordenar por</span>
+            <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
+          </div>
 
+          {/* Divisor ordenação ↔ ações globais */}
+          <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0 mx-0.5" />
+
+          {/* Grupo de ações globais — Fila CEO · menu ⋯ */}
+          <div className="flex items-center gap-1.5 shrink-0">
           {/* Fila CEO — colapsada num único botão com popover */}
           {isAdmin && filaCeoCount > 0 && (
             <Popover>
@@ -789,6 +807,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
 
 
