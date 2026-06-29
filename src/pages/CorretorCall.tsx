@@ -595,19 +595,11 @@ export default function CorretorCall() {
             <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 variant="ghost" size="sm"
-                className="h-7 gap-1 hover:opacity-80"
-                style={{ fontSize: 12, color: "var(--arena-text-muted)" }}
-                onClick={handleExitArena}
-              >
-                <Pause className="h-3 w-3" /> Pausar
-              </Button>
-              <Button
-                variant="ghost" size="sm"
                 className="h-7 gap-1 text-red-400 hover:bg-red-500/10"
                 style={{ fontSize: 12 }}
                 onClick={handleExitArena}
               >
-                <X className="h-3 w-3" /> Sair
+                <X className="h-3 w-3" /> Encerrar
               </Button>
             </div>
           </div>
