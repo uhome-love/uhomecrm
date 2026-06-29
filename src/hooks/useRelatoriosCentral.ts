@@ -252,6 +252,7 @@ export function useRelatoriosCentral(
     negocios,
     vendas,
     ranking,
+    metas,
     isAnyLoading,
     isAllLoading,
   };
