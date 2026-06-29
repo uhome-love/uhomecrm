@@ -157,7 +157,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/academia/gerenciar":    { key: "academia-gerenciar",   label: "Gerenciar Academia",  icon: "GraduationCap", roles: ["gestor", "admin", "diretor"] },
   "/onboarding":            { key: "onboarding",           label: "Onboarding",          icon: "Lightbulb" },
   "/homi":                  { key: "homi",                 label: "HOMI",                icon: "Bot" },
-  "/homi-gerente":          { key: "homi-gerente",         label: "HOMI Gerente",        icon: "Bot",           roles: ["gestor", "admin"] },
+  "/homi-gerente":          { key: "homi-gerente",         label: "HOMI Gerente",        icon: "Bot",           roles: ["gestor", "admin", "diretor"] },
   "/homi-ceo":              { key: "homi-ceo",             label: "HOMI CEO",            icon: "Bot",           roles: ["admin"] },
   "/homi/base-conhecimento":{ key: "base-conhecimento",    label: "Base HOMI",           icon: "BookOpen",      roles: ["admin", "gestor"] },
   "/pipeline-negocios":     { key: "negocios",             label: "Negócios",            icon: "BarChart3" },
