@@ -23,7 +23,7 @@ import AttemptHistory from "./AttemptHistory";
 import ScoringLegend from "./ScoringLegend";
 import RecentCallsHistory from "./RecentCallsHistory";
 import PendingAttemptsBar from "./PendingAttemptsBar";
-import SessionCoachingModal, { type SessionMetrics } from "./SessionCoachingModal";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { playSoundSuccess, playSoundDing } from "@/lib/celebrations";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
@@ -113,8 +113,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
-  const [showCoachingModal, setShowCoachingModal] = useState(false);
-  const [sessionMetricsSnapshot, setSessionMetricsSnapshot] = useState<SessionMetrics | null>(null);
 
   // Timer
   const [callStartTimestamp, setCallStartTimestamp] = useState<number | null>(null);
