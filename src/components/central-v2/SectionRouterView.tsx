@@ -8,6 +8,7 @@ import { SectionOA } from "./sections/SectionOA";
 import { SectionVisitas } from "./sections/SectionVisitas";
 import { SectionNegocios } from "./sections/SectionNegocios";
 import { SectionVendas } from "./sections/SectionVendas";
+import { SectionMetas } from "./sections/SectionMetas";
 import { SectionRanking } from "./sections/SectionRanking";
 import { safeGet } from "./shared/safeGet";
 
@@ -55,6 +56,7 @@ function IndividualSection({ secao, state }: { secao: CentralSectionId; state: C
         />
       )}
       {secao === "vendas" && <SectionVendas query={rel.vendas} />}
+      {secao === "metas" && <SectionMetas query={rel.metas} />}
       {secao === "ranking" && <SectionRanking query={rel.ranking} />}
     </div>
   );

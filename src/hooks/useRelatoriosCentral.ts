@@ -41,7 +41,8 @@ type RpcName =
   | "get_relatorio_oferta_ativa"
   | "get_relatorio_visitas"
   | "get_relatorio_negocios"
-  | "get_relatorio_vendas";
+  | "get_relatorio_vendas"
+  | "get_relatorio_metas";
 
 // ─────────────────────────────────────────────────────────────────
 // Resolução de período → janela atual + janela anterior (mesmo tamanho)
@@ -155,6 +156,7 @@ export interface UseRelatoriosCentralResult {
   negocios: UseQueryResult<Record<string, unknown>>;
   vendas: UseQueryResult<Record<string, unknown>>;
   ranking: UseQueryResult<Record<string, unknown>>;
+  metas: UseQueryResult<Record<string, unknown>>;
   isAnyLoading: boolean;
   isAllLoading: boolean;
 }
@@ -230,10 +232,17 @@ export function useRelatoriosCentral(
     },
   });
 
+  const metas = useQuery({
+    ...baseOpts,
+    queryKey: ["central", "metas", keyId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_metas", gestorId ?? undefined, range),
+  });
+
 
   const all = [pipelineLeads, ofertaAtiva, visitas, negocios, vendas];
   const isAnyLoading = all.some((q) => q.isLoading);
   const isAllLoading = all.every((q) => q.isLoading);
+
 
   return {
     range,
@@ -244,6 +253,7 @@ export function useRelatoriosCentral(
     negocios,
     vendas,
     ranking,
+    metas,
     isAnyLoading,
     isAllLoading,
   };
