@@ -159,6 +159,8 @@ export interface UseRelatoriosCentralResult {
   vendas: UseQueryResult<Record<string, unknown>>;
   ranking: UseQueryResult<Record<string, unknown>>;
   metas: UseQueryResult<Record<string, unknown>>;
+  sla: UseQueryResult<Record<string, unknown>>;
+  cohort: UseQueryResult<Record<string, unknown>>;
   isAnyLoading: boolean;
   isAllLoading: boolean;
 }
