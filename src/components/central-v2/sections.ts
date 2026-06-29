@@ -6,12 +6,14 @@ import {
   Briefcase,
   TrendingUp,
   Trophy,
+  Layers3,
   type LucideIcon,
 } from "lucide-react";
 
 export type CentralSectionId =
   | "geral"
   | "pipeline-leads"
+  | "origem-segmento"
   | "oferta-ativa"
   | "visitas"
   | "negocios"
