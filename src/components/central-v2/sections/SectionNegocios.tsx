@@ -105,6 +105,6 @@ const columns: MiniColumn<FaseRow>[] = [
     key: "dias",
     label: "Dias",
     align: "right",
-    render: (r) => fmtInt(r.dias ?? r.dias_medio ?? null),
+    render: (r) => fmtInt(r.tempo_medio_em_fase_dias ?? r.dias ?? r.dias_medio ?? null),
   },
 ];
