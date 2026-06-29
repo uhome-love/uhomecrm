@@ -20,6 +20,7 @@ interface FaseRow {
   ticket_medio?: number;
   dias?: number;
   dias_medio?: number;
+  tempo_medio_em_fase_dias?: number;
 }
 
 function fmtInt(v: number | null | undefined): string {
