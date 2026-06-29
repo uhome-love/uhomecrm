@@ -41,7 +41,8 @@ type RpcName =
   | "get_relatorio_oferta_ativa"
   | "get_relatorio_visitas"
   | "get_relatorio_negocios"
-  | "get_relatorio_vendas";
+  | "get_relatorio_vendas"
+  | "get_relatorio_metas";
 
 // ─────────────────────────────────────────────────────────────────
 // Resolução de período → janela atual + janela anterior (mesmo tamanho)
