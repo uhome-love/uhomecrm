@@ -118,7 +118,7 @@ export async function exportGeral(meta: ExportMeta): Promise<void> {
 
 function drawCover(
   pdf: jsPDF,
-  meta: { periodoLabel: string; equipeLabel: string; geradoEm: string }
+  meta: { periodoLabel: string; equipeLabel: string; geradoEm: string; subtitulo: string }
 ) {
   pdf.setFontSize(28);
   pdf.setTextColor(20);
@@ -126,7 +126,7 @@ function drawCover(
 
   pdf.setFontSize(14);
   pdf.setTextColor(80);
-  pdf.text("Visão geral consolidada", MARGIN_MM, 70);
+  pdf.text(meta.subtitulo, MARGIN_MM, 70);
 
   pdf.setDrawColor(200);
   pdf.line(MARGIN_MM, 80, A4_W_MM - MARGIN_MM, 80);
