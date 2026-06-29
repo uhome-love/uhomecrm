@@ -79,7 +79,7 @@ const listaColumns: MiniColumn<ListaRow>[] = [
     key: "lista",
     label: "Lista",
     align: "left",
-    render: (r) => r.lista ?? r.nome ?? "—",
+    render: (r) => r.lista_nome ?? r.lista ?? r.nome ?? "—",
   },
   {
     key: "total",
