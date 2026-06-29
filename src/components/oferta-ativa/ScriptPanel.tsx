@@ -286,7 +286,7 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
             {editingScript === s.key ? (
               <Textarea
                 value={s.value}
-                onChange={(e) => s.setValue(e.target.value)}
+                onChange={(e) => { manualEditRef.current = true; s.setValue(e.target.value); }}
                 rows={compact ? 4 : 6}
                 className="text-xs leading-relaxed resize-none font-mono bg-muted/50 border-border"
                 autoFocus
