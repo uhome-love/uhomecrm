@@ -55,7 +55,7 @@ const BADGES: BadgeDef[] = [
   { key: "negocios",   label: "negócios",   color: "#1D4ED8", dotColor: "#3B82F6", bgActive: "rgba(59,130,246,0.12)", bgIdle: "transparent" },
 ];
 
-export default function PipelineFiltroBadges({ active, onChange, counts: countsProp }: PipelineFiltroBadgesProps) {
+export default function PipelineFiltroBadges({ active, onChange, counts: countsProp, compact }: PipelineFiltroBadgesProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   // Hooks corretor-only: só são consultados quando `countsProp` não é passado
   // (fallback para a visão do corretor durante o rollout do fix Bug 1).
