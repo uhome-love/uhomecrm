@@ -6,6 +6,7 @@ import TabEmpresa from "@/components/ceo/TabEmpresa";
 import { GreetingBar } from "@/components/ui/GreetingBar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useCeoDashboard, type DashPeriod } from "@/hooks/useCeoDashboard";
 import { useDateFilter } from "@/contexts/DateFilterContext";
 import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
