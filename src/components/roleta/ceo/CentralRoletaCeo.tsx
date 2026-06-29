@@ -114,11 +114,7 @@ export function CentralRoletaCeo() {
     <div className="bg-muted/30 p-4 md:p-6 -m-4 md:-m-6 min-h-full space-y-4">
       <PageHeader
         title="Central de Roleta"
-        subtitle={
-          <>
-            {windowInfo.emoji} {windowInfo.descricao}
-          </>
-        }
+        subtitle={`${windowInfo.emoji} ${windowInfo.descricao}`}
         icon={<Target size={18} strokeWidth={1.5} />}
         actions={
           <>
