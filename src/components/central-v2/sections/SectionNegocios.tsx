@@ -20,6 +20,7 @@ interface FaseRow {
   ticket_medio?: number;
   dias?: number;
   dias_medio?: number;
+  tempo_medio_em_fase_dias?: number;
 }
 
 function fmtInt(v: number | null | undefined): string {
@@ -104,6 +105,6 @@ const columns: MiniColumn<FaseRow>[] = [
     key: "dias",
     label: "Dias",
     align: "right",
-    render: (r) => fmtInt(r.dias ?? r.dias_medio ?? null),
+    render: (r) => fmtInt(r.tempo_medio_em_fase_dias ?? r.dias ?? r.dias_medio ?? null),
   },
 ];

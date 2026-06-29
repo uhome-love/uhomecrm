@@ -5,11 +5,19 @@ import { useToast } from "@/hooks/use-toast";
 import { CentralHeader } from "@/components/central-v2/CentralHeader";
 import { CentralSidebar } from "@/components/central-v2/CentralSidebar";
 import { CentralFilters } from "@/components/central-v2/CentralFilters";
-import { EmptyStateView } from "@/components/central-v2/EmptyStateView";
-import { GeralView } from "@/components/central-v2/GeralView";
+import { SectionRouterView } from "@/components/central-v2/SectionRouterView";
 import { useCentralUrlState } from "@/components/central-v2/useCentralUrlState";
-import { DEFAULT_SECTION, isCentralSection, type CentralSectionId } from "@/components/central-v2/sections";
+import {
+  CENTRAL_SECTIONS,
+  DEFAULT_SECTION,
+  isCentralSection,
+  type CentralSectionId,
+} from "@/components/central-v2/sections";
 import { exportGeral } from "@/lib/centralPdf";
+
+const SECTION_LABELS: Record<string, string> = Object.fromEntries(
+  CENTRAL_SECTIONS.map((s) => [s.id, s.label])
+);
 
 const PERIODO_LABELS: Record<string, string> = {
   hoje: "Hoje",
@@ -71,18 +79,17 @@ function CentralRelatoriosV2Inner() {
   useEffect(() => {
     const handler = async (e: Event) => {
       const detail = (e as CustomEvent<{ secao?: CentralSectionId }>).detail;
-      if (detail?.secao !== "geral") {
-        toast({
-          title: "Exportação indisponível",
-          description: "PDF disponível apenas na visão Geral neste momento.",
-        });
-        return;
-      }
+      const secao = detail?.secao ?? state.secao;
+      const isGeral = secao === "geral";
       try {
         setIsExporting(true);
         await exportGeral({
           periodoLabel: PERIODO_LABELS[state.periodo] ?? state.periodo,
           equipeLabel: state.equipe ? "Equipe selecionada" : "Todas as equipes",
+          targetId: isGeral ? "central-relatorio-geral" : "central-relatorio-secao",
+          subtitulo: isGeral
+            ? "Visão geral consolidada"
+            : `Seção: ${SECTION_LABELS[secao] ?? secao}`,
         });
       } catch (err) {
         console.error("[CentralRelatoriosV2] export error", err);
@@ -97,7 +104,7 @@ function CentralRelatoriosV2Inner() {
     };
     window.addEventListener("central:export-pdf", handler);
     return () => window.removeEventListener("central:export-pdf", handler);
-  }, [state.periodo, state.equipe, toast]);
+  }, [state.periodo, state.equipe, state.secao, toast]);
 
   return (
     <div className="min-h-full bg-background">
@@ -120,11 +127,9 @@ function CentralRelatoriosV2Inner() {
 
         <main className="flex flex-col gap-4 p-4 sm:p-6">
           <CentralFilters state={state} onChange={update} />
-          {state.secao === "geral" ? (
-            <GeralView state={state} />
-          ) : (
-            <EmptyStateView secao={state.secao} />
-          )}
+          <div id="central-relatorio-secao">
+            <SectionRouterView state={state} />
+          </div>
         </main>
       </div>
 

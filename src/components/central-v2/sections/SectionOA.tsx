@@ -11,10 +11,13 @@ interface Props {
 
 interface ListaRow {
   lista?: string;
+  lista_nome?: string;
   nome?: string;
   total?: number;
+  tentativas?: number;
   aproveitados?: number;
   taxa?: number;
+  taxa_pct?: number;
 }
 
 function fmtInt(v: number | null | undefined): string {
@@ -76,13 +79,13 @@ const listaColumns: MiniColumn<ListaRow>[] = [
     key: "lista",
     label: "Lista",
     align: "left",
-    render: (r) => r.lista ?? r.nome ?? "—",
+    render: (r) => r.lista_nome ?? r.lista ?? r.nome ?? "—",
   },
   {
     key: "total",
     label: "Tentativas",
     align: "right",
-    render: (r) => fmtInt(r.total ?? null),
+    render: (r) => fmtInt(r.tentativas ?? r.total ?? null),
   },
   {
     key: "aproveitados",
@@ -94,6 +97,6 @@ const listaColumns: MiniColumn<ListaRow>[] = [
     key: "taxa",
     label: "Taxa",
     align: "right",
-    render: (r) => fmtPct(r.taxa ?? null),
+    render: (r) => fmtPct(r.taxa_pct ?? r.taxa ?? null),
   },
 ];

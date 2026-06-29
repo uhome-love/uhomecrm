@@ -17,6 +17,10 @@ export interface ExportMeta {
   equipeLabel: string;
   /** Se omitido, usa "agora" formatado em BRT. */
   geradoEm?: string;
+  /** id do elemento DOM a capturar. Default: central-relatorio-geral. */
+  targetId?: string;
+  /** Subtítulo exibido na capa. Default: "Visão geral consolidada". */
+  subtitulo?: string;
 }
 
 const A4_W_MM = 210;
@@ -24,9 +28,13 @@ const A4_H_MM = 297;
 const MARGIN_MM = 12;
 
 export async function exportGeral(meta: ExportMeta): Promise<void> {
-  const target = document.getElementById("central-relatorio-geral");
+  const targetId = meta.targetId ?? "central-relatorio-geral";
+  const target =
+    document.getElementById(targetId) ??
+    document.getElementById("central-relatorio-secao") ??
+    document.getElementById("central-relatorio-geral");
   if (!target) {
-    throw new Error("Elemento #central-relatorio-geral não encontrado.");
+    throw new Error(`Elemento #${targetId} não encontrado.`);
   }
 
   const geradoEm = meta.geradoEm ?? formatBRT(new Date(), "dd/MM/yyyy HH:mm");
@@ -38,6 +46,7 @@ export async function exportGeral(meta: ExportMeta): Promise<void> {
     periodoLabel: meta.periodoLabel,
     equipeLabel: meta.equipeLabel,
     geradoEm,
+    subtitulo: meta.subtitulo ?? "Visão geral consolidada",
   });
 
   // ─── Captura conteúdo ────────────────────────────────────────
@@ -109,7 +118,7 @@ export async function exportGeral(meta: ExportMeta): Promise<void> {
 
 function drawCover(
   pdf: jsPDF,
-  meta: { periodoLabel: string; equipeLabel: string; geradoEm: string }
+  meta: { periodoLabel: string; equipeLabel: string; geradoEm: string; subtitulo: string }
 ) {
   pdf.setFontSize(28);
   pdf.setTextColor(20);
@@ -117,7 +126,7 @@ function drawCover(
 
   pdf.setFontSize(14);
   pdf.setTextColor(80);
-  pdf.text("Visão geral consolidada", MARGIN_MM, 70);
+  pdf.text(meta.subtitulo, MARGIN_MM, 70);
 
   pdf.setDrawColor(200);
   pdf.line(MARGIN_MM, 80, A4_W_MM - MARGIN_MM, 80);

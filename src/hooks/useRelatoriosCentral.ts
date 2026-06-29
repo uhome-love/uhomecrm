@@ -154,6 +154,7 @@ export interface UseRelatoriosCentralResult {
   visitas: UseQueryResult<Record<string, unknown>>;
   negocios: UseQueryResult<Record<string, unknown>>;
   vendas: UseQueryResult<Record<string, unknown>>;
+  ranking: UseQueryResult<Record<string, unknown>>;
   isAnyLoading: boolean;
   isAllLoading: boolean;
 }
@@ -209,6 +210,25 @@ export function useRelatoriosCentral(
     queryKey: ["central", "vendas", keyId, range.start, range.end],
     queryFn: () => fetchRpc("get_relatorio_vendas", gestorId ?? undefined, range),
   });
+  const ranking = useQuery({
+    ...baseOpts,
+    queryKey: ["central", "ranking", keyId, range.start, range.end],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_ranking_central", {
+        p_gestor_id: gestorId ?? null,
+        p_start: range.start,
+        p_end: range.end,
+      } as never);
+      if (error) {
+        const msg = String(error.message || "").toLowerCase();
+        if (msg.includes("forbidden") || msg.includes("unauthorized")) {
+          throw new Error("forbidden");
+        }
+        throw error;
+      }
+      return (data as Record<string, unknown>) ?? {};
+    },
+  });
 
 
   const all = [pipelineLeads, ofertaAtiva, visitas, negocios, vendas];
@@ -223,6 +243,7 @@ export function useRelatoriosCentral(
     visitas,
     negocios,
     vendas,
+    ranking,
     isAnyLoading,
     isAllLoading,
   };
