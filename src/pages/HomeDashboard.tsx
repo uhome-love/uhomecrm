@@ -23,12 +23,14 @@ export default function HomeDashboard() {
       navigate("/backoffice", { replace: true });
     } else if (isRh) {
       navigate("/rh", { replace: true });
+    } else if (isDiretor) {
+      navigate("/ceo", { replace: true });
     } else if (isGestor) {
       navigate("/gerente/dashboard", { replace: true });
     } else {
       navigate("/corretor", { replace: true });
     }
-  }, [isAdmin, isGestor, isBackoffice, isRh, roleLoading, navigate, user]);
+  }, [isAdmin, isDiretor, isGestor, isBackoffice, isRh, roleLoading, navigate, user]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
