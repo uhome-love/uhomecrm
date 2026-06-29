@@ -128,6 +128,7 @@ function FunnelStep({ label, value, pct, color, isLast }: { label: string; value
 export default function CeoDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const { period, range } = useDateFilter();
   const [frase] = useState(() => FRASES[Math.floor(Math.random() * FRASES.length)]);
   const [dispatchOpen, setDispatchOpen] = useState(false);
