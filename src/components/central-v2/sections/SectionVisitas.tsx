@@ -53,6 +53,12 @@ export function SectionVisitas({ query }: Props) {
             loading={query.isLoading && !data}
             items={data ? buildKpis(data) : undefined}
           />
+          <SimpleBarChart
+            title="Visitas por dia da semana"
+            loading={query.isLoading && !data}
+            data={buildDowSeries(data)}
+            emptyLabel="Sem visitas no período."
+          />
           <MiniTable<EmpRow>
             title="Top empreendimentos"
             loading={query.isLoading && !data}
