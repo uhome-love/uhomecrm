@@ -308,6 +308,18 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
             {resultado === "numero_errado" && (
               <p className="text-[10px] text-red-600 bg-red-500/10 rounded px-2 py-1">Lead removido permanentemente. 0 pts.</p>
             )}
+            {resultado === "sem_interesse" && (
+              <label className="flex items-start gap-2 rounded-lg px-2.5 py-2 cursor-pointer border border-[var(--arena-card-border)] hover:border-red-500/40 transition-colors">
+                <Checkbox
+                  checked={retirarDoSistema}
+                  onCheckedChange={(c) => setRetirarDoSistema(c === true)}
+                  className="mt-0.5 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                />
+                <span className="text-[11px] leading-snug" style={{ color: "var(--arena-text-muted)" }}>
+                  🚫 <strong>Retirar do sistema</strong> — o lead não quer mais ser contatado e será excluído permanentemente.
+                </span>
+              </label>
+            )}
             {resultado === "sem_interesse" && !isRetirar && (
               <p className="text-[10px] text-amber-600 bg-amber-500/10 rounded px-2 py-1">Lead removido da fila. +1 pt.</p>
             )}
