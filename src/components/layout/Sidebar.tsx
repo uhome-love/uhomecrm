@@ -364,7 +364,7 @@ export default function Sidebar({
   const { openTab } = useTabNavigation();
   const [campOpen, setCampOpen] = useState(false);
   const isDark    = theme === "dark";
-  const isManagerRole = role === "admin" || role === "gestor";
+  const isManagerRole = role === "admin" || role === "diretor" || role === "gestor";
 
   // WhatsApp unread badge — only for corretores (not managers/admins)
   const [whatsappUnread, setWhatsappUnread] = useState(() => {
