@@ -44,6 +44,7 @@ function IndividualSection({ secao, state }: { secao: CentralSectionId; state: C
   return (
     <div className="flex flex-col gap-6">
       {secao === "pipeline-leads" && <SectionPipelineLeads query={rel.pipelineLeads} />}
+      {secao === "origem-segmento" && <SectionOrigemSegmento query={rel.pipelineLeads} />}
       {secao === "oferta-ativa" && <SectionOA query={rel.ofertaAtiva} />}
       {secao === "visitas" && <SectionVisitas query={rel.visitas} />}
       {secao === "negocios" && (
