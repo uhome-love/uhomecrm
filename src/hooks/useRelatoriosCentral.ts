@@ -270,6 +270,8 @@ export function useRelatoriosCentral(
     vendas,
     ranking,
     metas,
+    sla,
+    cohort,
     isAnyLoading,
     isAllLoading,
   };
