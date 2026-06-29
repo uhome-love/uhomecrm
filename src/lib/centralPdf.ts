@@ -46,6 +46,7 @@ export async function exportGeral(meta: ExportMeta): Promise<void> {
     periodoLabel: meta.periodoLabel,
     equipeLabel: meta.equipeLabel,
     geradoEm,
+    subtitulo: meta.subtitulo ?? "Visão geral consolidada",
   });
 
   // ─── Captura conteúdo ────────────────────────────────────────
