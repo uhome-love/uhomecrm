@@ -197,7 +197,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/gestor/whatsapp-dashboard": { key: "gestao-whatsapp", label: "Gestão WhatsApp",     icon: "BarChart2",     roles: ["gestor", "admin", "diretor"] },
   "/central-relatorios":        { key: "report-center",     label: "Central Relatórios",  icon: "BarChart2",     roles: ["admin", "gestor", "corretor", "diretor"], noPadding: true },
   "/materiais":             { key: "materiais",            label: "Materiais",           icon: "FolderOpen" },
-  "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor"] },
+  "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor", "diretor"] },
 };
 
 // ─── DYNAMIC ROUTES ──────────────────────────────────────────────────────────
