@@ -97,6 +97,6 @@ const listaColumns: MiniColumn<ListaRow>[] = [
     key: "taxa",
     label: "Taxa",
     align: "right",
-    render: (r) => fmtPct(r.taxa ?? null),
+    render: (r) => fmtPct(r.taxa_pct ?? r.taxa ?? null),
   },
 ];
