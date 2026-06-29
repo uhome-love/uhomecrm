@@ -82,6 +82,8 @@ export function GeralView({ state }: Props) {
       </div>
 
       <SectionPipelineLeads query={rel.pipelineLeads} />
+      <SectionOrigemSegmento query={rel.pipelineLeads} />
+
       <SectionOA query={rel.ofertaAtiva} />
       <SectionVisitas query={rel.visitas} />
       <SectionNegocios
