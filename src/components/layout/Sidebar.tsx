@@ -362,7 +362,14 @@ export default function Sidebar({
   showCampaigns = true,
 }: SidebarProps) {
   const location  = useLocation();
+  const navigate  = useNavigate();
   const { openTab } = useTabNavigation();
+  // Standalone full-page routes (rendered outside the tab shell in App.tsx) are not
+  // in pageRegistry, so openTab() can't resolve them. Fall back to direct navigation.
+  const go = (path: string) => {
+    if (resolveRoute(path.split("?")[0].split("#")[0])) openTab(path);
+    else navigate(path);
+  };
   const [campOpen, setCampOpen] = useState(false);
   const isDark    = theme === "dark";
   const isManagerRole = role === "admin" || role === "diretor" || role === "gestor";
