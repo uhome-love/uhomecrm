@@ -180,7 +180,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/disparador-ligacoes-ia":{ key: "disparador-ligacoes",  label: "Disparador IA",       icon: "Phone",         roles: ["admin"] },
   "/campanhas-voz":         { key: "campanhas-voz",        label: "Campanhas Voz",       icon: "Phone",         roles: ["admin"] },
   "/central-nutricao":      { key: "central-nutricao",     label: "Reengajamento",       icon: "RefreshCw",     roles: ["admin"] },
-  "/relatorio-semanal":     { key: "relatorio-semanal",    label: "Relatório Semanal",   icon: "FileText",      roles: ["admin", "gestor", "corretor"] },
+  "/relatorio-semanal":     { key: "relatorio-semanal",    label: "Relatório Semanal",   icon: "FileText",      roles: ["admin", "gestor", "corretor", "diretor"] },
   "/backoffice/pagadorias":           { key: "pagadorias",             label: "Pagadorias",          icon: "Wallet",        roles: ["backoffice", "admin"] },
   "/backoffice/solicitacoes-pagadoria":{ key: "pagadoria-solicitacoes", label: "Solicitações",        icon: "ClipboardList", roles: ["backoffice", "admin"] },
   "/backoffice/comissoes":            { key: "comissoes",              label: "Comissões",           icon: "PieChart",      roles: ["backoffice", "admin"] },
