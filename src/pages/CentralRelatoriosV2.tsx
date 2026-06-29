@@ -104,7 +104,7 @@ function CentralRelatoriosV2Inner() {
     };
     window.addEventListener("central:export-pdf", handler);
     return () => window.removeEventListener("central:export-pdf", handler);
-  }, [state.periodo, state.equipe, toast]);
+  }, [state.periodo, state.equipe, state.secao, toast]);
 
   return (
     <div className="min-h-full bg-background">
