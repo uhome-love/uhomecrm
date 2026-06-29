@@ -91,7 +91,59 @@ export default function PipelineFiltroBadges({ active, onChange, counts: countsP
     }
   };
 
+  // ── Modo compacto: cluster segmentado unido (dot + número), rótulo só no ativo ──
+  if (compact) {
+    return (
+      <div className="inline-flex items-center rounded-lg border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] p-0.5">
+        {BADGES.map((b) => {
+          const isActive = active === b.key;
+          const count = counts[b.key];
+          const alert = b.key === "atrasado" && count > 0;
+          return (
+            <button
+              key={b.key}
+              type="button"
+              onClick={() => handleClick(b.key)}
+              aria-pressed={isActive}
+              aria-label={`Filtrar por ${b.label}: ${count} ${count === 1 ? "lead" : "leads"}${isActive ? " (ativo)" : ""}`}
+              title={
+                b.key === "em_dia"
+                  ? "Em dia (inclui tarefas pra hoje que ainda não venceram)"
+                  : `${b.label}: ${count.toLocaleString("pt-BR")} leads`
+              }
+              className="group inline-flex items-center gap-1.5 h-7 px-2 rounded-md transition-colors cursor-pointer border-none"
+              style={{
+                background: isActive ? b.bgActive : "transparent",
+                color: b.color,
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+              }}
+              onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = b.bgActive; }}
+              onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: b.dotColor,
+                  display: "inline-block",
+                  boxShadow: alert ? `0 0 0 3px ${b.bgActive}` : "none",
+                }}
+              />
+              <span style={{ fontVariantNumeric: "tabular-nums", fontSize: 12, fontWeight: 700 }}>
+                {count.toLocaleString("pt-BR")}
+              </span>
+              {isActive && <span style={{ fontSize: 11, fontWeight: 600 }}>{b.label}</span>}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
+
     <div className="flex items-center gap-2 flex-wrap">
       {BADGES.map((b) => {
         const isActive = active === b.key;
