@@ -1,8 +1,9 @@
-import { Megaphone } from "lucide-react";
+import { Megaphone, PhoneCall, ThumbsUp, Users2, Handshake } from "lucide-react";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { KpiRow, type KpiItem } from "@/components/central-v2/shared/KpiRow";
+import { KpiGrid, type KpiCardData } from "@/components/central-v2/shared/KpiCard";
 import { MiniTable, type MiniColumn } from "@/components/central-v2/shared/MiniTable";
 import { SectionError } from "@/components/central-v2/shared/SectionError";
+import { SectionHeading } from "@/components/central-v2/shared/SectionHeading";
 import { safeGet } from "@/components/central-v2/shared/safeGet";
 
 interface Props {
@@ -10,8 +11,8 @@ interface Props {
 }
 
 interface ListaRow {
-  lista?: string;
   lista_nome?: string;
+  lista?: string;
   nome?: string;
   total?: number;
   tentativas?: number;
@@ -32,25 +33,24 @@ function fmtPct(v: number | null | undefined): string {
 
 export function SectionOA({ query }: Props) {
   const data = query.data;
+  const loading = query.isLoading && !data;
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 border-b border-border pb-2">
-        <Megaphone className="h-5 w-5 text-primary" strokeWidth={1.75} />
-        <h2 className="font-display text-xl text-foreground">Oferta Ativa</h2>
-      </div>
+      <SectionHeading
+        icon={Megaphone}
+        title="Oferta Ativa"
+        subtitle="Prospecção ativa: tentativas, aproveitamento e conversão por lista"
+      />
 
       {query.error ? (
         <SectionError query={query} label="Oferta Ativa" />
       ) : (
         <>
-          <KpiRow
-            loading={query.isLoading && !data}
-            items={data ? buildKpis(data) : undefined}
-          />
+          <KpiGrid loading={loading} items={data ? buildKpis(data) : undefined} />
           <MiniTable<ListaRow>
             title="Top listas de origem"
-            loading={query.isLoading && !data}
+            loading={loading}
             rows={safeGet<ListaRow[]>(data ?? {}, "extras.top_listas_origem", "OA top_listas_origem") ?? []}
             columns={listaColumns}
           />
@@ -60,17 +60,23 @@ export function SectionOA({ query }: Props) {
   );
 }
 
-function buildKpis(data: Record<string, unknown>): KpiItem[] {
+function buildKpis(data: Record<string, unknown>): KpiCardData[] {
   const tentativas = safeGet<number>(data, "oferta_ativa.tentativas", "OA tentativas");
   const aproveitados = safeGet<number>(data, "oferta_ativa.aproveitados", "OA aproveitados");
   const ativos = safeGet<number>(data, "oferta_ativa.ativos_no_pipeline", "OA ativos_no_pipeline");
   const negocios = safeGet<number>(data, "oferta_ativa.negocios_da_oa", "OA negocios_da_oa");
+  const conv = safeGet<number>(data, "oferta_ativa.conversao_pct", "OA conversao_pct");
 
   return [
-    { label: "Tentativas", value: fmtInt(tentativas) },
-    { label: "Aproveitados", value: fmtInt(aproveitados) },
-    { label: "Ativos no Pipeline", value: fmtInt(ativos) },
-    { label: "Negócios da OA", value: fmtInt(negocios) },
+    { label: "Tentativas", value: fmtInt(tentativas), icon: PhoneCall },
+    {
+      label: "Aproveitados",
+      value: fmtInt(aproveitados),
+      icon: ThumbsUp,
+      hint: conv != null ? `${fmtPct(conv)} de conversão` : undefined,
+    },
+    { label: "Ativos no Pipeline", value: fmtInt(ativos), icon: Users2 },
+    { label: "Negócios da OA", value: fmtInt(negocios), icon: Handshake },
   ];
 }
 
@@ -86,6 +92,7 @@ const listaColumns: MiniColumn<ListaRow>[] = [
     label: "Tentativas",
     align: "right",
     render: (r) => fmtInt(r.tentativas ?? r.total ?? null),
+    bar: (r) => r.tentativas ?? r.total ?? 0,
   },
   {
     key: "aproveitados",
