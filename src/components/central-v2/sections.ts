@@ -7,6 +7,7 @@ import {
   TrendingUp,
   Trophy,
   Layers3,
+  Target,
   type LucideIcon,
 } from "lucide-react";
 
