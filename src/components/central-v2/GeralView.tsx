@@ -7,6 +7,7 @@ import { SectionOA } from "./sections/SectionOA";
 import { SectionVisitas } from "./sections/SectionVisitas";
 import { SectionNegocios } from "./sections/SectionNegocios";
 import { SectionVendas } from "./sections/SectionVendas";
+import { SectionMetas } from "./sections/SectionMetas";
 import { RankingTeaser } from "./sections/RankingTeaser";
 import { FunnelChart, type FunnelStage } from "./shared/FunnelChart";
 import { TrendAreaChart, type ChartPoint } from "./shared/MiniChart";
