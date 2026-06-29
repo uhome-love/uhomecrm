@@ -123,6 +123,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
       setResultado("");
       setFeedback("");
       setVisitaMarcada(false);
+      setRetirarDoSistema(false);
       setInteresseTipo("");
       confirmedRetirar.current = false;
     } catch (err: any) {
