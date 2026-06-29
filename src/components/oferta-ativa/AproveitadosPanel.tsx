@@ -11,6 +11,7 @@ export default function AproveitadosPanel() {
   const { user } = useAuth();
   const [filterEmp, setFilterEmp] = useState("__all__");
   const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(30);
   const [addingToPlId, setAddingToPlId] = useState<string | null>(null);
   const [pipelineStatus, setPipelineStatus] = useState<Record<string, "exists" | "added">>({});
 
