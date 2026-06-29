@@ -398,7 +398,7 @@ Deno.serve(async (req) => {
     }).then(r => { if (r.error) L.warn("Audit insert failed", {}, r.error); });
 
     return new Response(
-      JSON.stringify({ success: true, lead_id: insertedLead.id, empreendimento, distributed, trace_id: traceId }),
+      JSON.stringify({ success: true, lead_id: insertedLead.id, empreendimento, distributed: distribution.success, trace_id: traceId }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
