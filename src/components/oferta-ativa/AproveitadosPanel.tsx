@@ -276,6 +276,17 @@ export default function AproveitadosPanel() {
         );
       })}
 
+      {filtered.length > visibleCount && (
+        <button
+          className="w-full h-10 text-xs font-semibold rounded-lg transition-colors"
+          style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)", color: "var(--arena-text)" }}
+          onClick={() => setVisibleCount(c => c + 30)}
+        >
+          Ver mais ({filtered.length - visibleCount} restantes)
+        </button>
+      )}
+
+
       {filtered.length === 0 && (
         <div className="text-center py-8 text-sm" style={{ color: "var(--arena-text-muted)" }}>
           Nenhum resultado para os filtros selecionados.
