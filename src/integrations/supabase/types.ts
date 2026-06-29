@@ -11008,6 +11008,16 @@ export type Database = {
           visitas_realizadas: number
         }[]
       }
+      get_relatorio_metas: {
+        Args: {
+          p_end: string
+          p_gestor_id: string
+          p_prev_end?: string
+          p_prev_start?: string
+          p_start: string
+        }
+        Returns: Json
+      }
       get_relatorio_negocios: {
         Args: {
           p_end: string
