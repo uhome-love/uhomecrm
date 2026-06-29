@@ -78,8 +78,9 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   const [visitaData, setVisitaData] = useState(tomorrowStr);
   const [visitaHora, setVisitaHora] = useState("10:00");
 
-  const RETIRAR_FEEDBACK = "🚫 Retirar do sistema — não quer ser mais contatado";
-  const isRetirar = feedback === RETIRAR_FEEDBACK;
+  // "Retirar do sistema" agora é um estado explícito (checkbox), não mais um
+  // match frágil de string no texto do feedback.
+  const isRetirar = resultado === "sem_interesse" && retirarDoSistema;
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.target instanceof HTMLTextAreaElement) {
