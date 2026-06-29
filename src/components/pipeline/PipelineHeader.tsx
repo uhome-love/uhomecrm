@@ -166,22 +166,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center shrink-0">
             <LayoutGrid className="h-3 w-3 text-white" />
           </div>
-          <span className="text-[15px] font-bold text-foreground">Pipeline</span>
-          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeadsCount}</span>
-          <div className="flex-1" />
-
-          {(isAdmin || isGestor) && (
-            <PipelineCorretorSelect
-              value={corretorFilter}
-              onChange={setCorretorFilter}
-              options={corretorOptions}
-              isAdmin={isAdmin}
-              variant="mobile"
-            />
-          )}
-          {isAdmin && setGestorFilter && (
-            <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="compact" />
-          )}
+          <span className="text-[15px] font-bold text-foreground shrink-0">Pipeline</span>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold shrink-0">{filteredLeadsCount}</span>
+          <div className="flex-1 min-w-0" />
 
           <PipelineAdvancedFilters
             filters={filters}
@@ -202,7 +189,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               }}
               aria-label="Buscar leads"
               aria-expanded={mobileSearchOpen}
-              className="relative w-8 h-8 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
+              className="relative w-8 h-8 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer shrink-0"
             >
               <Search className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
               {filters.search && (
@@ -215,12 +202,29 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           {canAdd && activeTab === "kanban" && (
             <button
               onClick={() => setAddOpen(true)}
-              className="bg-primary hover:bg-primary-600 text-white rounded-[7px] px-2.5 py-[5px] font-bold text-xs border-none cursor-pointer whitespace-nowrap"
+              className="bg-primary hover:bg-primary-600 text-white rounded-[7px] px-2.5 py-[5px] font-bold text-xs border-none cursor-pointer whitespace-nowrap shrink-0"
             >
               + Novo
             </button>
           )}
         </div>
+
+        {/* Mobile selects row — corretor/gestor em linha própria para não cortar */}
+        {(isAdmin || isGestor) && (
+          <div className="flex items-center gap-2 px-3 pb-1 overflow-x-auto scrollbar-none">
+            <PipelineCorretorSelect
+              value={corretorFilter}
+              onChange={setCorretorFilter}
+              options={corretorOptions}
+              isAdmin={isAdmin}
+              variant="mobile"
+            />
+            {isAdmin && setGestorFilter && (
+              <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="compact" />
+            )}
+          </div>
+        )}
+
 
         {/* Tab switcher mobile — paridade com desktop (Kanban / Inteligência / Modo Time / Equipes) */}
         {roleTabs.length > 1 && (
