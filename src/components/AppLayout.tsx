@@ -83,13 +83,17 @@ export default function AppLayout() {
   const { isFullscreen, isSession } = useArenaMode();
   const { tabs, activeTabId } = useTabContext();
 
-  // Derive role for the new Sidebar
+  // Derive role for the new Sidebar.
+  // Diretora Comercial (diretor) tem visão executiva própria, abaixo do CEO e
+  // acima do gestor. Mantém os papéis de gestão por baixo, mas a identidade é diretora.
   const sidebarRole: SidebarRole = isBackoffice
     ? "backoffice"
     : isAdmin
     ? "admin"
     : isRh
     ? "rh"
+    : isDiretor
+    ? "diretor"
     : isGestor
     ? "gestor"
     : "corretor";
