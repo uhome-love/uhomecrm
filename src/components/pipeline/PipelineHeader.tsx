@@ -723,8 +723,8 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           {/* Divisor ordenação ↔ ações globais */}
           <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0 mx-0.5" />
 
-
-
+          {/* Grupo de ações globais — Fila CEO · menu ⋯ */}
+          <div className="flex items-center gap-1.5 shrink-0">
           {/* Fila CEO — colapsada num único botão com popover */}
           {isAdmin && filaCeoCount > 0 && (
             <Popover>
