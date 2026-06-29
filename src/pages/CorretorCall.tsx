@@ -494,12 +494,6 @@ export default function CorretorCall() {
           {/* Secondary links */}
           <div className="flex flex-col items-center gap-2 text-sm">
             <button
-              onClick={handleStartSession}
-              className="text-neutral-500 hover:text-white transition-colors"
-            >
-              Escolher leads manualmente →
-            </button>
-            <button
               onClick={() => navigate("/corretor")}
               className="text-neutral-500 hover:text-white transition-colors"
             >
