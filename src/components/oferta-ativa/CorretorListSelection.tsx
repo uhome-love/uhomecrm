@@ -105,19 +105,27 @@ function ListaRow({
 
       {/* Inline stats */}
       {stats ? (
-        <div className="hidden sm:flex items-center gap-3 text-xs shrink-0">
-          <span style={{ color: "#60A5FA", fontWeight: 700 }}>{stats.naFila}</span>
-          <span style={{ color: "var(--arena-text-subtle)" }}>na fila</span>
-          <span style={{ color: "var(--arena-text-subtle)", opacity: 0.5 }}>·</span>
-          <span style={{ color: "#4ADE80", fontWeight: 700 }}>{stats.aproveitados}</span>
-          <span style={{ color: "var(--arena-text-subtle)" }}>aprov.</span>
-          <span style={{ color: "var(--arena-text-subtle)", opacity: 0.5 }}>·</span>
-          <span style={{ color: "var(--arena-text-muted)", fontWeight: 600 }}>{stats.total}</span>
-          <span style={{ color: "var(--arena-text-subtle)" }}>total</span>
-        </div>
+        <>
+          <div className="hidden sm:flex items-center gap-3 text-xs shrink-0">
+            <span style={{ color: "#60A5FA", fontWeight: 700 }}>{stats.naFila}</span>
+            <span style={{ color: "var(--arena-text-subtle)" }}>na fila</span>
+            <span style={{ color: "var(--arena-text-subtle)", opacity: 0.5 }}>·</span>
+            <span style={{ color: "#4ADE80", fontWeight: 700 }}>{stats.aproveitados}</span>
+            <span style={{ color: "var(--arena-text-subtle)" }}>aprov.</span>
+            <span style={{ color: "var(--arena-text-subtle)", opacity: 0.5 }}>·</span>
+            <span style={{ color: "var(--arena-text-muted)", fontWeight: 600 }}>{stats.total}</span>
+            <span style={{ color: "var(--arena-text-subtle)" }}>total</span>
+          </div>
+          {/* Compact mobile stat */}
+          <div className="flex sm:hidden items-center gap-1 text-[11px] shrink-0">
+            <span style={{ color: "#60A5FA", fontWeight: 700 }}>{stats.naFila}</span>
+            <span style={{ color: "var(--arena-text-subtle)" }}>na fila</span>
+          </div>
+        </>
       ) : (
-        <Skeleton className="h-4 w-32 rounded" style={{ background: "var(--arena-subtle-bg)" }} />
+        <Skeleton className="h-4 w-20 sm:w-32 rounded" style={{ background: "var(--arena-subtle-bg)" }} />
       )}
+
 
       {/* Mini progress bar */}
       <div className="hidden md:block w-20 shrink-0">

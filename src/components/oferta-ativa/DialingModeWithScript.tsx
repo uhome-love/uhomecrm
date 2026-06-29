@@ -23,7 +23,7 @@ import AttemptHistory from "./AttemptHistory";
 import ScoringLegend from "./ScoringLegend";
 import RecentCallsHistory from "./RecentCallsHistory";
 import PendingAttemptsBar from "./PendingAttemptsBar";
-import SessionCoachingModal, { type SessionMetrics } from "./SessionCoachingModal";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { playSoundSuccess, playSoundDing } from "@/lib/celebrations";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
@@ -113,8 +113,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
-  const [showCoachingModal, setShowCoachingModal] = useState(false);
-  const [sessionMetricsSnapshot, setSessionMetricsSnapshot] = useState<SessionMetrics | null>(null);
 
   // Timer
   const [callStartTimestamp, setCallStartTimestamp] = useState<number | null>(null);
@@ -986,6 +984,30 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     </div>
   );
 
+  // ─── RESULT COLUMN (mobile "Resultado" tab): histórico de tentativas ───
+  const ResultColumn = (
+    <div className="space-y-3 min-w-0">
+      <div className="rounded-xl p-4 space-y-3" style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)" }}>
+        <div className="flex items-center gap-2">
+          <History className="h-4 w-4" style={{ color: "var(--arena-text-muted)" }} />
+          <h3 className="text-sm font-bold" style={{ color: "var(--arena-text)" }}>
+            Histórico do lead ({lead.tentativas_count})
+          </h3>
+        </div>
+        <RecentCallsHistory />
+        {lead.tentativas_count > 0 ? (
+          <AttemptHistory leadId={lead.id} />
+        ) : (
+          <p className="text-xs" style={{ color: "var(--arena-text-muted)" }}>
+            Nenhuma tentativa registrada para este lead ainda.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+
+
   // ─── RESULT POPUP ───
   const ResultPopup = showResultPopup && (
     <div className="fixed inset-0 z-[70] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
@@ -1222,7 +1244,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             >
               {mobileTab === "lead" && LeadColumn}
               {mobileTab === "script" && ToolsColumn}
-              {mobileTab === "whatsapp" && ToolsColumn}
+              {mobileTab === "whatsapp" && ResultColumn}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -1274,15 +1296,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         />
       )}
 
-      {/* Session Coaching Modal */}
-      {sessionMetricsSnapshot && (
-        <SessionCoachingModal
-          open={showCoachingModal}
-          onClose={() => { setShowCoachingModal(false); onBack(); }}
-          metrics={sessionMetricsSnapshot}
-          onViewLeadsQuentes={() => { setShowCoachingModal(false); onBack(); }}
-        />
-      )}
+
+
 
       {lead && (
         <CentralComunicacao

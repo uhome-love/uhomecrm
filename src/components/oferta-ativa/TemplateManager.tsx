@@ -41,6 +41,7 @@ export default function TemplateManager() {
       if (error) throw error;
       return data as OATemplate[];
     },
+    staleTime: 60_000,
   });
 
   // Get unique empreendimentos from listas
@@ -50,7 +51,9 @@ export default function TemplateManager() {
       const { data } = await supabase.from("oferta_ativa_listas").select("empreendimento");
       return [...new Set((data || []).map(d => d.empreendimento))].filter(Boolean);
     },
+    staleTime: 60_000,
   });
+
 
   const openNew = () => {
     setEditing(null);
