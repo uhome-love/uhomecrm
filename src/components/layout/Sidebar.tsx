@@ -515,7 +515,7 @@ export default function Sidebar({
                 return (
                   <button
                     key={item.path}
-                    onClick={() => { openTab(item.path); if (isMobile) setOpenMobile(false); }}
+                    onClick={() => { go(item.path); if (isMobile) setOpenMobile(false); }}
                     className={cn(
                       "w-full flex items-center gap-[10px] px-2 py-[7px] rounded-[8px]",
                       "text-[13.5px] tracking-[-0.15px] transition-all text-left",
