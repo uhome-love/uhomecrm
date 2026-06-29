@@ -304,7 +304,53 @@
   .surface-raised  { background: hsl(var(--card)); box-shadow: var(--shadow-md); }
 
   /* ── Central Relatórios v2 ── */
-  .central-card { @apply rounded-[14px] border border-border bg-card shadow-sm; }
+  .central-card {
+    @apply rounded-[14px] border border-border bg-card shadow-sm;
+    transition: box-shadow var(--transition-normal), transform var(--transition-normal), border-color var(--transition-normal);
+  }
+  .central-card-hover:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+  /* KPI card premium: gradiente sutil + brilho de topo */
+  .central-kpi {
+    @apply relative overflow-hidden rounded-[14px] border border-border bg-card shadow-sm;
+    background-image: linear-gradient(135deg, hsl(var(--primary-500) / 0.035), transparent 55%);
+    transition: box-shadow var(--transition-normal), transform var(--transition-normal), border-color var(--transition-normal);
+  }
+  .central-kpi:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
+    border-color: hsl(var(--primary-500) / 0.35);
+  }
+  .central-kpi::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary-500) / 0.4), transparent);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+  }
+  .central-kpi:hover::after { opacity: 1; }
+  /* Hero do resumo executivo */
+  .central-hero {
+    @apply relative overflow-hidden rounded-[18px] border border-border;
+    background-image:
+      radial-gradient(120% 140% at 0% 0%, hsl(var(--primary-500) / 0.10), transparent 50%),
+      linear-gradient(135deg, hsl(var(--card)), hsl(var(--neutral-50)));
+  }
+  /* Pílula de nav agrupada (estilo Roleta) */
+  .central-navpill {
+    @apply inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors;
+  }
+  .central-navpill-active {
+    @apply border-transparent bg-primary text-primary-foreground shadow-sm;
+  }
+  .central-navpill-idle {
+    @apply border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground;
+  }
+
 
 
   /* ── Shadows ── */

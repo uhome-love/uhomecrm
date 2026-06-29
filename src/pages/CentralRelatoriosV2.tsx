@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { CentralHeader } from "@/components/central-v2/CentralHeader";
-import { CentralSidebar } from "@/components/central-v2/CentralSidebar";
-import { CentralFilters } from "@/components/central-v2/CentralFilters";
+import { CentralNav } from "@/components/central-v2/CentralNav";
 import { SectionRouterView } from "@/components/central-v2/SectionRouterView";
 import { useCentralUrlState } from "@/components/central-v2/useCentralUrlState";
 import {
@@ -14,6 +12,7 @@ import {
   type CentralSectionId,
 } from "@/components/central-v2/sections";
 import { exportGeral } from "@/lib/centralPdf";
+
 
 const SECTION_LABELS: Record<string, string> = Object.fromEntries(
   CENTRAL_SECTIONS.map((s) => [s.id, s.label])
@@ -66,13 +65,11 @@ export default function CentralRelatoriosV2() {
 
 function CentralRelatoriosV2Inner() {
   const { state, update } = useCentralUrlState();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
   const handleSelect = (id: CentralSectionId) => {
     update({ secao: id });
-    setMobileOpen(false);
   };
 
   // Listener do botão "Exportar PDF" do header.
@@ -108,30 +105,14 @@ function CentralRelatoriosV2Inner() {
 
   return (
     <div className="min-h-full bg-background">
-      <CentralHeader secao={state.secao} onOpenSidebar={() => setMobileOpen(true)} />
+      <CentralHeader state={state} onChange={update} />
 
-      <div className="grid lg:grid-cols-[260px_1fr]">
-        <aside className="hidden border-r border-border bg-card lg:block">
-          <div className="sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto">
-            <CentralSidebar secaoAtiva={state.secao} onSelect={handleSelect} />
-          </div>
-        </aside>
-
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="w-[280px] p-0">
-            <div className="pt-6">
-              <CentralSidebar secaoAtiva={state.secao} onSelect={handleSelect} />
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        <main className="flex flex-col gap-4 p-4 sm:p-6">
-          <CentralFilters state={state} onChange={update} />
-          <div id="central-relatorio-secao">
-            <SectionRouterView state={state} />
-          </div>
-        </main>
-      </div>
+      <main className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 p-4 sm:p-6">
+        <CentralNav active={state.secao} onSelect={handleSelect} />
+        <div id="central-relatorio-secao">
+          <SectionRouterView state={state} />
+        </div>
+      </main>
 
       {isExporting && (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
@@ -143,3 +124,4 @@ function CentralRelatoriosV2Inner() {
     </div>
   );
 }
+

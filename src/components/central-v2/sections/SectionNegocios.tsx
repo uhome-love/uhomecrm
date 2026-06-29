@@ -1,8 +1,9 @@
-import { Briefcase } from "lucide-react";
+import { Briefcase, Activity, FilePlus2, TrendingDown, PenLine } from "lucide-react";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { KpiRow, type KpiItem } from "@/components/central-v2/shared/KpiRow";
+import { KpiGrid, type KpiCardData } from "@/components/central-v2/shared/KpiCard";
 import { MiniTable, type MiniColumn } from "@/components/central-v2/shared/MiniTable";
 import { SectionError } from "@/components/central-v2/shared/SectionError";
+import { SectionHeading } from "@/components/central-v2/shared/SectionHeading";
 import { safeGet } from "@/components/central-v2/shared/safeGet";
 import { fmtMoney } from "@/lib/fmtMoney";
 
@@ -39,16 +40,17 @@ export function SectionNegocios({ query, assinados, assinadosLoading }: Props) {
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 border-b border-border pb-2">
-        <Briefcase className="h-5 w-5 text-primary" strokeWidth={1.75} />
-        <h2 className="font-display text-xl text-foreground">Pipeline de Negócios</h2>
-      </div>
+      <SectionHeading
+        icon={Briefcase}
+        title="Pipeline de Negócios"
+        subtitle="Negócios ativos, criação, perdas e distribuição por fase"
+      />
 
       {query.error ? (
         <SectionError query={query} label="Pipeline de Negócios" />
       ) : (
         <>
-          <KpiRow
+          <KpiGrid
             loading={loading || assinadosLoading}
             items={data ? buildKpis(data, assinados) : undefined}
           />
@@ -64,21 +66,22 @@ export function SectionNegocios({ query, assinados, assinadosLoading }: Props) {
   );
 }
 
-function buildKpis(data: Record<string, unknown>, assinados: number | null): KpiItem[] {
+function buildKpis(data: Record<string, unknown>, assinados: number | null): KpiCardData[] {
   const ativos = safeGet<number>(data, "negocios.ativos", "Negocios ativos");
   const criados = safeGet<number>(data, "negocios.criados", "Negocios criados");
   const criadosPrev = safeGet<number>(data, "negocios.criados_prev", "Negocios criados_prev");
   const cairam = safeGet<number>(data, "negocios.caidos", "Negocios caidos");
 
   return [
-    { label: "Ativos", value: fmtInt(ativos) },
+    { label: "Ativos", value: fmtInt(ativos), icon: Activity },
     {
       label: "Criados",
       value: fmtInt(criados),
+      icon: FilePlus2,
       delta: calcDelta(criados, criadosPrev),
     },
-    { label: "Caíram", value: fmtInt(cairam) },
-    { label: "Assinados", value: fmtInt(assinados) },
+    { label: "Caíram", value: fmtInt(cairam), icon: TrendingDown, invertDelta: true },
+    { label: "Assinados", value: fmtInt(assinados), icon: PenLine },
   ];
 }
 
@@ -94,6 +97,7 @@ const columns: MiniColumn<FaseRow>[] = [
     label: "Qtd",
     align: "right",
     render: (r) => fmtInt(r.qtd ?? null),
+    bar: (r) => r.qtd ?? 0,
   },
   {
     key: "ticket",

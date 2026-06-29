@@ -1,68 +1,61 @@
-## Central de Relatórios — reconstrução completa (visual + dados + funções)
+## Central de Relatórios — redesign extraordinário (visual + dados + análise)
 
 ### Diagnóstico do estado atual
-A rota `/central-relatorios` → `CentralRelatoriosV2` hoje:
-- **Só a seção "Geral" funciona.** As 6 abas do menu lateral (Pipeline de Leads, Oferta Ativa, Visitas, Negócios, Vendas, Ranking) caem em `EmptyStateView` → tela "Em construção · Fase 0.5". O usuário clica e não vê nada.
-- Os componentes de seção (`SectionVendas`, `SectionVisitas`, etc.) **já existem e funcionam**, mas só são montados empilhados dentro do "Geral" — não nas próprias abas.
-- **Bug de dados real:** `SectionVendas` lê `r.vendas` na tabela "Top empreendimentos", mas a RPC `get_relatorio_vendas` devolve o campo `count`. Resultado: coluna "Vendas" sempre "—".
-- **Ranking quebrado:** o `RankingTeaser` leva para `?secao=ranking`, que mostra "Em construção". A RPC `get_ranking_central(p_gestor_id, p_start, p_end)` já existe no banco e não é consumida.
-- Export PDF só cobre "Geral"; nas demais abas dá toast "indisponível".
-- Visual funcional mas plano: KPIs em texto, sem gráficos (apesar de `recharts` instalado e das RPCs já devolverem séries `por_dia`).
-
-A camada de dados (`_kpi_team_window_core` + 5 RPCs `SECURITY DEFINER`) é sólida, BRT-correta, com janela atual vs. anterior e split de parceria. **Mantemos o backend; o problema é frontend + 2 ajustes pontuais de mapeamento.**
+A rota `/central-relatorios` → `CentralRelatoriosV2` já é funcional (7 abas ativas, RPCs em paralelo, export PDF), mas o visual é "plano": cards brancos genéricos (`central-card` = só borda + sombra leve), KPIs em texto simples sem sparkline, gráficos isolados sem contexto, header pobre (só título + botão PDF) e sidebar de navegação básica. Falta a linguagem premium que aplicamos no **Pipeline** (command bar, segmented control, densidade) e na **Roleta** (grupos de navegação em pills full-width, status bar, hierarquia visual). Os dados existem e estão corretos — o problema é apresentação e profundidade analítica.
 
 ### Objetivo
-Transformar a Central numa central de inteligência completa para o gestor: cada aba vira uma visão rica e funcional (KPIs + gráfico + tabela), dados validados campo a campo, ranking real, visual moderno e exportação ampla — sem quebrar nada.
+Elevar a Central ao mesmo nível de produto SaaS premium do Pipeline/Roleta: header de comando, navegação por grupos elegante, KPI cards com microvisual (delta colorido + sparkline + ícone), gráficos com contexto comparativo, e análises mais ricas e úteis para gestão em cada relatório — tudo responsivo (mobile 100%), sem quebrar nada e validando cada número contra o banco.
 
 ---
 
-### Fase 1 — Ativar todas as abas (fim do "Em construção")
-Em `CentralRelatoriosV2.tsx`, substituir o roteamento `geral ? GeralView : EmptyStateView` por um switch que renderiza a visão real de cada seção, reusando os `Section*` existentes e o hook `useRelatoriosCentral`:
-- `geral` → `GeralView` (resumo executivo, hoje)
-- `pipeline-leads` → `SectionPipelineLeads`
-- `oferta-ativa` → `SectionOA`
-- `visitas` → `SectionVisitas`
-- `negocios` → `SectionNegocios`
-- `vendas` → `SectionVendas`
-- `ranking` → novo `SectionRanking`
+### Fase 1 — Linguagem visual / design system da Central
+- Criar tokens/classes utilitárias próprias da Central no `index.css` (reaproveitando os tokens semânticos existentes — nada hardcoded): variantes de card (`central-card`, `central-card-kpi`, `central-card-accent`), gradientes sutis de destaque, anel de foco no primário (mesmo idioma da Roleta `ring-primary/40`).
+- Padronizar espaçamentos, raios (14px) e tipografia display já usados, mas aplicar hierarquia consistente em todas as seções.
 
-Cada aba carrega só a(s) query(ies) que precisa. `EmptyStateView` é removido do fluxo.
+### Fase 2 — Header "Command bar" (substitui CentralHeader atual)
+- Linha 1: identidade ("Central de Relatórios" + seção ativa em breadcrumb), seletor de **período** (pills Hoje/Semana/Mês/Trimestre/Personalizado) movido pra cá, seletor de **equipe** (admin), e ações primárias (Exportar PDF, atualizar).
+- Sticky, com `backdrop-blur`, contagem do range ativo ("01–29 jun · vs. mês anterior") para dar contexto comparativo imediato.
+- Mescla o conteúdo de `CentralFilters` no header, eliminando o card de filtros solto e ganhando espaço vertical.
 
-### Fase 2 — Corrigir e validar cada dado
-- **Vendas:** corrigir o mapeamento da coluna para `count` (com fallback `vendas`). Validar `vendas.vgv / count / ticket_medio / delta_pct` e `extras.comissao_estimada`.
-- **Auditoria campo a campo:** para cada seção, conferir que toda chave lida via `safeGet` existe no JSON da RPC correspondente (já mapeei as chaves de Leads, OA, Visitas, Negócios, Vendas). Onde houver divergência, alinhar o front à RPC.
-- **Validação com dados reais:** após o build, rodar cada RPC autenticado como gestor/admin via Playwright na própria página e cruzar os números com consultas diretas (`negocios`, `visitas`, `pipeline_leads`) para o mês corrente. Nada de número fantasma.
+### Fase 3 — Navegação por grupos (estilo Roleta)
+- Substituir a sidebar simples por **navegação em pills agrupadas** (full-width no topo do conteúdo no desktop; `Sheet` deslizante no mobile), agrupando: **Visão Geral** · **Comercial** (Pipeline de Leads, Oferta Ativa, Visitas) · **Resultado** (Negócios, Vendas) · **Equipe** (Ranking). Indicador ativo claro, ícones, contador quando fizer sentido.
 
-### Fase 3 — Seção Ranking real
-Novo `SectionRanking` + entrada no `useRelatoriosCentral` consumindo `get_ranking_central`. Tabela ordenável por VGV / vendas / visitas / leads, com pódio (top 3 destacado) e medalhas. Substitui o teaser que hoje leva a uma tela vazia (mantém o teaser no "Geral" como atalho).
+### Fase 4 — KPI cards premium (shared/KpiRow + ExecutiveSummary)
+- Redesenhar `KpiRow` e `ExecutiveSummary`: cada card com ícone temático, valor grande (display), **delta vs. período anterior** (▲ verde / ▼ vermelho, já existe no backend via `delta_pct`), e **sparkline** miniatura quando houver série (`extras.por_dia`).
+- `ExecutiveSummary` vira um "hero" de KPIs do período (VGV, Visitas realizadas, Negócios assinados, Taxa de conversão) com visual de destaque.
 
-### Fase 4 — Modernização visual (modo gestor premium)
-Mantendo os tokens semânticos do design system (sem cores hardcoded):
-- **KPI cards** com ícone, valor grande, delta colorido (▲ verde / ▼ vermelho) vs. período anterior e sparkline quando houver série.
-- **Gráficos `recharts`** alimentados pelos `extras.por_dia` já existentes: área/linha de VGV e vendas por dia (Vendas), barras de visitas por status, funil de leads→visita→negócio→venda no "Geral".
-- **Header e filtros** refinados: período (hoje/semana/mês/trimestre/custom) + seletor de equipe (admin) numa barra sticky compacta e responsiva.
-- **Mobile 100% funcional:** abas viram menu deslizante (já há `Sheet`), cards em coluna, gráficos responsivos, nada cortado.
-- Skeletons de carregamento e `SectionError` por seção (isolamento de falha — uma aba que erra não derruba as outras).
+### Fase 5 — Gráficos e análises mais ricas por relatório
+Para cada seção, além de KPIs, adicionar a visão analítica mais útil pra gestão (todas com dados já devolvidos pelas RPCs; onde faltar série, derivar do JSON existente — sem nova migration):
+- **Geral:** funil Leads → Visitas → Negócios → Vendas (conversão entre etapas) + tendência de VGV.
+- **Pipeline de Leads:** distribuição por estágio/segmento (barras), entrada vs. saída, sparkline por dia.
+- **Oferta Ativa:** tentativas vs. aproveitamento por lista, taxa de conversão, ranking de listas.
+- **Visitas:** área por dia + barras por dia da semana, taxa de comparecimento com destaque, top empreendimentos.
+- **Negócios:** tempo médio em fase, distribuição por estágio, assinados cruzados de Vendas.
+- **Vendas:** tendência de VGV (área), ticket médio, comissão estimada, top empreendimentos com barra proporcional.
+- **Ranking:** manter pódio + tabela ordenável (já existe), refinando o visual (medalhas, barras de progresso por métrica).
+- Melhorar `MiniTable` com barras inline proporcionais e melhor densidade.
 
-### Fase 5 — Exportação ampliada
-Estender `centralPdf` para exportar a seção ativa (não só "Geral"), capturando KPIs + gráfico + tabela da view atual.
+### Fase 6 — Estados, loading e robustez
+- Skeletons consistentes com o novo visual em todas as seções.
+- `SectionError` isolado por seção (uma aba que falha não derruba as outras) — já existe, padronizar.
+- Empty states elegantes (ilustração/ícone + texto), não só "sem dados".
 
-### Fase 6 — Validação final
-- Build limpo + checagem de tipos (sem `as any` novo).
-- Playwright autenticado: percorrer as 7 abas em desktop e mobile, screenshot de cada uma, confirmar dados, gráficos e ausência de erros no console.
-- Conferência cruzada dos KPIs principais (VGV, vendas, visitas realizadas, leads) contra o banco.
+### Fase 7 — Validação de dados (sem números fantasma)
+- Auditoria campo a campo: confirmar que toda chave lida via `safeGet` existe no JSON de cada RPC (`get_relatorio_*`, `get_ranking_central`).
+- Validação com dados reais via Playwright autenticado como gestor/admin: percorrer as 7 abas, cruzar VGV / vendas / visitas / leads com consultas diretas ao banco (`negocios`, `visitas`, `pipeline_leads`) para o mês corrente.
+
+### Fase 8 — Verificação final
+- Build limpo + typecheck (sem `as any` novo).
+- Playwright: screenshots das 7 abas em desktop (1280px) e mobile (440px), confirmar visual, gráficos e ausência de erros no console.
+- Conferência cruzada dos KPIs principais contra o banco.
 
 ---
 
 ### Detalhes técnicos
-- **Arquivos novos:** `src/components/central-v2/sections/SectionRanking.tsx`; possíveis `shared/KpiCard.tsx` e `shared/MiniChart.tsx` (wrappers `recharts`).
-- **Arquivos alterados:** `CentralRelatoriosV2.tsx` (router de seções), `useRelatoriosCentral.ts` (+query ranking), `GeralView.tsx` (gráficos/funil), `SectionVendas.tsx` (fix `count`) e demais `Section*` (KpiCard + gráfico), `lib/centralPdf.ts` (export por seção).
-- **Backend:** nenhuma migration nova — todas as RPCs já existem (`get_relatorio_*`, `get_ranking_central`). Só leitura/validação.
-- **Sem mexer** em tabelas, RLS, edge functions ou no cliente Supabase auto-gerado.
+- **Arquivos alterados (frontend apenas):** `CentralHeader.tsx` (command bar + filtros), `CentralFilters.tsx` (mesclado/simplificado), `CentralSidebar.tsx` → navegação por grupos, `shared/KpiRow.tsx` (+sparkline/ícone), `shared/MiniChart.tsx` (novos tipos: funil/linha comparativa), `shared/MiniTable.tsx` (barras inline), `ExecutiveSummary.tsx`, todas as `Section*.tsx`, `GeralView.tsx`, `SectionRouterView.tsx`, e `index.css` (tokens/classes da Central).
+- **Backend:** nenhuma migration, nenhuma alteração de RPC, RLS, tabela, edge function ou cliente Supabase — só leitura/validação das RPCs já existentes (`get_relatorio_pipeline_leads/oferta_ativa/visitas/negocios/vendas`, `get_ranking_central`).
+- **Sem quebrar:** mantém rotas, query keys, contrato dos hooks (`useRelatoriosCentral`) e o fluxo de export PDF (`centralPdf.ts`) — apenas adaptando os `targetId` se necessário.
 
 ### Fora de escopo (confirmar se quiser incluir)
-- Novas métricas que exijam RPC nova (ex.: tempo médio de resposta por lead).
-- Drill-down clicável de KPI → lista de registros.
-</content>
-<summary>Plano para reconstruir a Central de Relatórios: ativar as 6 abas hoje "em construção", corrigir bugs de mapeamento de dados, adicionar ranking real e gráficos recharts, modernizar o visual (KPI cards, deltas, mobile), ampliar export PDF e validar cada dado contra o banco. Backend já pronto — sem migrations.</summary>
-</invoke>
+- Novas métricas que exijam RPC nova (ex.: tempo médio de 1ª resposta por lead, drill-down clicável KPI → lista de registros).
+- Geração de direções visuais com previews antes de implementar (posso rodar isso primeiro se quiser escolher entre 3 estilos para o header/cards).
