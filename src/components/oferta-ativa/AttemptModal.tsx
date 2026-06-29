@@ -95,6 +95,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
       e.preventDefault();
       setResultado(resultMap[e.key]);
       setFeedback("");
+      setRetirarDoSistema(false);
     }
   }, []);
 
