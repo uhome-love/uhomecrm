@@ -807,6 +807,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
 
 
