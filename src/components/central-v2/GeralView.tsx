@@ -2,6 +2,7 @@ import { useRelatoriosCentral } from "@/hooks/useRelatoriosCentral";
 import type { CentralUrlState } from "@/components/central-v2/useCentralUrlState";
 import { ExecutiveSummary } from "./sections/ExecutiveSummary";
 import { SectionPipelineLeads } from "./sections/SectionPipelineLeads";
+import { SectionOrigemSegmento } from "./sections/SectionOrigemSegmento";
 import { SectionOA } from "./sections/SectionOA";
 import { SectionVisitas } from "./sections/SectionVisitas";
 import { SectionNegocios } from "./sections/SectionNegocios";
@@ -82,6 +83,8 @@ export function GeralView({ state }: Props) {
       </div>
 
       <SectionPipelineLeads query={rel.pipelineLeads} />
+      <SectionOrigemSegmento query={rel.pipelineLeads} />
+
       <SectionOA query={rel.ofertaAtiva} />
       <SectionVisitas query={rel.visitas} />
       <SectionNegocios
