@@ -68,6 +68,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   const [resultado, setResultado] = useState<string>("");
   const [feedback, setFeedback] = useState("");
   const [visitaMarcada, setVisitaMarcada] = useState(false);
+  const [retirarDoSistema, setRetirarDoSistema] = useState(false);
   const [interesseTipo, setInteresseTipo] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
