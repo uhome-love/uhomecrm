@@ -687,11 +687,11 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             visitaLeadIds={visitaLeadIds}
           />
 
-          <div className="relative w-[200px] xl:w-[260px]">
+          <div className="relative w-[180px] xl:w-[220px]">
             <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
             <input
               aria-label="Buscar lead, telefone ou empreendimento"
-              placeholder="Buscar lead, telefone, empreendimento..."
+              placeholder="Buscar..."
               value={filters.search}
               onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
               className="w-full outline-none h-9 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-primary dark:focus:border-primary"
@@ -703,68 +703,94 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             )}
           </div>
 
+          <div className="flex-1" />
+
           <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
 
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            aria-label="Atualizar pipeline"
-            className="shrink-0 flex items-center justify-center transition-colors w-9 h-9 rounded-lg text-[#a1a1aa] dark:text-[#52525b] bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] cursor-pointer hover:text-foreground"
-          >
-            <RefreshCw size={13} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
-          </button>
-
-          {isAdmin && activeTab === "kanban" && (
-            <button
-              onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
-              className={`flex items-center gap-1.5 shrink-0 transition-colors h-9 px-3 rounded-lg text-xs font-medium border cursor-pointer ${
-                selectionMode
-                  ? "bg-primary text-white border-primary"
-                  : "bg-[#f7f7fb] dark:bg-white/[0.04] text-[#71717a] dark:text-[#a1a1aa] border-[#e8e8f0] dark:border-white/[0.07] hover:text-foreground"
-              }`}
-            >
-              {selectionMode ? <CheckSquare size={12} strokeWidth={1.5} /> : <Square size={12} strokeWidth={1.5} />}
-              {selectionMode ? "Selecionando..." : "Selecionar"}
-            </button>
-          )}
-
+          {/* Fila CEO — colapsada num único botão com popover */}
           {isAdmin && filaCeoCount > 0 && (
-            <>
-              <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] mx-0.5 shrink-0" />
-              <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] shrink-0">Fila CEO</span>
-              <button
-                onClick={() => setFilaCeoFilter(f => !f)}
-                className={`shrink-0 flex items-center gap-1 transition-colors h-7 px-2 rounded-md text-[10px] font-bold cursor-pointer border ${
-                  filaCeoFilter
-                    ? "bg-primary/10 text-primary border-primary"
-                    : "bg-transparent text-[#a1a1aa] dark:text-[#52525b] border-[#e8e8f0] dark:border-white/[0.07]"
-                }`}
-              >
-                {filaCeoFilter ? "Filtrando" : "Filtrar"}
-              </button>
-              {filaCeoNovosCount > 0 && (
+            <Popover>
+              <PopoverTrigger asChild>
                 <button
-                  onClick={() => openDispatch("novos")}
-                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold border-none cursor-pointer"
-                  title="Distribuir leads novos (Meta, site, ImovelWeb...)"
+                  className={`shrink-0 flex items-center gap-1.5 transition-colors h-9 px-2.5 rounded-lg text-xs font-semibold border cursor-pointer ${
+                    filaCeoFilter
+                      ? "bg-primary/10 text-primary border-primary"
+                      : "bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa] border-[#e8e8f0] dark:border-white/[0.07] hover:text-foreground"
+                  }`}
+                  title="Fila CEO"
                 >
-                  🆕 Novos <span className="font-bold">{filaCeoNovosCount}</span>
+                  <Inbox size={13} strokeWidth={1.5} />
+                  Fila CEO
+                  {(filaCeoNovosCount + filaCeoRedistCount) > 0 && (
+                    <span className="bg-emerald-600 text-white rounded-md px-1.5 py-px text-[10px] font-bold">
+                      {filaCeoNovosCount + filaCeoRedistCount}
+                    </span>
+                  )}
+                  <ChevronDown size={12} strokeWidth={1.5} className="opacity-60" />
                 </button>
-              )}
-              {filaCeoRedistCount > 0 && (
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-60 p-2 space-y-1.5">
                 <button
-                  onClick={() => openDispatch("redistribuicao")}
-                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold border-none cursor-pointer"
-                  title="Confirmar redistribuição (leads reciclados após 72h)"
+                  onClick={() => setFilaCeoFilter(f => !f)}
+                  className={`w-full flex items-center justify-between transition-colors h-8 px-2.5 rounded-md text-xs font-semibold cursor-pointer border ${
+                    filaCeoFilter
+                      ? "bg-primary/10 text-primary border-primary"
+                      : "bg-transparent text-[#52525b] dark:text-[#a1a1aa] border-[#e8e8f0] dark:border-white/[0.07] hover:text-foreground"
+                  }`}
                 >
-                  🔄 Redistrib. <span className="font-bold">{filaCeoRedistCount}</span>
+                  {filaCeoFilter ? "Filtrando Fila CEO" : "Filtrar Fila CEO"}
+                  <span className="text-[10px] font-bold opacity-70">{filaCeoCount}</span>
                 </button>
-              )}
-            </>
+                {filaCeoNovosCount > 0 && (
+                  <button
+                    onClick={() => openDispatch("novos")}
+                    className="w-full flex items-center justify-between transition-colors h-8 px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold border-none cursor-pointer"
+                    title="Distribuir leads novos (Meta, site, ImovelWeb...)"
+                  >
+                    🆕 Distribuir novos <span className="font-bold">{filaCeoNovosCount}</span>
+                  </button>
+                )}
+                {filaCeoRedistCount > 0 && (
+                  <button
+                    onClick={() => openDispatch("redistribuicao")}
+                    className="w-full flex items-center justify-between transition-colors h-8 px-2.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold border-none cursor-pointer"
+                    title="Confirmar redistribuição (leads reciclados após 72h)"
+                  >
+                    🔄 Redistribuição <span className="font-bold">{filaCeoRedistCount}</span>
+                  </button>
+                )}
+              </PopoverContent>
+            </Popover>
           )}
 
-          <div className="flex-1" />
+          {/* Menu de ações secundárias — Atualizar / Selecionar */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                aria-label="Mais ações"
+                className="shrink-0 flex items-center justify-center transition-colors w-9 h-9 rounded-lg text-[#a1a1aa] dark:text-[#52525b] bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] cursor-pointer hover:text-foreground"
+              >
+                <MoreHorizontal size={15} strokeWidth={1.5} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleRefresh} disabled={refreshing} className="text-xs gap-2">
+                <RefreshCw size={13} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
+                Atualizar pipeline
+              </DropdownMenuItem>
+              {isAdmin && activeTab === "kanban" && (
+                <DropdownMenuItem
+                  onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
+                  className="text-xs gap-2"
+                >
+                  {selectionMode ? <CheckSquare size={13} strokeWidth={1.5} /> : <Square size={13} strokeWidth={1.5} />}
+                  {selectionMode ? "Sair da seleção" : "Selecionar leads"}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
 
 
       </div>
