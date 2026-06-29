@@ -89,6 +89,7 @@ export function GeralView({ state }: Props) {
       <SectionOrigemSegmento query={rel.pipelineLeads} />
 
       <SectionOA query={rel.ofertaAtiva} />
+      <SectionSLA query={rel.sla} />
       <SectionVisitas query={rel.visitas} />
       <SectionNegocios
         query={rel.negocios}
@@ -97,6 +98,7 @@ export function GeralView({ state }: Props) {
       />
       <SectionVendas query={rel.vendas} />
       <SectionMetas query={rel.metas} />
+      <SectionCohort query={rel.cohort} />
       <RankingTeaser />
     </div>
   );
