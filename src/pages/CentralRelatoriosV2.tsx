@@ -119,11 +119,9 @@ function CentralRelatoriosV2Inner() {
 
         <main className="flex flex-col gap-4 p-4 sm:p-6">
           <CentralFilters state={state} onChange={update} />
-          {state.secao === "geral" ? (
-            <GeralView state={state} />
-          ) : (
-            <EmptyStateView secao={state.secao} />
-          )}
+          <div id="central-relatorio-secao">
+            <SectionRouterView state={state} />
+          </div>
         </main>
       </div>
 
