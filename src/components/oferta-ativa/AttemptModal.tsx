@@ -175,7 +175,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
                 return (
                   <button
                     key={r.key}
-                    onClick={() => { setResultado(r.key); setFeedback(QUICK_FEEDBACKS[r.key]?.[0] || ""); setInteresseTipo(""); }}
+                    onClick={() => { setResultado(r.key); setFeedback(QUICK_FEEDBACKS[r.key]?.[0] || ""); setInteresseTipo(""); setRetirarDoSistema(false); }}
                     className={`flex flex-col items-center gap-2 transition-all ${
                       selected ? r.selectedBorder : `border-[var(--arena-card-border)] ${r.hoverBorder}`
                     }`}
