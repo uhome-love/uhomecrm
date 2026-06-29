@@ -366,6 +366,17 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
     );
   }
 
+  if (isError && !liveData) {
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-10 text-center">
+        <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-red-400" />
+        <p className="font-bold text-foreground">Erro ao carregar a arena ao vivo</p>
+        <p className="text-sm text-muted-foreground mt-1">Verifique a conexão e tente novamente.</p>
+        <Badge variant="outline" className="cursor-pointer mt-4" onClick={() => refetch()}>Recarregar</Badge>
+      </div>
+    );
+  }
+
   if (teamOnly && teamMemberUserIds && teamMemberUserIds.length === 0) {
     return (
       <div className="rounded-2xl border border-border/50 p-12 text-center" style={{ background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%)" }}>
