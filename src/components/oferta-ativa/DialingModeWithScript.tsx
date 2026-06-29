@@ -984,6 +984,30 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     </div>
   );
 
+  // ─── RESULT COLUMN (mobile "Resultado" tab): histórico de tentativas ───
+  const ResultColumn = (
+    <div className="space-y-3 min-w-0">
+      <div className="rounded-xl p-4 space-y-3" style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)" }}>
+        <div className="flex items-center gap-2">
+          <History className="h-4 w-4" style={{ color: "var(--arena-text-muted)" }} />
+          <h3 className="text-sm font-bold" style={{ color: "var(--arena-text)" }}>
+            Histórico do lead ({lead.tentativas_count})
+          </h3>
+        </div>
+        <RecentCallsHistory />
+        {lead.tentativas_count > 0 ? (
+          <AttemptHistory leadId={lead.id} />
+        ) : (
+          <p className="text-xs" style={{ color: "var(--arena-text-muted)" }}>
+            Nenhuma tentativa registrada para este lead ainda.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+
+
   // ─── RESULT POPUP ───
   const ResultPopup = showResultPopup && (
     <div className="fixed inset-0 z-[70] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
