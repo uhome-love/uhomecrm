@@ -646,7 +646,7 @@ export default function CorretorCall() {
             metaLigacoes: progress.metaLigacoes,
             metaAproveitados: progress.metaAproveitados,
             metaVisitas: progress.metaVisitas,
-            empreendimento: w.queueLeads > 0 ? "Arena de Ligação" : "Arena de Ligação",
+            empreendimento: "Arena de Ligação",
             streak: streakDays,
           }}
           onNewSession={() => {
