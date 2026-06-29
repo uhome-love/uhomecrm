@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
  */
 export default function HomeDashboard() {
   const { user } = useAuth();
-  const { isAdmin, isGestor, isBackoffice, isRh, loading: roleLoading } = useUserRole();
+  const { isAdmin, isDiretor, isGestor, isBackoffice, isRh, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
 
   useEffect(() => {
