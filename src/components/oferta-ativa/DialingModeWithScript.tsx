@@ -1244,7 +1244,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             >
               {mobileTab === "lead" && LeadColumn}
               {mobileTab === "script" && ToolsColumn}
-              {mobileTab === "whatsapp" && ToolsColumn}
+              {mobileTab === "whatsapp" && ResultColumn}
             </motion.div>
           </AnimatePresence>
         </div>
