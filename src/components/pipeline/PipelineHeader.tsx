@@ -663,32 +663,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
           </div>
         </div>
 
-        {/* Linha 2 — Controles: escopo · busca · filtros · ordenação · pílulas */}
+        {/* Linha 2 — Busca · Filtros · Ordenação · Ações globais */}
         <div className="flex items-center flex-wrap gap-y-1.5 gap-x-2 min-h-11 py-1.5 px-6">
-          {(isAdmin || isGestor) && (
-            <PipelineCorretorSelect
-              value={corretorFilter}
-              onChange={setCorretorFilter}
-              options={corretorOptions}
-              isAdmin={isAdmin}
-              variant="desktop"
-            />
-          )}
-          {isAdmin && setGestorFilter && (
-            <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="desktop" />
-          )}
-
-          <PipelineAdvancedFilters
-            filters={filters}
-            onChange={setFilters}
-            stages={pipelineStages}
-            segmentos={pipelineSegmentos}
-            leads={pipelineLeads}
-            corretorNomes={corretorNomes}
-            isManager={isGestor || isAdmin}
-            visitaLeadIds={visitaLeadIds}
-          />
-
+          {/* Busca */}
           <div className="relative w-[180px] xl:w-[220px]">
             <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
             <input
@@ -705,9 +682,48 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
             )}
           </div>
 
+          {/* Divisor busca ↔ filtros */}
+          <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0 mx-0.5" />
+
+          {/* Grupo de filtros */}
+          <div className="flex items-center gap-2">
+            {(isAdmin || isGestor) && (
+              <PipelineCorretorSelect
+                value={corretorFilter}
+                onChange={setCorretorFilter}
+                options={corretorOptions}
+                isAdmin={isAdmin}
+                variant="desktop"
+              />
+            )}
+            {isAdmin && setGestorFilter && (
+              <PipelineGestorSelect value={gestorFilter} onChange={setGestorFilter} variant="desktop" />
+            )}
+
+            <PipelineAdvancedFilters
+              filters={filters}
+              onChange={setFilters}
+              stages={pipelineStages}
+              segmentos={pipelineSegmentos}
+              leads={pipelineLeads}
+              corretorNomes={corretorNomes}
+              isManager={isGestor || isAdmin}
+              visitaLeadIds={visitaLeadIds}
+            />
+          </div>
+
           <div className="flex-1" />
 
-          <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
+          {/* Ordenação */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-[#a1a1aa] dark:text-[#52525b] hidden xl:inline">Ordenar por</span>
+            <PipelineSortDropdown value={sortOrder} onChange={setSortOrder} />
+          </div>
+
+          {/* Divisor ordenação ↔ ações globais */}
+          <div className="w-px h-5 bg-[#e8e8f0] dark:bg-white/[0.07] shrink-0 mx-0.5" />
+
+
 
           {/* Fila CEO — colapsada num único botão com popover */}
           {isAdmin && filaCeoCount > 0 && (
