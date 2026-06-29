@@ -154,7 +154,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/conquistas":            { key: "conquistas",           label: "Conquistas",          icon: "Trophy" },
   "/progresso":             { key: "progresso",            label: "Progresso",           icon: "Target" },
   "/academia":              { key: "academia",             label: "Academia",            icon: "GraduationCap" },
-  "/academia/gerenciar":    { key: "academia-gerenciar",   label: "Gerenciar Academia",  icon: "GraduationCap", roles: ["gestor", "admin"] },
+  "/academia/gerenciar":    { key: "academia-gerenciar",   label: "Gerenciar Academia",  icon: "GraduationCap", roles: ["gestor", "admin", "diretor"] },
   "/onboarding":            { key: "onboarding",           label: "Onboarding",          icon: "Lightbulb" },
   "/homi":                  { key: "homi",                 label: "HOMI",                icon: "Bot" },
   "/homi-gerente":          { key: "homi-gerente",         label: "HOMI Gerente",        icon: "Bot",           roles: ["gestor", "admin"] },
