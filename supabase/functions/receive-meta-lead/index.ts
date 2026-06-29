@@ -53,6 +53,35 @@ function extractStr(val: any): string {
   return "";
 }
 
+function normalizeTimelineText(value: string | null | undefined): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isSameTimelineText(a: string | null | undefined, b: string | null | undefined): boolean {
+  const na = normalizeTimelineText(a);
+  const nb = normalizeTimelineText(b);
+  return !!na && !!nb && (na === nb || na.includes(nb) || nb.includes(na));
+}
+
+function addTimelineDetail(parts: string[], label: string, value: string | null | undefined, blocked: Array<string | null | undefined> = []) {
+  const clean = (value || "").trim();
+  if (!clean) return;
+  if (blocked.some((b) => isSameTimelineText(clean, b))) return;
+  if (parts.some((p) => isSameTimelineText(p.replace(/^.*?:\s*/, ""), clean))) return;
+  parts.push(`${label}: ${clean}`);
+}
+
+function friendlyMetaSource(raw: string | null | undefined): string {
+  const p = normalizeTimelineText(raw);
+  if (!p || p.includes("meta") || p.includes("facebook") || p.includes("instagram") || p.includes("backfill")) return "Meta Ads";
+  return "Meta Ads";
+}
+
 function normalizeLower(value: string | null | undefined): string {
   return (value || "").toLowerCase().trim();
 }
@@ -876,19 +905,19 @@ Deno.serve(async (req) => {
     L.info("Lead created", { leadId: insertedLead.id, name, empreendimento, campaignId, propertyCode });
     logOps("info", "business", "Lead created via Meta Ads", { lead_id: insertedLead.id, name, empreendimento, campaign_id: campaignId });
 
-    // ── Register entry activity with form info ──
+    // ── Register entry activity with concise, broker-friendly text ──
+    const plataformaLabel = isJetimobSite ? "Site Uhome" : friendlyMetaSource(platform);
+    const entryPrimary = empreendimento || (!/^\d{10,}$/.test(formName || "") ? formName : "") || campaignName || "";
     const entradaParts: string[] = [];
-    const plataformaLabel = isJetimobSite ? "Site Uhome" : (platform || "Meta Ads");
-    entradaParts.push(plataformaLabel);
-    if (formName && !/^\d{10,}$/.test(formName)) entradaParts.push(`Formulário: ${formName}`);
-    if (campaignName && campaignName !== formName) entradaParts.push(`Campanha: ${campaignName}`);
-    if (empreendimento) entradaParts.push(`Empreendimento: ${empreendimento}`);
+    addTimelineDetail(entradaParts, "Campanha", campaignName, [entryPrimary, formName]);
+    addTimelineDetail(entradaParts, "Cód. imóvel", propertyCode, [entryPrimary]);
+    addTimelineDetail(entradaParts, "Anúncio", adName, [entryPrimary, campaignName, formName]);
 
     await supabase.from("pipeline_atividades").insert({
       pipeline_lead_id: insertedLead.id,
       tipo: "entrada",
-      titulo: `Lead gerado via ${plataformaLabel}${empreendimento ? ` — ${empreendimento}` : ""}`,
-      descricao: entradaParts.join(" • "),
+      titulo: `Lead gerado via ${plataformaLabel}${entryPrimary ? ` — ${entryPrimary}` : ""}`,
+      descricao: entradaParts.length ? entradaParts.join(" • ") : null,
       status: "concluida",
       created_by: "00000000-0000-0000-0000-000000000000",
     }).then(r => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });

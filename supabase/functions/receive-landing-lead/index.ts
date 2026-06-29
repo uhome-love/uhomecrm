@@ -52,6 +52,29 @@ function normalizePhone(phone: string | null | undefined): string | null {
   return digits;
 }
 
+function normalizeTimelineText(value: string | null | undefined): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isSameTimelineText(a: string | null | undefined, b: string | null | undefined): boolean {
+  const na = normalizeTimelineText(a);
+  const nb = normalizeTimelineText(b);
+  return !!na && !!nb && (na === nb || na.includes(nb) || nb.includes(na));
+}
+
+function addTimelineDetail(parts: string[], label: string, value: string | null | undefined, blocked: Array<string | null | undefined> = []) {
+  const clean = (value || "").trim();
+  if (!clean) return;
+  if (blocked.some((b) => isSameTimelineText(clean, b))) return;
+  if (parts.some((p) => isSameTimelineText(p.replace(/^.*?:\s*/, ""), clean))) return;
+  parts.push(`${label}: ${clean}`);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -348,15 +371,13 @@ Deno.serve(async (req) => {
     }
 
     // ── Register entry activity ──
-    const entryTitle = `🟢 Lead gerado via Landing Page — ${empreendimento}`;
-    const entryDesc = [
-      `Lead recebido via Landing Page`,
-      empreendimento ? `Empreendimento: ${empreendimento}` : null,
-      message ? `Mensagem: ${message}` : null,
-      email ? `E-mail: ${email}` : null,
-      telefone ? `Telefone: ${telefone}` : null,
-      source ? `Origem: ${source}` : null,
-    ].filter(Boolean).join("\n");
+    const entryPrimary = empreendimento || campanha || "";
+    const entryDescParts: string[] = [];
+    addTimelineDetail(entryDescParts, "Campanha", campanha, [entryPrimary, source, "Landing Page"]);
+    addTimelineDetail(entryDescParts, "Origem", source, [entryPrimary, campanha, "Landing Page"]);
+    addTimelineDetail(entryDescParts, "Mensagem", message, [entryPrimary]);
+    const entryTitle = `Lead gerado via Landing Page${entryPrimary ? ` — ${entryPrimary}` : ""}`;
+    const entryDesc = entryDescParts.length ? entryDescParts.join(" • ") : null;
 
     await supabase.from("pipeline_atividades").insert({
       pipeline_lead_id: insertedLead.id,

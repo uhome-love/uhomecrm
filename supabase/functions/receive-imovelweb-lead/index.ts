@@ -81,6 +81,28 @@ function normalizePhone(phone: string | null | undefined): string | null {
   return digits;
 }
 
+function normalizeTimelineText(value: string | null | undefined): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isSameTimelineText(a: string | null | undefined, b: string | null | undefined): boolean {
+  const na = normalizeTimelineText(a);
+  const nb = normalizeTimelineText(b);
+  return !!na && !!nb && (na === nb || na.includes(nb) || nb.includes(na));
+}
+
+function addTimelineDetail(parts: string[], label: string, value: string | null | undefined, blocked: Array<string | null | undefined> = []) {
+  const clean = (value || "").trim();
+  if (!clean) return;
+  if (blocked.some((b) => isSameTimelineText(clean, b))) return;
+  parts.push(`${label}: ${clean}`);
+}
+
 /** Extract a second phone number from a concatenated string (e.g., "5199876123555199371479") */
 function extractSecondPhone(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -455,13 +477,16 @@ Deno.serve(async (req) => {
     logOps("info", "business", "Lead created via ImovelWeb", { lead_id: insertedLead.id, name, empreendimento, codigo_anuncio: codigoAnuncio });
 
     // ── Register entry activity ──
-    const atividadeDescricao = obsLines.join("\n");
+    const entryPrimary = codigoAnuncio ? `Imóvel ${codigoAnuncio}` : empreendimento;
+    const atividadeDescricaoParts: string[] = [];
+    addTimelineDetail(atividadeDescricaoParts, "Empreendimento", empreendimento, [entryPrimary, "Avulso - ImovelWeb"]);
+    addTimelineDetail(atividadeDescricaoParts, "Mensagem", mensagem, [entryPrimary]);
 
     await supabase.from("pipeline_atividades").insert({
       pipeline_lead_id: insertedLead.id,
       tipo: "entrada",
-      titulo: `Lead gerado via ImovelWeb${codigoAnuncio ? ` — Imóvel ${codigoAnuncio}` : ""}`,
-      descricao: atividadeDescricao,
+      titulo: `Lead gerado via Imóvel Web${entryPrimary ? ` — ${entryPrimary}` : ""}`,
+      descricao: atividadeDescricaoParts.length ? atividadeDescricaoParts.join(" • ") : null,
       status: "concluida",
       created_by: "00000000-0000-0000-0000-000000000000",
     }).then(r => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });
