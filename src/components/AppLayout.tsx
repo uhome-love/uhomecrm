@@ -131,7 +131,7 @@ export default function AppLayout() {
         setCargoLabel(labelMap[c] || c || "Corretor");
       }
     });
-  }, [user, isAdmin, isGestor, isBackoffice, isRh, rolesUnavailable]);
+  }, [user, isAdmin, isDiretor, isGestor, isBackoffice, isRh, rolesUnavailable]);
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
