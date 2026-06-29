@@ -19,6 +19,7 @@ export type CentralSectionId =
   | "visitas"
   | "negocios"
   | "vendas"
+  | "metas"
   | "ranking";
 
 export interface CentralSection {
