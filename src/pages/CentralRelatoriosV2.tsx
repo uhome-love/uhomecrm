@@ -70,18 +70,17 @@ function CentralRelatoriosV2Inner() {
   useEffect(() => {
     const handler = async (e: Event) => {
       const detail = (e as CustomEvent<{ secao?: CentralSectionId }>).detail;
-      if (detail?.secao !== "geral") {
-        toast({
-          title: "Exportação indisponível",
-          description: "PDF disponível apenas na visão Geral neste momento.",
-        });
-        return;
-      }
+      const secao = detail?.secao ?? state.secao;
+      const isGeral = secao === "geral";
       try {
         setIsExporting(true);
         await exportGeral({
           periodoLabel: PERIODO_LABELS[state.periodo] ?? state.periodo,
           equipeLabel: state.equipe ? "Equipe selecionada" : "Todas as equipes",
+          targetId: isGeral ? "central-relatorio-geral" : "central-relatorio-secao",
+          subtitulo: isGeral
+            ? "Visão geral consolidada"
+            : `Seção: ${SECTION_LABELS[secao] ?? secao}`,
         });
       } catch (err) {
         console.error("[CentralRelatoriosV2] export error", err);
