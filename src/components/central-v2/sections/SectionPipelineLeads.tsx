@@ -1,8 +1,9 @@
-import { Users } from "lucide-react";
+import { Users, Layers, UserPlus, GitBranch, Clock } from "lucide-react";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { KpiRow, type KpiItem } from "@/components/central-v2/shared/KpiRow";
+import { KpiGrid, type KpiCardData } from "@/components/central-v2/shared/KpiCard";
 import { SectionError } from "@/components/central-v2/shared/SectionError";
 import { safeGet } from "@/components/central-v2/shared/safeGet";
+import { SectionHeading } from "@/components/central-v2/shared/SectionHeading";
 
 interface Props {
   query: UseQueryResult<Record<string, unknown>>;
@@ -25,37 +26,26 @@ function calcDelta(curr: number | null, prev: number | null): number | null {
 
 export function SectionPipelineLeads({ query }: Props) {
   const data = query.data;
+  const loading = query.isLoading && !data;
 
   return (
     <section className="flex flex-col gap-3">
-      <SectionHeader />
+      <SectionHeading
+        icon={Users}
+        title="Pipeline de Leads"
+        subtitle="Entrada, atividade e conversão de leads no funil comercial"
+      />
 
       {query.error ? (
         <SectionError query={query} label="Pipeline de Leads" />
       ) : (
-        <KpiRow
-          loading={query.isLoading && !data}
-          items={
-            data
-              ? buildKpis(data)
-              : undefined
-          }
-        />
+        <KpiGrid loading={loading} items={data ? buildKpis(data) : undefined} />
       )}
     </section>
   );
 }
 
-function SectionHeader() {
-  return (
-    <div className="flex items-center gap-2 border-b border-border pb-2">
-      <Users className="h-5 w-5 text-primary" strokeWidth={1.75} />
-      <h2 className="font-display text-xl text-foreground">Pipeline de Leads</h2>
-    </div>
-  );
-}
-
-function buildKpis(data: Record<string, unknown>): KpiItem[] {
+function buildKpis(data: Record<string, unknown>): KpiCardData[] {
   const pipelineAtivo = safeGet<number>(data, "extras.pipeline_ativo", "PL pipeline_ativo");
   const recebidos = safeGet<number>(data, "leads.recebidos", "PL leads.recebidos");
   const recebidosPrev = safeGet<number>(data, "leads.recebidos_prev", "PL leads.recebidos_prev");
@@ -63,13 +53,14 @@ function buildKpis(data: Record<string, unknown>): KpiItem[] {
   const atualizacao48 = safeGet<number>(data, "extras.taxa_atualizacao_48h", "PL taxa_atualizacao_48h");
 
   return [
-    { label: "Pipeline Ativo", value: fmtInt(pipelineAtivo) },
+    { label: "Pipeline Ativo", value: fmtInt(pipelineAtivo), icon: Layers, hint: "Leads vivos no funil" },
     {
       label: "Leads Recebidos",
       value: fmtInt(recebidos),
+      icon: UserPlus,
       delta: calcDelta(recebidos, recebidosPrev),
     },
-    { label: "Conv. Lead → Visita", value: fmtPct(convVisita) },
-    { label: "Atualização 48h", value: fmtPct(atualizacao48) },
+    { label: "Conv. Lead → Visita", value: fmtPct(convVisita), icon: GitBranch },
+    { label: "Atualização 48h", value: fmtPct(atualizacao48), icon: Clock },
   ];
 }
