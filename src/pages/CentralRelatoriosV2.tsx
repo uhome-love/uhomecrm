@@ -7,8 +7,17 @@ import { CentralSidebar } from "@/components/central-v2/CentralSidebar";
 import { CentralFilters } from "@/components/central-v2/CentralFilters";
 import { SectionRouterView } from "@/components/central-v2/SectionRouterView";
 import { useCentralUrlState } from "@/components/central-v2/useCentralUrlState";
-import { DEFAULT_SECTION, isCentralSection, type CentralSectionId } from "@/components/central-v2/sections";
+import {
+  CENTRAL_SECTIONS,
+  DEFAULT_SECTION,
+  isCentralSection,
+  type CentralSectionId,
+} from "@/components/central-v2/sections";
 import { exportGeral } from "@/lib/centralPdf";
+
+const SECTION_LABELS: Record<string, string> = Object.fromEntries(
+  CENTRAL_SECTIONS.map((s) => [s.id, s.label])
+);
 
 const PERIODO_LABELS: Record<string, string> = {
   hoje: "Hoje",
