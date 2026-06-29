@@ -242,6 +242,18 @@ export function useRelatoriosCentral(
     queryFn: () => fetchRpc("get_relatorio_metas", gestorId ?? undefined, range),
   });
 
+  const sla = useQuery({
+    ...baseOpts,
+    queryKey: ["central", "sla", keyId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_sla", gestorId ?? undefined, range),
+  });
+
+  const cohort = useQuery({
+    ...baseOpts,
+    queryKey: ["central", "cohort", keyId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_cohort", gestorId ?? undefined, range),
+  });
+
 
   const all = [pipelineLeads, ofertaAtiva, visitas, negocios, vendas];
   const isAnyLoading = all.some((q) => q.isLoading);
