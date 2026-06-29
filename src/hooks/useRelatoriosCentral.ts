@@ -230,10 +230,17 @@ export function useRelatoriosCentral(
     },
   });
 
+  const metas = useQuery({
+    ...baseOpts,
+    queryKey: ["central", "metas", keyId, range.start, range.end],
+    queryFn: () => fetchRpc("get_relatorio_metas", gestorId ?? undefined, range),
+  });
+
 
   const all = [pipelineLeads, ofertaAtiva, visitas, negocios, vendas];
   const isAnyLoading = all.some((q) => q.isLoading);
   const isAllLoading = all.every((q) => q.isLoading);
+
 
   return {
     range,
