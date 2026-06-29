@@ -66,11 +66,11 @@ function useArenaMode() {
 
 /** Arena auto-collapse removed — sidebar stays open during arena sessions */
 
-type SidebarRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
+type SidebarRole = "admin" | "diretor" | "gestor" | "corretor" | "backoffice" | "rh";
 
 export default function AppLayout() {
   const { user, signOut } = useAuth();
-  const { isAdmin, isGestor, isBackoffice, isRh, rolesUnavailable } = useUserRole();
+  const { isAdmin, isDiretor, isGestor, isBackoffice, isRh, rolesUnavailable } = useUserRole();
   const { theme, toggle: onThemeToggle } = useTheme();
   useVendaRealtimeNotification();
   useWhatsAppNotifications();
@@ -83,13 +83,17 @@ export default function AppLayout() {
   const { isFullscreen, isSession } = useArenaMode();
   const { tabs, activeTabId } = useTabContext();
 
-  // Derive role for the new Sidebar
+  // Derive role for the new Sidebar.
+  // Diretora Comercial (diretor) tem visão executiva própria, abaixo do CEO e
+  // acima do gestor. Mantém os papéis de gestão por baixo, mas a identidade é diretora.
   const sidebarRole: SidebarRole = isBackoffice
     ? "backoffice"
     : isAdmin
     ? "admin"
     : isRh
     ? "rh"
+    : isDiretor
+    ? "diretor"
     : isGestor
     ? "gestor"
     : "corretor";
@@ -107,6 +111,8 @@ export default function AppLayout() {
         setCargoLabel("Admin · 👑 CEO");
       } else if (isRh) {
         setCargoLabel("RH · 💚 Carol");
+      } else if (isDiretor) {
+        setCargoLabel("Diretora Comercial · 💼");
       } else if (isGestor) {
         setCargoLabel("Gerente");
       } else if (rolesUnavailable) {
@@ -125,7 +131,7 @@ export default function AppLayout() {
         setCargoLabel(labelMap[c] || c || "Corretor");
       }
     });
-  }, [user, isAdmin, isGestor, isBackoffice, isRh, rolesUnavailable]);
+  }, [user, isAdmin, isDiretor, isGestor, isBackoffice, isRh, rolesUnavailable]);
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
 

@@ -6,6 +6,7 @@ import TabEmpresa from "@/components/ceo/TabEmpresa";
 import { GreetingBar } from "@/components/ui/GreetingBar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useCeoDashboard, type DashPeriod } from "@/hooks/useCeoDashboard";
 import { useDateFilter } from "@/contexts/DateFilterContext";
 import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
@@ -128,6 +129,7 @@ function FunnelStep({ label, value, pct, color, isLast }: { label: string; value
 export default function CeoDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const { period, range } = useDateFilter();
   const [frase] = useState(() => FRASES[Math.floor(Math.random() * FRASES.length)]);
   const [dispatchOpen, setDispatchOpen] = useState(false);
@@ -821,9 +823,11 @@ export default function CeoDashboard() {
                 <span className="text-[11px] text-[#71717a]">Top Origem</span>
                 <span className="text-sm font-bold">{origens[0]?.origem || "—"}</span>
               </div>
-              <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/marketing")}>
-                Ver Marketing
-              </Button>
+              {isAdmin && (
+                <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/marketing")}>
+                  Ver Marketing
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -847,9 +851,11 @@ export default function CeoDashboard() {
                 <span className="text-[11px] text-[#71717a]">Total Corretores</span>
                 <span className="text-sm font-bold">{corretoresRank.length}</span>
               </div>
-              <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/rh")}>
-                Ver RH
-              </Button>
+              {isAdmin && (
+                <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/rh")}>
+                  Ver RH
+                </Button>
+              )}
             </CardContent>
           </Card>
 
