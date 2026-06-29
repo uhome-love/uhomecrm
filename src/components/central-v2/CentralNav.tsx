@@ -14,7 +14,7 @@ interface NavGroup {
 const GROUPS: NavGroup[] = [
   { label: "Visão", ids: ["geral"] },
   { label: "Comercial", ids: ["pipeline-leads", "origem-segmento", "oferta-ativa", "visitas"] },
-  { label: "Resultado", ids: ["negocios", "vendas"] },
+  { label: "Resultado", ids: ["negocios", "vendas", "metas"] },
   { label: "Equipe", ids: ["ranking"] },
 ];
 
