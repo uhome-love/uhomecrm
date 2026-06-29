@@ -154,6 +154,7 @@ export interface UseRelatoriosCentralResult {
   visitas: UseQueryResult<Record<string, unknown>>;
   negocios: UseQueryResult<Record<string, unknown>>;
   vendas: UseQueryResult<Record<string, unknown>>;
+  ranking: UseQueryResult<Record<string, unknown>>;
   isAnyLoading: boolean;
   isAllLoading: boolean;
 }
