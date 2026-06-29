@@ -11,10 +11,13 @@ interface Props {
 
 interface ListaRow {
   lista?: string;
+  lista_nome?: string;
   nome?: string;
   total?: number;
+  tentativas?: number;
   aproveitados?: number;
   taxa?: number;
+  taxa_pct?: number;
 }
 
 function fmtInt(v: number | null | undefined): string {
