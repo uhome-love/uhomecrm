@@ -1010,7 +1010,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             <button
               key={r.key}
               onClick={() => handlePopupResult(r.key)}
-              className="flex items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+              disabled={submitting}
+              className="flex items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
               style={{
                 height: 56,
                 background: selectedResult === r.key ? r.hoverBg : r.bg,
