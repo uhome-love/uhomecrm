@@ -123,6 +123,7 @@ const App = () => (
               <Route path="/relatorios" element={<Navigate to="/central-relatorios?visao=um-a-um" replace />} />
               <Route path="/relatorios-1-1" element={<Navigate to="/central-relatorios?secao=geral" replace />} />
               <Route path="/links-site" element={<Navigate to="/imoveis?view=links" replace />} />
+              <Route path="/disponibilidade" element={<Navigate to="/roleta" replace />} />
 
               {/* All authenticated routes — rendered via Chrome-style tab system */}
               <Route path="/*" element={
