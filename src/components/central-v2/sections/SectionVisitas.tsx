@@ -1,8 +1,9 @@
-import { MapPin } from "lucide-react";
+import { MapPin, CalendarPlus, CheckCircle2, UserX, Percent } from "lucide-react";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { KpiRow, type KpiItem } from "@/components/central-v2/shared/KpiRow";
+import { KpiGrid, type KpiCardData } from "@/components/central-v2/shared/KpiCard";
 import { MiniTable, type MiniColumn } from "@/components/central-v2/shared/MiniTable";
 import { SectionError } from "@/components/central-v2/shared/SectionError";
+import { SectionHeading } from "@/components/central-v2/shared/SectionHeading";
 import { SimpleBarChart, type ChartPoint } from "@/components/central-v2/shared/MiniChart";
 import { safeGet } from "@/components/central-v2/shared/safeGet";
 
@@ -37,51 +38,52 @@ function fmtPct(v: number | null | undefined): string {
 
 export function SectionVisitas({ query }: Props) {
   const data = query.data;
+  const loading = query.isLoading && !data;
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 border-b border-border pb-2">
-        <MapPin className="h-5 w-5 text-primary" strokeWidth={1.75} />
-        <h2 className="font-display text-xl text-foreground">Visitas</h2>
-      </div>
+      <SectionHeading
+        icon={MapPin}
+        title="Visitas"
+        subtitle="Agendamento, comparecimento e desempenho por empreendimento"
+      />
 
       {query.error ? (
         <SectionError query={query} label="Visitas" />
       ) : (
         <>
-          <KpiRow
-            loading={query.isLoading && !data}
-            items={data ? buildKpis(data) : undefined}
-          />
-          <SimpleBarChart
-            title="Visitas por dia da semana"
-            loading={query.isLoading && !data}
-            data={buildDowSeries(data)}
-            emptyLabel="Sem visitas no período."
-          />
-          <MiniTable<EmpRow>
-            title="Top empreendimentos"
-            loading={query.isLoading && !data}
-            rows={safeGet<EmpRow[]>(data ?? {}, "extras.por_empreendimento", "Visitas por_empreendimento") ?? []}
-            columns={columns}
-          />
+          <KpiGrid loading={loading} items={data ? buildKpis(data) : undefined} />
+          <div className="grid gap-3 lg:grid-cols-2">
+            <SimpleBarChart
+              title="Visitas por dia da semana"
+              loading={loading}
+              data={buildDowSeries(data)}
+              emptyLabel="Sem visitas no período."
+            />
+            <MiniTable<EmpRow>
+              title="Top empreendimentos"
+              loading={loading}
+              rows={safeGet<EmpRow[]>(data ?? {}, "extras.por_empreendimento", "Visitas por_empreendimento") ?? []}
+              columns={columns}
+            />
+          </div>
         </>
       )}
     </section>
   );
 }
 
-function buildKpis(data: Record<string, unknown>): KpiItem[] {
+function buildKpis(data: Record<string, unknown>): KpiCardData[] {
   const criadas = safeGet<number>(data, "visitas.criadas", "Visitas criadas");
   const realizadas = safeGet<number>(data, "visitas.realizadas", "Visitas realizadas");
   const noShow = safeGet<number>(data, "visitas.no_show", "Visitas no_show");
   const taxa = safeGet<number>(data, "visitas.taxa_comparecimento_pct", "Visitas taxa_comparecimento_pct");
 
   return [
-    { label: "Criadas", value: fmtInt(criadas) },
-    { label: "Realizadas", value: fmtInt(realizadas) },
-    { label: "No Show", value: fmtInt(noShow) },
-    { label: "Taxa Comparecimento", value: fmtPct(taxa) },
+    { label: "Criadas", value: fmtInt(criadas), icon: CalendarPlus },
+    { label: "Realizadas", value: fmtInt(realizadas), icon: CheckCircle2 },
+    { label: "No Show", value: fmtInt(noShow), icon: UserX },
+    { label: "Taxa Comparecimento", value: fmtPct(taxa), icon: Percent },
   ];
 }
 
@@ -103,5 +105,6 @@ const columns: MiniColumn<EmpRow>[] = [
     label: "Realizadas",
     align: "right",
     render: (r) => fmtInt(r.realizadas ?? null),
+    bar: (r) => r.realizadas ?? 0,
   },
 ];
