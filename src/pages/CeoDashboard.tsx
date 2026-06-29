@@ -823,9 +823,11 @@ export default function CeoDashboard() {
                 <span className="text-[11px] text-[#71717a]">Top Origem</span>
                 <span className="text-sm font-bold">{origens[0]?.origem || "—"}</span>
               </div>
-              <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/marketing")}>
-                Ver Marketing
-              </Button>
+              {isAdmin && (
+                <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/marketing")}>
+                  Ver Marketing
+                </Button>
+              )}
             </CardContent>
           </Card>
 
