@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { resolveRoute } from "@/config/pageRegistry";
 import {
   LayoutGrid, CheckCircle, FileText, Target, AlignLeft,
   CalendarDays, Home, Phone, Search, Megaphone,
