@@ -34,6 +34,9 @@ interface PipelineFiltroBadgesProps {
    * Quando ausente, mantém o comportamento antigo (compat corretor).
    */
   counts?: { em_dia: number; sem_tarefa: number; atrasado: number; negocios: number };
+  /** Modo compacto: cluster segmentado (dot + número), rótulo só no ativo + tooltip. */
+  compact?: boolean;
+
 }
 
 interface BadgeDef {
