@@ -10491,6 +10491,11 @@ export type Database = {
       }
     }
     Functions: {
+      _central_origem: { Args: { p_origem: string }; Returns: string }
+      _central_segmento: {
+        Args: { p_emp: string; p_seg: string }
+        Returns: string
+      }
       _kpi_team_window_core: {
         Args: {
           p_end: string
