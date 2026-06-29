@@ -1045,9 +1045,10 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             <Button
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-foreground font-semibold"
               style={{ height: 44 }}
+              disabled={submitting}
               onClick={handlePopupConfirm}
             >
-              Confirmar e Próximo →
+              {submitting ? "Registrando..." : "Confirmar e Próximo →"}
             </Button>
           )}
         </div>
