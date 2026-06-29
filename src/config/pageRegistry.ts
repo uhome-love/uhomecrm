@@ -164,7 +164,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/vendas-realizadas":     { key: "vendas-realizadas",    label: "Vendas",              icon: "TrendingUp" },
   "/pos-vendas":            { key: "pos-vendas",           label: "Pós-Vendas",          icon: "Heart" },
   "/imoveis":               { key: "imoveis",              label: "Imóveis",             icon: "Home" },
-  "/busca-leads":           { key: "busca-leads",          label: "Busca Leads",         icon: "Search",        roles: ["gestor", "admin"] },
+  "/busca-leads":           { key: "busca-leads",          label: "Busca Leads",         icon: "Search",        roles: ["gestor", "admin", "diretor"] },
   "/configuracoes":         { key: "configuracoes",        label: "Configurações",       icon: "Settings" },
   "/integracoes":           { key: "integracoes",          label: "Integrações",         icon: "Plug" },
   
