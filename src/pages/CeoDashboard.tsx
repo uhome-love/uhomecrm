@@ -851,9 +851,11 @@ export default function CeoDashboard() {
                 <span className="text-[11px] text-[#71717a]">Total Corretores</span>
                 <span className="text-sm font-bold">{corretoresRank.length}</span>
               </div>
-              <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/rh")}>
-                Ver RH
-              </Button>
+              {isAdmin && (
+                <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/rh")}>
+                  Ver RH
+                </Button>
+              )}
             </CardContent>
           </Card>
 
