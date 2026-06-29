@@ -33,7 +33,7 @@ type NavGroup = {
   items: NavItem[];
 };
 
-type UserRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
+type UserRole = "admin" | "diretor" | "gestor" | "corretor" | "backoffice" | "rh";
 
 // ─── CAMPAIGN CONFIG ─────────────────────────────────────────────────────────
 
