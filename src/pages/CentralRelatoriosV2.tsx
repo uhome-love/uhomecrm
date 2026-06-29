@@ -125,4 +125,3 @@ function CentralRelatoriosV2Inner() {
   );
 }
 
-}
