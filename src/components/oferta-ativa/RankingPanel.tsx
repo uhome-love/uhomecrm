@@ -163,7 +163,8 @@ export default function RankingPanel() {
               <Trophy className="h-4 w-4 text-amber-500" />
               <span className="text-sm font-semibold" style={{ color: "var(--arena-text)" }}>Ranking por Pontos</span>
             </div>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[560px]">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--arena-card-border)" }}>
                   {["#", "Corretor", "Pts", "Tent.", "Aprov.", "Taxa", "🔥", "📞", "💬", "✉️"].map((h, i) => (
@@ -218,6 +219,7 @@ export default function RankingPanel() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Badges */}

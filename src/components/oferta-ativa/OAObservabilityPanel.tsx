@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, AlertTriangle, Clock, TrendingUp, Users, AlertCircle, ShieldAlert } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Activity, AlertTriangle, Clock, TrendingUp, Users, AlertCircle, ShieldAlert, Loader2 } from "lucide-react";
 
 export default function OAObservabilityPanel() {
   const [period, setPeriod] = useState<"hoje" | "semana">("hoje");
@@ -15,7 +16,7 @@ export default function OAObservabilityPanel() {
     return d.toISOString();
   })();
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: events = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["oa-observability", period],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -63,6 +64,33 @@ export default function OAObservabilityPanel() {
   const isRepeatCritical = repeatRate > 70;
   const isRepeatWarning = repeatRate > 15;
   const isLocksCritical = expired > 5;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">Carregando observabilidade...</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-[72px] rounded-xl" />)}
+        </div>
+        <Skeleton className="h-32 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="border-red-500/30 bg-red-500/5">
+        <CardContent className="p-6 text-center space-y-2">
+          <AlertCircle className="h-8 w-8 mx-auto text-red-400" />
+          <p className="text-sm font-medium text-foreground">Erro ao carregar dados de observabilidade</p>
+          <Badge variant="outline" className="cursor-pointer" onClick={() => refetch()}>Tentar novamente</Badge>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">

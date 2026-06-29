@@ -11,6 +11,7 @@ export default function AproveitadosPanel() {
   const { user } = useAuth();
   const [filterEmp, setFilterEmp] = useState("__all__");
   const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(30);
   const [addingToPlId, setAddingToPlId] = useState<string | null>(null);
   const [pipelineStatus, setPipelineStatus] = useState<Record<string, "exists" | "added">>({});
 
@@ -178,7 +179,7 @@ export default function AproveitadosPanel() {
       </div>
 
       {/* Lead cards */}
-      {filtered.map(lead => {
+      {filtered.slice(0, visibleCount).map(lead => {
         const plStatus = pipelineStatus[lead.id];
         return (
           <div
@@ -274,6 +275,17 @@ export default function AproveitadosPanel() {
           </div>
         );
       })}
+
+      {filtered.length > visibleCount && (
+        <button
+          className="w-full h-10 text-xs font-semibold rounded-lg transition-colors"
+          style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)", color: "var(--arena-text)" }}
+          onClick={() => setVisibleCount(c => c + 30)}
+        >
+          Ver mais ({filtered.length - visibleCount} restantes)
+        </button>
+      )}
+
 
       {filtered.length === 0 && (
         <div className="text-center py-8 text-sm" style={{ color: "var(--arena-text-muted)" }}>

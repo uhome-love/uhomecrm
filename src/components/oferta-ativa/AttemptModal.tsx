@@ -169,7 +169,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
 
           <div className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
             {/* Result options */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {RESULTS.map(r => {
                 const selected = resultado === r.key;
                 return (

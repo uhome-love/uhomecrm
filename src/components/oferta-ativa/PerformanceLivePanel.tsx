@@ -105,7 +105,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
   const teamFilter = teamOnly ? teamMemberUserIds : null;
   const ready = !teamOnly || (teamFilter && teamFilter.length > 0);
 
-  const { data: liveData, isLoading } = useQuery({
+  const { data: liveData, isLoading, isError, refetch } = useQuery({
     queryKey: ["oa-performance-live", todayStartRef.current, teamFilter?.join(",") ?? "all"],
     queryFn: async () => {
       const todayStart = todayStartRef.current;
@@ -362,6 +362,17 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
           </div>
           <p className="text-sm font-medium text-muted-foreground animate-pulse">Carregando arena...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (isError && !liveData) {
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-10 text-center">
+        <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-red-400" />
+        <p className="font-bold text-foreground">Erro ao carregar a arena ao vivo</p>
+        <p className="text-sm text-muted-foreground mt-1">Verifique a conexão e tente novamente.</p>
+        <Badge variant="outline" className="cursor-pointer mt-4" onClick={() => refetch()}>Recarregar</Badge>
       </div>
     );
   }
