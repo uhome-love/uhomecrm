@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { resolveRoute } from "@/config/pageRegistry";
 import {
   LayoutGrid, CheckCircle, FileText, Target, AlignLeft,
   CalendarDays, Home, Phone, Search, Megaphone,
@@ -361,7 +362,14 @@ export default function Sidebar({
   showCampaigns = true,
 }: SidebarProps) {
   const location  = useLocation();
+  const navigate  = useNavigate();
   const { openTab } = useTabNavigation();
+  // Standalone full-page routes (rendered outside the tab shell in App.tsx) are not
+  // in pageRegistry, so openTab() can't resolve them. Fall back to direct navigation.
+  const go = (path: string) => {
+    if (resolveRoute(path.split("?")[0].split("#")[0])) openTab(path);
+    else navigate(path);
+  };
   const [campOpen, setCampOpen] = useState(false);
   const isDark    = theme === "dark";
   const isManagerRole = role === "admin" || role === "diretor" || role === "gestor";
@@ -507,7 +515,7 @@ export default function Sidebar({
                 return (
                   <button
                     key={item.path}
-                    onClick={() => { openTab(item.path); if (isMobile) setOpenMobile(false); }}
+                    onClick={() => { go(item.path); if (isMobile) setOpenMobile(false); }}
                     className={cn(
                       "w-full flex items-center gap-[10px] px-2 py-[7px] rounded-[8px]",
                       "text-[13.5px] tracking-[-0.15px] transition-all text-left",
@@ -593,7 +601,7 @@ export default function Sidebar({
             return (
               <button
                 key={item.path}
-                onClick={() => openTab(item.path)}
+                onClick={() => go(item.path)}
                 title={item.label}
                 className={cn(
                   "mx-auto mb-0.5 w-[38px] h-[38px] flex items-center justify-center rounded-[8px] transition-all",
