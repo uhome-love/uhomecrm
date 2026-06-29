@@ -194,8 +194,8 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/rh/conversas":          { key: "rh-conversas",         label: "Conversas 1:1",       icon: "MessageSquare", roles: ["rh", "admin"] },
   "/rh/sala-reuniao":       { key: "rh-sala-reuniao",      label: "Sala de Reunião",     icon: "Video",         roles: ["rh", "admin"] },
   "/import-brevo-contacts": { key: "import-brevo",         label: "Import Brevo",        icon: "Database",      roles: ["admin"] },
-  "/gestor/whatsapp-dashboard": { key: "gestao-whatsapp", label: "Gestão WhatsApp",     icon: "BarChart2",     roles: ["gestor", "admin"] },
-  "/central-relatorios":        { key: "report-center",     label: "Central Relatórios",  icon: "BarChart2",     roles: ["admin", "gestor", "corretor"], noPadding: true },
+  "/gestor/whatsapp-dashboard": { key: "gestao-whatsapp", label: "Gestão WhatsApp",     icon: "BarChart2",     roles: ["gestor", "admin", "diretor"] },
+  "/central-relatorios":        { key: "report-center",     label: "Central Relatórios",  icon: "BarChart2",     roles: ["admin", "gestor", "corretor", "diretor"], noPadding: true },
   "/materiais":             { key: "materiais",            label: "Materiais",           icon: "FolderOpen" },
   "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor"] },
 };
