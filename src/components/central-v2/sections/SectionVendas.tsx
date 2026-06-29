@@ -1,8 +1,9 @@
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Banknote, Receipt, PercentCircle, Coins } from "lucide-react";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { KpiRow, type KpiItem } from "@/components/central-v2/shared/KpiRow";
+import { KpiGrid, type KpiCardData } from "@/components/central-v2/shared/KpiCard";
 import { MiniTable, type MiniColumn } from "@/components/central-v2/shared/MiniTable";
 import { SectionError } from "@/components/central-v2/shared/SectionError";
+import { SectionHeading } from "@/components/central-v2/shared/SectionHeading";
 import { TrendAreaChart, type ChartPoint } from "@/components/central-v2/shared/MiniChart";
 import { safeGet } from "@/components/central-v2/shared/safeGet";
 import { fmtMoney } from "@/lib/fmtMoney";
@@ -47,16 +48,17 @@ export function SectionVendas({ query }: Props) {
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 border-b border-border pb-2">
-        <TrendingUp className="h-5 w-5 text-primary" strokeWidth={1.75} />
-        <h2 className="font-display text-xl text-foreground">Vendas</h2>
-      </div>
+      <SectionHeading
+        icon={TrendingUp}
+        title="Vendas"
+        subtitle="VGV assinado, ticket médio, comissão e evolução diária"
+      />
 
       {query.error ? (
         <SectionError query={query} label="Vendas" />
       ) : (
         <>
-          <KpiRow loading={loading} items={data ? buildKpis(data) : undefined} />
+          <KpiGrid loading={loading} items={data ? buildKpis(data) : undefined} />
           <TrendAreaChart
             title="VGV assinado por dia"
             loading={loading}
@@ -76,7 +78,7 @@ export function SectionVendas({ query }: Props) {
   );
 }
 
-function buildKpis(data: Record<string, unknown>): KpiItem[] {
+function buildKpis(data: Record<string, unknown>): KpiCardData[] {
   const vgv = safeGet<number>(data, "vendas.vgv", "Vendas vgv");
   const count = safeGet<number>(data, "vendas.count", "Vendas count");
   const ticket = safeGet<number>(data, "vendas.ticket_medio", "Vendas ticket_medio");
@@ -91,10 +93,11 @@ function buildKpis(data: Record<string, unknown>): KpiItem[] {
       value: vgvFmt.display,
       title: vgvFmt.title,
       delta: deltaPct,
+      icon: Banknote,
     },
-    { label: "Vendas", value: fmtInt(count) },
-    { label: "Ticket Médio", value: ticket != null ? fmtMoney(ticket, "short") : "—" },
-    { label: "Comissão Estimada", value: comissao != null ? fmtMoney(comissao, "short") : "—" },
+    { label: "Vendas", value: fmtInt(count), icon: Receipt },
+    { label: "Ticket Médio", value: ticket != null ? fmtMoney(ticket, "short") : "—", icon: PercentCircle },
+    { label: "Comissão Estimada", value: comissao != null ? fmtMoney(comissao, "short") : "—", icon: Coins },
   ];
 }
 
@@ -116,5 +119,6 @@ const columns: MiniColumn<EmpRow>[] = [
     label: "VGV",
     align: "right",
     render: (r) => (r.vgv != null ? fmtMoney(r.vgv, "short") : "—"),
+    bar: (r) => r.vgv ?? 0,
   },
 ];
