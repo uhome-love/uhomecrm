@@ -142,9 +142,9 @@ export function CentralRoletaCeo() {
       />
 
       {/* Navegação em dois níveis */}
-      <div className="space-y-2">
+      <div className="rounded-2xl border border-border bg-card p-2 shadow-sm">
         {/* Grupos (segmented control) */}
-        <div className="inline-flex flex-wrap gap-1 rounded-xl bg-muted/60 p-1">
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-muted/60 p-1">
           {NAV_GROUPS.map((g) => {
             const active = g.key === activeGroup;
             const badge =
@@ -157,10 +157,10 @@ export function CentralRoletaCeo() {
                   setActiveSub(g.subs[0].value);
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-all",
+                  "flex flex-1 min-w-[96px] items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-all",
                   active
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-card text-foreground shadow-sm ring-1 ring-border"
+                    : "text-muted-foreground hover:bg-card/60 hover:text-foreground"
                 )}
               >
                 {g.label}
@@ -175,7 +175,7 @@ export function CentralRoletaCeo() {
         </div>
 
         {/* Sub-abas do grupo ativo */}
-        <div className="flex flex-wrap items-center gap-1 overflow-x-auto">
+        <div className="mt-2 flex flex-wrap items-center gap-1 overflow-x-auto border-t border-border/60 px-1 pt-2">
           {currentGroup.subs.map((sub) => {
             const active = sub.value === activeSub;
             return (
@@ -183,9 +183,9 @@ export function CentralRoletaCeo() {
                 key={sub.value}
                 onClick={() => setActiveSub(sub.value)}
                 className={cn(
-                  "rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors whitespace-nowrap",
+                  "rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors whitespace-nowrap",
                   active
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
@@ -195,6 +195,7 @@ export function CentralRoletaCeo() {
           })}
         </div>
       </div>
+
 
       {/* Conteúdo */}
       <div>
