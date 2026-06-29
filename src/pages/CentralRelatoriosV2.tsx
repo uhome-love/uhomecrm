@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { CentralHeader } from "@/components/central-v2/CentralHeader";
-import { CentralSidebar } from "@/components/central-v2/CentralSidebar";
-import { CentralFilters } from "@/components/central-v2/CentralFilters";
+import { CentralNav } from "@/components/central-v2/CentralNav";
 import { SectionRouterView } from "@/components/central-v2/SectionRouterView";
 import { useCentralUrlState } from "@/components/central-v2/useCentralUrlState";
 import {
@@ -14,6 +12,7 @@ import {
   type CentralSectionId,
 } from "@/components/central-v2/sections";
 import { exportGeral } from "@/lib/centralPdf";
+
 
 const SECTION_LABELS: Record<string, string> = Object.fromEntries(
   CENTRAL_SECTIONS.map((s) => [s.id, s.label])
