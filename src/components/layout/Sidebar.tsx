@@ -601,7 +601,7 @@ export default function Sidebar({
             return (
               <button
                 key={item.path}
-                onClick={() => openTab(item.path)}
+                onClick={() => go(item.path)}
                 title={item.label}
                 className={cn(
                   "mx-auto mb-0.5 w-[38px] h-[38px] flex items-center justify-center rounded-[8px] transition-all",
