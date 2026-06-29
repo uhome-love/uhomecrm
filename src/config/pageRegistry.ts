@@ -125,8 +125,8 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
 export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/":                      { key: "home",                 label: "Home",                icon: "LayoutGrid",    closable: false },
   "/corretor":              { key: "corretor",             label: "Minha Rotina",        icon: "LayoutGrid",    closable: false },
-  "/ceo":                   { key: "ceo",                  label: "Dashboard CEO",       icon: "LayoutGrid",    closable: false, roles: ["admin"] },
-  "/ceo/religacao-negocios":{ key: "ceo-religacao-negocios", label: "Religação Negócios", icon: "Link2",         roles: ["admin"] },
+  "/ceo":                   { key: "ceo",                  label: "Dashboard CEO",       icon: "LayoutGrid",    closable: false, roles: ["admin", "diretor"] },
+  "/ceo/religacao-negocios":{ key: "ceo-religacao-negocios", label: "Religação Negócios", icon: "Link2",         roles: ["admin", "diretor"] },
   "/gerente/dashboard":     { key: "gerente-dashboard",    label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin"] },
   "/backoffice":            { key: "backoffice",           label: "Dashboard BO",        icon: "LayoutGrid",    closable: false, roles: ["backoffice", "admin"] },
   "/rh":                    { key: "rh",                   label: "Dashboard RH",        icon: "LayoutGrid",    closable: false, roles: ["rh", "admin"] },
