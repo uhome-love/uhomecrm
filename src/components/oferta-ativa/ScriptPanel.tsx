@@ -101,15 +101,32 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
     whatsapp: teamScript ? teamScript.titulo : "Script genérico",
   });
 
+  // Tracks whether the corretor manually edited the current script.
+  // While true, we must NOT overwrite their text just because the lead changed.
+  const manualEditRef = useRef(false);
+
+  // Context change (empreendimento / modo / templates / script do time) → reset script.
+  // Esta é uma troca intencional de contexto, então limpamos a edição manual.
   useEffect(() => {
     setScriptLigacao(getDefaultLigacao(scriptMode));
     setScriptWhatsApp(getDefaultWhatsApp());
     setEditingScript(null);
+    manualEditRef.current = false;
     setActiveScriptName({
       ligacao: teamScript ? teamScript.titulo : scriptMode === "personalizado" ? `Script · ${emp}` : "Script genérico",
       whatsapp: teamScript ? teamScript.titulo : "Script genérico",
     });
-  }, [lead?.id, leadName, emp, templates, teamScript, scriptMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emp, templates, teamScript, scriptMode]);
+
+  // Lead change → apenas re-aplica a substituição de variáveis (nome) SE o corretor
+  // não tiver editado manualmente. Assim a edição manual sobrevive à troca de lead.
+  useEffect(() => {
+    if (manualEditRef.current) return;
+    setScriptLigacao(getDefaultLigacao(scriptMode));
+    setScriptWhatsApp(getDefaultWhatsApp());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead?.id, leadName]);
 
   const handleModeSwitch = (mode: "generico" | "personalizado") => {
     setScriptMode(mode);
