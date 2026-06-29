@@ -1,50 +1,35 @@
-# Limpeza da barra de topo do Pipeline (desktop)
+# Reorganização visual do header do Pipeline (desktop)
 
-Objetivo: tirar o aspecto "embolado", liberar espaço e manter 100% das funções, com visual moderno e denso (padrão SaaS premium). Só altera `src/components/pipeline/PipelineHeader.tsx` (bloco desktop `lg+`, linhas ~516-760). Mobile/tablet ficam intactos. Nenhuma mudança de lógica/negócio — só apresentação e reagrupamento dos mesmos controles.
+Você escolheu a direção **Command deck segmentado (v3)**. O objetivo é puramente visual/organizacional: agrupar os controles em clusters limpos, com divisores e espaçamento consistente, para o header parecer um produto SaaS de alto nível. **Nenhuma função é removida** — apenas reorganizada e restilizada.
 
-## O que muda, item por item
+Escopo: somente o bloco desktop (`lg+`) de `src/components/pipeline/PipelineHeader.tsx`. O header mobile e toda a lógica (estado, handlers, contadores) permanecem intactos.
 
-### 1. Selects de escopo (corretor / gestor)
-- "Todos os corretores" → rótulo curto **"Corretores"**; "Todos gestores" → **"Gestores"** (quando nenhum selecionado). Quando há seleção, mostra o nome escolhido normalmente.
-- Largura reduzida e fixa, alinhados ao lado esquerdo da linha de controles.
+## O que muda visualmente
 
-### 2. Busca
-- Encolhe para um botão/campo compacto: largura menor por padrão (`w-[180px]`), placeholder curto **"Buscar..."**.
-- Mantém ícone de lupa, clear (x) e o atalho de digitação. Sem perder função.
-
-### 3. Ordenar
-- Vira dropdown **icon-first**: ícone de ordenação + valor atual curto (ex.: só "Atividade"), sem o prefixo "Ordenar:". Menos largura.
-
-### 4. Pílulas de status (Em dia / Sem tarefa / Atrasado / Negócios)
-Ideia escolhida — **cluster segmentado compacto**: um único grupo unido (sem 4 cápsulas soltas com borda), cada item = bolinha colorida + número, e o texto ("em dia", etc.) aparece só no item ativo e em tooltip no hover. Isso reduz a largura em ~60% mantendo leitura rápida e o clique-para-filtrar.
-
+### Linha 1 — Identidade · Navegação · Status
 ```text
-Antes:  ( ● 1.350 em dia ) ( ● 295 sem tarefa ) ( ● 576 atrasado ) ( ● 70 negócios )
-Depois: [ ●1.350 · ●295 · ●576 · ●70 ]   (rótulo só no ativo + tooltip)
+[ ▣ Pipeline  ·  79 leads  ·  «escopo» ]   [ Equipes | Kanban | Inteligência ]            [● 1.350 │ ● 295 │ ● 576 │ ● 70]
 ```
+- **Identidade**: mantém ícone + "Pipeline" + contador de leads + badge de escopo, agrupados com baseline alinhada.
+- **Navegação (abas)**: passa a ser um **segmented control** dentro de um container `bg-muted` com borda e `p-1` (aba ativa em card branco com sombra sutil), em vez de botões soltos. Os toggles Equipe/Minha carteira e Funil/Radar continuam ao lado.
+- **Pílulas de status**: viram um **cluster unido** (botões encostados com `-space-x-px` e bordas compartilhadas, cantos arredondados só nas pontas), em vez de pílulas separadas flutuando. Mantém o modo `compact` e o comportamento de filtro atual.
+- As ações primárias (Modo Foco, Novo Lead) continuam alinhadas à direita da linha 1.
 
-Alternativas consideradas (posso trocar se preferir): (a) manter texto só nas pílulas com contagem relevante; (b) um chip-resumo único "Status ▾" que abre popover com as 4 opções. A recomendada é o cluster segmentado por ser a mais rápida de ler sem clique extra.
-
-### 5. Refresh + Selecionar
-- Saem da linha como botões soltos e entram num **menu de ações "⋯"** (kebab) à direita: "Atualizar" e "Selecionar" (Selecionar só para admin/Kanban). Refresh também pode virar só ícone discreto se preferir mantê-lo visível — recomendo movê-lo para o ⋯ para limpar.
-
-### 6. Fila CEO
-- O bloco "Fila CEO · Filtrar · 🆕 Novos · 🔄 Redistrib" colapsa num **único botão com badge** (ex.: "Fila CEO ⌄" com a soma pendente) que abre um popover compacto com: toggle Filtrar, botão Novos (com contagem) e botão Redistribuição (com contagem). Mantém todas as ações, mas ocupa 1 botão em vez de 4 elementos.
-
-## Layout final (desktop)
-
+### Linha 2 — Filtros · Busca · Ordenação · Ações globais
 ```text
-Linha 1: [▦ Pipeline · 2221 leads · escopo]   ……   [ cluster de status ]   [Modo Foco] [Novo Lead]
-Linha 2: [Corretores▾] [Gestores▾] [+Filtros] [Buscar…]   ……   [Ordenar▾] [Fila CEO ⌄] [⋯]
+[ 🔍 Buscar... ] │ [ Corretores ▾ ] [ Gestores ▾ ] [ + Filtros ]      «Ordenar por» Atividade ▾  │  [ Fila CEO ⦿14 ]  [ ⋯ ]
 ```
+- **Busca** vai para a esquerda, com divisor vertical separando-a do grupo de filtros.
+- **Filtros** (Corretores, Gestores, +Filtros) ficam agrupados como cluster coeso à esquerda.
+- **Ordenação** ganha rótulo discreto "Ordenar por" + valor, seguido de divisor.
+- **Fila CEO** e o menu **⋯** ficam agrupados à direita como ações globais.
+- Alturas (`h-9`), raios (`rounded-lg`) e cores via tokens semânticos unificados em todos os controles.
 
-- Espaçamento consistente (`gap-2`), divisores sutis, alturas alinhadas (h-9). Em larguras menores (1280px) tudo continua em 2 linhas sem quebrar, agora com folga.
+## Notas técnicas
+- Edição única em `src/components/pipeline/PipelineHeader.tsx`, bloco `hidden lg:block` (linhas ~519–792).
+- Reaproveita componentes existentes (`PipelineCorretorSelect`, `PipelineGestorSelect`, `PipelineAdvancedFilters`, `PipelineSortDropdown`, `PipelineFiltroBadges`, `PipelineScopeBadge`, Popover da Fila CEO, DropdownMenu ⋯). Pequenos ajustes de classe nesses subcomponentes só se necessário para alinhamento (sem mudar comportamento).
+- Cores convertidas para tokens semânticos do design system (sem hardcode de `bg-white`/`text-slate-*` novos); o protótipo usa slate/indigo apenas como referência visual.
+- Mantém `flex-wrap` para degradar bem de 1280px a 1920px.
+- Validação: `tsgo` limpo + screenshots multi-largura (1280/1440/1702/1920) confirmando que nada quebrou e os grupos ficam alinhados.
 
-## Detalhes técnicos
-- Arquivo único: `src/components/pipeline/PipelineHeader.tsx`.
-- Reusar componentes existentes (`PipelineCorretorSelect`, `PipelineGestorSelect`, `PipelineSortDropdown`, `PipelineFiltroBadges`) — ajustar props/labels e estilos; o cluster de pílulas é um ajuste visual dentro de `PipelineFiltroBadges` (modo compacto).
-- Popover/menu via componentes shadcn já no projeto (`DropdownMenu`/`Popover`).
-- Sem mudança de estado, handlers ou dados — apenas reorganização visual.
-- Validação: typecheck + screenshots em 1280px, 1600px e 1848px para confirmar nada quebrou.
-
-Quer que eu siga com a pílula no formato **cluster segmentado** (recomendado) ou prefere o **chip-resumo "Status ▾"**? Posso ajustar antes de implementar.
+Resultado: mesmo conjunto de funções, agora visualmente organizado em grupos claros com divisores e espaçamento consistente.
