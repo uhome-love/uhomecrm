@@ -111,6 +111,8 @@ export default function AppLayout() {
         setCargoLabel("Admin · 👑 CEO");
       } else if (isRh) {
         setCargoLabel("RH · 💚 Carol");
+      } else if (isDiretor) {
+        setCargoLabel("Diretora Comercial · 💼");
       } else if (isGestor) {
         setCargoLabel("Gerente");
       } else if (rolesUnavailable) {
