@@ -105,7 +105,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
   const teamFilter = teamOnly ? teamMemberUserIds : null;
   const ready = !teamOnly || (teamFilter && teamFilter.length > 0);
 
-  const { data: liveData, isLoading } = useQuery({
+  const { data: liveData, isLoading, isError, refetch } = useQuery({
     queryKey: ["oa-performance-live", todayStartRef.current, teamFilter?.join(",") ?? "all"],
     queryFn: async () => {
       const todayStart = todayStartRef.current;
