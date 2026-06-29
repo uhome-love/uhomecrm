@@ -200,8 +200,9 @@ export default function CorretorCall() {
   // Format estimated time
   const estLabel = w.estMinutes >= 120 ? "2h+" : w.estMinutes >= 60 ? `~${Math.floor(w.estMinutes / 60)}h${(w.estMinutes % 60) > 0 ? (w.estMinutes % 60).toString().padStart(2, "0") : ""}` : `~${w.estMinutes}min`;
 
-  // Streak: only show if genuinely > 0 from activity
-  const streakDays = progress.tentativas > 0 ? 3 : 0; // TODO: compute from DB
+  // Streak: ainda não há fonte real no DB, então não exibimos um valor fabricado.
+  // Mantido em 0 (oculta a UI de streak) até existir cálculo real por dia de atividade.
+  const streakDays = 0;
 
   // Arena particles - must be before any early returns
   const arenaParticles = useMemo(() =>
