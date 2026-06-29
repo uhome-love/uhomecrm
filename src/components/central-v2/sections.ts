@@ -37,6 +37,7 @@ export const CENTRAL_SECTIONS: CentralSection[] = [
   { id: "visitas", label: "Visitas", icon: MapPin },
   { id: "negocios", label: "Pipeline de Negócios", icon: Briefcase },
   { id: "vendas", label: "Vendas", icon: TrendingUp },
+  { id: "metas", label: "Metas vs. Realizado", icon: Target },
   { id: "ranking", label: "Ranking", icon: Trophy },
 ];
 
