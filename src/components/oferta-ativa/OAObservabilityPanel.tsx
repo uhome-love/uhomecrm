@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, AlertTriangle, Clock, TrendingUp, Users, AlertCircle, ShieldAlert } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Activity, AlertTriangle, Clock, TrendingUp, Users, AlertCircle, ShieldAlert, Loader2 } from "lucide-react";
 
 export default function OAObservabilityPanel() {
   const [period, setPeriod] = useState<"hoje" | "semana">("hoje");
@@ -15,7 +16,7 @@ export default function OAObservabilityPanel() {
     return d.toISOString();
   })();
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: events = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["oa-observability", period],
     queryFn: async () => {
       const { data, error } = await supabase
