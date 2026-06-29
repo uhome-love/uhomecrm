@@ -106,6 +106,67 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     },
   ],
 
+  // ── DIRETOR / DIRETORA COMERCIAL ───────────────────────────────────────────
+  // Visão executiva semelhante ao CEO (enxerga todas as equipes e dados),
+  // SEM as estruturas exclusivas do CEO: Roleta, Marketing, Reengajamento,
+  // Escala diária, Integrações, HOMI CEO, Base HOMI.
+  diretor: [
+    {
+      title: "Principal",
+      items: [
+        { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
+        { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2     size={15} strokeWidth={1.5} /> },
+      ],
+    },
+    {
+      title: "Leads",
+      items: [
+        { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
+        { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
+        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
+        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
+        { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
+      ],
+    },
+    {
+      title: "Vendas",
+      items: [
+        { label: "Pipeline negócios",  path: "/pipeline-negocios", icon: <BarChart3    size={15} strokeWidth={1.5} /> },
+        { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
+        { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
+        { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
+      ],
+    },
+    {
+      title: "Equipes",
+      items: [
+        { label: "Meu time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
+        { label: "Relatórios 1:1",     path: "/relatorios",        icon: <FileText     size={15} strokeWidth={1.5} /> },
+        { label: "Performance",        path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
+        { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
+        { label: "Gestão WhatsApp",    path: "/gestor/whatsapp-dashboard", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
+      ],
+    },
+    {
+      title: "Operações",
+      items: [
+        { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
+        { label: "Usuários",           path: "/central-usuarios",  icon: <UsersRound   size={15} strokeWidth={1.5} /> },
+        { label: "Disponibilidade",    path: "/disponibilidade",   icon: <Clock        size={15} strokeWidth={1.5} /> },
+      ],
+    },
+    {
+      title: "Ferramentas",
+      items: [
+        { label: "HOMI Gerente",       path: "/homi-gerente",      icon: <Bot          size={15} strokeWidth={1.5} /> },
+        { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
+        { label: "Templates",          path: "/templates-comunicacao", icon: <ClipboardList size={15} strokeWidth={1.5} /> },
+        { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
+      ],
+    },
+  ],
+
+
   // ── GESTOR ────────────────────────────────────────────────────────────────
   gestor: [
     {
