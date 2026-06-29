@@ -911,7 +911,14 @@ Deno.serve(async (req) => {
     const entradaParts: string[] = [];
     addTimelineDetail(entradaParts, "Campanha", campaignName, [entryPrimary, formName]);
     addTimelineDetail(entradaParts, "Cód. imóvel", propertyCode, [entryPrimary]);
-    addTimelineDetail(entradaParts, "Anúncio", adName, [entryPrimary, campaignName, formName]);
+    // Prioriza a mensagem do formulário (identifica o criativo) sobre o ad_name técnico
+    const GENERIC_FORM_MESSAGES = [
+      "lead gerado do formulário", "lead gerado do formulario",
+      "lead gerado do anúncio", "lead gerado do anuncio", "lead gerado",
+    ];
+    const isGenericMessage = (m: string) => GENERIC_FORM_MESSAGES.includes(normalizeTimelineText(m));
+    const anuncioValue = (message && !isGenericMessage(message)) ? message : adName;
+    addTimelineDetail(entradaParts, "Anúncio", anuncioValue, [entryPrimary, campaignName, formName]);
 
     await supabase.from("pipeline_atividades").insert({
       pipeline_lead_id: insertedLead.id,
