@@ -1,94 +1,40 @@
-## Objetivo
-Corrigir o texto de entrada do lead no histórico para ficar limpo, sem duplicação e com origem amigável para o corretor.
+# Incluir a "message" do Meta Ads no histórico do lead (rótulo "Anúncio")
 
-## Padrão final
-O título deve concentrar a informação principal:
+## Problema
+No formulário do Meta Ads você usa o campo **message** para identificar o criativo/anúncio que originou o lead (ex.: `video gabriel tour 2D no casa tua`). Hoje a função `receive-meta-lead` captura esse `message`, mas **não** o coloca na atividade de "entrada" do histórico, então a identificação do criativo se perde.
 
-```text
-Lead gerado via Meta Ads — Átrio
+## Solução
+Mostrar a mensagem do formulário como um detalhe **"Anúncio: …"** na atividade de entrada do lead, sempre que ela existir e não for um texto genérico de placeholder.
+
+### Comportamento final
+- `message` específico → aparece no subtítulo como `Anúncio: video gabriel tour 2D no casa tua`
+- `message` genérico/vazio (`Lead Gerado do Formulário`, etc.) → não aparece
+- A dedup existente evita repetir se já constar campanha/empreendimento.
+
+## Detalhes técnicos
+Arquivo único alterado: `supabase/functions/receive-meta-lead/index.ts` (atividade de entrada, ~linhas 908-923).
+
+1. Lista de placeholders genéricos a ignorar:
+```ts
+const GENERIC_FORM_MESSAGES = [
+  "lead gerado do formulário", "lead gerado do formulario",
+  "lead gerado do anúncio", "lead gerado do anuncio", "lead gerado",
+];
+const isGenericMessage = (m: string) =>
+  GENERIC_FORM_MESSAGES.includes(normalizeTimelineText(m));
 ```
 
-O subtítulo só deve aparecer se houver uma informação adicional que não esteja no título. Portanto, neste caso não deve mostrar:
+2. Usar a mensagem como valor do "Anúncio" (com prioridade sobre o `adName` técnico quando a mensagem for específica):
+```ts
+addTimelineDetail(entradaParts, "Campanha", campaignName, [entryPrimary, formName]);
+addTimelineDetail(entradaParts, "Cód. imóvel", propertyCode, [entryPrimary]);
 
-```text
-Meta Ads · Átrio
+const anuncioValue = (message && !isGenericMessage(message)) ? message : adName;
+addTimelineDetail(entradaParts, "Anúncio", anuncioValue, [entryPrimary, campaignName, formName]);
 ```
 
-porque isso duplica exatamente o título.
-
-## Regras de exibição
-
-### Meta Ads
-- Qualquer origem técnica como `meta_backfill`, `meta_native`, `facebook`, `instagram` ou similar deve aparecer como `Meta Ads`.
-- Título:
-
-```text
-Lead gerado via Meta Ads — Nome da campanha/empreendimento
-```
-
-- Subtítulo:
-  - Não repetir `Meta Ads`.
-  - Não repetir o empreendimento/campanha já usado no título.
-  - Só mostrar algo se for realmente extra e útil, por exemplo um código de campanha diferente ou um detalhe que não aparece no título.
-  - Se não houver extra real, deixar sem subtítulo.
-
-### Imóvel Web
-- Título:
-
-```text
-Lead gerado via Imóvel Web — Imóvel 12345
-```
-
-ou, se não houver código:
-
-```text
-Lead gerado via Imóvel Web — Nome do empreendimento
-```
-
-- Subtítulo só com informação extra não repetida, como mensagem do lead ou outro dado útil.
-
-### TikTok, RD Station e Landing Page
-- Usar o mesmo padrão:
-
-```text
-Lead gerado via TikTok Ads — Campanha/empreendimento
-Lead gerado via RD Station — Campanha/empreendimento
-Lead gerado via Landing Page — Empreendimento
-```
-
-- Subtítulo apenas se houver informação adicional não repetida.
-
-## Arquivos a ajustar
-
-### `supabase/functions/receive-meta-lead/index.ts`
-- Normalizar origem técnica para label amigável.
-- Montar título com origem + campanha/empreendimento.
-- Trocar a montagem atual de `descricao` para uma versão deduplicada.
-- Remover do subtítulo informações já presentes no título.
-
-### `supabase/functions/receive-imovelweb-lead/index.ts`
-- Aplicar o mesmo padrão anti-duplicação para Imóvel Web.
-
-### `supabase/functions/receive-tiktok-lead/index.ts`
-- Aplicar o mesmo padrão anti-duplicação para TikTok Ads.
-
-### `supabase/functions/receive-rdstation-lead/index.ts`
-- Aplicar o mesmo padrão anti-duplicação para RD Station.
-
-### `supabase/functions/receive-landing-lead/index.ts`
-- Aplicar o mesmo padrão anti-duplicação para Landing Page.
+3. Deploy da edge function `receive-meta-lead`.
 
 ## Fora de escopo
-- Não alterar banco, RLS, tabelas, Storage ou frontend.
-- Não mexer no layout do histórico.
-- A correção vale para novos cadastros daqui para frente. Registros antigos só seriam ajustados se você pedir depois.
-
-## Validação
-- Confirmar que `meta_backfill` nunca aparece no histórico.
-- Confirmar que o exemplo final fica sem subtítulo duplicado:
-
-```text
-Lead gerado via Meta Ads — Átrio
-```
-
-- Confirmar que outras origens seguem o mesmo padrão limpo.
+- Não altera tabelas, RLS, roleta, segmentos nem outras edge functions.
+- Não muda a captura do `message` (já funciona) — só a exibição no histórico.
