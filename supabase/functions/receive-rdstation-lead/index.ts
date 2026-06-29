@@ -34,6 +34,29 @@ function extractStr(val: any): string {
   return "";
 }
 
+function normalizeTimelineText(value: string | null | undefined): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isSameTimelineText(a: string | null | undefined, b: string | null | undefined): boolean {
+  const na = normalizeTimelineText(a);
+  const nb = normalizeTimelineText(b);
+  return !!na && !!nb && (na === nb || na.includes(nb) || nb.includes(na));
+}
+
+function addTimelineDetail(parts: string[], label: string, value: string | null | undefined, blocked: Array<string | null | undefined> = []) {
+  const clean = (value || "").trim();
+  if (!clean) return;
+  if (blocked.some((b) => isSameTimelineText(clean, b))) return;
+  if (parts.some((p) => isSameTimelineText(p.replace(/^.*?:\s*/, ""), clean))) return;
+  parts.push(`${label}: ${clean}`);
+}
+
 function normalizeLower(value: string | null | undefined): string {
   return (value || "").toLowerCase().trim();
 }
@@ -422,11 +445,16 @@ async function processLead(
   logOps("info", "business", "Lead created via RD Station", { lead_id: insertedLead.id, name, empreendimento });
 
   // ── Register entry activity ──
+  const entryPrimary = campaignName || empreendimento || "";
+  const entryDescriptionParts: string[] = [];
+  addTimelineDetail(entryDescriptionParts, "Empreendimento", empreendimento, [entryPrimary]);
+  if (tags.length) addTimelineDetail(entryDescriptionParts, "Tags", tags.join(", "), [entryPrimary]);
+
   await supabase.from("pipeline_atividades").insert({
     pipeline_lead_id: insertedLead.id,
     tipo: "entrada",
-    titulo: `Lead gerado via RD Station${campaignName ? ` — ${campaignName}` : ""}`,
-    descricao: `RD Station • ${empreendimento}${tags.length ? ` • Tags: ${tags.join(", ")}` : ""}`,
+    titulo: `Lead gerado via RD Station${entryPrimary ? ` — ${entryPrimary}` : ""}`,
+    descricao: entryDescriptionParts.length ? entryDescriptionParts.join(" • ") : null,
     status: "concluida",
     created_by: "00000000-0000-0000-0000-000000000000",
   }).then(r => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });
