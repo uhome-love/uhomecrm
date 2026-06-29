@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Loader2, Target, RefreshCw, UserPlus, Clock } from "lucide-react";
 import { RoletaStatusBar } from "./RoletaStatusBar";
 import { RoletaOperacaoTab } from "./RoletaOperacaoTab";
+import { RoletaIncluirModal } from "./RoletaIncluirModal";
 import LeadsGeradosTab from "@/components/roleta/LeadsGeradosTab";
 import RoletagensTab from "@/components/roleta/RoletagensTab";
 import WhatsAppEntradasTab from "@/components/roleta/WhatsAppEntradasTab";
