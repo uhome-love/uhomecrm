@@ -63,14 +63,13 @@ export function PipelineSortDropdown({ value, onChange }: Props) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          title="Ordenar leads"
-          className="shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa] hover:border-primary hover:text-primary transition-colors cursor-pointer whitespace-nowrap"
+          title={`Ordenar: ${current.label}`}
+          className="shrink-0 flex items-center gap-1.5 h-9 px-2.5 rounded-lg text-xs font-medium border border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa] hover:border-primary hover:text-primary transition-colors cursor-pointer whitespace-nowrap"
         >
-          <ArrowUpDown className="h-4 w-4" />
-          <span>
-            Ordenar: <strong className="font-semibold text-[#0a0a0a] dark:text-white">{current.label}</strong>
-          </span>
+          <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
+          <span className="font-semibold text-[#0a0a0a] dark:text-white">{current.label}</span>
         </button>
+
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="px-2 pt-2 pb-1 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">

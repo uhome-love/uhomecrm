@@ -43,10 +43,11 @@ export default function PipelineGestorSelect({
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={triggerCls} aria-label="Filtrar por gestor">
-        <SelectValue placeholder="Filtrar por gestor" />
+        <SelectValue placeholder="Gestores" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="todos">Todos gestores</SelectItem>
+        <SelectItem value="todos">Gestores (todos)</SelectItem>
+
         {lista.map((g) => (
           <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
         ))}
