@@ -25,7 +25,7 @@ const TRIGGER_BY_VARIANT: Record<CorretorSelectVariant, string> = {
   tablet:
     "h-7 text-[10px] w-[110px] shrink-0 rounded-[7px] font-semibold",
   desktop:
-    "h-[32px] text-[12px] max-w-[170px] min-w-[120px] shrink rounded-lg font-medium truncate",
+    "h-[32px] text-[12px] max-w-[200px] min-w-[150px] shrink rounded-lg font-medium",
 };
 
 const ACTIVE_BY_VARIANT: Record<CorretorSelectVariant, string> = {
