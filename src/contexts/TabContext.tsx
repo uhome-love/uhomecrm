@@ -208,6 +208,11 @@ export function TabProvider({ children }: { children: ReactNode }) {
   const syncingRef = useRef(false);
   useEffect(() => {
     if (syncingRef.current || roleLoading) return;
+    // Wait until roles are actually loaded before applying role gates.
+    // On deep-link/refresh there is a window where roleLoading is false but
+    // roles is still empty; without this guard hasAccess() returns false and
+    // the user is wrongly redirected to "/" (→ role home, e.g. /ceo).
+    if (rolesRef.current.length === 0) return;
     syncingRef.current = true;
 
     const fullPath = location.pathname + location.search;
