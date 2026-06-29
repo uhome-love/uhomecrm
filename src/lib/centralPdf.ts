@@ -17,6 +17,10 @@ export interface ExportMeta {
   equipeLabel: string;
   /** Se omitido, usa "agora" formatado em BRT. */
   geradoEm?: string;
+  /** id do elemento DOM a capturar. Default: central-relatorio-geral. */
+  targetId?: string;
+  /** Subtítulo exibido na capa. Default: "Visão geral consolidada". */
+  subtitulo?: string;
 }
 
 const A4_W_MM = 210;
@@ -24,9 +28,13 @@ const A4_H_MM = 297;
 const MARGIN_MM = 12;
 
 export async function exportGeral(meta: ExportMeta): Promise<void> {
-  const target = document.getElementById("central-relatorio-geral");
+  const targetId = meta.targetId ?? "central-relatorio-geral";
+  const target =
+    document.getElementById(targetId) ??
+    document.getElementById("central-relatorio-secao") ??
+    document.getElementById("central-relatorio-geral");
   if (!target) {
-    throw new Error("Elemento #central-relatorio-geral não encontrado.");
+    throw new Error(`Elemento #${targetId} não encontrado.`);
   }
 
   const geradoEm = meta.geradoEm ?? formatBRT(new Date(), "dd/MM/yyyy HH:mm");
