@@ -93,6 +93,7 @@ export function GeralView({ state }: Props) {
         assinadosLoading={rel.vendas.isLoading && !rel.vendas.data}
       />
       <SectionVendas query={rel.vendas} />
+      <SectionMetas query={rel.metas} />
       <RankingTeaser />
     </div>
   );
