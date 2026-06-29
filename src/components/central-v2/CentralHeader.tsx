@@ -66,7 +66,7 @@ export function CentralHeader({ state, onChange }: Props) {
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-border bg-background supports-[backdrop-filter]:bg-background/90 supports-[backdrop-filter]:backdrop-blur">
       <div className="flex flex-col gap-3 px-4 py-3.5 sm:px-6">
         {/* Linha 1 — identidade + ações */}
         <div className="flex items-center justify-between gap-3">
