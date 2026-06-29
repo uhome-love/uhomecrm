@@ -30,6 +30,7 @@ export interface CentralSection {
 export const CENTRAL_SECTIONS: CentralSection[] = [
   { id: "geral", label: "Geral", icon: Sparkles, highlight: true },
   { id: "pipeline-leads", label: "Pipeline de Leads", icon: Users },
+  { id: "origem-segmento", label: "Origem & Segmento", icon: Layers3 },
   { id: "oferta-ativa", label: "Oferta Ativa", icon: Megaphone },
   { id: "visitas", label: "Visitas", icon: MapPin },
   { id: "negocios", label: "Pipeline de Negócios", icon: Briefcase },
