@@ -197,13 +197,7 @@ export function CentralRoletaCeo() {
 
       {/* Conteúdo */}
       <div>
-        {activeSub === "board" && (
-          <RoletaOperacaoTab
-            roleta={roleta}
-            showIncluirModal={showIncluirModal}
-            setShowIncluirModal={setShowIncluirModal}
-          />
-        )}
+        {activeSub === "board" && <RoletaOperacaoTab roleta={roleta} />}
         {activeSub === "pendentes" && <PendingLeadsPanel />}
         {activeSub === "bloqueados" && <CorretoresBloqueadosPanel />}
         {activeSub === "gerados" && <LeadsGeradosTab />}
@@ -216,15 +210,12 @@ export function CentralRoletaCeo() {
         {activeSub === "performance" && <DistributionDashboard />}
       </div>
 
-      {/* Modal de incluir vive no board, mas precisa abrir de qualquer aba */}
-      {activeSub !== "board" && showIncluirModal && (
-        <RoletaOperacaoTab
-          roleta={roleta}
-          showIncluirModal={showIncluirModal}
-          setShowIncluirModal={setShowIncluirModal}
-          hidden
-        />
-      )}
+      {/* Modal de incluir — acessível de qualquer aba */}
+      <RoletaIncluirModal
+        roleta={roleta}
+        open={showIncluirModal}
+        onOpenChange={setShowIncluirModal}
+      />
     </div>
   );
 }
