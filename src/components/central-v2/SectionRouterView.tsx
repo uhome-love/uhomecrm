@@ -56,6 +56,7 @@ function IndividualSection({ secao, state }: { secao: CentralSectionId; state: C
         />
       )}
       {secao === "vendas" && <SectionVendas query={rel.vendas} />}
+      {secao === "metas" && <SectionMetas query={rel.metas} />}
       {secao === "ranking" && <SectionRanking query={rel.ranking} />}
     </div>
   );
