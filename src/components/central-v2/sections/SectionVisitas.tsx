@@ -3,7 +3,16 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import { KpiRow, type KpiItem } from "@/components/central-v2/shared/KpiRow";
 import { MiniTable, type MiniColumn } from "@/components/central-v2/shared/MiniTable";
 import { SectionError } from "@/components/central-v2/shared/SectionError";
+import { SimpleBarChart, type ChartPoint } from "@/components/central-v2/shared/MiniChart";
 import { safeGet } from "@/components/central-v2/shared/safeGet";
+
+const DOW_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+function buildDowSeries(data: Record<string, unknown> | undefined): ChartPoint[] {
+  const porDia = safeGet<Record<string, number>>(data ?? {}, "extras.por_dia_semana", "Visitas por_dia_semana");
+  if (!porDia || typeof porDia !== "object") return [];
+  return DOW_LABELS.map((label, i) => ({ label, value: Number(porDia[String(i)] ?? 0) }));
+}
 
 interface Props {
   query: UseQueryResult<Record<string, unknown>>;
