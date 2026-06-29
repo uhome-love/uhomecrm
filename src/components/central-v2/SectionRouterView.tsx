@@ -9,6 +9,8 @@ import { SectionVisitas } from "./sections/SectionVisitas";
 import { SectionNegocios } from "./sections/SectionNegocios";
 import { SectionVendas } from "./sections/SectionVendas";
 import { SectionMetas } from "./sections/SectionMetas";
+import { SectionSLA } from "./sections/SectionSLA";
+import { SectionCohort } from "./sections/SectionCohort";
 import { SectionRanking } from "./sections/SectionRanking";
 import { safeGet } from "./shared/safeGet";
 
@@ -57,6 +59,8 @@ function IndividualSection({ secao, state }: { secao: CentralSectionId; state: C
       )}
       {secao === "vendas" && <SectionVendas query={rel.vendas} />}
       {secao === "metas" && <SectionMetas query={rel.metas} />}
+      {secao === "sla" && <SectionSLA query={rel.sla} />}
+      {secao === "cohort" && <SectionCohort query={rel.cohort} />}
       {secao === "ranking" && <SectionRanking query={rel.ranking} />}
     </div>
   );

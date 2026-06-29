@@ -8,6 +8,8 @@ import {
   Trophy,
   Layers3,
   Target,
+  Gauge,
+  LineChart,
   type LucideIcon,
 } from "lucide-react";
 
@@ -16,10 +18,12 @@ export type CentralSectionId =
   | "pipeline-leads"
   | "origem-segmento"
   | "oferta-ativa"
+  | "sla"
   | "visitas"
   | "negocios"
   | "vendas"
   | "metas"
+  | "cohort"
   | "ranking";
 
 export interface CentralSection {
@@ -34,10 +38,12 @@ export const CENTRAL_SECTIONS: CentralSection[] = [
   { id: "pipeline-leads", label: "Pipeline de Leads", icon: Users },
   { id: "origem-segmento", label: "Origem & Segmento", icon: Layers3 },
   { id: "oferta-ativa", label: "Oferta Ativa", icon: Megaphone },
+  { id: "sla", label: "Tempo de Resposta", icon: Gauge },
   { id: "visitas", label: "Visitas", icon: MapPin },
   { id: "negocios", label: "Pipeline de Negócios", icon: Briefcase },
   { id: "vendas", label: "Vendas", icon: TrendingUp },
   { id: "metas", label: "Metas vs. Realizado", icon: Target },
+  { id: "cohort", label: "Coorte & Retenção", icon: LineChart },
   { id: "ranking", label: "Ranking", icon: Trophy },
 ];
 

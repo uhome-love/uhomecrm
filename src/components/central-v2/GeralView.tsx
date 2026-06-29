@@ -8,6 +8,8 @@ import { SectionVisitas } from "./sections/SectionVisitas";
 import { SectionNegocios } from "./sections/SectionNegocios";
 import { SectionVendas } from "./sections/SectionVendas";
 import { SectionMetas } from "./sections/SectionMetas";
+import { SectionSLA } from "./sections/SectionSLA";
+import { SectionCohort } from "./sections/SectionCohort";
 import { RankingTeaser } from "./sections/RankingTeaser";
 import { FunnelChart, type FunnelStage } from "./shared/FunnelChart";
 import { TrendAreaChart, type ChartPoint } from "./shared/MiniChart";
@@ -87,6 +89,7 @@ export function GeralView({ state }: Props) {
       <SectionOrigemSegmento query={rel.pipelineLeads} />
 
       <SectionOA query={rel.ofertaAtiva} />
+      <SectionSLA query={rel.sla} />
       <SectionVisitas query={rel.visitas} />
       <SectionNegocios
         query={rel.negocios}
@@ -95,6 +98,7 @@ export function GeralView({ state }: Props) {
       />
       <SectionVendas query={rel.vendas} />
       <SectionMetas query={rel.metas} />
+      <SectionCohort query={rel.cohort} />
       <RankingTeaser />
     </div>
   );
