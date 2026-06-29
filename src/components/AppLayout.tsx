@@ -66,7 +66,7 @@ function useArenaMode() {
 
 /** Arena auto-collapse removed — sidebar stays open during arena sessions */
 
-type SidebarRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
+type SidebarRole = "admin" | "diretor" | "gestor" | "corretor" | "backoffice" | "rh";
 
 export default function AppLayout() {
   const { user, signOut } = useAuth();
