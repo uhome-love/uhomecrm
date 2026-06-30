@@ -6553,6 +6553,7 @@ export type Database = {
           escalation_level: number | null
           estagnado: boolean
           estagnado_aviso_em: string | null
+          estagnado_aviso2_em: string | null
           estagnado_em: string | null
           estagnado_prazo_em: string | null
           flag_status: Json | null
@@ -6646,6 +6647,7 @@ export type Database = {
           escalation_level?: number | null
           estagnado?: boolean
           estagnado_aviso_em?: string | null
+          estagnado_aviso2_em?: string | null
           estagnado_em?: string | null
           estagnado_prazo_em?: string | null
           flag_status?: Json | null
@@ -6739,6 +6741,7 @@ export type Database = {
           escalation_level?: number | null
           estagnado?: boolean
           estagnado_aviso_em?: string | null
+          estagnado_aviso2_em?: string | null
           estagnado_em?: string | null
           estagnado_prazo_em?: string | null
           flag_status?: Json | null
