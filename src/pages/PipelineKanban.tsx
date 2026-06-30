@@ -158,6 +158,8 @@ export default function PipelineKanban() {
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
   const [clientStatusFilter, setClientStatusFilter] = useState<ClientStatusFilter>("todos");
   const [negociosFilter, setNegociosFilter] = useState(false);
+  // Filtro "em risco de estagnação" — ativado via ?risco=estagnacao (vindo do dashboard).
+  const [riscoFilter, setRiscoFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -240,8 +242,26 @@ export default function PipelineKanban() {
     }
   }, [searchParams]);
 
+  // URL sync para ?risco=estagnacao (vindo do aviso no dashboard do corretor)
+  useEffect(() => {
+    const r = searchParams.get("risco") === "estagnacao";
+    setRiscoFilter(r);
+  }, [searchParams]);
 
-  // Load tasks for status classification
+  // IDs dos leads em risco de estagnar (própria carteira) para o filtro rápido.
+  const { data: riscoLeadIds } = useQuery({
+    queryKey: ["pipeline-pre-estagnacao-ids"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_corretor_pre_estagnacao");
+      const ids = new Set<string>();
+      (data || []).forEach((row: any) => { if (row.lead_id) ids.add(row.lead_id); });
+      return ids;
+    },
+    enabled: riscoFilter,
+    staleTime: 60_000,
+  });
+
+
   const leadIds = useMemo(() => pipeline.leads.map(l => l.id), [pipeline.leads]);
   const leadIdsKey = useMemo(() => leadIds.slice().sort().join(","), [leadIds]);
   const { data: kanbanTarefasMap = {}, isLoading: tarefasLoading } = useQuery({
@@ -350,8 +370,11 @@ export default function PipelineKanban() {
     if (clientStatusFilter !== "todos") {
       result = result.filter(l => getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id)) === clientStatusFilter);
     }
+    if (riscoFilter && riscoLeadIds) {
+      result = result.filter(l => riscoLeadIds.has(l.id));
+    }
     return result;
-  }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages]);
+  }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages, riscoFilter, riscoLeadIds]);
 
 
   // Bug-fix Bug 4: corretorNomes é "poliglota" (indexa cada pessoa sob user_id
@@ -473,18 +496,27 @@ export default function PipelineKanban() {
 
   const [intelView, setIntelView] = useState<"funil" | "radar">("funil");
 
+  const clearRisco = () => {
+    setRiscoFilter(false);
+    if (searchParams.get("risco")) {
+      searchParams.delete("risco");
+      setSearchParams(searchParams, { replace: true });
+    }
+  };
+
   const clearAllFilters = () => {
     setFilters({ ...EMPTY_FILTERS });
     setCampaignTagFilter("all");
     setClientStatusFilter("todos");
     setNegociosFilter(false);
+    clearRisco();
     if (searchParams.get("filtro")) {
       searchParams.delete("filtro");
       setSearchParams(searchParams, { replace: true });
     }
   };
 
-  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter;
+  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter || riscoFilter;
 
 
   if (pipeline.loading || !rolesReady || activeTab === null) {
@@ -661,6 +693,11 @@ export default function PipelineKanban() {
           {clientStatusFilter !== "todos" && (
             <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setClientStatusFilter("todos")}>
               {clientStatusFilter === "em_dia" ? "✅ Em dia" : clientStatusFilter === "desatualizado" ? "🟡 Desatualizado" : "🔴 Atrasado"} ×
+            </Badge>
+          )}
+          {riscoFilter && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={clearRisco}>
+              ⏳ Em risco de estagnação ×
             </Badge>
           )}
           <button

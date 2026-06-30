@@ -31,6 +31,7 @@ import {
   Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil, MessageCircle
 } from "lucide-react";
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
+import CadenciaSemContatoCard from "./CadenciaSemContatoCard";
 import DrawerLeadHeader from "./drawer/DrawerLeadHeader";
 import DrawerTimeline from "./drawer/DrawerTimeline";
 import DrawerActionGrid from "./drawer/DrawerActionGrid";
@@ -426,6 +427,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const bodyNode = (
     <>
+      {/* Aviso de cadência Sem Contato (apenas nessa etapa) */}
+      <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} />
+
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
       {empreendimentoOpen && (
         <div className="flex items-center gap-2">

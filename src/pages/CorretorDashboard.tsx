@@ -19,6 +19,7 @@ import OnboardingWidget from "@/components/corretor/OnboardingWidget";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 
 import CarteiraKpis from "@/components/corretor/CarteiraKpis";
+import PreEstagnacaoCard from "@/components/corretor/PreEstagnacaoCard";
 import ConquistasKpis from "@/components/corretor/ConquistasKpis";
 import CaminhosCards from "@/components/corretor/CaminhosCards";
 import TarefasHojeLateral from "@/components/corretor/TarefasHojeLateral";
@@ -103,6 +104,7 @@ export default function CorretorDashboard() {
       <div className="flex flex-col lg:flex-row gap-3.5">
         {/* Coluna principal */}
         <div className="flex-1 min-w-0 space-y-5">
+          <PreEstagnacaoCard />
           <CarteiraKpis />
           <ConquistasKpis />
           <CaminhosCards />
