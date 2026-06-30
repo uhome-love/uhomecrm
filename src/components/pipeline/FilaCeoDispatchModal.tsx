@@ -180,25 +180,12 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       const leadsList = (leadsRes.data || []) as any[];
       setAllLeads(leadsList);
 
-      // Carrega nomes dos corretores anteriores (somente redistribuídos)
-      const anteriorIds = Array.from(new Set(leadsList.filter((l) => l.is_redistribuicao && l.corretor_anterior_id).map((l) => l.corretor_anterior_id)));
-      if (anteriorIds.length > 0) {
-        const { data: profs } = await supabase
-          .from("profiles")
-          .select("user_id, nome")
-          .in("user_id", anteriorIds);
-        const map: Record<string, string> = {};
-        (profs || []).forEach((p: any) => { map[p.user_id] = p.nome || ""; });
-        setCorretoresMap(map);
-      }
-
       // Auto-seleciona aba com leads
       const reengCount = leadsList.filter((l) => !!l.reativado_por_nutricao).length;
-      const redistCount = leadsList.filter((l) => !!l.is_redistribuicao && !l.reativado_por_nutricao).length;
       const novosCount = leadsList.filter((l) => !l.is_redistribuicao && !l.reativado_por_nutricao).length;
-      setActiveTab(novosCount > 0 ? "novos" : reengCount > 0 ? "reengajamento" : redistCount > 0 ? "redistribuicao" : "novos");
+      setActiveTab(novosCount > 0 ? "novos" : reengCount > 0 ? "reengajamento" : "novos");
 
-      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${redistCount} redistribuição, ${reengCount} reengajamento)`);
+      console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${reengCount} reengajamento)`);
       setLoading(false);
     })();
     return () => { cancelled = true; };
