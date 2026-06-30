@@ -15,6 +15,9 @@ import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { fmtMoney } from "@/lib/fmtMoney";
+import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
+import type { CompletionPayload } from "@/components/pipeline/task-completion/types";
+import { runTaskCompletion } from "@/lib/taskCompletion";
 
 interface LeadInfo {
   id: string;
