@@ -237,21 +237,24 @@ export default function LeadsEstagnados() {
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <PageHeader
         title="Leads Estagnados"
-        subtitle="Leads sem nenhuma ação humana além do limite da etapa. Clique no lead para ver o histórico e decida: repassar, roleta ou descartar."
+        subtitle="Gestão dos leads parados no pipeline, organizados por etapa de risco."
         icon={<AlarmClock className="h-5 w-5" />}
         tabs={TABS.map((t) => ({ label: t.label, value: t.value, badge: counts[t.value] }))}
         activeTab={tab}
         onTabChange={handleTabChange}
       />
 
-      {tab === "em_parceria" && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3 text-[13px] text-muted-foreground">
-          <Users className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span>
-            Leads em parceria ativa não são estagnados automaticamente. Decida manualmente para não desfazer a parceria sem alinhar com o parceiro.
-          </span>
-        </div>
-      )}
+      {(() => {
+        const info = TAB_INFO[tab];
+        if (!info) return null;
+        const Icon = info.icon;
+        return (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3 text-[13px] text-muted-foreground">
+            <Icon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <span>{info.texto}</span>
+          </div>
+        );
+      })()}
 
       {/* Filtros */}
       {!isLoading && baseRows.length > 0 && (
