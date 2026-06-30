@@ -1135,6 +1135,50 @@ export default function MeusNegocios() {
           })}
         </div>
       </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 scrollbar-thin">
+          {perdidosNegocios.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center gap-2">
+              <div className="h-12 w-12 rounded-full flex items-center justify-center bg-[#e8e8f0] dark:bg-white/[0.06]">
+                <XCircle className="h-6 w-6 text-[#a1a1aa] dark:text-[#52525b]" />
+              </div>
+              <span className="text-sm font-semibold text-[#0a0a0a] dark:text-white">Nenhum negócio caído</span>
+              <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">Negócios que caírem aparecerão aqui, fora do pipeline ativo.</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pb-4 max-w-[1400px] mx-auto">
+              {perdidosNegocios.map(negocio => (
+                <div
+                  key={negocio.id}
+                  onClick={() => setSelectedNegocio(negocio)}
+                  className="cursor-pointer rounded-xl border border-[#e8e8f0] dark:border-white/[0.06] bg-white dark:bg-[rgba(255,255,255,0.02)] px-3.5 py-3 opacity-90 hover:opacity-100 transition-all grayscale-[0.3] hover:grayscale-0"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-bold text-[#0a0a0a] dark:text-white truncate">{negocio.nome_cliente}</span>
+                    <Badge variant="secondary" className="text-[10px] gap-1 shrink-0 bg-[#f0f0f5] dark:bg-white/[0.06] text-[#71717a] dark:text-[#a1a1aa]">
+                      <XCircle className="h-3 w-3" /> Caído
+                    </Badge>
+                  </div>
+                  {negocio.empreendimento && (
+                    <div className="text-[12px] text-[#71717a] dark:text-[#a1a1aa] mt-1 truncate">{negocio.empreendimento}</div>
+                  )}
+                  <div className="flex items-center justify-between mt-2">
+                    {negocio.vgv_estimado ? (
+                      <span className="text-[12px] font-semibold text-[#a1a1aa] dark:text-[#52525b]">{formatVGV(negocio.vgv_estimado)}</span>
+                    ) : <span />}
+                    {(isAdmin || isGestor) && negocio.corretor_id && (
+                      <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] truncate max-w-[120px]">{corretorNomes[negocio.corretor_id]}</span>
+                    )}
+                  </div>
+                  {negocio.motivo_queda && (
+                    <div className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] mt-2 line-clamp-2 italic">"{negocio.motivo_queda}"</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <AddNegocioDialog
         open={addNegocioOpen}
