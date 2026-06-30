@@ -24,6 +24,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useNavigate, useSearchParams } from "react-router-dom";
 import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/lib/taskQueryUtils";
+import { maxTaskDateBRT, isTaskDateTooFar, TASK_DATE_TOO_FAR_MSG } from "@/lib/taskScheduling";
 import { lazy, Suspense } from "react";
 
 const CorretorScriptsView = lazy(() => import("@/components/scripts/CorretorScriptsView"));
@@ -777,6 +778,7 @@ export default function MinhasTarefas() {
 
   const handleAdiarCustom = async () => {
     if (!adiarId || !adiarData) return;
+    if (isTaskDateTooFar(adiarData)) { toast.error(TASK_DATE_TOO_FAR_MSG); return; }
     const { error } = await supabase.from("pipeline_tarefas").update({ vence_em: adiarData, hora_vencimento: adiarHora || null } as any).eq("id", adiarId);
     if (error) { toast.error("Não foi possível reagendar: " + error.message); return; }
     toast.success("Tarefa reagendada ✅");
@@ -786,6 +788,7 @@ export default function MinhasTarefas() {
 
   const handleCriarTarefa = async () => {
     if (!user || !selectedLeadId || !novoData) return;
+    if (isTaskDateTooFar(novoData)) { toast.error(TASK_DATE_TOO_FAR_MSG); return; }
     const { error } = await supabase.from("pipeline_tarefas").insert({
       pipeline_lead_id: selectedLeadId,
       titulo: `${TIPO_LABELS[novoTipo] || novoTipo}: ${selectedLeadNome}`,
@@ -852,6 +855,7 @@ export default function MinhasTarefas() {
 
   const handleEditTarefa = async () => {
     if (!editId) return;
+    if (isTaskDateTooFar(editData)) { toast.error(TASK_DATE_TOO_FAR_MSG); return; }
     const { error } = await supabase.from("pipeline_tarefas").update({
       tipo: editTipo,
       vence_em: editData || null,
@@ -1115,7 +1119,7 @@ export default function MinhasTarefas() {
               <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 24); setAdiarId(null); }}>Amanhã</Button>
             </div>
             <p className="text-xs text-muted-foreground text-center">ou escolha data/hora:</p>
-            <Input type="date" value={adiarData} onChange={e => setAdiarData(e.target.value)} />
+            <Input type="date" value={adiarData} max={maxTaskDateBRT()} onChange={e => setAdiarData(e.target.value)} />
             <Input type="time" value={adiarHora} onChange={e => setAdiarHora(e.target.value)} />
             <Button className="w-full" onClick={handleAdiarCustom} disabled={!adiarData}>Reagendar ✅</Button>
           </div>
@@ -1141,7 +1145,7 @@ export default function MinhasTarefas() {
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">Data</label>
-                <Input type="date" value={editData} onChange={e => setEditData(e.target.value)} />
+                <Input type="date" value={editData} max={maxTaskDateBRT()} onChange={e => setEditData(e.target.value)} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">Hora</label>
@@ -1210,7 +1214,7 @@ export default function MinhasTarefas() {
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">Data</label>
-                <Input type="date" value={novoData} onChange={e => setNovoData(e.target.value)} />
+                <Input type="date" value={novoData} max={maxTaskDateBRT()} onChange={e => setNovoData(e.target.value)} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">Hora</label>

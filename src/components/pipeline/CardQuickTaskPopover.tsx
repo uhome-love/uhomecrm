@@ -11,6 +11,7 @@ import { todayBRT, dateToBRT } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { TIPO_LABELS } from "@/lib/taskQueryUtils";
+import { isTaskDateTooFar, TASK_DATE_TOO_FAR_MSG, MAX_TASK_DAYS_AHEAD } from "@/lib/taskScheduling";
 
 const CARD_QUICK_TASK_TYPES = [
   { value: "ligar", label: "Ligar", emoji: "📞" },
@@ -69,6 +70,11 @@ export default function CardQuickTaskPopover({
         venceEm = dateToBRT(customDate);
       } else {
         toast.error("Selecione uma data");
+        setSaving(false);
+        return;
+      }
+      if (isTaskDateTooFar(venceEm)) {
+        toast.error(TASK_DATE_TOO_FAR_MSG);
         setSaving(false);
         return;
       }
@@ -203,7 +209,7 @@ export default function CardQuickTaskPopover({
               mode="single"
               selected={customDate}
               onSelect={(d) => setCustomDate(d as Date | undefined)}
-              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || date > new Date(new Date().setHours(0, 0, 0, 0) + MAX_TASK_DAYS_AHEAD * 86400000)}
               className={cn("p-1 pointer-events-auto text-[10px] [&_.rdp-day]:h-7 [&_.rdp-day]:w-7 [&_.rdp-head_cell]:text-[9px]")}
             />
           </div>

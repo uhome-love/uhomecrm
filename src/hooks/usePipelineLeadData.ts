@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
+import { isTaskDateTooFar, TASK_DATE_TOO_FAR_MSG } from "@/lib/taskScheduling";
 
 export interface PipelineAtividade {
   id: string;
@@ -156,6 +157,10 @@ export function usePipelineLeadData(leadId: string | null) {
     if (!user || !leadId) {
       console.error("[addTarefa] bloqueado: sem usuário/lead", { hasUser: !!user, leadId });
       toast.error("Sessão expirou ou lead não carregado. Recarregue a página.");
+      return false;
+    }
+    if (isTaskDateTooFar(data.vence_em)) {
+      toast.error(TASK_DATE_TOO_FAR_MSG);
       return false;
     }
     const { error } = await supabase.from("pipeline_tarefas").insert({
