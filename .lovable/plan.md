@@ -1,62 +1,57 @@
-## Objetivo
+# Validação das etapas de estagnação
 
-Deixar a etapa **Sem Contato** correta, completa e bonita: tarefas concluídas visíveis, histórico legível por tentativa, **observação obrigatória ao concluir em TODOS os pontos**, contagem de tentativas correta (sem pular passos) e status sempre automático.
+## O que encontrei (auditoria)
 
----
+Conferi o motor de estagnação de ponta a ponta para as 3 etapas que você citou. A boa notícia: a **lógica já está correta** — falta só ajustar **um** prazo e corrigir **1 lead**.
 
-## Diagnóstico (causa raiz)
+### Prazos atuais (tabela `pipeline_estagnacao_config`)
+| Etapa | Hoje | Você quer | Ação |
+|---|---|---|---|
+| Contato Iniciado | **7 dias** | 15 dias | **Alterar para 15** |
+| Busca | 15 dias | 15 dias | Já correto ✅ |
+| Aquecimento | 30 dias | 30 dias | Já correto ✅ |
 
-1. **Tarefas concluídas somem** — a aba Tarefas do modal usa `DrawerTasksTab`, que só renderiza pendentes (agrupadas por prazo). Concluídas nunca aparecem.
-2. **Camila "pulou" para T3 com 1 tarefa concluída** — **contagem dupla**: a cadência avança em DOIS gatilhos — ao **criar** a tarefa (`trg_cadencia_sc_avancar_tarefa`) E ao **concluir** (insere atividade → `trg_cadencia_sc_avancar_acao`). Criar + concluir = +2.
-3. **"Status da Etapa / Tentativas: 0/7"** — `LeadFlagControls` já retorna `null` para `sem_contato`; o print é build em cache. Só valido.
-4. **Observação opcional na conclusão** — hoje o campo é opcional no `TaskCompletionDialog`, e há **2 pontos que concluem sem nem abrir o diálogo**.
+### Como a regra "sem tarefa" e "tarefa atrasada" já funciona
+O motor calcula um único "relógio de inatividade" (`_pipeline_referencia_estagnacao`) que pega **o mais recente** entre:
+- a **última ação humana** (entrada na etapa, ligação, WhatsApp enviado, visita, tarefa concluída, anotação); e
+- o **vencimento de uma tarefa atrasada**.
 
-### Auditoria — pontos de conclusão de tarefa
-- Via `TaskCompletionDialog` (serão cobertos pela obrigatoriedade): `DrawerTasksTab`, `LeadTarefasTab`, `MinhasTarefas`, `FocusModeModal`/`FocusFooter`.
-- **Bypass (concluem direto, sem observação)**: `MinhaAgendaWidget` (✓ rápido) e `LeadPanel` (WhatsApp). Precisam abrir o diálogo.
-- Fora de escopo: `TarefasPage` (board operacional, tabela `tarefas`) e os `concluida` de `ConversationThread` (são `pipeline_atividades`).
+Resultado prático, que bate 100% com o que você pediu:
+- **Sem tarefa criada** → conta a partir da última ação / entrada na etapa. Passou de X dias → estagna.
+- **Com tarefa atrasada** → conta a partir do vencimento da tarefa. Atrasou X dias → estagna.
+- **Qualquer ação ou tarefa futura pendente zera o relógio** e protege o lead.
 
----
+Depois do estouro do prazo, há **aviso ao corretor (48h)** antes de arquivar de fato.
 
-## Mudanças
+### Auditoria dos estagnados de hoje (1 por 1)
+Nessas 3 etapas só há **1 lead estagnado hoje**: **Alexandre Nogueira** (Contato Iniciado).
+**Está incorretamente estagnado** (falso-positivo): ele teve **WhatsApp hoje 17:03** e tem **tarefa pendente futura (vence 07/07)** criada às 18:20 — ou seja, está sendo trabalhado. Dias reais parado = **0**. Será desarquivado.
 
-### 1. Backend — cadência avança só ao concluir (1 migração)
-- Remover trigger `trg_cadencia_sc_avancar_tarefa` e função `fn_cadencia_sc_avancar_tarefa` (avanço na criação).
-- Manter `fn_cadencia_sc_avancar_acao` (avança quando atividade de contato é registrada = ao concluir, e nas ações Ligar/WhatsApp).
-- Resultado: criar tarefa = planejar; **concluir** = conta como tentativa. T2 → T3 só ao concluir a tarefa da T2.
+### Dashboard do corretor (futuras estagnações)
+O card **"Leads prestes a estagnar"** (`PreEstagnacaoCard`, montado no `CorretorDashboard`) lê o prazo **dinamicamente** da config e mostra leads a partir de `dias_limite − 2`. Então, ao mudar Contato Iniciado para 15, ele passa a avisar automaticamente a partir do 13º dia (Busca: 13º, Aquecimento: 28º). **Nenhuma mudança de código necessária** — só confirmar visualmente após o ajuste.
 
-### 2. Correção de dados (1 operação)
-- Recalcular `tentativa_atual` das cadências `ativa`/`concluida` em Sem Contato para o nº real de ações de contato concluídas (cap 7), corrigindo Camila e leads super-contados. Reabrir os marcados como concluídos por engano e não arquivados.
+## Plano de execução
 
-### 3. Observação obrigatória em TODA conclusão
-- **`TaskCompletionDialog`**: tornar observação/descrição **obrigatória** (botão Confirmar desabilitado + mensagem enquanto vazio). Cobre DrawerTasksTab, LeadTarefasTab, MinhasTarefas e FocusMode.
-- **`MinhaAgendaWidget`**: substituir o ✓ rápido por abertura do `TaskCompletionDialog` (ou mini-prompt obrigatório de observação) antes de concluir.
-- **`LeadPanel`**: mesma correção — concluir só via `TaskCompletionDialog`/observação obrigatória.
+1. **Migration** — atualizar `pipeline_estagnacao_config`: Contato Iniciado `dias_limite = 15` (Busca e Aquecimento permanecem). Mantém `ativo`, `limite_backfill_dia`.
+2. **Correção de dados** — recalcular os estagnados das 3 etapas pelo relógio real: desarquivar/limpar (`estagnado`, `estagnado_em`, `estagnado_aviso_em`, `estagnado_prazo_em`, `arquivado`) de todo lead cujo relógio de inatividade já não atinge o novo limite — corrige o Alexandre e qualquer outro falso-positivo.
+3. **Reprocessar** — rodar `processar_estagnacao_pipeline()` uma vez para reavaliar tudo sob a regra nova.
+4. **Validar 1 por 1** — após rodar, conferir no banco que:
+   - Contato Iniciado/Busca só estagnam com ≥15 dias reais; Aquecimento com ≥30;
+   - leads com tarefa futura ou ação recente não aparecem como estagnados;
+   - o `PreEstagnacaoCard` lista as futuras estagnações nos novos limiares.
+5. **Texto para o time** — entregar o resumo simples abaixo.
 
-### 4. Tarefas concluídas visíveis (`DrawerTasksTab`)
-- Seção **recolhível "✓ Concluídas (N)"** ao final; cada item mostra tipo + título, **observação** e data/hora de conclusão. Fechada por padrão.
+## Texto para explicar ao time (rascunho final entregue após execução)
 
-### 5. Histórico legível (`LeadHistoricoTab`)
-- Eventos de conclusão exibem **"Tarefa {tipo}: Concluída"** + observação.
-- Em Sem Contato, rotular como **"Tentativa N: {ação} — concluída"** e indicar a **tentativa atual pendente**.
-
-### 6. Card de cadência mais claro (`CadenciaSemContatoCard`)
-- Reforçar: **"Você está na tentativa N/7 — registre ou conclua a tarefa pendente para avançar."**
-- Mostrar progresso mesmo quando `concluida` mas lead não arquivado (evita "esgotada" enganoso).
-
-### 7. Status automático (validação)
-- Confirmar que `LeadFlagControls` não renderiza nada em `sem_contato` (já é o caso). Card de cadência é a única referência.
-
----
+> **Quando um lead "estagna" (e some do pipeline)?**
+> O sistema conta os dias **sem nenhuma ação sua** (ligação, WhatsApp, visita, tarefa concluída) **ou** com **tarefa atrasada**:
+> - **Contato Iniciado:** 15 dias
+> - **Busca:** 15 dias
+> - **Aquecimento:** 30 dias
+>
+> Funciona assim: se você **não criou tarefa**, conta desde a última ação; se **criou e deixou atrasar**, conta desde o vencimento. **Qualquer ação ou tarefa agendada para o futuro zera o contador.** Antes de arquivar, você recebe um **aviso de 48h**. No card "Leads prestes a estagnar" do seu painel você já vê quem está chegando perto.
 
 ## Detalhes técnicos
-- **Arquivos**: `drawer/DrawerTasksTab.tsx`, `TaskCompletionDialog.tsx` (+ `task-completion/*`), `LeadHistoricoTab.tsx`, `CadenciaSemContatoCard.tsx`, `corretor/MinhaAgendaWidget.tsx`, `whatsapp/LeadPanel.tsx`.
-- **DB**: migração `DROP TRIGGER`/`DROP FUNCTION`; operação de dados (UPDATE) recalculando `tentativa_atual`.
-- Sem rota/tabela nova.
-
-## Validação
-- Concluir tarefa em Sem Contato → tentativa +1; criar tarefa não avança.
-- Nenhum ponto conclui tarefa sem observação (inclui agenda e WhatsApp).
-- Concluída aparece na seção "Concluídas" com a observação.
-- Histórico mostra "Tarefa X: Concluída" + observação e numeração por tentativa.
-- Caso Camila: 1 ação concluída + 1 pendente.
+- Sem alteração de funções/triggers; apenas dados (`UPDATE` na config + correção de leads) e uma chamada de reprocessamento.
+- Janela de aviso do dashboard = `dias_limite − 2` (dinâmica). Se quiser uma antecedência maior no Aquecimento (ex.: avisar 5 dias antes em vez de 2), posso parametrizar — me avise.
+- Etapa "Sem Contato" tem motor próprio (cadência 7 tentativas) e não é afetada por este ajuste.
