@@ -10,6 +10,7 @@ import {
   Search,
   X,
   Loader2,
+  Undo2,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -75,6 +76,7 @@ function diasBadge(dias: number) {
 }
 
 const ACAO_LABELS: Record<AcaoEstagnacao, string> = {
+  devolver: "Devolver ao corretor",
   repassar: "Repassar para outro corretor",
   roleta: "Enviar para a Fila do CEO",
   descartar: "Descartar (reengajável)",
@@ -93,6 +95,7 @@ export default function LeadsEstagnados() {
   const [search, setSearch] = useState("");
   const [corretorFilter, setCorretorFilter] = useState<string>("todos");
   const [empreendimentoFilter, setEmpreendimentoFilter] = useState<string>("todos");
+  const [etapaFilter, setEtapaFilter] = useState<string>("todos");
   const [sort, setSort] = useState<SortKey>("dias_desc");
 
   // Seleção múltipla
@@ -135,12 +138,21 @@ export default function LeadsEstagnados() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [baseRows]);
 
+  const etapaOptions = useMemo(() => {
+    const set = new Set<string>();
+    baseRows.forEach((l) => {
+      if (l.etapa) set.add(l.etapa);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [baseRows]);
+
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     let result = baseRows.filter((l) => {
       if (corretorFilter !== "todos" && l.corretor_id !== corretorFilter) return false;
       if (empreendimentoFilter !== "todos" && l.empreendimento !== empreendimentoFilter)
         return false;
+      if (etapaFilter !== "todos" && l.etapa !== etapaFilter) return false;
       if (q) {
         const hay = `${l.nome} ${l.empreendimento ?? ""} ${l.corretor_nome ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -153,7 +165,7 @@ export default function LeadsEstagnados() {
       return b.dias_sem_acao - a.dias_sem_acao;
     });
     return result;
-  }, [baseRows, search, corretorFilter, empreendimentoFilter, sort]);
+  }, [baseRows, search, corretorFilter, empreendimentoFilter, etapaFilter, sort]);
 
   const selectedRows = useMemo(
     () => rows.filter((l) => selected.has(l.lead_id)),
@@ -167,6 +179,7 @@ export default function LeadsEstagnados() {
     setSearch("");
     setCorretorFilter("todos");
     setEmpreendimentoFilter("todos");
+    setEtapaFilter("todos");
     setSelected(new Set());
   };
 
@@ -193,7 +206,7 @@ export default function LeadsEstagnados() {
   };
 
   const hasFilters =
-    search.trim() !== "" || corretorFilter !== "todos" || empreendimentoFilter !== "todos";
+    search.trim() !== "" || corretorFilter !== "todos" || empreendimentoFilter !== "todos" || etapaFilter !== "todos";
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
@@ -266,6 +279,23 @@ export default function LeadsEstagnados() {
             </Select>
           )}
 
+          {etapaOptions.length > 0 && (
+            <Select value={etapaFilter} onValueChange={setEtapaFilter}>
+              <SelectTrigger className="h-9 w-[170px]">
+                <SelectValue placeholder="Etapa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas as etapas</SelectItem>
+                {etapaOptions.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {e}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+
           <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
             <SelectTrigger className="h-9 w-[170px]">
               <SelectValue placeholder="Ordenar" />
@@ -286,6 +316,7 @@ export default function LeadsEstagnados() {
                 setSearch("");
                 setCorretorFilter("todos");
                 setEmpreendimentoFilter("todos");
+                setEtapaFilter("todos");
               }}
             >
               <X className="h-3.5 w-3.5" /> Limpar
@@ -301,6 +332,14 @@ export default function LeadsEstagnados() {
             {selectedRows.length} selecionado{selectedRows.length > 1 ? "s" : ""}
           </span>
           <div className="flex items-center gap-1.5 flex-wrap">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5 text-[12px]"
+              onClick={() => setDecision({ leads: selectedRows, acao: "devolver" })}
+            >
+              <Undo2 className="h-3.5 w-3.5" /> Devolver
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -472,6 +511,11 @@ function LeadRow({
       <div className="flex items-center gap-2 flex-wrap pl-7 sm:pl-0">
         {diasBadge(lead.dias_sem_acao)}
         <div className="flex items-center gap-1.5">
+          {lead.corretor_id && (
+            <Button size="sm" variant="outline" className="h-8 gap-1.5 text-[12px]" onClick={() => onDecide("devolver")}>
+              <Undo2 className="h-3.5 w-3.5" /> Devolver
+            </Button>
+          )}
           <Button size="sm" variant="outline" className="h-8 gap-1.5 text-[12px]" onClick={() => onDecide("repassar")}>
             <UserCheck className="h-3.5 w-3.5" /> Repassar
           </Button>
@@ -555,6 +599,7 @@ function DecisionDialog({
     setProgress(null);
     if (isMulti) {
       const labels: Record<AcaoEstagnacao, string> = {
+        devolver: "devolvidos ao corretor",
         repassar: "repassados",
         roleta: "enviados para a Fila do CEO",
         descartar: "descartados",
@@ -604,6 +649,11 @@ function DecisionDialog({
             </div>
           )}
 
+          {acao === "devolver" && (
+            <p className="text-[13px] text-muted-foreground">
+              {isMulti ? "Os leads voltarão" : "O lead voltará"} para {isMulti ? "os corretores atuais" : firstLead.corretor_nome ?? "o corretor atual"} na etapa <strong>Novo Lead</strong>, saindo da estagnação.
+            </p>
+          )}
           {acao === "roleta" && (
             <p className="text-[13px] text-muted-foreground">
               {isMulti ? "Os leads sairão" : "O lead sairá"} do corretor atual e {isMulti ? "irão" : "irá"} para a Fila do CEO, aguardando redistribuição.

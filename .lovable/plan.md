@@ -1,46 +1,38 @@
 ## Objetivo
+Três melhorias na página **Leads Estagnados** (`/leads-estagnados`):
+1. Botão **"Devolver ao corretor"** — devolve o lead estagnado ao próprio corretor que o perdeu (quando o cliente volta a responder).
+2. **Filtro por etapa** na barra de filtros.
+3. Ao **repassar** para outro corretor, o lead sempre vai para a etapa **Novo Lead** (melhor visualização para quem recebe).
 
-No modal do lead (aba **Histórico**), cada evento da timeline hoje não mostra **quem** registrou. Gestores/gerentes (e qualquer pessoa) precisam ver o autor de cada ação e, no evento "Lead distribuído", **para qual corretor** foi.
+## Mudanças no banco (1 migração — funções, sem alterar tabelas/RLS)
 
-## O que existe hoje
+**`decidir_lead_estagnado`** ganha:
 
-Cada registro já guarda o autor no banco, mas a tela ignora esses campos:
-- `pipeline_atividades.created_by` → autor da atividade
-- `pipeline_tarefas.created_by` → autor da tarefa
-- `pipeline_historico.movido_por` → quem moveu de etapa
-- `pipeline_anotacoes.autor_nome` → já exibido ("Nota de …")
-- `pipeline_leads.corretor_id` / `corretor_anterior_id` → responsável atual/anterior
+- **Nova ação `devolver`**: mantém o `corretor_id` atual (o corretor que perdeu o lead), tira de estagnação (`estagnado=false`, limpa `estagnado_em/aviso/prazo`), desarquiva (`arquivado=false`), `aceite_status='aceito'`, `aceito_em=now()`, e move para a etapa **Novo Lead** (`d3843b2f-2fa1-4c31-9129-4eb0ed21f019`) com `stage_changed_at=now()` e `ultima_acao_at=now()`. Registra no `pipeline_historico` ("Estagnação: devolvido ao corretor — cliente retornou."). Permissão: mesma regra atual (admin/diretor global; gestor só própria equipe).
+- **Ação `repassar` ajustada**: além do que já faz, passa a setar `stage_id = Novo Lead` + `stage_changed_at=now()`, para o lead aparecer no topo do pipeline do novo corretor. (Hoje ela mantém a etapa antiga.)
 
-Todos os IDs de autor (`created_by`, `movido_por`, `corretor_id`) resolvem para o nome via `profiles.user_id = <id>` (confirmado: ~30k atividades batem por `user_id`).
+Demais ações (`roleta`, `descartar`) ficam iguais.
 
-O evento "🔄 Lead distribuído" é montado só com a data (`lead.distribuido_em`), sem indicar o responsável.
+## Mudanças no frontend
 
-## Mudanças (somente frontend)
+**`src/hooks/usePipelineEstagnacao.ts`**
+- Adicionar `"devolver"` ao tipo `AcaoEstagnacao`.
+- Incluir label de sucesso para `devolver` ("Lead devolvido ao corretor.").
 
-Arquivo único: `src/components/pipeline/LeadHistoricoTab.tsx`
-
-1. **Resolver nomes dos autores**
-   - Coletar o conjunto de IDs envolvidos: `created_by` das atividades e tarefas, `movido_por` do histórico, `corretor_id` e `corretor_anterior_id` do lead.
-   - Buscar uma única vez (`profiles` com `user_id in (...)` → `{ user_id: nome }`) num `useEffect`/estado local, e montar um mapa `id → primeiro nome`.
-
-2. **Anexar o autor a cada item da timeline**
-   - Adicionar campo opcional `autor` em `TimelineItem`.
-   - Atividades: `autor = mapa[a.created_by]`.
-   - Histórico (movimentações de etapa): `autor = mapa[h.movido_por]`.
-   - Tarefas concluídas: `autor = mapa[t.created_by]`.
-   - Anotações: já têm `autor_nome` (mantém).
-   - Exibir como sufixo discreto na descrição/legenda do item, ex.: `· por João`.
-
-3. **Evento "Lead distribuído" com destino**
-   - No item de `lead.distribuido_em`, montar título/descrição com o responsável atual: `🔄 Lead distribuído → para {nome do corretor_id}` (e, se existir `corretor_anterior_id`, opcionalmente `de {anterior}`).
-   - Idem para "Lead aceito": mostrar quem aceitou (corretor atual) quando disponível.
-
-4. **Passar o autor ao componente de timeline**
-   - Repassar `autor` no objeto enviado ao `DrawerTimelineGroup` (concatenando na `description`, sem alterar o componente de timeline para manter o escopo mínimo).
+**`src/pages/LeadsEstagnados.tsx`**
+1. **Filtro por etapa**: novo `Select` (igual ao de empreendimento), populado dinamicamente a partir de `baseRows` (campo `l.etapa`), com estado `etapaFilter`; integrado ao `rows` (filtro), ao `hasFilters` e ao "Limpar", e resetado no `handleTabChange`.
+2. **Botão "Devolver ao corretor"**:
+   - No `LeadRow` (ação individual), adicionar botão `Devolver` (ícone `Undo2`/`RotateCcw`) que chama `onDecide("devolver")`. Exibido apenas quando `lead.corretor_id` existe.
+   - Na barra de seleção múltipla, adicionar botão **Devolver** equivalente.
+   - No `DecisionDialog`: tratar `acao === "devolver"` — sem seletor de corretor de destino, com texto explicativo ("O lead volta para {corretor} na etapa Novo Lead"), label no `ACAO_LABELS`, e botão de confirmação padrão. O fluxo de `handleConfirm` já é genérico (não envia `corretorDestino` quando não é repassar).
 
 ## Detalhes técnicos
+- `ACAO_LABELS` ganha `devolver: "Devolver ao corretor"`.
+- Reuso total do hook `useDecidirEstagnado` e do RPC `decidir_lead_estagnado` (apenas mais um valor de `p_acao`).
+- Sem novas tabelas, sem mudança de RLS, sem edge function.
+- A regra de estagnação (arquivamento, reset por ação/tarefa futura) permanece intacta; `devolver` e `repassar` apenas desarquivam e reposicionam na etapa Novo Lead.
 
-- A resolução de nome usa `profiles.user_id` (não `profiles.id`) — conforme convenção confirmada para estas colunas.
-- Mostrar apenas o **primeiro nome** para manter a timeline enxuta.
-- Sem migração, sem mudança de RLS, sem alterar a lógica de distribuição — apenas leitura e exibição.
-- Visível para todos os papéis (atribuição histórica é útil), atendendo o pedido de gestor/gerente.
+### Validação após aplicar
+- Devolver um lead estagnado → confirmar que volta ao mesmo corretor, na etapa Novo Lead, fora da estagnação e visível no pipeline.
+- Repassar → confirmar que aparece no novo corretor na etapa Novo Lead.
+- Filtro por etapa → confirmar que filtra corretamente e combina com os demais filtros.

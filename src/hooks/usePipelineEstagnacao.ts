@@ -19,7 +19,7 @@ export interface LeadEstagnacao {
   estagnado_prazo_em: string | null;
 }
 
-export type AcaoEstagnacao = "repassar" | "roleta" | "descartar";
+export type AcaoEstagnacao = "devolver" | "repassar" | "roleta" | "descartar";
 
 export function usePipelineEstagnacao() {
   return useQuery({
@@ -87,6 +87,7 @@ export function useDecidirEstagnado() {
     },
     onSuccess: (_res, vars) => {
       const labels: Record<AcaoEstagnacao, string> = {
+        devolver: "Lead devolvido ao corretor.",
         repassar: "Lead repassado para outro corretor.",
         roleta: "Lead enviado para a Fila do CEO.",
         descartar: "Lead descartado (reengajável).",
