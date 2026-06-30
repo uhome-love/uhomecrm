@@ -85,7 +85,7 @@ export interface PipelineHeaderProps {
   setFocusModeOpen: (v: boolean) => void;
   filaCeoFilter: boolean;
   setFilaCeoFilter: React.Dispatch<React.SetStateAction<boolean>>;
-  openDispatch: (mode: "novos" | "redistribuicao") => void;
+  openDispatch: (mode: "novos") => void;
   selectionMode: boolean;
   setSelectionMode: (v: boolean) => void;
   clearSelection: () => void;
