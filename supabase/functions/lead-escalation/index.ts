@@ -466,11 +466,11 @@ Deno.serve(async (req) => {
               hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
             }).format(new Date(p.proxima_em));
             return p.numero >= 8
-              ? "Sem retorno → descarte automático"
+              ? "Sem retorno → vai para Leads Estagnados"
               : `Próxima ação ${quando} (${hhmm})`;
           })();
 
-          const tag = p.numero >= 8 ? "Descarte" : `T${p.numero}`;
+          const tag = p.numero >= 8 ? "Estagnado" : `T${p.numero}`;
           const titulo = `📲 Sem Contato · ${tag} — ${p.acao}`;
           const corpo = `${p.lead_nome || "Lead"}${p.empreendimento ? ` (${p.empreendimento})` : ""}: ${p.texto_app}${prazoTxt ? ` · ${prazoTxt}` : ""}`;
 
