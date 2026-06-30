@@ -210,6 +210,27 @@ const CardMinimal = memo(function CardMinimal({
     [lead.flag_status, stage?.tipo]
   );
 
+  // Badge da cadência "Sem Contato": Tn + semáforo (verde em dia / âmbar próximo / vermelho atrasado ou risco T6+)
+  const cadenciaBadge = useMemo(() => {
+    if (!cadencia) return null;
+    const n = cadencia.tentativa;
+    const prox = cadencia.proxima_em ? new Date(cadencia.proxima_em).getTime() : null;
+    const now = Date.now();
+    const atrasado = prox != null && prox < now;
+    let tone = "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
+    if (atrasado || n >= 6) tone = "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300";
+    else if (n >= 3) tone = "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300";
+    let when = "";
+    if (prox != null) {
+      const diffMin = Math.round((prox - now) / 60000);
+      if (diffMin <= 0) when = "agora";
+      else if (diffMin < 60) when = `${diffMin}min`;
+      else if (diffMin < 1440) when = `${Math.round(diffMin / 60)}h`;
+      else when = `${Math.round(diffMin / 1440)}d`;
+    }
+    return { label: `T${Math.max(1, n + (atrasado ? 1 : 1))}`, when, tone, atrasado };
+  }, [cadencia?.tentativa, cadencia?.proxima_em]);
+
   const handleOpen = () => {
     trackPipelineEvent("pipeline_card_clicked", {
       lead_id: lead.id,
