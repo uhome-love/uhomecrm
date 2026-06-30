@@ -6382,6 +6382,44 @@ export type Database = {
           },
         ]
       }
+      pipeline_estagnacao_config: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          dias_limite: number
+          id: string
+          limite_backfill_dia: number
+          stage_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          dias_limite?: number
+          id?: string
+          limite_backfill_dia?: number
+          stage_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          dias_limite?: number
+          id?: string
+          limite_backfill_dia?: number
+          stage_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_estagnacao_config_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: true
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_historico: {
         Row: {
           created_at: string
@@ -6513,6 +6551,10 @@ export type Database = {
           email: string | null
           empreendimento: string | null
           escalation_level: number | null
+          estagnado: boolean
+          estagnado_aviso_em: string | null
+          estagnado_em: string | null
+          estagnado_prazo_em: string | null
           flag_status: Json | null
           forma_pagamento: string | null
           formulario: string | null
@@ -6602,6 +6644,10 @@ export type Database = {
           email?: string | null
           empreendimento?: string | null
           escalation_level?: number | null
+          estagnado?: boolean
+          estagnado_aviso_em?: string | null
+          estagnado_em?: string | null
+          estagnado_prazo_em?: string | null
           flag_status?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
@@ -6691,6 +6737,10 @@ export type Database = {
           email?: string | null
           empreendimento?: string | null
           escalation_level?: number | null
+          estagnado?: boolean
+          estagnado_aviso_em?: string | null
+          estagnado_em?: string | null
+          estagnado_prazo_em?: string | null
           flag_status?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
