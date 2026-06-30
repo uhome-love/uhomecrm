@@ -22,9 +22,18 @@ export interface DrawerTimelineItem {
   tipo?: string;
   /** opcional: kind genérico pra fallback (atividade, historico, tarefa, etc) */
   kind?: "atividade" | "historico" | "tarefa" | "anotacao" | "imovel_event" | "system";
+  /** etiqueta de resultado (ex.: "Não atendeu") */
+  badge?: { label: string; tone: "success" | "danger" | "neutral" | "warning" };
   /** ação extra à direita (ex: botão deletar) */
   trailing?: ReactNode;
 }
+
+const BADGE_TONE: Record<string, string> = {
+  success: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+  danger: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300",
+  warning: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+  neutral: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
+};
 
 interface Props {
   items: DrawerTimelineItem[];
@@ -127,7 +136,14 @@ function DefaultTimelineRow({ item }: { item: DrawerTimelineItem }) {
       <div className="flex-1 min-w-0 pt-0.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-[13px] font-medium text-foreground leading-snug">{item.title}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-[13px] font-medium text-foreground leading-snug">{item.title}</p>
+              {item.badge && (
+                <span className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold ${BADGE_TONE[item.badge.tone] || BADGE_TONE.neutral}`}>
+                  {item.badge.label}
+                </span>
+              )}
+            </div>
             {item.description && (
               <p className="text-[12px] text-muted-foreground whitespace-pre-wrap leading-snug mt-0.5">
                 {item.description}

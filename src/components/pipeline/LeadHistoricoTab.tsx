@@ -88,6 +88,7 @@ interface TimelineItem {
   icon: any;
   color: string;
   autor?: string;
+  badge?: { label: string; tone: "success" | "danger" | "neutral" | "warning" };
   sourceType?: "atividade" | "historico" | "tarefa" | "imovel_event" | "anotacao" | "system";
   sourceId?: string;
 }
@@ -95,6 +96,49 @@ interface TimelineItem {
 function firstName(nome?: string | null): string | undefined {
   if (!nome) return undefined;
   return nome.trim().split(/\s+/)[0] || undefined;
+}
+
+// Resultados crus → etiquetas legíveis (ordem importa: específicos primeiro)
+const RESULTADO_LABELS: Record<string, { label: string; tone: "success" | "danger" | "neutral" | "warning" }> = {
+  nao_atendeu: { label: "Não atendeu", tone: "danger" },
+  "não atendeu": { label: "Não atendeu", tone: "danger" },
+  caixa_postal: { label: "Caixa postal", tone: "warning" },
+  numero_errado: { label: "Número errado", tone: "danger" },
+  sem_interesse: { label: "Sem interesse", tone: "danger" },
+  agendou_proximo: { label: "Agendou retorno", tone: "success" },
+  positivo: { label: "Positivo", tone: "success" },
+  negativo: { label: "Negativo", tone: "danger" },
+  neutro: { label: "Neutro", tone: "neutral" },
+  ocupado: { label: "Ocupado", tone: "warning" },
+  atendeu: { label: "Atendeu", tone: "success" },
+};
+
+// Resultado é sempre o trecho após o último " — " no título da atividade
+function resultadoDoTitulo(titulo?: string | null): { key: string; meta: { label: string; tone: "success" | "danger" | "neutral" | "warning" } } | null {
+  if (!titulo || !titulo.includes(" — ")) return null;
+  const raw = titulo.split(" — ").pop()!.trim().toLowerCase();
+  for (const key of Object.keys(RESULTADO_LABELS)) {
+    if (raw === key || raw.includes(key)) return { key, meta: RESULTADO_LABELS[key] };
+  }
+  return null;
+}
+
+// Remove o nome completo do lead, datas soltas e resultados crus do texto
+function limparTexto(texto: string | null | undefined, leadNome?: string | null, resultKey?: string): string {
+  let out = (texto || "").trim();
+  if (!out) return "";
+  const nome = leadNome?.trim();
+  if (nome) {
+    out = out.split(nome).join(" ");
+    const fn = nome.split(/\s+/)[0];
+    if (fn && fn.length > 2) out = out.replace(new RegExp(`\\b${fn}\\b`, "g"), " ");
+  }
+  if (resultKey) out = out.replace(new RegExp(resultKey, "gi"), " ");
+  out = out.replace(/resultado:\s*/gi, " ");
+  out = out.replace(/·\s*\d{1,2}\/\d{1,2}(\/\d{2,4})?/g, " ");
+  out = out.replace(/\s{2,}/g, " ").trim();
+  out = out.replace(/^[\s—•·:;-]+/, "").replace(/[\s—•·:;-]+$/, "").trim();
+  return out;
 }
 
 
@@ -162,16 +206,42 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
   for (const a of atividades) {
     const info = ATIVIDADE_TIPOS[a.tipo];
     const isEntrada = a.tipo === "entrada";
-    const desc = isEntrada && a.descricao
-      ? a.descricao
-      : (a.descricao || `${a.titulo} • ${a.status === "concluida" ? "✅" : "⏳"}`);
+
+    if (isEntrada) {
+      items.push({
+        title: a.titulo || info?.label || "Lead entrou",
+        description: a.descricao || undefined,
+        date: a.created_at,
+        icon: info?.icon || Plus,
+        color: info?.color || "bg-emerald-100 text-emerald-600",
+        sourceType: "atividade",
+        sourceId: a.id,
+      });
+      continue;
+    }
+
+    const res = resultadoDoTitulo(a.titulo);
+    const labelText = info?.label || a.tipo;
+    // Título sem o trecho de resultado (após " — "), sem nome do lead e sem data solta
+    const core = limparTexto((a.titulo || "").split(" — ")[0], lead.nome, res?.key);
+    const labelPlain = (info?.label || "").replace(/^[^\s]+\s*/, "").trim().toLowerCase();
+    const coreLow = core.toLowerCase();
+    // Palavras que apenas repetem o canal — não agregam ao título
+    const canalSinonimos = ["whatsapp", "ligar", "ligação", "ligacao", "e-mail", "email", "mensagem", "contato", "ligacão"];
+    const redundante = !core || coreLow === labelPlain || canalSinonimos.includes(coreLow);
+    const title = redundante ? labelText : `${labelText} · ${core}`;
+    // Descrição: só observação real (ignora "Resultado: x")
+    const rawDesc = a.descricao && !/^resultado:/i.test(a.descricao.trim()) ? a.descricao : null;
+    const desc = limparTexto(rawDesc, lead.nome, res?.key) || undefined;
+
     items.push({
-      title: isEntrada ? (a.titulo || info?.label || "Lead entrou") : (info?.label ? `${info.label} — ${a.titulo}` : a.titulo),
+      title,
       description: desc,
       date: a.created_at,
       icon: info?.icon || PhoneCall,
-      color: info?.color || (isEntrada ? "bg-emerald-100 text-emerald-600" : (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600")),
-      autor: isEntrada ? undefined : nome(a.created_by),
+      color: info?.color || (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"),
+      autor: nome(a.created_by),
+      badge: res?.meta,
       sourceType: "atividade",
       sourceId: a.id,
     });
@@ -179,7 +249,8 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
 
   for (const t of tarefas) {
     if (t.status === "concluida" && t.concluida_em) {
-      items.push({ title: `✅ ${t.titulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600", autor: nome(t.created_by), sourceType: "tarefa", sourceId: t.id });
+      const tTitulo = limparTexto(t.titulo, lead.nome) || t.titulo || "Tarefa";
+      items.push({ title: `✅ ${tTitulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600", autor: nome(t.created_by), sourceType: "tarefa", sourceId: t.id });
     }
   }
 
@@ -309,7 +380,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
         : followUpDate;
       if (fDate) {
         await onAddTarefa({
-          titulo: `Follow-up: ${lead.nome}`,
+          titulo: "Follow-up",
           descricao: `Após: ${titulo}`,
           tipo: "follow_up",
           vence_em: fDate,
@@ -422,6 +493,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               date: item.date,
               tipo: tipoGuess,
               kind: item.sourceType as any,
+              badge: item.badge,
               trailing: item.sourceId && item.sourceType !== "system" ? (
                 <Button
                   variant="ghost"
