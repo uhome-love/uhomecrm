@@ -10,6 +10,7 @@ import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
 import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookTab";
 import VisitaAmanhaTab from "@/components/central-nutricao/VisitaAmanhaTab";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 const CampanhaOndasTab = lazy(() => import("@/components/central-nutricao/CampanhaOndasTab"));
 
@@ -48,19 +49,11 @@ export default function CentralNutricaoPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2">
-            <RefreshCw className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">Central de Reengajamento</h1>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Disparos avulsos e campanhas em ondas. Selecione a lista, o modelo e dispare via Meta ou Evolution.
-            Acompanhe o retorno em tempo real em uma única página.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Central de Reengajamento"
+        subtitle="Disparos avulsos e campanhas em ondas. Selecione a lista, o modelo e dispare via Meta ou Evolution. Acompanhe o retorno em tempo real em uma única página."
+        icon={<RefreshCw className="h-5 w-5" />}
+      />
 
       <LiveDispatchBanner />
 

@@ -6,6 +6,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { MaterialCard } from "@/components/materiais/MaterialCard";
 import { EmpreendimentoFormDialog } from "@/components/materiais/EmpreendimentoFormDialog";
 import { FolderOpen, Plus, Search, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default function MateriaisPage() {
   const { data: empreendimentos = [], isLoading } = useMateriais();
@@ -28,24 +29,18 @@ export default function MateriaisPage() {
 
   return (
     <div className="container max-w-7xl mx-auto py-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <FolderOpen className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Materiais</h1>
-            <p className="text-sm text-muted-foreground">
-              Hub de drives, apresentações e scripts por empreendimento.
-            </p>
-          </div>
-        </div>
-        {isGestor && (
-          <Button onClick={() => setNewDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Novo empreendimento
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Materiais"
+        subtitle="Hub de drives, apresentações e scripts por empreendimento."
+        icon={<FolderOpen className="h-5 w-5" />}
+        actions={
+          isGestor && (
+            <Button onClick={() => setNewDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Novo empreendimento
+            </Button>
+          )
+        }
+      />
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
