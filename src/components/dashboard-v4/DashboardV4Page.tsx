@@ -13,6 +13,7 @@ import { V4PanelVisitas } from "./V4PanelVisitas";
 import { V4PanelNegocios } from "./V4PanelNegocios";
 import { V4PanelAlertas } from "./V4PanelAlertas";
 import { V4PanelRoleta } from "./V4PanelRoleta";
+import { V4PanelSemContato } from "./V4PanelSemContato";
 
 export function DashboardV4Page() {
   const { user } = useAuth();
