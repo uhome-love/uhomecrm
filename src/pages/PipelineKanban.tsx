@@ -242,8 +242,26 @@ export default function PipelineKanban() {
     }
   }, [searchParams]);
 
+  // URL sync para ?risco=estagnacao (vindo do aviso no dashboard do corretor)
+  useEffect(() => {
+    const r = searchParams.get("risco") === "estagnacao";
+    setRiscoFilter(r);
+  }, [searchParams]);
 
-  // Load tasks for status classification
+  // IDs dos leads em risco de estagnar (própria carteira) para o filtro rápido.
+  const { data: riscoLeadIds } = useQuery({
+    queryKey: ["pipeline-pre-estagnacao-ids"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_corretor_pre_estagnacao");
+      const ids = new Set<string>();
+      (data || []).forEach((row: any) => { if (row.lead_id) ids.add(row.lead_id); });
+      return ids;
+    },
+    enabled: riscoFilter,
+    staleTime: 60_000,
+  });
+
+
   const leadIds = useMemo(() => pipeline.leads.map(l => l.id), [pipeline.leads]);
   const leadIdsKey = useMemo(() => leadIds.slice().sort().join(","), [leadIds]);
   const { data: kanbanTarefasMap = {}, isLoading: tarefasLoading } = useQuery({
