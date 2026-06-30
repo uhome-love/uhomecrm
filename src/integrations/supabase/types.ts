@@ -6382,6 +6382,44 @@ export type Database = {
           },
         ]
       }
+      pipeline_estagnacao_config: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          dias_limite: number
+          id: string
+          limite_backfill_dia: number
+          stage_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          dias_limite?: number
+          id?: string
+          limite_backfill_dia?: number
+          stage_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          dias_limite?: number
+          id?: string
+          limite_backfill_dia?: number
+          stage_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_estagnacao_config_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: true
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_historico: {
         Row: {
           created_at: string
@@ -6513,6 +6551,10 @@ export type Database = {
           email: string | null
           empreendimento: string | null
           escalation_level: number | null
+          estagnado: boolean
+          estagnado_aviso_em: string | null
+          estagnado_em: string | null
+          estagnado_prazo_em: string | null
           flag_status: Json | null
           forma_pagamento: string | null
           formulario: string | null
@@ -6602,6 +6644,10 @@ export type Database = {
           email?: string | null
           empreendimento?: string | null
           escalation_level?: number | null
+          estagnado?: boolean
+          estagnado_aviso_em?: string | null
+          estagnado_em?: string | null
+          estagnado_prazo_em?: string | null
           flag_status?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
@@ -6691,6 +6737,10 @@ export type Database = {
           email?: string | null
           empreendimento?: string | null
           escalation_level?: number | null
+          estagnado?: boolean
+          estagnado_aviso_em?: string | null
+          estagnado_em?: string | null
+          estagnado_prazo_em?: string | null
           flag_status?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
@@ -10594,6 +10644,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _pipeline_ultima_acao_humana: {
+        Args: { _lead_id: string }
+        Returns: string
+      }
       aceitar_lead: {
         Args: {
           p_corretor_id: string
@@ -11079,6 +11133,23 @@ export type Database = {
         }[]
       }
       get_pipeline_equipes_overview: { Args: never; Returns: Json }
+      get_pipeline_estagnacao: {
+        Args: never
+        Returns: {
+          categoria: string
+          corretor_id: string
+          corretor_nome: string
+          dias_limite: number
+          dias_sem_acao: number
+          empreendimento: string
+          estagnado_prazo_em: string
+          etapa: string
+          lead_id: string
+          nome: string
+          stage_id: string
+          ultima_acao_humana: string
+        }[]
+      }
       get_profile_id_for_auth: { Args: never; Returns: string }
       get_ranking_central: {
         Args: { p_end: string; p_gestor_id: string; p_start: string }

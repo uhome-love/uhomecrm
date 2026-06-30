@@ -119,6 +119,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   materiais: lazyRetry(() => import("@/pages/MateriaisPage")),
   integracoes: lazyRetry(() => import("@/pages/IntegracoesPage")),
   intermediacao: lazyRetry(() => import("@/pages/IntermediacaoPage")),
+  "leads-estagnados": lazyRetry(() => import("@/pages/LeadsEstagnados")),
 };
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
@@ -198,6 +199,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/central-relatorios":        { key: "report-center",     label: "Central Relatórios",  icon: "BarChart2",     roles: ["admin", "gestor", "corretor", "diretor"], noPadding: true },
   "/materiais":             { key: "materiais",            label: "Materiais",           icon: "FolderOpen" },
   "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor", "diretor"] },
+  "/leads-estagnados":      { key: "leads-estagnados",     label: "Leads Estagnados",    icon: "AlarmClock",    roles: ["admin", "gestor", "diretor"] },
 };
 
 // ─── DYNAMIC ROUTES ──────────────────────────────────────────────────────────
