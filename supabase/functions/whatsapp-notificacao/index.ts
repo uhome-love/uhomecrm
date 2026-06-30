@@ -77,6 +77,7 @@ serve(async (req) => {
       aviso_repasse: () => `🔴 *ÚLTIMO AVISO — Lead repassado em 30 min!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nApós 3 avisos o lead será repassado para outro corretor.`,
       lead_expirado_gestor: () => `📋 *Lead repassado por inatividade*\n\nCorretor: ${dados.corretor}\nLead: ${dados.nome} — ${dados.empreendimento}\n\nLead devolvido para a fila automaticamente.`,
       cobranca: () => dados.mensagem_personalizada || dados.mensagem || "",
+      cadencia_sem_contato: () => dados.mensagem || "",
       teste_texto: () => `🏠 Teste UhomeSales!\n\nSe você recebeu isso, a integração WhatsApp está funcionando. 🎉`,
     };
 

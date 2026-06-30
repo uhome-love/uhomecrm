@@ -109,7 +109,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   stageLeads, stage, stages, segmentos, corretorNomes, corretorAvatars, parcerias,
   selectionMode, selectedLeads, arrivedLeadId,
   onToggleSelect, onSelectLead, onMoveLead, onTransferred, stageIndexMap, handleDragStart,
-  tarefasMap, whatsappUnreadSet,
+  tarefasMap, whatsappUnreadSet, cadenciaMap,
 }: {
   stageLeads: PipelineLead[];
   stage: PipelineStage;
@@ -129,6 +129,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   handleDragStart: (leadId: string) => void;
   tarefasMap: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
   whatsappUnreadSet: Set<string>;
+  cadenciaMap: Record<string, { tentativa: number; proxima_em: string | null }>;
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -204,6 +205,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
                 corretorAvatarUrl={lead.corretor_id ? corretorAvatars?.[lead.corretor_id] : undefined}
                 parceiroNome={parcerias[lead.id]}
                 proximaTarefa={tarefasMap[lead.id] || null}
+                cadencia={cadenciaMap[lead.id] || null}
                 onDragStart={() => !selectionMode && handleDragStart(lead.id)}
                 onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
               />
@@ -331,6 +333,35 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     () => new Set<string>(Array.isArray(whatsappUnreadIds) ? whatsappUnreadIds : []),
     [whatsappUnreadIds]
   );
+
+  // Cadência "Sem Contato" — mapa leadId -> { tentativa, proxima_em } (RLS limita ao escopo do usuário)
+  const { data: cadenciaRows = [] as { pipeline_lead_id: string; tentativa_atual: number; proxima_em: string | null }[] } = useQuery({
+    queryKey: ["pipeline-cadencia-sc", leadIdsKey],
+    queryFn: async () => {
+      if (leadIds.length === 0) return [];
+      const chunks: string[][] = [];
+      for (let i = 0; i < leadIds.length; i += 200) chunks.push(leadIds.slice(i, i + 200));
+      const results = await Promise.all(chunks.map(async (chunk) => {
+        const { data } = await supabase
+          .from("lead_cadencia_sem_contato")
+          .select("pipeline_lead_id, tentativa_atual, proxima_em")
+          .eq("status", "ativa")
+          .in("pipeline_lead_id", chunk);
+        return data || [];
+      }));
+      return results.flat();
+    },
+    enabled: leadIds.length > 0,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const cadenciaMap = useMemo(() => {
+    const map: Record<string, { tentativa: number; proxima_em: string | null }> = {};
+    for (const r of cadenciaRows) {
+      if (r.pipeline_lead_id) map[r.pipeline_lead_id] = { tentativa: r.tentativa_atual, proxima_em: r.proxima_em };
+    }
+    return map;
+  }, [cadenciaRows]);
 
   // "Negócio Criado" (convertido) is now visible to ALL users (corretores included)
   const visibleStages = useMemo(() => {
@@ -941,6 +972,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     handleDragStart={handleDragStart}
                     tarefasMap={tarefasMap}
                     whatsappUnreadSet={whatsappUnreadSet}
+                    cadenciaMap={cadenciaMap}
                   />
                 )}
               </div>

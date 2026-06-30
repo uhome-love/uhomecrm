@@ -44,6 +44,8 @@ interface CardMinimalProps {
   corretorAvatarUrl?: string;
   parceiroNome?: string;
   proximaTarefa?: CardMinimalProximaTarefa | null;
+  /** Estado da cadência "Sem Contato" (tentativa atual + quando vence a próxima). */
+  cadencia?: { tentativa: number; proxima_em: string | null } | null;
   onClick: () => void;
   onDragStart: () => void;
   /** Stages do pipeline — necessário para o menu ··· (sub-menu "Mudar de etapa"). */
@@ -156,6 +158,7 @@ const CardMinimal = memo(function CardMinimal({
   corretorAvatarUrl,
   parceiroNome,
   proximaTarefa,
+  cadencia,
   onClick,
   onDragStart,
   stages,
@@ -206,6 +209,27 @@ const CardMinimal = memo(function CardMinimal({
     () => getLeadSubstatusBadge(lead.flag_status, stage?.tipo),
     [lead.flag_status, stage?.tipo]
   );
+
+  // Badge da cadência "Sem Contato": Tn + semáforo (verde em dia / âmbar próximo / vermelho atrasado ou risco T6+)
+  const cadenciaBadge = useMemo(() => {
+    if (!cadencia) return null;
+    const n = cadencia.tentativa;
+    const prox = cadencia.proxima_em ? new Date(cadencia.proxima_em).getTime() : null;
+    const now = Date.now();
+    const atrasado = prox != null && prox < now;
+    let tone = "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
+    if (atrasado || n >= 6) tone = "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300";
+    else if (n >= 3) tone = "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300";
+    let when = "";
+    if (prox != null) {
+      const diffMin = Math.round((prox - now) / 60000);
+      if (diffMin <= 0) when = "agora";
+      else if (diffMin < 60) when = `${diffMin}min`;
+      else if (diffMin < 1440) when = `${Math.round(diffMin / 60)}h`;
+      else when = `${Math.round(diffMin / 1440)}d`;
+    }
+    return { label: `T${Math.min(7, n + 1)}`, when, tone, atrasado };
+  }, [cadencia?.tentativa, cadencia?.proxima_em]);
 
   const handleOpen = () => {
     trackPipelineEvent("pipeline_card_clicked", {
@@ -263,6 +287,14 @@ const CardMinimal = memo(function CardMinimal({
             <div className="flex-1 min-w-0 text-[14px] font-semibold text-foreground tracking-tight leading-tight truncate">
               {lead.nome || "Sem nome"}
             </div>
+            {cadenciaBadge && (
+              <span
+                className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[9px] font-bold tabular-nums ${cadenciaBadge.tone}`}
+                title={`Cadência Sem Contato — próxima ${cadenciaBadge.label}${cadenciaBadge.when ? ` em ${cadenciaBadge.when}` : ""}`}
+              >
+                📲 {cadenciaBadge.label}{cadenciaBadge.when ? ` · ${cadenciaBadge.when}` : ""}
+              </span>
+            )}
             {substatus && (
               <span className={`shrink-0 ${substatus.className}`}>
                 {substatus.label}

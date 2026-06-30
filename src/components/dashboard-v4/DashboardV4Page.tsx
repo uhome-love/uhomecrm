@@ -13,6 +13,7 @@ import { V4PanelVisitas } from "./V4PanelVisitas";
 import { V4PanelNegocios } from "./V4PanelNegocios";
 import { V4PanelAlertas } from "./V4PanelAlertas";
 import { V4PanelRoleta } from "./V4PanelRoleta";
+import { V4PanelSemContato } from "./V4PanelSemContato";
 
 export function DashboardV4Page() {
   const { user } = useAuth();
@@ -70,6 +71,7 @@ export function DashboardV4Page() {
         <V4PanelNegocios gestorId={user?.id} />
         <V4PanelAlertas alertas={data?.alertas_corretores ?? []} isLoading={isLoading} />
         <V4PanelRoleta gestorId={user?.id} />
+        <V4PanelSemContato />
       </div>
 
       {user?.id && (
