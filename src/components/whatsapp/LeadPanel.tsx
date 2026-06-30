@@ -402,6 +402,17 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
           <ExternalLink size={12} /> Ver ficha completa
         </Button>
       </div>
+
+      <TaskCompletionDialog
+        open={!!completingTask}
+        onOpenChange={(v) => { if (!v) setCompletingTask(null); }}
+        tarefaTitulo={completingTask?.titulo || ""}
+        leadNome={localLead.nome}
+        leadId={localLead.id}
+        currentStageId={localLead.stage_id ?? undefined}
+        onConfirm={handleCompletionConfirm}
+      />
     </div>
+
   );
 }
