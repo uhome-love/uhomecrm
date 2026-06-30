@@ -82,7 +82,7 @@ export function KpiCard({
       {(hint || trend) && (
         <div className="flex items-center justify-between gap-2 mt-auto">
           {hint && (
-            <span className="text-[11px] text-[#d4d4d8] dark:text-[#3f3f46] truncate">
+            <span className="text-[11px] text-muted-foreground/70 truncate">
               {hint}
             </span>
           )}
