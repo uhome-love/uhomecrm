@@ -600,6 +600,8 @@ Deno.serve(async (req) => {
       sem_contato_recycled: semContatoRecycled,
       stuck_redistributed: stuckRedistributed,
       locks_cleaned: cleanedCount || 0,
+      cadencia_sent: cadenciaSent,
+      cadencia_descartados: cadenciaDescartados,
         backlog_recovered: backlogRecovered,
         backlog_still_queued: backlogStillQueued,
         timestamp: new Date().toISOString(),
