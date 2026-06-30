@@ -305,7 +305,7 @@ export default function BuscaLeads() {
             <Button onClick={() => setShowFilters(!showFilters)} variant="outline" size="icon">
               <Filter className="h-4 w-4" />
             </Button>
-            <Button onClick={handleSearch} disabled={isSearching} className="bg-[#4969FF] hover:bg-[#3350E6] text-white">
+            <Button onClick={handleSearch} disabled={isSearching} className="bg-primary hover:bg-primary text-white">
               {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4 mr-1" />}
               Buscar
             </Button>
@@ -620,7 +620,7 @@ export default function BuscaLeads() {
                     )}
                     <Button
                       size="sm"
-                      className="bg-[#4969FF] hover:bg-[#3350E6] text-white text-xs"
+                      className="bg-primary hover:bg-primary text-white text-xs"
                       onClick={() => openAction("repassar_pipeline", selectedLead)}
                     >
                       <ArrowRightLeft className="h-3.5 w-3.5 mr-1" /> Repassar para outro corretor

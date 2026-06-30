@@ -263,7 +263,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* Row 4: VGV with quick-fill — show half if partnership */}
           <div className="flex items-center gap-2">
             {negocio.vgv_estimado ? (
-              <span className="text-[14px] font-bold text-[#10b981] dark:text-[#34d399] flex items-center gap-1">
+              <span className="text-[14px] font-bold text-success dark:text-[#34d399] flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5" />
                 {parceriaInfo?.isParceria
                   ? `${formatVGV(negocio.vgv_estimado / 2)} (50%)`
@@ -316,7 +316,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                 onChange={(e) => setTaskText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleSaveTask(); if (e.key === "Escape") setEditingTask(false); }}
                 placeholder="Definir próximo passo..."
-                className="flex-1 text-[11px] bg-[#f7f7fb] dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded px-2 py-1 text-[#0a0a0a] dark:text-white placeholder:text-[#a1a1aa] dark:placeholder:text-white/30 focus:outline-none focus:border-[#4969FF] dark:focus:border-white/20"
+                className="flex-1 text-[11px] bg-[#f7f7fb] dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded px-2 py-1 text-[#0a0a0a] dark:text-white placeholder:text-[#a1a1aa] dark:placeholder:text-white/30 focus:outline-none focus:border-primary dark:focus:border-white/20"
               />
               <button onClick={handleSaveTask} className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 font-medium shrink-0">Salvar</button>
             </div>
@@ -345,7 +345,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* Ligar */}
           <button
             onClick={() => setLigarPopup(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#4969FF] dark:hover:text-white hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors border-r border-[#e8e8f0] dark:border-white/[0.06]"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-primary dark:hover:text-white hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors border-r border-[#e8e8f0] dark:border-white/[0.06]"
           >
             <Phone className="h-3.5 w-3.5" /> Ligar
           </button>
@@ -353,7 +353,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* WhatsApp */}
           {whatsappUrl ? (
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#10b981] hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors border-r border-[#e8e8f0] dark:border-white/[0.06]"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-success hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors border-r border-[#e8e8f0] dark:border-white/[0.06]"
             >
               <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
             </a>
@@ -366,7 +366,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* Ação */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#4969FF] hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors">
+              <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-primary hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors">
                 <Zap className="h-3.5 w-3.5" /> Ação
               </button>
             </DropdownMenuTrigger>
@@ -875,13 +875,13 @@ export default function MeusNegocios() {
       {/* Header — Line 1 */}
       <div className="shrink-0 px-4 pt-4 pb-1">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center flex-shrink-0">
+          <div className="w-7 h-7 rounded-[7px] bg-primary flex items-center justify-center flex-shrink-0">
             <Briefcase size={13} strokeWidth={1.5} className="text-white" />
           </div>
           <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#0a0a0a] dark:text-white">Pipeline negócios</h1>
           <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{filteredNegocios.length} negócios</span>
           {totalVGV > 0 && (
-            <span className="text-[12px] font-bold text-[#10b981] dark:text-[#34d399]">{formatVGV(totalVGV)}</span>
+            <span className="text-[12px] font-bold text-success dark:text-[#34d399]">{formatVGV(totalVGV)}</span>
           )}
 
           <div className="flex-1" />
@@ -893,7 +893,7 @@ export default function MeusNegocios() {
               placeholder="Buscar negócio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-[12px] pl-7 pr-3 h-[32px] w-[200px] bg-white dark:bg-white/[0.06] border border-[#e8e8f0] dark:border-white/[0.1] rounded-[8px] text-[#0a0a0a] dark:text-white placeholder:text-[#a1a1aa] dark:placeholder:text-[#52525b] focus:border-[#4969FF] outline-none"
+              className="text-[12px] pl-7 pr-3 h-[32px] w-[200px] bg-white dark:bg-white/[0.06] border border-[#e8e8f0] dark:border-white/[0.1] rounded-[8px] text-[#0a0a0a] dark:text-white placeholder:text-[#a1a1aa] dark:placeholder:text-[#52525b] focus:border-primary outline-none"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -905,7 +905,7 @@ export default function MeusNegocios() {
           {/* Filters */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="h-[32px] px-3 text-[12px] text-[#71717a] dark:text-[#a1a1aa] border border-[#e8e8f0] dark:border-white/[0.1] rounded-[8px] hover:border-[#4969FF] dark:hover:border-white/[0.2] flex items-center gap-1.5 bg-white dark:bg-transparent"
+            className="h-[32px] px-3 text-[12px] text-[#71717a] dark:text-[#a1a1aa] border border-[#e8e8f0] dark:border-white/[0.1] rounded-[8px] hover:border-primary dark:hover:border-white/[0.2] flex items-center gap-1.5 bg-white dark:bg-transparent"
           >
             <SlidersHorizontal size={12} strokeWidth={1.5} />
             <span className="hidden sm:inline">Filtros</span>
@@ -915,7 +915,7 @@ export default function MeusNegocios() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="w-[32px] h-[32px] flex items-center justify-center rounded-[8px] border border-[#e8e8f0] dark:border-white/[0.1] text-[#71717a] dark:text-[#a1a1aa] hover:border-[#4969FF] dark:hover:border-white/[0.2] bg-white dark:bg-transparent"
+            className="w-[32px] h-[32px] flex items-center justify-center rounded-[8px] border border-[#e8e8f0] dark:border-white/[0.1] text-[#71717a] dark:text-[#a1a1aa] hover:border-primary dark:hover:border-white/[0.2] bg-white dark:bg-transparent"
           >
             <RefreshCw size={13} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
           </button>
@@ -937,7 +937,7 @@ export default function MeusNegocios() {
           {/* New */}
           <button
             onClick={() => setAddNegocioOpen(true)}
-            className="h-[32px] px-4 bg-[#4969FF] hover:bg-[#3350E6] text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5"
+            className="h-[32px] px-4 bg-primary hover:bg-primary text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5"
           >
             <Plus size={13} strokeWidth={2} /> Novo
           </button>
@@ -995,7 +995,7 @@ export default function MeusNegocios() {
           <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{filteredNegocios.length} negócios</span>
           <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">·</span>
           {totalVGV > 0 && (
-            <span className="text-[12px] text-[#10b981] dark:text-[#34d399] font-semibold">{formatVGV(totalVGV)} VGV total</span>
+            <span className="text-[12px] text-success dark:text-[#34d399] font-semibold">{formatVGV(totalVGV)} VGV total</span>
           )}
         </div>
       </div>
@@ -1057,7 +1057,7 @@ export default function MeusNegocios() {
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full" style={{ backgroundColor: fase.cor }} />
                       <span className="text-[13px] font-bold text-[#0a0a0a] dark:text-white">{fase.label}</span>
-                      <span className="text-[13px] font-bold text-[#4969FF] dark:text-[#6B84FF]">{faseNegocios.length}</span>
+                      <span className="text-[13px] font-bold text-primary dark:text-[#6B84FF]">{faseNegocios.length}</span>
                     </div>
                     {totalFaseVGV > 0 && (
                       <span className="text-[11px] text-[#a1a1aa] dark:text-[#3f3f46]">{formatVGV(totalFaseVGV)}</span>

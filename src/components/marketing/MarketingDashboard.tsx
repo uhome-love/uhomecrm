@@ -180,7 +180,7 @@ export default function MarketingDashboard() {
             <Button
               variant="outline"
               size="sm"
-              className="border-[#4969FF] text-[#4969FF]"
+              className="border-primary text-primary"
               onClick={async () => { await syncNow(); reload(); }}
               disabled={syncing}
             >
@@ -188,7 +188,7 @@ export default function MarketingDashboard() {
               {syncing ? "Sincronizando..." : "Sincronizar Meta Ads"}
             </Button>
             <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileUpload} />
-            <Button size="sm" className="bg-[#4969FF] hover:bg-[#3350E6] text-white" onClick={() => fileRef.current?.click()} disabled={importing}>
+            <Button size="sm" className="bg-primary hover:bg-primary text-white" onClick={() => fileRef.current?.click()} disabled={importing}>
               {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
               {importing ? "Importando..." : "Importar Relatório"}
             </Button>

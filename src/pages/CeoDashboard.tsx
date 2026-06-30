@@ -58,10 +58,10 @@ const FALLBACK_COLORS = ["#4969FF","#ec4899","#10b981","#f97316","#06b6d4","#636
 function SectionLabel({ children, icon: Icon }: { children: string; icon: any }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <div className="h-7 w-7 rounded-lg bg-[#4969FF]/10 flex items-center justify-center">
-        <Icon className="h-3.5 w-3.5 text-[#4969FF]" />
+      <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+        <Icon className="h-3.5 w-3.5 text-primary" />
       </div>
-      <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#4969FF]">{children}</span>
+      <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-primary">{children}</span>
     </div>
   );
 }
@@ -74,15 +74,15 @@ const MiniKpi = forwardRef<HTMLDivElement, {
 }>(({ label, value, sub, variant = "default", onClick }, ref) => {
   const colors = {
     default: "text-foreground",
-    highlight: "text-[#4969FF]",
-    success: "text-[#10b981]",
-    warning: "text-[#f59e0b]",
+    highlight: "text-primary",
+    success: "text-success",
+    warning: "text-warning",
   };
   return (
     <div
       ref={ref}
       onClick={onClick}
-      className={`bg-[#f7f7fb] dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/[0.07] rounded-xl p-3.5 border-l-[3px] border-l-[#4969FF] ${onClick ? "cursor-pointer hover:border-[#d0d0d8] dark:hover:border-white/[0.12] transition-colors" : ""}`}
+      className={`bg-[#f7f7fb] dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/[0.07] rounded-xl p-3.5 border-l-[3px] border-l-primary ${onClick ? "cursor-pointer hover:border-[#d0d0d8] dark:hover:border-white/[0.12] transition-colors" : ""}`}
     >
       <p className="text-[10px] font-medium text-[#a1a1aa] dark:text-[#52525b] tracking-wide mb-1 truncate">{label}</p>
       <p className={`text-xl font-[800] leading-none tracking-tight ${colors[variant]}`}>{value}</p>
@@ -365,11 +365,11 @@ export default function CeoDashboard() {
             variant="outline"
             onClick={() => setDispatchOpen(true)}
             disabled={filaCeoCount === 0}
-            className="gap-1.5 text-xs border-[#4969FF]/30 text-[#4969FF] hover:bg-[#4969FF]/5"
+            className="gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/5"
           >
             <Inbox className="h-3.5 w-3.5" />
             Fila CEO
-            {filaCeoCount > 0 && <Badge className="bg-[#4969FF] text-white text-[10px] px-1.5 py-0 ml-1">{filaCeoCount}</Badge>}
+            {filaCeoCount > 0 && <Badge className="bg-primary text-white text-[10px] px-1.5 py-0 ml-1">{filaCeoCount}</Badge>}
           </Button>
         </div>
       </div>
@@ -390,15 +390,15 @@ export default function CeoDashboard() {
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
       {localPendentes.length > 0 && (
-        <Card className="border-[#4969FF]/40 bg-[#f7f7fb] dark:bg-[#141e30]">
+        <Card className="border-primary/40 bg-[#f7f7fb] dark:bg-[#141e30]">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2">
                 Aprovações Pendentes
-                <Badge className="bg-[#4969FF] text-white text-[10px]">{localPendentes.length}</Badge>
+                <Badge className="bg-primary text-white text-[10px]">{localPendentes.length}</Badge>
               </CardTitle>
               {localPendentes.length > 1 && (
-                <Button size="sm" onClick={aprovarTodos} className="bg-[#10b981] hover:bg-[#059669] text-white text-xs">
+                <Button size="sm" onClick={aprovarTodos} className="bg-success hover:bg-[#059669] text-white text-xs">
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar todos
                 </Button>
               )}
@@ -411,7 +411,7 @@ export default function CeoDashboard() {
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
                       {c.avatar && <AvatarImage src={c.avatar} />}
-                      <AvatarFallback className="text-xs bg-[#4969FF]/10 text-[#4969FF]">
+                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
                         {(c.corretor_nome || "C").substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -419,16 +419,16 @@ export default function CeoDashboard() {
                       <p className="font-medium text-sm">{c.corretor_nome}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <Badge variant="outline" className="text-[10px]">{c.janela}</Badge>
-                        <Badge className="text-[10px] bg-[#4969FF]/10 text-[#4969FF] border-0">{c.seg1_nome}</Badge>
+                        <Badge className="text-[10px] bg-primary/10 text-primary border-0">{c.seg1_nome}</Badge>
                         {c.seg2_nome && <Badge className="text-[10px] bg-muted text-muted-foreground border-0">{c.seg2_nome}</Badge>}
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => aprovar(c.id)} className="bg-[#10b981] hover:bg-[#059669] text-white text-xs flex-1 sm:flex-none">
+                    <Button size="sm" onClick={() => aprovar(c.id)} className="bg-success hover:bg-[#059669] text-white text-xs flex-1 sm:flex-none">
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => recusar(c.id)} className="text-[#ef4444] border-[#ef4444]/30 hover:bg-[#ef4444]/5 text-xs flex-1 sm:flex-none">
+                    <Button size="sm" variant="outline" onClick={() => recusar(c.id)} className="text-danger border-danger/30 hover:bg-danger/5 text-xs flex-1 sm:flex-none">
                       <XCircle className="h-3.5 w-3.5 mr-1" /> Recusar
                     </Button>
                   </div>
@@ -463,7 +463,7 @@ export default function CeoDashboard() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                  <Building2 className="h-3.5 w-3.5 text-[#4969FF]" /> Leads por Empreendimento
+                  <Building2 className="h-3.5 w-3.5 text-primary" /> Leads por Empreendimento
                 </CardTitle>
                 {campanhas.some(c => c.empreendimento === "Sem empreendimento") && (
                   <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1" onClick={() => setBulkEmpOpen(true)}>Corrigir</Button>
@@ -494,7 +494,7 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <Megaphone className="h-3.5 w-3.5 text-[#4969FF]" /> Leads por Origem
+                <Megaphone className="h-3.5 w-3.5 text-primary" /> Leads por Origem
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -513,7 +513,7 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <Users className="h-3.5 w-3.5 text-[#4969FF]" /> Leads por Corretor
+                <Users className="h-3.5 w-3.5 text-primary" /> Leads por Corretor
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -526,7 +526,7 @@ export default function CeoDashboard() {
                 {leadsPorCorretor.length === 0 && <p className="text-xs text-[#a1a1aa] text-center py-4">Sem dados</p>}
               </div>
               {leadsPorCorretor.length > 6 && (
-                <Button variant="ghost" size="sm" className="w-full mt-2 text-[10px] text-[#4969FF] hover:text-[#4969FF]/80" onClick={() => setShowAllCorretorLeads(!showAllCorretorLeads)}>
+                <Button variant="ghost" size="sm" className="w-full mt-2 text-[10px] text-primary hover:text-primary/80" onClick={() => setShowAllCorretorLeads(!showAllCorretorLeads)}>
                   {showAllCorretorLeads ? "Ver menos" : `Ver mais (${leadsPorCorretor.length})`}
                 </Button>
               )}
@@ -592,25 +592,25 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <CalendarCheck className="h-3.5 w-3.5 text-[#4969FF]" /> Agenda de Visitas
+                <CalendarCheck className="h-3.5 w-3.5 text-primary" /> Agenda de Visitas
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-[#4969FF]">{totalVisitasCriadas}</p>
+                  <p className="text-2xl font-[800] text-primary">{totalVisitasCriadas}</p>
                   <p className="text-[10px] text-[#a1a1aa] mt-0.5">Total Visitas (Novas)</p>
                 </div>
                 <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-[#f59e0b]">{kpis.visitasMarcadas}</p>
+                  <p className="text-2xl font-[800] text-warning">{kpis.visitasMarcadas}</p>
                   <p className="text-[10px] text-[#a1a1aa] mt-0.5">Marcadas</p>
                 </div>
                 <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-[#10b981]">{kpis.visitasRealizadas}</p>
+                  <p className="text-2xl font-[800] text-success">{kpis.visitasRealizadas}</p>
                   <p className="text-[10px] text-[#a1a1aa] mt-0.5">Realizadas</p>
                 </div>
                 <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
-                  <p className="text-2xl font-[800] text-[#ef4444]">{kpis.noShows}</p>
+                  <p className="text-2xl font-[800] text-danger">{kpis.noShows}</p>
                   <p className="text-[10px] text-[#a1a1aa] mt-0.5">No Show</p>
                 </div>
               </div>
@@ -621,7 +621,7 @@ export default function CeoDashboard() {
                     <span className="font-semibold text-foreground">{Math.round((kpis.visitasRealizadas / ceoMetas.meta_visitas_realizadas) * 100)}%</span>
                   </div>
                   <div className="h-2 rounded-full bg-[#e8e8f0] dark:bg-white/[0.06] overflow-hidden">
-                    <div className="h-full rounded-full bg-[#10b981] transition-all" style={{ width: `${Math.min((kpis.visitasRealizadas / ceoMetas.meta_visitas_realizadas) * 100, 100)}%` }} />
+                    <div className="h-full rounded-full bg-success transition-all" style={{ width: `${Math.min((kpis.visitasRealizadas / ceoMetas.meta_visitas_realizadas) * 100, 100)}%` }} />
                   </div>
                 </div>
               )}
@@ -732,8 +732,8 @@ export default function CeoDashboard() {
                   {teams.sort((a, b) => b.ligacoes - a.ligacoes).map(t => (
                     <tr key={t.gerente_id} className="border-b border-[#e8e8f0]/50 dark:border-white/[0.04] hover:bg-white/50 dark:hover:bg-white/[0.02] transition-colors">
                       <td className="py-2 font-medium text-foreground">{t.gerente_nome}</td>
-                      <td className="py-2 text-right font-semibold text-[#4969FF]">{t.ligacoes}</td>
-                      <td className="py-2 text-right text-[#10b981] font-semibold">{t.aproveitados}</td>
+                      <td className="py-2 text-right font-semibold text-primary">{t.ligacoes}</td>
+                      <td className="py-2 text-right text-success font-semibold">{t.aproveitados}</td>
                       <td className="py-2 text-right">{t.taxa}%</td>
                       <td className="py-2 text-right">{t.visitasMarcadas}</td>
                       <td className="py-2 text-right">{t.visitasRealizadas}</td>
@@ -742,10 +742,10 @@ export default function CeoDashboard() {
                     </tr>
                   ))}
                   {teams.length > 0 && (
-                    <tr className="bg-[#4969FF]/5 font-semibold">
-                      <td className="py-2 text-[#4969FF]">Total</td>
-                      <td className="py-2 text-right text-[#4969FF]">{totalTeam.ligacoes}</td>
-                      <td className="py-2 text-right text-[#10b981]">{totalTeam.aproveitados}</td>
+                    <tr className="bg-primary/5 font-semibold">
+                      <td className="py-2 text-primary">Total</td>
+                      <td className="py-2 text-right text-primary">{totalTeam.ligacoes}</td>
+                      <td className="py-2 text-right text-success">{totalTeam.aproveitados}</td>
                       <td className="py-2 text-right">{totalTeam.ligacoes > 0 ? Math.round((totalTeam.aproveitados / totalTeam.ligacoes) * 100) : 0}%</td>
                       <td className="py-2 text-right">{totalTeam.visitasMarcadas}</td>
                       <td className="py-2 text-right">{totalTeam.visitasRealizadas}</td>
@@ -784,8 +784,8 @@ export default function CeoDashboard() {
                         <td className="py-1.5 font-bold text-[#a1a1aa]">{i + 1}</td>
                         <td className="py-1.5 font-medium text-foreground">{c.nome}</td>
                         <td className="py-1.5 text-[#a1a1aa]">{c.gerente_nome}</td>
-                        <td className="py-1.5 text-right font-semibold text-[#4969FF]">{c.ligacoes}</td>
-                        <td className="py-1.5 text-right text-[#10b981] font-semibold">{c.aproveitados}</td>
+                        <td className="py-1.5 text-right font-semibold text-primary">{c.ligacoes}</td>
+                        <td className="py-1.5 text-right text-success font-semibold">{c.aproveitados}</td>
                         <td className="py-1.5 text-right">{c.taxa}%</td>
                       </tr>
                     ))}
@@ -807,13 +807,13 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <Megaphone className="h-3.5 w-3.5 text-[#4969FF]" /> Marketing
+                <Megaphone className="h-3.5 w-3.5 text-primary" /> Marketing
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
                 <span className="text-[11px] text-[#71717a]">Total Leads Gerados</span>
-                <span className="text-sm font-bold text-[#4969FF]">{totalLeadsPeriodo}</span>
+                <span className="text-sm font-bold text-primary">{totalLeadsPeriodo}</span>
               </div>
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
                 <span className="text-[11px] text-[#71717a]">Origens Ativas</span>
@@ -824,7 +824,7 @@ export default function CeoDashboard() {
                 <span className="text-sm font-bold">{origens[0]?.origem || "—"}</span>
               </div>
               {isAdmin && (
-                <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/marketing")}>
+                <Button variant="outline" size="sm" className="w-full text-xs text-primary border-primary/20" onClick={() => navigate("/marketing")}>
                   Ver Marketing
                 </Button>
               )}
@@ -835,13 +835,13 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <UserCheck className="h-3.5 w-3.5 text-[#4969FF]" /> RH & Equipe
+                <UserCheck className="h-3.5 w-3.5 text-primary" /> RH & Equipe
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
                 <span className="text-[11px] text-[#71717a]">Presentes Hoje</span>
-                <span className="text-sm font-bold text-[#10b981]">{presentesHoje}</span>
+                <span className="text-sm font-bold text-success">{presentesHoje}</span>
               </div>
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
                 <span className="text-[11px] text-[#71717a]">Equipes Ativas</span>
@@ -852,7 +852,7 @@ export default function CeoDashboard() {
                 <span className="text-sm font-bold">{corretoresRank.length}</span>
               </div>
               {isAdmin && (
-                <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20" onClick={() => navigate("/rh")}>
+                <Button variant="outline" size="sm" className="w-full text-xs text-primary border-primary/20" onClick={() => navigate("/rh")}>
                   Ver RH
                 </Button>
               )}
@@ -863,33 +863,33 @@ export default function CeoDashboard() {
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <Eye className="h-3.5 w-3.5 text-[#4969FF]" /> Alertas & Atenção
+                <Eye className="h-3.5 w-3.5 text-primary" /> Alertas & Atenção
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {alertas.length > 0 ? alertas.map((a, i) => (
                 <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg text-[11px] ${
-                  a.tipo === "red" ? "bg-[#ef4444]/5 text-[#ef4444]" :
-                  a.tipo === "yellow" ? "bg-[#f59e0b]/5 text-[#f59e0b]" :
-                  "bg-[#10b981]/5 text-[#10b981]"
+                  a.tipo === "red" ? "bg-danger/5 text-danger" :
+                  a.tipo === "yellow" ? "bg-warning/5 text-warning" :
+                  "bg-success/5 text-success"
                 }`}>
                   <div className={`h-2 w-2 rounded-full mt-1 shrink-0 ${
-                    a.tipo === "red" ? "bg-[#ef4444]" : a.tipo === "yellow" ? "bg-[#f59e0b]" : "bg-[#10b981]"
+                    a.tipo === "red" ? "bg-danger" : a.tipo === "yellow" ? "bg-warning" : "bg-success"
                   }`} />
                   <span>{a.mensagem}</span>
                 </div>
               )) : (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-[#10b981]/5 text-[#10b981] text-[11px]">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-success/5 text-success text-[11px]">
                   <CheckCircle2 className="h-4 w-4" /> Operação saudável
                 </div>
               )}
               {vgvEmRisco > 0 && (
-                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-[#f59e0b]/5 text-[#f59e0b] text-[11px]">
-                  <div className="h-2 w-2 rounded-full mt-1 shrink-0 bg-[#f59e0b]" />
+                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-warning/5 text-warning text-[11px]">
+                  <div className="h-2 w-2 rounded-full mt-1 shrink-0 bg-warning" />
                   <span>VGV em risco (parados &gt;15d): {formatBRLCompact(vgvEmRisco)}</span>
                 </div>
               )}
-              <Button variant="outline" size="sm" className="w-full text-xs text-[#4969FF] border-[#4969FF]/20 mt-2" onClick={() => navigate("/central-relatorios?visao=executivo")}>
+              <Button variant="outline" size="sm" className="w-full text-xs text-primary border-primary/20 mt-2" onClick={() => navigate("/central-relatorios?visao=executivo")}>
                 Ver Relatório Geral
               </Button>
             </CardContent>

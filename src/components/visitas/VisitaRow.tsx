@@ -41,21 +41,21 @@ function addToCalendar(v: Visita) {
 }
 
 const STATUS_BADGE_STYLES: Record<string, string> = {
-  marcada: "text-[#f59e0b] bg-[#fffbeb] border-[#fde68a]",
-  confirmada: "text-[#4969FF] bg-[#eff6ff] border-[#bfdbfe]",
-  realizada: "text-[#10b981] bg-[#f0fdf4] border-[#bbf7d0]",
+  marcada: "text-warning bg-[#fffbeb] border-[#fde68a]",
+  confirmada: "text-primary bg-[#eff6ff] border-[#bfdbfe]",
+  realizada: "text-success bg-[#f0fdf4] border-[#bbf7d0]",
   reagendada: "text-[#6366f1] bg-[#eef2ff] border-[#c7d2fe]",
   cancelada: "text-[#52525b] bg-[#f7f7fb] border-[#e8e8f0]",
-  no_show: "text-[#ef4444] bg-[#fef2f2] border-[#fecaca]",
+  no_show: "text-danger bg-[#fef2f2] border-[#fecaca]",
 };
 
 const STATUS_LINE_COLORS: Record<string, string> = {
-  marcada: "bg-[#f59e0b]",
-  confirmada: "bg-[#4969FF]",
-  realizada: "bg-[#10b981]",
+  marcada: "bg-warning",
+  confirmada: "bg-primary",
+  realizada: "bg-success",
   reagendada: "bg-[#6366f1]",
   cancelada: "bg-[#71717a]",
-  no_show: "bg-[#ef4444]",
+  no_show: "bg-danger",
 };
 
 const LOCAL_LABELS: Record<string, string> = {
@@ -206,9 +206,9 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
           {/* Quick actions on hover */}
           {(v.status === "marcada" || v.status === "confirmada") && (
             <div className="hidden group-hover:flex items-center gap-0.5">
-              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded hover:bg-[#10b981]/10" onClick={() => onUpdateStatus(v.id, "realizada")} title="Realizada">✅</Button>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded hover:bg-success/10" onClick={() => onUpdateStatus(v.id, "realizada")} title="Realizada">✅</Button>
               <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded hover:bg-[#6366f1]/10" onClick={() => onUpdateStatus(v.id, "reagendada")} title="Reagendada">🔄</Button>
-              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded hover:bg-[#ef4444]/10" onClick={() => onUpdateStatus(v.id, "no_show")} title="No Show">❌</Button>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded hover:bg-danger/10" onClick={() => onUpdateStatus(v.id, "no_show")} title="No Show">❌</Button>
               <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded hover:bg-[#f7f7fb]" onClick={() => onUpdateStatus(v.id, "cancelada")} title="Cancelada">⚫</Button>
             </div>
           )}

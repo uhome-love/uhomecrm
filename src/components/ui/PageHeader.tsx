@@ -33,21 +33,21 @@ export function PageHeader({
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           {icon && (
-            <div className="w-9 h-9 rounded-[10px] bg-[#4969FF]/10 flex items-center justify-center flex-shrink-0 text-[#4969FF]">
+            <div className="w-9 h-9 rounded-[10px] bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
               {icon}
             </div>
           )}
           <div className="min-w-0">
             <h1
               className={cn(
-                "font-bold tracking-tight text-[#0a0a0a] dark:text-[#fafafa] leading-none",
+                "font-bold tracking-tight text-foreground leading-none",
                 size === "sm" ? "text-[18px]" : "text-[22px]"
               )}
             >
               {title}
             </h1>
             {subtitle && (
-              <p className="text-[13px] text-[#a1a1aa] mt-1.5 font-normal">
+              <p className="text-[13px] text-muted-foreground mt-1.5 font-normal">
                 {subtitle}
               </p>
             )}
@@ -68,8 +68,8 @@ export function PageHeader({
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[13px] font-medium transition-all",
                 activeTab === tab.value
-                  ? "bg-[#4969FF] text-white"
-                  : "text-[#71717a] hover:text-[#0a0a0a] hover:bg-[#f5f5f5] dark:hover:text-[#fafafa] dark:hover:bg-white/[0.06]"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
               {tab.label}
@@ -78,8 +78,8 @@ export function PageHeader({
                   className={cn(
                     "text-[10px] font-semibold rounded-full px-1.5 py-px",
                     activeTab === tab.value
-                      ? "bg-white/20 text-white"
-                      : "bg-[#f0f0f0] text-[#a1a1aa] dark:bg-white/10 dark:text-[#71717a]"
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
                   )}
                 >
                   {tab.badge}
@@ -89,7 +89,7 @@ export function PageHeader({
           ))}
         </div>
       )}
-      <div className="h-px bg-[#f0f0f0] dark:bg-white/[0.06]" />
+      <div className="h-px bg-border" />
     </div>
   );
 }

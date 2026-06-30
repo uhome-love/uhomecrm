@@ -108,7 +108,7 @@ export default function CeoOverview() {
           {/* Resumo Executivo */}
           <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-4 w-4 text-[#4969FF]" />
+              <Zap className="h-4 w-4 text-primary" />
               <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Resumo executivo</h3>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -119,9 +119,9 @@ export default function CeoOverview() {
                   className={cn(
                     "flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors",
                     s.link && "cursor-pointer hover:opacity-80",
-                    s.type === "success" ? "bg-[#10b981]/5 border-[#10b981]/20 text-[#10b981]" :
-                    s.type === "warning" ? "bg-[#f59e0b]/5 border-[#f59e0b]/20 text-[#f59e0b]" :
-                    "bg-[#ef4444]/5 border-[#ef4444]/20 text-[#ef4444]"
+                    s.type === "success" ? "bg-success/5 border-success/20 text-success" :
+                    s.type === "warning" ? "bg-warning/5 border-warning/20 text-warning" :
+                    "bg-danger/5 border-danger/20 text-danger"
                   )}
                 >
                   {s.type === "success" ? <CheckCircle className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
@@ -201,7 +201,7 @@ export default function CeoOverview() {
           {/* Saúde da Operação */}
           <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Activity className="h-4 w-4 text-[#4969FF]" />
+              <Activity className="h-4 w-4 text-primary" />
               <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Saúde da operação</h3>
             </div>
             <SaudeOperacao />
@@ -216,7 +216,7 @@ function TeamComparisonTable({ gerentes, expandedTeam, setExpandedTeam }: { gere
   return (
     <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] overflow-hidden">
       <div className="px-4 py-3 border-b border-[#f0f0f0] dark:border-white/[0.07] flex items-center gap-2">
-        <BarChart3 className="h-4 w-4 text-[#4969FF]" />
+        <BarChart3 className="h-4 w-4 text-primary" />
         <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Performance por equipe</h3>
       </div>
       <table className="w-full text-xs">
@@ -251,7 +251,7 @@ function TeamComparisonTable({ gerentes, expandedTeam, setExpandedTeam }: { gere
                   <td className="px-2 py-2 text-center text-[#71717a]">{g.totals.real_visitas_realizadas}</td>
                   <td className="px-2 py-2 text-center font-medium text-[#0a0a0a] dark:text-[#fafafa]">{formatBRLCompact(g.totals.real_vgv_assinado)}</td>
                   <td className="px-2 py-2 text-center">
-                    <span className={cn("font-semibold", gPct >= 70 ? "text-[#10b981]" : gPct >= 30 ? "text-[#f59e0b]" : "text-[#ef4444]")}>
+                    <span className={cn("font-semibold", gPct >= 70 ? "text-success" : gPct >= 30 ? "text-warning" : "text-danger")}>
                       {gPct}%
                     </span>
                   </td>
@@ -267,7 +267,7 @@ function TeamComparisonTable({ gerentes, expandedTeam, setExpandedTeam }: { gere
                       <td className="px-2 py-1.5 text-center text-[#a1a1aa]">{c.real_visitas_realizadas}</td>
                       <td className="px-2 py-1.5 text-center text-[#a1a1aa]">{formatBRLCompact(c.real_vgv_assinado)}</td>
                       <td className="px-2 py-1.5 text-center">
-                        <span className={cn("text-[10px]", cPct >= 70 ? "text-[#10b981]" : cPct >= 30 ? "text-[#f59e0b]" : "text-[#ef4444]")}>{cPct}%</span>
+                        <span className={cn("text-[10px]", cPct >= 70 ? "text-success" : cPct >= 30 ? "text-warning" : "text-danger")}>{cPct}%</span>
                       </td>
                     </tr>
                   );
@@ -303,7 +303,7 @@ function FunnelSection({ t }: { t: any }) {
   return (
     <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] p-4">
       <div className="flex items-center gap-2 mb-3">
-        <BarChart3 className="h-4 w-4 text-[#4969FF]" />
+        <BarChart3 className="h-4 w-4 text-primary" />
         <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Conversão do funil</h3>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -313,13 +313,13 @@ function FunnelSection({ t }: { t: any }) {
           return (
             <div key={step.label} className={cn(
               "rounded-[10px] border p-3 text-center",
-              isBottleneck ? "border-[#ef4444]/30 bg-[#ef4444]/5" : "border-[#f0f0f0] dark:border-white/[0.07] bg-[#fafafa] dark:bg-white/[0.02]"
+              isBottleneck ? "border-danger/30 bg-danger/5" : "border-[#f0f0f0] dark:border-white/[0.07] bg-[#fafafa] dark:bg-white/[0.02]"
             )}>
               <p className="text-[10px] text-[#a1a1aa] font-medium">{step.label}</p>
               <p className="text-lg font-[800] text-[#0a0a0a] dark:text-[#fafafa] mt-1">{step.value}</p>
               {convRate !== null && (
                 <div className={cn("mt-1 text-[10px] font-semibold",
-                  isBottleneck ? "text-[#ef4444]" : convRate >= 50 ? "text-[#10b981]" : "text-[#f59e0b]"
+                  isBottleneck ? "text-danger" : convRate >= 50 ? "text-success" : "text-warning"
                 )}>
                   → {convRate}%
                 </div>
@@ -329,7 +329,7 @@ function FunnelSection({ t }: { t: any }) {
         })}
       </div>
       {funnel.some((s) => s.next !== null && s.value > 0 && Math.round((s.next! / s.value) * 100) < 20) && (
-        <div className="mt-2 flex items-center gap-2 text-xs text-[#ef4444]">
+        <div className="mt-2 flex items-center gap-2 text-xs text-danger">
           <AlertTriangle className="h-3.5 w-3.5" />
           <span>Gargalo detectado em etapas com conversão abaixo de 20%</span>
         </div>
