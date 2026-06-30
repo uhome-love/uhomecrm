@@ -9,8 +9,9 @@ import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, GripVertical, Calendar, Clock, User, Edit2, Trash2,
-  ChevronRight, AlertTriangle, Filter, LayoutGrid, CalendarDays
+  ChevronRight, AlertTriangle, Filter, LayoutGrid, CalendarDays, ClipboardList
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
