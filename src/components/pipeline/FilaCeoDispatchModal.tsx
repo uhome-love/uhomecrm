@@ -331,7 +331,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
             Fila CEO
           </DialogTitle>
           <DialogDescription>
-            Distribua leads novos ou confirme a redistribuição de leads parados há 72h.
+            Distribua leads novos ou de reengajamento para a roleta ou Oferta Ativa.
           </DialogDescription>
         </DialogHeader>
 
