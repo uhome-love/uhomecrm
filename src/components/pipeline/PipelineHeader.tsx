@@ -763,15 +763,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                     🆕 Distribuir novos <span className="font-bold">{filaCeoNovosCount}</span>
                   </button>
                 )}
-                {filaCeoRedistCount > 0 && (
-                  <button
-                    onClick={() => openDispatch("redistribuicao")}
-                    className="w-full flex items-center justify-between transition-colors h-8 px-2.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold border-none cursor-pointer"
-                    title="Confirmar redistribuição (leads reciclados após 72h)"
-                  >
-                    🔄 Redistribuição <span className="font-bold">{filaCeoRedistCount}</span>
-                  </button>
-                )}
               </PopoverContent>
             </Popover>
           )}
