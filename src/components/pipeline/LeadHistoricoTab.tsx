@@ -132,7 +132,7 @@ function limparTexto(texto: string | null | undefined, leadNome?: string | null,
   out = out.replace(/resultado:\s*/gi, " ");
   out = out.replace(/·\s*\d{1,2}\/\d{1,2}(\/\d{2,4})?/g, " ");
   out = out.replace(/\s{2,}/g, " ").trim();
-  out = out.replace(/^[\s—•·-]+/, "").replace(/[\s—•·-]+$/, "").trim();
+  out = out.replace(/^[\s—•·:;-]+/, "").replace(/[\s—•·:;-]+$/, "").trim();
   return out;
 }
 
