@@ -10644,6 +10644,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _pipeline_tem_tarefa_pendente_futura: {
+        Args: { _lead_id: string }
+        Returns: boolean
+      }
       _pipeline_ultima_acao_humana: {
         Args: { _lead_id: string }
         Returns: string

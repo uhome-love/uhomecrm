@@ -13,6 +13,7 @@ import type { PipelineStage } from "@/hooks/usePipeline";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
+import { maxTaskDateBRT, isTaskDateTooFar, TASK_DATE_TOO_FAR_MSG } from "@/lib/taskScheduling";
 
 type OptionType = "tarefa" | "avancar" | "descartar";
 
@@ -84,6 +85,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
     try {
       if (selected === "tarefa") {
         if (!tarefaData) { toast.error("Informe a data da tarefa"); setSaving(false); return; }
+        if (isTaskDateTooFar(tarefaData)) { toast.error(TASK_DATE_TOO_FAR_MSG); setSaving(false); return; }
         const { error: insertErr } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: leadId,
           titulo: TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa,
@@ -202,7 +204,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">Data *</label>
-                  <Input type="date" value={tarefaData} onChange={(e) => setTarefaData(e.target.value)} className="h-9" />
+                  <Input type="date" value={tarefaData} max={maxTaskDateBRT()} onChange={(e) => setTarefaData(e.target.value)} className="h-9" />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">Hora (opcional)</label>

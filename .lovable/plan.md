@@ -1,37 +1,54 @@
-# Melhorias na página Leads Estagnados
+# Tarefa futura protege da estagnação + teto de 30 dias
 
-Três melhorias na página `/leads-estagnados` (`src/pages/LeadsEstagnados.tsx`) para facilitar a decisão do gestor/CEO. Sem mudanças no banco, RLS ou edge functions — apenas frontend, reaproveitando o que já existe.
+## Entendimento confirmado
+- Tarefa pendente com data futura = ação planejada → o lead **não estagna** enquanto ela existir e não vencer.
+- Quando a tarefa é concluída (ou vence sem conclusão), o relógio de inatividade passa a contar a partir desse momento. Sem nova tarefa/ação dentro do limite de dias, o lead estagna.
+- Corretor poderá agendar tarefa no máximo **30 dias** à frente (impede "burlar" a estagnação jogando tarefa para meses depois).
 
-## 1) Clicar no cliente → abrir o histórico do lead
+## Problema atual (auditado)
+- `_pipeline_ultima_acao_humana` só conta tarefas **concluídas**; ignora tarefas **pendentes futuras**. Resultado: lead com tarefa agendada estagna do mesmo jeito.
+- 1 estagnado e vários "em aviso" possuem tarefa futura pendente; há 65 tarefas marcadas para >30 dias (máx. 261 dias).
 
-Hoje cada linha mostra só nome, etapa e corretor. Vamos tornar o nome/linha clicável para abrir o **mesmo drawer de detalhe do lead** usado no pipeline (`PipelineLeadDetail`), com timeline, tarefas, visitas, anotações e histórico completo — assim o gestor entende o contexto antes de decidir.
+## Mudanças
 
-Como o card de estagnação carrega só dados resumidos, ao clicar buscamos o registro completo do lead (`pipeline_leads` por `id`) sob demanda e abrimos o drawer com ele. As ações de update/mover/excluir dentro do drawer funcionarão e, ao fechar, a lista de estagnados é recarregada para refletir qualquer mudança.
+### 1. Estagnação passa a respeitar tarefa pendente futura (migration)
+Criar helper `public._pipeline_tem_tarefa_pendente_futura(lead_id)`:
+- retorna `true` se existe tarefa em `pipeline_tarefas` com `concluida_em IS NULL`, `status <> 'concluida'` e `vence_em >= CURRENT_DATE`.
 
-## 2) Filtros para facilitar a visualização
+Aplicar esse guard em:
+- **`processar_estagnacao_pipeline`**:
+  - Não marcar aviso para candidatos que tenham tarefa pendente futura.
+  - Resetar (`estagnado_aviso_em=NULL`, `estagnado_prazo_em=NULL`) leads em aviso que tenham tarefa pendente futura.
+  - Resetar (`estagnado=false`, limpa campos) leads já estagnados que tenham tarefa pendente futura.
+- **`get_pipeline_estagnacao`**: excluir da lista da Central os leads com tarefa pendente futura (consistência com o motor).
 
-Adicionar uma barra de filtros acima da lista (dentro da aba atual):
-- **Busca por texto** (nome, empreendimento, corretor)
-- **Corretor** (dropdown com os corretores que têm leads na categoria)
-- **Empreendimento** (dropdown)
-- **Ordenação** por dias sem ação (maior → menor é o padrão) ou nome
+> Observação: tarefa **vencida e não concluída** (data no passado) NÃO protege — atraso na própria tarefa é sinal de inação.
 
-Os filtros operam sobre os dados já carregados (client-side), sem nova chamada ao servidor, e funcionam junto com as abas de categoria existentes (Estagnados / Em aviso / Em parceria / Confirmados).
+### 2. Teto de 30 dias para agendamento de tarefas
 
-## 3) Decisões em múltipla seleção
+**a) Defesa central — trigger no banco (migration):**
+Trigger `BEFORE INSERT OR UPDATE` em `pipeline_tarefas` que rejeita `vence_em > CURRENT_DATE + 30` (apenas para tarefas não concluídas), com mensagem clara: "Tarefas podem ser agendadas para no máximo 30 dias à frente." Garante a regra independentemente de qual tela criou a tarefa.
 
-Permitir selecionar vários leads e aplicar uma ação de uma vez:
-- Um **checkbox** por linha + um "selecionar todos" no topo da lista.
-- Quando há seleção, aparece uma **barra de ações em massa** mostrando "N selecionados" com os botões: **Repassar**, **Roleta** e **Descartar**.
-- Reaproveita o mesmo `DecisionDialog` já existente, em modo lote:
-  - **Repassar**: escolhe um corretor de destino único e aplica a todos.
-  - **Roleta / Descartar**: confirma o motivo e aplica a todos.
-- A execução chama o mesmo hook `useDecidirEstagnado` para cada lead selecionado (em sequência, com feedback de progresso), depois limpa a seleção e recarrega a lista. Um toast resume "X leads processados".
+**b) Frontend — limitar os seletores de data** (max = hoje + 30 dias) nos pontos onde o corretor escolhe a data da tarefa:
+- `src/components/pipeline/LeadTarefasTab.tsx`
+- `src/components/pipeline/NextActionModal.tsx`
+- `src/components/pipeline/CardQuickTaskPopover.tsx`
+- `src/pages/MinhasTarefas.tsx`
+- `src/hooks/usePipelineLeadData.ts` (validação no submit)
 
-## Detalhes técnicos
+Inputs `type="date"` ganham atributo `max`; onde houver agendamento por "X dias depois", limitar a 30.
 
-- **Arquivo principal alterado:** `src/pages/LeadsEstagnados.tsx`.
-- **Drawer:** reusar `src/components/pipeline/PipelineLeadDetail.tsx`. Ele exige um `PipelineLead` completo + `stages`/`segmentos` + callbacks `onUpdate/onMove/onDelete`. Para evitar carregar o pipeline inteiro, ao clicar buscamos o lead único e os `stages`/`segmentos` (queries leves, em cache via react-query). Callbacks fazem `update`/`move` direto em `pipeline_leads` e, no fechamento, `invalidateQueries(["pipeline-estagnacao"])`.
-- **Filtros e seleção:** estado local (`useState`) + `useMemo`; nenhum novo hook de dados necessário além de reusar `useCorretoresOptions`.
-- **Bulk actions:** estende o `DecisionDialog` para aceitar `leadIds: string[]` opcional além do `lead` único; loop sobre `useDecidirEstagnado.mutateAsync`.
-- Sem migração, sem mudança em RLS/edge functions, sem alteração de regras de negócio (as ações continuam idênticas às atuais).
+### 3. Correção dos dados existentes (auditoria + fix)
+Numa migration/insert de saneamento:
+- **Tirar da estagnação** os leads (estagnado ou em aviso) que possuem tarefa pendente futura — limpar `estagnado`, `estagnado_em`, `estagnado_aviso_em`, `estagnado_prazo_em`. (Ex.: Júlia Veiga, Ana Tormen e demais listados.)
+- **Reescalonar para 30 dias** as 65 tarefas pendentes com `vence_em > hoje+30` → setar `vence_em = CURRENT_DATE + 30` (não apagar, apenas ajustar para dentro da nova regra).
+
+## Validação após aplicar
+- Reexecutar a auditoria: `estagnados_com_tarefa_futura` deve ser 0.
+- Conferir que nenhuma tarefa pendente fica com `vence_em > hoje+30`.
+- Testar criar tarefa para 60 dias na UI → bloqueado pelo seletor e, se contornado, pelo trigger.
+- Rodar `processar_estagnacao_pipeline` e confirmar que leads com tarefa futura não voltam a estagnar.
+
+## Fora de escopo
+- Não muda dias-limite por etapa nem o fluxo de arquivamento já existente.
+- Não altera RLS, buckets ou edge functions.

@@ -18,6 +18,7 @@ import type { PipelineTarefa } from "@/hooks/usePipelineLeadData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TaskCompletionDialog from "./TaskCompletionDialog";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
+import { maxTaskDateBRT, isTaskDateTooFar, TASK_DATE_TOO_FAR_MSG } from "@/lib/taskScheduling";
 
 const TIPO_BUTTONS = [
   { value: "ligar", label: "Ligar", emoji: "📞" },
@@ -114,6 +115,10 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     }
     if (!venceEm) {
       toast.error("Selecione uma data (Hoje ou Amanhã) para a tarefa.");
+      return;
+    }
+    if (isTaskDateTooFar(venceEm)) {
+      toast.error(TASK_DATE_TOO_FAR_MSG);
       return;
     }
     setCreating(true);
@@ -308,6 +313,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
 
   const handleAdiarCustom = async () => {
     if (!adiarId || !adiarData) return;
+    if (isTaskDateTooFar(adiarData)) { toast.error(TASK_DATE_TOO_FAR_MSG); return; }
     await supabase.from("pipeline_tarefas").update({
       vence_em: adiarData,
       hora_vencimento: adiarHora || null,
@@ -320,6 +326,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
 
   const handleEditSave = async () => {
     if (!editId) return;
+    if (isTaskDateTooFar(editData)) { toast.error(TASK_DATE_TOO_FAR_MSG); return; }
     const finalTipo = editTipo;
     const titulo = `${TIPO_LABELS[finalTipo] || finalTipo}: ${leadNome}`;
     await supabase.from("pipeline_tarefas").update({
@@ -475,7 +482,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
               >
                 Amanhã
               </button>
-              <Input type="date" className="h-8 text-xs w-36" value={venceEm} onChange={e => setVenceEm(e.target.value)} />
+              <Input type="date" className="h-8 text-xs w-36" max={maxTaskDateBRT()} value={venceEm} onChange={e => setVenceEm(e.target.value)} />
               <Input type="time" className="h-8 text-xs w-24" value={horaVencimento} onChange={e => setHoraVencimento(e.target.value)} />
             </div>
           </div>
@@ -563,7 +570,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
               <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 24); setAdiarId(null); }}>Amanhã</Button>
             </div>
             <p className="text-xs text-muted-foreground text-center">ou escolha data/hora:</p>
-            <Input type="date" value={adiarData} onChange={e => setAdiarData(e.target.value)} />
+            <Input type="date" value={adiarData} max={maxTaskDateBRT()} onChange={e => setAdiarData(e.target.value)} />
             <Input type="time" value={adiarHora} onChange={e => setAdiarHora(e.target.value)} />
             <Button className="w-full" onClick={handleAdiarCustom} disabled={!adiarData}>Reagendar ✅</Button>
           </div>
@@ -596,7 +603,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-muted-foreground font-medium">Data:</label>
-                <Input type="date" value={editData} onChange={e => setEditData(e.target.value)} className="h-8 text-xs mt-1" />
+                <Input type="date" value={editData} max={maxTaskDateBRT()} onChange={e => setEditData(e.target.value)} className="h-8 text-xs mt-1" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground font-medium">Hora:</label>
