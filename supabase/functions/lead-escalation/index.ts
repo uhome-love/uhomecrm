@@ -520,8 +520,20 @@ Deno.serve(async (req) => {
     // 4e. Cadência "Sem Contato": disparar tentativas vencidas (push + sino + WhatsApp)
     let cadenciaSent = 0;
     let cadenciaDescartados = 0;
+    // Janela de silêncio: nunca notificar entre 00:00 e 09:00 (BRT).
+    // O cron roda a cada minuto; o que vencer de madrugada é processado a partir das 09:00.
+    const horaBRT = Number(
+      new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit", hour12: false, timeZone: "America/Sao_Paulo",
+      }).format(new Date())
+    );
+    const dentroJanelaSilencio = horaBRT < 9;
     try {
+      if (dentroJanelaSilencio) {
+        L.info("Cadencia sem contato — janela de silêncio (00:00-09:00 BRT), pulando", { horaBRT });
+      } else {
       const { data: passos, error: cadErr } = await supabase.rpc("processar_cadencia_sem_contato");
+
       if (cadErr) {
         L.error("Cadencia sem contato RPC failed", {}, cadErr);
       } else if (passos && passos.length > 0) {
@@ -593,6 +605,7 @@ Deno.serve(async (req) => {
         logOps("info", "business",
           `Cadencia Sem Contato: ${cadenciaSent} tentativas, ${cadenciaDescartados} descartados`,
           { cadenciaSent, cadenciaDescartados } as unknown as Record<string, unknown>);
+      }
       }
     } catch (cadErr) {
       L.error("Cadencia sem contato error (non-blocking)", {}, cadErr);
