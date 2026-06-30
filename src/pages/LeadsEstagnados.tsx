@@ -179,6 +179,7 @@ export default function LeadsEstagnados() {
     setSearch("");
     setCorretorFilter("todos");
     setEmpreendimentoFilter("todos");
+    setEtapaFilter("todos");
     setSelected(new Set());
   };
 
@@ -205,7 +206,7 @@ export default function LeadsEstagnados() {
   };
 
   const hasFilters =
-    search.trim() !== "" || corretorFilter !== "todos" || empreendimentoFilter !== "todos";
+    search.trim() !== "" || corretorFilter !== "todos" || empreendimentoFilter !== "todos" || etapaFilter !== "todos";
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
