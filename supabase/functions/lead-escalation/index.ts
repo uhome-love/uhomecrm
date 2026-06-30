@@ -501,20 +501,20 @@ Deno.serve(async (req) => {
             });
           }
 
-          // T7: mover lead para Descarte (reengajável)
+          // T7 esgotado: marcar lead como ESTAGNADO (Central de Leads Estagnados)
           if (p.do_descarte) {
             const { error: descErr } = await supabase.rpc("cadencia_sc_descartar_reengajavel", {
               p_lead_id: p.lead_id,
             });
             if (descErr) {
-              L.error("Cadencia descarte failed", { lead_id: p.lead_id }, descErr);
+              L.error("Cadencia estagnar failed", { lead_id: p.lead_id }, descErr);
             } else {
               cadenciaDescartados++;
             }
           }
         }
         logOps("info", "business",
-          `Cadencia Sem Contato: ${cadenciaSent} tentativas, ${cadenciaDescartados} descartados`,
+          `Cadencia Sem Contato: ${cadenciaSent} tentativas, ${cadenciaDescartados} estagnados`,
           { cadenciaSent, cadenciaDescartados } as unknown as Record<string, unknown>);
       }
       }
