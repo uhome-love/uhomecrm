@@ -63,7 +63,8 @@ export function CompletionStep1({
   onCancel,
   onNext,
 }: Props) {
-  const canAdvance = !!tipoContato && !!resultado;
+  const descricaoValida = descricao.trim().length >= 3;
+  const canAdvance = !!tipoContato && !!resultado && descricaoValida;
 
   return (
     <div className="p-5 space-y-5">
