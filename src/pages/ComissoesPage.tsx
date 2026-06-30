@@ -74,17 +74,16 @@ export default function ComissoesPage() {
 
   return (
     <div className="space-y-5 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-primary" /> Controle de Comissões
-          </h1>
-          <p className="text-sm text-muted-foreground">Faixas, VGV acumulado e comissões por corretor</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => { setEditFaixa({ nome: "", vgv_min: 0, vgv_max: null, percentual: 30 }); setEditOpen(true); }}>
-          <Plus className="h-4 w-4 mr-1" /> Nova Faixa
-        </Button>
-      </div>
+      <PageHeader
+        title="Controle de Comissões"
+        subtitle="Faixas, VGV acumulado e comissões por corretor"
+        icon={<TrendingUp className="h-5 w-5" />}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => { setEditFaixa({ nome: "", vgv_min: 0, vgv_max: null, percentual: 30 }); setEditOpen(true); }}>
+            <Plus className="h-4 w-4 mr-1" /> Nova Faixa
+          </Button>
+        }
+      />
 
       {/* Faixas reference */}
       <Card>
