@@ -599,6 +599,7 @@ function DecisionDialog({
     setProgress(null);
     if (isMulti) {
       const labels: Record<AcaoEstagnacao, string> = {
+        devolver: "devolvidos ao corretor",
         repassar: "repassados",
         roleta: "enviados para a Fila do CEO",
         descartar: "descartados",
@@ -648,6 +649,11 @@ function DecisionDialog({
             </div>
           )}
 
+          {acao === "devolver" && (
+            <p className="text-[13px] text-muted-foreground">
+              {isMulti ? "Os leads voltarão" : "O lead voltará"} para {isMulti ? "os corretores atuais" : firstLead.corretor_nome ?? "o corretor atual"} na etapa <strong>Novo Lead</strong>, saindo da estagnação.
+            </p>
+          )}
           {acao === "roleta" && (
             <p className="text-[13px] text-muted-foreground">
               {isMulti ? "Os leads sairão" : "O lead sairá"} do corretor atual e {isMulti ? "irão" : "irá"} para a Fila do CEO, aguardando redistribuição.
