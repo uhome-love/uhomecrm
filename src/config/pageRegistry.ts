@@ -199,6 +199,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/central-relatorios":        { key: "report-center",     label: "Central Relatórios",  icon: "BarChart2",     roles: ["admin", "gestor", "corretor", "diretor"], noPadding: true },
   "/materiais":             { key: "materiais",            label: "Materiais",           icon: "FolderOpen" },
   "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor", "diretor"] },
+  "/leads-estagnados":      { key: "leads-estagnados",     label: "Leads Estagnados",    icon: "AlarmClock",    roles: ["admin", "gestor", "diretor"] },
 };
 
 // ─── DYNAMIC ROUTES ──────────────────────────────────────────────────────────
