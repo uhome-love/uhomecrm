@@ -1027,6 +1027,7 @@ export default function MeusNegocios() {
       </div>
 
       {/* Kanban */}
+      {boardTab === "ativos" ? (
       <div className="relative flex-1 min-h-0 px-2">
         {canScrollLeft && (
           <button
