@@ -165,9 +165,13 @@ export default function CadenciaSemContatoCard({ leadId, stageTipo, leadNome, le
             </div>
           </div>
 
-          {cadencia?.proxima_em && (
+          {prazoEstagnar ? (
+            <p className="text-[11px] text-destructive/90 px-0.5 font-medium">
+              ⏳ Tarefa atrasada — conclua para não estagnar. Prazo {formatRelativo(prazoEstagnar)}.
+            </p>
+          ) : (
             <p className="text-[11px] text-muted-foreground px-0.5">
-              Próximo passo {formatRelativo(cadencia.proxima_em)}.
+              Conclua a tarefa desta tentativa para avançar para a próxima.
             </p>
           )}
         </div>
