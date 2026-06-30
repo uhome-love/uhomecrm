@@ -225,13 +225,19 @@ export function useNegocios() {
 
     // Optimistic
     setNegocios(prev => prev.map(n =>
-      n.id === negocioId ? { ...n, fase: novaFase, fase_changed_at: new Date().toISOString() } : n
+      n.id === negocioId
+        ? { ...n, fase: novaFase, status: novaFase === NEGOCIO_FASE_PERDIDO ? "perdido" : n.status, fase_changed_at: new Date().toISOString() }
+        : n
     ));
 
     const updatePayload: Record<string, any> = { fase: novaFase, updated_at: new Date().toISOString() };
     // Always set data_assinatura when moving to vendido (negócio fechado)
     if (novaFase === "vendido") {
       updatePayload.data_assinatura = dataAssinatura || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    }
+    // Perdido/caído sai do board ativo (status perdido)
+    if (novaFase === NEGOCIO_FASE_PERDIDO) {
+      updatePayload.status = "perdido";
     }
 
     const { error } = await supabase
