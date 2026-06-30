@@ -279,6 +279,23 @@ export default function LeadsEstagnados() {
             </Select>
           )}
 
+          {etapaOptions.length > 0 && (
+            <Select value={etapaFilter} onValueChange={setEtapaFilter}>
+              <SelectTrigger className="h-9 w-[170px]">
+                <SelectValue placeholder="Etapa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas as etapas</SelectItem>
+                {etapaOptions.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {e}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+
           <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
             <SelectTrigger className="h-9 w-[170px]">
               <SelectValue placeholder="Ordenar" />
@@ -299,6 +316,7 @@ export default function LeadsEstagnados() {
                 setSearch("");
                 setCorretorFilter("todos");
                 setEmpreendimentoFilter("todos");
+                setEtapaFilter("todos");
               }}
             >
               <X className="h-3.5 w-3.5" /> Limpar
