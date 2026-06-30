@@ -98,22 +98,27 @@ function firstName(nome?: string | null): string | undefined {
   return nome.trim().split(/\s+/)[0] || undefined;
 }
 
-// Resultados crus → etiquetas legíveis
+// Resultados crus → etiquetas legíveis (ordem importa: específicos primeiro)
 const RESULTADO_LABELS: Record<string, { label: string; tone: "success" | "danger" | "neutral" | "warning" }> = {
   nao_atendeu: { label: "Não atendeu", tone: "danger" },
-  atendeu: { label: "Atendeu", tone: "success" },
-  positivo: { label: "Positivo", tone: "success" },
-  neutro: { label: "Neutro", tone: "neutral" },
-  negativo: { label: "Negativo", tone: "danger" },
+  "não atendeu": { label: "Não atendeu", tone: "danger" },
   caixa_postal: { label: "Caixa postal", tone: "warning" },
   numero_errado: { label: "Número errado", tone: "danger" },
+  sem_interesse: { label: "Sem interesse", tone: "danger" },
+  agendou_proximo: { label: "Agendou retorno", tone: "success" },
+  positivo: { label: "Positivo", tone: "success" },
+  negativo: { label: "Negativo", tone: "danger" },
+  neutro: { label: "Neutro", tone: "neutral" },
   ocupado: { label: "Ocupado", tone: "warning" },
+  atendeu: { label: "Atendeu", tone: "success" },
 };
 
-function detectResultado(...textos: (string | null | undefined)[]): { key: string; meta: { label: string; tone: "success" | "danger" | "neutral" | "warning" } } | null {
-  const hay = textos.filter(Boolean).join(" ").toLowerCase();
+// Resultado é sempre o trecho após o último " — " no título da atividade
+function resultadoDoTitulo(titulo?: string | null): { key: string; meta: { label: string; tone: "success" | "danger" | "neutral" | "warning" } } | null {
+  if (!titulo || !titulo.includes(" — ")) return null;
+  const raw = titulo.split(" — ").pop()!.trim().toLowerCase();
   for (const key of Object.keys(RESULTADO_LABELS)) {
-    if (hay.includes(key)) return { key, meta: RESULTADO_LABELS[key] };
+    if (raw === key || raw.includes(key)) return { key, meta: RESULTADO_LABELS[key] };
   }
   return null;
 }
