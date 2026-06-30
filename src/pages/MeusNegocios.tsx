@@ -813,7 +813,7 @@ export default function MeusNegocios() {
     }
 
     // Handle "caiu" destination — return lead to pipeline
-    if (data.fase === "distrato" && data.fields.destino === "pipeline" && negocio.pipeline_lead_id) {
+    if (data.fase === "perdido" && data.fields.destino === "pipeline" && negocio.pipeline_lead_id) {
       const stageId = data.fields.stage_id;
       if (stageId) {
         await supabase.from("pipeline_leads").update({
