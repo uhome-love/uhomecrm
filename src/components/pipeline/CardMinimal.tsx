@@ -287,6 +287,14 @@ const CardMinimal = memo(function CardMinimal({
             <div className="flex-1 min-w-0 text-[14px] font-semibold text-foreground tracking-tight leading-tight truncate">
               {lead.nome || "Sem nome"}
             </div>
+            {cadenciaBadge && (
+              <span
+                className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[9px] font-bold tabular-nums ${cadenciaBadge.tone}`}
+                title={`Cadência Sem Contato — próxima ${cadenciaBadge.label}${cadenciaBadge.when ? ` em ${cadenciaBadge.when}` : ""}`}
+              >
+                📲 {cadenciaBadge.label}{cadenciaBadge.when ? ` · ${cadenciaBadge.when}` : ""}
+              </span>
+            )}
             {substatus && (
               <span className={`shrink-0 ${substatus.className}`}>
                 {substatus.label}
