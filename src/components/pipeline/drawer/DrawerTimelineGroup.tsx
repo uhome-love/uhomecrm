@@ -22,9 +22,18 @@ export interface DrawerTimelineItem {
   tipo?: string;
   /** opcional: kind genérico pra fallback (atividade, historico, tarefa, etc) */
   kind?: "atividade" | "historico" | "tarefa" | "anotacao" | "imovel_event" | "system";
+  /** etiqueta de resultado (ex.: "Não atendeu") */
+  badge?: { label: string; tone: "success" | "danger" | "neutral" | "warning" };
   /** ação extra à direita (ex: botão deletar) */
   trailing?: ReactNode;
 }
+
+const BADGE_TONE: Record<string, string> = {
+  success: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+  danger: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300",
+  warning: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+  neutral: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
+};
 
 interface Props {
   items: DrawerTimelineItem[];
