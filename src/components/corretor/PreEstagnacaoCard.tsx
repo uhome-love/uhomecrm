@@ -9,7 +9,15 @@ interface RiscoLead {
   empreendimento: string | null;
   etapa: string;
   dias_sem_acao: number;
+  dias_para_estagnar: number;
   categoria: string;
+}
+
+function prazoLabel(l: RiscoLead) {
+  if (l.categoria === "em_aviso") return "aviso final";
+  if (l.dias_para_estagnar <= 0) return "estagna hoje";
+  if (l.dias_para_estagnar === 1) return "estagna amanhã";
+  return `estagna em ${l.dias_para_estagnar}d`;
 }
 
 export default function PreEstagnacaoCard() {
@@ -52,7 +60,7 @@ export default function PreEstagnacaoCard() {
               Leads prestes a estagnar
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {leads.length} lead{leads.length > 1 ? "s" : ""} precisam de ação
+              {leads.length} lead{leads.length > 1 ? "s" : ""} nos próximos 5 dias
               {emAviso > 0 ? ` · ${emAviso} em aviso final` : ""}
             </p>
           </div>
@@ -86,7 +94,7 @@ export default function PreEstagnacaoCard() {
                     : "bg-warning/15 text-warning"
                 }`}
               >
-                {l.categoria === "em_aviso" ? "aviso final" : `${l.dias_sem_acao}d parado`}
+                {prazoLabel(l)}
               </span>
             </button>
           </li>

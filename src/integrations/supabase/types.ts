@@ -10994,6 +10994,7 @@ export type Database = {
         Returns: {
           categoria: string
           dias_limite: number
+          dias_para_estagnar: number
           dias_sem_acao: number
           empreendimento: string
           etapa: string
