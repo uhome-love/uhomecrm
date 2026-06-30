@@ -20,17 +20,17 @@ interface KpiCardProps {
 }
 
 const VALUE_COLORS: Record<KpiVariant, string> = {
-  default:   "text-[#0a0a0a] dark:text-[#fafafa]",
-  highlight: "text-primary dark:text-[#6B84FF]",
-  success:   "text-success dark:text-[#34d399]",
-  warning:   "text-warning dark:text-[#fbbf24]",
-  danger:    "text-danger dark:text-[#f87171]",
+  default:   "text-foreground",
+  highlight: "text-primary",
+  success:   "text-success-500",
+  warning:   "text-warning-500",
+  danger:    "text-danger-500",
 };
 
 const TREND_COLORS: Record<TrendDirection, string> = {
-  up:      "text-success dark:text-[#34d399]",
-  down:    "text-danger dark:text-[#f87171]",
-  neutral: "text-[#a1a1aa]",
+  up:      "text-success-500",
+  down:    "text-danger-500",
+  neutral: "text-muted-foreground",
 };
 
 export function KpiCard({
