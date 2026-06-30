@@ -422,100 +422,11 @@ Deno.serve(async (req) => {
       L.error("Pre-warning error (non-blocking)", {}, e);
     }
 
-    // 4d. Reciclar leads "Sem Contato" inativos há 72h
-    let semContatoRecycled = 0;
-    try {
-      const { data: recycledSemContato, error: scError } = await supabase.rpc("reciclar_leads_sem_contato");
-      if (scError) {
-        L.error("Sem Contato recycle RPC failed", {}, scError);
-      } else if (recycledSemContato && recycledSemContato.length > 0) {
-        semContatoRecycled = recycledSemContato.length;
-        L.info("Sem Contato leads recycled", { count: semContatoRecycled });
+    // 4d. (REMOVIDO) Reciclagem 72h "Sem Contato" → Redistribuição.
+    // Unificado na Central de Leads Estagnados: a cadência T1–T7 cuida desses leads
+    // e, ao esgotar (T7 + 24h), o lead é marcado como estagnado.
+    const semContatoRecycled = 0;
 
-        // Notificar CEOs (lead vai para fila CEO de Redistribuição — NÃO redistribui automaticamente)
-        const { data: ceos } = await supabase
-          .from("profiles")
-          .select("user_id, nome")
-          .eq("cargo", "ceo")
-          .eq("ativo", true);
-
-        for (const item of recycledSemContato) {
-          // Notificar corretor anterior
-          if (item.corretor_anterior) {
-            await supabase.from("notifications").insert({
-              user_id: item.corretor_anterior,
-              tipo: "lead_reciclado_sem_contato",
-              categoria: "leads",
-              titulo: `🔄 Lead movido para fila CEO`,
-              mensagem: `${item.lead_nome || "Lead"} (${item.lead_empreendimento || "N/A"}) foi para a fila do CEO após 72h sem contato. Aguardando confirmação para redistribuir.`,
-              dados: { lead_id: item.lead_id },
-              cargo_destino: ["corretor"],
-            } as any);
-
-            await sendPush(supabaseUrl, serviceKey, item.corretor_anterior,
-              "🔄 Lead na fila do CEO",
-              `${item.lead_nome || "Lead"} aguarda redistribuição.`,
-              { lead_id: item.lead_id }
-            );
-
-            // Notificar gerente
-            const { data: tm } = await supabase
-              .from("team_members")
-              .select("gerente_id")
-              .eq("user_id", item.corretor_anterior)
-              .maybeSingle();
-            if (tm?.gerente_id) {
-              const { data: gp } = await supabase
-                .from("profiles")
-                .select("user_id, nome")
-                .eq("id", tm.gerente_id)
-                .maybeSingle();
-              if (gp?.user_id) {
-                const { data: corretorProfile } = await supabase
-                  .from("profiles")
-                  .select("nome")
-                  .eq("user_id", item.corretor_anterior)
-                  .maybeSingle();
-                await supabase.from("notifications").insert({
-                  user_id: gp.user_id,
-                  tipo: "lead_reciclado_sem_contato",
-                  categoria: "leads",
-                  titulo: `🔄 Lead na fila CEO (Redistribuição)`,
-                  mensagem: `${corretorProfile?.nome || "Corretor"} perdeu ${item.lead_nome || "lead"} por 72h sem contato. Aguarda confirmação do CEO.`,
-                  dados: { lead_id: item.lead_id, corretor_id: item.corretor_anterior },
-                  cargo_destino: ["gerente"],
-                } as any);
-              }
-            }
-          }
-        }
-
-        // Notificar todos os CEOs sobre o batch
-        if (ceos && ceos.length > 0) {
-          for (const ceo of ceos) {
-            if (!ceo.user_id) continue;
-            await supabase.from("notifications").insert({
-              user_id: ceo.user_id,
-              tipo: "fila_ceo_redistribuicao",
-              categoria: "leads",
-              titulo: `🔄 ${semContatoRecycled} lead(s) na fila CEO — Redistribuição`,
-              mensagem: `${semContatoRecycled} lead(s) parados há 72h aguardam sua confirmação para redistribuir.`,
-              dados: { count: semContatoRecycled },
-              cargo_destino: ["ceo"],
-            } as any);
-            await sendPush(supabaseUrl, serviceKey, ceo.user_id,
-              `🔄 ${semContatoRecycled} lead(s) para redistribuir`,
-              `Confirme a redistribuição na fila CEO.`,
-              { tab: "redistribuicao" }
-            );
-          }
-        }
-
-        logOps("info", "business", `Sem Contato recycled: ${semContatoRecycled} leads`, { count: semContatoRecycled });
-      }
-    } catch (scErr) {
-      L.error("Sem Contato recycling error (non-blocking)", {}, scErr);
-    }
 
     // 4e. Cadência "Sem Contato": disparar tentativas vencidas (push + sino + WhatsApp)
     let cadenciaSent = 0;
@@ -555,11 +466,11 @@ Deno.serve(async (req) => {
               hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
             }).format(new Date(p.proxima_em));
             return p.numero >= 8
-              ? "Sem retorno → descarte automático"
+              ? "Sem retorno → vai para Leads Estagnados"
               : `Próxima ação ${quando} (${hhmm})`;
           })();
 
-          const tag = p.numero >= 8 ? "Descarte" : `T${p.numero}`;
+          const tag = p.numero >= 8 ? "Estagnado" : `T${p.numero}`;
           const titulo = `📲 Sem Contato · ${tag} — ${p.acao}`;
           const corpo = `${p.lead_nome || "Lead"}${p.empreendimento ? ` (${p.empreendimento})` : ""}: ${p.texto_app}${prazoTxt ? ` · ${prazoTxt}` : ""}`;
 
@@ -590,20 +501,20 @@ Deno.serve(async (req) => {
             });
           }
 
-          // T7: mover lead para Descarte (reengajável)
+          // T7 esgotado: marcar lead como ESTAGNADO (Central de Leads Estagnados)
           if (p.do_descarte) {
             const { error: descErr } = await supabase.rpc("cadencia_sc_descartar_reengajavel", {
               p_lead_id: p.lead_id,
             });
             if (descErr) {
-              L.error("Cadencia descarte failed", { lead_id: p.lead_id }, descErr);
+              L.error("Cadencia estagnar failed", { lead_id: p.lead_id }, descErr);
             } else {
               cadenciaDescartados++;
             }
           }
         }
         logOps("info", "business",
-          `Cadencia Sem Contato: ${cadenciaSent} tentativas, ${cadenciaDescartados} descartados`,
+          `Cadencia Sem Contato: ${cadenciaSent} tentativas, ${cadenciaDescartados} estagnados`,
           { cadenciaSent, cadenciaDescartados } as unknown as Record<string, unknown>);
       }
       }

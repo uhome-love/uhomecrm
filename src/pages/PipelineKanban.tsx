@@ -386,12 +386,8 @@ export default function PipelineKanban() {
     pipeline.leads.filter(l => !l.corretor_id && !(l as any).is_redistribuicao).length,
     [pipeline.leads]
   );
-  const filaCeoRedistCount = useMemo(() =>
-    pipeline.leads.filter(l => !l.corretor_id && !!(l as any).is_redistribuicao).length,
-    [pipeline.leads]
-  );
-  const [dispatchInitialTab, setDispatchInitialTab] = useState<"novos" | "redistribuicao">("novos");
-  const openDispatch = (tab: "novos" | "redistribuicao") => { setDispatchInitialTab(tab); setDispatchOpen(true); };
+  const [dispatchInitialTab, setDispatchInitialTab] = useState<"novos" | "reengajamento">("novos");
+  const openDispatch = (tab: "novos" | "reengajamento") => { setDispatchInitialTab(tab); setDispatchOpen(true); };
 
   const campaignTagCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -557,7 +553,7 @@ export default function PipelineKanban() {
         focusLeadsCount={focusLeads.length}
         filaCeoCount={filaCeoCount}
         filaCeoNovosCount={filaCeoNovosCount}
-        filaCeoRedistCount={filaCeoRedistCount}
+        
         isAdmin={isCeoView}
         isDiretor={isDiretor}
         isGestor={isGestor}

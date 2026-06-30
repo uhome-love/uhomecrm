@@ -11495,15 +11495,6 @@ export type Database = {
           segmento_id: string
         }[]
       }
-      reciclar_leads_sem_contato: {
-        Args: never
-        Returns: {
-          corretor_anterior: string
-          lead_empreendimento: string
-          lead_id: string
-          lead_nome: string
-        }[]
-      }
       redistribuir_leads_pendentes: {
         Args: { p_segmento_id?: string }
         Returns: Json

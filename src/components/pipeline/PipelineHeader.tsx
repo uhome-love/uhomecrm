@@ -50,7 +50,7 @@ export interface PipelineHeaderProps {
   focusLeadsCount: number;
   filaCeoCount: number;
   filaCeoNovosCount: number;
-  filaCeoRedistCount: number;
+  
 
   // Role flags
   isAdmin: boolean;
@@ -85,7 +85,7 @@ export interface PipelineHeaderProps {
   setFocusModeOpen: (v: boolean) => void;
   filaCeoFilter: boolean;
   setFilaCeoFilter: React.Dispatch<React.SetStateAction<boolean>>;
-  openDispatch: (mode: "novos" | "redistribuicao") => void;
+  openDispatch: (mode: "novos") => void;
   selectionMode: boolean;
   setSelectionMode: (v: boolean) => void;
   clearSelection: () => void;
@@ -117,7 +117,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
   const {
     filteredLeadsCount, displayedClientStatusCounts, campaignTagCounts, campaignTags,
     pipelineStages, pipelineSegmentos, pipelineLeads, corretorNomes, corretorOptions,
-    visitaLeadIds, focusLeadsCount, filaCeoCount, filaCeoNovosCount, filaCeoRedistCount,
+    visitaLeadIds, focusLeadsCount, filaCeoCount, filaCeoNovosCount,
     isAdmin, isDiretor = false, isGestor, canAdd,
     filters, setFilters, corretorFilter, setCorretorFilter,
     campaignTagFilter, setCampaignTagFilter,
@@ -484,15 +484,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   🆕 Novos {filaCeoNovosCount}
                 </button>
               )}
-              {filaCeoRedistCount > 0 && (
-                <button
-                  onClick={() => openDispatch("redistribuicao")}
-                  className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-amber-600 text-white border-none cursor-pointer shrink-0"
-                  title="Leads aguardando confirmação de redistribuição"
-                >
-                  🔄 Redistrib. {filaCeoRedistCount}
-                </button>
-              )}
             </>
           )}
 
@@ -743,9 +734,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 >
                   <Inbox size={13} strokeWidth={1.5} />
                   Fila CEO
-                  {(filaCeoNovosCount + filaCeoRedistCount) > 0 && (
+                  {filaCeoNovosCount > 0 && (
                     <span className="bg-emerald-600 text-white rounded-md px-1.5 py-px text-[10px] font-bold">
-                      {filaCeoNovosCount + filaCeoRedistCount}
+                      {filaCeoNovosCount}
                     </span>
                   )}
                   <ChevronDown size={12} strokeWidth={1.5} className="opacity-60" />
@@ -770,15 +761,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                     title="Distribuir leads novos (Meta, site, ImovelWeb...)"
                   >
                     🆕 Distribuir novos <span className="font-bold">{filaCeoNovosCount}</span>
-                  </button>
-                )}
-                {filaCeoRedistCount > 0 && (
-                  <button
-                    onClick={() => openDispatch("redistribuicao")}
-                    className="w-full flex items-center justify-between transition-colors h-8 px-2.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold border-none cursor-pointer"
-                    title="Confirmar redistribuição (leads reciclados após 72h)"
-                  >
-                    🔄 Redistribuição <span className="font-bold">{filaCeoRedistCount}</span>
                   </button>
                 )}
               </PopoverContent>
