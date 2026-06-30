@@ -38,8 +38,10 @@ export const NEGOCIOS_FASES = [
   { key: "negociacao", label: "Negociação", cor: "#F59E0B", icon: "" },
   { key: "documentacao", label: "Contrato Gerado", cor: "#8B5CF6", icon: "" },
   { key: "vendido", label: "Vendido", cor: "#22C55E", icon: "" },
-  { key: "distrato", label: "Caiu", cor: "#EF4444", icon: "" },
 ] as const;
+
+// Negócio perdido/caído — fica fora do board ativo, em base separada (aba "Caídos")
+export const NEGOCIO_FASE_PERDIDO = "perdido";
 
 export function useNegocios() {
   const { user } = useAuth();
