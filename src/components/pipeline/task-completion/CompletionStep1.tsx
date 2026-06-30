@@ -129,19 +129,27 @@ export function CompletionStep1({
         </div>
       </div>
 
-      {/* Resumo (opcional) */}
+      {/* Observação (obrigatória) */}
       <div>
         <label className="text-[11px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3" /> Resumo{" "}
-          <span className="text-muted-foreground normal-case font-normal">(opcional)</span>
+          <Sparkles className="w-3 h-3" /> Observação{" "}
+          <span className="text-destructive">*</span>
         </label>
         <Textarea
           placeholder="Ex: Cliente pediu para ligar amanhã às 14h, demonstrou interesse no apto 301..."
           value={descricao}
           onChange={(e) => onChangeDescricao(e.target.value)}
           rows={3}
-          className="resize-none text-sm bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/20"
+          className={cn(
+            "resize-none text-sm bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/20",
+            descricao.length > 0 && !descricaoValida && "border-destructive focus-visible:ring-destructive/20",
+          )}
         />
+        {!descricaoValida && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Obrigatória — descreva o que foi tratado para concluir a tarefa.
+          </p>
+        )}
       </div>
 
       {/* Footer */}
