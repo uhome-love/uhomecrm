@@ -606,6 +606,7 @@ Deno.serve(async (req) => {
           `Cadencia Sem Contato: ${cadenciaSent} tentativas, ${cadenciaDescartados} descartados`,
           { cadenciaSent, cadenciaDescartados } as unknown as Record<string, unknown>);
       }
+      }
     } catch (cadErr) {
       L.error("Cadencia sem contato error (non-blocking)", {}, cadErr);
     }
