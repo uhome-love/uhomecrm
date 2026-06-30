@@ -370,8 +370,11 @@ export default function PipelineKanban() {
     if (clientStatusFilter !== "todos") {
       result = result.filter(l => getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id)) === clientStatusFilter);
     }
+    if (riscoFilter && riscoLeadIds) {
+      result = result.filter(l => riscoLeadIds.has(l.id));
+    }
     return result;
-  }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages]);
+  }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages, riscoFilter, riscoLeadIds]);
 
 
   // Bug-fix Bug 4: corretorNomes é "poliglota" (indexa cada pessoa sob user_id
