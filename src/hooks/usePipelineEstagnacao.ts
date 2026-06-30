@@ -19,7 +19,7 @@ export interface LeadEstagnacao {
   estagnado_prazo_em: string | null;
 }
 
-export type AcaoEstagnacao = "repassar" | "roleta" | "descartar";
+export type AcaoEstagnacao = "devolver" | "repassar" | "roleta" | "descartar";
 
 export function usePipelineEstagnacao() {
   return useQuery({
