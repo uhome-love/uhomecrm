@@ -11441,6 +11441,7 @@ export type Database = {
           texto_whatsapp: string
         }[]
       }
+      processar_estagnacao_pipeline: { Args: never; Returns: Json }
       prune_old_notifications: {
         Args: { batch_size?: number }
         Returns: number
