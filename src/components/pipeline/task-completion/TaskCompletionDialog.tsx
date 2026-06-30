@@ -92,6 +92,10 @@ export default function TaskCompletionDialog({
 
   const handleConfirm = async () => {
     if (!tipoContato || !resultado) return;
+    if (descricao.trim().length < 3) {
+      setStep(1);
+      return;
+    }
     setSaving(true);
     try {
       const effectiveOutcome: OutcomeChoice =
