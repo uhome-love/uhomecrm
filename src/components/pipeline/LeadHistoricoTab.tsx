@@ -219,11 +219,25 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
   }
 
   if (lead.aceito_em) {
-    items.push({ title: "✅ Lead aceito", date: lead.aceito_em, icon: CheckCircle2, color: "bg-emerald-100 text-emerald-600", sourceType: "system" });
+    const aceitoPor = nome((lead as any).corretor_id);
+    items.push({ title: "✅ Lead aceito", description: aceitoPor ? `Responsável: ${aceitoPor}` : undefined, date: lead.aceito_em, icon: CheckCircle2, color: "bg-emerald-100 text-emerald-600", sourceType: "system" });
   }
   if (lead.distribuido_em) {
-    items.push({ title: "🔄 Lead distribuído", date: lead.distribuido_em, icon: ArrowRight, color: "bg-blue-100 text-blue-600", sourceType: "system" });
+    const paraNome = nome((lead as any).corretor_id);
+    const deNome = nome((lead as any).corretor_anterior_id);
+    const partes: string[] = [];
+    if (deNome) partes.push(`De: ${deNome}`);
+    if (paraNome) partes.push(`Para: ${paraNome}`);
+    items.push({
+      title: paraNome ? `🔄 Lead distribuído → ${paraNome}` : "🔄 Lead distribuído",
+      description: partes.length ? partes.join(" • ") : undefined,
+      date: lead.distribuido_em,
+      icon: ArrowRight,
+      color: "bg-blue-100 text-blue-600",
+      sourceType: "system",
+    });
   }
+
 
   items.sort((a, b) => (parseDateTimeSafe(b.date)?.getTime() ?? 0) - (parseDateTimeSafe(a.date)?.getTime() ?? 0));
   return items;
