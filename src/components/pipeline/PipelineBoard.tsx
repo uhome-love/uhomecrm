@@ -972,6 +972,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     handleDragStart={handleDragStart}
                     tarefasMap={tarefasMap}
                     whatsappUnreadSet={whatsappUnreadSet}
+                    cadenciaMap={cadenciaMap}
                   />
                 )}
               </div>
