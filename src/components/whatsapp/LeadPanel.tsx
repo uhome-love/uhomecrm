@@ -356,7 +356,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
                 size="icon"
                 variant="ghost"
                 className="h-5 w-5 shrink-0 opacity-60 hover:opacity-100"
-                onClick={() => completeTask(t.id)}
+                onClick={() => setCompletingTask(t)}
               >
                 <CheckCircle2 size={12} />
               </Button>
