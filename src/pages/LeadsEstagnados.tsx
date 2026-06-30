@@ -86,7 +86,7 @@ export default function LeadsEstagnados() {
   const { data, isLoading } = usePipelineEstagnacao();
   const meta = usePipelineMeta();
   const drawer = useEstagnadoLeadDrawer();
-  const [tab, setTab] = useState<CategoriaEstagnacao>("candidato");
+  const [tab, setTab] = useState<CategoriaEstagnacao>("estagnado");
   const [decision, setDecision] = useState<
     { leads: LeadEstagnacao[]; acao: AcaoEstagnacao } | null
   >(null);
