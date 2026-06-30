@@ -242,7 +242,8 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
 
   for (const t of tarefas) {
     if (t.status === "concluida" && t.concluida_em) {
-      items.push({ title: `✅ ${t.titulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600", autor: nome(t.created_by), sourceType: "tarefa", sourceId: t.id });
+      const tTitulo = limparTexto(t.titulo, lead.nome) || t.titulo || "Tarefa";
+      items.push({ title: `✅ ${tTitulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600", autor: nome(t.created_by), sourceType: "tarefa", sourceId: t.id });
     }
   }
 
