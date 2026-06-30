@@ -517,7 +517,74 @@ Deno.serve(async (req) => {
       L.error("Sem Contato recycling error (non-blocking)", {}, scErr);
     }
 
-    // 5. Clean expired OA locks
+    // 4e. Cadência "Sem Contato": disparar tentativas vencidas (push + sino + WhatsApp)
+    let cadenciaSent = 0;
+    let cadenciaDescartados = 0;
+    try {
+      const { data: passos, error: cadErr } = await supabase.rpc("processar_cadencia_sem_contato");
+      if (cadErr) {
+        L.error("Cadencia sem contato RPC failed", {}, cadErr);
+      } else if (passos && passos.length > 0) {
+        cadenciaSent = passos.length;
+        L.info("Cadencia sem contato — tentativas disparadas", { count: cadenciaSent });
+
+        for (const p of passos) {
+          if (!p.corretor_id) continue;
+          const titulo = `📲 Sem Contato · Tentativa ${p.numero} — ${p.acao}`;
+          const corpo = `${p.lead_nome || "Lead"}${p.empreendimento ? ` (${p.empreendimento})` : ""}: ${p.texto_app}`;
+
+          // Sino (in-app) — insert direto bypassa horário de silêncio (disparar a qualquer hora)
+          await supabase.from("notifications").insert({
+            user_id: p.corretor_id,
+            tipo: "cadencia_sem_contato",
+            categoria: "leads",
+            titulo,
+            mensagem: corpo,
+            dados: { lead_id: p.lead_id, tentativa: p.numero, acao: p.acao, canal: p.canal },
+            cargo_destino: ["corretor"],
+          } as any);
+
+          // Push (tela bloqueada)
+          await sendPush(supabaseUrl, serviceKey, p.corretor_id, titulo, corpo, {
+            lead_id: p.lead_id,
+            tentativa: p.numero,
+          });
+
+          // WhatsApp do corretor
+          const { data: cprof } = await supabase
+            .from("profiles")
+            .select("telefone")
+            .eq("user_id", p.corretor_id)
+            .maybeSingle();
+          if (cprof?.telefone) {
+            await sendWhatsApp(supabaseUrl, serviceKey, cprof.telefone, "cadencia_sem_contato", {
+              nome: p.lead_nome,
+              empreendimento: p.empreendimento,
+              mensagem: p.texto_whatsapp,
+            });
+          }
+
+          // T7: mover lead para Descarte (reengajável)
+          if (p.do_descarte) {
+            const { error: descErr } = await supabase.rpc("cadencia_sc_descartar_reengajavel", {
+              p_lead_id: p.lead_id,
+            });
+            if (descErr) {
+              L.error("Cadencia descarte failed", { lead_id: p.lead_id }, descErr);
+            } else {
+              cadenciaDescartados++;
+            }
+          }
+        }
+        logOps("info", "business",
+          `Cadencia Sem Contato: ${cadenciaSent} tentativas, ${cadenciaDescartados} descartados`,
+          { cadenciaSent, cadenciaDescartados } as unknown as Record<string, unknown>);
+      }
+    } catch (cadErr) {
+      L.error("Cadencia sem contato error (non-blocking)", {}, cadErr);
+    }
+
+
     const { data: cleanedCount, error: cleanError } = await supabase.rpc(
       "cleanup_expired_locks"
     );
