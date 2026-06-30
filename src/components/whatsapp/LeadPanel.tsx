@@ -101,6 +101,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
   const [stages, setStages] = useState<StageInfo[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [completingTask, setCompletingTask] = useState<Task | null>(null);
 
   // Inline editing
   const [editingField, setEditingField] = useState<string | null>(null);
