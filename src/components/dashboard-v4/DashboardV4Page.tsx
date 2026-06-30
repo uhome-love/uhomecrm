@@ -70,6 +70,7 @@ export function DashboardV4Page() {
         <V4PanelNegocios gestorId={user?.id} />
         <V4PanelAlertas alertas={data?.alertas_corretores ?? []} isLoading={isLoading} />
         <V4PanelRoleta gestorId={user?.id} />
+        <V4PanelSemContato />
       </div>
 
       {user?.id && (
