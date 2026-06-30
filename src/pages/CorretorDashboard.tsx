@@ -103,6 +103,7 @@ export default function CorretorDashboard() {
       <div className="flex flex-col lg:flex-row gap-3.5">
         {/* Coluna principal */}
         <div className="flex-1 min-w-0 space-y-5">
+          <PreEstagnacaoCard />
           <CarteiraKpis />
           <ConquistasKpis />
           <CaminhosCards />
