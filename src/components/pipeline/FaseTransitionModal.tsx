@@ -292,7 +292,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
           </>
         );
 
-      case "distrato":
+      case "perdido":
         return (
           <>
             <DialogHeader>
