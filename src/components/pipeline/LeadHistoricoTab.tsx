@@ -220,9 +220,11 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
     // Núcleo do título sem nome do lead, sem data solta e sem resultado cru
     const core = limparTexto(a.titulo, lead.nome, res?.key);
     const labelPlain = (info?.label || "").replace(/^[^\s]+\s*/, "").trim().toLowerCase();
-    const title = core && core.toLowerCase() !== labelPlain
-      ? `${labelText} · ${core}`
-      : labelText;
+    const coreLow = core.toLowerCase();
+    // Palavras que apenas repetem o canal — não agregam ao título
+    const canalSinonimos = ["whatsapp", "ligar", "ligação", "ligacao", "e-mail", "email", "mensagem", "contato", "ligacão"];
+    const redundante = !core || coreLow === labelPlain || canalSinonimos.includes(coreLow);
+    const title = redundante ? labelText : `${labelText} · ${core}`;
     // Descrição: só observação real (ignora "Resultado: x")
     const rawDesc = a.descricao && !/^resultado:/i.test(a.descricao.trim()) ? a.descricao : null;
     const desc = limparTexto(rawDesc, lead.nome, res?.key) || undefined;
