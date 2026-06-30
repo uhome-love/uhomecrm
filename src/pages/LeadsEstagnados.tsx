@@ -336,6 +336,14 @@ export default function LeadsEstagnados() {
               size="sm"
               variant="outline"
               className="h-8 gap-1.5 text-[12px]"
+              onClick={() => setDecision({ leads: selectedRows, acao: "devolver" })}
+            >
+              <Undo2 className="h-3.5 w-3.5" /> Devolver
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5 text-[12px]"
               onClick={() => setDecision({ leads: selectedRows, acao: "repassar" })}
             >
               <UserCheck className="h-3.5 w-3.5" /> Repassar
