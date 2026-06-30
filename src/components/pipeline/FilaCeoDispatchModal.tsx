@@ -421,7 +421,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
           <div className="space-y-5 mt-5 pt-5 border-t border-border">
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Disparar {activeTab === "reengajamento" ? "leads de Reengajamento" : activeTab === "redistribuicao" ? "leads de Redistribuição" : "Novos leads"} para onde?
+                Disparar {activeTab === "reengajamento" ? "leads de Reengajamento" : "Novos leads"} para onde?
               </p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1 mb-1">Roleta</p>
               <div className="grid grid-cols-1 gap-1.5">
