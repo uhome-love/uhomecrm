@@ -75,18 +75,18 @@ const MiniKpi = forwardRef<HTMLDivElement, {
   const colors = {
     default: "text-foreground",
     highlight: "text-primary",
-    success: "text-success",
-    warning: "text-warning",
+    success: "text-success-500",
+    warning: "text-warning-500",
   };
   return (
     <div
       ref={ref}
       onClick={onClick}
-      className={`bg-[#f7f7fb] dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/[0.07] rounded-xl p-3.5 border-l-[3px] border-l-primary ${onClick ? "cursor-pointer hover:border-[#d0d0d8] dark:hover:border-white/[0.12] transition-colors" : ""}`}
+      className={`bg-card border border-border rounded-xl p-3.5 border-l-[3px] border-l-primary ${onClick ? "cursor-pointer hover:border-primary/30 transition-colors" : ""}`}
     >
-      <p className="text-[10px] font-medium text-[#a1a1aa] dark:text-[#52525b] tracking-wide mb-1 truncate">{label}</p>
+      <p className="text-[10px] font-medium text-muted-foreground tracking-wide mb-1 truncate">{label}</p>
       <p className={`text-xl font-[800] leading-none tracking-tight ${colors[variant]}`}>{value}</p>
-      {sub && <p className="text-[10px] text-[#a1a1aa] mt-1 truncate">{sub}</p>}
+      {sub && <p className="text-[10px] text-muted-foreground/70 mt-1 truncate">{sub}</p>}
     </div>
   );
 });
