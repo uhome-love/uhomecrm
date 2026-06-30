@@ -60,7 +60,7 @@ export default function PreEstagnacaoCard() {
               Leads prestes a estagnar
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {leads.length} lead{leads.length > 1 ? "s" : ""} precisam de ação
+              {leads.length} lead{leads.length > 1 ? "s" : ""} nos próximos 5 dias
               {emAviso > 0 ? ` · ${emAviso} em aviso final` : ""}
             </p>
           </div>
