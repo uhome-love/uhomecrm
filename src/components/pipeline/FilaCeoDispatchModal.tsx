@@ -342,16 +342,11 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
         ) : (
           <>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="novos" className="gap-2">
                 <Sparkles className="h-3.5 w-3.5" />
                 Novos
                 <Badge variant="secondary" className="ml-1 h-5">{leadsNovos.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="redistribuicao" className="gap-2">
-                <RefreshCw className="h-3.5 w-3.5" />
-                Redistribuição
-                <Badge variant="secondary" className="ml-1 h-5">{leadsRedistribuicao.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="reengajamento" className="gap-2">
                 <HeartHandshake className="h-3.5 w-3.5" />
