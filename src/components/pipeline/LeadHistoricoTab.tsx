@@ -373,7 +373,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
         : followUpDate;
       if (fDate) {
         await onAddTarefa({
-          titulo: `Follow-up: ${lead.nome}`,
+          titulo: "Follow-up",
           descricao: `Após: ${titulo}`,
           tipo: "follow_up",
           vence_em: fDate,
