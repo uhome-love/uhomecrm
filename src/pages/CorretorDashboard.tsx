@@ -19,6 +19,7 @@ import OnboardingWidget from "@/components/corretor/OnboardingWidget";
 import FocusModeModal from "@/components/pipeline/FocusModeModal";
 
 import CarteiraKpis from "@/components/corretor/CarteiraKpis";
+import PreEstagnacaoCard from "@/components/corretor/PreEstagnacaoCard";
 import ConquistasKpis from "@/components/corretor/ConquistasKpis";
 import CaminhosCards from "@/components/corretor/CaminhosCards";
 import TarefasHojeLateral from "@/components/corretor/TarefasHojeLateral";
