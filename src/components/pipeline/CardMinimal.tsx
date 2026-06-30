@@ -44,6 +44,8 @@ interface CardMinimalProps {
   corretorAvatarUrl?: string;
   parceiroNome?: string;
   proximaTarefa?: CardMinimalProximaTarefa | null;
+  /** Estado da cadência "Sem Contato" (tentativa atual + quando vence a próxima). */
+  cadencia?: { tentativa: number; proxima_em: string | null } | null;
   onClick: () => void;
   onDragStart: () => void;
   /** Stages do pipeline — necessário para o menu ··· (sub-menu "Mudar de etapa"). */
