@@ -158,6 +158,7 @@ const CardMinimal = memo(function CardMinimal({
   corretorAvatarUrl,
   parceiroNome,
   proximaTarefa,
+  cadencia,
   onClick,
   onDragStart,
   stages,
