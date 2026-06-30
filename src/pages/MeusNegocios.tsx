@@ -715,6 +715,16 @@ export default function MeusNegocios() {
     return result;
   }, [negocios, filterGerente, filterCorretor, searchQuery]);
 
+  // Negócios ativos (board) × perdidos/caídos (aba separada, fora do pipeline ativo)
+  const isPerdido = (n: Negocio) => n.fase === "perdido" || n.status === "perdido";
+  const activeNegocios = useMemo(() => filteredNegocios.filter(n => !isPerdido(n)), [filteredNegocios]);
+  const perdidosNegocios = useMemo(
+    () => filteredNegocios.filter(isPerdido).sort((a, b) =>
+      new Date(b.fase_changed_at || b.updated_at).getTime() - new Date(a.fase_changed_at || a.updated_at).getTime()
+    ),
+    [filteredNegocios]
+  );
+
   const corretorList = useMemo(() => {
     // If filtering by gerente, only show corretores from that gerente's negocios
     const sourceNegocios = filterGerente !== "all" ? negocios.filter(n => n.gerente_id === filterGerente) : negocios;
@@ -723,23 +733,23 @@ export default function MeusNegocios() {
   }, [negocios, corretorNomes, filterGerente]);
 
   const totalVGV = useMemo(() =>
-    filteredNegocios.reduce((sum, n) => {
+    activeNegocios.reduce((sum, n) => {
       const vgv = n.vgv_estimado || 0;
       const parceria = n.pipeline_lead_id ? parceriaMap[n.pipeline_lead_id] : null;
       return sum + (parceria?.isParceria ? vgv * parceria.fatorSplit : vgv);
     }, 0),
-    [filteredNegocios, parceriaMap]
+    [activeNegocios, parceriaMap]
   );
 
   const negociosByFase = useMemo(() => {
     const map = new Map<string, Negocio[]>();
     NEGOCIOS_FASES.forEach(f => map.set(f.key, []));
-    for (const n of filteredNegocios) {
+    for (const n of activeNegocios) {
       const arr = map.get(n.fase);
       if (arr) arr.push(n);
     }
     return map;
-  }, [filteredNegocios]);
+  }, [activeNegocios]);
 
   // Phases that require a transition popup
   const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "vendido", "perdido"];
