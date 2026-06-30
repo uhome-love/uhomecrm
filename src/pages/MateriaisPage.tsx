@@ -6,6 +6,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { MaterialCard } from "@/components/materiais/MaterialCard";
 import { EmpreendimentoFormDialog } from "@/components/materiais/EmpreendimentoFormDialog";
 import { FolderOpen, Plus, Search, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default function MateriaisPage() {
   const { data: empreendimentos = [], isLoading } = useMateriais();
