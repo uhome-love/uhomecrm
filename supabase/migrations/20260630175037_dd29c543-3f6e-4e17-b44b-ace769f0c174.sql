@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trg_cadencia_sc_avancar_tarefa ON public.pipeline_tarefas;
