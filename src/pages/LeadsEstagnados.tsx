@@ -10,6 +10,7 @@ import {
   Search,
   X,
   Loader2,
+  Undo2,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -75,6 +76,7 @@ function diasBadge(dias: number) {
 }
 
 const ACAO_LABELS: Record<AcaoEstagnacao, string> = {
+  devolver: "Devolver ao corretor",
   repassar: "Repassar para outro corretor",
   roleta: "Enviar para a Fila do CEO",
   descartar: "Descartar (reengajável)",
