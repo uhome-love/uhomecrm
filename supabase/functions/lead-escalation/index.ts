@@ -448,42 +448,39 @@ Deno.serve(async (req) => {
       if (cadErr) {
         L.error("Cadencia sem contato RPC failed", {}, cadErr);
       } else if (passos && passos.length > 0) {
-        cadenciaSent = passos.length;
-        L.info("Cadencia sem contato — tentativas disparadas", { count: cadenciaSent });
+        L.info("Cadencia sem contato — eventos", { count: passos.length });
 
         for (const p of passos) {
           if (!p.corretor_id) continue;
 
-          // Prazo da próxima ação (BRT) — relativo + horário
+          if (p.tipo === "estagnado") {
+            // O banco já estagnou/arquivou e notificou o gestor. Apenas contabiliza.
+            cadenciaDescartados++;
+            continue;
+          }
+
+          // tipo === 'aviso' (tarefa atrasada há 24h, estagna em 48h)
+          cadenciaSent++;
           const prazoTxt = (() => {
             if (!p.proxima_em) return "";
-            const diffMs = new Date(p.proxima_em).getTime() - Date.now();
-            const horas = Math.max(0, Math.round(diffMs / 3600000));
-            const quando = horas >= 24
-              ? `em ${Math.round(horas / 24)}d`
-              : horas >= 1 ? `em ${horas}h` : "em instantes";
             const hhmm = new Intl.DateTimeFormat("pt-BR", {
-              hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
+              day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+              timeZone: "America/Sao_Paulo",
             }).format(new Date(p.proxima_em));
-            return p.numero >= 8
-              ? "Sem retorno → vai para Leads Estagnados"
-              : `Próxima ação ${quando} (${hhmm})`;
+            return ` · estagna em ${hhmm}`;
           })();
 
-          const tag = p.numero >= 8 ? "Estagnado" : `T${p.numero}`;
-          const titulo = `📲 Sem Contato · ${tag} — ${p.acao}`;
-          const corpo = `${p.lead_nome || "Lead"}${p.empreendimento ? ` (${p.empreendimento})` : ""}: ${p.texto_app}${prazoTxt ? ` · ${prazoTxt}` : ""}`;
+          const titulo = `⏳ Sem Contato — possível estagnação`;
+          const corpo = `${p.lead_nome || "Lead"}${p.empreendimento ? ` (${p.empreendimento})` : ""}: ${p.texto_app}${prazoTxt}`;
 
-          // Sino (in-app) + Push (tela bloqueada): o insert dispara o trigger trg_push_on_notification
-          // automaticamente (push), e bypassa o horário de silêncio do criar_notificacao
-          // (requisito: disparar a qualquer hora).
+          // Sino (in-app) + Push (tela bloqueada) via trg_push_on_notification
           await supabase.from("notifications").insert({
             user_id: p.corretor_id,
             tipo: "cadencia_sem_contato",
             categoria: "leads",
             titulo,
             mensagem: corpo,
-            dados: { url: `/pipeline?lead=${p.lead_id}`, lead_id: p.lead_id, tentativa: p.numero, acao: p.acao, canal: p.canal, proxima_em: p.proxima_em },
+            dados: { url: `/pipeline?lead=${p.lead_id}`, lead_id: p.lead_id, acao: p.acao, proxima_em: p.proxima_em },
             cargo_destino: ["corretor"],
           } as any);
 
@@ -493,28 +490,16 @@ Deno.serve(async (req) => {
             .select("telefone")
             .eq("user_id", p.corretor_id)
             .maybeSingle();
-          if (cprof?.telefone) {
+          if (cprof?.telefone && p.texto_whatsapp) {
             await sendWhatsApp(supabaseUrl, serviceKey, cprof.telefone, "cadencia_sem_contato", {
               nome: p.lead_nome,
               empreendimento: p.empreendimento,
               mensagem: p.texto_whatsapp,
             });
           }
-
-          // T7 esgotado: marcar lead como ESTAGNADO (Central de Leads Estagnados)
-          if (p.do_descarte) {
-            const { error: descErr } = await supabase.rpc("cadencia_sc_descartar_reengajavel", {
-              p_lead_id: p.lead_id,
-            });
-            if (descErr) {
-              L.error("Cadencia estagnar failed", { lead_id: p.lead_id }, descErr);
-            } else {
-              cadenciaDescartados++;
-            }
-          }
         }
         logOps("info", "business",
-          `Cadencia Sem Contato: ${cadenciaSent} tentativas, ${cadenciaDescartados} estagnados`,
+          `Cadencia Sem Contato: ${cadenciaSent} avisos, ${cadenciaDescartados} estagnados`,
           { cadenciaSent, cadenciaDescartados } as unknown as Record<string, unknown>);
       }
       }
