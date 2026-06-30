@@ -683,6 +683,7 @@ export default function MeusNegocios() {
   const moveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragNegocioId = useRef<string | null>(null);
   const [dragOverFase, setDragOverFase] = useState<string | null>(null);
+  const [boardTab, setBoardTab] = useState<"ativos" | "perdidos">("ativos");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
