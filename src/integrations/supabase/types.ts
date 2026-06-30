@@ -10815,6 +10815,15 @@ export type Database = {
         }
         Returns: string
       }
+      decidir_lead_estagnado: {
+        Args: {
+          p_acao: string
+          p_corretor_destino?: string
+          p_lead_id: string
+          p_motivo?: string
+        }
+        Returns: Json
+      }
       detectar_leads_parados: { Args: never; Returns: number }
       distribuir_lead_atomico: {
         Args: {
