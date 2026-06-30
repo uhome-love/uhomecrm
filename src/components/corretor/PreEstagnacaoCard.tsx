@@ -94,7 +94,7 @@ export default function PreEstagnacaoCard() {
                     : "bg-warning/15 text-warning"
                 }`}
               >
-                {l.categoria === "em_aviso" ? "aviso final" : `${l.dias_sem_acao}d parado`}
+                {prazoLabel(l)}
               </span>
             </button>
           </li>
