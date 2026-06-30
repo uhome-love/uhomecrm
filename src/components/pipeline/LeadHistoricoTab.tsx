@@ -88,6 +88,7 @@ interface TimelineItem {
   icon: any;
   color: string;
   autor?: string;
+  badge?: { label: string; tone: "success" | "danger" | "neutral" | "warning" };
   sourceType?: "atividade" | "historico" | "tarefa" | "imovel_event" | "anotacao" | "system";
   sourceId?: string;
 }
@@ -95,6 +96,44 @@ interface TimelineItem {
 function firstName(nome?: string | null): string | undefined {
   if (!nome) return undefined;
   return nome.trim().split(/\s+/)[0] || undefined;
+}
+
+// Resultados crus → etiquetas legíveis
+const RESULTADO_LABELS: Record<string, { label: string; tone: "success" | "danger" | "neutral" | "warning" }> = {
+  nao_atendeu: { label: "Não atendeu", tone: "danger" },
+  atendeu: { label: "Atendeu", tone: "success" },
+  positivo: { label: "Positivo", tone: "success" },
+  neutro: { label: "Neutro", tone: "neutral" },
+  negativo: { label: "Negativo", tone: "danger" },
+  caixa_postal: { label: "Caixa postal", tone: "warning" },
+  numero_errado: { label: "Número errado", tone: "danger" },
+  ocupado: { label: "Ocupado", tone: "warning" },
+};
+
+function detectResultado(...textos: (string | null | undefined)[]): { key: string; meta: { label: string; tone: "success" | "danger" | "neutral" | "warning" } } | null {
+  const hay = textos.filter(Boolean).join(" ").toLowerCase();
+  for (const key of Object.keys(RESULTADO_LABELS)) {
+    if (hay.includes(key)) return { key, meta: RESULTADO_LABELS[key] };
+  }
+  return null;
+}
+
+// Remove o nome completo do lead, datas soltas e resultados crus do texto
+function limparTexto(texto: string | null | undefined, leadNome?: string | null, resultKey?: string): string {
+  let out = (texto || "").trim();
+  if (!out) return "";
+  const nome = leadNome?.trim();
+  if (nome) {
+    out = out.split(nome).join(" ");
+    const fn = nome.split(/\s+/)[0];
+    if (fn && fn.length > 2) out = out.replace(new RegExp(`\\b${fn}\\b`, "g"), " ");
+  }
+  if (resultKey) out = out.replace(new RegExp(resultKey, "gi"), " ");
+  out = out.replace(/resultado:\s*/gi, " ");
+  out = out.replace(/·\s*\d{1,2}\/\d{1,2}(\/\d{2,4})?/g, " ");
+  out = out.replace(/\s{2,}/g, " ").trim();
+  out = out.replace(/^[\s—•·-]+/, "").replace(/[\s—•·-]+$/, "").trim();
+  return out;
 }
 
 
