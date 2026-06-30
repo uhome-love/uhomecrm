@@ -484,15 +484,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   🆕 Novos {filaCeoNovosCount}
                 </button>
               )}
-              {filaCeoRedistCount > 0 && (
-                <button
-                  onClick={() => openDispatch("redistribuicao")}
-                  className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-amber-600 text-white border-none cursor-pointer shrink-0"
-                  title="Leads aguardando confirmação de redistribuição"
-                >
-                  🔄 Redistrib. {filaCeoRedistCount}
-                </button>
-              )}
             </>
           )}
 
