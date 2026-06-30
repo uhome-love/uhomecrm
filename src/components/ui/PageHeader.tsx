@@ -68,8 +68,8 @@ export function PageHeader({
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[13px] font-medium transition-all",
                 activeTab === tab.value
-                  ? "bg-[#4969FF] text-white"
-                  : "text-[#71717a] hover:text-[#0a0a0a] hover:bg-[#f5f5f5] dark:hover:text-[#fafafa] dark:hover:bg-white/[0.06]"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
               {tab.label}
@@ -78,8 +78,8 @@ export function PageHeader({
                   className={cn(
                     "text-[10px] font-semibold rounded-full px-1.5 py-px",
                     activeTab === tab.value
-                      ? "bg-white/20 text-white"
-                      : "bg-[#f0f0f0] text-[#a1a1aa] dark:bg-white/10 dark:text-[#71717a]"
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
                   )}
                 >
                   {tab.badge}
@@ -89,7 +89,7 @@ export function PageHeader({
           ))}
         </div>
       )}
-      <div className="h-px bg-[#f0f0f0] dark:bg-white/[0.06]" />
+      <div className="h-px bg-border" />
     </div>
   );
 }
