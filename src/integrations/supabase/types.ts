@@ -11364,6 +11364,7 @@ export type Database = {
           lead_id: string
           lead_nome: string
           numero: number
+          proxima_em: string
           telefone: string
           texto_app: string
           texto_whatsapp: string
