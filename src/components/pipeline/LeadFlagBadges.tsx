@@ -44,13 +44,8 @@ const LeadFlagBadges = memo(function LeadFlagBadges({ flagStatus, stageTipo }: P
   const badges: { label: string; color: string; bg: string }[] = [];
   const stageConfig = FLAG_CONFIGS[stageTipo];
 
-  if (stageTipo === "sem_contato" && flagStatus.tentativas) {
-    badges.push({
-      label: `☎️ ${flagStatus.tentativas}/7`,
-      color: parseInt(flagStatus.tentativas) >= 5 ? "#DC2626" : "#6B7280",
-      bg: parseInt(flagStatus.tentativas) >= 5 ? "rgba(220,38,38,0.12)" : "rgba(107,114,128,0.12)",
-    });
-  }
+  // "Sem Contato": tentativas vêm do badge automático da cadência (📲), não do manual.
+
 
   if (stageTipo === "aquecimento" && flagStatus.prazo) {
     badges.push({
