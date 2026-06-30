@@ -192,19 +192,37 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
     }
   };
 
-  const completeTask = async (taskId: string) => {
-    try {
-      await supabase.from("pipeline_tarefas").update({
-        status: "concluida",
-        concluida_em: new Date().toISOString(),
-      }).eq("id", taskId);
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-      toast.success("✅ Tarefa concluída!");
-      invalidateTaskQueries(queryClient, localLead?.id ?? null);
-    } catch (err: any) {
-      toast.error("Erro: " + (err.message || ""));
-    }
+  const handleCompletionConfirm = async (payload: CompletionPayload) => {
+    if (!completingTask || !localLead) return;
+    const leadId = localLead.id;
+    const result = await runTaskCompletion(
+      {
+        tarefaId: completingTask.id,
+        tarefaTitulo: completingTask.titulo,
+        leadId,
+        leadNome: localLead.nome,
+        leadStageId: localLead.stage_id ?? null,
+        addTarefa: async (input) => {
+          await supabase.from("pipeline_tarefas").insert({
+            pipeline_lead_id: leadId,
+            tipo: input.tipo,
+            titulo: input.titulo,
+            descricao: input.descricao ?? null,
+            vence_em: input.vence_em,
+            hora_vencimento: input.hora_vencimento ?? null,
+            status: "pendente",
+          } as any);
+        },
+      },
+      payload,
+    );
+    if (result.level === "error") toast.error(result.toastMessage);
+    else toast.success(result.toastMessage);
+    setTasks(prev => prev.filter(t => t.id !== completingTask.id));
+    setCompletingTask(null);
+    invalidateTaskQueries(queryClient, leadId);
   };
+
 
   const currentStageName = stages.find(s => s.id === localLead?.stage_id)?.nome || "—";
 
