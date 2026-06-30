@@ -220,10 +220,10 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       continue;
     }
 
-    const res = detectResultado(a.titulo, a.descricao);
+    const res = resultadoDoTitulo(a.titulo);
     const labelText = info?.label || a.tipo;
-    // Núcleo do título sem nome do lead, sem data solta e sem resultado cru
-    const core = limparTexto(a.titulo, lead.nome, res?.key);
+    // Título sem o trecho de resultado (após " — "), sem nome do lead e sem data solta
+    const core = limparTexto((a.titulo || "").split(" — ")[0], lead.nome, res?.key);
     const labelPlain = (info?.label || "").replace(/^[^\s]+\s*/, "").trim().toLowerCase();
     const coreLow = core.toLowerCase();
     // Palavras que apenas repetem o canal — não agregam ao título
