@@ -10594,6 +10594,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _pipeline_ultima_acao_humana: {
+        Args: { _lead_id: string }
+        Returns: string
+      }
       aceitar_lead: {
         Args: {
           p_corretor_id: string
