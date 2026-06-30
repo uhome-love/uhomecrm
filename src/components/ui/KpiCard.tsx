@@ -20,17 +20,17 @@ interface KpiCardProps {
 }
 
 const VALUE_COLORS: Record<KpiVariant, string> = {
-  default:   "text-[#0a0a0a] dark:text-[#fafafa]",
-  highlight: "text-primary dark:text-[#6B84FF]",
-  success:   "text-success dark:text-[#34d399]",
-  warning:   "text-warning dark:text-[#fbbf24]",
-  danger:    "text-danger dark:text-[#f87171]",
+  default:   "text-foreground",
+  highlight: "text-primary",
+  success:   "text-success-500",
+  warning:   "text-warning-500",
+  danger:    "text-danger-500",
 };
 
 const TREND_COLORS: Record<TrendDirection, string> = {
-  up:      "text-success dark:text-[#34d399]",
-  down:    "text-danger dark:text-[#f87171]",
-  neutral: "text-[#a1a1aa]",
+  up:      "text-success-500",
+  down:    "text-danger-500",
+  neutral: "text-muted-foreground",
 };
 
 export function KpiCard({
@@ -52,21 +52,21 @@ export function KpiCard({
     <div
       onClick={onClick}
       className={cn(
-        "bg-[#f7f7fb] dark:bg-[#141e30]",
-        "border border-[#e8e8f0] dark:border-white/[0.07] shadow-none",
+        "bg-card dark:bg-card",
+        "border border-border shadow-none",
         "border-l-[3px] border-l-primary",
         "rounded-[14px] p-4 pl-4",
         "flex flex-col gap-2",
-        onClick && "cursor-pointer hover:border-[#e0e0e0] dark:hover:border-white/[0.12] hover:border-l-primary transition-colors",
+        onClick && "cursor-pointer hover:border-primary/30 hover:border-l-primary transition-colors",
         className
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-medium text-[#a1a1aa] dark:text-[#52525b] tracking-[0.01em] truncate">
+        <span className="text-[11px] font-medium text-muted-foreground tracking-[0.01em] truncate">
           {label}
         </span>
         {icon && (
-          <span className="text-[#a1a1aa] flex-shrink-0">
+          <span className="text-muted-foreground flex-shrink-0">
             {icon}
           </span>
         )}
@@ -82,7 +82,7 @@ export function KpiCard({
       {(hint || trend) && (
         <div className="flex items-center justify-between gap-2 mt-auto">
           {hint && (
-            <span className="text-[11px] text-[#d4d4d8] dark:text-[#3f3f46] truncate">
+            <span className="text-[11px] text-muted-foreground/70 truncate">
               {hint}
             </span>
           )}
