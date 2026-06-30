@@ -133,12 +133,10 @@ export function getLeadSubstatusBadge(
   const f = flagStatus;
 
   switch (stageTipo) {
-    case "sem_contato": {
-      const n = parseInt(f.tentativas || "", 10);
-      if (!Number.isFinite(n) || n <= 0) return null;
-      const color = n >= 5 ? PILL.red : n >= 3 ? PILL.amber : PILL.zinc;
-      return { label: `☎️ ${n}/7`, className: color };
-    }
+    case "sem_contato":
+      // Tentativas são exibidas pelo badge automático da cadência (📲), não pelo manual.
+      return null;
+
 
     case "contato_inicial": {
       if (f.intencao === "morar") return { label: "🏠 Morar", className: PILL.indigo };
