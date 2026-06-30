@@ -393,6 +393,16 @@ export default function MinhaAgendaWidget() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <TaskCompletionDialog
+        open={!!completing}
+        onOpenChange={(v) => { if (!v) setCompleting(null); }}
+        tarefaTitulo={completing?.titulo || ""}
+        leadNome={completing?.lead_nome || ""}
+        leadId={completing?.pipeline_lead_id}
+        onConfirm={handleCompletionConfirm}
+      />
     </>
+
   );
 }
