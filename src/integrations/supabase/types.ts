@@ -11133,6 +11133,23 @@ export type Database = {
         }[]
       }
       get_pipeline_equipes_overview: { Args: never; Returns: Json }
+      get_pipeline_estagnacao: {
+        Args: never
+        Returns: {
+          categoria: string
+          corretor_id: string
+          corretor_nome: string
+          dias_limite: number
+          dias_sem_acao: number
+          empreendimento: string
+          estagnado_prazo_em: string
+          etapa: string
+          lead_id: string
+          nome: string
+          stage_id: string
+          ultima_acao_humana: string
+        }[]
+      }
       get_profile_id_for_auth: { Args: never; Returns: string }
       get_ranking_central: {
         Args: { p_end: string; p_gestor_id: string; p_start: string }
