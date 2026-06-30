@@ -155,18 +155,12 @@ export default function LeadsEstagnados() {
     return result;
   }, [baseRows, search, corretorFilter, empreendimentoFilter, sort]);
 
-  // Mantém seleção apenas para leads visíveis
-  const visibleIds = useMemo(() => new Set(rows.map((l) => l.lead_id)), [rows]);
   const selectedRows = useMemo(
     () => rows.filter((l) => selected.has(l.lead_id)),
     [rows, selected],
   );
   const allSelected = rows.length > 0 && rows.every((l) => selected.has(l.lead_id));
 
-  const resetFilters = () => {
-    setTab((t) => t);
-    setSelected(new Set());
-  };
 
   const handleTabChange = (v: string) => {
     setTab(v as CategoriaEstagnacao);
