@@ -33,21 +33,21 @@ export function PageHeader({
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           {icon && (
-            <div className="w-9 h-9 rounded-[10px] bg-[#4969FF]/10 flex items-center justify-center flex-shrink-0 text-[#4969FF]">
+            <div className="w-9 h-9 rounded-[10px] bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
               {icon}
             </div>
           )}
           <div className="min-w-0">
             <h1
               className={cn(
-                "font-bold tracking-tight text-[#0a0a0a] dark:text-[#fafafa] leading-none",
+                "font-bold tracking-tight text-foreground leading-none",
                 size === "sm" ? "text-[18px]" : "text-[22px]"
               )}
             >
               {title}
             </h1>
             {subtitle && (
-              <p className="text-[13px] text-[#a1a1aa] mt-1.5 font-normal">
+              <p className="text-[13px] text-muted-foreground mt-1.5 font-normal">
                 {subtitle}
               </p>
             )}
