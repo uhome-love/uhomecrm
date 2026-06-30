@@ -236,12 +236,11 @@ export default function TarefasPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">📋 Tarefas</h1>
-          <p className="text-sm text-muted-foreground mt-1">{weekLabel}</p>
-        </div>
+      <PageHeader
+        title="Tarefas"
+        subtitle={weekLabel}
+        icon={<ClipboardList className="h-5 w-5" />}
+        actions={
         <div className="flex items-center gap-2 flex-wrap">
           {/* Filters */}
           <div className="flex gap-1 flex-wrap">
