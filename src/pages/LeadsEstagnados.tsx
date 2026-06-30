@@ -1,9 +1,22 @@
 import { useMemo, useState } from "react";
-import { AlarmClock, Users, Clock, ShieldAlert, UserCheck, RotateCcw, Trash2 } from "lucide-react";
+import {
+  AlarmClock,
+  Users,
+  Clock,
+  ShieldAlert,
+  UserCheck,
+  RotateCcw,
+  Trash2,
+  Search,
+  X,
+  Loader2,
+} from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -29,6 +42,11 @@ import {
   type LeadEstagnacao,
   type AcaoEstagnacao,
 } from "@/hooks/usePipelineEstagnacao";
+import {
+  usePipelineMeta,
+  useEstagnadoLeadDrawer,
+} from "@/hooks/useEstagnadoLeadDrawer";
+import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { formatBRT } from "@/lib/brtTime";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +56,8 @@ const TABS: { value: CategoriaEstagnacao; label: string }[] = [
   { value: "em_parceria", label: "Em parceria" },
   { value: "estagnado", label: "Confirmados" },
 ];
+
+type SortKey = "dias_desc" | "dias_asc" | "nome";
 
 function diasBadge(dias: number) {
   const variant = dias >= 60 ? "danger" : dias >= 30 ? "warning" : "muted";
@@ -62,8 +82,21 @@ const ACAO_LABELS: Record<AcaoEstagnacao, string> = {
 
 export default function LeadsEstagnados() {
   const { data, isLoading } = usePipelineEstagnacao();
+  const meta = usePipelineMeta();
+  const drawer = useEstagnadoLeadDrawer();
   const [tab, setTab] = useState<CategoriaEstagnacao>("candidato");
-  const [decision, setDecision] = useState<{ lead: LeadEstagnacao; acao: AcaoEstagnacao } | null>(null);
+  const [decision, setDecision] = useState<
+    { leads: LeadEstagnacao[]; acao: AcaoEstagnacao } | null
+  >(null);
+
+  // Filtros
+  const [search, setSearch] = useState("");
+  const [corretorFilter, setCorretorFilter] = useState<string>("todos");
+  const [empreendimentoFilter, setEmpreendimentoFilter] = useState<string>("todos");
+  const [sort, setSort] = useState<SortKey>("dias_desc");
+
+  // Seleção múltipla
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const counts = useMemo(() => {
     const c: Record<CategoriaEstagnacao, number> = {
@@ -78,20 +111,99 @@ export default function LeadsEstagnados() {
     return c;
   }, [data]);
 
-  const rows = useMemo(
+  const baseRows = useMemo(
     () => (data ?? []).filter((l) => l.categoria === tab),
     [data, tab],
   );
+
+  // Opções dinâmicas dos filtros (baseadas na categoria atual)
+  const corretorOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    baseRows.forEach((l) => {
+      if (l.corretor_id) map.set(l.corretor_id, l.corretor_nome ?? "—");
+    });
+    return Array.from(map.entries())
+      .map(([id, nome]) => ({ id, nome }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [baseRows]);
+
+  const empreendimentoOptions = useMemo(() => {
+    const set = new Set<string>();
+    baseRows.forEach((l) => {
+      if (l.empreendimento) set.add(l.empreendimento);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [baseRows]);
+
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let result = baseRows.filter((l) => {
+      if (corretorFilter !== "todos" && l.corretor_id !== corretorFilter) return false;
+      if (empreendimentoFilter !== "todos" && l.empreendimento !== empreendimentoFilter)
+        return false;
+      if (q) {
+        const hay = `${l.nome} ${l.empreendimento ?? ""} ${l.corretor_nome ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    result = [...result].sort((a, b) => {
+      if (sort === "nome") return a.nome.localeCompare(b.nome);
+      if (sort === "dias_asc") return a.dias_sem_acao - b.dias_sem_acao;
+      return b.dias_sem_acao - a.dias_sem_acao;
+    });
+    return result;
+  }, [baseRows, search, corretorFilter, empreendimentoFilter, sort]);
+
+  const selectedRows = useMemo(
+    () => rows.filter((l) => selected.has(l.lead_id)),
+    [rows, selected],
+  );
+  const allSelected = rows.length > 0 && rows.every((l) => selected.has(l.lead_id));
+
+
+  const handleTabChange = (v: string) => {
+    setTab(v as CategoriaEstagnacao);
+    setSearch("");
+    setCorretorFilter("todos");
+    setEmpreendimentoFilter("todos");
+    setSelected(new Set());
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelected((prev) => {
+      if (rows.every((l) => prev.has(l.lead_id))) {
+        const next = new Set(prev);
+        rows.forEach((l) => next.delete(l.lead_id));
+        return next;
+      }
+      const next = new Set(prev);
+      rows.forEach((l) => next.add(l.lead_id));
+      return next;
+    });
+  };
+
+  const hasFilters =
+    search.trim() !== "" || corretorFilter !== "todos" || empreendimentoFilter !== "todos";
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <PageHeader
         title="Leads Estagnados"
-        subtitle="Leads sem nenhuma ação humana além do limite da etapa. Decida o destino: repassar, roleta ou descartar."
+        subtitle="Leads sem nenhuma ação humana além do limite da etapa. Clique no lead para ver o histórico e decida: repassar, roleta ou descartar."
         icon={<AlarmClock className="h-5 w-5" />}
         tabs={TABS.map((t) => ({ label: t.label, value: t.value, badge: counts[t.value] }))}
         activeTab={tab}
-        onTabChange={(v) => setTab(v as CategoriaEstagnacao)}
+        onTabChange={handleTabChange}
       />
 
       {tab === "em_parceria" && (
@@ -100,6 +212,128 @@ export default function LeadsEstagnados() {
           <span>
             Leads em parceria ativa não são estagnados automaticamente. Decida manualmente para não desfazer a parceria sem alinhar com o parceiro.
           </span>
+        </div>
+      )}
+
+      {/* Filtros */}
+      {!isLoading && baseRows.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[180px] max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar nome, empreendimento, corretor..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          <Select value={corretorFilter} onValueChange={setCorretorFilter}>
+            <SelectTrigger className="h-9 w-[180px]">
+              <SelectValue placeholder="Corretor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os corretores</SelectItem>
+              {corretorOptions.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {empreendimentoOptions.length > 0 && (
+            <Select value={empreendimentoFilter} onValueChange={setEmpreendimentoFilter}>
+              <SelectTrigger className="h-9 w-[180px]">
+                <SelectValue placeholder="Empreendimento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos empreendimentos</SelectItem>
+                {empreendimentoOptions.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {e}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+            <SelectTrigger className="h-9 w-[170px]">
+              <SelectValue placeholder="Ordenar" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="dias_desc">Mais dias parado</SelectItem>
+              <SelectItem value="dias_asc">Menos dias parado</SelectItem>
+              <SelectItem value="nome">Nome (A-Z)</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 gap-1.5 text-[12px]"
+              onClick={() => {
+                setSearch("");
+                setCorretorFilter("todos");
+                setEmpreendimentoFilter("todos");
+              }}
+            >
+              <X className="h-3.5 w-3.5" /> Limpar
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Barra de seleção múltipla */}
+      {selectedRows.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+          <span className="text-[13px] font-semibold text-foreground">
+            {selectedRows.length} selecionado{selectedRows.length > 1 ? "s" : ""}
+          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5 text-[12px]"
+              onClick={() => setDecision({ leads: selectedRows, acao: "repassar" })}
+            >
+              <UserCheck className="h-3.5 w-3.5" /> Repassar
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5 text-[12px]"
+              onClick={() => setDecision({ leads: selectedRows, acao: "roleta" })}
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Roleta
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5 text-[12px] text-destructive hover:text-destructive"
+              onClick={() => setDecision({ leads: selectedRows, acao: "descartar" })}
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Descartar
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 text-[12px]"
+              onClick={() => setSelected(new Set())}
+            >
+              Limpar seleção
+            </Button>
+          </div>
         </div>
       )}
 
@@ -112,55 +346,130 @@ export default function LeadsEstagnados() {
       ) : rows.length === 0 ? (
         <Card className="p-10 text-center text-muted-foreground text-[14px]">
           <ShieldAlert className="h-8 w-8 mx-auto mb-3 opacity-40" />
-          Nenhum lead nesta categoria.
+          {baseRows.length === 0
+            ? "Nenhum lead nesta categoria."
+            : "Nenhum lead corresponde aos filtros."}
         </Card>
       ) : (
         <div className="space-y-2">
+          {/* Selecionar todos */}
+          <div className="flex items-center gap-2 px-1 pb-1">
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={toggleSelectAll}
+              aria-label="Selecionar todos"
+            />
+            <span className="text-[12px] text-muted-foreground">
+              Selecionar todos ({rows.length})
+            </span>
+          </div>
+
           {rows.map((l) => (
-            <LeadRow key={l.lead_id} lead={l} onDecide={(acao) => setDecision({ lead: l, acao })} />
+            <LeadRow
+              key={l.lead_id}
+              lead={l}
+              selected={selected.has(l.lead_id)}
+              onToggleSelect={() => toggleSelect(l.lead_id)}
+              onOpen={() => drawer.openLead(l.lead_id)}
+              onDecide={(acao) => setDecision({ leads: [l], acao })}
+            />
           ))}
         </div>
       )}
 
       <DecisionDialog
         open={!!decision}
-        lead={decision?.lead ?? null}
+        leads={decision?.leads ?? []}
         acao={decision?.acao ?? null}
         onClose={() => setDecision(null)}
+        onDone={() => setSelected(new Set())}
       />
+
+      {drawer.loadingLead && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/40">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      )}
+
+      {drawer.lead && (
+        <PipelineLeadDetail
+          lead={drawer.lead}
+          stages={meta.stages}
+          segmentos={meta.segmentos}
+          open={drawer.open}
+          onOpenChange={(o) => {
+            if (!o) drawer.close();
+          }}
+          onUpdate={drawer.onUpdate}
+          onMove={drawer.onMove}
+          onDelete={drawer.onDelete}
+        />
+      )}
     </div>
   );
 }
 
-function LeadRow({ lead, onDecide }: { lead: LeadEstagnacao; onDecide: (acao: AcaoEstagnacao) => void }) {
+function LeadRow({
+  lead,
+  selected,
+  onToggleSelect,
+  onOpen,
+  onDecide,
+}: {
+  lead: LeadEstagnacao;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onOpen: () => void;
+  onDecide: (acao: AcaoEstagnacao) => void;
+}) {
   return (
-    <Card className="p-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-semibold text-[14px] text-foreground truncate">{lead.nome}</span>
-          <Badge variant="outline" className="text-[11px]">{lead.etapa}</Badge>
-          {lead.empreendimento && (
-            <span className="text-[12px] text-muted-foreground truncate">{lead.empreendimento}</span>
-          )}
+    <Card
+      className={cn(
+        "p-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between transition-colors",
+        selected && "ring-1 ring-primary/40 bg-primary/5",
+      )}
+    >
+      <div className="flex items-start gap-3 min-w-0 flex-1">
+        <div className="pt-0.5">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={onToggleSelect}
+            aria-label={`Selecionar ${lead.nome}`}
+          />
         </div>
-        <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-          <span>Corretor: {lead.corretor_nome ?? "—"}</span>
-          <span className="opacity-40">·</span>
-          <span className="inline-flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            Última ação: {formatBRT(lead.ultima_acao_humana, "dd/MM/yyyy")}
-          </span>
-          {lead.categoria === "em_aviso" && lead.estagnado_prazo_em && (
-            <>
-              <span className="opacity-40">·</span>
-              <span className="text-warning-foreground font-medium">
-                Prazo: {formatBRT(lead.estagnado_prazo_em, "dd/MM HH:mm")}
-              </span>
-            </>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="min-w-0 flex-1 text-left group"
+        >
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-[14px] text-foreground truncate group-hover:text-primary group-hover:underline underline-offset-2">
+              {lead.nome}
+            </span>
+            <Badge variant="outline" className="text-[11px]">{lead.etapa}</Badge>
+            {lead.empreendimento && (
+              <span className="text-[12px] text-muted-foreground truncate">{lead.empreendimento}</span>
+            )}
+          </div>
+          <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+            <span>Corretor: {lead.corretor_nome ?? "—"}</span>
+            <span className="opacity-40">·</span>
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Última ação: {formatBRT(lead.ultima_acao_humana, "dd/MM/yyyy")}
+            </span>
+            {lead.categoria === "em_aviso" && lead.estagnado_prazo_em && (
+              <>
+                <span className="opacity-40">·</span>
+                <span className="text-warning-foreground font-medium">
+                  Prazo: {formatBRT(lead.estagnado_prazo_em, "dd/MM HH:mm")}
+                </span>
+              </>
+            )}
+          </div>
+        </button>
       </div>
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap pl-7 sm:pl-0">
         {diasBadge(lead.dias_sem_acao)}
         <div className="flex items-center gap-1.5">
           <Button size="sm" variant="outline" className="h-8 gap-1.5 text-[12px]" onClick={() => onDecide("repassar")}>
@@ -185,54 +494,92 @@ function LeadRow({ lead, onDecide }: { lead: LeadEstagnacao; onDecide: (acao: Ac
 
 function DecisionDialog({
   open,
-  lead,
+  leads,
   acao,
   onClose,
+  onDone,
 }: {
   open: boolean;
-  lead: LeadEstagnacao | null;
+  leads: LeadEstagnacao[];
   acao: AcaoEstagnacao | null;
   onClose: () => void;
+  onDone: () => void;
 }) {
   const { data: corretores, isLoading: loadingCorretores } = useCorretoresOptions();
   const decidir = useDecidirEstagnado();
   const [corretorDestino, setCorretorDestino] = useState<string>("");
   const [motivo, setMotivo] = useState<string>("");
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+
+  const isMulti = leads.length > 1;
+  const firstLead = leads[0] ?? null;
 
   // Reset on open
-  const key = lead?.lead_id + (acao ?? "");
+  const key = leads.map((l) => l.lead_id).join(",") + (acao ?? "");
   const [lastKey, setLastKey] = useState<string>("");
   if (open && key !== lastKey) {
     setLastKey(key);
     setCorretorDestino("");
     setMotivo("");
+    setProgress(null);
   }
 
-  if (!lead || !acao) return null;
+  if (!firstLead || !acao) return null;
 
   const isRepassar = acao === "repassar";
-  const disabled = decidir.isPending || (isRepassar && !corretorDestino);
+  const busy = decidir.isPending || progress !== null;
+  const disabled = busy || (isRepassar && !corretorDestino);
 
-  const handleConfirm = () => {
-    decidir.mutate(
-      {
-        leadId: lead.lead_id,
-        acao,
-        corretorDestino: isRepassar ? corretorDestino : undefined,
-        motivo: motivo.trim() || undefined,
-      },
-      { onSuccess: () => onClose() },
-    );
+  // Para repasse de seleção, evita repassar para o mesmo corretor de origem (quando único)
+  const origemCorretorId = isMulti ? null : firstLead.corretor_id;
+
+  const handleConfirm = async () => {
+    let done = 0;
+    setProgress({ done, total: leads.length });
+    let okCount = 0;
+    for (const l of leads) {
+      try {
+        await decidir.mutateAsync({
+          leadId: l.lead_id,
+          acao,
+          corretorDestino: isRepassar ? corretorDestino : undefined,
+          motivo: motivo.trim() || undefined,
+        });
+        okCount += 1;
+      } catch (err) {
+        console.error("[decidir] falha lead", l.lead_id, err);
+      }
+      done += 1;
+      setProgress({ done, total: leads.length });
+    }
+    setProgress(null);
+    if (isMulti) {
+      const labels: Record<AcaoEstagnacao, string> = {
+        repassar: "repassados",
+        roleta: "enviados para a Fila do CEO",
+        descartar: "descartados",
+      };
+      if (okCount > 0) {
+        // toast individual já é emitido pelo hook; um resumo extra para lote
+        // mantém clareza sem duplicar excessivamente.
+      }
+    }
+    onDone();
+    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{ACAO_LABELS[acao]}</DialogTitle>
+          <DialogTitle>
+            {ACAO_LABELS[acao]}
+            {isMulti ? ` · ${leads.length} leads` : ""}
+          </DialogTitle>
           <DialogDescription>
-            {lead.nome} · {lead.etapa}
-            {lead.empreendimento ? ` · ${lead.empreendimento}` : ""}
+            {isMulti
+              ? `Esta ação será aplicada a ${leads.length} leads selecionados.`
+              : `${firstLead.nome} · ${firstLead.etapa}${firstLead.empreendimento ? ` · ${firstLead.empreendimento}` : ""}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -246,7 +593,7 @@ function DecisionDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {(corretores ?? [])
-                    .filter((c) => c.user_id !== lead.corretor_id)
+                    .filter((c) => !origemCorretorId || c.user_id !== origemCorretorId)
                     .map((c) => (
                       <SelectItem key={c.user_id} value={c.user_id}>
                         {c.nome}
@@ -259,12 +606,12 @@ function DecisionDialog({
 
           {acao === "roleta" && (
             <p className="text-[13px] text-muted-foreground">
-              O lead sairá do corretor atual e irá para a Fila do CEO, aguardando redistribuição.
+              {isMulti ? "Os leads sairão" : "O lead sairá"} do corretor atual e {isMulti ? "irão" : "irá"} para a Fila do CEO, aguardando redistribuição.
             </p>
           )}
           {acao === "descartar" && (
             <p className="text-[13px] text-muted-foreground">
-              O lead irá para a etapa de Descarte como reengajável e poderá voltar via nutrição/reengajamento.
+              {isMulti ? "Os leads irão" : "O lead irá"} para a etapa de Descarte como reengajável e {isMulti ? "poderão" : "poderá"} voltar via nutrição/reengajamento.
             </p>
           )}
 
@@ -279,10 +626,16 @@ function DecisionDialog({
               rows={3}
             />
           </div>
+
+          {progress && (
+            <p className="text-[12px] text-muted-foreground">
+              Processando {progress.done}/{progress.total}...
+            </p>
+          )}
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={decidir.isPending}>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
             Cancelar
           </Button>
           <Button
@@ -290,7 +643,7 @@ function DecisionDialog({
             onClick={handleConfirm}
             disabled={disabled}
           >
-            {decidir.isPending ? "Processando..." : "Confirmar"}
+            {busy ? "Processando..." : isMulti ? `Confirmar (${leads.length})` : "Confirmar"}
           </Button>
         </DialogFooter>
       </DialogContent>

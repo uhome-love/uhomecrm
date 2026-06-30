@@ -1,68 +1,37 @@
-# Unificar Sem Contato + Redistribuição em Leads Estagnados
+# Melhorias na página Leads Estagnados
 
-## Objetivo
-Hoje existem dois mecanismos competindo para leads parados na etapa **Sem Contato**:
-- **Reciclagem 72h → Fila CEO "Redistribuição"** (`reciclar_leads_sem_contato` + aba/botão na UI)
-- **Cadência T1–T7 → descarte automático reengajável** (após aviso da 7ª tentativa + 24h)
+Três melhorias na página `/leads-estagnados` (`src/pages/LeadsEstagnados.tsx`) para facilitar a decisão do gestor/CEO. Sem mudanças no banco, RLS ou edge functions — apenas frontend, reaproveitando o que já existe.
 
-Vamos unificar tudo na **Central de Leads Estagnados**: ao esgotar a cadência (T7 + prazo vencido), o lead vira **estagnado** na própria etapa Sem Contato e aparece na central para o gestor/CEO decidir (repassar / roleta / descartar). O fluxo antigo de Redistribuição 72h é removido por completo.
+## 1) Clicar no cliente → abrir o histórico do lead
 
----
+Hoje cada linha mostra só nome, etapa e corretor. Vamos tornar o nome/linha clicável para abrir o **mesmo drawer de detalhe do lead** usado no pipeline (`PipelineLeadDetail`), com timeline, tarefas, visitas, anotações e histórico completo — assim o gestor entende o contexto antes de decidir.
 
-## 1. Backend — T7 passa a estagnar (não descartar)
+Como o card de estagnação carrega só dados resumidos, ao clicar buscamos o registro completo do lead (`pipeline_leads` por `id`) sob demanda e abrimos o drawer com ele. As ações de update/mover/excluir dentro do drawer funcionarão e, ao fechar, a lista de estagnados é recarregada para refletir qualquer mudança.
 
-Substituir a função `cadencia_sc_descartar_reengajavel(lead_id)`: em vez de mover o lead para a etapa **Descarte**, ela passa a:
-- Marcar `estagnado = true`, `estagnado_em = now()` (mantém o lead na etapa **Sem Contato**, mantém o corretor atual).
-- Registrar histórico e atividade ("Estagnado — cadência Sem Contato esgotada (T7 sem retorno)").
-- Encerrar a cadência (`lead_cadencia_sem_contato.status = 'concluida'`).
-- Notificar gestor/CEO/diretor (categoria `lead_estagnado`) apontando para a Central de Leads Estagnados.
+## 2) Filtros para facilitar a visualização
 
-A seção A de `processar_cadencia_sem_contato` (que detecta o vencimento do prazo de 24h e dispara `do_descarte`) continua igual — só muda o efeito final na função acima. O texto retornado ao `lead-escalation` passa de "descartado" para "estagnado".
+Adicionar uma barra de filtros acima da lista (dentro da aba atual):
+- **Busca por texto** (nome, empreendimento, corretor)
+- **Corretor** (dropdown com os corretores que têm leads na categoria)
+- **Empreendimento** (dropdown)
+- **Ordenação** por dias sem ação (maior → menor é o padrão) ou nome
 
-## 2. Backend — Central passa a enxergar Sem Contato estagnado
+Os filtros operam sobre os dados já carregados (client-side), sem nova chamada ao servidor, e funcionam junto com as abas de categoria existentes (Estagnados / Em aviso / Em parceria / Confirmados).
 
-`get_pipeline_estagnacao` hoje faz `JOIN pipeline_estagnacao_config` (só Busca, Contato Iniciado, Aquecimento), então um lead estagnado em **Sem Contato** não apareceria.
-- Trocar o `JOIN` por `LEFT JOIN` na config, com `dias_limite` padrão de fallback.
-- Garantir no `WHERE` que **qualquer** lead com `estagnado = true` apareça, mesmo fora dos estágios configurados.
+## 3) Decisões em múltipla seleção
 
-`decidir_lead_estagnado` (repassar / roleta / descartar) já cobre o destino — sem alteração de lógica, apenas validar que funciona para leads na etapa Sem Contato.
-
-## 3. Backend — Remover o fluxo de Redistribuição 72h
-
-- **Parar a reciclagem 72h**: remover a chamada a `reciclar_leads_sem_contato` na edge function `lead-escalation` (bloco que move para Fila CEO "Redistribuição" e notifica). A função do banco pode ser descontinuada (`DROP`) ou apenas deixar de ser chamada.
-- A **redistribuição por timeout de aceite da roleta** (leads `pendente_distribuicao` recém-distribuídos via `redistribuir_leads_pendentes` / `distribuir_lead_atomico`) **permanece intacta** — é outro fluxo.
-
-## 4. Migração de dados — converter quem já está em Redistribuição
-
-Leads atualmente na Fila CEO com `is_redistribuicao = true` (e não reativados por nutrição) serão convertidos para estagnados:
-- Devolver ao corretor anterior (`corretor_id = corretor_anterior_id`), limpar `aceite_status = 'pendente_distribuicao'`/flags de redistribuição.
-- Marcar `estagnado = true`, `estagnado_em = now()`.
-- Registrar histórico da conversão.
-
-## 5. Frontend — Remover UI de Redistribuição
-
-- `src/components/pipeline/FilaCeoDispatchModal.tsx`: remover a aba **Redistribuição** (tab `redistribuicao`), seus memos (`leadsRedistribuicao`), contadores e textos. Mantém abas **Novos** e **Reengajamento**.
-- `src/components/pipeline/PipelineHeader.tsx`: remover o botão/atalho "confirmar redistribuição".
-- `src/pages/PipelineKanban.tsx`: remover o estado/contador de `is_redistribuicao` e o `openDispatch("redistribuicao")`.
-- Ajustar tipagem `initialTab` para `"novos" | "reengajamento"`.
-
----
+Permitir selecionar vários leads e aplicar uma ação de uma vez:
+- Um **checkbox** por linha + um "selecionar todos" no topo da lista.
+- Quando há seleção, aparece uma **barra de ações em massa** mostrando "N selecionados" com os botões: **Repassar**, **Roleta** e **Descartar**.
+- Reaproveita o mesmo `DecisionDialog` já existente, em modo lote:
+  - **Repassar**: escolhe um corretor de destino único e aplica a todos.
+  - **Roleta / Descartar**: confirma o motivo e aplica a todos.
+- A execução chama o mesmo hook `useDecidirEstagnado` para cada lead selecionado (em sequência, com feedback de progresso), depois limpa a seleção e recarrega a lista. Um toast resume "X leads processados".
 
 ## Detalhes técnicos
-- Etapa **Sem Contato** id: `2fcba9be-1188-4a54-9452-394beefdc330`.
-- Colunas de estagnação já existem em `pipeline_leads`: `estagnado`, `estagnado_em`, `estagnado_aviso_em`, `estagnado_prazo_em`.
-- O T7 estagnado **não** passa pelo aviso de 48h do motor de estagnação (já teve o ciclo T1–T7 + aviso de 24h); entra direto como `estagnado = true`.
-- Como a etapa Sem Contato não está em `pipeline_estagnacao_config`, o `processar_estagnacao_pipeline` não reseta esses leads automaticamente — a saída é sempre pela decisão na central (correto para o caso).
-- Notificações reutilizam `categoria = 'lead_estagnado'` já usada pelo motor.
 
-## Ordem de execução
-1. Migração: nova versão de `cadencia_sc_descartar_reengajavel` + `get_pipeline_estagnacao` (LEFT JOIN) — aprovação do usuário.
-2. Edge function `lead-escalation`: remover bloco da reciclagem 72h e ajustar textos do T7.
-3. Conversão de dados dos leads em redistribuição (insert/update).
-4. Limpeza de UI (modal, header, kanban).
-5. Validação end-to-end (simular T7 vencido, conferir aparição na central, testar repassar/roleta/descartar).
-
-## Fora de escopo
-- Não altera a redistribuição por timeout de aceite da roleta.
-- Não altera os estágios já ativos no motor de estagnação (Busca, Contato Iniciado, Aquecimento).
-- Não altera a etapa Descarte nem o reengajamento existente.
+- **Arquivo principal alterado:** `src/pages/LeadsEstagnados.tsx`.
+- **Drawer:** reusar `src/components/pipeline/PipelineLeadDetail.tsx`. Ele exige um `PipelineLead` completo + `stages`/`segmentos` + callbacks `onUpdate/onMove/onDelete`. Para evitar carregar o pipeline inteiro, ao clicar buscamos o lead único e os `stages`/`segmentos` (queries leves, em cache via react-query). Callbacks fazem `update`/`move` direto em `pipeline_leads` e, no fechamento, `invalidateQueries(["pipeline-estagnacao"])`.
+- **Filtros e seleção:** estado local (`useState`) + `useMemo`; nenhum novo hook de dados necessário além de reusar `useCorretoresOptions`.
+- **Bulk actions:** estende o `DecisionDialog` para aceitar `leadIds: string[]` opcional além do `lead` único; loop sobre `useDecidirEstagnado.mutateAsync`.
+- Sem migração, sem mudança em RLS/edge functions, sem alteração de regras de negócio (as ações continuam idênticas às atuais).
