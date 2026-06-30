@@ -279,7 +279,8 @@ export default function TarefasPage() {
             <Plus className="h-4 w-4" /> Nova Tarefa
           </Button>
         </div>
-      </div>
+        }
+      />
 
       {/* Overdue / today banners */}
       {(() => {
