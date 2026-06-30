@@ -21,7 +21,7 @@ import {
 import {
   Plus, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
-  Building2, Share2, Search as SearchIcon, Trash2, Megaphone
+  Building2, Share2, Search as SearchIcon, Trash2, Megaphone, Repeat
 } from "lucide-react";
 import { parseDateTimeSafe } from "@/lib/utils";
 import { todayBRT, dateToBRT } from "@/lib/utils";
@@ -191,6 +191,20 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
   for (const h of historico) {
     const from = stages.find(s => s.id === h.stage_anterior_id);
     const to = stages.find(s => s.id === h.stage_novo_id);
+    // Progressão de cadência (mesma etapa, sem movimentação real) → não exibir "Movido para…"
+    const mesmaEtapa = h.stage_anterior_id && h.stage_novo_id && h.stage_anterior_id === h.stage_novo_id;
+    if (mesmaEtapa) {
+      items.push({
+        title: h.observacao || "Cadência atualizada",
+        date: h.created_at,
+        icon: Repeat,
+        color: "bg-muted text-muted-foreground",
+        autor: nome(h.movido_por),
+        sourceType: "historico",
+        sourceId: h.id,
+      });
+      continue;
+    }
     items.push({
       title: `Movido para ${to?.nome || "?"}`,
       description: from ? `De: ${from.nome}${h.observacao ? ` • ${h.observacao}` : ""}` : h.observacao || undefined,
