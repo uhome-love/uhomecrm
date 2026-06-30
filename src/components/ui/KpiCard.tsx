@@ -21,15 +21,15 @@ interface KpiCardProps {
 
 const VALUE_COLORS: Record<KpiVariant, string> = {
   default:   "text-[#0a0a0a] dark:text-[#fafafa]",
-  highlight: "text-[#4969FF] dark:text-[#6B84FF]",
-  success:   "text-[#10b981] dark:text-[#34d399]",
-  warning:   "text-[#f59e0b] dark:text-[#fbbf24]",
-  danger:    "text-[#ef4444] dark:text-[#f87171]",
+  highlight: "text-primary dark:text-[#6B84FF]",
+  success:   "text-success dark:text-[#34d399]",
+  warning:   "text-warning dark:text-[#fbbf24]",
+  danger:    "text-danger dark:text-[#f87171]",
 };
 
 const TREND_COLORS: Record<TrendDirection, string> = {
-  up:      "text-[#10b981] dark:text-[#34d399]",
-  down:    "text-[#ef4444] dark:text-[#f87171]",
+  up:      "text-success dark:text-[#34d399]",
+  down:    "text-danger dark:text-[#f87171]",
   neutral: "text-[#a1a1aa]",
 };
 
@@ -54,10 +54,10 @@ export function KpiCard({
       className={cn(
         "bg-[#f7f7fb] dark:bg-[#141e30]",
         "border border-[#e8e8f0] dark:border-white/[0.07] shadow-none",
-        "border-l-[3px] border-l-[#4969FF]",
+        "border-l-[3px] border-l-primary",
         "rounded-[14px] p-4 pl-4",
         "flex flex-col gap-2",
-        onClick && "cursor-pointer hover:border-[#e0e0e0] dark:hover:border-white/[0.12] hover:border-l-[#3350E6] transition-colors",
+        onClick && "cursor-pointer hover:border-[#e0e0e0] dark:hover:border-white/[0.12] hover:border-l-primary transition-colors",
         className
       )}
     >

@@ -90,7 +90,7 @@ export default function RhRecrutamento() {
         subtitle="Pipeline de recrutamento"
         icon={<Users size={18} strokeWidth={1.5} />}
         actions={
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="bg-[#4969FF] hover:bg-[#3350E6] text-white gap-1">
+          <Button onClick={() => setDialogOpen(true)} size="sm" className="bg-primary hover:bg-primary text-white gap-1">
             <Plus size={14} /> Novo Candidato
           </Button>
         }

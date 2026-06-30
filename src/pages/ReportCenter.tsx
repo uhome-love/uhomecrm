@@ -183,7 +183,7 @@ export default function ReportCenter() {
                 onClick={() => update({ visao: v.key })}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all border ${
                   isActive
-                    ? "bg-[#4969FF] text-white border-transparent shadow-sm"
+                    ? "bg-primary text-white border-transparent shadow-sm"
                     : "bg-white text-muted-foreground border-border hover:bg-accent"
                 }`}
               >

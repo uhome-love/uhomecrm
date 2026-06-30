@@ -185,7 +185,7 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
 
           <div className="flex items-center gap-2">
             {negocio.vgv_estimado ? (
-              <span className="text-[14px] font-bold text-[#10b981] dark:text-[#34d399] flex items-center gap-1">
+              <span className="text-[14px] font-bold text-success dark:text-[#34d399] flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5" />
                 {parceriaInfo?.isParceria ? `${formatVGV(negocio.vgv_estimado / 2)} (50%)` : formatVGV(negocio.vgv_estimado)}
               </span>
@@ -216,7 +216,7 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
         <div className="px-3.5 pb-2.5 border-t border-[#e8e8f0] dark:border-white/[0.04] pt-2" onClick={(e) => e.stopPropagation()}>
           {editingTask ? (
             <div className="flex items-center gap-1.5">
-              <input autoFocus value={taskText} onChange={(e) => setTaskText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSaveTask(); if (e.key === "Escape") setEditingTask(false); }} placeholder="Definir próximo passo..." className="flex-1 text-[11px] bg-[#f7f7fb] dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded px-2 py-1 text-[#0a0a0a] dark:text-white placeholder:text-[#a1a1aa] dark:placeholder:text-white/30 focus:outline-none focus:border-[#4969FF] dark:focus:border-white/20" />
+              <input autoFocus value={taskText} onChange={(e) => setTaskText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSaveTask(); if (e.key === "Escape") setEditingTask(false); }} placeholder="Definir próximo passo..." className="flex-1 text-[11px] bg-[#f7f7fb] dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded px-2 py-1 text-[#0a0a0a] dark:text-white placeholder:text-[#a1a1aa] dark:placeholder:text-white/30 focus:outline-none focus:border-primary dark:focus:border-white/20" />
               <button onClick={handleSaveTask} className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 font-medium shrink-0">Salvar</button>
             </div>
           ) : (
@@ -238,12 +238,12 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
 
         {/* Action bar */}
         <div className="flex items-center border-t border-[#e8e8f0] dark:border-white/[0.06] bg-[#f7f7fb] dark:bg-[rgba(255,255,255,0.02)]" onClick={(e) => e.stopPropagation()}>
-          <button onClick={() => setLigarPopup(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#4969FF] dark:hover:text-white hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors border-r border-[#e8e8f0] dark:border-white/[0.06]">
+          <button onClick={() => setLigarPopup(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-primary dark:hover:text-white hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors border-r border-[#e8e8f0] dark:border-white/[0.06]">
             <Phone className="h-3.5 w-3.5" /> Ligar
           </button>
 
           {whatsappUrl ? (
-            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#10b981] hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors border-r border-[#e8e8f0] dark:border-white/[0.06]">
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-success hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors border-r border-[#e8e8f0] dark:border-white/[0.06]">
               <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
             </a>
           ) : (
@@ -254,7 +254,7 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#4969FF] hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors">
+              <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-primary hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors">
                 <Zap className="h-3.5 w-3.5" /> Ação
               </button>
             </DropdownMenuTrigger>

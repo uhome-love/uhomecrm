@@ -319,7 +319,7 @@ export default function CustomListAttemptModal({ open, onClose, onSubmit, leadNa
                 onChange={e => setFeedback(e.target.value)}
                 rows={2}
                 style={{ background: "var(--arena-bg-from)", border: "1px solid var(--arena-card-border)", borderRadius: 10, color: "var(--arena-text)", fontSize: 15, padding: 12 }}
-                className="placeholder:text-[#64748B] focus-visible:ring-blue-500/40 focus-visible:border-blue-500"
+                className="placeholder:text-neutral-500 focus-visible:ring-blue-500/40 focus-visible:border-blue-500"
               />
               <div className="flex items-center justify-between mt-1">
                 <p style={{ fontSize: 10, color: "#64748B" }}>Mín. 10 chars · Ctrl+Enter enviar</p>

@@ -444,7 +444,7 @@ export default function VendasRealizadas() {
                   className={cn(
                     "text-xs font-medium px-3 py-1.5 rounded-md transition-all",
                     periodMode === mode
-                      ? "bg-[#4969FF] text-white"
+                      ? "bg-primary text-white"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -470,7 +470,7 @@ export default function VendasRealizadas() {
                         className={cn(
                           "text-xs py-2 px-1 rounded-lg font-medium transition-all",
                           selectedMonth === i
-                            ? "bg-[#4969FF] text-white"
+                            ? "bg-primary text-white"
                             : "hover:bg-[#f5f5f5] dark:hover:bg-white/[0.06] text-[#0a0a0a] dark:text-[#fafafa]",
                           i > new Date().getMonth() && selectedYear >= new Date().getFullYear()
                             ? "opacity-40 pointer-events-none"

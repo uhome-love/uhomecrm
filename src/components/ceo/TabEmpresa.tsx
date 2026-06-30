@@ -199,7 +199,7 @@ export default function TabEmpresa() {
             className={cn(
               "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
               period === p.value
-                ? "bg-[#4969FF] text-white shadow-sm"
+                ? "bg-primary text-white shadow-sm"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
             )}
           >
@@ -281,7 +281,7 @@ export default function TabEmpresa() {
           <Card className="bg-card">
             <CardContent className="p-4 space-y-4">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Trophy size={14} className="text-[#4969FF]" /> Comparativo entre equipes
+                <Trophy size={14} className="text-primary" /> Comparativo entre equipes
               </h3>
               <ComparisonBars label="Visitas (marc+real)" teams={teamData} getValue={t => t.visitasMarcadas + t.visitasRealizadas} />
               <ComparisonBars label="VGV" teams={teamData} getValue={t => t.vgv} formatFn={formatBRLCompact} />
@@ -294,7 +294,7 @@ export default function TabEmpresa() {
             <Card className="bg-card overflow-hidden">
               <CardContent className="p-0">
                 <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-                  <Trophy size={14} className="text-[#4969FF]" />
+                  <Trophy size={14} className="text-primary" />
                   <h3 className="text-sm font-bold text-foreground">Top 10 corretores da empresa</h3>
                 </div>
                 <table className="w-full text-xs">
@@ -323,7 +323,7 @@ export default function TabEmpresa() {
                         <td className="px-2 py-2 text-center text-muted-foreground">{r.ligacoes}</td>
                         <td className="px-2 py-2 text-center text-muted-foreground">{r.vMarc}</td>
                         <td className="px-2 py-2 text-center text-muted-foreground">{r.vReal}</td>
-                        <td className="px-2 py-2 text-center font-bold text-[#4969FF]">{r.pts}</td>
+                        <td className="px-2 py-2 text-center font-bold text-primary">{r.pts}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -339,12 +339,12 @@ export default function TabEmpresa() {
 
 function KpiBox({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-3.5 border-l-[3px] border-l-[#4969FF]">
+    <div className="bg-card border border-border rounded-xl p-3.5 border-l-[3px] border-l-primary">
       <div className="flex items-center gap-1.5 mb-1">
-        <span className="text-[#4969FF]">{icon}</span>
+        <span className="text-primary">{icon}</span>
         <p className="text-[10px] font-medium text-muted-foreground truncate">{label}</p>
       </div>
-      <p className={cn("text-xl font-[800] leading-none", highlight ? "text-[#4969FF]" : "text-foreground")}>{value}</p>
+      <p className={cn("text-xl font-[800] leading-none", highlight ? "text-primary" : "text-foreground")}>{value}</p>
     </div>
   );
 }
