@@ -201,16 +201,40 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
   for (const a of atividades) {
     const info = ATIVIDADE_TIPOS[a.tipo];
     const isEntrada = a.tipo === "entrada";
-    const desc = isEntrada && a.descricao
-      ? a.descricao
-      : (a.descricao || `${a.titulo} • ${a.status === "concluida" ? "✅" : "⏳"}`);
+
+    if (isEntrada) {
+      items.push({
+        title: a.titulo || info?.label || "Lead entrou",
+        description: a.descricao || undefined,
+        date: a.created_at,
+        icon: info?.icon || Plus,
+        color: info?.color || "bg-emerald-100 text-emerald-600",
+        sourceType: "atividade",
+        sourceId: a.id,
+      });
+      continue;
+    }
+
+    const res = detectResultado(a.titulo, a.descricao);
+    const labelText = info?.label || a.tipo;
+    // Núcleo do título sem nome do lead, sem data solta e sem resultado cru
+    const core = limparTexto(a.titulo, lead.nome, res?.key);
+    const labelPlain = (info?.label || "").replace(/^[^\s]+\s*/, "").trim().toLowerCase();
+    const title = core && core.toLowerCase() !== labelPlain
+      ? `${labelText} · ${core}`
+      : labelText;
+    // Descrição: só observação real (ignora "Resultado: x")
+    const rawDesc = a.descricao && !/^resultado:/i.test(a.descricao.trim()) ? a.descricao : null;
+    const desc = limparTexto(rawDesc, lead.nome, res?.key) || undefined;
+
     items.push({
-      title: isEntrada ? (a.titulo || info?.label || "Lead entrou") : (info?.label ? `${info.label} — ${a.titulo}` : a.titulo),
+      title,
       description: desc,
       date: a.created_at,
       icon: info?.icon || PhoneCall,
-      color: info?.color || (isEntrada ? "bg-emerald-100 text-emerald-600" : (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600")),
-      autor: isEntrada ? undefined : nome(a.created_by),
+      color: info?.color || (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"),
+      autor: nome(a.created_by),
+      badge: res?.meta,
       sourceType: "atividade",
       sourceId: a.id,
     });
