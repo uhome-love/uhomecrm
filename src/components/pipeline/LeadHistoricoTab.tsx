@@ -486,6 +486,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               date: item.date,
               tipo: tipoGuess,
               kind: item.sourceType as any,
+              badge: item.badge,
               trailing: item.sourceId && item.sourceType !== "system" ? (
                 <Button
                   variant="ghost"
