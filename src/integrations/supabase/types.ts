@@ -11460,17 +11460,15 @@ export type Database = {
         Args: never
         Returns: {
           acao: string
-          canal: string
           corretor_id: string
-          do_descarte: boolean
           empreendimento: string
           lead_id: string
           lead_nome: string
-          numero: number
           proxima_em: string
           telefone: string
           texto_app: string
           texto_whatsapp: string
+          tipo: string
         }[]
       }
       processar_estagnacao_pipeline: { Args: never; Returns: Json }
