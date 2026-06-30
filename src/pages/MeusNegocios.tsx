@@ -1001,11 +1001,26 @@ export default function MeusNegocios() {
           </div>
         )}
 
-        {/* Line 2 — summary */}
-        <div className="flex items-center gap-3 mt-2 pb-2">
-          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{filteredNegocios.length} negócios</span>
-          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">·</span>
-          {totalVGV > 0 && (
+        {/* Line 2 — tabs + summary */}
+        <div className="flex items-center gap-2 mt-2 pb-2">
+          <div className="flex items-center gap-1 p-0.5 rounded-[9px] bg-[#e8e8f0] dark:bg-white/[0.06]">
+            <button
+              onClick={() => setBoardTab("ativos")}
+              className={`h-[26px] px-3 text-[12px] font-semibold rounded-[7px] transition-all ${boardTab === "ativos" ? "bg-white dark:bg-white/[0.12] text-[#0a0a0a] dark:text-white shadow-sm" : "text-[#71717a] dark:text-[#a1a1aa]"}`}
+            >
+              Pipeline ativo
+              <span className="ml-1.5 text-[#a1a1aa] dark:text-[#52525b]">{activeNegocios.length}</span>
+            </button>
+            <button
+              onClick={() => setBoardTab("perdidos")}
+              className={`h-[26px] px-3 text-[12px] font-semibold rounded-[7px] transition-all ${boardTab === "perdidos" ? "bg-white dark:bg-white/[0.12] text-[#0a0a0a] dark:text-white shadow-sm" : "text-[#71717a] dark:text-[#a1a1aa]"}`}
+            >
+              Negócios caídos
+              <span className="ml-1.5 text-[#a1a1aa] dark:text-[#52525b]">{perdidosNegocios.length}</span>
+            </button>
+          </div>
+          <div className="flex-1" />
+          {boardTab === "ativos" && totalVGV > 0 && (
             <span className="text-[12px] text-success dark:text-[#34d399] font-semibold">{formatVGV(totalVGV)} VGV total</span>
           )}
         </div>
