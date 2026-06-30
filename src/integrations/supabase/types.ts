@@ -866,6 +866,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cadencia_sem_contato_passos: {
+        Row: {
+          acao: string
+          canal: string
+          created_at: string
+          descartar: boolean
+          espera_minutos: number
+          numero: number
+          texto_app: string
+          texto_whatsapp: string
+          updated_at: string
+        }
+        Insert: {
+          acao: string
+          canal: string
+          created_at?: string
+          descartar?: boolean
+          espera_minutos: number
+          numero: number
+          texto_app: string
+          texto_whatsapp: string
+          updated_at?: string
+        }
+        Update: {
+          acao?: string
+          canal?: string
+          created_at?: string
+          descartar?: boolean
+          espera_minutos?: number
+          numero?: number
+          texto_app?: string
+          texto_whatsapp?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       campaign_clicks: {
         Row: {
           campanha: string
@@ -3455,6 +3491,56 @@ export type Database = {
           telefone?: string | null
         }
         Relationships: []
+      }
+      lead_cadencia_sem_contato: {
+        Row: {
+          corretor_id: string | null
+          created_at: string
+          id: string
+          iniciada_em: string
+          pipeline_lead_id: string
+          proxima_em: string | null
+          status: string
+          tentativa_atual: number
+          tentativas_log: Json
+          ultima_acao_em: string | null
+          updated_at: string
+        }
+        Insert: {
+          corretor_id?: string | null
+          created_at?: string
+          id?: string
+          iniciada_em?: string
+          pipeline_lead_id: string
+          proxima_em?: string | null
+          status?: string
+          tentativa_atual?: number
+          tentativas_log?: Json
+          ultima_acao_em?: string | null
+          updated_at?: string
+        }
+        Update: {
+          corretor_id?: string | null
+          created_at?: string
+          id?: string
+          iniciada_em?: string
+          pipeline_lead_id?: string
+          proxima_em?: string | null
+          status?: string
+          tentativa_atual?: number
+          tentativas_log?: Json
+          ultima_acao_em?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_cadencia_sem_contato_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_imoveis_indicados: {
         Row: {
@@ -10573,6 +10659,10 @@ export type Database = {
           similarity: number
         }[]
       }
+      cadencia_sc_descartar_reengajavel: {
+        Args: { p_lead_id: string }
+        Returns: undefined
+      }
       calculate_recovery_score: {
         Args: {
           p_email: string
@@ -10846,6 +10936,18 @@ export type Database = {
       get_dashboard_gerente_v4_kpis: {
         Args: { p_gestor_id: string; p_periodo?: string }
         Returns: Json
+      }
+      get_dashboard_sem_contato: {
+        Args: never
+        Returns: {
+          atrasado: number
+          avatar_url: string
+          corretor_id: string
+          corretor_nome: string
+          no_prazo: number
+          risco: number
+          total: number
+        }[]
       }
       get_distribuicao_performance: {
         Args: { p_periodo?: string }
@@ -11251,6 +11353,22 @@ export type Database = {
       marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
       norm_empreendimento: { Args: { s: string }; Returns: string }
       normalize_telefone: { Args: { raw: string }; Returns: string }
+      processar_cadencia_sem_contato: {
+        Args: never
+        Returns: {
+          acao: string
+          canal: string
+          corretor_id: string
+          do_descarte: boolean
+          empreendimento: string
+          lead_id: string
+          lead_nome: string
+          numero: number
+          telefone: string
+          texto_app: string
+          texto_whatsapp: string
+        }[]
+      }
       prune_old_notifications: {
         Args: { batch_size?: number }
         Returns: number
