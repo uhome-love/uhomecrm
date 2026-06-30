@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Rocket, AlertTriangle, Sparkles, RefreshCw, HeartHandshake } from "lucide-react";
+import { Loader2, Rocket, AlertTriangle, Sparkles, HeartHandshake } from "lucide-react";
 import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
 
