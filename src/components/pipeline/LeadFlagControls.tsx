@@ -48,19 +48,13 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
     </div>
   );
 
+  // Etapa "Sem Contato": tentativas são controladas automaticamente pela cadência
+  // do CRM (lead_cadencia_sem_contato). Não há seletor manual aqui para evitar
+  // duplicação com o badge automático.
   if (stageTipo === "sem_contato") {
-    return wrapper(
-      <>
-        <Label className="text-xs font-medium text-muted-foreground">Tentativas:</Label>
-        <Select value={flags.tentativas || "0"} onValueChange={(v) => setFlag("tentativas", v)}>
-          <SelectTrigger className="h-7 w-20 text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {[0,1,2,3,4,5,6,7].map(n => <SelectItem key={n} value={String(n)} className="text-xs">{n}/7</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </>
-    );
+    return null;
   }
+
 
   if (stageTipo === "contato_inicial") {
     return wrapper(

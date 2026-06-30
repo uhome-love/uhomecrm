@@ -1,54 +1,36 @@
-# Tarefa futura protege da estagnação + teto de 30 dias
+# Sem Contato: remover tentativa manual + contar tarefas como ação
 
-## Entendimento confirmado
-- Tarefa pendente com data futura = ação planejada → o lead **não estagna** enquanto ela existir e não vencer.
-- Quando a tarefa é concluída (ou vence sem conclusão), o relógio de inatividade passa a contar a partir desse momento. Sem nova tarefa/ação dentro do limite de dias, o lead estagna.
-- Corretor poderá agendar tarefa no máximo **30 dias** à frente (impede "burlar" a estagnação jogando tarefa para meses depois).
+## Problema 1 — Duplicação de tentativas
 
-## Problema atual (auditado)
-- `_pipeline_ultima_acao_humana` só conta tarefas **concluídas**; ignora tarefas **pendentes futuras**. Resultado: lead com tarefa agendada estagna do mesmo jeito.
-- 1 estagnado e vários "em aviso" possuem tarefa futura pendente; há 65 tarefas marcadas para >30 dias (máx. 261 dias).
+Hoje a etapa **Sem Contato** tem DOIS contadores de tentativa:
 
-## Mudanças
+1. **Manual** — o corretor escolhe `0/7` num seletor ("📋 Status da Etapa → Tentativas"). Isso grava em `pipeline_leads.flag_status.tentativas` e gera o badge `☎️ X/7`.
+2. **Automático** — o CRM controla via cadência (`lead_cadencia_sem_contato`), gerando o badge `📲 tentativa`.
 
-### 1. Estagnação passa a respeitar tarefa pendente futura (migration)
-Criar helper `public._pipeline_tem_tarefa_pendente_futura(lead_id)`:
-- retorna `true` se existe tarefa em `pipeline_tarefas` com `concluida_em IS NULL`, `status <> 'concluida'` e `vence_em >= CURRENT_DATE`.
+Por isso aparece duplicado. Vamos **remover o manual** e manter só o automático do CRM.
 
-Aplicar esse guard em:
-- **`processar_estagnacao_pipeline`**:
-  - Não marcar aviso para candidatos que tenham tarefa pendente futura.
-  - Resetar (`estagnado_aviso_em=NULL`, `estagnado_prazo_em=NULL`) leads em aviso que tenham tarefa pendente futura.
-  - Resetar (`estagnado=false`, limpa campos) leads já estagnados que tenham tarefa pendente futura.
-- **`get_pipeline_estagnacao`**: excluir da lista da Central os leads com tarefa pendente futura (consistência com o motor).
+### Mudanças (frontend, sem backend)
+- `src/components/pipeline/LeadFlagControls.tsx`: remover o bloco do seletor de "Tentativas" do caso `sem_contato` (deixar de renderizar o card "Status da Etapa" para essa etapa, já que tentativa era o único campo).
+- `src/lib/leadHelpers.ts`: em `getLeadSubstatusBadge`, remover o `case "sem_contato"` que monta `☎️ X/7` a partir de `flag_status.tentativas`.
+- `src/components/pipeline/LeadFlagBadges.tsx`: remover o badge manual `☎️ X/7` do `sem_contato`.
 
-> Observação: tarefa **vencida e não concluída** (data no passado) NÃO protege — atraso na própria tarefa é sinal de inação.
+O badge automático `📲` (vindo da cadência, em `CardMinimal.tsx`) permanece intacto.
 
-### 2. Teto de 30 dias para agendamento de tarefas
+## Problema 2 — Criar/concluir tarefa deve contar como ação na cadência
 
-**a) Defesa central — trigger no banco (migration):**
-Trigger `BEFORE INSERT OR UPDATE` em `pipeline_tarefas` que rejeita `vence_em > CURRENT_DATE + 30` (apenas para tarefas não concluídas), com mensagem clara: "Tarefas podem ser agendadas para no máximo 30 dias à frente." Garante a regra independentemente de qual tela criou a tarefa.
+Hoje a cadência só avança quando entra uma atividade em `pipeline_atividades` com tipo de contato (`ligacao`, `whatsapp`, `nota`, etc.).
 
-**b) Frontend — limitar os seletores de data** (max = hoje + 30 dias) nos pontos onde o corretor escolhe a data da tarefa:
-- `src/components/pipeline/LeadTarefasTab.tsx`
-- `src/components/pipeline/NextActionModal.tsx`
-- `src/components/pipeline/CardQuickTaskPopover.tsx`
-- `src/pages/MinhasTarefas.tsx`
-- `src/hooks/usePipelineLeadData.ts` (validação no submit)
+- **Concluir tarefa**: já registra atividade com `tipo = tipo_contato` (ligação/whatsapp/...), então **já conta**.
+- **Criar tarefa**: registra atividade com `tipo = 'tarefa'`, que **não está** na lista permitida do gatilho `fn_cadencia_sc_avancar_acao` → hoje não conta.
 
-Inputs `type="date"` ganham atributo `max`; onde houver agendamento por "X dias depois", limitar a 30.
+### Mudança (migration)
+Atualizar a função `fn_cadencia_sc_avancar_acao` para incluir `'tarefa'` na lista de tipos que avançam a cadência. Assim, **criar** uma tarefa passa a contar como tentativa de contato, e **concluir** continua contando (como já acontece).
 
-### 3. Correção dos dados existentes (auditoria + fix)
-Numa migration/insert de saneamento:
-- **Tirar da estagnação** os leads (estagnado ou em aviso) que possuem tarefa pendente futura — limpar `estagnado`, `estagnado_em`, `estagnado_aviso_em`, `estagnado_prazo_em`. (Ex.: Júlia Veiga, Ana Tormen e demais listados.)
-- **Reescalonar para 30 dias** as 65 tarefas pendentes com `vence_em > hoje+30` → setar `vence_em = CURRENT_DATE + 30` (não apagar, apenas ajustar para dentro da nova regra).
+## Detalhes técnicos
+- Gatilho atual: `trg_cadencia_sc_avancar_acao AFTER INSERT ON pipeline_atividades` → `fn_cadencia_sc_avancar_acao()`. Só precisa adicionar `'tarefa'` ao `NEW.tipo IN (...)`.
+- O campo `flag_status.tentativas` deixa de ser escrito/lido na UI; não há função de banco dependente dele (verificado), então nenhum dado precisa ser migrado.
+- Nenhuma alteração no motor de estagnação, que já considera ações humanas e tarefas futuras.
 
-## Validação após aplicar
-- Reexecutar a auditoria: `estagnados_com_tarefa_futura` deve ser 0.
-- Conferir que nenhuma tarefa pendente fica com `vence_em > hoje+30`.
-- Testar criar tarefa para 60 dias na UI → bloqueado pelo seletor e, se contornado, pelo trigger.
-- Rodar `processar_estagnacao_pipeline` e confirmar que leads com tarefa futura não voltam a estagnar.
-
-## Fora de escopo
-- Não muda dias-limite por etapa nem o fluxo de arquivamento já existente.
-- Não altera RLS, buckets ou edge functions.
+## Verificação
+- Conferir no preview que a etapa Sem Contato mostra apenas o badge automático `📲` e não o `☎️ X/7` manual.
+- Criar uma tarefa num lead em Sem Contato e confirmar que `lead_cadencia_sem_contato.tentativa_atual` avança.
