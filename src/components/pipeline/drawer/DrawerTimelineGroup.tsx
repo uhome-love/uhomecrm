@@ -136,7 +136,14 @@ function DefaultTimelineRow({ item }: { item: DrawerTimelineItem }) {
       <div className="flex-1 min-w-0 pt-0.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-[13px] font-medium text-foreground leading-snug">{item.title}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-[13px] font-medium text-foreground leading-snug">{item.title}</p>
+              {item.badge && (
+                <span className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold ${BADGE_TONE[item.badge.tone] || BADGE_TONE.neutral}`}>
+                  {item.badge.label}
+                </span>
+              )}
+            </div>
             {item.description && (
               <p className="text-[12px] text-muted-foreground whitespace-pre-wrap leading-snug mt-0.5">
                 {item.description}
