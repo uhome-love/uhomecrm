@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DollarSign, TrendingUp, Edit2, Plus, Trash2, Loader2, AlertTriangle, Target } from "lucide-react";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default function ComissoesPage() {
   const { faixas, isLoading, upsertFaixa, deleteFaixa } = useComissaoFaixas();
