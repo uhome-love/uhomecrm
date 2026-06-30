@@ -511,6 +511,11 @@ function LeadRow({
       <div className="flex items-center gap-2 flex-wrap pl-7 sm:pl-0">
         {diasBadge(lead.dias_sem_acao)}
         <div className="flex items-center gap-1.5">
+          {lead.corretor_id && (
+            <Button size="sm" variant="outline" className="h-8 gap-1.5 text-[12px]" onClick={() => onDecide("devolver")}>
+              <Undo2 className="h-3.5 w-3.5" /> Devolver
+            </Button>
+          )}
           <Button size="sm" variant="outline" className="h-8 gap-1.5 text-[12px]" onClick={() => onDecide("repassar")}>
             <UserCheck className="h-3.5 w-3.5" /> Repassar
           </Button>
