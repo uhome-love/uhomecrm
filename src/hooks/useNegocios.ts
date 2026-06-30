@@ -38,8 +38,10 @@ export const NEGOCIOS_FASES = [
   { key: "negociacao", label: "Negociação", cor: "#F59E0B", icon: "" },
   { key: "documentacao", label: "Contrato Gerado", cor: "#8B5CF6", icon: "" },
   { key: "vendido", label: "Vendido", cor: "#22C55E", icon: "" },
-  { key: "distrato", label: "Caiu", cor: "#EF4444", icon: "" },
 ] as const;
+
+// Negócio perdido/caído — fica fora do board ativo, em base separada (aba "Caídos")
+export const NEGOCIO_FASE_PERDIDO = "perdido";
 
 export function useNegocios() {
   const { user } = useAuth();
@@ -66,7 +68,7 @@ export function useNegocios() {
     let query = supabase
       .from("negocios")
       .select("id, lead_id, visita_id, pipeline_lead_id, corretor_id, gerente_id, nome_cliente, telefone, empreendimento, fase, vgv_estimado, vgv_final, observacoes, origem, status, fase_changed_at, created_at, updated_at")
-      .eq("status", "ativo")
+      .in("status", ["ativo", "perdido"])
       .order("updated_at", { ascending: false })
       .limit(500);
 
@@ -128,7 +130,7 @@ export function useNegocios() {
         const { data: partnerNegocios } = await supabase
           .from("negocios")
           .select("id, lead_id, visita_id, pipeline_lead_id, corretor_id, gerente_id, nome_cliente, telefone, empreendimento, fase, vgv_estimado, vgv_final, observacoes, origem, status, fase_changed_at, created_at, updated_at")
-          .eq("status", "ativo")
+          .in("status", ["ativo", "perdido"])
           .in("pipeline_lead_id", partnerLeadIds);
 
         if (partnerNegocios) {
@@ -223,13 +225,19 @@ export function useNegocios() {
 
     // Optimistic
     setNegocios(prev => prev.map(n =>
-      n.id === negocioId ? { ...n, fase: novaFase, fase_changed_at: new Date().toISOString() } : n
+      n.id === negocioId
+        ? { ...n, fase: novaFase, status: novaFase === NEGOCIO_FASE_PERDIDO ? "perdido" : n.status, fase_changed_at: new Date().toISOString() }
+        : n
     ));
 
     const updatePayload: Record<string, any> = { fase: novaFase, updated_at: new Date().toISOString() };
     // Always set data_assinatura when moving to vendido (negócio fechado)
     if (novaFase === "vendido") {
       updatePayload.data_assinatura = dataAssinatura || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    }
+    // Perdido/caído sai do board ativo (status perdido)
+    if (novaFase === NEGOCIO_FASE_PERDIDO) {
+      updatePayload.status = "perdido";
     }
 
     const { error } = await supabase

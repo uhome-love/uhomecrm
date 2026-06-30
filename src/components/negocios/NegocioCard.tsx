@@ -92,8 +92,8 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
     if (!quedaMotivo.trim()) { toast.error("Informe o motivo da queda"); return; }
     if (!user) return;
     await supabase.from("negocios_atividades").insert({ negocio_id: negocio.id, tipo: "queda", resultado: "negativo", descricao: quedaMotivo, titulo: "Negócio caiu", created_by: user.id } as any);
-    onMoveFase(negocio.id, "distrato");
-    toast("❌ Negócio movido para Caiu");
+    onMoveFase(negocio.id, "perdido");
+    toast("❌ Negócio movido para Caídos");
     setQuedaPopup(false); setQuedaMotivo("");
   };
 
@@ -279,7 +279,7 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="gap-2 text-xs"><ArrowRight className="h-3.5 w-3.5" /> Mover para etapa</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase && f.key !== "distrato").map(f => (
+                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase).map(f => (
                     <DropdownMenuItem key={f.key} onClick={() => onMoveFase(negocio.id, f.key)} className="gap-2 cursor-pointer text-xs">
                       <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: f.cor }} />
                       {f.icon} {f.label}

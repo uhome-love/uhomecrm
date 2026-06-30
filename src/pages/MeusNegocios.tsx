@@ -123,8 +123,8 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
       negocio_id: negocio.id, tipo: "queda", resultado: "negativo",
       descricao: quedaMotivo, titulo: "Negócio caiu", created_by: user.id,
     } as any);
-    onMoveFase(negocio.id, "distrato");
-    toast("❌ Negócio movido para Caiu");
+    onMoveFase(negocio.id, "perdido");
+    toast("❌ Negócio movido para Caídos");
     setQuedaPopup(false); setQuedaMotivo("");
   };
 
@@ -395,7 +395,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                   <ArrowRight className="h-3.5 w-3.5" /> Mover para etapa
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase && f.key !== "distrato").map(f => (
+                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase).map(f => (
                     <DropdownMenuItem key={f.key} onClick={() => onMoveFase(negocio.id, f.key)} className="gap-2 cursor-pointer text-xs">
                       <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: f.cor }} />
                       {f.icon} {f.label}
@@ -683,6 +683,7 @@ export default function MeusNegocios() {
   const moveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragNegocioId = useRef<string | null>(null);
   const [dragOverFase, setDragOverFase] = useState<string | null>(null);
+  const [boardTab, setBoardTab] = useState<"ativos" | "perdidos">("ativos");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -715,6 +716,16 @@ export default function MeusNegocios() {
     return result;
   }, [negocios, filterGerente, filterCorretor, searchQuery]);
 
+  // Negócios ativos (board) × perdidos/caídos (aba separada, fora do pipeline ativo)
+  const isPerdido = (n: Negocio) => n.fase === "perdido" || n.status === "perdido";
+  const activeNegocios = useMemo(() => filteredNegocios.filter(n => !isPerdido(n)), [filteredNegocios]);
+  const perdidosNegocios = useMemo(
+    () => filteredNegocios.filter(isPerdido).sort((a, b) =>
+      new Date(b.fase_changed_at || b.updated_at).getTime() - new Date(a.fase_changed_at || a.updated_at).getTime()
+    ),
+    [filteredNegocios]
+  );
+
   const corretorList = useMemo(() => {
     // If filtering by gerente, only show corretores from that gerente's negocios
     const sourceNegocios = filterGerente !== "all" ? negocios.filter(n => n.gerente_id === filterGerente) : negocios;
@@ -723,26 +734,26 @@ export default function MeusNegocios() {
   }, [negocios, corretorNomes, filterGerente]);
 
   const totalVGV = useMemo(() =>
-    filteredNegocios.reduce((sum, n) => {
+    activeNegocios.reduce((sum, n) => {
       const vgv = n.vgv_estimado || 0;
       const parceria = n.pipeline_lead_id ? parceriaMap[n.pipeline_lead_id] : null;
       return sum + (parceria?.isParceria ? vgv * parceria.fatorSplit : vgv);
     }, 0),
-    [filteredNegocios, parceriaMap]
+    [activeNegocios, parceriaMap]
   );
 
   const negociosByFase = useMemo(() => {
     const map = new Map<string, Negocio[]>();
     NEGOCIOS_FASES.forEach(f => map.set(f.key, []));
-    for (const n of filteredNegocios) {
+    for (const n of activeNegocios) {
       const arr = map.get(n.fase);
       if (arr) arr.push(n);
     }
     return map;
-  }, [filteredNegocios]);
+  }, [activeNegocios]);
 
   // Phases that require a transition popup
-  const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "vendido", "distrato"];
+  const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "vendido", "perdido"];
 
   const requestMoveFase = useCallback((negocioId: string, novaFase: string) => {
     const negocio = negocios.find(n => n.id === negocioId);
@@ -813,7 +824,7 @@ export default function MeusNegocios() {
     }
 
     // Handle "caiu" destination — return lead to pipeline
-    if (data.fase === "distrato" && data.fields.destino === "pipeline" && negocio.pipeline_lead_id) {
+    if (data.fase === "perdido" && data.fields.destino === "pipeline" && negocio.pipeline_lead_id) {
       const stageId = data.fields.stage_id;
       if (stageId) {
         await supabase.from("pipeline_leads").update({
@@ -879,7 +890,7 @@ export default function MeusNegocios() {
             <Briefcase size={13} strokeWidth={1.5} className="text-white" />
           </div>
           <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#0a0a0a] dark:text-white">Pipeline negócios</h1>
-          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{filteredNegocios.length} negócios</span>
+          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{activeNegocios.length} negócios</span>
           {totalVGV > 0 && (
             <span className="text-[12px] font-bold text-success dark:text-[#34d399]">{formatVGV(totalVGV)}</span>
           )}
@@ -990,17 +1001,33 @@ export default function MeusNegocios() {
           </div>
         )}
 
-        {/* Line 2 — summary */}
-        <div className="flex items-center gap-3 mt-2 pb-2">
-          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{filteredNegocios.length} negócios</span>
-          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">·</span>
-          {totalVGV > 0 && (
+        {/* Line 2 — tabs + summary */}
+        <div className="flex items-center gap-2 mt-2 pb-2">
+          <div className="flex items-center gap-1 p-0.5 rounded-[9px] bg-[#e8e8f0] dark:bg-white/[0.06]">
+            <button
+              onClick={() => setBoardTab("ativos")}
+              className={`h-[26px] px-3 text-[12px] font-semibold rounded-[7px] transition-all ${boardTab === "ativos" ? "bg-white dark:bg-white/[0.12] text-[#0a0a0a] dark:text-white shadow-sm" : "text-[#71717a] dark:text-[#a1a1aa]"}`}
+            >
+              Pipeline ativo
+              <span className="ml-1.5 text-[#a1a1aa] dark:text-[#52525b]">{activeNegocios.length}</span>
+            </button>
+            <button
+              onClick={() => setBoardTab("perdidos")}
+              className={`h-[26px] px-3 text-[12px] font-semibold rounded-[7px] transition-all ${boardTab === "perdidos" ? "bg-white dark:bg-white/[0.12] text-[#0a0a0a] dark:text-white shadow-sm" : "text-[#71717a] dark:text-[#a1a1aa]"}`}
+            >
+              Negócios caídos
+              <span className="ml-1.5 text-[#a1a1aa] dark:text-[#52525b]">{perdidosNegocios.length}</span>
+            </button>
+          </div>
+          <div className="flex-1" />
+          {boardTab === "ativos" && totalVGV > 0 && (
             <span className="text-[12px] text-success dark:text-[#34d399] font-semibold">{formatVGV(totalVGV)} VGV total</span>
           )}
         </div>
       </div>
 
       {/* Kanban */}
+      {boardTab === "ativos" ? (
       <div className="relative flex-1 min-h-0 px-2">
         {canScrollLeft && (
           <button
@@ -1108,6 +1135,50 @@ export default function MeusNegocios() {
           })}
         </div>
       </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 scrollbar-thin">
+          {perdidosNegocios.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center gap-2">
+              <div className="h-12 w-12 rounded-full flex items-center justify-center bg-[#e8e8f0] dark:bg-white/[0.06]">
+                <XCircle className="h-6 w-6 text-[#a1a1aa] dark:text-[#52525b]" />
+              </div>
+              <span className="text-sm font-semibold text-[#0a0a0a] dark:text-white">Nenhum negócio caído</span>
+              <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">Negócios que caírem aparecerão aqui, fora do pipeline ativo.</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pb-4 max-w-[1400px] mx-auto">
+              {perdidosNegocios.map(negocio => (
+                <div
+                  key={negocio.id}
+                  onClick={() => setSelectedNegocio(negocio)}
+                  className="cursor-pointer rounded-xl border border-[#e8e8f0] dark:border-white/[0.06] bg-white dark:bg-[rgba(255,255,255,0.02)] px-3.5 py-3 opacity-90 hover:opacity-100 transition-all grayscale-[0.3] hover:grayscale-0"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-bold text-[#0a0a0a] dark:text-white truncate">{negocio.nome_cliente}</span>
+                    <Badge variant="secondary" className="text-[10px] gap-1 shrink-0 bg-[#f0f0f5] dark:bg-white/[0.06] text-[#71717a] dark:text-[#a1a1aa]">
+                      <XCircle className="h-3 w-3" /> Caído
+                    </Badge>
+                  </div>
+                  {negocio.empreendimento && (
+                    <div className="text-[12px] text-[#71717a] dark:text-[#a1a1aa] mt-1 truncate">{negocio.empreendimento}</div>
+                  )}
+                  <div className="flex items-center justify-between mt-2">
+                    {negocio.vgv_estimado ? (
+                      <span className="text-[12px] font-semibold text-[#a1a1aa] dark:text-[#52525b]">{formatVGV(negocio.vgv_estimado)}</span>
+                    ) : <span />}
+                    {(isAdmin || isGestor) && negocio.corretor_id && (
+                      <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] truncate max-w-[120px]">{corretorNomes[negocio.corretor_id]}</span>
+                    )}
+                  </div>
+                  {negocio.observacoes && (
+                    <div className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] mt-2 line-clamp-2 italic">"{negocio.observacoes}"</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <AddNegocioDialog
         open={addNegocioOpen}

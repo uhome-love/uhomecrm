@@ -96,7 +96,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
 
   // Load pipeline stages for "Voltar para Pipeline" option
   useEffect(() => {
-    if (targetFase !== "distrato") return;
+    if (targetFase !== "perdido") return;
     supabase.from("pipeline_stages")
       .select("id, nome")
       .eq("pipeline_tipo", "leads")
@@ -144,10 +144,10 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
         fase: "vendido",
         fields: { tipo_assinatura: assDigital, ato_pago: assAtoPago, observacoes: assObs, data_assinatura: assDataAssinatura },
       });
-    } else if (targetFase === "distrato") {
+    } else if (targetFase === "perdido") {
       if (!caiuMotivo.trim()) return;
       onConfirm({
-        fase: "distrato",
+        fase: "perdido",
         fields: { motivo: caiuMotivo, destino: caiuDestino, stage_id: caiuDestino === "pipeline" ? caiuStageId : undefined },
       });
     }
@@ -292,7 +292,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
           </>
         );
 
-      case "distrato":
+      case "perdido":
         return (
           <>
             <DialogHeader>
