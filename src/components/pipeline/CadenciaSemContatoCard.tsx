@@ -6,6 +6,8 @@ import { nowBRT } from "@/lib/brtTime";
 interface CadenciaSemContatoCardProps {
   leadId: string;
   stageTipo?: string | null;
+  leadNome?: string | null;
+  leadEmpreendimento?: string | null;
 }
 
 interface CadenciaRow {
@@ -29,6 +31,12 @@ function canalIcon(canal: string) {
   return <RefreshCcw className="h-3.5 w-3.5" />;
 }
 
+function aplicarPlaceholders(texto: string, nome?: string | null, emp?: string | null): string {
+  return (texto || "")
+    .replace(/\{nome\}/g, (nome || "o lead").trim() || "o lead")
+    .replace(/\{empreendimento\}/g, (emp || "o empreendimento").trim() || "o empreendimento");
+}
+
 function formatRelativo(target: string): string {
   const diffMs = new Date(target).getTime() - nowBRT().getTime();
   const abs = Math.abs(diffMs);
@@ -42,7 +50,7 @@ function formatRelativo(target: string): string {
   return diffMs >= 0 ? `vence em ${unidade}` : `atrasado há ${unidade}`;
 }
 
-export default function CadenciaSemContatoCard({ leadId, stageTipo }: CadenciaSemContatoCardProps) {
+export default function CadenciaSemContatoCard({ leadId, stageTipo, leadNome, leadEmpreendimento }: CadenciaSemContatoCardProps) {
   const [cadencia, setCadencia] = useState<CadenciaRow | null>(null);
   const [passos, setPassos] = useState<PassoRow[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -79,8 +87,12 @@ export default function CadenciaSemContatoCard({ leadId, stageTipo }: CadenciaSe
   const feitos = cadencia?.tentativa_atual ?? 0;
   const atualNum = Math.min(feitos + 1, TOTAL_PASSOS);
   const passoAtual = passos.find((p) => p.numero === atualNum);
-  const risco = !concluida && atualNum >= 6;
+  // Só a ÚLTIMA etapa real (passo 7 = despedida) alerta sobre estagnação.
+  const ultimaEtapa = !concluida && atualNum >= TOTAL_PASSOS;
   const progresso = Math.round((Math.min(feitos, TOTAL_PASSOS) / TOTAL_PASSOS) * 100);
+
+  const acaoTxt = passoAtual ? aplicarPlaceholders(passoAtual.acao, leadNome, leadEmpreendimento) : "";
+  const passoTxt = passoAtual ? aplicarPlaceholders(passoAtual.texto_app, leadNome, leadEmpreendimento) : "";
 
   return (
     <div className="rounded-xl border bg-card p-3 space-y-2.5">
@@ -97,7 +109,7 @@ export default function CadenciaSemContatoCard({ leadId, stageTipo }: CadenciaSe
       {/* Barra de progresso */}
       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${risco ? "bg-destructive" : "bg-primary"}`}
+          className={`h-full rounded-full transition-all ${ultimaEtapa ? "bg-destructive" : "bg-primary"}`}
           style={{ width: `${progresso}%` }}
         />
       </div>
@@ -109,6 +121,27 @@ export default function CadenciaSemContatoCard({ leadId, stageTipo }: CadenciaSe
             Cadência esgotada — o lead foi para a Central de Leads Estagnados.
           </p>
         </div>
+      ) : ultimaEtapa && passoAtual ? (
+        /* Passo 7 (despedida): UM único bloco, sem duplicar aviso */
+        <div className="space-y-2">
+          <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/25 p-2.5">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5" />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-[12.5px] font-semibold text-foreground leading-tight">
+                Última etapa — {acaoTxt}
+              </p>
+              <p className="text-[12px] text-muted-foreground leading-snug">
+                {passoTxt}
+              </p>
+            </div>
+          </div>
+          <p className="text-[11px] text-destructive/90 px-0.5 font-medium">
+            Sem retorno em 48h, o lead será estagnado e sairá do seu pipeline.
+            {cadencia?.proxima_em && <> Prazo {formatRelativo(cadencia.proxima_em)}.</>}
+          </p>
+        </div>
       ) : passoAtual ? (
         <div className="space-y-2">
           <div className="flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/15 p-2.5">
@@ -117,10 +150,10 @@ export default function CadenciaSemContatoCard({ leadId, stageTipo }: CadenciaSe
             </div>
             <div className="space-y-0.5">
               <p className="text-[12.5px] font-semibold text-foreground leading-tight">
-                Agora: {passoAtual.acao}
+                Agora: {acaoTxt}
               </p>
               <p className="text-[12px] text-muted-foreground leading-snug">
-                {passoAtual.texto_app}
+                {passoTxt}
               </p>
             </div>
           </div>
@@ -129,15 +162,6 @@ export default function CadenciaSemContatoCard({ leadId, stageTipo }: CadenciaSe
             <p className="text-[11px] text-muted-foreground px-0.5">
               Próximo passo {formatRelativo(cadencia.proxima_em)}.
             </p>
-          )}
-
-          {risco && (
-            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 p-2.5">
-              <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-              <p className="text-[12px] text-destructive leading-snug font-medium">
-                Última etapa da cadência — sem retorno, o lead será estagnado e sairá do seu pipeline.
-              </p>
-            </div>
           )}
         </div>
       ) : null}
