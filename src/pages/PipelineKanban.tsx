@@ -695,6 +695,11 @@ export default function PipelineKanban() {
               {clientStatusFilter === "em_dia" ? "✅ Em dia" : clientStatusFilter === "desatualizado" ? "🟡 Desatualizado" : "🔴 Atrasado"} ×
             </Badge>
           )}
+          {riscoFilter && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={clearRisco}>
+              ⏳ Em risco de estagnação ×
+            </Badge>
+          )}
           <button
             onClick={clearAllFilters}
             className="ml-1 shrink-0 flex items-center gap-1 text-[10px] font-semibold text-danger-500 bg-transparent border-none cursor-pointer hover:underline"
