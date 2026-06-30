@@ -54,10 +54,34 @@ import { cn } from "@/lib/utils";
 
 const TABS: { value: CategoriaEstagnacao; label: string }[] = [
   { value: "estagnado", label: "Estagnados" },
-  { value: "candidato", label: "A estagnar" },
   { value: "em_aviso", label: "Em aviso (48h)" },
+  { value: "candidato", label: "Em alerta" },
   { value: "em_parceria", label: "Em parceria" },
 ];
+
+const TAB_INFO: Record<CategoriaEstagnacao, { icon: typeof AlarmClock; texto: string }> = {
+  estagnado: {
+    icon: AlarmClock,
+    texto:
+      "Já estagnaram. Passaram do prazo da etapa e ficaram mais 48h sem nenhuma ação do corretor. Saíram do pipeline (arquivados) e aguardam sua decisão: Devolver, Repassar, Roleta ou Descartar.",
+  },
+  em_aviso: {
+    icon: AlertTriangle,
+    texto:
+      "Prestes a estagnar. Estão na contagem final de 48h e o corretor já foi avisado. Se ele não agir até o prazo (mostrado em cada lead), o lead estagna automaticamente e vai para a aba 'Estagnados'.",
+  },
+  candidato: {
+    icon: Clock,
+    texto:
+      "Já passaram do limite de dias da etapa, mas ainda não estagnaram. Continuam no pipeline do corretor. Em breve recebem o aviso de 48h. Se o corretor agir (ligar, WhatsApp, criar/concluir tarefa) o prazo zera.",
+  },
+  em_parceria: {
+    icon: Users,
+    texto:
+      "Leads em parceria ativa não são estagnados automaticamente. Decida manualmente para não desfazer a parceria sem alinhar com o parceiro.",
+  },
+};
+
 
 type SortKey = "dias_desc" | "dias_asc" | "nome";
 
