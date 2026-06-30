@@ -51,38 +51,30 @@ export default function Notificacoes() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-black text-foreground" style={{ fontSize: 28 }}>
-            🔔 Central de Notificações
-          </h1>
-          <p className="mt-1" style={{ fontSize: 14 }}>
-            {unreadCount > 0 ? (
-              <span className="text-muted-foreground">{unreadCount} não lida{unreadCount > 1 ? "s" : ""}</span>
-            ) : (
-              <span className="text-green-500 font-medium">Tudo em dia! ✅</span>
-            )}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowUnreadOnly(!showUnreadOnly)}
-            className="text-muted-foreground font-medium transition-colors border border-border rounded-lg px-3.5 py-1.5 text-[13px] hover:bg-muted"
-          >
-            {showUnreadOnly ? "Mostrar todas" : "Só não lidas"}
-          </button>
-          {unreadCount > 0 && (
+      <PageHeader
+        title="Central de Notificações"
+        subtitle={unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? "s" : ""}` : "Tudo em dia! ✅"}
+        icon={<Bell className="h-5 w-5" />}
+        actions={
+          <>
             <button
-              onClick={() => markAllAsRead()}
-              className="flex items-center gap-1.5 text-muted-foreground font-medium transition-colors border border-border rounded-lg px-3.5 py-1.5 text-[13px] hover:bg-muted"
+              onClick={() => setShowUnreadOnly(!showUnreadOnly)}
+              className="text-muted-foreground font-medium transition-colors border border-border rounded-lg px-3.5 py-1.5 text-[13px] hover:bg-muted"
             >
-              <CheckCheck className="h-3.5 w-3.5" />
-              Marcar todas como lidas
+              {showUnreadOnly ? "Mostrar todas" : "Só não lidas"}
             </button>
-          )}
-        </div>
-      </div>
+            {unreadCount > 0 && (
+              <button
+                onClick={() => markAllAsRead()}
+                className="flex items-center gap-1.5 text-muted-foreground font-medium transition-colors border border-border rounded-lg px-3.5 py-1.5 text-[13px] hover:bg-muted"
+              >
+                <CheckCheck className="h-3.5 w-3.5" />
+                Marcar todas como lidas
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
