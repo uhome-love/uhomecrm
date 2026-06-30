@@ -10644,6 +10644,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _pipeline_referencia_estagnacao: {
+        Args: { _lead_id: string }
+        Returns: string
+      }
       _pipeline_tem_tarefa_pendente_futura: {
         Args: { _lead_id: string }
         Returns: boolean
@@ -11062,6 +11066,7 @@ export type Database = {
           visitas_realizadas: number
         }[]
       }
+      get_lead_estagnacao_status: { Args: { p_lead_id: string }; Returns: Json }
       get_leads_atrasados: {
         Args: { p_corretor_id: string }
         Returns: {
