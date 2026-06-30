@@ -426,6 +426,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const bodyNode = (
     <>
+      {/* Aviso de cadência Sem Contato (apenas nessa etapa) */}
+      <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} />
+
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
       {empreendimentoOpen && (
         <div className="flex items-center gap-2">
