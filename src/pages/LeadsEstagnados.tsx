@@ -52,10 +52,10 @@ import { formatBRT } from "@/lib/brtTime";
 import { cn } from "@/lib/utils";
 
 const TABS: { value: CategoriaEstagnacao; label: string }[] = [
-  { value: "candidato", label: "Estagnados" },
+  { value: "estagnado", label: "Estagnados" },
+  { value: "candidato", label: "A estagnar" },
   { value: "em_aviso", label: "Em aviso (48h)" },
   { value: "em_parceria", label: "Em parceria" },
-  { value: "estagnado", label: "Confirmados" },
 ];
 
 type SortKey = "dias_desc" | "dias_asc" | "nome";
