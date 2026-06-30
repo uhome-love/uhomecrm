@@ -533,22 +533,18 @@ Deno.serve(async (req) => {
           const titulo = `📲 Sem Contato · Tentativa ${p.numero} — ${p.acao}`;
           const corpo = `${p.lead_nome || "Lead"}${p.empreendimento ? ` (${p.empreendimento})` : ""}: ${p.texto_app}`;
 
-          // Sino (in-app) — insert direto bypassa horário de silêncio (disparar a qualquer hora)
+          // Sino (in-app) + Push (tela bloqueada): o insert dispara o trigger trg_push_on_notification
+          // automaticamente (push), e bypassa o horário de silêncio do criar_notificacao
+          // (requisito: disparar a qualquer hora).
           await supabase.from("notifications").insert({
             user_id: p.corretor_id,
             tipo: "cadencia_sem_contato",
             categoria: "leads",
             titulo,
             mensagem: corpo,
-            dados: { lead_id: p.lead_id, tentativa: p.numero, acao: p.acao, canal: p.canal },
+            dados: { url: `/pipeline?lead=${p.lead_id}`, lead_id: p.lead_id, tentativa: p.numero, acao: p.acao, canal: p.canal },
             cargo_destino: ["corretor"],
           } as any);
-
-          // Push (tela bloqueada)
-          await sendPush(supabaseUrl, serviceKey, p.corretor_id, titulo, corpo, {
-            lead_id: p.lead_id,
-            tentativa: p.numero,
-          });
 
           // WhatsApp do corretor
           const { data: cprof } = await supabase
