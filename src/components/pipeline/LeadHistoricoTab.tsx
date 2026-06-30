@@ -415,7 +415,10 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             return {
               id: `${item.sourceType ?? "x"}-${item.sourceId ?? i}-${item.date}`,
               title: item.title,
-              description: item.description,
+              description: item.autor
+                ? `${item.description ? `${item.description} • ` : ""}por ${item.autor}`
+                : item.description,
+
               date: item.date,
               tipo: tipoGuess,
               kind: item.sourceType as any,
