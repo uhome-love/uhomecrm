@@ -15,6 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
+import type { CompletionPayload } from "@/components/pipeline/task-completion/types";
+import { runTaskCompletion } from "@/lib/taskCompletion";
 
 interface TarefaAgenda {
   id: string;
