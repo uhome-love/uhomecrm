@@ -95,6 +95,7 @@ export default function LeadsEstagnados() {
   const [search, setSearch] = useState("");
   const [corretorFilter, setCorretorFilter] = useState<string>("todos");
   const [empreendimentoFilter, setEmpreendimentoFilter] = useState<string>("todos");
+  const [etapaFilter, setEtapaFilter] = useState<string>("todos");
   const [sort, setSort] = useState<SortKey>("dias_desc");
 
   // Seleção múltipla
