@@ -430,6 +430,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       {/* Aviso de cadência Sem Contato (apenas nessa etapa) */}
       <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} leadNome={lead.nome} leadEmpreendimento={(lead as any).empreendimento} />
 
+      {/* Contador de estagnação (demais etapas com config) */}
+      <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
+
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
       {empreendimentoOpen && (
         <div className="flex items-center gap-2">
