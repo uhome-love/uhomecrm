@@ -3,7 +3,7 @@
 // Agrupa por prazo: atrasadas / hoje / amanhã / esta semana / próximas
 // ─────────────────────────────────────────────────────────────────
 import { useMemo, useState } from "react";
-import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw } from "lucide-react";
+import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
