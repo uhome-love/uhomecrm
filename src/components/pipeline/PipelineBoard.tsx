@@ -129,6 +129,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   handleDragStart: (leadId: string) => void;
   tarefasMap: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
   whatsappUnreadSet: Set<string>;
+  cadenciaMap: Record<string, { tentativa: number; proxima_em: string | null }>;
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER);
   const scrollRef = useRef<HTMLDivElement>(null);
