@@ -162,14 +162,48 @@ export default function MinhaAgendaWidget() {
   const negociosClassified = useMemo(() => classify(tarefasNegocios), [tarefasNegocios, now]);
 
   const handleConcluir = async (t: TarefaAgenda) => {
-    const table = t._source === "negocio" ? "negocios_tarefas" : "pipeline_tarefas";
-    await supabase.from(table).update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", t.id);
+    // Leads passam pelo diálogo de conclusão (observação obrigatória + cadência).
     if (t._source === "lead" && t.pipeline_lead_id) {
-      await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any).eq("id", t.pipeline_lead_id);
+      setCompleting(t);
+      return;
     }
+    // Negócios: conclusão direta (fora da cadência de leads).
+    await supabase.from("negocios_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", t.id);
     toast.success("Tarefa concluída ✅");
-    invalidateTaskQueries(queryClient, t._source === "lead" ? t.pipeline_lead_id : null);
+    invalidateTaskQueries(queryClient, null);
   };
+
+  const handleCompletionConfirm = async (payload: CompletionPayload) => {
+    if (!completing || !completing.pipeline_lead_id) return;
+    const leadId = completing.pipeline_lead_id;
+    const result = await runTaskCompletion(
+      {
+        tarefaId: completing.id,
+        tarefaTitulo: completing.titulo,
+        leadId,
+        leadNome: completing.lead_nome || "Lead",
+        leadStageId: null,
+        addTarefa: async (input) => {
+          await supabase.from("pipeline_tarefas").insert({
+            pipeline_lead_id: leadId,
+            tipo: input.tipo,
+            titulo: input.titulo,
+            descricao: input.descricao ?? null,
+            vence_em: input.vence_em,
+            hora_vencimento: input.hora_vencimento ?? null,
+            status: "pendente",
+            user_id: user?.id,
+          } as any);
+        },
+      },
+      payload,
+    );
+    if (result.level === "error") toast.error(result.toastMessage);
+    else toast.success(result.toastMessage);
+    setCompleting(null);
+    invalidateTaskQueries(queryClient, leadId);
+  };
+
 
   const handleAdiarRapido = async (id: string, horas: number, source: "lead" | "negocio") => {
     const table = source === "negocio" ? "negocios_tarefas" : "pipeline_tarefas";
