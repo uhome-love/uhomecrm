@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationList from "@/components/notifications/NotificationList";
-import { CheckCheck, Loader2 } from "lucide-react";
+import { CheckCheck, Loader2, Bell } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 const ROLETA_TIPOS = ["lead_roleta", "lead", "leads", "lead_timeout", "lead_urgente", "lead_ultimo_alerta", "fila_ceo"];
 const ROLETA_CATEGORIAS = ["lead_novo", "lead_aceito", "lead_atribuido"];
