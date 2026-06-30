@@ -345,7 +345,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         const { data } = await supabase
           .from("lead_cadencia_sem_contato")
           .select("pipeline_lead_id, tentativa_atual, proxima_em")
-          .eq("status", "ativa")
+          .in("status", ["ativa", "aguardando_descarte"])
           .in("pipeline_lead_id", chunk);
         return data || [];
       }));
