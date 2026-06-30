@@ -21,7 +21,7 @@ import {
 import {
   Plus, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
-  Building2, Share2, Search as SearchIcon, Trash2, Megaphone
+  Building2, Share2, Search as SearchIcon, Trash2, Megaphone, Repeat
 } from "lucide-react";
 import { parseDateTimeSafe } from "@/lib/utils";
 import { todayBRT, dateToBRT } from "@/lib/utils";
