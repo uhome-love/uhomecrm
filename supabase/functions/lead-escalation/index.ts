@@ -530,8 +530,26 @@ Deno.serve(async (req) => {
 
         for (const p of passos) {
           if (!p.corretor_id) continue;
-          const titulo = `📲 Sem Contato · Tentativa ${p.numero} — ${p.acao}`;
-          const corpo = `${p.lead_nome || "Lead"}${p.empreendimento ? ` (${p.empreendimento})` : ""}: ${p.texto_app}`;
+
+          // Prazo da próxima ação (BRT) — relativo + horário
+          const prazoTxt = (() => {
+            if (!p.proxima_em) return "";
+            const diffMs = new Date(p.proxima_em).getTime() - Date.now();
+            const horas = Math.max(0, Math.round(diffMs / 3600000));
+            const quando = horas >= 24
+              ? `em ${Math.round(horas / 24)}d`
+              : horas >= 1 ? `em ${horas}h` : "em instantes";
+            const hhmm = new Intl.DateTimeFormat("pt-BR", {
+              hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
+            }).format(new Date(p.proxima_em));
+            return p.numero >= 8
+              ? "Sem retorno → descarte automático"
+              : `Próxima ação ${quando} (${hhmm})`;
+          })();
+
+          const tag = p.numero >= 8 ? "Descarte" : `T${p.numero}`;
+          const titulo = `📲 Sem Contato · ${tag} — ${p.acao}`;
+          const corpo = `${p.lead_nome || "Lead"}${p.empreendimento ? ` (${p.empreendimento})` : ""}: ${p.texto_app}${prazoTxt ? ` · ${prazoTxt}` : ""}`;
 
           // Sino (in-app) + Push (tela bloqueada): o insert dispara o trigger trg_push_on_notification
           // automaticamente (push), e bypassa o horário de silêncio do criar_notificacao
@@ -542,7 +560,7 @@ Deno.serve(async (req) => {
             categoria: "leads",
             titulo,
             mensagem: corpo,
-            dados: { url: `/pipeline?lead=${p.lead_id}`, lead_id: p.lead_id, tentativa: p.numero, acao: p.acao, canal: p.canal },
+            dados: { url: `/pipeline?lead=${p.lead_id}`, lead_id: p.lead_id, tentativa: p.numero, acao: p.acao, canal: p.canal, proxima_em: p.proxima_em },
             cargo_destino: ["corretor"],
           } as any);
 
