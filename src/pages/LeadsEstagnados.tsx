@@ -138,12 +138,21 @@ export default function LeadsEstagnados() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [baseRows]);
 
+  const etapaOptions = useMemo(() => {
+    const set = new Set<string>();
+    baseRows.forEach((l) => {
+      if (l.etapa) set.add(l.etapa);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [baseRows]);
+
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     let result = baseRows.filter((l) => {
       if (corretorFilter !== "todos" && l.corretor_id !== corretorFilter) return false;
       if (empreendimentoFilter !== "todos" && l.empreendimento !== empreendimentoFilter)
         return false;
+      if (etapaFilter !== "todos" && l.etapa !== etapaFilter) return false;
       if (q) {
         const hay = `${l.nome} ${l.empreendimento ?? ""} ${l.corretor_nome ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -156,7 +165,7 @@ export default function LeadsEstagnados() {
       return b.dias_sem_acao - a.dias_sem_acao;
     });
     return result;
-  }, [baseRows, search, corretorFilter, empreendimentoFilter, sort]);
+  }, [baseRows, search, corretorFilter, empreendimentoFilter, etapaFilter, sort]);
 
   const selectedRows = useMemo(
     () => rows.filter((l) => selected.has(l.lead_id)),
