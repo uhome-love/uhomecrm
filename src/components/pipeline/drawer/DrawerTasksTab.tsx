@@ -128,10 +128,18 @@ export default function DrawerTasksTab({
   const countHoje = grouped.hoje.length;
   const countProximas = grouped.amanha.length + grouped.semana.length + grouped.proximas.length;
   const totalPendentes = countAtrasadas + countHoje + countProximas;
+  const concluidas = useMemo(
+    () =>
+      tarefas
+        .filter((t) => t.status === "concluida")
+        .sort((a, b) => (b.concluida_em || b.vence_em || "").localeCompare(a.concluida_em || a.vence_em || "")),
+    [tarefas],
+  );
 
   const [editTarefa, setEditTarefa] = useState<PipelineTarefa | null>(null);
   const [adiarTarefa, setAdiarTarefa] = useState<PipelineTarefa | null>(null);
   const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
+  const [showConcluidas, setShowConcluidas] = useState(false);
 
   async function handleCompletionConfirm(payload: CompletionPayload) {
     if (!completingTarefa) return;
