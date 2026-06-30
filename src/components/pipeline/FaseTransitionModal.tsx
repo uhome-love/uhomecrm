@@ -96,7 +96,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
 
   // Load pipeline stages for "Voltar para Pipeline" option
   useEffect(() => {
-    if (targetFase !== "distrato") return;
+    if (targetFase !== "perdido") return;
     supabase.from("pipeline_stages")
       .select("id, nome")
       .eq("pipeline_tipo", "leads")
