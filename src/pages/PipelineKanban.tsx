@@ -496,18 +496,27 @@ export default function PipelineKanban() {
 
   const [intelView, setIntelView] = useState<"funil" | "radar">("funil");
 
+  const clearRisco = () => {
+    setRiscoFilter(false);
+    if (searchParams.get("risco")) {
+      searchParams.delete("risco");
+      setSearchParams(searchParams, { replace: true });
+    }
+  };
+
   const clearAllFilters = () => {
     setFilters({ ...EMPTY_FILTERS });
     setCampaignTagFilter("all");
     setClientStatusFilter("todos");
     setNegociosFilter(false);
+    clearRisco();
     if (searchParams.get("filtro")) {
       searchParams.delete("filtro");
       setSearchParams(searchParams, { replace: true });
     }
   };
 
-  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter;
+  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter || riscoFilter;
 
 
   if (pipeline.loading || !rolesReady || activeTab === null) {
