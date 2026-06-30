@@ -742,7 +742,7 @@ export default function MeusNegocios() {
   }, [filteredNegocios]);
 
   // Phases that require a transition popup
-  const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "vendido", "distrato"];
+  const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "vendido", "perdido"];
 
   const requestMoveFase = useCallback((negocioId: string, novaFase: string) => {
     const negocio = negocios.find(n => n.id === negocioId);
