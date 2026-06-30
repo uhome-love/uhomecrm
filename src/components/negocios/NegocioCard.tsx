@@ -92,8 +92,8 @@ export default function NegocioCard({ negocio, corretorNome, corretorInfo, showC
     if (!quedaMotivo.trim()) { toast.error("Informe o motivo da queda"); return; }
     if (!user) return;
     await supabase.from("negocios_atividades").insert({ negocio_id: negocio.id, tipo: "queda", resultado: "negativo", descricao: quedaMotivo, titulo: "Negócio caiu", created_by: user.id } as any);
-    onMoveFase(negocio.id, "distrato");
-    toast("❌ Negócio movido para Caiu");
+    onMoveFase(negocio.id, "perdido");
+    toast("❌ Negócio movido para Caídos");
     setQuedaPopup(false); setQuedaMotivo("");
   };
 
