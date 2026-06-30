@@ -144,10 +144,10 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
         fase: "vendido",
         fields: { tipo_assinatura: assDigital, ato_pago: assAtoPago, observacoes: assObs, data_assinatura: assDataAssinatura },
       });
-    } else if (targetFase === "distrato") {
+    } else if (targetFase === "perdido") {
       if (!caiuMotivo.trim()) return;
       onConfirm({
-        fase: "distrato",
+        fase: "perdido",
         fields: { motivo: caiuMotivo, destino: caiuDestino, stage_id: caiuDestino === "pipeline" ? caiuStageId : undefined },
       });
     }
