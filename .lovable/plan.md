@@ -1,44 +1,34 @@
-## Objetivo
+# Conferência do mostrador de tentativas + limpeza do histórico inconsistente
 
-Deixar a página `/leads-estagnados` clara para os gerentes: renomear e reordenar as abas e adicionar uma explicação simples em cada uma. Mudança apenas de UI/texto em `src/pages/LeadsEstagnados.tsx`.
+## Resultado da conferência (concluída)
 
-## Nova ordem e nomes das abas
+- **Mostrador "Tentativa N / 7": CORRETO em 209/209 leads.** O `tentativa_atual` bate 100% com as ações reais registradas após o início da cadência. Nenhum corretor está vendo contador errado.
+- **Histórico: 19 leads** com linha inflada (ex.: "Tentativa 6 concluída") que contradiz o contador — resíduo de uma versão antiga do gatilho, já corrigido. Confunde o corretor.
+- **`tentativas_log`: 81 leads** com entradas "fantasma" (campo interno, não exibido no card) — apenas higiene.
+- O gatilho atual (`fn_cadencia_sc_avancar_acao`) já grava corretamente → **não há recorrência**; nenhuma mudança de código/trigger/UI necessária.
 
-A ordem e os rótulos passam a ser (o valor interno/categoria não muda, só o label e a posição):
+## Correção proposta (somente dados, sem schema, sem regra)
 
-1. **Estagnados** (`estagnado`) — já estagnaram de fato.
-2. **Em aviso (48h)** (`em_aviso`) — em aviso, prestes a estagnar.
-3. **Em alerta** (`candidato`) — já passou do prazo da etapa e vai receber o aviso de 48h.
-4. **Em parceria** (`em_parceria`) — inalterado.
+1. **Remover as 19 linhas de histórico falsas** — registros `pipeline_historico` cujo texto começa com `Cadência Sem Contato — Tentativa N…` em que **N > `tentativa_atual` real** do lead. Histórico legítimo (N == contador) é mantido. Eventos reais (WhatsApp, Follow-up, "Movido para Sem Contato") permanecem intactos.
 
-Ou seja: o array `TABS` (linhas 55-58) será reordenado e renomeado:
-```
-{ value: "estagnado",   label: "Estagnados" }
-{ value: "em_aviso",    label: "Em aviso (48h)" }
-{ value: "candidato",   label: "Em alerta" }
-{ value: "em_parceria", label: "Em parceria" }
-```
+2. **Sanear o `tentativas_log` dos 81 leads** — manter apenas os elementos com `(n)::int <= tentativa_atual`, descartando os inflados. Não altera o contador (já correto).
 
-## Banner explicativo por aba
+3. **Não tocar** em `tentativa_atual` nem no status da cadência (já validados como corretos).
 
-Hoje só a aba "Em parceria" tem banner (linhas 222-229). Substituir por um mapa `TAB_INFO` com `{ icon, texto }` por categoria, renderizando o banner da aba ativa:
+## Validação após a correção
 
-- **Estagnados** (`estagnado`) — ícone `AlarmClock`:
-  "Já estagnaram. Passaram do prazo da etapa e ficaram mais 48h sem nenhuma ação do corretor. Saíram do pipeline (arquivados) e aguardam sua decisão: Devolver, Repassar, Roleta ou Descartar."
+- Reexecutar a conferência: confirmar **0 leads** com histórico inflado e **0** com log inflado.
+- Abrir Gabriela Rezende: card continua em "Tentativa 2/7"; o histórico deixa de mostrar "Tentativa 6"; os eventos reais permanecem.
+- Conferir 2–3 leads da lista (Jhon Lima, Everson Oliveira) para garantir que só o lixo foi removido.
 
-- **Em aviso (48h)** (`em_aviso`) — ícone `AlertTriangle`:
-  "Prestes a estagnar. Estão na contagem final de 48h e o corretor já foi avisado. Se ele não agir até o prazo (mostrado em cada lead), o lead estagna automaticamente e vai para a aba 'Estagnados'."
+## Detalhes técnicos
 
-- **Em alerta** (`candidato`) — ícone `Clock`:
-  "Já passaram do limite de dias da etapa, mas ainda não estagnaram. Continuam no pipeline do corretor. Em breve recebem o aviso de 48h. Se o corretor agir (ligar, WhatsApp, criar/concluir tarefa) o prazo zera."
+- Operação via ferramenta de dados (DELETE/UPDATE) — é correção de dados existentes, sem migração de schema.
+- Histórico: `observacao ILIKE 'Cadência Sem Contato — Tentativa%'` e número extraído `> tentativa_atual` do lead correspondente, restrito à etapa Sem Contato.
+- Log: reconstruir `tentativas_log` filtrando `(elem->>'n')::int <= tentativa_atual`.
+- Sem alteração em gatilhos, crons ou componentes de UI.
 
-- **Em parceria** (`em_parceria`) — ícone `Users` (texto atual mantido).
+## Fora de escopo
 
-## Detalhes de implementação
-
-- Reordenar/renomear o array `TABS`.
-- Trocar o bloco condicional do banner (só `em_parceria`) por renderização baseada em `TAB_INFO[tab]`.
-- Conferir imports de `lucide-react` e adicionar `AlertTriangle`/`Clock` se faltarem.
-- Encurtar o `subtitle` do `PageHeader` para algo genérico (ex.: "Gestão dos leads parados no pipeline, por etapa de risco."), já que a explicação detalhada fica no banner.
-
-Nenhuma alteração em RPCs, lógica de estagnação ou banco — apenas ordem, rótulos e textos na interface.
+- Nenhuma mudança nas regras da cadência (avanço só por ação/tarefa concluída; aviso 24h; estagnação 48h).
+- Nenhuma mudança no `CadenciaSemContatoCard` — o mostrador já está correto.
