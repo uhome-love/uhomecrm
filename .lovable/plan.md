@@ -1,57 +1,62 @@
-# Aviso de cadência no modal + alerta de pré-estagnação para o corretor
+## Objetivo
 
-Duas melhorias para o corretor: (1) um card de orientação dentro do modal do lead na etapa **Sem Contato** mostrando "tentativa atual + o que fazer agora", e (2) um aviso no dashboard do corretor com os leads prestes a estagnar, mais um filtro rápido no pipeline.
+Deixar a etapa **Sem Contato** correta, completa e bonita: tarefas concluídas visíveis, histórico legível por tentativa, **observação obrigatória ao concluir em TODOS os pontos**, contagem de tentativas correta (sem pular passos) e status sempre automático.
 
-## Parte 1 — Card "Cadência Sem Contato" no modal do lead
+---
 
-Hoje a etapa Sem Contato só mostra um badge automático (📲) no card do pipeline. Dentro do modal não há orientação. Os 7 passos já existem na tabela `cadencia_sem_contato_passos` (com `texto_app`, `acao`, `canal`, `espera_minutos`) e o estado por lead está em `lead_cadencia_sem_contato` (`tentativa_atual`, `proxima_em`, `status`).
+## Diagnóstico (causa raiz)
 
-**Novo componente `src/components/pipeline/CadenciaSemContatoCard.tsx`** (read-only):
-- Renderiza **apenas quando `stageTipo === "sem_contato"`**.
-- Busca a linha de `lead_cadencia_sem_contato` do lead + os passos de `cadencia_sem_contato_passos` (RLS já permite corretor dono / gestor / admin).
-- Mostra:
-  - **Tentativa atual: N / 7** com barra de progresso.
-  - **Ação de agora**: título da `acao` do passo atual + texto orientativo (`texto_app`), com ícone do canal (ligação / WhatsApp / ambos). Ex.: "Tentativa 3 — Insistir no contato: tente de novo por ligação ou WhatsApp."
-  - **Próximo passo**: quando vence (`proxima_em`) em linguagem relativa BRT ("vence em 4h", "atrasado há 2h") usando os helpers de `@/lib/brtTime`.
-  - **Aviso de risco** quando `tentativa_atual >= 6`: "⚠️ Última etapa — sem retorno o lead será estagnado."
-  - Estado concluído: se `status = 'concluida'`, mostra aviso "Cadência esgotada — lead foi para a Central de Leads Estagnados."
-- Estilo seguindo tokens semânticos (sem cores hardcoded), no padrão dos demais cards do modal.
+1. **Tarefas concluídas somem** — a aba Tarefas do modal usa `DrawerTasksTab`, que só renderiza pendentes (agrupadas por prazo). Concluídas nunca aparecem.
+2. **Camila "pulou" para T3 com 1 tarefa concluída** — **contagem dupla**: a cadência avança em DOIS gatilhos — ao **criar** a tarefa (`trg_cadencia_sc_avancar_tarefa`) E ao **concluir** (insere atividade → `trg_cadencia_sc_avancar_acao`). Criar + concluir = +2.
+3. **"Status da Etapa / Tentativas: 0/7"** — `LeadFlagControls` já retorna `null` para `sem_contato`; o print é build em cache. Só valido.
+4. **Observação opcional na conclusão** — hoje o campo é opcional no `TaskCompletionDialog`, e há **2 pontos que concluem sem nem abrir o diálogo**.
 
-**Integração em `src/components/pipeline/PipelineLeadDetail.tsx`**:
-- Incluir `<CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} />` no topo do `bodyNode` (linha ~427). Como o `bodyNode` é reaproveitado na aba "Info" mobile, aparece automaticamente em desktop e mobile.
+### Auditoria — pontos de conclusão de tarefa
+- Via `TaskCompletionDialog` (serão cobertos pela obrigatoriedade): `DrawerTasksTab`, `LeadTarefasTab`, `MinhasTarefas`, `FocusModeModal`/`FocusFooter`.
+- **Bypass (concluem direto, sem observação)**: `MinhaAgendaWidget` (✓ rápido) e `LeadPanel` (WhatsApp). Precisam abrir o diálogo.
+- Fora de escopo: `TarefasPage` (board operacional, tabela `tarefas`) e os `concluida` de `ConversationThread` (são `pipeline_atividades`).
 
-Sem mudança de schema nesta parte.
+---
 
-## Parte 2 — Aviso de pré-estagnação no dashboard + filtro no pipeline
+## Mudanças
 
-O corretor não tem visibilidade dos leads que estão prestes a estagnar (só o gestor/CEO veem a Central). Vamos dar a ele um alerta preventivo da própria carteira.
+### 1. Backend — cadência avança só ao concluir (1 migração)
+- Remover trigger `trg_cadencia_sc_avancar_tarefa` e função `fn_cadencia_sc_avancar_tarefa` (avanço na criação).
+- Manter `fn_cadencia_sc_avancar_acao` (avança quando atividade de contato é registrada = ao concluir, e nas ações Ligar/WhatsApp).
+- Resultado: criar tarefa = planejar; **concluir** = conta como tentativa. T2 → T3 só ao concluir a tarefa da T2.
 
-### 2a. RPC nova `get_corretor_pre_estagnacao()` (1 migração)
-- `SECURITY DEFINER`, escopo no `auth.uid()` (corretor só vê os próprios leads).
-- Reusa `pipeline_estagnacao_config`, `_pipeline_ultima_acao_humana` e `_pipeline_tem_tarefa_pendente_futura` (mesma lógica do motor, sem duplicar regra).
-- Retorna leads do corretor que estão **em risco**, classificados:
-  - `em_aviso` — já receberam o aviso de 48h (`estagnado_aviso_em` preenchido, ainda não estagnado).
-  - `proximo` — sem ação há ≥ (dias_limite − 2) dias, sem tarefa futura, sem parceria, ainda não em aviso.
-- Exclui: já estagnados/arquivados, com negócio, pós-vendas e com tarefa pendente futura (não estão em risco real).
-- Campos: `lead_id, nome, empreendimento, etapa, stage_id, dias_sem_acao, prazo_em, categoria`.
+### 2. Correção de dados (1 operação)
+- Recalcular `tentativa_atual` das cadências `ativa`/`concluida` em Sem Contato para o nº real de ações de contato concluídas (cap 7), corrigindo Camila e leads super-contados. Reabrir os marcados como concluídos por engano e não arquivados.
 
-### 2b. Widget `src/components/corretor/PreEstagnacaoCard.tsx`
-- Card no `CorretorDashboard.tsx`, inserido na coluna principal acima de `CarteiraKpis` (só aparece se houver leads em risco — sem ruído quando lista vazia).
-- Cabeçalho: "⏳ Leads prestes a estagnar (N)" com semáforo (âmbar = próximos, vermelho = em aviso/48h).
-- Lista compacta (até ~5) com nome, etapa, "parado há X dias" e badge da categoria; botão "Ver todos" abre o pipeline filtrado.
-- Clique em um item abre o modal do lead (mesma navegação já usada para abrir lead no pipeline).
+### 3. Observação obrigatória em TODA conclusão
+- **`TaskCompletionDialog`**: tornar observação/descrição **obrigatória** (botão Confirmar desabilitado + mensagem enquanto vazio). Cobre DrawerTasksTab, LeadTarefasTab, MinhasTarefas e FocusMode.
+- **`MinhaAgendaWidget`**: substituir o ✓ rápido por abertura do `TaskCompletionDialog` (ou mini-prompt obrigatório de observação) antes de concluir.
+- **`LeadPanel`**: mesma correção — concluir só via `TaskCompletionDialog`/observação obrigatória.
 
-### 2c. Filtro rápido no pipeline
-- No pipeline (`PipelineKanban` / filtros existentes), adicionar uma opção de filtro **"Em risco de estagnação"** que marca os leads retornados pela RPC.
-- O card do dashboard navega para o pipeline já com esse filtro ativo (via query param, ex. `?risco=estagnacao`), reaproveitando o mecanismo de filtros atual. Confirmo o ponto exato de integração ao implementar, mantendo o padrão dos filtros já existentes.
+### 4. Tarefas concluídas visíveis (`DrawerTasksTab`)
+- Seção **recolhível "✓ Concluídas (N)"** ao final; cada item mostra tipo + título, **observação** e data/hora de conclusão. Fechada por padrão.
+
+### 5. Histórico legível (`LeadHistoricoTab`)
+- Eventos de conclusão exibem **"Tarefa {tipo}: Concluída"** + observação.
+- Em Sem Contato, rotular como **"Tentativa N: {ação} — concluída"** e indicar a **tentativa atual pendente**.
+
+### 6. Card de cadência mais claro (`CadenciaSemContatoCard`)
+- Reforçar: **"Você está na tentativa N/7 — registre ou conclua a tarefa pendente para avançar."**
+- Mostrar progresso mesmo quando `concluida` mas lead não arquivado (evita "esgotada" enganoso).
+
+### 7. Status automático (validação)
+- Confirmar que `LeadFlagControls` não renderiza nada em `sem_contato` (já é o caso). Card de cadência é a única referência.
+
+---
 
 ## Detalhes técnicos
-- Sem alterar tabelas, RLS, buckets ou edge functions. Apenas **1 migração** (a RPC `get_corretor_pre_estagnacao`) — dentro do limite diário.
-- A RPC não duplica regras: chama as mesmas funções auxiliares do motor de estagnação, então o que o corretor vê como "risco" é exatamente o que viraria estagnação.
-- Timezone BRT via `@/lib/brtTime` em todas as datas/contadores.
-- Componentes novos pequenos e focados; nada de cores hardcoded.
+- **Arquivos**: `drawer/DrawerTasksTab.tsx`, `TaskCompletionDialog.tsx` (+ `task-completion/*`), `LeadHistoricoTab.tsx`, `CadenciaSemContatoCard.tsx`, `corretor/MinhaAgendaWidget.tsx`, `whatsapp/LeadPanel.tsx`.
+- **DB**: migração `DROP TRIGGER`/`DROP FUNCTION`; operação de dados (UPDATE) recalculando `tentativa_atual`.
+- Sem rota/tabela nova.
 
 ## Validação
-- Modal: abrir um lead na etapa Sem Contato e conferir tentativa atual, texto do passo, próximo vencimento e aviso de risco em T6/T7; conferir em mobile (aba Info).
-- Dashboard: corretor com lead em aviso/próximo vê o card; lista some quando não há risco.
-- Filtro: clicar "Ver todos" abre o pipeline filtrado corretamente; conferir que só aparecem leads do próprio corretor.
+- Concluir tarefa em Sem Contato → tentativa +1; criar tarefa não avança.
+- Nenhum ponto conclui tarefa sem observação (inclui agenda e WhatsApp).
+- Concluída aparece na seção "Concluídas" com a observação.
+- Histórico mostra "Tarefa X: Concluída" + observação e numeração por tentativa.
+- Caso Camila: 1 ação concluída + 1 pendente.
