@@ -228,7 +228,7 @@ const CardMinimal = memo(function CardMinimal({
       else if (diffMin < 1440) when = `${Math.round(diffMin / 60)}h`;
       else when = `${Math.round(diffMin / 1440)}d`;
     }
-    return { label: `T${Math.max(1, n + (atrasado ? 1 : 1))}`, when, tone, atrasado };
+    return { label: `T${Math.min(7, n + 1)}`, when, tone, atrasado };
   }, [cadencia?.tentativa, cadencia?.proxima_em]);
 
   const handleOpen = () => {
