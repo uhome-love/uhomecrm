@@ -10,6 +10,7 @@ import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
 import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookTab";
 import VisitaAmanhaTab from "@/components/central-nutricao/VisitaAmanhaTab";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 const CampanhaOndasTab = lazy(() => import("@/components/central-nutricao/CampanhaOndasTab"));
 
