@@ -87,9 +87,16 @@ interface TimelineItem {
   date: string;
   icon: any;
   color: string;
+  autor?: string;
   sourceType?: "atividade" | "historico" | "tarefa" | "imovel_event" | "anotacao" | "system";
   sourceId?: string;
 }
+
+function firstName(nome?: string | null): string | undefined {
+  if (!nome) return undefined;
+  return nome.trim().split(/\s+/)[0] || undefined;
+}
+
 
 const IMOVEL_EVENT_META: Record<string, { label: string; icon: any; color: string }> = {
   search_performed: { label: "🔍 Busca de imóveis", icon: SearchIcon, color: "bg-violet-100 text-violet-600" },
