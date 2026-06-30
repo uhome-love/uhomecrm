@@ -50,7 +50,7 @@ export interface PipelineHeaderProps {
   focusLeadsCount: number;
   filaCeoCount: number;
   filaCeoNovosCount: number;
-  filaCeoRedistCount: number;
+  
 
   // Role flags
   isAdmin: boolean;
@@ -117,7 +117,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
   const {
     filteredLeadsCount, displayedClientStatusCounts, campaignTagCounts, campaignTags,
     pipelineStages, pipelineSegmentos, pipelineLeads, corretorNomes, corretorOptions,
-    visitaLeadIds, focusLeadsCount, filaCeoCount, filaCeoNovosCount, filaCeoRedistCount,
+    visitaLeadIds, focusLeadsCount, filaCeoCount, filaCeoNovosCount,
     isAdmin, isDiretor = false, isGestor, canAdd,
     filters, setFilters, corretorFilter, setCorretorFilter,
     campaignTagFilter, setCampaignTagFilter,
