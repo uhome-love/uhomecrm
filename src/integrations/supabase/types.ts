@@ -10982,6 +10982,20 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_corretor_pre_estagnacao: {
+        Args: never
+        Returns: {
+          categoria: string
+          dias_limite: number
+          dias_sem_acao: number
+          empreendimento: string
+          etapa: string
+          lead_id: string
+          nome: string
+          prazo_em: string
+          stage_id: string
+        }[]
+      }
       get_corretores_intermediacao: {
         Args: never
         Returns: {
