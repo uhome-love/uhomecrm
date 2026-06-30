@@ -734,9 +734,9 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 >
                   <Inbox size={13} strokeWidth={1.5} />
                   Fila CEO
-                  {(filaCeoNovosCount + filaCeoRedistCount) > 0 && (
+                  {filaCeoNovosCount > 0 && (
                     <span className="bg-emerald-600 text-white rounded-md px-1.5 py-px text-[10px] font-bold">
-                      {filaCeoNovosCount + filaCeoRedistCount}
+                      {filaCeoNovosCount}
                     </span>
                   )}
                   <ChevronDown size={12} strokeWidth={1.5} className="opacity-60" />
