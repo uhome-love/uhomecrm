@@ -169,13 +169,13 @@ export function useRelatoriosCentral(
   filters: CentralFiltersInput
 ): UseRelatoriosCentralResult {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isDiretor } = useUserRole();
 
   const gestorId = useMemo<string | null | undefined>(() => {
     if (!user?.id) return null;                 // não autenticado → bloqueia query
-    if (isAdmin) return filters.equipe ?? undefined; // admin sem equipe → undefined = todas
+    if (isAdmin || isDiretor) return filters.equipe ?? undefined; // admin/diretor sem equipe → undefined = todas
     return user.id;                             // gestor → próprio id
-  }, [user?.id, isAdmin, filters.equipe]);
+  }, [user?.id, isAdmin, isDiretor, filters.equipe]);
 
   const range = useMemo(
     () => resolvePeriodo(filters.periodo, filters.de, filters.ate),
