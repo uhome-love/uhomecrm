@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -87,9 +87,16 @@ interface TimelineItem {
   date: string;
   icon: any;
   color: string;
+  autor?: string;
   sourceType?: "atividade" | "historico" | "tarefa" | "imovel_event" | "anotacao" | "system";
   sourceId?: string;
 }
+
+function firstName(nome?: string | null): string | undefined {
+  if (!nome) return undefined;
+  return nome.trim().split(/\s+/)[0] || undefined;
+}
+
 
 const IMOVEL_EVENT_META: Record<string, { label: string; icon: any; color: string }> = {
   search_performed: { label: "🔍 Busca de imóveis", icon: SearchIcon, color: "bg-violet-100 text-violet-600" },
@@ -133,8 +140,9 @@ function LeadOrigemInfo({ lead }: { lead: PipelineLead }) {
   );
 }
 
-function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtividade[], tarefas: PipelineTarefa[], stages: PipelineStage[], lead: PipelineLead, imovelEvents?: LeadImovelEvent[], anotacoes?: PipelineAnotacao[]): TimelineItem[] {
+function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtividade[], tarefas: PipelineTarefa[], stages: PipelineStage[], lead: PipelineLead, imovelEvents?: LeadImovelEvent[], anotacoes?: PipelineAnotacao[], nomesPorId?: Record<string, string>): TimelineItem[] {
   const items: TimelineItem[] = [];
+  const nome = (id?: string | null) => (id && nomesPorId?.[id]) ? firstName(nomesPorId[id]) : undefined;
 
   for (const h of historico) {
     const from = stages.find(s => s.id === h.stage_anterior_id);
@@ -145,6 +153,7 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       date: h.created_at,
       icon: ArrowRight,
       color: "bg-primary/10 text-primary",
+      autor: nome(h.movido_por),
       sourceType: "historico",
       sourceId: h.id,
     });
@@ -162,6 +171,7 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       date: a.created_at,
       icon: info?.icon || PhoneCall,
       color: info?.color || (isEntrada ? "bg-emerald-100 text-emerald-600" : (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600")),
+      autor: isEntrada ? undefined : nome(a.created_by),
       sourceType: "atividade",
       sourceId: a.id,
     });
@@ -169,9 +179,10 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
 
   for (const t of tarefas) {
     if (t.status === "concluida" && t.concluida_em) {
-      items.push({ title: `✅ ${t.titulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600", sourceType: "tarefa", sourceId: t.id });
+      items.push({ title: `✅ ${t.titulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600", autor: nome(t.created_by), sourceType: "tarefa", sourceId: t.id });
     }
   }
+
 
   // Lead-imóvel events
   if (imovelEvents) {
@@ -208,11 +219,25 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
   }
 
   if (lead.aceito_em) {
-    items.push({ title: "✅ Lead aceito", date: lead.aceito_em, icon: CheckCircle2, color: "bg-emerald-100 text-emerald-600", sourceType: "system" });
+    const aceitoPor = nome((lead as any).corretor_id);
+    items.push({ title: "✅ Lead aceito", description: aceitoPor ? `Responsável: ${aceitoPor}` : undefined, date: lead.aceito_em, icon: CheckCircle2, color: "bg-emerald-100 text-emerald-600", sourceType: "system" });
   }
   if (lead.distribuido_em) {
-    items.push({ title: "🔄 Lead distribuído", date: lead.distribuido_em, icon: ArrowRight, color: "bg-blue-100 text-blue-600", sourceType: "system" });
+    const paraNome = nome((lead as any).corretor_id);
+    const deNome = nome((lead as any).corretor_anterior_id);
+    const partes: string[] = [];
+    if (deNome) partes.push(`De: ${deNome}`);
+    if (paraNome) partes.push(`Para: ${paraNome}`);
+    items.push({
+      title: paraNome ? `🔄 Lead distribuído → ${paraNome}` : "🔄 Lead distribuído",
+      description: partes.length ? partes.join(" • ") : undefined,
+      date: lead.distribuido_em,
+      icon: ArrowRight,
+      color: "bg-blue-100 text-blue-600",
+      sourceType: "system",
+    });
   }
+
 
   items.sort((a, b) => (parseDateTimeSafe(b.date)?.getTime() ?? 0) - (parseDateTimeSafe(a.date)?.getTime() ?? 0));
   return items;
@@ -232,8 +257,31 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   const [deleting, setDeleting] = useState(false);
 
   const { data: imovelEvents } = useLeadImoveisEvents(leadId);
+  const [nomesPorId, setNomesPorId] = useState<Record<string, string>>({});
 
-  const timeline = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes);
+  useEffect(() => {
+    const ids = new Set<string>();
+    atividades.forEach(a => { if (a.created_by) ids.add(a.created_by); });
+    tarefas.forEach(t => { if (t.created_by) ids.add(t.created_by); });
+    historico.forEach(h => { if (h.movido_por) ids.add(h.movido_por); });
+    const lc: any = lead;
+    if (lc.corretor_id) ids.add(lc.corretor_id);
+    if (lc.corretor_anterior_id) ids.add(lc.corretor_anterior_id);
+    const lista = Array.from(ids);
+    if (lista.length === 0) { setNomesPorId({}); return; }
+    let cancel = false;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("user_id, nome").in("user_id", lista);
+      if (cancel || !data) return;
+      const map: Record<string, string> = {};
+      for (const p of data as any[]) { if (p.user_id && p.nome) map[p.user_id] = p.nome; }
+      setNomesPorId(map);
+    })();
+    return () => { cancel = true; };
+  }, [atividades, tarefas, historico, lead]);
+
+  const timeline = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes, nomesPorId);
+
   const totalEventos = timeline.length;
   const totalNotas = anotacoes?.length ?? 0;
 
@@ -367,7 +415,10 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             return {
               id: `${item.sourceType ?? "x"}-${item.sourceId ?? i}-${item.date}`,
               title: item.title,
-              description: item.description,
+              description: item.autor
+                ? `${item.description ? `${item.description} • ` : ""}por ${item.autor}`
+                : item.description,
+
               date: item.date,
               tipo: tipoGuess,
               kind: item.sourceType as any,

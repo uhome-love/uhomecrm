@@ -1,36 +1,46 @@
-# Sem Contato: remover tentativa manual + contar tarefas como ação
+## Objetivo
 
-## Problema 1 — Duplicação de tentativas
+No modal do lead (aba **Histórico**), cada evento da timeline hoje não mostra **quem** registrou. Gestores/gerentes (e qualquer pessoa) precisam ver o autor de cada ação e, no evento "Lead distribuído", **para qual corretor** foi.
 
-Hoje a etapa **Sem Contato** tem DOIS contadores de tentativa:
+## O que existe hoje
 
-1. **Manual** — o corretor escolhe `0/7` num seletor ("📋 Status da Etapa → Tentativas"). Isso grava em `pipeline_leads.flag_status.tentativas` e gera o badge `☎️ X/7`.
-2. **Automático** — o CRM controla via cadência (`lead_cadencia_sem_contato`), gerando o badge `📲 tentativa`.
+Cada registro já guarda o autor no banco, mas a tela ignora esses campos:
+- `pipeline_atividades.created_by` → autor da atividade
+- `pipeline_tarefas.created_by` → autor da tarefa
+- `pipeline_historico.movido_por` → quem moveu de etapa
+- `pipeline_anotacoes.autor_nome` → já exibido ("Nota de …")
+- `pipeline_leads.corretor_id` / `corretor_anterior_id` → responsável atual/anterior
 
-Por isso aparece duplicado. Vamos **remover o manual** e manter só o automático do CRM.
+Todos os IDs de autor (`created_by`, `movido_por`, `corretor_id`) resolvem para o nome via `profiles.user_id = <id>` (confirmado: ~30k atividades batem por `user_id`).
 
-### Mudanças (frontend, sem backend)
-- `src/components/pipeline/LeadFlagControls.tsx`: remover o bloco do seletor de "Tentativas" do caso `sem_contato` (deixar de renderizar o card "Status da Etapa" para essa etapa, já que tentativa era o único campo).
-- `src/lib/leadHelpers.ts`: em `getLeadSubstatusBadge`, remover o `case "sem_contato"` que monta `☎️ X/7` a partir de `flag_status.tentativas`.
-- `src/components/pipeline/LeadFlagBadges.tsx`: remover o badge manual `☎️ X/7` do `sem_contato`.
+O evento "🔄 Lead distribuído" é montado só com a data (`lead.distribuido_em`), sem indicar o responsável.
 
-O badge automático `📲` (vindo da cadência, em `CardMinimal.tsx`) permanece intacto.
+## Mudanças (somente frontend)
 
-## Problema 2 — Criar/concluir tarefa deve contar como ação na cadência
+Arquivo único: `src/components/pipeline/LeadHistoricoTab.tsx`
 
-Hoje a cadência só avança quando entra uma atividade em `pipeline_atividades` com tipo de contato (`ligacao`, `whatsapp`, `nota`, etc.).
+1. **Resolver nomes dos autores**
+   - Coletar o conjunto de IDs envolvidos: `created_by` das atividades e tarefas, `movido_por` do histórico, `corretor_id` e `corretor_anterior_id` do lead.
+   - Buscar uma única vez (`profiles` com `user_id in (...)` → `{ user_id: nome }`) num `useEffect`/estado local, e montar um mapa `id → primeiro nome`.
 
-- **Concluir tarefa**: já registra atividade com `tipo = tipo_contato` (ligação/whatsapp/...), então **já conta**.
-- **Criar tarefa**: registra atividade com `tipo = 'tarefa'`, que **não está** na lista permitida do gatilho `fn_cadencia_sc_avancar_acao` → hoje não conta.
+2. **Anexar o autor a cada item da timeline**
+   - Adicionar campo opcional `autor` em `TimelineItem`.
+   - Atividades: `autor = mapa[a.created_by]`.
+   - Histórico (movimentações de etapa): `autor = mapa[h.movido_por]`.
+   - Tarefas concluídas: `autor = mapa[t.created_by]`.
+   - Anotações: já têm `autor_nome` (mantém).
+   - Exibir como sufixo discreto na descrição/legenda do item, ex.: `· por João`.
 
-### Mudança (migration)
-Atualizar a função `fn_cadencia_sc_avancar_acao` para incluir `'tarefa'` na lista de tipos que avançam a cadência. Assim, **criar** uma tarefa passa a contar como tentativa de contato, e **concluir** continua contando (como já acontece).
+3. **Evento "Lead distribuído" com destino**
+   - No item de `lead.distribuido_em`, montar título/descrição com o responsável atual: `🔄 Lead distribuído → para {nome do corretor_id}` (e, se existir `corretor_anterior_id`, opcionalmente `de {anterior}`).
+   - Idem para "Lead aceito": mostrar quem aceitou (corretor atual) quando disponível.
+
+4. **Passar o autor ao componente de timeline**
+   - Repassar `autor` no objeto enviado ao `DrawerTimelineGroup` (concatenando na `description`, sem alterar o componente de timeline para manter o escopo mínimo).
 
 ## Detalhes técnicos
-- Gatilho atual: `trg_cadencia_sc_avancar_acao AFTER INSERT ON pipeline_atividades` → `fn_cadencia_sc_avancar_acao()`. Só precisa adicionar `'tarefa'` ao `NEW.tipo IN (...)`.
-- O campo `flag_status.tentativas` deixa de ser escrito/lido na UI; não há função de banco dependente dele (verificado), então nenhum dado precisa ser migrado.
-- Nenhuma alteração no motor de estagnação, que já considera ações humanas e tarefas futuras.
 
-## Verificação
-- Conferir no preview que a etapa Sem Contato mostra apenas o badge automático `📲` e não o `☎️ X/7` manual.
-- Criar uma tarefa num lead em Sem Contato e confirmar que `lead_cadencia_sem_contato.tentativa_atual` avança.
+- A resolução de nome usa `profiles.user_id` (não `profiles.id`) — conforme convenção confirmada para estas colunas.
+- Mostrar apenas o **primeiro nome** para manter a timeline enxuta.
+- Sem migração, sem mudança de RLS, sem alterar a lógica de distribuição — apenas leitura e exibição.
+- Visível para todos os papéis (atribuição histórica é útil), atendendo o pedido de gestor/gerente.
