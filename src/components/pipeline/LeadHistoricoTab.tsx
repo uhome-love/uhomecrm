@@ -257,8 +257,31 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   const [deleting, setDeleting] = useState(false);
 
   const { data: imovelEvents } = useLeadImoveisEvents(leadId);
+  const [nomesPorId, setNomesPorId] = useState<Record<string, string>>({});
 
-  const timeline = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes);
+  useEffect(() => {
+    const ids = new Set<string>();
+    atividades.forEach(a => { if (a.created_by) ids.add(a.created_by); });
+    tarefas.forEach(t => { if (t.created_by) ids.add(t.created_by); });
+    historico.forEach(h => { if (h.movido_por) ids.add(h.movido_por); });
+    const lc: any = lead;
+    if (lc.corretor_id) ids.add(lc.corretor_id);
+    if (lc.corretor_anterior_id) ids.add(lc.corretor_anterior_id);
+    const lista = Array.from(ids);
+    if (lista.length === 0) { setNomesPorId({}); return; }
+    let cancel = false;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("user_id, nome").in("user_id", lista);
+      if (cancel || !data) return;
+      const map: Record<string, string> = {};
+      for (const p of data as any[]) { if (p.user_id && p.nome) map[p.user_id] = p.nome; }
+      setNomesPorId(map);
+    })();
+    return () => { cancel = true; };
+  }, [atividades, tarefas, historico, lead]);
+
+  const timeline = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes, nomesPorId);
+
   const totalEventos = timeline.length;
   const totalNotas = anotacoes?.length ?? 0;
 
