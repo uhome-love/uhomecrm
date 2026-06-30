@@ -11,6 +11,7 @@ import {
   X,
   Loader2,
   Undo2,
+  AlertTriangle,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -53,10 +54,34 @@ import { cn } from "@/lib/utils";
 
 const TABS: { value: CategoriaEstagnacao; label: string }[] = [
   { value: "estagnado", label: "Estagnados" },
-  { value: "candidato", label: "A estagnar" },
   { value: "em_aviso", label: "Em aviso (48h)" },
+  { value: "candidato", label: "Em alerta" },
   { value: "em_parceria", label: "Em parceria" },
 ];
+
+const TAB_INFO: Record<CategoriaEstagnacao, { icon: typeof AlarmClock; texto: string }> = {
+  estagnado: {
+    icon: AlarmClock,
+    texto:
+      "Já estagnaram. Passaram do prazo da etapa e ficaram mais 48h sem nenhuma ação do corretor. Saíram do pipeline (arquivados) e aguardam sua decisão: Devolver, Repassar, Roleta ou Descartar.",
+  },
+  em_aviso: {
+    icon: AlertTriangle,
+    texto:
+      "Prestes a estagnar. Estão na contagem final de 48h e o corretor já foi avisado. Se ele não agir até o prazo (mostrado em cada lead), o lead estagna automaticamente e vai para a aba 'Estagnados'.",
+  },
+  candidato: {
+    icon: Clock,
+    texto:
+      "Já passaram do limite de dias da etapa, mas ainda não estagnaram. Continuam no pipeline do corretor. Em breve recebem o aviso de 48h. Se o corretor agir (ligar, WhatsApp, criar/concluir tarefa) o prazo zera.",
+  },
+  em_parceria: {
+    icon: Users,
+    texto:
+      "Leads em parceria ativa não são estagnados automaticamente. Decida manualmente para não desfazer a parceria sem alinhar com o parceiro.",
+  },
+};
+
 
 type SortKey = "dias_desc" | "dias_asc" | "nome";
 
@@ -212,21 +237,24 @@ export default function LeadsEstagnados() {
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <PageHeader
         title="Leads Estagnados"
-        subtitle="Leads sem nenhuma ação humana além do limite da etapa. Clique no lead para ver o histórico e decida: repassar, roleta ou descartar."
+        subtitle="Gestão dos leads parados no pipeline, organizados por etapa de risco."
         icon={<AlarmClock className="h-5 w-5" />}
         tabs={TABS.map((t) => ({ label: t.label, value: t.value, badge: counts[t.value] }))}
         activeTab={tab}
         onTabChange={handleTabChange}
       />
 
-      {tab === "em_parceria" && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3 text-[13px] text-muted-foreground">
-          <Users className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span>
-            Leads em parceria ativa não são estagnados automaticamente. Decida manualmente para não desfazer a parceria sem alinhar com o parceiro.
-          </span>
-        </div>
-      )}
+      {(() => {
+        const info = TAB_INFO[tab];
+        if (!info) return null;
+        const Icon = info.icon;
+        return (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3 text-[13px] text-muted-foreground">
+            <Icon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <span>{info.texto}</span>
+          </div>
+        );
+      })()}
 
       {/* Filtros */}
       {!isLoading && baseRows.length > 0 && (
