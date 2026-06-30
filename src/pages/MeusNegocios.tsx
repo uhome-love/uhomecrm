@@ -890,7 +890,7 @@ export default function MeusNegocios() {
             <Briefcase size={13} strokeWidth={1.5} className="text-white" />
           </div>
           <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#0a0a0a] dark:text-white">Pipeline negócios</h1>
-          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{filteredNegocios.length} negócios</span>
+          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{activeNegocios.length} negócios</span>
           {totalVGV > 0 && (
             <span className="text-[12px] font-bold text-success dark:text-[#34d399]">{formatVGV(totalVGV)}</span>
           )}
