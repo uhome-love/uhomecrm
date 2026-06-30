@@ -3,7 +3,7 @@
 // Agrupa por prazo: atrasadas / hoje / amanhã / esta semana / próximas
 // ─────────────────────────────────────────────────────────────────
 import { useMemo, useState } from "react";
-import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw } from "lucide-react";
+import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -128,10 +128,18 @@ export default function DrawerTasksTab({
   const countHoje = grouped.hoje.length;
   const countProximas = grouped.amanha.length + grouped.semana.length + grouped.proximas.length;
   const totalPendentes = countAtrasadas + countHoje + countProximas;
+  const concluidas = useMemo(
+    () =>
+      tarefas
+        .filter((t) => t.status === "concluida")
+        .sort((a, b) => (b.concluida_em || b.vence_em || "").localeCompare(a.concluida_em || a.vence_em || "")),
+    [tarefas],
+  );
 
   const [editTarefa, setEditTarefa] = useState<PipelineTarefa | null>(null);
   const [adiarTarefa, setAdiarTarefa] = useState<PipelineTarefa | null>(null);
   const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
+  const [showConcluidas, setShowConcluidas] = useState(false);
 
   async function handleCompletionConfirm(payload: CompletionPayload) {
     if (!completingTarefa) return;
@@ -235,6 +243,63 @@ export default function DrawerTasksTab({
           })}
         </div>
       )}
+
+      {/* ───── Concluídas (recolhível) ───── */}
+      {concluidas.length > 0 && (
+        <div className="px-7 mt-6">
+          <button
+            onClick={() => setShowConcluidas((v) => !v)}
+            className="w-full flex items-center justify-between text-left py-2 border-t border-zinc-100"
+          >
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Concluídas
+              <span className="bg-zinc-100 text-zinc-500 text-[10px] px-1.5 py-0.5 rounded-md font-medium">
+                {concluidas.length}
+              </span>
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-zinc-400 transition-transform ${showConcluidas ? "rotate-180" : ""}`}
+            />
+          </button>
+          {showConcluidas && (
+            <div className="pt-2 space-y-2">
+              {concluidas.map((t) => {
+                const tipo = canonTipo(t.tipo);
+                return (
+                  <div
+                    key={t.id}
+                    className="rounded-xl p-3 bg-zinc-50 border border-zinc-100 flex items-start gap-2.5"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-medium text-zinc-700 flex items-center gap-1.5 flex-wrap">
+                        <span className="line-through decoration-zinc-300">{t.titulo}</span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-medium uppercase tracking-tight ${TIPO_BADGE[tipo]}`}>
+                          {TIPO_LABEL[tipo]}
+                        </span>
+                      </div>
+                      {t.concluida_em && (
+                        <div className="text-[11px] text-zinc-400 mt-0.5">
+                          Concluída em {new Date(t.concluida_em).toLocaleDateString("pt-BR")}
+                        </div>
+                      )}
+                      {t.descricao && (
+                        <div className="text-[12px] text-zinc-500 mt-1 leading-snug whitespace-pre-wrap">
+                          {t.descricao}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+
 
       {editTarefa && (
         <EditTaskDialog

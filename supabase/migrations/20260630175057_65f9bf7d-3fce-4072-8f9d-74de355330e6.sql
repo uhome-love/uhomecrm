@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.fn_cadencia_sc_avancar_tarefa();

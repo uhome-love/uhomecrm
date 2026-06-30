@@ -15,6 +15,9 @@ import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { fmtMoney } from "@/lib/fmtMoney";
+import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
+import type { CompletionPayload } from "@/components/pipeline/task-completion/types";
+import { runTaskCompletion } from "@/lib/taskCompletion";
 
 interface LeadInfo {
   id: string;
@@ -98,6 +101,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
   const [stages, setStages] = useState<StageInfo[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [completingTask, setCompletingTask] = useState<Task | null>(null);
 
   // Inline editing
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -188,19 +192,37 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
     }
   };
 
-  const completeTask = async (taskId: string) => {
-    try {
-      await supabase.from("pipeline_tarefas").update({
-        status: "concluida",
-        concluida_em: new Date().toISOString(),
-      }).eq("id", taskId);
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-      toast.success("✅ Tarefa concluída!");
-      invalidateTaskQueries(queryClient, localLead?.id ?? null);
-    } catch (err: any) {
-      toast.error("Erro: " + (err.message || ""));
-    }
+  const handleCompletionConfirm = async (payload: CompletionPayload) => {
+    if (!completingTask || !localLead) return;
+    const leadId = localLead.id;
+    const result = await runTaskCompletion(
+      {
+        tarefaId: completingTask.id,
+        tarefaTitulo: completingTask.titulo,
+        leadId,
+        leadNome: localLead.nome,
+        leadStageId: localLead.stage_id ?? null,
+        addTarefa: async (input) => {
+          await supabase.from("pipeline_tarefas").insert({
+            pipeline_lead_id: leadId,
+            tipo: input.tipo,
+            titulo: input.titulo,
+            descricao: input.descricao ?? null,
+            vence_em: input.vence_em,
+            hora_vencimento: input.hora_vencimento ?? null,
+            status: "pendente",
+          } as any);
+        },
+      },
+      payload,
+    );
+    if (result.level === "error") toast.error(result.toastMessage);
+    else toast.success(result.toastMessage);
+    setTasks(prev => prev.filter(t => t.id !== completingTask.id));
+    setCompletingTask(null);
+    invalidateTaskQueries(queryClient, leadId);
   };
+
 
   const currentStageName = stages.find(s => s.id === localLead?.stage_id)?.nome || "—";
 
@@ -334,7 +356,7 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
                 size="icon"
                 variant="ghost"
                 className="h-5 w-5 shrink-0 opacity-60 hover:opacity-100"
-                onClick={() => completeTask(t.id)}
+                onClick={() => setCompletingTask(t)}
               >
                 <CheckCircle2 size={12} />
               </Button>
@@ -380,6 +402,17 @@ export default function LeadPanel({ lead, leadId, profileId, messages = [], onOp
           <ExternalLink size={12} /> Ver ficha completa
         </Button>
       </div>
+
+      <TaskCompletionDialog
+        open={!!completingTask}
+        onOpenChange={(v) => { if (!v) setCompletingTask(null); }}
+        tarefaTitulo={completingTask?.titulo || ""}
+        leadNome={localLead.nome}
+        leadId={localLead.id}
+        currentStageId={localLead.stage_id ?? undefined}
+        onConfirm={handleCompletionConfirm}
+      />
     </div>
+
   );
 }
