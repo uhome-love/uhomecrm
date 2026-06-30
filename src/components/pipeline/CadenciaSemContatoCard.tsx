@@ -53,6 +53,7 @@ function formatRelativo(target: string): string {
 export default function CadenciaSemContatoCard({ leadId, stageTipo, leadNome, leadEmpreendimento }: CadenciaSemContatoCardProps) {
   const [cadencia, setCadencia] = useState<CadenciaRow | null>(null);
   const [passos, setPassos] = useState<PassoRow[]>([]);
+  const [prazoEstagnar, setPrazoEstagnar] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   const isSemContato = stageTipo === "sem_contato";
@@ -61,7 +62,7 @@ export default function CadenciaSemContatoCard({ leadId, stageTipo, leadNome, le
     if (!isSemContato || !leadId) return;
     let active = true;
     (async () => {
-      const [cad, ps] = await Promise.all([
+      const [cad, ps, lead] = await Promise.all([
         supabase
           .from("lead_cadencia_sem_contato")
           .select("tentativa_atual, proxima_em, status")
@@ -71,10 +72,16 @@ export default function CadenciaSemContatoCard({ leadId, stageTipo, leadNome, le
           .from("cadencia_sem_contato_passos")
           .select("numero, acao, canal, texto_app")
           .order("numero", { ascending: true }),
+        supabase
+          .from("pipeline_leads")
+          .select("estagnado_prazo_em")
+          .eq("id", leadId)
+          .maybeSingle(),
       ]);
       if (!active) return;
       setCadencia((cad.data as CadenciaRow) ?? null);
       setPassos((ps.data as PassoRow[]) ?? []);
+      setPrazoEstagnar((lead.data as { estagnado_prazo_em?: string | null } | null)?.estagnado_prazo_em ?? null);
       setLoaded(true);
     })();
     return () => { active = false; };
