@@ -1,34 +1,42 @@
-# Conferência do mostrador de tentativas + limpeza do histórico inconsistente
+## Objetivo
 
-## Resultado da conferência (concluída)
+Reposicionar o widget **"Leads prestes a estagnar"** (`PreEstagnacaoCard`) no Dashboard do Corretor (`/corretor`). Hoje ele fica no topo da coluna principal, ocupando muito espaço central. Deve passar para a **coluna da direita, abaixo das tarefas de hoje**.
 
-- **Mostrador "Tentativa N / 7": CORRETO em 209/209 leads.** O `tentativa_atual` bate 100% com as ações reais registradas após o início da cadência. Nenhum corretor está vendo contador errado.
-- **Histórico: 19 leads** com linha inflada (ex.: "Tentativa 6 concluída") que contradiz o contador — resíduo de uma versão antiga do gatilho, já corrigido. Confunde o corretor.
-- **`tentativas_log`: 81 leads** com entradas "fantasma" (campo interno, não exibido no card) — apenas higiene.
-- O gatilho atual (`fn_cadencia_sc_avancar_acao`) já grava corretamente → **não há recorrência**; nenhuma mudança de código/trigger/UI necessária.
+## Situação atual
 
-## Correção proposta (somente dados, sem schema, sem regra)
+Em `src/pages/CorretorDashboard.tsx` o layout de 2 colunas é:
 
-1. **Remover as 19 linhas de histórico falsas** — registros `pipeline_historico` cujo texto começa com `Cadência Sem Contato — Tentativa N…` em que **N > `tentativa_atual` real** do lead. Histórico legítimo (N == contador) é mantido. Eventos reais (WhatsApp, Follow-up, "Movido para Sem Contato") permanecem intactos.
+```text
+Coluna principal (flex-1)      Coluna lateral (280px, ≥1024px)
+--------------------------     ------------------------------
+PreEstagnacaoCard              TarefasHojeLateral (desktop)
+CarteiraKpis
+ConquistasKpis
+CaminhosCards
+```
 
-2. **Sanear o `tentativas_log` dos 81 leads** — manter apenas os elementos com `(n)::int <= tentativa_atual`, descartando os inflados. Não altera o contador (já correto).
+No mobile (<1024px) a lateral vira um accordion abaixo dos cards.
 
-3. **Não tocar** em `tentativa_atual` nem no status da cadência (já validados como corretos).
+## Mudança proposta
 
-## Validação após a correção
+Editar **apenas** `src/pages/CorretorDashboard.tsx`:
 
-- Reexecutar a conferência: confirmar **0 leads** com histórico inflado e **0** com log inflado.
-- Abrir Gabriela Rezende: card continua em "Tentativa 2/7"; o histórico deixa de mostrar "Tentativa 6"; os eventos reais permanecem.
-- Conferir 2–3 leads da lista (Jhon Lima, Everson Oliveira) para garantir que só o lixo foi removido.
+1. Remover `<PreEstagnacaoCard />` do topo da coluna principal.
+2. Na coluna lateral desktop (`hidden lg:block w-[280px]`), colocar o `PreEstagnacaoCard` **abaixo** do `TarefasHojeLateral variant="desktop"`, empilhados com espaçamento.
+3. No bloco mobile (`lg:hidden`), colocar o `PreEstagnacaoCard` também **abaixo** do accordion de tarefas, para manter a mesma ordem (tarefas primeiro, leads a estagnar depois).
 
-## Detalhes técnicos
+Layout resultante:
 
-- Operação via ferramenta de dados (DELETE/UPDATE) — é correção de dados existentes, sem migração de schema.
-- Histórico: `observacao ILIKE 'Cadência Sem Contato — Tentativa%'` e número extraído `> tentativa_atual` do lead correspondente, restrito à etapa Sem Contato.
-- Log: reconstruir `tentativas_log` filtrando `(elem->>'n')::int <= tentativa_atual`.
-- Sem alteração em gatilhos, crons ou componentes de UI.
+```text
+Coluna principal (flex-1)      Coluna lateral (280px)
+--------------------------     ----------------------
+CarteiraKpis                   TarefasHojeLateral
+ConquistasKpis                 PreEstagnacaoCard
+CaminhosCards
+```
 
-## Fora de escopo
+## Observações técnicas
 
-- Nenhuma mudança nas regras da cadência (avanço só por ação/tarefa concluída; aviso 24h; estagnação 48h).
-- Nenhuma mudança no `CadenciaSemContatoCard` — o mostrador já está correto.
+- O `PreEstagnacaoCard` já retorna `null` quando não há leads em risco, então não ocupa espaço quando vazio.
+- O card é fluido (`w-full`), então cabe naturalmente na largura de 280px da lateral.
+- Nenhuma lógica de dados, RPC ou regra de estagnação é alterada — mudança puramente de posicionamento/layout.

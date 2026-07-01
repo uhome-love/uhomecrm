@@ -104,20 +104,21 @@ export default function CorretorDashboard() {
       <div className="flex flex-col lg:flex-row gap-3.5">
         {/* Coluna principal */}
         <div className="flex-1 min-w-0 space-y-5">
-          <PreEstagnacaoCard />
           <CarteiraKpis />
           <ConquistasKpis />
           <CaminhosCards />
         </div>
 
         {/* Coluna lateral — desktop ≥1024px */}
-        <div className="hidden lg:block w-[280px] shrink-0">
+        <div className="hidden lg:block w-[280px] shrink-0 space-y-3.5">
           <TarefasHojeLateral variant="desktop" />
+          <PreEstagnacaoCard />
         </div>
 
         {/* Lateral — tablet/mobile vira accordion abaixo dos cards */}
-        <div className="lg:hidden">
+        <div className="lg:hidden space-y-3.5">
           <TarefasHojeLateral variant="mobile" />
+          <PreEstagnacaoCard />
         </div>
       </div>
 
