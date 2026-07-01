@@ -10911,6 +10911,10 @@ export type Database = {
         Returns: Json
       }
       flush_page_views: { Args: { payload: Json }; Returns: undefined }
+      fn_cadencia_sc_recalcular_por_tarefas: {
+        Args: { p_lead_id: string }
+        Returns: undefined
+      }
       get_bairros_disponiveis: {
         Args: { p_cidade?: string; p_cidades?: string[] }
         Returns: {

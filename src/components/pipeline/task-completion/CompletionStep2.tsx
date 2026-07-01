@@ -58,6 +58,13 @@ interface Props {
   leadId?: string;
   currentStageId?: string;
   step1Descricao?: string;
+  semContato?: {
+    enabled: boolean;
+    tentativaAtual: number;
+    tentativaConcluida: number;
+    requiresNextTask: boolean;
+    finalAttempt: boolean;
+  };
   onChangeOutcome: (v: OutcomeChoice) => void;
   onChangeNovaTarefa: (patch: Partial<NovaTarefaPayload>) => void;
   onChangeNovoStage: (v: string | undefined) => void;
@@ -118,12 +125,15 @@ const OUTCOME_OPTIONS: ReadonlyArray<{
 function OutcomeOption({
   opt,
   active,
+  disabledReason,
   onSelect,
 }: {
   opt: (typeof OUTCOME_OPTIONS)[number];
   active: boolean;
+  disabledReason?: string;
   onSelect: () => void;
 }) {
+  const disabled = !!disabledReason;
   const toneCls =
     opt.tone === "primary"
       ? active
@@ -145,17 +155,22 @@ function OutcomeOption({
   return (
     <button
       type="button"
-      onClick={onSelect}
+      disabled={disabled}
+      onClick={() => {
+        if (!disabled) onSelect();
+      }}
+      title={disabledReason}
       className={cn(
         "w-full text-left px-3 py-2.5 rounded-md border transition-all flex items-start gap-2.5",
         toneCls,
+        disabled && "opacity-45 cursor-not-allowed hover:border-border",
       )}
     >
       <Icon className="w-4 h-4 mt-0.5 shrink-0" />
       <div className="min-w-0">
         <div className="text-xs font-semibold leading-tight">{opt.label}</div>
         <div className="text-[10px] mt-0.5 opacity-70 leading-snug">
-          {opt.description}
+          {disabledReason || opt.description}
         </div>
       </div>
     </button>
@@ -165,9 +180,11 @@ function OutcomeOption({
 function OutcomeSelector({
   outcome,
   onChange,
+  disabledReasons,
 }: {
   outcome: OutcomeChoice;
   onChange: (v: OutcomeChoice) => void;
+  disabledReasons?: Partial<Record<OutcomeChoice, string>>;
 }) {
   const rotina = OUTCOME_OPTIONS.filter((o) => o.group === "rotina");
   const encerrar = OUTCOME_OPTIONS.filter((o) => o.group === "encerrar");
@@ -183,6 +200,7 @@ function OutcomeSelector({
               key={opt.value}
               opt={opt}
               active={outcome === opt.value}
+              disabledReason={disabledReasons?.[opt.value]}
               onSelect={() => onChange(opt.value)}
             />
           ))}
@@ -198,6 +216,7 @@ function OutcomeSelector({
               key={opt.value}
               opt={opt}
               active={outcome === opt.value}
+              disabledReason={disabledReasons?.[opt.value]}
               onSelect={() => onChange(opt.value)}
             />
           ))}
@@ -215,6 +234,7 @@ function ScheduleNextFields({
   leadId,
   currentStageId,
   step1Descricao,
+  semContato,
   onChangeNovaTarefa,
   onChangeNovoStage,
 }: {
@@ -223,6 +243,7 @@ function ScheduleNextFields({
   leadId?: string;
   currentStageId?: string;
   step1Descricao?: string;
+  semContato?: Props["semContato"];
   onChangeNovaTarefa: (patch: Partial<NovaTarefaPayload>) => void;
   onChangeNovoStage: (v: string | undefined) => void;
 }) {
@@ -239,6 +260,16 @@ function ScheduleNextFields({
 
   return (
     <div className="space-y-3">
+      {semContato?.enabled && semContato.requiresNextTask && (
+        <div className="text-xs text-primary bg-primary/5 border border-primary/25 rounded-md p-3 flex items-start gap-2">
+          <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span>
+            Ao concluir esta tarefa, o CRM registra a <strong>Tentativa {semContato.tentativaConcluida}</strong>.
+            Para seguir a cadência Sem Contato, já deixe criada a próxima tarefa.
+          </span>
+        </div>
+      )}
+
       <div>
         <label className="text-[11px] uppercase tracking-wide font-semibold text-primary mb-2 flex items-center gap-1.5">
           Tipo da próxima ação <span className="text-destructive">*</span>
@@ -372,6 +403,7 @@ function OnlyCompleteFields({
   leadId,
   currentStageId,
   observacaoCurta,
+  semContato,
   onChangeNovoStage,
   onChangeObservacaoCurta,
 }: {
@@ -379,6 +411,7 @@ function OnlyCompleteFields({
   leadId?: string;
   currentStageId?: string;
   observacaoCurta?: string;
+  semContato?: Props["semContato"];
   onChangeNovoStage: (v: string | undefined) => void;
   onChangeObservacaoCurta: (v: string) => void;
 }) {
@@ -392,8 +425,17 @@ function OnlyCompleteFields({
   return (
     <div className="space-y-3">
       <div className="text-xs text-muted-foreground bg-muted/40 border border-border rounded-md p-3">
-        A tarefa atual será marcada como concluída sem agendar próxima.
-        Você pode opcionalmente mover o lead de etapa.
+        {semContato?.enabled && semContato.finalAttempt ? (
+          <>
+            A <strong>Tentativa 7</strong> será marcada como concluída. Não existe T8;
+            depois disso o CRM entra no prazo final de 48h antes de estagnar.
+          </>
+        ) : (
+          <>
+            A tarefa atual será marcada como concluída sem agendar próxima.
+            Você pode opcionalmente mover o lead de etapa.
+          </>
+        )}
       </div>
 
       {leadId && currentStageId && (
@@ -545,6 +587,7 @@ export function CompletionStep2({
   leadId,
   currentStageId,
   step1Descricao,
+  semContato,
   onChangeOutcome,
   onChangeNovaTarefa,
   onChangeNovoStage,
@@ -555,7 +598,23 @@ export function CompletionStep2({
   onConfirm,
   saving,
 }: Props) {
+  const semContatoDisabledReasons = useMemo(() => {
+    if (!semContato?.enabled) return undefined;
+    const disabled: Partial<Record<OutcomeChoice, string>> = {};
+    if (semContato.requiresNextTask) {
+      disabled.concluir = "Na etapa Sem Contato, T1 a T6 precisam deixar a próxima tarefa criada.";
+    }
+    if (semContato.finalAttempt) {
+      disabled.agendar = "T7 é a última tentativa; não existe próxima tarefa automática.";
+    }
+    return disabled;
+  }, [semContato]);
+
   const canConfirm = useMemo(() => {
+    if (semContato?.enabled) {
+      if (semContato.requiresNextTask && outcome === "concluir") return false;
+      if (semContato.finalAttempt && outcome === "agendar") return false;
+    }
     switch (outcome) {
       case "agendar":
         return (
@@ -574,29 +633,38 @@ export function CompletionStep2({
       default:
         return false;
     }
-  }, [outcome, novaTarefa, reasonCode, reasonCustomText]);
+  }, [outcome, novaTarefa, reasonCode, reasonCustomText, semContato]);
 
   const ctaConfig = useMemo(() => {
     switch (outcome) {
       case "agendar":
         return {
-          label: "Concluir e criar próxima tarefa",
+          label: semContato?.enabled
+            ? "Concluir tentativa e criar próxima tarefa"
+            : "Concluir e criar próxima tarefa",
           variant: "gradient" as const,
         };
       case "concluir":
-        return { label: "Apenas concluir", variant: "neutral" as const };
+        return {
+          label: semContato?.enabled && semContato.finalAttempt ? "Concluir T7" : "Apenas concluir",
+          variant: "neutral" as const,
+        };
       case "descartar":
         return { label: "Descartar lead", variant: "warning" as const };
       case "inativar":
         return { label: "Inativar definitivo", variant: "destructive" as const };
     }
-  }, [outcome]);
+  }, [outcome, semContato]);
 
   return (
     <div className="p-5 space-y-4">
       {/* Negócios: pula o seletor (apenas Agendar é permitido) */}
       {context === "lead" && (
-        <OutcomeSelector outcome={outcome} onChange={onChangeOutcome} />
+        <OutcomeSelector
+          outcome={outcome}
+          onChange={onChangeOutcome}
+          disabledReasons={semContatoDisabledReasons}
+        />
       )}
 
       {/* Campos condicionais por outcome */}
@@ -607,6 +675,7 @@ export function CompletionStep2({
           leadId={leadId}
           currentStageId={currentStageId}
           step1Descricao={step1Descricao}
+          semContato={semContato}
           onChangeNovaTarefa={onChangeNovaTarefa}
           onChangeNovoStage={onChangeNovoStage}
         />
@@ -617,6 +686,7 @@ export function CompletionStep2({
           leadId={leadId}
           currentStageId={currentStageId}
           observacaoCurta={observacaoCurta}
+          semContato={semContato}
           onChangeNovoStage={onChangeNovoStage}
           onChangeObservacaoCurta={onChangeObservacaoCurta}
         />
