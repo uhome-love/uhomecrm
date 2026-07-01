@@ -77,7 +77,10 @@ export function usePipeline(
 ) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const { isGestor, isAdmin } = useUserRole();
+  const { isGestor, isAdmin: rawIsAdmin, isDiretor } = useUserRole();
+  // Diretoria tem visão de escritório equivalente ao CEO: trata diretor como
+  // admin para escopo de leitura do pipeline (todos os leads, sem filtro por time).
+  const isAdmin = rawIsAdmin || isDiretor;
   // Escopo opcional vindo do consumidor (ex.: CEO filtrando por gestor).
   // Quando array (mesmo vazio), aplica .in("corretor_id", ...) na query
   // do server, evitando trazer 10k+ leads pra filtrar no cliente.
