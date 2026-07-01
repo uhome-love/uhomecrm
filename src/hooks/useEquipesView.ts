@@ -53,7 +53,7 @@ export interface EquipesOverview {
 }
 
 export function useEquipesView() {
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isDiretor } = useUserRole();
 
   return useQuery({
     queryKey: ["pipeline", "equipes-overview"],
