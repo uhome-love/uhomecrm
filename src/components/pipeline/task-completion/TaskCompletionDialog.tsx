@@ -11,6 +11,7 @@
  */
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { CompletionProgress } from "./CompletionProgress";
 import { CompletionStep1 } from "./CompletionStep1";
 import { CompletionStep2 } from "./CompletionStep2";
@@ -62,6 +63,19 @@ export default function TaskCompletionDialog({
   const [reasonCode, setReasonCode] = useState<string | undefined>();
   const [reasonCustomText, setReasonCustomText] = useState("");
   const [observacaoCurta, setObservacaoCurta] = useState("");
+  const [semContatoInfo, setSemContatoInfo] = useState<{
+    enabled: boolean;
+    tentativaAtual: number;
+    tentativaConcluida: number;
+    requiresNextTask: boolean;
+    finalAttempt: boolean;
+  }>({
+    enabled: false,
+    tentativaAtual: 0,
+    tentativaConcluida: 1,
+    requiresNextTask: false,
+    finalAttempt: false,
+  });
 
   const [saving, setSaving] = useState(false);
 
@@ -76,6 +90,13 @@ export default function TaskCompletionDialog({
     setReasonCode(undefined);
     setReasonCustomText("");
     setObservacaoCurta("");
+    setSemContatoInfo({
+      enabled: false,
+      tentativaAtual: 0,
+      tentativaConcluida: 1,
+      requiresNextTask: false,
+      finalAttempt: false,
+    });
     setSaving(false);
   };
 
@@ -90,6 +111,95 @@ export default function TaskCompletionDialog({
     setReasonCustomText("");
   }, [outcome]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSemContatoInfo() {
+      if (!open || !leadId || context !== "lead") {
+        if (!cancelled) {
+          setSemContatoInfo({
+            enabled: false,
+            tentativaAtual: 0,
+            tentativaConcluida: 1,
+            requiresNextTask: false,
+            finalAttempt: false,
+          });
+        }
+        return;
+      }
+
+      let stageId = currentStageId;
+      if (!stageId) {
+        const { data: lead } = await supabase
+          .from("pipeline_leads")
+          .select("stage_id")
+          .eq("id", leadId)
+          .maybeSingle();
+        stageId = (lead as { stage_id?: string | null } | null)?.stage_id ?? undefined;
+      }
+
+      if (!stageId) return;
+
+      const { data: stage } = await supabase
+        .from("pipeline_stages")
+        .select("tipo")
+        .eq("id", stageId)
+        .maybeSingle();
+
+      if ((stage as { tipo?: string } | null)?.tipo !== "sem_contato") {
+        if (!cancelled) {
+          setSemContatoInfo({
+            enabled: false,
+            tentativaAtual: 0,
+            tentativaConcluida: 1,
+            requiresNextTask: false,
+            finalAttempt: false,
+          });
+        }
+        return;
+      }
+
+      const { data: cadencia } = await supabase
+        .from("lead_cadencia_sem_contato")
+        .select("tentativa_atual")
+        .eq("pipeline_lead_id", leadId)
+        .maybeSingle();
+
+      const tentativaAtual = Math.max(
+        0,
+        Math.min(7, Number((cadencia as { tentativa_atual?: number } | null)?.tentativa_atual ?? 0)),
+      );
+      const tentativaConcluida = Math.min(7, tentativaAtual + 1);
+      const finalAttempt = tentativaConcluida >= 7;
+
+      if (!cancelled) {
+        setSemContatoInfo({
+          enabled: true,
+          tentativaAtual,
+          tentativaConcluida,
+          requiresNextTask: !finalAttempt,
+          finalAttempt,
+        });
+        setOutcome(finalAttempt ? "concluir" : "agendar");
+      }
+    }
+
+    loadSemContatoInfo();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, leadId, currentStageId, context]);
+
+  useEffect(() => {
+    if (!semContatoInfo.enabled) return;
+    if (semContatoInfo.requiresNextTask && outcome === "concluir") {
+      setOutcome("agendar");
+    }
+    if (semContatoInfo.finalAttempt && outcome === "agendar") {
+      setOutcome("concluir");
+    }
+  }, [semContatoInfo, outcome]);
+
   const handleConfirm = async () => {
     if (!tipoContato || !resultado) return;
     if (descricao.trim().length < 3) {
@@ -100,6 +210,24 @@ export default function TaskCompletionDialog({
     try {
       const effectiveOutcome: OutcomeChoice =
         context === "negocio" ? "agendar" : outcome;
+
+      if (
+        semContatoInfo.enabled &&
+        semContatoInfo.requiresNextTask &&
+        effectiveOutcome === "concluir"
+      ) {
+        setOutcome("agendar");
+        return;
+      }
+
+      if (
+        semContatoInfo.enabled &&
+        semContatoInfo.finalAttempt &&
+        effectiveOutcome === "agendar"
+      ) {
+        setOutcome("concluir");
+        return;
+      }
 
       let reasonLabel: string | undefined;
       if (
@@ -193,6 +321,7 @@ export default function TaskCompletionDialog({
             leadId={leadId}
             currentStageId={currentStageId}
             step1Descricao={descricao}
+            semContato={semContatoInfo}
             onChangeOutcome={setOutcome}
             onChangeNovaTarefa={(patch) =>
               setNovaTarefa((prev) => ({ ...prev, ...patch }))
