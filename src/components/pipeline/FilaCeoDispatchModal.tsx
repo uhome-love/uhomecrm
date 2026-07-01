@@ -184,7 +184,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
       // Auto-seleciona aba com leads
       const reengCount = leadsList.filter((l) => !!l.reativado_por_nutricao).length;
-      const novosCount = leadsList.filter((l) => !l.is_redistribuicao && !l.reativado_por_nutricao).length;
+      const novosCount = leadsList.filter((l) => !l.reativado_por_nutricao).length;
       setActiveTab(novosCount > 0 ? "novos" : reengCount > 0 ? "reengajamento" : "novos");
 
       console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${reengCount} reengajamento)`);
