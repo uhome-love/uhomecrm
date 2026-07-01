@@ -105,7 +105,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
   // Separa leads por categoria
   const leadsReengajamento = useMemo(() => allLeads.filter((l) => !!l.reativado_por_nutricao), [allLeads]);
-  const leadsNovos = useMemo(() => allLeads.filter((l) => !l.is_redistribuicao && !l.reativado_por_nutricao), [allLeads]);
+  // Não existe mais categoria "redistribuição": lead retornado à Fila do CEO
+  // é tratado como lead novo. Só "reengajamento" (reativado por nutrição) é separado.
+  const leadsNovos = useMemo(() => allLeads.filter((l) => !l.reativado_por_nutricao), [allLeads]);
   const leads = activeTab === "novos" ? leadsNovos : leadsReengajamento;
 
   useEffect(() => {
@@ -182,7 +184,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
       // Auto-seleciona aba com leads
       const reengCount = leadsList.filter((l) => !!l.reativado_por_nutricao).length;
-      const novosCount = leadsList.filter((l) => !l.is_redistribuicao && !l.reativado_por_nutricao).length;
+      const novosCount = leadsList.filter((l) => !l.reativado_por_nutricao).length;
       setActiveTab(novosCount > 0 ? "novos" : reengCount > 0 ? "reengajamento" : "novos");
 
       console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${reengCount} reengajamento)`);
