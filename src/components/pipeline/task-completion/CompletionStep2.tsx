@@ -587,6 +587,7 @@ export function CompletionStep2({
   leadId,
   currentStageId,
   step1Descricao,
+  semContato,
   onChangeOutcome,
   onChangeNovaTarefa,
   onChangeNovoStage,
