@@ -1,50 +1,100 @@
-## Problema
+## Diagnóstico encontrado
 
-O widget **"Leads a estagnar"** no dashboard do corretor (`/corretor`):
+A regra hoje ainda não está 100% alinhada com o que você quer.
 
-1. **Não atualiza** — continua mostrando leads como "a estagnar" mesmo depois que o corretor age no pipeline (cria tarefa futura ou registra ação). Confirmei **11 leads presos** nessa condição.
-2. **Mostra cedo demais** — hoje lista qualquer lead na janela de **5 dias**, gerando ruído. O corretor quer o aviso **só quando faltam ~48h** (aviso final); fora disso, não tratar como urgência.
+O banco mostra **223 leads ativos em Sem Contato** com cadência. Na conferência preliminar:
 
-## Causa raiz (item 1)
+- **126 leads** têm tentativa exibida diferente da contagem real de tarefas concluídas desde o início da cadência.
+- **125 leads** têm tentativa diferente do histórico de “Tentativa concluída”.
+- O avanço da tentativa hoje acontece pelo gatilho em `pipeline_atividades`, ou seja: quando uma atividade é registrada. Isso inclui a atividade criada ao concluir tarefa, mas também pode incluir registros que não deveriam contar como tentativa independente.
+- O gatilho antigo de “avançar ao criar tarefa” **não está ativo hoje**, então a causa atual é principalmente: tentativa avançando por atividade, sem validar que existe uma tarefa concluída correspondente.
 
-Inconsistência de ordem de lógica entre a RPC do widget e a do modal do lead:
+## Padrão definitivo que será aplicado
 
-- Modal (`get_lead_estagnacao_status`): checa **primeiro** tarefa futura / ação recente → marca "protegido" e ignora aviso antigo. ✅
-- Widget (`get_corretor_pre_estagnacao`): checa **primeiro** os campos persistidos `estagnado_aviso_em` / `estagnado_prazo_em`. Se o aviso foi gravado antes, ele vence a lógica e mostra "a estagnar" mesmo com tarefa/ação posterior. ❌
-
-Os campos de aviso só são limpos quando o cron `processar_estagnacao_pipeline` roda. Entre execuções, o widget fica defasado — pipeline e modal já mostram certo.
+A regra passa a ser:
 
 ```text
-Aviso 19:12 -> estagnado_aviso_em/prazo_em gravados
-Corretor cria tarefa 22:04
-   Modal  -> "protegido"   OK
-   Widget -> "a estagnar"  BUG
+Tentativa N = N tarefas criadas e concluídas na etapa Sem Contato.
+
+Criar tarefa sozinha não conta.
+Registrar atividade solta não conta.
+Concluir tarefa conta 1 tentativa.
+Ao concluir a tentativa, o histórico mostra:
+“Cadência Sem Contato — Tentativa N concluída: ...”
 ```
 
-## Correção
+## Plano de execução
 
-**1. Corrigir a RPC `get_corretor_pre_estagnacao` (migration)**
+### 1. Auditoria completa lead por lead
 
-- Aplicar a mesma prioridade do modal: revivência (tarefa pendente futura OU ação humana mais recente que o aviso) tem precedência sobre o aviso persistido. O ramo `em_aviso` só vale quando `estagnado_aviso_em IS NOT NULL AND estagnado_prazo_em > now()` **E** o lead **não** tem tarefa futura **E** `ref` não é posterior ao aviso.
-- **Restringir a janela do widget para só 48h**: em vez do filtro atual `WHERE prazo_real <= now() + interval '5 days'`, mostrar apenas leads em urgência real, ou seja:
-  - leads em **aviso final ativo** (`estagnado_aviso_em` válido, dentro das 48h), ou
-  - leads cujo `prazo_real` já venceu / vence em até 48h (`prazo_real <= now() + interval '48 hours'`).
-  - Leads com folga (>48h) **não aparecem** no widget.
-- A `categoria` passa a ser `em_aviso` quando estiver no aviso final de 48h e `proximo` apenas para o caso de já estar no limite (<=48h) sem aviso formal.
+Vou gerar uma auditoria de todos os leads com cadência Sem Contato, incluindo:
 
-**2. Limpeza pontual dos leads já presos (mesma migration)**
-Rodar o `UPDATE` de ressurreição do cron para zerar `estagnado_aviso_em / estagnado_aviso2_em / estagnado_prazo_em` nos leads não-estagnados que já têm tarefa futura ou ação posterior ao aviso — efeito imediato, sem esperar o cron.
+- lead;
+- corretor;
+- tentativa atual no `lead_cadencia_sem_contato`;
+- quantidade real de tarefas concluídas;
+- tarefas pendentes;
+- histórico de tentativas concluídas;
+- status correto esperado;
+- divergência encontrada.
 
-Sem alteração de regras de negócio, prazos ou cron. O componente `PreEstagnacaoCard.tsx` não muda (a query e o `staleTime` de 60s já refazem o fetch ao focar a tela) — a mudança é puramente na RPC.
+Critério canônico:
 
-## Validação
+```text
+real_tentativa = min(7, quantidade de tarefas concluídas do lead desde o início da cadência Sem Contato)
+```
 
-- `leads_presos_no_widget` deve ir de **11 → 0**.
-- Widget passa a listar **apenas** leads dentro de 48h do prazo; leads com folga somem.
-- Leads "protegido/atualizado" no modal não aparecem mais no widget.
+### 2. Corrigir a regra daqui para frente
 
-## Detalhes técnicos
+Vou aplicar uma migration para trocar a origem do avanço:
 
-- Arquivo único: uma migration SQL (`CREATE OR REPLACE FUNCTION public.get_corretor_pre_estagnacao` + `UPDATE` de limpeza).
-- Assinatura de retorno da função permanece idêntica → sem impacto no frontend/tipos.
-- Uma única migration (respeita o limite diário no horário comercial).
+- parar de avançar tentativa por simples atividade em `pipeline_atividades`;
+- criar/ajustar gatilho em `pipeline_tarefas` para recalcular a tentativa quando uma tarefa muda para `concluida`;
+- garantir idempotência: a mesma tarefa não pode inflar tentativa duas vezes;
+- se uma tarefa for revertida/deletada, a tentativa volta a refletir a contagem real;
+- manter a limpeza de aviso de estagnação quando houver ação humana, mas sem inflar tentativa.
+
+### 3. Corrigir os dados atuais
+
+Vou rodar uma correção de dados para todos os leads afetados:
+
+- atualizar `tentativa_atual` para bater com as tarefas concluídas reais;
+- ajustar `status` da cadência conforme a tentativa real:
+  - 0 a 6: `ativa`;
+  - 7: `aguardando_descarte`, se ainda não estagnou;
+  - leads já arquivados/estagnados permanecem concluídos conforme regra atual;
+- ajustar `proxima_em` para não mostrar prazo falso quando não houver tarefa pendente válida;
+- remover/neutralizar histórico automático inflado que não corresponde a tarefa concluída real;
+- criar histórico faltante para tentativas que têm tarefa concluída real, mas não têm registro correto.
+
+Não vou apagar tarefas nem atividades humanas. A limpeza será apenas nos registros automáticos de cadência que estão errados.
+
+### 4. Ajustar a tela para reforçar a regra
+
+Vou ajustar o fluxo de conclusão de tarefa na etapa Sem Contato para evitar novo erro operacional:
+
+- ao concluir tarefa em Sem Contato, deixar claro que aquilo está concluindo uma tentativa;
+- manter a exigência de registrar “o que aconteceu”; 
+- orientar/agendar a próxima tarefa quando o lead permanecer em Sem Contato;
+- o card de cadência e o board passam a exibir a tentativa recalculada corretamente.
+
+### 5. Validação final ponta a ponta
+
+Depois da correção, vou validar:
+
+- todos os leads em Sem Contato com tentativa exibida = tarefas concluídas reais;
+- histórico de cada lead consistente com as tentativas reais;
+- nenhum lead com tentativa acima do real;
+- nenhum lead ativo sem tarefa pendente quando ainda precisa de próxima tentativa;
+- conclusão de tarefa nova avança exatamente 1 tentativa;
+- atividade manual solta não avança tentativa;
+- widget/card/board refletem o valor corrigido.
+
+### 6. Entrega do feedback
+
+No final vou te passar um resumo simples para o time, com:
+
+- quantos leads foram auditados;
+- quantos estavam divergentes;
+- o que foi corrigido;
+- qual é a regra oficial para os corretores seguirem daqui para frente.
