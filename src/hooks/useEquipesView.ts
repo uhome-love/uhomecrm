@@ -53,7 +53,7 @@ export interface EquipesOverview {
 }
 
 export function useEquipesView() {
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isDiretor } = useUserRole();
 
   return useQuery({
     queryKey: ["pipeline", "equipes-overview"],
@@ -64,7 +64,7 @@ export function useEquipesView() {
         total_leads_ativos: 0, atrasados: 0, negocios: 0, vgv_assinado_mes: 0, vgv_pipeline_ativo: 0,
       }, gestores: [] };
     },
-    enabled: isAdmin,
+    enabled: isAdmin || isDiretor,
     staleTime: 60_000,
     gcTime: 5 * 60_000,
     retry: 1,
