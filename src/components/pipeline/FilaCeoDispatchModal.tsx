@@ -16,7 +16,7 @@ interface CampanhaMap {
 }
 
 const SEG_GERAL = "Geral (todos)";
-const SEG_AVULSO = "S3 - Avulso";
+const SEG_MORADIA = "S1 - Moradia";
 
 function resolveSegmentoNome(
   emp: string | null,
@@ -26,6 +26,12 @@ function resolveSegmentoNome(
 ): string | null {
   const matchToName = (c: CampanhaMap) => (c.ignorar_segmento ? SEG_GERAL : c.segmento_nome);
   const lower = (emp || "").toLowerCase().trim();
+  const origemLower = (origem || "").toLowerCase().trim();
+
+  // Roteamento explícito por origem (alinhado ao backend distribuir_lead_atomico)
+  if (origemLower.includes("imovelweb") || origemLower.includes("site")) {
+    return SEG_MORADIA;
+  }
 
   if (lower) {
     // Exact
@@ -43,10 +49,10 @@ function resolveSegmentoNome(
     }
   }
 
-  // Fallback universal: qualquer lead sem match de campanha → S3 - Avulso
+  // Fallback universal: qualquer lead sem match de campanha → S1 - Moradia
   // (mantém alinhado com distribuir_lead_atomico no banco)
   if (hasAvulsoSegmento) {
-    return SEG_AVULSO;
+    return SEG_MORADIA;
   }
   return null;
 }
