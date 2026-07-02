@@ -243,6 +243,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Fallback: leads ImovelWeb sem campanha mapeada (Avulso) são de moradia → S1 - Moradia ──
+    if (!segmentoId) {
+      const { data: s1 } = await supabase
+        .from("pipeline_segmentos")
+        .select("id")
+        .ilike("nome", "S1 - Moradia")
+        .limit(1)
+        .maybeSingle();
+      if (s1) segmentoId = s1.id;
+    }
+
+
+
     // ── Dedup by phone ──
     if (telefone) {
       const { data: alreadyProcessed } = await supabase
