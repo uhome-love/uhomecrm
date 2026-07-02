@@ -36,32 +36,35 @@ export function usePipelineEstagnacao() {
 export interface CorretorOption {
   user_id: string;
   nome: string;
+  equipe?: string | null;
 }
 
 export function useCorretoresOptions() {
   return useQuery({
     queryKey: ["corretores-options"],
     queryFn: async (): Promise<CorretorOption[]> => {
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "corretor");
-      if (rolesError) throw rolesError;
-      const ids = (roles ?? []).map((r) => r.user_id).filter(Boolean);
-      if (ids.length === 0) return [];
-      const { data: profs, error: profError } = await supabase
-        .from("profiles")
-        .select("user_id, nome")
-        .in("user_id", ids)
+      // Fonte: team_members (leitura aberta a autenticados). user_roles tem RLS
+      // que restringe não-admins a verem apenas o próprio registro, o que
+      // deixava o gestor sem opções para repassar leads estagnados.
+      const { data, error } = await supabase
+        .from("team_members")
+        .select("user_id, nome, equipe")
+        .eq("status", "ativo")
         .order("nome");
-      if (profError) throw profError;
-      return (profs ?? [])
-        .filter((p) => p.user_id && p.nome)
-        .map((p) => ({ user_id: p.user_id as string, nome: p.nome as string }));
+      if (error) throw error;
+      const seen = new Set<string>();
+      return (data ?? [])
+        .filter((m) => {
+          if (!m.user_id || !m.nome || seen.has(m.user_id)) return false;
+          seen.add(m.user_id);
+          return true;
+        })
+        .map((m) => ({ user_id: m.user_id as string, nome: m.nome as string, equipe: m.equipe }));
     },
     staleTime: 5 * 60_000,
   });
 }
+
 
 interface DecidirArgs {
   leadId: string;
