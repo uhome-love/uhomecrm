@@ -669,7 +669,7 @@ function DecisionDialog({
                     .filter((c) => !origemCorretorId || c.user_id !== origemCorretorId)
                     .map((c) => (
                       <SelectItem key={c.user_id} value={c.user_id}>
-                        {c.nome}
+                        {c.nome}{c.equipe ? ` — ${c.equipe}` : ""}
                       </SelectItem>
                     ))}
                 </SelectContent>
