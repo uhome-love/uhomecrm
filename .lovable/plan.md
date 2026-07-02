@@ -1,34 +1,24 @@
-# Corrigir visão da Diretora Comercial no Pipeline
+# Corrigir prévia "S3 - Avulso" → "S1 - Moradia" na Fila CEO
 
-## Problema
+## Contexto
+As edições da rodada anterior não persistiram — o arquivo `FilaCeoDispatchModal.tsx` voltou ao estado original com o rótulo hardcoded `SEG_AVULSO = "S3 - Avulso"`. Por isso os leads ImovelWeb/Site e leads sem match de campanha ainda aparecem como **S3 - Avulso** na prévia por segmento.
 
-A Gabrielle tem o papel **diretor** (e também gestor, mas com 0 membros de equipe). A visão "CEO-like" da diretoria foi aplicada anteriormente só em funções SECURITY DEFINER (RPCs), mas **as partes que leem as tabelas diretamente ainda só reconhecem `admin`**. Resultado:
+O dado real está correto: a função `distribuir_lead_atomico` roteia ImovelWeb/Site para **S1 - Moradia** (`v_avulso_segmento_id = 9948… S1 Moradia`). O problema é apenas o rótulo cosmético da prévia no modal.
 
-- **Pipeline vazio**: `usePipeline` trata diretor como gestor → busca só a equipe dela (vazia) → nada. Além disso, a política de segurança (RLS) de `pipeline_leads` só libera leitura total para `admin`, não para `diretor` — então mesmo removendo o filtro, o banco bloquearia.
-- **Equipes vazio**: a função `get_pipeline_equipes_overview` recusa quem não é `admin` ("Acesso negado"), e o hook `useEquipesView` só habilita para `admin`.
+## Alteração (único arquivo)
+`src/components/pipeline/FilaCeoDispatchModal.tsx`
 
-## Correções
+1. Trocar a constante: `SEG_AVULSO = "S3 - Avulso"` → `SEG_MORADIA = "S1 - Moradia"` (atualizar usos).
 
-### 1. Banco de dados (migração)
-- Alterar a função `get_pipeline_equipes_overview` para permitir também `diretor` na checagem de acesso (`admin OR diretor`).
-- Adicionar políticas de leitura para `diretor` (visão de todo o escritório, igual admin) nas tabelas que o pipeline lê diretamente:
-  - `pipeline_leads` (essencial para ver os leads)
-  - `pipeline_tarefas`, `pipeline_atividades`, `pipeline_historico`, `pipeline_anotacoes` (para abrir e operar o detalhe do lead sem falhas)
-  - `negocios` e `negocios_tarefas`/`negocios_atividades` se necessário para os cards de negócio
+2. Em `resolveSegmentoNome`, alinhar ao backend:
+   - Roteamento explícito por origem no início: se `origem` contém `imovelweb` ou `site` → retornar `"S1 - Moradia"`.
+   - Fallback universal (sem match de campanha) → retornar `"S1 - Moradia"` em vez de `"S3 - Avulso"`.
 
-Cada política nova apenas adiciona `has_role(auth.uid(), 'diretor')` como condição de SELECT, espelhando o que já existe para admin. Nenhuma política existente é removida.
+3. Atualizar o mapa `SEGMENTO_COLORS` para os 4 segmentos canônicos atuais:
+   - `S1 - Moradia`, `S2 - Investimento`, `S3 - Foco`, `S4 - Alto Padrão` (remover chaves antigas "S1 - MCMV / Médio Padrão", "S2 - Alto Padrão", "S3 - Avulso", "S4 - Investimento").
 
-### 2. Frontend
-- **`src/hooks/usePipeline.ts`**: incluir `isDiretor` do `useUserRole` e tratar `isCeoView = isAdmin || isDiretor` como escopo do escritório inteiro (mesmo ramo do admin, sem filtro por equipe), tanto na resolução de escopo quanto na query.
-- **`src/hooks/useEquipesView.ts`**: habilitar a query para `isAdmin || isDiretor` (hoje só `isAdmin`).
+## Fora de escopo
+- Não alterar banco de dados, funções, RLS nem edge functions (distribuição real já correta).
 
-`PipelineKanban.tsx` já trata `isCeoView = isAdmin || isDiretor` para as abas (default "equipes"), então após os ajustes acima a aba Equipes e o Kanban global passam a carregar dados.
-
-## Validação
-- Confirmar que a Diretora passa a ver todos os leads do escritório no Kanban e a aba Equipes populada.
-- Confirmar que gestores e corretores continuam com o mesmo escopo restrito de antes (nada muda para eles).
-
-## Detalhes técnicos
-- Não altera a tabela `intermediacoes`, storage, nem edge functions.
-- Migração só adiciona/edita políticas RLS e uma função — segue o limite de migrações por dia; roda em janela adequada.
-- A abordagem espelha exatamente o acesso de `admin`, coerente com a decisão anterior de dar à diretoria visão equivalente ao CEO.
+## Resultado esperado
+A prévia da Fila CEO mostra **S1 - Moradia** para leads ImovelWeb/Site e para qualquer lead sem match de campanha, batendo com o destino real ao disparar.
