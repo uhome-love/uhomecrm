@@ -16,7 +16,7 @@ interface CampanhaMap {
 }
 
 const SEG_GERAL = "Geral (todos)";
-const SEG_AVULSO = "S3 - Avulso";
+const SEG_MORADIA = "S1 - Moradia";
 
 function resolveSegmentoNome(
   emp: string | null,
@@ -26,6 +26,13 @@ function resolveSegmentoNome(
 ): string | null {
   const matchToName = (c: CampanhaMap) => (c.ignorar_segmento ? SEG_GERAL : c.segmento_nome);
   const lower = (emp || "").toLowerCase().trim();
+  const origemLower = (origem || "").toLowerCase().trim();
+
+  // Roteamento explícito por ORIGEM (alinhado ao distribuir_lead_atomico no banco):
+  // Imovelweb / Site → S1 - Moradia
+  if (origemLower.includes("imovelweb") || origemLower.includes("site")) {
+    return SEG_MORADIA;
+  }
 
   if (lower) {
     // Exact
@@ -43,10 +50,10 @@ function resolveSegmentoNome(
     }
   }
 
-  // Fallback universal: qualquer lead sem match de campanha → S3 - Avulso
+  // Fallback universal: qualquer lead sem match de campanha → S1 - Moradia
   // (mantém alinhado com distribuir_lead_atomico no banco)
   if (hasAvulsoSegmento) {
-    return SEG_AVULSO;
+    return SEG_MORADIA;
   }
   return null;
 }
@@ -245,10 +252,10 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
   const SEGMENTO_COLORS: Record<string, string> = {
     [SEG_GERAL]: "bg-indigo-500/10 text-indigo-700 border-indigo-500/30 dark:text-indigo-300",
-    "S1 - MCMV / Médio Padrão": "bg-blue-500/10 text-blue-700 border-blue-500/30 dark:text-blue-300",
-    "S2 - Alto Padrão": "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300",
-    "S3 - Avulso": "bg-pink-500/10 text-pink-700 border-pink-500/30 dark:text-pink-300",
-    "S4 - Investimento": "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300",
+    "S1 - Moradia": "bg-blue-500/10 text-blue-700 border-blue-500/30 dark:text-blue-300",
+    "S2 - Investimento": "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300",
+    "S3 - Foco": "bg-pink-500/10 text-pink-700 border-pink-500/30 dark:text-pink-300",
+    "S4 - Alto Padrão": "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300",
   };
 
   const handleDispatch = async () => {
