@@ -28,8 +28,7 @@ function resolveSegmentoNome(
   const lower = (emp || "").toLowerCase().trim();
   const origemLower = (origem || "").toLowerCase().trim();
 
-  // Roteamento explícito por ORIGEM (alinhado ao distribuir_lead_atomico no banco):
-  // Imovelweb / Site → S1 - Moradia
+  // Roteamento explícito por origem (alinhado ao backend distribuir_lead_atomico)
   if (origemLower.includes("imovelweb") || origemLower.includes("site")) {
     return SEG_MORADIA;
   }

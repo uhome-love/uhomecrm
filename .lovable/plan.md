@@ -1,28 +1,24 @@
-# Corrigir prévia "S3 - Avulso" na Fila CEO
+# Corrigir prévia "S3 - Avulso" → "S1 - Moradia" na Fila CEO
 
 ## Contexto
-O lead ImovelWeb parado na Fila CEO aparece como **S3 - Avulso** na prévia por segmento, mas isso é apenas um rótulo desatualizado no frontend. No banco o lead já está em **S1 - Moradia**, e a função de distribuição (`distribuir_lead_atomico`) roteia ImovelWeb/Site corretamente para S1 - Moradia. Nenhuma mudança de banco ou de lógica de distribuição é necessária.
+As edições da rodada anterior não persistiram — o arquivo `FilaCeoDispatchModal.tsx` voltou ao estado original com o rótulo hardcoded `SEG_AVULSO = "S3 - Avulso"`. Por isso os leads ImovelWeb/Site e leads sem match de campanha ainda aparecem como **S3 - Avulso** na prévia por segmento.
 
-## Objetivo
-Fazer a prévia por segmento do modal refletir o comportamento real do backend, eliminando o rótulo antigo "S3 - Avulso".
+O dado real está correto: a função `distribuir_lead_atomico` roteia ImovelWeb/Site para **S1 - Moradia** (`v_avulso_segmento_id = 9948… S1 Moradia`). O problema é apenas o rótulo cosmético da prévia no modal.
 
 ## Alteração (único arquivo)
 `src/components/pipeline/FilaCeoDispatchModal.tsx`
 
-1. Trocar a constante de fallback:
-   - de `const SEG_AVULSO = "S3 - Avulso";`
-   - para `const SEG_MORADIA = "S1 - Moradia";` (renomear usos)
+1. Trocar a constante: `SEG_AVULSO = "S3 - Avulso"` → `SEG_MORADIA = "S1 - Moradia"` (atualizar usos).
 
 2. Em `resolveSegmentoNome`, alinhar ao backend:
-   - Adicionar roteamento explícito por origem no início: se `origem` contém `imovelweb` ou `site` → retornar `"S1 - Moradia"`.
-   - Trocar o fallback universal (lead sem match de campanha) para retornar `"S1 - Moradia"` em vez de `"S3 - Avulso"`.
+   - Roteamento explícito por origem no início: se `origem` contém `imovelweb` ou `site` → retornar `"S1 - Moradia"`.
+   - Fallback universal (sem match de campanha) → retornar `"S1 - Moradia"` em vez de `"S3 - Avulso"`.
 
-3. Atualizar o mapa de cores `SEGMENTO_COLORS`: substituir a chave `"S3 - Avulso"` por `"S1 - Moradia"` (mantendo/ajustando a cor apropriada para o segmento de Moradia).
+3. Atualizar o mapa `SEGMENTO_COLORS` para os 4 segmentos canônicos atuais:
+   - `S1 - Moradia`, `S2 - Investimento`, `S3 - Foco`, `S4 - Alto Padrão` (remover chaves antigas "S1 - MCMV / Médio Padrão", "S2 - Alto Padrão", "S3 - Avulso", "S4 - Investimento").
 
 ## Fora de escopo
-- Não alterar banco de dados, funções, RLS nem edge functions.
-- Não mexer na lógica real de distribuição (já correta).
-- A referência residual "S3 - Avulso" em `RoletaCampanhasPanel.tsx` é apenas um fallback de cor inofensivo; pode ser atualizada opcionalmente, mas não é necessária para resolver o problema relatado.
+- Não alterar banco de dados, funções, RLS nem edge functions (distribuição real já correta).
 
 ## Resultado esperado
-A prévia da Fila CEO mostrará **S1 - Moradia** para leads ImovelWeb/Site e para qualquer lead sem match de campanha, batendo com o destino real ao disparar.
+A prévia da Fila CEO mostra **S1 - Moradia** para leads ImovelWeb/Site e para qualquer lead sem match de campanha, batendo com o destino real ao disparar.
