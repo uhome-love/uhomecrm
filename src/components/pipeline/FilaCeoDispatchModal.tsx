@@ -104,6 +104,8 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const [dispatching, setDispatching] = useState(false);
   const [allLeads, setAllLeads] = useState<any[]>([]);
   const [campanhas, setCampanhas] = useState<CampanhaMap[]>([]);
+  // leadId → empreendimento resolvido pelo template do disparo de reengajamento
+  const [reengEmpreendimento, setReengEmpreendimento] = useState<Record<string, string>>({});
   const { isSunday, isHoliday } = getBrtDateInfo();
   const isAllDayRoleta = isSunday || isHoliday;
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
