@@ -547,7 +547,7 @@ export default function PipelineKanban() {
     );
   }
 
-  if (!pipeline.stages || pipeline.stages.length === 0) {
+  if (tabNeedsLeads && (!pipeline.stages || pipeline.stages.length === 0)) {
     // Sem stages e sem erro: provavelmente recarga em andamento após uma falha de rede.
     // Mostra um loading discreto em vez do erro vermelho que assustava o usuário.
     return (
