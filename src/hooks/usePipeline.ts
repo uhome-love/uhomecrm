@@ -636,7 +636,7 @@ export function usePipeline(
     };
   }, [staleSince, degraded, performReload]);
 
-
+  const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
     if (!user) return;
     const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
