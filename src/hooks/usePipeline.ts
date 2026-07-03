@@ -106,6 +106,13 @@ export function usePipeline(
   // "dados de há X min — reconectando…". Volta a null no próximo sucesso.
   const [staleSince, setStaleSince] = useState<Date | null>(null);
   const lastSuccessAtRef = useRef<Date | null>(null);
+  // Marca uma carga bem-sucedida: atualiza o marcador de sucesso e limpa o
+  // banner "reconectando…". Centralizado para que TODOS os caminhos de recarga
+  // (efeito inicial, reload manual, reload por visibility) removam o banner.
+  const markLoadSuccess = useCallback(() => {
+    lastSuccessAtRef.current = new Date();
+    setStaleSince(null);
+  }, []);
   // Guard: suppress realtime events during local mutations to prevent flicker
   const localMutationRef = useRef(false);
   // Track last visible timestamp for tab-switch debounce
