@@ -1,49 +1,46 @@
-# Mostrar o empreendimento da campanha nos leads de Reengajamento (Fila CEO)
-
 ## Problema
 
-Na aba **Reengajamento** da Fila CEO, os leads reativados aparecem só como "Reengajamento (Nutrição)" com o badge de empreendimento vazio (`—`). Quando o lead respondeu SIM a um disparo específico (ex.: **Lake Baikal** — template `lakebaical_novidade`), essa informação não é exibida, mesmo já existindo no banco.
-
-Causa: alguns caminhos do webhook do WhatsApp criam/reativam o lead sem herdar o empreendimento da campanha, então `pipeline_leads.empreendimento` fica vazio. O template do disparo (registrado em `reengajamento_meta_disparos`), porém, identifica o empreendimento.
-
-## Solução
-
-Duas frentes: (1) exibir corretamente no card usando o template do disparo, e (2) preencher o empreendimento na origem para novos casos.
-
-### 1. Mapa template → empreendimento (novo utilitário)
-
-Criar um helper compartilhado que traduz o nome do template da campanha para o rótulo do empreendimento:
+No pipeline do CEO/Admin as **etapas (colunas) do Kanban falham ao carregar**, então o board fica vazio ("Nenhum lead nesta etapa") mesmo havendo ~1.806 leads ativos. Confirmado pelos logs:
 
 ```text
-lakebaical_novidade          → Lake Baikal
-casatua_maio / casatua_*     → Casa Tua
-vividterrace2                → Vivid Terrace
-atrio_lancamento             → Átrio
-engajamento_visitasabado     → (genérico: "Reengajamento")
-reativacao_opcoes_perfil_v2  → (genérico)
-reengajamento_imovel_v1      → (genérico)
+[usePipeline] Partial load failure: ["stages","segmentos"]
+TypeError: Failed to fetch
 ```
 
-Regra: casamento por prefixo/inclusão, case-insensitive; quando não houver empreendimento específico, mantém o comportamento atual (sem badge de empreendimento).
+Os leads chegam, mas sem `stages` não há colunas onde exibi-los.
 
-### 2. Exibição no card da Fila CEO (`FilaCeoDispatchModal.tsx`)
+## Causa raiz
 
-- Para os leads da aba Reengajamento cujo `empreendimento` estiver vazio, buscar em `reengajamento_meta_disparos` o disparo mais recente com resposta positiva daquele lead (por `lead_id` e, como fallback, pelos últimos 10 dígitos do telefone).
-- Resolver o `template_name` → empreendimento com o helper acima.
-- Exibir no badge o empreendimento resolvido (ex.: **Lake Baikal**) em vez de `—`, deixando claro que veio do disparo de reengajamento.
-- A busca é feita em lote para os leads de reengajamento visíveis (sem impacto perceptível de performance).
+Em `src/hooks/usePipeline.ts`, o efeito de carga dispara as três queries **em paralelo**:
 
-### 3. Preencher na origem (`whatsapp-webhook`)
+```text
+Promise.allSettled([ loadStages(), loadSegmentos(), loadLeads() ])
+```
 
-Nos caminhos que reativam/criam o lead a partir de uma resposta a disparo (incluindo o caminho "remetente novo"), quando houver um disparo correlacionado pelo `wamid`/telefone, gravar o `empreendimento` resolvido pelo template no `pipeline_leads`. Assim, novos leads de reengajamento já nascem com o empreendimento correto, sem depender da correção de exibição.
+Para o CEO, `loadLeads()` traz **todos os leads da empresa** (query enorme, 40+ colunas, paginada). Rodando ao mesmo tempo que as queries leves de etapas/segmentos, a conexão satura e as requisições pequenas caem com `Failed to fetch`. Como `loadStages` propaga o erro e não há cache, o board renderiza sem colunas → parece "sem leads". Nas demais roles o volume é pequeno, por isso só o CEO é afetado. O próprio código já tem o comentário "ORDEM: stages PRIMEIRO", mas isso nunca foi aplicado no nível de rede.
 
-## Detalhes técnicos
+## Correção
 
-- Novo arquivo utilitário (ex.: `src/lib/reengajamentoEmpreendimento.ts`) com a função de mapeamento template → empreendimento, reutilizável no frontend.
-- `FilaCeoDispatchModal.tsx`: adicionar consulta a `reengajamento_meta_disparos` (a policy de SELECT é restrita a admin/gestor — compatível com quem acessa a Fila CEO) e aplicar o rótulo no render dos cards de reengajamento.
-- `supabase/functions/whatsapp-webhook/index.ts`: no bloco de reativação por disparo e no fallback "remetente novo", setar `empreendimento` a partir do template quando disponível.
-- Sem migration de schema. Opcionalmente, um backfill pontual (via inserção controlada) poderia preencher o empreendimento dos leads de reengajamento atuais que têm disparo correlacionado — confirmo com você antes de rodar, pois altera dados existentes.
+Reordenar a carga em `usePipeline.ts` para garantir que as queries **leves e críticas (etapas/segmentos) rodem e concluam antes** da query pesada de leads, evitando a disputa de conexão.
 
-## Resultado esperado
+1. **Sequenciar as cargas** no efeito principal (por volta das linhas 419-461):
+   - Primeiro: `await Promise.allSettled([ loadStages(), loadSegmentos() ])` (rápidas, garantem as colunas).
+   - Depois: `await loadLeads()` (pesada).
+   - Manter os `withTimeout` atuais e a mesma lógica de detecção de falha parcial / `staleSince` / `setError`.
 
-O card do lead na Fila CEO passa a mostrar, por exemplo, "**Lake Baikal** · Reengajamento (Nutrição)", tornando claro de qual campanha/empreendimento o lead veio.
+2. **Robustez das etapas** (`loadStages`): como as colunas são críticas, em caso de falha de rede transitória não deixar o board vazio — reaproveitar `stagesRef.current` (cache do último snapshot válido) em vez de exibir "sem leads". A função já não sobrescreve com `[]`; o ganho vem de garantir que a query de etapas não concorra mais com a de leads.
+
+3. **Aplicar a mesma ordenação no `reload()`** (por volta das linhas 839-843), que hoje também dispara os três em paralelo.
+
+4. **(Opcional, mesma direção) Aliviar a carga do CEO**: a resolução de nomes de corretores usa um `.or(user_id.in.(...),id.in.(...))` com todos os IDs da empresa. Não é a causa do board vazio (roda depois do `setLeads`), então fica fora do escopo desta correção salvo se você quiser otimizar performance depois.
+
+## Validação
+
+- Reproduzir com o usuário CEO no preview (desktop e celular): as colunas do Kanban devem aparecer e os leads distribuídos por etapa.
+- Confirmar nos logs do console que não há mais `Partial load failure: ["stages", ...]` na carga inicial do pipeline do CEO.
+
+## Arquivos afetados
+
+- `src/hooks/usePipeline.ts` (efeito de carga inicial e `reload`).
+
+Nenhuma mudança de banco/RLS necessária — os dados existem e as permissões estão corretas; é ordem de carregamento no cliente.
