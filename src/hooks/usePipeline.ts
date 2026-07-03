@@ -598,7 +598,45 @@ export function usePipeline(
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [userId, loadLeads, withTimeout, isAdmin, markLoadSuccess]);
 
-  const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
+  // Recarga compartilhada (usada pelo botão "Atualizar agora" e pelo auto-retry).
+  const performReload = useCallback(async () => {
+    setError(null);
+    // allSettled: recarga não pode lançar e quebrar o caller.
+    // Etapas/segmentos (leves) antes dos leads (pesado) para não saturar a conexão.
+    const [stagesResult] = await Promise.allSettled([
+      withTimeout(loadStages(), 8_000, "Etapas do pipeline"),
+      withTimeout(loadSegmentos(), 6_000, "Segmentos do pipeline"),
+    ]);
+    const [leadsResult] = await Promise.allSettled([
+      withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline"),
+    ]);
+    const criticalOk =
+      stagesResult.status === "fulfilled" && leadsResult.status === "fulfilled";
+    if (criticalOk) {
+      markLoadSuccess();
+    } else if (leadsRef.current.length > 0 && lastSuccessAtRef.current) {
+      setStaleSince(lastSuccessAtRef.current);
+    }
+    return criticalOk;
+  }, [loadStages, loadSegmentos, loadLeads, withTimeout, isAdmin, markLoadSuccess]);
+
+  // Rede de segurança: enquanto o banner "reconectando…" estiver ativo e o
+  // backend não estiver claramente caído, tenta recarregar sozinho a cada 45s
+  // até voltar a ter sucesso. Assim o banner se auto-resolve sem clique manual.
+  useEffect(() => {
+    if (!staleSince || degraded) return;
+    let cancelled = false;
+    const id = setInterval(() => {
+      if (cancelled) return;
+      void performReload();
+    }, 45_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [staleSince, degraded, performReload]);
+
+
     if (!user) return;
     const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
