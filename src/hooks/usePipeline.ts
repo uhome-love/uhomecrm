@@ -149,6 +149,57 @@ export function usePipeline(
     return false;
   }, [discardStageIds]);
 
+  const mergeVisibleLeads = useCallback((rows: PipelineLead[]) => {
+    const seenIds = new Set<string>();
+    return rows.filter(l => {
+      if (seenIds.has(l.id)) return false;
+      seenIds.add(l.id);
+      return !shouldHideLeadFromPipeline(l);
+    });
+  }, [shouldHideLeadFromPipeline]);
+
+  const hydrateBrokerNames = useCallback(async (rows: PipelineLead[]) => {
+    if (!(isGestor || isAdmin) || rows.length === 0) return;
+    const allBrokerIds = [...new Set([
+      ...rows.map(l => l.corretor_id).filter(Boolean),
+      ...rows.map(l => l.gerente_id).filter(Boolean),
+    ])] as string[];
+    if (allBrokerIds.length === 0) return;
+
+    try {
+      const inList = allBrokerIds.map((id) => `"${id}"`).join(",");
+      const [{ data: members }, { data: profilesUnified }] = await Promise.all([
+        supabase
+          .from("team_members")
+          .select("user_id, nome")
+          .in("user_id", allBrokerIds),
+        supabase
+          .from("profiles")
+          .select("id, user_id, nome, avatar_url, avatar_gamificado_url")
+          .or(`user_id.in.(${inList}),id.in.(${inList})`),
+      ]);
+      const map: Record<string, string> = {};
+      const avatarMap: Record<string, string> = {};
+      members?.forEach(m => { if (m.user_id) map[m.user_id] = m.nome; });
+      (profilesUnified || []).forEach((p: any) => {
+        if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome;
+        if (p.id && !map[p.id]) map[p.id] = p.nome;
+        if (p.user_id) {
+          const url = (p as any).avatar_gamificado_url || p.avatar_url;
+          if (url) avatarMap[p.user_id] = url;
+        }
+        if (p.id) {
+          const url = (p as any).avatar_gamificado_url || p.avatar_url;
+          if (url) avatarMap[p.id] = url;
+        }
+      });
+      setCorretorNomes(map);
+      setCorretorAvatars(avatarMap);
+    } catch (err) {
+      console.warn("[usePipeline] hydrateBrokerNames failed — mantendo kanban utilizável", err);
+    }
+  }, [isGestor, isAdmin]);
+
   const loadStages = useCallback(async () => {
     const { data, error } = await runQueryWithRetry<any[]>(() =>
       supabase
@@ -167,7 +218,9 @@ export function usePipeline(
     const filtered = (data || [] as any[]).filter((s: any) => s.pipeline_tipo === pipelineTipo);
     // Só substitui se a query realmente retornou algo OU se ainda não temos nada.
     // Isso evita zerar a UI durante uma resposta vazia anômala.
-    if (filtered.length > 0 || stagesRef.current.length === 0) {
+    const currentKey = stagesRef.current.map((s) => `${s.id}:${s.ordem}:${s.tipo}:${s.nome}`).join("|");
+    const nextKey = filtered.map((s: any) => `${s.id}:${s.ordem}:${s.tipo}:${s.nome}`).join("|");
+    if ((filtered.length > 0 || stagesRef.current.length === 0) && currentKey !== nextKey) {
       setStages(filtered.map((s: any) => ({
         id: s.id,
         nome: s.nome,
@@ -211,8 +264,8 @@ export function usePipeline(
     loadingLeadsRef.current = true;
     try {
 
-    const selectFields = "id, nome, telefone, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, origem_detalhe, observacoes, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma, imovel_codigo, imovel_url, flag_status, is_redistribuicao, motivo_redistribuicao, corretor_anterior_id, reativado_por_nutricao, reativado_em";
-    const pageSize = 1000;
+    const selectFields = "id, nome, telefone, telefone2, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, origem_detalhe, observacoes, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma, flag_status, is_redistribuicao";
+    const pageSize = isAdmin ? 500 : 1000;
 
     let teamUserIds: string[] = [];
     let teamScopeIds: string[] = [];
@@ -303,6 +356,12 @@ export function usePipeline(
       const batch = ((data || []) as PipelineLead[]);
       allRows.push(...batch);
 
+      const progressiveLeads = mergeVisibleLeads(allRows);
+      if (from === 0 && leadsRef.current.length === 0 && progressiveLeads.length > 0) {
+        setLeads(progressiveLeads);
+        if (stagesRef.current.length > 0) setLoading(false);
+      }
+
       if (batch.length < pageSize) break;
       from += pageSize;
     }
@@ -329,57 +388,14 @@ export function usePipeline(
     }
 
     // Deduplicate leads by id (in case of duplicate rows)
-    const seenIds = new Set<string>();
-    const leadsData = allRows.filter(l => {
-      if (seenIds.has(l.id)) return false;
-      seenIds.add(l.id);
-      return !shouldHideLeadFromPipeline(l);
-    });
+    const leadsData = mergeVisibleLeads(allRows);
     // Só substitui se o resultado tem dados OU se ainda não temos nada cacheado.
     // Evita zerar a tela em respostas vazias anômalas pós-erro transitório.
     if (leadsData.length > 0 || leadsRef.current.length === 0) {
       setLeads(leadsData);
     }
 
-    // Load corretor + gerente names (skip for corretores — they only see their own leads)
-    if ((isGestor || isAdmin) && allRows.length > 0) {
-      const allBrokerIds = [...new Set([
-        ...leadsData.map(l => l.corretor_id).filter(Boolean),
-        ...leadsData.map(l => l.gerente_id).filter(Boolean),
-      ])] as string[];
-      if (allBrokerIds.length > 0) {
-        // Uma chamada de profiles via .or() em vez de duas (user_id + id).
-        // team_members continua separado (tabela e select diferentes).
-        const inList = allBrokerIds.map((id) => `"${id}"`).join(",");
-        const [{ data: members }, { data: profilesUnified }] = await Promise.all([
-          supabase
-            .from("team_members")
-            .select("user_id, nome")
-            .in("user_id", allBrokerIds),
-          supabase
-            .from("profiles")
-            .select("id, user_id, nome, avatar_url, avatar_gamificado_url")
-            .or(`user_id.in.(${inList}),id.in.(${inList})`),
-        ]);
-        const map: Record<string, string> = {};
-        const avatarMap: Record<string, string> = {};
-        members?.forEach(m => { if (m.user_id) map[m.user_id] = m.nome; });
-        (profilesUnified || []).forEach((p: any) => {
-          if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome;
-          if (p.id && !map[p.id]) map[p.id] = p.nome;
-          if (p.user_id) {
-            const url = (p as any).avatar_gamificado_url || p.avatar_url;
-            if (url) avatarMap[p.user_id] = url;
-          }
-          if (p.id) {
-            const url = (p as any).avatar_gamificado_url || p.avatar_url;
-            if (url) avatarMap[p.id] = url;
-          }
-        });
-        setCorretorNomes(map);
-        setCorretorAvatars(avatarMap);
-      }
-    }
+    void hydrateBrokerNames(leadsData);
 
     } catch (err) {
       console.error("[usePipeline] loadLeads crash:", err);
@@ -392,7 +408,7 @@ export function usePipeline(
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin, roleLoading, shouldHideLeadFromPipeline, scopeKey]);
+  }, [userId, isGestor, isAdmin, roleLoading, mergeVisibleLeads, hydrateBrokerNames, scopeKey]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
@@ -434,7 +450,7 @@ export function usePipeline(
       if (cancelled) return;
 
       const leadsResult = (await Promise.allSettled([
-        withTimeout(loadLeads(), 12_000, "Leads do pipeline"),
+        withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline"),
       ]))[0];
       if (cancelled) return;
 
@@ -552,7 +568,7 @@ export function usePipeline(
       if (document.visibilityState === "visible") {
         const elapsed = Date.now() - lastVisibleRef.current;
         if (elapsed > 60_000) {
-          withTimeout(loadLeads(), 12_000, "Leads do pipeline").catch((err) => {
+            withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline").catch((err) => {
             console.warn("[usePipeline] reload por visibility falhou:", err);
           });
         }
@@ -562,7 +578,7 @@ export function usePipeline(
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [userId, loadLeads, withTimeout]);
+  }, [userId, loadLeads, withTimeout, isAdmin]);
 
   const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
     if (!user) return;
@@ -853,8 +869,8 @@ export function usePipeline(
         withTimeout(loadSegmentos(), 6_000, "Segmentos do pipeline"),
       ]);
       await Promise.allSettled([
-        withTimeout(loadLeads(), 12_000, "Leads do pipeline"),
+        withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline"),
       ]);
-    }, [loadStages, loadSegmentos, loadLeads, withTimeout]),
+    }, [loadStages, loadSegmentos, loadLeads, withTimeout, isAdmin]),
   };
 }

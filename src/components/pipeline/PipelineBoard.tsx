@@ -302,8 +302,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     queryFn: async () => {
       if (leadIds.length === 0) return [] as string[];
       const chunks: string[][] = [];
-      for (let i = 0; i < leadIds.length; i += 200) {
-        chunks.push(leadIds.slice(i, i + 200));
+      for (let i = 0; i < leadIds.length; i += 500) {
+        chunks.push(leadIds.slice(i, i + 500));
       }
       const results = await Promise.all(chunks.map(async (chunk) => {
         const { data } = await supabase
@@ -340,7 +340,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     queryFn: async () => {
       if (leadIds.length === 0) return [];
       const chunks: string[][] = [];
-      for (let i = 0; i < leadIds.length; i += 200) chunks.push(leadIds.slice(i, i + 200));
+      for (let i = 0; i < leadIds.length; i += 500) chunks.push(leadIds.slice(i, i + 500));
       const results = await Promise.all(chunks.map(async (chunk) => {
         const { data } = await supabase
           .from("lead_cadencia_sem_contato")
