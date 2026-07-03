@@ -574,9 +574,17 @@ export function usePipeline(
       if (document.visibilityState === "visible") {
         const elapsed = Date.now() - lastVisibleRef.current;
         if (elapsed > 60_000) {
-            withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline").catch((err) => {
-            console.warn("[usePipeline] reload por visibility falhou:", err);
-          });
+            withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline")
+              .then(() => {
+                // Recarga por visibility deu certo → remove banner "reconectando…".
+                markLoadSuccess();
+              })
+              .catch((err) => {
+                console.warn("[usePipeline] reload por visibility falhou:", err);
+                if (leadsRef.current.length > 0 && lastSuccessAtRef.current) {
+                  setStaleSince(lastSuccessAtRef.current);
+                }
+              });
         }
       } else {
         lastVisibleRef.current = Date.now();
@@ -584,7 +592,7 @@ export function usePipeline(
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [userId, loadLeads, withTimeout, isAdmin]);
+  }, [userId, loadLeads, withTimeout, isAdmin, markLoadSuccess]);
 
   const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
     if (!user) return;
