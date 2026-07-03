@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2, Rocket, AlertTriangle, Sparkles, HeartHandshake } from "lucide-react";
 import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
+import { empreendimentoFromTemplate } from "@/lib/reengajamentoEmpreendimento";
 
 interface CampanhaMap {
   empreendimento: string;
@@ -103,6 +104,8 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const [dispatching, setDispatching] = useState(false);
   const [allLeads, setAllLeads] = useState<any[]>([]);
   const [campanhas, setCampanhas] = useState<CampanhaMap[]>([]);
+  // leadId → empreendimento resolvido pelo template do disparo de reengajamento
+  const [reengEmpreendimento, setReengEmpreendimento] = useState<Record<string, string>>({});
   const { isSunday, isHoliday } = getBrtDateInfo();
   const isAllDayRoleta = isSunday || isHoliday;
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
@@ -130,6 +133,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
     setLoading(true);
     setAllLeads([]);
     setCampanhas([]);
+    setReengEmpreendimento({});
     (async () => {
       const [leadsRes, segRes, campRes] = await Promise.all([
         supabase
@@ -195,6 +199,56 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
       console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${reengCount} reengajamento)`);
       setLoading(false);
+
+      // Para leads de reengajamento SEM empreendimento, descobre o empreendimento
+      // pelo template do disparo que originou a reativação (Lake Baikal, Casa Tua, etc.)
+      const reengSemEmp = leadsList.filter(
+        (l) => !!l.reativado_por_nutricao && !String(l.empreendimento || "").trim()
+      );
+      if (reengSemEmp.length > 0) {
+        const leadIds = reengSemEmp.map((l) => l.id);
+        const { data: disparos } = await supabase
+          .from("reengajamento_meta_disparos")
+          .select("lead_id, template_name, phone, created_at")
+          .in("lead_id", leadIds)
+          .order("created_at", { ascending: false });
+
+        const byLead: Record<string, string> = {};
+        // 1ª passada: casa por lead_id (disparo mais recente já vem primeiro)
+        for (const d of (disparos || []) as any[]) {
+          const emp = empreendimentoFromTemplate(d.template_name);
+          if (emp && d.lead_id && !byLead[d.lead_id]) byLead[d.lead_id] = emp;
+        }
+
+        // Fallback por telefone (últimos 10 dígitos) p/ leads criados como "remetente novo"
+        const semMatch = reengSemEmp.filter((l) => !byLead[l.id] && l.telefone);
+        if (semMatch.length > 0) {
+          const results = await Promise.all(
+            semMatch.map(async (l) => {
+              const tail = String(l.telefone).replace(/\D/g, "").slice(-10);
+              if (!tail) return null;
+              const { data } = await supabase
+                .from("reengajamento_meta_disparos")
+                .select("template_name")
+                .ilike("phone", `%${tail}%`)
+                .order("created_at", { ascending: false })
+                .limit(5);
+              for (const d of (data || []) as any[]) {
+                const emp = empreendimentoFromTemplate(d.template_name);
+                if (emp) return { id: l.id, emp };
+              }
+              return null;
+            })
+          );
+          for (const r of results) {
+            if (r && !byLead[r.id]) byLead[r.id] = r.emp;
+          }
+        }
+
+        if (!cancelled && Object.keys(byLead).length > 0) {
+          setReengEmpreendimento(byLead);
+        }
+      }
     })();
     return () => { cancelled = true; };
   }, [open]);
@@ -382,7 +436,14 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium truncate">{l.nome || "Sem nome"}</span>
-                            <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.empreendimento || "—"}</Badge>
+                            {(() => {
+                              const emp = String(l.empreendimento || "").trim() || reengEmpreendimento[l.id];
+                              return emp ? (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1.5">{emp}</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1.5">—</Badge>
+                              );
+                            })()}
                             {l.origem && <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.origem}</Badge>}
                           </div>
                           <p className="text-[11px] text-muted-foreground mt-0.5">

@@ -6,7 +6,49 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// ── Call whatsapp-ai-reply for new leads ──
+// ── Mapa template de reengajamento → empreendimento (Lake Baikal, Casa Tua, etc.) ──
+function empreendimentoFromTemplate(templateName?: string | null): string | null {
+  const t = (templateName ?? "").toString().trim().toLowerCase();
+  if (!t) return null;
+  if (t.includes("lakebaical") || t.includes("lake baical") || t.includes("lakebaikal")) return "Lake Baikal";
+  if (t.includes("casatua") || t.includes("casa tua") || t.includes("casa_tua")) return "Casa Tua";
+  if (t.includes("vivid")) return "Vivid Terrace";
+  if (t.includes("atrio") || t.includes("átrio")) return "Átrio";
+  return null;
+}
+
+// ── Descobre o empreendimento pelo disparo de reengajamento que o lead respondeu ──
+// Tenta primeiro pelo wamid respondido (context.id), depois por telefone.
+async function resolveReengEmpreendimento(
+  supabase: any, repliedToWamid: string | null, from: string
+): Promise<string | null> {
+  try {
+    if (repliedToWamid) {
+      const { data } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("template_name")
+        .eq("wamid", repliedToWamid)
+        .maybeSingle();
+      const emp = empreendimentoFromTemplate(data?.template_name);
+      if (emp) return emp;
+    }
+    const tail = (from || "").replace(/\D/g, "").slice(-10);
+    if (tail) {
+      const { data } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("template_name")
+        .ilike("phone", `%${tail}%`)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      for (const d of (data || []) as any[]) {
+        const emp = empreendimentoFromTemplate(d.template_name);
+        if (emp) return emp;
+      }
+    }
+  } catch (_e) { /* best-effort */ }
+  return null;
+}
+
 async function callAIReply(supabaseUrl: string, serviceKey: string, telefone: string, nome_contato: string, mensagem: string, lead_id: string, tipo_mensagem: string) {
   try {
     const resp = await fetch(`${supabaseUrl}/functions/v1/whatsapp-ai-reply`, {
@@ -880,6 +922,8 @@ async function handleUnknownReply(
   from: string, mensagemTexto: string, msg: any, contactName: string | null
 ) {
   const msgText = mensagemTexto || msg?.type || "mensagem";
+  // Empreendimento derivado do disparo de reengajamento respondido (ex.: Lake Baikal)
+  const reengEmp = await resolveReengEmpreendimento(supabase, msg?.context?.id || null, from);
 
   // 1. Search pipeline_leads by normalized phone (últimos 8 dígitos cobre variações de DDI/DDD/9)
   const fromDigits = (from || "").replace(/\D/g, "");
@@ -1002,7 +1046,7 @@ async function handleUnknownReply(
         nome: oaLead.nome || contactName || "Lead Reativado",
         telefone: oaLead.telefone || from,
         email: oaLead.email || null,
-        empreendimento: oaLead.empreendimento || null,
+        empreendimento: oaLead.empreendimento || reengEmp || null,
         segmento_id: oaLead.segmento_id || null,
         origem: "Reengajamento (Nutrição)",
         reativado_por_nutricao: true,
@@ -1072,6 +1116,7 @@ async function handleUnknownReply(
     .insert({
       nome: contactName || "Lead WhatsApp",
       telefone: from,
+      empreendimento: reengEmp || null,
       origem: "Reengajamento (Nutrição)",
       reativado_por_nutricao: true,
       reativado_em: nowIso,
