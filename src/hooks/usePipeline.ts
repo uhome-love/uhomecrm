@@ -878,13 +878,21 @@ export function usePipeline(
       // allSettled: recarga manual não pode lançar e quebrar o caller.
       // Mesma ordenação da carga inicial: etapas/segmentos (leves) antes dos
       // leads (pesado) para não saturar a conexão e perder as colunas.
-      await Promise.allSettled([
+      const [stagesResult] = await Promise.allSettled([
         withTimeout(loadStages(), 8_000, "Etapas do pipeline"),
         withTimeout(loadSegmentos(), 6_000, "Segmentos do pipeline"),
       ]);
-      await Promise.allSettled([
+      const [leadsResult] = await Promise.allSettled([
         withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline"),
       ]);
-    }, [loadStages, loadSegmentos, loadLeads, withTimeout, isAdmin]),
+      // Só limpa o banner "reconectando…" quando as queries críticas voltaram.
+      const criticalOk =
+        stagesResult.status === "fulfilled" && leadsResult.status === "fulfilled";
+      if (criticalOk) {
+        markLoadSuccess();
+      } else if (leadsRef.current.length > 0 && lastSuccessAtRef.current) {
+        setStaleSince(lastSuccessAtRef.current);
+      }
+    }, [loadStages, loadSegmentos, loadLeads, withTimeout, isAdmin, markLoadSuccess]),
   };
 }
