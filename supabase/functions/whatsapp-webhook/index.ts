@@ -922,6 +922,8 @@ async function handleUnknownReply(
   from: string, mensagemTexto: string, msg: any, contactName: string | null
 ) {
   const msgText = mensagemTexto || msg?.type || "mensagem";
+  // Empreendimento derivado do disparo de reengajamento respondido (ex.: Lake Baikal)
+  const reengEmp = await resolveReengEmpreendimento(supabase, msg?.context?.id || null, from);
 
   // 1. Search pipeline_leads by normalized phone (últimos 8 dígitos cobre variações de DDI/DDD/9)
   const fromDigits = (from || "").replace(/\D/g, "");
