@@ -302,7 +302,9 @@ export default function PipelineKanban() {
 
       return map;
     },
-    enabled: leadIds.length > 0,
+    // Só busca depois que a lista de leads estabiliza (!pipeline.loading): evita
+    // refetch a cada página progressiva e não concorre com as requisições de leads.
+    enabled: leadIds.length > 0 && !pipeline.loading,
     staleTime: 10_000,
     refetchOnWindowFocus: !isCeoView,
     placeholderData: keepPreviousData,
@@ -519,7 +521,13 @@ export default function PipelineKanban() {
   const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos" || negociosFilter || riscoFilter;
 
 
-  if (pipeline.loading || !rolesReady || activeTab === null) {
+  // A aba "Equipes" (padrão do CEO/Diretor) tem fonte de dados própria
+  // (useEquipesView) e NÃO depende da lista completa de leads. Só bloqueamos a
+  // tela na carga pesada de leads (pipeline.loading) para abas que realmente
+  // renderizam a lista (kanban, time, inteligência). Isso torna a visão do CEO
+  // instantânea em vez de esperar os ~1.800 leads que ela nem usa para pintar.
+  const tabNeedsLeads = activeTab !== "equipes";
+  if (!rolesReady || activeTab === null || (tabNeedsLeads && pipeline.loading)) {
     return (
       <LoadingState
         title="Carregando pipeline..."
@@ -541,7 +549,7 @@ export default function PipelineKanban() {
     );
   }
 
-  if (!pipeline.stages || pipeline.stages.length === 0) {
+  if (tabNeedsLeads && (!pipeline.stages || pipeline.stages.length === 0)) {
     // Sem stages e sem erro: provavelmente recarga em andamento após uma falha de rede.
     // Mostra um loading discreto em vez do erro vermelho que assustava o usuário.
     return (
