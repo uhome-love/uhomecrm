@@ -1116,6 +1116,7 @@ async function handleUnknownReply(
     .insert({
       nome: contactName || "Lead WhatsApp",
       telefone: from,
+      empreendimento: reengEmp || null,
       origem: "Reengajamento (Nutrição)",
       reativado_por_nutricao: true,
       reativado_em: nowIso,
