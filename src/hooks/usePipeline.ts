@@ -5,6 +5,7 @@ import { getManagedTeamProfileIds, resolveProfileIds } from "@/hooks/useAuthUser
 import { useUserRole } from "@/hooks/useUserRole";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
 import { withTimeout as withTimeoutLib } from "@/lib/queryTimeout";
+import { useBackendHealth } from "@/hooks/useBackendHealth";
 import { toast } from "sonner";
 
 export interface PipelineStage {
@@ -77,6 +78,9 @@ export function usePipeline(
 ) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
+  // Ping leve do backend: usado só para não disparar auto-retry às cegas quando
+  // a conexão está claramente caída (evita marteladas na rede).
+  const { degraded } = useBackendHealth();
   const { isGestor, isAdmin: rawIsAdmin, isDiretor, loading: roleLoading } = useUserRole();
   // Diretoria tem visão de escritório equivalente ao CEO: trata diretor como
   // admin para escopo de leitura do pipeline (todos os leads, sem filtro por time).
@@ -106,6 +110,13 @@ export function usePipeline(
   // "dados de há X min — reconectando…". Volta a null no próximo sucesso.
   const [staleSince, setStaleSince] = useState<Date | null>(null);
   const lastSuccessAtRef = useRef<Date | null>(null);
+  // Marca uma carga bem-sucedida: atualiza o marcador de sucesso e limpa o
+  // banner "reconectando…". Centralizado para que TODOS os caminhos de recarga
+  // (efeito inicial, reload manual, reload por visibility) removam o banner.
+  const markLoadSuccess = useCallback(() => {
+    lastSuccessAtRef.current = new Date();
+    setStaleSince(null);
+  }, []);
   // Guard: suppress realtime events during local mutations to prevent flicker
   const localMutationRef = useRef(false);
   // Track last visible timestamp for tab-switch debounce
@@ -461,8 +472,7 @@ export function usePipeline(
         .filter((x) => x.r.status === "rejected");
 
       if (failed.length === 0) {
-        lastSuccessAtRef.current = new Date();
-        setStaleSince(null);
+        markLoadSuccess();
       } else {
         console.warn("[usePipeline] Partial load failure:", failed.map((f) => f.name));
         const criticalFailed = failed.some((f) => f.name === "stages" || f.name === "leads");
@@ -485,7 +495,7 @@ export function usePipeline(
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [userId, pipelineTipo, loadStages, loadSegmentos, loadLeads, withTimeout, roleLoading]);
+  }, [userId, pipelineTipo, loadStages, loadSegmentos, loadLeads, withTimeout, roleLoading, markLoadSuccess]);
 
   // NOTA: o auto-retry de 4s foi removido nesta rodada (Fase 3 / Item 2).
   // Com runQueryWithRetry agora limitado a 3 tentativas + parada imediata em
@@ -568,9 +578,17 @@ export function usePipeline(
       if (document.visibilityState === "visible") {
         const elapsed = Date.now() - lastVisibleRef.current;
         if (elapsed > 60_000) {
-            withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline").catch((err) => {
-            console.warn("[usePipeline] reload por visibility falhou:", err);
-          });
+            withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline")
+              .then(() => {
+                // Recarga por visibility deu certo → remove banner "reconectando…".
+                markLoadSuccess();
+              })
+              .catch((err) => {
+                console.warn("[usePipeline] reload por visibility falhou:", err);
+                if (leadsRef.current.length > 0 && lastSuccessAtRef.current) {
+                  setStaleSince(lastSuccessAtRef.current);
+                }
+              });
         }
       } else {
         lastVisibleRef.current = Date.now();
@@ -578,7 +596,45 @@ export function usePipeline(
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [userId, loadLeads, withTimeout, isAdmin]);
+  }, [userId, loadLeads, withTimeout, isAdmin, markLoadSuccess]);
+
+  // Recarga compartilhada (usada pelo botão "Atualizar agora" e pelo auto-retry).
+  const performReload = useCallback(async () => {
+    setError(null);
+    // allSettled: recarga não pode lançar e quebrar o caller.
+    // Etapas/segmentos (leves) antes dos leads (pesado) para não saturar a conexão.
+    const [stagesResult] = await Promise.allSettled([
+      withTimeout(loadStages(), 8_000, "Etapas do pipeline"),
+      withTimeout(loadSegmentos(), 6_000, "Segmentos do pipeline"),
+    ]);
+    const [leadsResult] = await Promise.allSettled([
+      withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline"),
+    ]);
+    const criticalOk =
+      stagesResult.status === "fulfilled" && leadsResult.status === "fulfilled";
+    if (criticalOk) {
+      markLoadSuccess();
+    } else if (leadsRef.current.length > 0 && lastSuccessAtRef.current) {
+      setStaleSince(lastSuccessAtRef.current);
+    }
+    return criticalOk;
+  }, [loadStages, loadSegmentos, loadLeads, withTimeout, isAdmin, markLoadSuccess]);
+
+  // Rede de segurança: enquanto o banner "reconectando…" estiver ativo e o
+  // backend não estiver claramente caído, tenta recarregar sozinho a cada 45s
+  // até voltar a ter sucesso. Assim o banner se auto-resolve sem clique manual.
+  useEffect(() => {
+    if (!staleSince || degraded) return;
+    let cancelled = false;
+    const id = setInterval(() => {
+      if (cancelled) return;
+      void performReload();
+    }, 45_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [staleSince, degraded, performReload]);
 
   const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
     if (!user) return;
@@ -864,13 +920,21 @@ export function usePipeline(
       // allSettled: recarga manual não pode lançar e quebrar o caller.
       // Mesma ordenação da carga inicial: etapas/segmentos (leves) antes dos
       // leads (pesado) para não saturar a conexão e perder as colunas.
-      await Promise.allSettled([
+      const [stagesResult] = await Promise.allSettled([
         withTimeout(loadStages(), 8_000, "Etapas do pipeline"),
         withTimeout(loadSegmentos(), 6_000, "Segmentos do pipeline"),
       ]);
-      await Promise.allSettled([
+      const [leadsResult] = await Promise.allSettled([
         withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline"),
       ]);
-    }, [loadStages, loadSegmentos, loadLeads, withTimeout, isAdmin]),
+      // Só limpa o banner "reconectando…" quando as queries críticas voltaram.
+      const criticalOk =
+        stagesResult.status === "fulfilled" && leadsResult.status === "fulfilled";
+      if (criticalOk) {
+        markLoadSuccess();
+      } else if (leadsRef.current.length > 0 && lastSuccessAtRef.current) {
+        setStaleSince(lastSuccessAtRef.current);
+      }
+    }, [loadStages, loadSegmentos, loadLeads, withTimeout, isAdmin, markLoadSuccess]),
   };
 }
