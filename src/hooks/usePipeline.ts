@@ -5,6 +5,7 @@ import { getManagedTeamProfileIds, resolveProfileIds } from "@/hooks/useAuthUser
 import { useUserRole } from "@/hooks/useUserRole";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
 import { withTimeout as withTimeoutLib } from "@/lib/queryTimeout";
+import { useBackendHealth } from "@/hooks/useBackendHealth";
 import { toast } from "sonner";
 
 export interface PipelineStage {
