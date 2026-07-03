@@ -77,7 +77,7 @@ export function usePipeline(
 ) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const { isGestor, isAdmin: rawIsAdmin, isDiretor } = useUserRole();
+  const { isGestor, isAdmin: rawIsAdmin, isDiretor, loading: roleLoading } = useUserRole();
   // Diretoria tem visão de escritório equivalente ao CEO: trata diretor como
   // admin para escopo de leitura do pipeline (todos os leads, sem filtro por time).
   const isAdmin = rawIsAdmin || isDiretor;
@@ -203,6 +203,10 @@ export function usePipeline(
 
   const loadLeads = useCallback(async () => {
     if (!userId) return;
+    // Aguarda a role antes de buscar leads. Sem isso, CEO/Admin abre a tela
+    // primeiro como "corretor" por alguns ms, a query volta 0 e a chamada
+    // correta de CEO pode ser descartada pelo guard de concorrência.
+    if (roleLoading) return;
     if (loadingLeadsRef.current) return; // prevent concurrent loads
     loadingLeadsRef.current = true;
     try {
@@ -388,13 +392,13 @@ export function usePipeline(
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [userId, isGestor, isAdmin, shouldHideLeadFromPipeline, scopeKey]);
+  }, [userId, isGestor, isAdmin, roleLoading, shouldHideLeadFromPipeline, scopeKey]);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
 
     setError(null);
-    setLoading(prev => (stagesRef.current.length === 0 && leadsRef.current.length === 0 && segmentosRef.current.length === 0 ? true : prev));
+    setLoading(prev => (stagesRef.current.length === 0 || leadsRef.current.length === 0 ? true : prev));
 
     let cancelled = false;
 
@@ -417,9 +421,8 @@ export function usePipeline(
     // Sem isso, leads chegam antes e são classificados/exibidos com filtro
     // vazio → "50 desatualizados" piscando até stages chegarem.
     (async () => {
-      // CRÍTICO: NÃO bloqueamos loadLeads em roleLoading. Se role demora/falha,
-      // o corretor ainda enxerga o próprio pipeline (fallback isAdmin=false/isGestor=false).
-      // Re-run automático acontece quando roleLoading vira false (deps inclui roleLoading).
+      // CRÍTICO: loadLeads aguarda roleLoading=false. Sem isso CEO/Admin pode
+      // carregar como corretor na primeira render e ficar com 0 leads.
       // ORDEM DE REDE: etapas/segmentos PRIMEIRO (queries leves e críticas),
       // depois os leads (query pesada, principalmente p/ CEO que traz a empresa
       // inteira). Rodar tudo em paralelo saturava a conexão e derrubava as
@@ -466,7 +469,7 @@ export function usePipeline(
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [userId, pipelineTipo, loadStages, loadSegmentos, loadLeads, withTimeout]);
+  }, [userId, pipelineTipo, loadStages, loadSegmentos, loadLeads, withTimeout, roleLoading]);
 
   // NOTA: o auto-retry de 4s foi removido nesta rodada (Fase 3 / Item 2).
   // Com runQueryWithRetry agora limitado a 3 tentativas + parada imediata em
