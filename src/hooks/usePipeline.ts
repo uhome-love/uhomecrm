@@ -420,11 +420,19 @@ export function usePipeline(
       // CRÍTICO: NÃO bloqueamos loadLeads em roleLoading. Se role demora/falha,
       // o corretor ainda enxerga o próprio pipeline (fallback isAdmin=false/isGestor=false).
       // Re-run automático acontece quando roleLoading vira false (deps inclui roleLoading).
-      const [stagesResult, segmentosResult, leadsResult] = await Promise.allSettled([
+      // ORDEM DE REDE: etapas/segmentos PRIMEIRO (queries leves e críticas),
+      // depois os leads (query pesada, principalmente p/ CEO que traz a empresa
+      // inteira). Rodar tudo em paralelo saturava a conexão e derrubava as
+      // requisições pequenas com "Failed to fetch" → board sem colunas = "sem leads".
+      const [stagesResult, segmentosResult] = await Promise.allSettled([
         withTimeout(loadStages(), 8_000, "Etapas do pipeline"),
         withTimeout(loadSegmentos(), 6_000, "Segmentos do pipeline"),
-        withTimeout(loadLeads(), 12_000, "Leads do pipeline"),
       ]);
+      if (cancelled) return;
+
+      const leadsResult = (await Promise.allSettled([
+        withTimeout(loadLeads(), 12_000, "Leads do pipeline"),
+      ]))[0];
       if (cancelled) return;
 
       const all = [stagesResult, segmentosResult, leadsResult];
