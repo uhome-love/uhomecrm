@@ -843,9 +843,13 @@ export function usePipeline(
     reload: useCallback(async () => {
       setError(null);
       // allSettled: recarga manual não pode lançar e quebrar o caller.
+      // Mesma ordenação da carga inicial: etapas/segmentos (leves) antes dos
+      // leads (pesado) para não saturar a conexão e perder as colunas.
       await Promise.allSettled([
         withTimeout(loadStages(), 8_000, "Etapas do pipeline"),
         withTimeout(loadSegmentos(), 6_000, "Segmentos do pipeline"),
+      ]);
+      await Promise.allSettled([
         withTimeout(loadLeads(), 12_000, "Leads do pipeline"),
       ]);
     }, [loadStages, loadSegmentos, loadLeads, withTimeout]),
