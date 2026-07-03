@@ -638,7 +638,7 @@ Deno.serve(async (req) => {
                 // descartados / oferta_ativa_lista / legacy → reativa e manda pra roleta
                 // pipeline_ativo / visita_amanha → mantém corretor, só notifica
                 const audSrc = String(metaDispatch.audience_source || "legacy");
-                const routeToRoleta = audSrc === "descartados" || audSrc === "oferta_ativa_lista" || audSrc === "legacy";
+                const routeToRoleta = audSrc === "descartados" || audSrc === "oferta_ativa_lista" || audSrc === "legacy" || audSrc === "combo";
                 const justNotifyCorretor = audSrc === "pipeline_ativo" || audSrc === "visita_amanha";
 
                 // Reativa lead se respondeu SIM E origem permite reengajamento → SEMPRE Fila do CEO
