@@ -436,7 +436,14 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium truncate">{l.nome || "Sem nome"}</span>
-                            <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.empreendimento || "—"}</Badge>
+                            {(() => {
+                              const emp = String(l.empreendimento || "").trim() || reengEmpreendimento[l.id];
+                              return emp ? (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1.5">{emp}</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1.5">—</Badge>
+                              );
+                            })()}
                             {l.origem && <Badge variant="outline" className="text-[10px] h-4 px-1.5">{l.origem}</Badge>}
                           </div>
                           <p className="text-[11px] text-muted-foreground mt-0.5">
