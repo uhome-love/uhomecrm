@@ -133,6 +133,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
     setLoading(true);
     setAllLeads([]);
     setCampanhas([]);
+    setReengEmpreendimento({});
     (async () => {
       const [leadsRes, segRes, campRes] = await Promise.all([
         supabase
