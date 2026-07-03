@@ -468,8 +468,7 @@ export function usePipeline(
         .filter((x) => x.r.status === "rejected");
 
       if (failed.length === 0) {
-        lastSuccessAtRef.current = new Date();
-        setStaleSince(null);
+        markLoadSuccess();
       } else {
         console.warn("[usePipeline] Partial load failure:", failed.map((f) => f.name));
         const criticalFailed = failed.some((f) => f.name === "stages" || f.name === "leads");
