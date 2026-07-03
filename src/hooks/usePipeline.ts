@@ -113,6 +113,42 @@ export function usePipeline(
   // Guard against concurrent loadLeads calls
   const loadingLeadsRef = useRef(false);
 
+  // Reaproveita helper centralizado em @/lib/queryTimeout para garantir
+  // comportamento idêntico em todos os hooks (mesma label/erro/Sentry-grouping).
+  const withTimeout = useCallback(
+    <T,>(promise: Promise<T>, ms: number, label: string) => withTimeoutLib(promise, ms, label),
+    []
+  );
+
+  // Refs com snapshot atual de cada coleção. Usadas dentro de callbacks
+  // estáveis para evitar loops de re-render (não entram nas deps).
+  const stagesRef = useRef<PipelineStage[]>([]);
+  const segmentosRef = useRef<PipelineSegmento[]>([]);
+  const leadsRef = useRef<PipelineLead[]>([]);
+  useEffect(() => { stagesRef.current = stages; }, [stages]);
+  useEffect(() => { segmentosRef.current = segmentos; }, [segmentos]);
+  useEffect(() => { leadsRef.current = leads; }, [leads]);
+
+  // Memoizado: só muda quando a lista de stages muda (não a cada render).
+  // Sem isso, `shouldHideLeadFromPipeline` mudava a cada render → loadLeads
+  // mudava → useEffect refazia fetch infinitamente.
+  const discardStageIds = useMemo(
+    () => new Set(stages.filter((stage) => stage.tipo === "descarte").map((stage) => stage.id)),
+    [stages]
+  );
+
+  const shouldHideLeadFromPipeline = useCallback((lead: Partial<PipelineLead> | null | undefined) => {
+    if (!lead) return false;
+
+    // Esconder APENAS se o lead estiver realmente em etapa de descarte.
+    // NÃO esconder por texto antigo em motivo_descarte — leads reengajados
+    // (ex: Átrio) voltam para "Novo Lead" mas mantêm o motivo histórico,
+    // e isso fazia eles sumirem do pipeline mesmo já reativos.
+    if (lead.stage_id && discardStageIds.has(lead.stage_id)) return true;
+
+    return false;
+  }, [discardStageIds]);
+
   const mergeVisibleLeads = useCallback((rows: PipelineLead[]) => {
     const seenIds = new Set<string>();
     return rows.filter(l => {
@@ -163,42 +199,6 @@ export function usePipeline(
       console.warn("[usePipeline] hydrateBrokerNames failed — mantendo kanban utilizável", err);
     }
   }, [isGestor, isAdmin]);
-
-  // Reaproveita helper centralizado em @/lib/queryTimeout para garantir
-  // comportamento idêntico em todos os hooks (mesma label/erro/Sentry-grouping).
-  const withTimeout = useCallback(
-    <T,>(promise: Promise<T>, ms: number, label: string) => withTimeoutLib(promise, ms, label),
-    []
-  );
-
-  // Refs com snapshot atual de cada coleção. Usadas dentro de callbacks
-  // estáveis para evitar loops de re-render (não entram nas deps).
-  const stagesRef = useRef<PipelineStage[]>([]);
-  const segmentosRef = useRef<PipelineSegmento[]>([]);
-  const leadsRef = useRef<PipelineLead[]>([]);
-  useEffect(() => { stagesRef.current = stages; }, [stages]);
-  useEffect(() => { segmentosRef.current = segmentos; }, [segmentos]);
-  useEffect(() => { leadsRef.current = leads; }, [leads]);
-
-  // Memoizado: só muda quando a lista de stages muda (não a cada render).
-  // Sem isso, `shouldHideLeadFromPipeline` mudava a cada render → loadLeads
-  // mudava → useEffect refazia fetch infinitamente.
-  const discardStageIds = useMemo(
-    () => new Set(stages.filter((stage) => stage.tipo === "descarte").map((stage) => stage.id)),
-    [stages]
-  );
-
-  const shouldHideLeadFromPipeline = useCallback((lead: Partial<PipelineLead> | null | undefined) => {
-    if (!lead) return false;
-
-    // Esconder APENAS se o lead estiver realmente em etapa de descarte.
-    // NÃO esconder por texto antigo em motivo_descarte — leads reengajados
-    // (ex: Átrio) voltam para "Novo Lead" mas mantêm o motivo histórico,
-    // e isso fazia eles sumirem do pipeline mesmo já reativos.
-    if (lead.stage_id && discardStageIds.has(lead.stage_id)) return true;
-
-    return false;
-  }, [discardStageIds]);
 
   const loadStages = useCallback(async () => {
     const { data, error } = await runQueryWithRetry<any[]>(() =>
