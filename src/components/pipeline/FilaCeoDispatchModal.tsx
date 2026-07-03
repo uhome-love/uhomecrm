@@ -199,6 +199,56 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
       console.info(`[FilaCeoDispatchModal] Fila CEO: ${leadsList.length} leads (${novosCount} novos, ${reengCount} reengajamento)`);
       setLoading(false);
+
+      // Para leads de reengajamento SEM empreendimento, descobre o empreendimento
+      // pelo template do disparo que originou a reativação (Lake Baikal, Casa Tua, etc.)
+      const reengSemEmp = leadsList.filter(
+        (l) => !!l.reativado_por_nutricao && !String(l.empreendimento || "").trim()
+      );
+      if (reengSemEmp.length > 0) {
+        const leadIds = reengSemEmp.map((l) => l.id);
+        const { data: disparos } = await supabase
+          .from("reengajamento_meta_disparos")
+          .select("lead_id, template_name, phone, created_at")
+          .in("lead_id", leadIds)
+          .order("created_at", { ascending: false });
+
+        const byLead: Record<string, string> = {};
+        // 1ª passada: casa por lead_id (disparo mais recente já vem primeiro)
+        for (const d of (disparos || []) as any[]) {
+          const emp = empreendimentoFromTemplate(d.template_name);
+          if (emp && d.lead_id && !byLead[d.lead_id]) byLead[d.lead_id] = emp;
+        }
+
+        // Fallback por telefone (últimos 10 dígitos) p/ leads criados como "remetente novo"
+        const semMatch = reengSemEmp.filter((l) => !byLead[l.id] && l.telefone);
+        if (semMatch.length > 0) {
+          const results = await Promise.all(
+            semMatch.map(async (l) => {
+              const tail = String(l.telefone).replace(/\D/g, "").slice(-10);
+              if (!tail) return null;
+              const { data } = await supabase
+                .from("reengajamento_meta_disparos")
+                .select("template_name")
+                .ilike("phone", `%${tail}%`)
+                .order("created_at", { ascending: false })
+                .limit(5);
+              for (const d of (data || []) as any[]) {
+                const emp = empreendimentoFromTemplate(d.template_name);
+                if (emp) return { id: l.id, emp };
+              }
+              return null;
+            })
+          );
+          for (const r of results) {
+            if (r && !byLead[r.id]) byLead[r.id] = r.emp;
+          }
+        }
+
+        if (!cancelled && Object.keys(byLead).length > 0) {
+          setReengEmpreendimento(byLead);
+        }
+      }
     })();
     return () => { cancelled = true; };
   }, [open]);
