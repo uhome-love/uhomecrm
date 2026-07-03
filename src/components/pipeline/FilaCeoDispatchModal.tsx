@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2, Rocket, AlertTriangle, Sparkles, HeartHandshake } from "lucide-react";
 import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
+import { empreendimentoFromTemplate } from "@/lib/reengajamentoEmpreendimento";
 
 interface CampanhaMap {
   empreendimento: string;
