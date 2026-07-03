@@ -355,7 +355,7 @@ export function usePipeline(
       allRows.push(...batch);
 
       const progressiveLeads = mergeVisibleLeads(allRows);
-      if (progressiveLeads.length > 0 || leadsRef.current.length === 0) {
+      if (from === 0 && (progressiveLeads.length > 0 || leadsRef.current.length === 0)) {
         setLeads(progressiveLeads);
         if (stagesRef.current.length > 0) setLoading(false);
       }
@@ -448,7 +448,7 @@ export function usePipeline(
       if (cancelled) return;
 
       const leadsResult = (await Promise.allSettled([
-        withTimeout(loadLeads(), 12_000, "Leads do pipeline"),
+        withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline"),
       ]))[0];
       if (cancelled) return;
 
@@ -566,7 +566,7 @@ export function usePipeline(
       if (document.visibilityState === "visible") {
         const elapsed = Date.now() - lastVisibleRef.current;
         if (elapsed > 60_000) {
-          withTimeout(loadLeads(), 12_000, "Leads do pipeline").catch((err) => {
+            withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline").catch((err) => {
             console.warn("[usePipeline] reload por visibility falhou:", err);
           });
         }
@@ -576,7 +576,7 @@ export function usePipeline(
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [userId, loadLeads, withTimeout]);
+  }, [userId, loadLeads, withTimeout, isAdmin]);
 
   const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
     if (!user) return;
@@ -867,8 +867,8 @@ export function usePipeline(
         withTimeout(loadSegmentos(), 6_000, "Segmentos do pipeline"),
       ]);
       await Promise.allSettled([
-        withTimeout(loadLeads(), 12_000, "Leads do pipeline"),
+        withTimeout(loadLeads(), isAdmin ? 45_000 : 12_000, "Leads do pipeline"),
       ]);
-    }, [loadStages, loadSegmentos, loadLeads, withTimeout]),
+    }, [loadStages, loadSegmentos, loadLeads, withTimeout, isAdmin]),
   };
 }
