@@ -302,7 +302,9 @@ export default function PipelineKanban() {
 
       return map;
     },
-    enabled: leadIds.length > 0,
+    // Só busca depois que a lista de leads estabiliza (!pipeline.loading): evita
+    // refetch a cada página progressiva e não concorre com as requisições de leads.
+    enabled: leadIds.length > 0 && !pipeline.loading,
     staleTime: 10_000,
     refetchOnWindowFocus: !isCeoView,
     placeholderData: keepPreviousData,
