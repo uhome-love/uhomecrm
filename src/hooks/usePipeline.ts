@@ -491,7 +491,7 @@ export function usePipeline(
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [userId, pipelineTipo, loadStages, loadSegmentos, loadLeads, withTimeout, roleLoading]);
+  }, [userId, pipelineTipo, loadStages, loadSegmentos, loadLeads, withTimeout, roleLoading, markLoadSuccess]);
 
   // NOTA: o auto-retry de 4s foi removido nesta rodada (Fase 3 / Item 2).
   // Com runQueryWithRetry agora limitado a 3 tentativas + parada imediata em
