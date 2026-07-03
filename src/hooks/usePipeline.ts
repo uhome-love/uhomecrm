@@ -78,6 +78,9 @@ export function usePipeline(
 ) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
+  // Ping leve do backend: usado só para não disparar auto-retry às cegas quando
+  // a conexão está claramente caída (evita marteladas na rede).
+  const { degraded } = useBackendHealth();
   const { isGestor, isAdmin: rawIsAdmin, isDiretor, loading: roleLoading } = useUserRole();
   // Diretoria tem visão de escritório equivalente ao CEO: trata diretor como
   // admin para escopo de leitura do pipeline (todos os leads, sem filtro por time).
