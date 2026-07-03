@@ -218,7 +218,9 @@ export function usePipeline(
     const filtered = (data || [] as any[]).filter((s: any) => s.pipeline_tipo === pipelineTipo);
     // Só substitui se a query realmente retornou algo OU se ainda não temos nada.
     // Isso evita zerar a UI durante uma resposta vazia anômala.
-    if (filtered.length > 0 || stagesRef.current.length === 0) {
+    const currentKey = stagesRef.current.map((s) => `${s.id}:${s.ordem}:${s.tipo}:${s.nome}`).join("|");
+    const nextKey = filtered.map((s: any) => `${s.id}:${s.ordem}:${s.tipo}:${s.nome}`).join("|");
+    if ((filtered.length > 0 || stagesRef.current.length === 0) && currentKey !== nextKey) {
       setStages(filtered.map((s: any) => ({
         id: s.id,
         nome: s.nome,
@@ -355,7 +357,7 @@ export function usePipeline(
       allRows.push(...batch);
 
       const progressiveLeads = mergeVisibleLeads(allRows);
-      if (from === 0 && (progressiveLeads.length > 0 || leadsRef.current.length === 0)) {
+      if (from === 0 && leadsRef.current.length === 0 && progressiveLeads.length > 0) {
         setLeads(progressiveLeads);
         if (stagesRef.current.length > 0) setLoading(false);
       }
