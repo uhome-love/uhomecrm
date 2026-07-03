@@ -279,7 +279,7 @@ export default function PipelineKanban() {
             .eq("status", "pendente")
             .order("vence_em", { ascending: true })
             .order("hora_vencimento", { ascending: true }),
-        { chunkSize: 50, minChunkSize: 10 }
+        { chunkSize: isCeoView ? 200 : 80, minChunkSize: 20, concurrency: isCeoView ? 2 : 4 }
       );
 
       for (const row of rows) {
@@ -304,7 +304,7 @@ export default function PipelineKanban() {
     },
     enabled: leadIds.length > 0,
     staleTime: 10_000,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: !isCeoView,
     placeholderData: keepPreviousData,
   });
 
