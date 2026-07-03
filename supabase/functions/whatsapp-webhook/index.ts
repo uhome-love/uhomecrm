@@ -1046,7 +1046,7 @@ async function handleUnknownReply(
         nome: oaLead.nome || contactName || "Lead Reativado",
         telefone: oaLead.telefone || from,
         email: oaLead.email || null,
-        empreendimento: oaLead.empreendimento || null,
+        empreendimento: oaLead.empreendimento || reengEmp || null,
         segmento_id: oaLead.segmento_id || null,
         origem: "Reengajamento (Nutrição)",
         reativado_por_nutricao: true,
