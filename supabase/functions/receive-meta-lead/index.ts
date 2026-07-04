@@ -381,6 +381,9 @@ Deno.serve(async (req) => {
       "1253040266458947": "Casa Tua",
       // Mapeamento por NOME de formulário (Meta envia form_name) → empreendimento limpo
       "Uhome - Ápice - Bairro Las Casas": "Ápice Las Casas",
+      "Uhome - Lake Baycal": "Lake Baikal",
+      "Uhome - Lake Baikal": "Lake Baikal",
+      "Uhome - Lake Baical": "Lake Baikal",
     };
 
     // Resolve form name from ID map, then fallback to raw ID
@@ -466,6 +469,12 @@ Deno.serve(async (req) => {
         .replace(/\s*\((?:Imagem|Video|Vídeo)[^)]*\)/gi, "")
         .replace(/\s*-\s*(Uhome|Venda|Locação|Locacao)$/i, "")
         .trim();
+    }
+
+    // Canonicaliza variações de "Lake Baikal" (Baikal/Baical/Baycal, com/sem prefixo "Uhome - ")
+    // Garante roteamento correto para o segmento S4 - Alto Padrão via roleta_campanhas.
+    if (empreendimento && /\bba[iy][kc]a?l\b/i.test(empreendimento)) {
+      empreendimento = "Lake Baikal";
     }
 
     L.info("Parsed", { name, telefone, campaignId, propertyCode, empreendimento, externalLeadId, isTestLead });

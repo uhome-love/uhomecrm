@@ -1,37 +1,53 @@
-# Corrigir banner "reconectando" preso na visão CEO
+# Lake Baikal (Meta) → Segmento Alto Padrão 100%
 
-## Diagnóstico
+## Objetivo
+Todo lead que entrar pelo anúncio do Meta com o formulário **"Uhome - Lake Baycal"** deve:
+1. Ser reconhecido como empreendimento **Lake Baikal**
+2. Cair no segmento **S4 - Alto Padrão**
 
-O aviso "Dados de há 7min — reconectando…" é o componente `StaleDataBadge`, controlado pelo estado `staleSince` no hook `src/hooks/usePipeline.ts`. Os leads **estão carregando normalmente** (a tela mostra 1.662 leads e os KPIs preenchidos) — o problema é que o banner **nunca some**, mesmo depois de recarregar.
+## O que já está correto (não mexer)
+- `roleta_campanhas` já tem a linha **Lake Baikal → S4 - Alto Padrão**.
+- A cadeia de resolução `roleta_campanhas → roleta_segmentos → pipeline_segmentos` funciona quando o empreendimento resolvido é exatamente "Lake Baikal".
+- `src/lib/empreendimentos.ts` já lista "Lake Baikal".
 
-Causa raiz: `staleSince` só é **limpo** (`setStaleSince(null)`) dentro do `useEffect` de carga inicial (linha ~465). Esse efeito roda essencialmente uma vez. Os outros caminhos que recarregam os leads **não limpam** o banner nem atualizam o marcador de sucesso:
+## O problema
+O Meta envia `form_name = "Uhome - Lake Baycal"`. Hoje:
+- Não existe entrada no `META_FORM_ID_MAP` para esse nome.
+- A normalização remove apenas o sufixo `" - Uhome"`, não o prefixo `"Uhome - "`, nem corrige a grafia "Baycal".
+- Resultado: empreendimento fica `"Uhome - Lake Baycal"`, o `ilike('%Uhome - Lake Baycal%')` não bate com a linha "Lake Baikal" da roleta, e o lead entra **sem segmento**.
 
-- `reload()` (botão **"Atualizar agora"**, linha ~862): recarrega etapas/segmentos/leads via `Promise.allSettled`, mas **nunca** chama `setStaleSince(null)` nem atualiza `lastSuccessAtRef` em caso de sucesso. Ou seja, clicar em "Atualizar agora" busca os dados de novo, mas o banner continua lá.
-- O reload por troca de aba (visibility, linha ~571): chama `loadLeads()` direto e também não mexe em `staleSince`.
+## Alterações
 
-Como a query de leads do CEO é pesada (empresa inteira, ~1.800 leads paginados), basta uma falha/timeout de uma recarga em segundo plano — depois de um sucesso inicial — para `staleSince` ser setado. A partir daí ele fica preso para sempre.
+### 1. Mapa de formulário (edge + front)
+Adicionar o nome do formulário mapeado para o empreendimento canônico, nos dois lugares que precisam ficar sincronizados:
+- `supabase/functions/receive-meta-lead/index.ts` (const `META_FORM_ID_MAP` interno)
+- `src/lib/metaFormIdMap.ts` (`META_FORM_ID_MAP`)
 
-## Correção (somente frontend)
+Entradas (cobrindo variações de grafia):
+```
+"Uhome - Lake Baycal": "Lake Baikal",
+"Uhome - Lake Baikal": "Lake Baikal",
+"Uhome - Lake Baical": "Lake Baikal",
+```
 
-Em `src/hooks/usePipeline.ts`:
+### 2. Canonicalização robusta por nome (rede de segurança)
+No `receive-meta-lead/index.ts`, logo após a etapa de normalização do `empreendimento` (onde hoje removem sufixos), adicionar uma regra que detecta qualquer variante de Baikal e força o nome canônico:
 
-1. **Centralizar o "marcar sucesso"**: criar um helper interno `markLoadSuccess()` que faz `lastSuccessAtRef.current = new Date()` e `setStaleSince(null)`, e usá-lo no `useEffect` inicial no lugar do código atual.
+```
+// Canonicaliza variações de "Lake Baikal" (Baikal/Baical/Baycal, com/sem prefixo Uhome)
+if (/\bl(a|á)ke?\s*ba[iy]?ca?l\b/i.test(empreendimento) || /\bba[iy]ca?l\b/i.test(empreendimento)) {
+  empreendimento = "Lake Baikal";
+}
+```
+(O regex final será ajustado/validado para casar "Lake Baycal", "Lake Baical", "Lake Baikal", "Baikal", "Baical" e não gerar falso-positivo em outros empreendimentos.)
 
-2. **`reload()`**: após os `Promise.allSettled`, avaliar os resultados. Se etapas e leads tiverem sucesso, chamar `markLoadSuccess()`. Se falharem mas houver cache, atualizar `staleSince` para o último sucesso (mesmo critério do efeito inicial). Assim "Atualizar agora" realmente remove o banner quando os dados voltam.
-
-3. **Reload por visibility** (linha ~565): ao concluir `loadLeads()` com sucesso, chamar `markLoadSuccess()`; em falha com cache, sinalizar stale de forma consistente.
-
-4. **Rede de segurança (opcional, recomendada)**: quando `staleSince` estiver ativo, agendar uma re-tentativa automática leve (ex.: um `setTimeout`/intervalo de ~30–60s) que chama `reload()` até voltar a ter sucesso, para o banner se auto-resolver sem o usuário precisar clicar. Já existe um `useBackendHealth` que confirma se o backend está vivo; podemos disparar a re-tentativa só quando o ping estiver saudável, evitando marteladas na conexão.
+Isso garante que, mesmo se o Meta mudar levemente o texto (prefixo, maiúsculas, grafia), o empreendimento vira "Lake Baikal", que já resolve para S4 - Alto Padrão.
 
 ## Validação
+1. `tsgo` / build limpo.
+2. Teste do edge function via chamada direta simulando o payload do Meta com `form_name = "Uhome - Lake Baycal"` (e uma variação "Uhome - Lake Baical"), com telefone de teste, verificando na resposta/no banco que o lead foi criado com `empreendimento = "Lake Baikal"` e `segmento_id` = id de "S4 - Alto Padrão" (`5e930c09-634d-40e1-9ccc-981b0a4eae74`).
+3. Conferir no log que a resolução de segmento não caiu em "Avulso - Meta Ads".
 
-- Reproduzir na visão CEO em `/pipeline-leads` via navegador autenticado (Playwright), confirmando que os leads aparecem.
-- Forçar o estado `staleSince` (ou aguardar uma recarga) e verificar que:
-  - clicar em **"Atualizar agora"** remove o banner quando a recarga tem sucesso;
-  - a re-tentativa automática (se implementada) faz o banner sumir sozinho em até ~1 min;
-  - o banner só permanece enquanto realmente houver falha de recarga.
-- Confirmar no console que não há loop de "Partial load failure".
-
-## Escopo
-
-Mudança isolada em `src/hooks/usePipeline.ts` (lógica de estado do banner). Sem alterações de schema, RLS ou de outras telas. A performance da query pesada do CEO não é alterada aqui — se após esta correção o banner ainda piscar por timeouts frequentes, tratamos performance/índices em um passo separado.
+## Fora de escopo
+- Nenhuma mudança de schema ou de UI.
+- Não altero a lógica da roleta nem os segmentos existentes.
