@@ -381,6 +381,9 @@ Deno.serve(async (req) => {
       "1253040266458947": "Casa Tua",
       // Mapeamento por NOME de formulário (Meta envia form_name) → empreendimento limpo
       "Uhome - Ápice - Bairro Las Casas": "Ápice Las Casas",
+      "Uhome - Lake Baycal": "Lake Baikal",
+      "Uhome - Lake Baikal": "Lake Baikal",
+      "Uhome - Lake Baical": "Lake Baikal",
     };
 
     // Resolve form name from ID map, then fallback to raw ID
