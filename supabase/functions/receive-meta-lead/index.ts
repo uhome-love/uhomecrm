@@ -473,7 +473,7 @@ Deno.serve(async (req) => {
 
     // Canonicaliza variações de "Lake Baikal" (Baikal/Baical/Baycal, com/sem prefixo "Uhome - ")
     // Garante roteamento correto para o segmento S4 - Alto Padrão via roleta_campanhas.
-    if (empreendimento && /\bba[iy]ca?l\b/i.test(empreendimento)) {
+    if (empreendimento && /\bba[iy][kc]a?l\b/i.test(empreendimento)) {
       empreendimento = "Lake Baikal";
     }
 
