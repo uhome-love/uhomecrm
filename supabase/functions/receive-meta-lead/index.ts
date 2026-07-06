@@ -971,31 +971,76 @@ Deno.serve(async (req) => {
       created_by: "00000000-0000-0000-0000-000000000000",
     }).then(r => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });
 
-    // ── Auto-distribute via roleta (with retry) ──
-    const distribution = await distributeLeadDirect(supabaseUrl, serviceKey, insertedLead.id, traceId, L);
-    if (!distribution.success) {
-      // BLOCO 3: feature flag META_FALLBACK_FILA_CEO (default true / ausente = true / "false" desativa).
-      // Quando o fallback Fila CEO está ativo, lead órfão NÃO é erro — é estado canônico
-      // (pipeline_leads.aceite_status='pendente_distribuicao' AND corretor_id IS NULL) coberto
-      // pelo cron lead-escalation. Reclassificamos para info/business para parar falso-positivo
-      // no painel de erros. Se o flag for explicitamente "false", volta a logar como error/integration.
-      const fallbackFilaCeo = (Deno.env.get("META_FALLBACK_FILA_CEO") ?? "true").toLowerCase() !== "false";
-      if (fallbackFilaCeo) {
-        logOps("info", "business", "queued_fila_ceo", {
-          lead_id: insertedLead.id,
-          name,
-          empreendimento,
-          reason: distribution.reason || null,
-          detail: distribution.error || null,
+    // ── Atribuição direta (campanha exclusiva do Bruno) — NÃO passa pela roleta ──
+    let distribution: { success: boolean; reason?: string; error?: string } = { success: true, reason: "atribuicao_direta" };
+    if (atribuicaoDiretaBruno) {
+      const interestLabel = empreendimento || "Casa Menino Deus";
+      const todayStamp = new Date().toISOString().slice(0, 10);
+      await Promise.all([
+        supabase.from("notifications").insert({
+          user_id: corretorDiretoId,
+          tipo: "lead",
+          categoria: "lead_novo",
+          titulo: `🎯 Novo lead exclusivo! ${name}`,
+          mensagem: `${name} chegou pela campanha ${interestLabel} e foi atribuído direto a você.`,
+          dados: { pipeline_lead_id: insertedLead.id, lead_nome: name, empreendimento: interestLabel },
+          agrupamento_key: `lead_novo_${insertedLead.id}_${todayStamp}`,
+        }),
+        supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: insertedLead.id,
+          tipo: "entrada",
+          titulo: `🎯 Atribuição direta (campanha exclusiva)`,
+          descricao: `Lead atribuído diretamente sem passar pela roleta — campanha ${interestLabel}.`,
+          status: "concluida",
+          created_by: "00000000-0000-0000-0000-000000000000",
+        }),
+      ]);
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: corretorDiretoId,
+            title: "🎯 Novo lead exclusivo!",
+            body: `${name} — ${interestLabel}`,
+            url: `/pipeline-leads?lead=${insertedLead.id}`,
+          }),
         });
-      } else {
-        logOps("error", "integration", "Distribution failed after retries — lead orphaned", {
-          lead_id: insertedLead.id,
-          name,
-          empreendimento,
-          reason: distribution.reason || null,
-          detail: distribution.error || null,
-        });
+      } catch (e) { L.warn("Push error (atribuição direta)", { leadId: insertedLead.id }, e); }
+      logOps("info", "business", "lead_atribuido_direto_campanha", {
+        lead_id: insertedLead.id,
+        corretor_id: corretorDiretoId,
+        campanha: formName || campaignName,
+        empreendimento,
+      });
+      L.info("Lead atribuído direto ao Bruno (sem roleta)", { leadId: insertedLead.id, corretor: corretorDiretoId });
+    } else {
+      // ── Auto-distribute via roleta (with retry) ──
+      distribution = await distributeLeadDirect(supabaseUrl, serviceKey, insertedLead.id, traceId, L);
+      if (!distribution.success) {
+        // BLOCO 3: feature flag META_FALLBACK_FILA_CEO (default true / ausente = true / "false" desativa).
+        // Quando o fallback Fila CEO está ativo, lead órfão NÃO é erro — é estado canônico
+        // (pipeline_leads.aceite_status='pendente_distribuicao' AND corretor_id IS NULL) coberto
+        // pelo cron lead-escalation. Reclassificamos para info/business para parar falso-positivo
+        // no painel de erros. Se o flag for explicitamente "false", volta a logar como error/integration.
+        const fallbackFilaCeo = (Deno.env.get("META_FALLBACK_FILA_CEO") ?? "true").toLowerCase() !== "false";
+        if (fallbackFilaCeo) {
+          logOps("info", "business", "queued_fila_ceo", {
+            lead_id: insertedLead.id,
+            name,
+            empreendimento,
+            reason: distribution.reason || null,
+            detail: distribution.error || null,
+          });
+        } else {
+          logOps("error", "integration", "Distribution failed after retries — lead orphaned", {
+            lead_id: insertedLead.id,
+            name,
+            empreendimento,
+            reason: distribution.reason || null,
+            detail: distribution.error || null,
+          });
+        }
       }
     }
 
