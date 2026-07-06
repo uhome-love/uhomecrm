@@ -727,6 +727,22 @@ Deno.serve(async (req) => {
     if (propertyCode) obsLines.push(`Cód. Imóvel: ${propertyCode}`);
     const obsText = obsLines.length > 0 ? obsLines.join(" | ") : null;
 
+    // ── Atribuição direta: resolve gerente do Bruno via team_members ──
+    let corretorDiretoId: string | null = null;
+    let gerenteDiretoId: string | null = null;
+    if (atribuicaoDiretaBruno) {
+      corretorDiretoId = BRUNO_SCHULER_AUTH_ID;
+      const { data: tm } = await supabase
+        .from("team_members")
+        .select("gerente_id")
+        .eq("user_id", BRUNO_SCHULER_AUTH_ID)
+        .eq("status", "ativo")
+        .limit(1)
+        .maybeSingle();
+      // Se o Bruno é o próprio gestor (sem gerente acima), referencia ele mesmo.
+      gerenteDiretoId = tm?.gerente_id || BRUNO_SCHULER_AUTH_ID;
+    }
+
     // ── Register in permanent dedup BEFORE insert (prevents race condition) ──
     const { error: registryError } = await supabase
       .from("jetimob_processed")
