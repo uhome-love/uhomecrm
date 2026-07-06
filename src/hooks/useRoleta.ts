@@ -228,6 +228,9 @@ export interface RoletaFilaItem {
   janela: string;
   posicao: number;
   leads_recebidos: number | null;
+  distribuidos_roleta: number;
+  aceitos_roleta: number;
+  fora_roleta: number;
   ativo: boolean | null;
   data: string;
   corretor_nome?: string;
