@@ -788,8 +788,10 @@ Deno.serve(async (req) => {
         formulario: formName || null,
         plataforma: platform || null,
         observacoes: obsText,
-        corretor_id: null,
-        aceite_status: "pendente_distribuicao",
+        corretor_id: atribuicaoDiretaBruno ? corretorDiretoId : null,
+        gerente_id: atribuicaoDiretaBruno ? gerenteDiretoId : undefined,
+        aceite_status: atribuicaoDiretaBruno ? "aceito" : "pendente_distribuicao",
+        distribuido_em: atribuicaoDiretaBruno ? new Date().toISOString() : undefined,
         prioridade_lead: message && message.length > 10 ? "alta" : "media",
       })
       .select("id")
