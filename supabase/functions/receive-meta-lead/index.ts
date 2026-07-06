@@ -479,6 +479,21 @@ Deno.serve(async (req) => {
 
     L.info("Parsed", { name, telefone, campaignId, propertyCode, empreendimento, externalLeadId, isTestLead });
 
+    // ── Atribuição direta por campanha específica (não passa pela roleta) ──
+    // Campanha "Uhome – Casa Menino Deus (CP)" é exclusiva do Bruno Schuler.
+    // Match tolerante a acentos, hífens e caixa via normalizeTimelineText (colapsa
+    // não-alfanuméricos em espaço). Ex.: "Uhome – Casa Menino Deus (CP)" → "uhome casa menino deus cp".
+    const BRUNO_SCHULER_AUTH_ID = "fb61ecda-5c4b-49d7-bda7-ccf9b589da07";
+    const CAMPANHA_DIRETA_BRUNO_CANON = "uhome casa menino deus cp";
+    const canonFormOrCampaign = (s: string | null | undefined) =>
+      normalizeTimelineText((s || "").replace(/[^0-9a-zA-ZÀ-ÿ]+/g, " "));
+    const atribuicaoDiretaBruno =
+      canonFormOrCampaign(formName) === CAMPANHA_DIRETA_BRUNO_CANON ||
+      canonFormOrCampaign(campaignName) === CAMPANHA_DIRETA_BRUNO_CANON;
+    if (atribuicaoDiretaBruno) {
+      L.info("Campanha de atribuição direta detectada (Bruno Schuler)", { formName, campaignName });
+    }
+
     if (isTestLead) {
       L.info("Ignored test payload", { name, email, externalLeadId });
       return new Response(
