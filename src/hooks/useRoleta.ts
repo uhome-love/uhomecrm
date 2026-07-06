@@ -228,6 +228,9 @@ export interface RoletaFilaItem {
   janela: string;
   posicao: number;
   leads_recebidos: number | null;
+  distribuidos_roleta: number;
+  aceitos_roleta: number;
+  fora_roleta: number;
   ativo: boolean | null;
   data: string;
   corretor_nome?: string;
@@ -364,39 +367,91 @@ export function useRoleta() {
       .in("id", profileIds);
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
-    // Get auth user IDs to count leads currently held by each corretor that were distributed via roleta today.
-    // Counting via pipeline_leads.corretor_id (current owner) instead of distribuicao_historico
-    // ensures that reverted/redistributed leads no longer inflate the previous corretor's count.
+    // Get auth user IDs for these corretores.
     const authUserIds = (profiles || []).map(p => p.user_id).filter(Boolean) as string[];
     // BUG5 fix: use BRT date for lead count, not local timezone
     const todayStart = hoje + "T00:00:00-03:00";
 
+    // Leads currently held by each corretor that entered the carteira today (any source).
     const { data: todayLeads } = authUserIds.length > 0
       ? await supabase
           .from("pipeline_leads")
-          .select("corretor_id")
+          .select("id, corretor_id")
           .in("corretor_id", authUserIds)
           .gte("distribuido_em", todayStart)
       : { data: [] };
 
-    // Build count map: auth_user_id → count
-    const authLeadCount = new Map<string, number>();
+    // Owned-today lead ids per auth user.
+    const ownedByAuth = new Map<string, Set<string>>();
     for (const l of todayLeads || []) {
-      if (!l.corretor_id) continue;
-      authLeadCount.set(l.corretor_id, (authLeadCount.get(l.corretor_id) || 0) + 1);
-    }
-    // Map profile_id → real lead count
-    const profileLeadCount = new Map<string, number>();
-    for (const p of profiles || []) {
-      profileLeadCount.set(p.id, p.user_id ? (authLeadCount.get(p.user_id) || 0) : 0);
+      if (!l.corretor_id || !l.id) continue;
+      if (!ownedByAuth.has(l.corretor_id)) ownedByAuth.set(l.corretor_id, new Set());
+      ownedByAuth.get(l.corretor_id)!.add(l.id as string);
     }
 
-    const enriched = filaData.map(f => ({
-      ...f,
-      leads_recebidos: f.corretor_id ? (profileLeadCount.get(f.corretor_id) ?? 0) : 0,
-      corretor_nome: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.nome || "Corretor" : "Corretor",
-      corretor_avatar: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.avatar_url || null : null,
-    }));
+    // Real roleta distribution events for today (source of truth).
+    const { data: histRows } = await supabase
+      .from("distribuicao_historico")
+      .select("pipeline_lead_id, corretor_id, segmento_id, acao")
+      .gte("created_at", todayStart);
+
+    // Accepted set: `${leadId}|${authId}` that were accepted via roleta.
+    const acceptedSet = new Set<string>();
+    for (const r of histRows || []) {
+      if (r.acao === "aceito" && r.pipeline_lead_id && r.corretor_id) {
+        acceptedSet.add(`${r.pipeline_lead_id}|${r.corretor_id}`);
+      }
+    }
+
+    // Aggregate per (authId|segmentoId): distribuidos / aceitos.
+    // Also track which lead ids were distributed via roleta to each auth user.
+    const distMap = new Map<string, number>();
+    const aceMap = new Map<string, number>();
+    const roletaLeadsByAuth = new Map<string, Set<string>>();
+    for (const r of histRows || []) {
+      if (r.acao !== "distribuido" || !r.corretor_id || !r.pipeline_lead_id) continue;
+      const auth = r.corretor_id as string;
+      const seg = (r.segmento_id as string) || "";
+      const key = `${auth}|${seg}`;
+      distMap.set(key, (distMap.get(key) || 0) + 1);
+      if (acceptedSet.has(`${r.pipeline_lead_id}|${auth}`)) {
+        aceMap.set(key, (aceMap.get(key) || 0) + 1);
+      }
+      if (!roletaLeadsByAuth.has(auth)) roletaLeadsByAuth.set(auth, new Set());
+      roletaLeadsByAuth.get(auth)!.add(r.pipeline_lead_id as string);
+    }
+
+    // "Fora da roleta" per auth = leads owned today NOT distributed via roleta to them.
+    const foraByAuth = new Map<string, number>();
+    for (const [auth, owned] of ownedByAuth.entries()) {
+      const roleta = roletaLeadsByAuth.get(auth);
+      let fora = 0;
+      for (const leadId of owned) {
+        if (!roleta || !roleta.has(leadId)) fora++;
+      }
+      foraByAuth.set(auth, fora);
+    }
+
+    // profile_id → auth user id (for mapping fila rows).
+    const profileToAuth = new Map<string, string>();
+    for (const p of profiles || []) {
+      if (p.user_id) profileToAuth.set(p.id, p.user_id as string);
+    }
+
+    const enriched = filaData.map(f => {
+      const auth = f.corretor_id ? profileToAuth.get(f.corretor_id) : undefined;
+      const seg = (f.segmento_id as string) || "";
+      const key = auth ? `${auth}|${seg}` : "";
+      return {
+        ...f,
+        leads_recebidos: auth ? (ownedByAuth.get(auth)?.size ?? 0) : 0,
+        distribuidos_roleta: auth ? (distMap.get(key) || 0) : 0,
+        aceitos_roleta: auth ? (aceMap.get(key) || 0) : 0,
+        fora_roleta: auth ? (foraByAuth.get(auth) || 0) : 0,
+        corretor_nome: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.nome || "Corretor" : "Corretor",
+        corretor_avatar: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.avatar_url || null : null,
+      };
+    });
 
     // Sort by ultima_distribuicao_at ASC NULLS FIRST — matches the SQL engine's round-robin order
     enriched.sort((a, b) => {
