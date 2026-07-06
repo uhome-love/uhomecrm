@@ -208,9 +208,18 @@ export function RoletaOperacaoTab({ roleta }: Props) {
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-xs text-muted-foreground">
-                              {f.leads_recebidos || 0} leads
-                            </span>
+                            <div className="flex flex-col items-end leading-tight">
+                              <span className="text-xs text-foreground">
+                                <span className="font-semibold tabular-nums">{f.distribuidos_roleta}</span> distribuídos
+                                {" · "}
+                                <span className="font-semibold tabular-nums">{f.aceitos_roleta}</span> aceitos
+                              </span>
+                              {f.fora_roleta > 0 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  {f.fora_roleta} fora da roleta
+                                </span>
+                              )}
+                            </div>
                             <Button
                               size="icon"
                               variant="ghost"
