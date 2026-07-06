@@ -548,7 +548,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 type="button"
                 onClick={() => {
                   navigator.clipboard?.writeText(lead.imovel_codigo || "");
-                  toast({ description: `Código ${lead.imovel_codigo} copiado` });
+                  toast.success(`Código ${lead.imovel_codigo} copiado`);
                 }}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold bg-background border border-border rounded px-2 py-1 hover:bg-muted transition-colors"
                 title="Copiar código"
