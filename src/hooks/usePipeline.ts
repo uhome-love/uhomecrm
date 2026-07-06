@@ -45,6 +45,8 @@ export interface PipelineLead {
   origem_detalhe?: string | null;
   jetimob_lead_id?: string | null;
   observacoes?: string | null;
+  imovel_codigo?: string | null;
+  imovel_url?: string | null;
   proxima_acao: string | null;
   data_proxima_acao: string | null;
   motivo_descarte: string | null;
