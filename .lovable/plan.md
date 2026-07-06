@@ -1,42 +1,34 @@
 ## Objetivo
 
-Leads da campanha do Meta Ads com o formulário **"Uhome – Casa Menino Deus (CP)"** não podem entrar na roleta. Devem ser atribuídos **direto ao Bruno Schuler**, já no estado **aceito** (na carteira dele), sem passar por distribuição.
+Deixar como padrão **nenhum disparo de WhatsApp sendo feito automaticamente** pelo CRM (reengajamento de descartados + lembrete de visita amanhã). O disparo **manual** pela Central de Reengajamento continua funcionando normalmente.
 
-## Como funciona hoje
+## Situação atual
 
-Todo lead do Meta chega em `receive-meta-lead`, é inserido em `pipeline_leads` com `corretor_id = null` e `aceite_status = "pendente_distribuicao"`, e em seguida é chamado `distributeLeadDirect(...)` (roleta). É exatamente esse ponto que precisamos interceptar para essa campanha específica.
+Existem dois crons ativos que disparam WhatsApp sozinhos:
 
-## Mudança (somente na edge function `receive-meta-lead`)
+| Cron | Frequência | O que faz |
+|------|-----------|-----------|
+| `reengajamento-descartados-diario` | Diário ~10h BRT | Dispara reengajamento para leads descartados |
+| `visita-reminder-daily-09h` | Diário ~09h BRT | Dispara lembrete "visita amanhã" |
 
-1. **Detecção da campanha por nome de formulário**
-   Após o parse do lead (já temos a variável `formName`), verificar se o nome do formulário corresponde a "Uhome – Casa Menino Deus (CP)". A comparação será tolerante (sem acentos, minúsculas, ignorando o traço/hífen e espaços) para não quebrar se o Meta enviar variações como `-`, `–`, `CP` etc. Isso define uma flag `atribuicaoDiretaBruno`.
+Observação: a flag `reengajamento_config.enabled` já está `false`, mas o cron continua ligado — o desligamento do cron torna o comportamento definitivo e independente da flag.
 
-2. **Inserção já atribuída**
-   Quando `atribuicaoDiretaBruno` for verdadeiro, o lead é inserido com:
-   - `corretor_id` = Bruno Schuler (`fb61ecda-5c4b-49d7-bda7-ccf9b589da07`)
-   - `gerente_id` = gerente do Bruno (resolvido via `team_members`; se ele for o próprio gestor, mantém a referência dele / senão `null`)
-   - `aceite_status = "aceito"`, `distribuido_em = now()`
-   - `stage_id` = etapa inicial normal (mesma usada hoje)
-   
-   Toda a lógica de dedup existente continua valendo (telefone/e-mail), sem alteração.
+## Mudanças
 
-3. **Pular a roleta**
-   Quando a flag estiver ativa, **não** chamar `distributeLeadDirect`. Em vez disso, notificar o Bruno diretamente (registro em `notifications` + push via `send-push` + atividade de entrada no `pipeline_atividades`), reaproveitando o mesmo padrão de notificação já usado no código para leads reativados.
+1. **Desativar o cron `reengajamento-descartados-diario`** — para de acionar o disparo diário de reengajamento.
+2. **Desativar o cron `visita-reminder-daily-09h`** — para de acionar o lembrete automático de visita amanhã.
+3. **Manter `reengajamento_config.enabled = false`** como salvaguarda extra.
 
-4. **Rastreabilidade**
-   Registrar em `ops_events` um evento `lead_atribuido_direto_campanha` com o nome da campanha e o lead, para auditoria de que aquele lead pulou a roleta de propósito.
+Nada é apagado — os crons ficam apenas inativos e podem ser reativados quando o usuário quiser voltar com o automático.
 
-## Observações
+## O que continua funcionando
 
-- Nenhuma migração de banco é necessária — só código na edge function.
-- Nada muda para as outras campanhas: elas continuam indo para a roleta normalmente.
-- Se amanhã surgir outra campanha exclusiva, dá para transformar isso num pequeno mapa (`formulário → corretor`), mas por ora fica só para essa campanha do Bruno, como pedido.
+- Disparo **manual** pela Central de Reengajamento (aba "Novo disparo" e campanhas em ondas).
+- Recebimento de leads (Meta/site) e distribuição — não são afetados.
+- Limpezas e relatórios automáticos — não são afetados.
 
 ## Detalhes técnicos
 
-- Arquivo: `supabase/functions/receive-meta-lead/index.ts`.
-- Match do formulário via função de normalização (reaproveitar `normalizeTimelineText` já existente) comparando contra o texto canônico `"uhome casa menino deus cp"`.
-- `corretor_id` em `pipeline_leads` = `profiles.user_id` (auth id) — confirmado no banco (7.647 leads batem por `user_id`, 0 por `profiles.id`). Por isso usamos o auth id do Bruno.
-</content>
-<summary>Interceptar na edge function receive-meta-lead os leads do formulário "Uhome – Casa Menino Deus (CP)" e atribuí-los direto ao Bruno Schuler (já aceito), sem passar pela roleta.</summary>
-</invoke>
+- Usar `cron.unschedule`/`UPDATE cron.job SET active=false` nos jobs `reengajamento-descartados-diario` (jobid 42) e `visita-reminder-daily-09h` (jobid 6) via a ferramenta de dados (contêm URL/anon key específicos do projeto, portanto não vão em migration).
+- Garantir `reengajamento_config.enabled=false`.
+- Verificar após a mudança consultando `cron.job` para confirmar que ambos ficaram `active=false`.
