@@ -28,7 +28,7 @@ import {
   Plus, CheckCircle2, AlertTriangle, ChevronRight,
   FileText, ChevronDown, ClipboardList,
   Flame, Snowflake, Sun, Brain, TrendingUp,
-  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil, MessageCircle
+  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil, MessageCircle, ExternalLink, Home, Copy
 } from "lucide-react";
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
 import CadenciaSemContatoCard from "./CadenciaSemContatoCard";
