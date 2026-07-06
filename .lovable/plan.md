@@ -1,53 +1,42 @@
-# Lake Baikal (Meta) → Segmento Alto Padrão 100%
-
 ## Objetivo
-Todo lead que entrar pelo anúncio do Meta com o formulário **"Uhome - Lake Baycal"** deve:
-1. Ser reconhecido como empreendimento **Lake Baikal**
-2. Cair no segmento **S4 - Alto Padrão**
 
-## O que já está correto (não mexer)
-- `roleta_campanhas` já tem a linha **Lake Baikal → S4 - Alto Padrão**.
-- A cadeia de resolução `roleta_campanhas → roleta_segmentos → pipeline_segmentos` funciona quando o empreendimento resolvido é exatamente "Lake Baikal".
-- `src/lib/empreendimentos.ts` já lista "Lake Baikal".
+Leads da campanha do Meta Ads com o formulário **"Uhome – Casa Menino Deus (CP)"** não podem entrar na roleta. Devem ser atribuídos **direto ao Bruno Schuler**, já no estado **aceito** (na carteira dele), sem passar por distribuição.
 
-## O problema
-O Meta envia `form_name = "Uhome - Lake Baycal"`. Hoje:
-- Não existe entrada no `META_FORM_ID_MAP` para esse nome.
-- A normalização remove apenas o sufixo `" - Uhome"`, não o prefixo `"Uhome - "`, nem corrige a grafia "Baycal".
-- Resultado: empreendimento fica `"Uhome - Lake Baycal"`, o `ilike('%Uhome - Lake Baycal%')` não bate com a linha "Lake Baikal" da roleta, e o lead entra **sem segmento**.
+## Como funciona hoje
 
-## Alterações
+Todo lead do Meta chega em `receive-meta-lead`, é inserido em `pipeline_leads` com `corretor_id = null` e `aceite_status = "pendente_distribuicao"`, e em seguida é chamado `distributeLeadDirect(...)` (roleta). É exatamente esse ponto que precisamos interceptar para essa campanha específica.
 
-### 1. Mapa de formulário (edge + front)
-Adicionar o nome do formulário mapeado para o empreendimento canônico, nos dois lugares que precisam ficar sincronizados:
-- `supabase/functions/receive-meta-lead/index.ts` (const `META_FORM_ID_MAP` interno)
-- `src/lib/metaFormIdMap.ts` (`META_FORM_ID_MAP`)
+## Mudança (somente na edge function `receive-meta-lead`)
 
-Entradas (cobrindo variações de grafia):
-```
-"Uhome - Lake Baycal": "Lake Baikal",
-"Uhome - Lake Baikal": "Lake Baikal",
-"Uhome - Lake Baical": "Lake Baikal",
-```
+1. **Detecção da campanha por nome de formulário**
+   Após o parse do lead (já temos a variável `formName`), verificar se o nome do formulário corresponde a "Uhome – Casa Menino Deus (CP)". A comparação será tolerante (sem acentos, minúsculas, ignorando o traço/hífen e espaços) para não quebrar se o Meta enviar variações como `-`, `–`, `CP` etc. Isso define uma flag `atribuicaoDiretaBruno`.
 
-### 2. Canonicalização robusta por nome (rede de segurança)
-No `receive-meta-lead/index.ts`, logo após a etapa de normalização do `empreendimento` (onde hoje removem sufixos), adicionar uma regra que detecta qualquer variante de Baikal e força o nome canônico:
+2. **Inserção já atribuída**
+   Quando `atribuicaoDiretaBruno` for verdadeiro, o lead é inserido com:
+   - `corretor_id` = Bruno Schuler (`fb61ecda-5c4b-49d7-bda7-ccf9b589da07`)
+   - `gerente_id` = gerente do Bruno (resolvido via `team_members`; se ele for o próprio gestor, mantém a referência dele / senão `null`)
+   - `aceite_status = "aceito"`, `distribuido_em = now()`
+   - `stage_id` = etapa inicial normal (mesma usada hoje)
+   
+   Toda a lógica de dedup existente continua valendo (telefone/e-mail), sem alteração.
 
-```
-// Canonicaliza variações de "Lake Baikal" (Baikal/Baical/Baycal, com/sem prefixo Uhome)
-if (/\bl(a|á)ke?\s*ba[iy]?ca?l\b/i.test(empreendimento) || /\bba[iy]ca?l\b/i.test(empreendimento)) {
-  empreendimento = "Lake Baikal";
-}
-```
-(O regex final será ajustado/validado para casar "Lake Baycal", "Lake Baical", "Lake Baikal", "Baikal", "Baical" e não gerar falso-positivo em outros empreendimentos.)
+3. **Pular a roleta**
+   Quando a flag estiver ativa, **não** chamar `distributeLeadDirect`. Em vez disso, notificar o Bruno diretamente (registro em `notifications` + push via `send-push` + atividade de entrada no `pipeline_atividades`), reaproveitando o mesmo padrão de notificação já usado no código para leads reativados.
 
-Isso garante que, mesmo se o Meta mudar levemente o texto (prefixo, maiúsculas, grafia), o empreendimento vira "Lake Baikal", que já resolve para S4 - Alto Padrão.
+4. **Rastreabilidade**
+   Registrar em `ops_events` um evento `lead_atribuido_direto_campanha` com o nome da campanha e o lead, para auditoria de que aquele lead pulou a roleta de propósito.
 
-## Validação
-1. `tsgo` / build limpo.
-2. Teste do edge function via chamada direta simulando o payload do Meta com `form_name = "Uhome - Lake Baycal"` (e uma variação "Uhome - Lake Baical"), com telefone de teste, verificando na resposta/no banco que o lead foi criado com `empreendimento = "Lake Baikal"` e `segmento_id` = id de "S4 - Alto Padrão" (`5e930c09-634d-40e1-9ccc-981b0a4eae74`).
-3. Conferir no log que a resolução de segmento não caiu em "Avulso - Meta Ads".
+## Observações
 
-## Fora de escopo
-- Nenhuma mudança de schema ou de UI.
-- Não altero a lógica da roleta nem os segmentos existentes.
+- Nenhuma migração de banco é necessária — só código na edge function.
+- Nada muda para as outras campanhas: elas continuam indo para a roleta normalmente.
+- Se amanhã surgir outra campanha exclusiva, dá para transformar isso num pequeno mapa (`formulário → corretor`), mas por ora fica só para essa campanha do Bruno, como pedido.
+
+## Detalhes técnicos
+
+- Arquivo: `supabase/functions/receive-meta-lead/index.ts`.
+- Match do formulário via função de normalização (reaproveitar `normalizeTimelineText` já existente) comparando contra o texto canônico `"uhome casa menino deus cp"`.
+- `corretor_id` em `pipeline_leads` = `profiles.user_id` (auth id) — confirmado no banco (7.647 leads batem por `user_id`, 0 por `profiles.id`). Por isso usamos o auth id do Bruno.
+</content>
+<summary>Interceptar na edge function receive-meta-lead os leads do formulário "Uhome – Casa Menino Deus (CP)" e atribuí-los direto ao Bruno Schuler (já aceito), sem passar pela roleta.</summary>
+</invoke>
