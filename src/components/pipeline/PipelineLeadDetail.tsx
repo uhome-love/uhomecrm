@@ -28,7 +28,7 @@ import {
   Plus, CheckCircle2, AlertTriangle, ChevronRight,
   FileText, ChevronDown, ClipboardList,
   Flame, Snowflake, Sun, Brain, TrendingUp,
-  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil, MessageCircle
+  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag, Search, Pencil, MessageCircle, ExternalLink, Home, Copy
 } from "lucide-react";
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
 import CadenciaSemContatoCard from "./CadenciaSemContatoCard";
@@ -533,6 +533,44 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         diasDesdeUltimoContato={daysSinceLastAction}
         onEdit={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
       />
+
+
+      {/* Imóvel de interesse (leads do site) */}
+      {(lead.imovel_codigo || lead.imovel_url) && (
+        <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+            <Home className="h-3 w-3" />
+            Imóvel de interesse
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {lead.imovel_codigo && (
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard?.writeText(lead.imovel_codigo || "");
+                  toast.success(`Código ${lead.imovel_codigo} copiado`);
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold bg-background border border-border rounded px-2 py-1 hover:bg-muted transition-colors"
+                title="Copiar código"
+              >
+                Cód. {lead.imovel_codigo}
+                <Copy className="h-3 w-3 text-muted-foreground" />
+              </button>
+            )}
+            {lead.imovel_url && (
+              <a
+                href={lead.imovel_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+              >
+                Abrir imóvel no site
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Observações / Dados do anúncio (ImovelWeb, etc.) */}
       {lead.observacoes && (
