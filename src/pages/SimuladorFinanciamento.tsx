@@ -343,7 +343,7 @@ export default function SimuladorFinanciamento() {
               onChange={(e) => setTaxaCustom(Number(e.target.value) / 100)}
             />
             <p className="text-xs text-muted-foreground">
-              Pré-preenchida com a taxa auditada{mcmvAtivo && enquadramento?.faixa ? ` da ${enquadramento.faixa.nome}` : ` do ${banco.nome}`}. Ajuste conforme a proposta do banco.
+              Pré-preenchida com a taxa auditada{mcmvAtivo && enquadramento?.faixa ? ` da ${enquadramento.faixa.nome}` : ` do ${banco.nome} para imóvel ${tipoImovel}`}. Ajuste conforme a proposta do banco.
             </p>
           </div>
 
