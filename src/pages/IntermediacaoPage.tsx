@@ -17,7 +17,28 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, FileSignature, Loader2, Download, Search } from "lucide-react";
+import { Plus, Trash2, FileSignature, Loader2, Download, Search, Pencil } from "lucide-react";
+import { formatCurrencyInput, handleCurrencyChange, parseCurrencyToNumber, numberToRawCurrency } from "@/utils/currencyFormat";
+
+// ─── Máscaras de documentos/contato ────────────────────────────────────────────
+const onlyDigits = (v: string) => v.replace(/\D/g, "");
+const maskCPF = (v: string) =>
+  onlyDigits(v).slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+const maskCNPJ = (v: string) =>
+  onlyDigits(v).slice(0, 14)
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+const maskTelefone = (v: string) => {
+  const d = onlyDigits(v).slice(0, 11);
+  if (d.length <= 10) return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d{1,4})$/, "$1-$2");
+  return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+};
+const maskRG = (v: string) => v.replace(/[^\dxX.-]/g, "").slice(0, 14);
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface CorretorOption {
@@ -148,8 +169,8 @@ export default function IntermediacaoPage() {
 
   // Comissão
   const [valorTotal, setValorTotal] = useState("");
-  const [pctGabrielle, setPctGabrielle] = useState("15");
-  const [pctDiretoria, setPctDiretoria] = useState("10");
+  const [pctGabrielle, setPctGabrielle] = useState("10");
+  const [pctDiretoria, setPctDiretoria] = useState("5");
   const [parcelas, setParcelas] = useState<Parcela[]>([{ vencimento: "", valor: "" }]);
 
   // Data do contrato
@@ -162,6 +183,63 @@ export default function IntermediacaoPage() {
 
   const [gerando, setGerando] = useState(false);
   const [carregandoCorretores, setCarregandoCorretores] = useState(true);
+
+  // Aba ativa (controlada, para permitir "Editar" a partir do histórico)
+  const [aba, setAba] = useState("gerar");
+
+  // Carrega um payload salvo de volta no formulário (fluxo de edição).
+  const carregarIntermediacao = (p: any) => {
+    if (!p) return;
+    const c = p.comprador ?? {};
+    setTipoPessoa(c.tipoPessoa === "PJ" ? "PJ" : "PF");
+    setRazaoSocial(c.razaoSocial ?? "");
+    setCnpj(c.cnpj ?? "");
+    setSocioAdmin(c.socioAdmin ?? "");
+    setNomeCompleto(c.nomeCompleto ?? "");
+    setGenero(c.genero ?? "");
+    setProfissao(c.profissao ?? "");
+    setEstadoCivil(c.estadoCivil ?? "");
+    setRegimeBens(c.regimeBens ?? "");
+    setCpf(c.cpf ?? "");
+    setRg(c.rg ?? "");
+    setTelefone(c.telefone ?? "");
+    setEmail(c.email ?? "");
+    setEndereco(c.endereco ?? "");
+
+    const im = p.imovel ?? {};
+    setEmpreendimento(im.empreendimento ?? "");
+    setUnidade(im.unidade ?? "");
+    setVgv(numberToRawCurrency(im.vgv ?? 0));
+
+    const corrs = Array.isArray(p.corretores) ? p.corretores : [];
+    const mapCorr = (x: any): CorretorForm => ({
+      user_id: "",
+      nome: x?.nome ?? "",
+      cpf: x?.cpf ?? "",
+      rg: x?.rg ?? "",
+      email: x?.email ?? "",
+      percentual: x?.percentual != null ? String(x.percentual) : "",
+    });
+    setCorretor1(corrs[0] ? mapCorr(corrs[0]) : { ...emptyCorretor });
+    if (corrs[1]) { setUsarCorretor2(true); setCorretor2(mapCorr(corrs[1])); }
+    else { setUsarCorretor2(false); setCorretor2({ ...emptyCorretor }); }
+
+    const co = p.comissao ?? {};
+    setValorTotal(numberToRawCurrency(co.valorTotal ?? 0));
+    setPctGabrielle(co.pctGabrielle != null ? String(co.pctGabrielle) : "10");
+    setPctDiretoria(co.pctDiretoria != null ? String(co.pctDiretoria) : "5");
+    const pcs = Array.isArray(co.parcelas) ? co.parcelas : [];
+    setParcelas(pcs.length ? pcs.map((x: any) => ({ vencimento: x?.vencimento ?? "", valor: numberToRawCurrency(x?.valor ?? 0) })) : [{ vencimento: "", valor: "" }]);
+
+    const ts = Array.isArray(p.testemunhas) ? p.testemunhas : [];
+    setTestemunha1(ts[0] ? { nome: ts[0].nome ?? "", email: ts[0].email ?? "" } : { nome: "", email: "" });
+    setTestemunha2(ts[1] ? { nome: ts[1].nome ?? "", email: ts[1].email ?? "" } : { ...CAROLINA });
+
+    setDataContrato(p.dataContrato ?? hoje);
+    setAba("gerar");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.info("Dados carregados. Ajuste o que precisar e gere novamente.");
+  };
 
   // Carregar corretores (via RPC SECURITY DEFINER — contorna RLS de user_roles p/ gestores)
   useEffect(() => {
@@ -208,9 +286,9 @@ export default function IntermediacaoPage() {
       { nome: corretor1.nome || "Corretor 1", pct: num(corretor1.percentual) },
       ...(usarCorretor2 ? [{ nome: corretor2.nome || "Corretor 2", pct: num(corretor2.percentual) }] : []),
     ];
-    const valoresParcelas = parcelas.map((p) => num(p.valor));
+    const valoresParcelas = parcelas.map((p) => parseCurrencyToNumber(p.valor));
     return calcularCredores(
-      num(valorTotal),
+      parseCurrencyToNumber(valorTotal),
       corretoresInput,
       num(pctGabrielle),
       num(pctDiretoria),
@@ -228,10 +306,10 @@ export default function IntermediacaoPage() {
 
   // Aviso quando a soma das parcelas diverge do valor total da corretagem.
   const somaParcelas = useMemo(
-    () => round2(parcelas.reduce((s, p) => s + num(p.valor), 0)),
+    () => round2(parcelas.reduce((s, p) => s + parseCurrencyToNumber(p.valor), 0)),
     [parcelas],
   );
-  const parcelasDivergem = num(valorTotal) > 0 && Math.abs(somaParcelas - num(valorTotal)) > 0.01;
+  const parcelasDivergem = parseCurrencyToNumber(valorTotal) > 0 && Math.abs(somaParcelas - parseCurrencyToNumber(valorTotal)) > 0.01;
 
   // Atalhos de preenchimento de testemunhas: Carolina + corretores/gerentes carregados.
   const opcoesTestemunha = useMemo<Testemunha[]>(() => {
@@ -262,15 +340,15 @@ export default function IntermediacaoPage() {
     if (tipoPessoa === "PJ" && (!razaoSocial.trim() || !socioAdmin.trim())) return toast.error("Informe Razão Social e sócio-administrador.");
     if (!empreendimento.trim() || !unidade.trim()) return toast.error("Informe empreendimento e unidade.");
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
-    if (num(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
+    if (parseCurrencyToNumber(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
     if (pctExcedido) return toast.error("A soma dos percentuais (corretores + Gabrielle + Diretoria) ultrapassa 100%.");
-    if (parcelas.some((p) => !p.vencimento || num(p.valor) <= 0)) return toast.error("Preencha todas as parcelas (vencimento e valor).");
+    if (parcelas.some((p) => !p.vencimento || parseCurrencyToNumber(p.valor) <= 0)) return toast.error("Preencha todas as parcelas (vencimento e valor).");
     if (!testemunha1.nome.trim() || !testemunha1.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 1.");
     if (!testemunha2.nome.trim() || !testemunha2.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 2.");
 
     // Aviso não bloqueante: parcelas divergem do valor total.
     if (parcelasDivergem) {
-      toast.warning(`Atenção: a soma das parcelas (${brl(somaParcelas)}) difere do valor total (${brl(num(valorTotal))}).`);
+      toast.warning(`Atenção: a soma das parcelas (${brl(somaParcelas)}) difere do valor total (${brl(parseCurrencyToNumber(valorTotal))}).`);
     }
 
     // Comprador: envia apenas os campos do tipo selecionado.
@@ -289,7 +367,7 @@ export default function IntermediacaoPage() {
 
     const payload = {
       comprador,
-      imovel: { empreendimento, unidade, vgv: num(vgv) },
+      imovel: { empreendimento, unidade, vgv: parseCurrencyToNumber(vgv) },
       corretores: [
         { nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
         ...(usarCorretor2 && corretor2.user_id
@@ -297,10 +375,10 @@ export default function IntermediacaoPage() {
           : []),
       ],
       comissao: {
-        valorTotal: num(valorTotal),
+        valorTotal: parseCurrencyToNumber(valorTotal),
         pctGabrielle: num(pctGabrielle),
         pctDiretoria: num(pctDiretoria),
-        parcelas: parcelas.map((p) => ({ vencimento: p.vencimento, valor: num(p.valor) })),
+        parcelas: parcelas.map((p) => ({ vencimento: p.vencimento, valor: parseCurrencyToNumber(p.valor) })),
       },
       testemunhas: [
         { nome: testemunha1.nome.trim(), email: testemunha1.email.trim() },
@@ -351,7 +429,7 @@ export default function IntermediacaoPage() {
         </div>
       </header>
 
-      <Tabs defaultValue="gerar" className="space-y-6">
+      <Tabs value={aba} onValueChange={setAba} className="space-y-6">
         <TabsList>
           <TabsTrigger value="gerar">Gerar Intermediação</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
@@ -380,7 +458,7 @@ export default function IntermediacaoPage() {
           {tipoPessoa === "PJ" ? (
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Razão Social</Label><Input value={razaoSocial} onChange={(e) => setRazaoSocial(e.target.value)} placeholder="Ex: Empresa Exemplo LTDA." /></div>
-              <div className="space-y-2"><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="00.000.000/0001-00" /></div>
+              <div className="space-y-2"><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(maskCNPJ(e.target.value))} inputMode="numeric" placeholder="00.000.000/0001-00" /></div>
               <div className="space-y-2 sm:col-span-2"><Label>Nome do sócio-administrador</Label><Input value={socioAdmin} onChange={(e) => setSocioAdmin(e.target.value)} placeholder="Ex: Carlos Souza" /></div>
             </div>
           ) : (
@@ -417,9 +495,9 @@ export default function IntermediacaoPage() {
           )}
 
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00" /></div>
-            <div className="space-y-2"><Label>RG</Label><Input value={rg} onChange={(e) => setRg(e.target.value)} placeholder="0000000000" /></div>
-            <div className="space-y-2"><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(51) 99999-9999" /></div>
+            <div className="space-y-2"><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(maskCPF(e.target.value))} inputMode="numeric" placeholder="000.000.000-00" /></div>
+            <div className="space-y-2"><Label>RG</Label><Input value={rg} onChange={(e) => setRg(maskRG(e.target.value))} placeholder="0000000000" /></div>
+            <div className="space-y-2"><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(maskTelefone(e.target.value))} inputMode="numeric" placeholder="(51) 99999-9999" /></div>
             <div className="space-y-2"><Label>E-mail</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@email.com" /></div>
             <div className="space-y-2 sm:col-span-2"><Label>Endereço completo</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Rua Exemplo, nº 123, Bairro, Porto Alegre/RS, CEP 90000-000" /></div>
           </div>
@@ -432,7 +510,7 @@ export default function IntermediacaoPage() {
         <CardContent className="grid sm:grid-cols-3 gap-4">
           <div className="space-y-2 sm:col-span-2"><Label>Empreendimento</Label><Input value={empreendimento} onChange={(e) => setEmpreendimento(e.target.value)} placeholder="Ex: Shift Torre Residencial" /></div>
           <div className="space-y-2"><Label>Unidade</Label><Input value={unidade} onChange={(e) => setUnidade(e.target.value)} placeholder="Ex: 1107" /></div>
-          <div className="space-y-2 sm:col-span-3"><Label>VGV (valor do imóvel)</Label><Input value={vgv} onChange={(e) => setVgv(e.target.value)} placeholder="R$ 000.000,00" /></div>
+          <div className="space-y-2 sm:col-span-3"><Label>VGV (valor do imóvel)</Label><Input value={formatCurrencyInput(vgv)} onChange={(e) => setVgv(handleCurrencyChange(e.target.value))} inputMode="numeric" placeholder="R$ 000.000,00" /></div>
         </CardContent>
       </Card>
 
@@ -458,10 +536,10 @@ export default function IntermediacaoPage() {
               </SelectContent>
             </Select>
             <div className="grid sm:grid-cols-4 gap-3">
-              <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={corretor1.cpf} onChange={(e) => setCorretor1({ ...corretor1, cpf: e.target.value })} placeholder="000.000.000-00" /></div>
-              <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={corretor1.rg} onChange={(e) => setCorretor1({ ...corretor1, rg: e.target.value })} placeholder="0000000000" /></div>
+              <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={corretor1.cpf} onChange={(e) => setCorretor1({ ...corretor1, cpf: maskCPF(e.target.value) })} inputMode="numeric" placeholder="000.000.000-00" /></div>
+              <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={corretor1.rg} onChange={(e) => setCorretor1({ ...corretor1, rg: maskRG(e.target.value) })} placeholder="0000000000" /></div>
               <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={corretor1.email} onChange={(e) => setCorretor1({ ...corretor1, email: e.target.value })} placeholder="nome@uhome.imb.br" /></div>
-              <div className="space-y-1"><Label className="text-xs">% Comissão</Label><Input value={corretor1.percentual} onChange={(e) => setCorretor1({ ...corretor1, percentual: e.target.value })} /></div>
+              <div className="space-y-1"><Label className="text-xs">% Comissão</Label><Input type="number" min={0} max={100} value={corretor1.percentual} onChange={(e) => setCorretor1({ ...corretor1, percentual: e.target.value })} /></div>
             </div>
           </div>
 
@@ -493,10 +571,10 @@ export default function IntermediacaoPage() {
                 </SelectContent>
               </Select>
               <div className="grid sm:grid-cols-4 gap-3">
-                <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={corretor2.cpf} onChange={(e) => setCorretor2({ ...corretor2, cpf: e.target.value })} placeholder="000.000.000-00" /></div>
-                <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={corretor2.rg} onChange={(e) => setCorretor2({ ...corretor2, rg: e.target.value })} placeholder="0000000000" /></div>
+                <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={corretor2.cpf} onChange={(e) => setCorretor2({ ...corretor2, cpf: maskCPF(e.target.value) })} inputMode="numeric" placeholder="000.000.000-00" /></div>
+                <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={corretor2.rg} onChange={(e) => setCorretor2({ ...corretor2, rg: maskRG(e.target.value) })} placeholder="0000000000" /></div>
                 <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={corretor2.email} onChange={(e) => setCorretor2({ ...corretor2, email: e.target.value })} placeholder="nome@uhome.imb.br" /></div>
-                <div className="space-y-1"><Label className="text-xs">% Comissão</Label><Input value={corretor2.percentual} onChange={(e) => setCorretor2({ ...corretor2, percentual: e.target.value })} /></div>
+                <div className="space-y-1"><Label className="text-xs">% Comissão</Label><Input type="number" min={0} max={100} value={corretor2.percentual} onChange={(e) => setCorretor2({ ...corretor2, percentual: e.target.value })} /></div>
               </div>
             </div>
           )}
@@ -508,9 +586,9 @@ export default function IntermediacaoPage() {
         <CardHeader><CardTitle className="text-base">Comissão</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid sm:grid-cols-4 gap-4">
-            <div className="space-y-2"><Label>Valor total da corretagem</Label><Input value={valorTotal} onChange={(e) => setValorTotal(e.target.value)} placeholder="R$ 00.000,00" /></div>
-            <div className="space-y-2"><Label>% Gabrielle</Label><Input value={pctGabrielle} onChange={(e) => setPctGabrielle(e.target.value)} /></div>
-            <div className="space-y-2"><Label>% Diretoria</Label><Input value={pctDiretoria} onChange={(e) => setPctDiretoria(e.target.value)} /></div>
+            <div className="space-y-2"><Label>Valor total da corretagem</Label><Input value={formatCurrencyInput(valorTotal)} onChange={(e) => setValorTotal(handleCurrencyChange(e.target.value))} inputMode="numeric" placeholder="R$ 00.000,00" /></div>
+            <div className="space-y-2"><Label>% Gabrielle</Label><Input type="number" min={0} max={100} value={pctGabrielle} onChange={(e) => setPctGabrielle(e.target.value)} /></div>
+            <div className="space-y-2"><Label>% Diretoria</Label><Input type="number" min={0} max={100} value={pctDiretoria} onChange={(e) => setPctDiretoria(e.target.value)} /></div>
             <div className="space-y-2"><Label>% UHome (auto)</Label><Input value={`${round2(pctUhome)}%`} readOnly disabled /></div>
           </div>
           {pctExcedido && (
@@ -527,7 +605,7 @@ export default function IntermediacaoPage() {
             {parcelas.map((p, i) => (
               <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
                 <div className="space-y-1"><Label className="text-xs">Vencimento</Label><Input type="date" value={p.vencimento} onChange={(e) => updateParcela(i, "vencimento", e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Valor</Label><Input value={p.valor} onChange={(e) => updateParcela(i, "valor", e.target.value)} placeholder="R$ 0.000,00" /></div>
+                <div className="space-y-1"><Label className="text-xs">Valor</Label><Input value={formatCurrencyInput(p.valor)} onChange={(e) => updateParcela(i, "valor", handleCurrencyChange(e.target.value))} inputMode="numeric" placeholder="R$ 0.000,00" /></div>
                 <Button variant="ghost" size="icon" onClick={() => removeParcela(i)} disabled={parcelas.length === 1}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))}
@@ -634,7 +712,7 @@ export default function IntermediacaoPage() {
         </TabsContent>
 
         <TabsContent value="historico">
-          <HistoricoTab />
+          <HistoricoTab onEditar={carregarIntermediacao} />
         </TabsContent>
       </Tabs>
     </div>
@@ -654,6 +732,7 @@ interface IntermediacaoRegistro {
   corretores: string[];
   arquivo_path: string;
   filename: string;
+  payload: any;
 }
 
 const fmtDataHist = (iso: string) =>
@@ -662,7 +741,7 @@ const fmtDataHist = (iso: string) =>
     timeZone: "America/Sao_Paulo",
   });
 
-function HistoricoTab() {
+function HistoricoTab({ onEditar }: { onEditar: (payload: any) => void }) {
   const [registros, setRegistros] = useState<IntermediacaoRegistro[]>([]);
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
@@ -776,6 +855,16 @@ function HistoricoTab() {
                     <TableCell className="text-sm">{(r.corretores ?? []).join(", ")}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onEditar(r.payload)}
+                          disabled={!r.payload}
+                          title={r.payload ? "Editar e gerar novamente" : "Registro antigo sem dados para edição"}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          <span className="ml-1">Editar</span>
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
