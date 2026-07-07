@@ -858,6 +858,16 @@ function HistoricoTab({ onEditar }: { onEditar: (payload: any) => void }) {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => onEditar(r.payload)}
+                          disabled={!r.payload}
+                          title={r.payload ? "Editar e gerar novamente" : "Registro antigo sem dados para edição"}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          <span className="ml-1">Editar</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => baixar(r)}
                           disabled={baixando === r.id}
                         >
