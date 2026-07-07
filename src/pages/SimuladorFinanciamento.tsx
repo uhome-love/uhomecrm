@@ -39,6 +39,7 @@ export default function SimuladorFinanciamento() {
   const [entradaValor, setEntradaValor] = useState(0);
   const [entradaPct, setEntradaPct] = useState(20);
   const [bancoId, setBancoId] = useState("caixa");
+  const [tipoImovel, setTipoImovel] = useState<TipoImovel>("novo");
   const [usarMCMV, setUsarMCMV] = useState(false);
   const [sistema, setSistema] = useState<SistemaAmortizacao>("SAC");
   const [prazoAnos, setPrazoAnos] = useState(30);
