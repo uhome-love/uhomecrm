@@ -300,13 +300,14 @@ export async function gerarPdfSimulacao(d: DadosPdf, acao: "download" | "share" 
   const nomeArquivo = `Simulacao-${d.banco.replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.pdf`;
 
   const opt = {
-    margin: [0, 0, 0, 0] as [number, number, number, number],
+    margin: [14, 16, 14, 16] as [number, number, number, number],
     filename: nomeArquivo,
     image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, logging: false },
+    html2canvas: { scale: 2, useCORS: true, logging: false, width: 760, windowWidth: 760 },
     jsPDF: { unit: "pt", format: "a4", orientation: "portrait" as const },
     pagebreak: { mode: ["css", "legacy"], avoid: ".avoid-break" },
   };
+
 
   try {
     const worker = html2pdf().set(opt).from(container.firstElementChild as HTMLElement);
