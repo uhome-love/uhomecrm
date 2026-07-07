@@ -12,7 +12,7 @@ import {
   Trophy, GraduationCap, Lightbulb, Layers,
   Building2, Wallet, ListTodo, Database,
   BarChart2, GitBranch, Award, BellRing,
-  UserCheck, Clock, LineChart, PieChart, Link2, Smartphone, FolderOpen, Plug, RefreshCw, Activity, FileSignature, AlarmClock,
+  UserCheck, Clock, LineChart, PieChart, Link2, Smartphone, FolderOpen, Plug, RefreshCw, Activity, FileSignature, AlarmClock, Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -72,6 +72,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
+        { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -138,6 +139,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
+        { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -198,6 +200,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
+        { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -249,6 +252,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Pipeline negócios",  path: "/pipeline-negocios", icon: <BarChart3    size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
+        { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
     },
     {
