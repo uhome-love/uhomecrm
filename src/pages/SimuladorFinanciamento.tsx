@@ -129,9 +129,10 @@ export default function SimuladorFinanciamento() {
     if (!resultado) return;
     setGerandoPdf(true);
     try {
+      const tipoLabel = tipoImovel === "novo" ? "Imóvel novo / na planta" : "Imóvel usado";
       const modoLabel = mcmvAtivo && enquadramento?.faixa
-        ? `Minha Casa Minha Vida — ${enquadramento.faixa.nome}`
-        : "Financiamento convencional";
+        ? `Minha Casa Minha Vida — ${enquadramento.faixa.nome} · ${tipoLabel}`
+        : `Financiamento convencional · ${tipoLabel}`;
       await gerarPdfSimulacao(
         {
           corretor: {
@@ -142,6 +143,7 @@ export default function SimuladorFinanciamento() {
           },
           banco: banco.nome,
           modoLabel,
+          regiao: REGIAO_REFERENCIA,
           valorImovel,
           entrada,
           resultado,
