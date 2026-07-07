@@ -165,12 +165,27 @@ export default function SimuladorFinanciamento() {
           valorImovel,
           entrada,
           resultado,
-          analiseRenda,
+          analiseRenda: analiseRendaEfetiva,
           analiseIdade,
           subsidioEstimado: enquadramento?.subsidioEstimado,
           clienteNome: clienteNome || undefined,
           fonteTaxas: mcmvAtivo ? `Portaria MCID 333/2026 (${DATA_REFERENCIA_MCMV})` : DATA_REFERENCIA_TAXAS,
           dataReferencia: mcmvAtivo ? DATA_REFERENCIA_MCMV : DATA_REFERENCIA_TAXAS,
+          seguros: seguros
+            ? {
+                seguradora: seguros.seguradora,
+                cetAnual: seguros.cetAnual,
+                primeiraParcelaTotal: seguros.primeiraParcelaTotal,
+                ultimaParcelaTotal: seguros.ultimaParcelaTotal,
+                mip1: seguros.parcelas[0]?.mip ?? 0,
+                dfi1: seguros.parcelas[0]?.dfi ?? 0,
+                tarifa: seguros.parcelas[0]?.tarifa ?? 0,
+                totalSeguros: seguros.totalSeguros,
+                idadeConsiderada: seguros.idadeConsiderada,
+                idadeEstimada: seguros.idadeEstimada,
+                dataReferencia: DATA_REFERENCIA_SEGUROS,
+              }
+            : undefined,
         },
         acao,
       );
