@@ -48,7 +48,6 @@ function lazyRetry(factory: () => Promise<any>) {
 // Only public/unprotected pages need lazy imports here
 // All protected pages are loaded via pageRegistry.ts
 const Auth = lazyRetry(() => import("./pages/Auth"));
-const SimTest = lazyRetry(() => import("./pages/SimuladorFinanciamento"));
 const NotFound = lazyRetry(() => import("./pages/NotFound"));
 const Welcome = lazyRetry(() => import("./pages/Welcome"));
 const VisitaConfirmacao = lazyRetry(() => import("./pages/VisitaConfirmacao"));
