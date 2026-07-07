@@ -129,7 +129,7 @@ function buildHtml(d: DadosPdf): string {
       : "";
 
   return `
-  <div style="font-family:${FONT};color:${INK};width:760px;padding:0;background:#fff;">
+  <div style="font-family:${FONT};color:${INK};width:760px;padding:0;background:#fff;border-radius:14px;overflow:hidden;box-sizing:border-box;">
     <!-- Header -->
     <div style="background:linear-gradient(135deg,${BRAND},${BRAND_DARK});padding:26px 32px;color:#fff;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
