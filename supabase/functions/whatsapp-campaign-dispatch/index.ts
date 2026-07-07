@@ -360,6 +360,7 @@ serve(async (req) => {
               })
               .eq("id", send.id);
             sentCount++;
+            consecutiveFails = 0;
           } else {
             const errMsg = waResult?.error?.message || "Unknown WhatsApp error";
             const errCode = waResult?.error?.code ? String(waResult.error.code) : null;
