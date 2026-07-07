@@ -53,6 +53,7 @@ export default function SimuladorFinanciamento() {
   const banco = getBanco(bancoId)!;
   const isCaixa = bancoId === "caixa";
   const mcmvAtivo = isCaixa && usarMCMV;
+  const condicao = getCondicao(banco, tipoImovel);
 
   // ── Entrada / financiado ──
   const entrada = entradaModo === "valor" ? entradaValor : (valorImovel * entradaPct) / 100;
@@ -61,8 +62,8 @@ export default function SimuladorFinanciamento() {
   // ── Enquadramento MCMV ──
   const enquadramento: EnquadramentoMCMV | null = mcmvAtivo ? enquadrarMCMV(renda, valorImovel) : null;
 
-  // ── Taxa vigente ──
-  const taxaBase = mcmvAtivo && enquadramento?.faixa ? enquadramento.faixa.taxaAnual : banco.taxaAnual;
+  // ── Taxa vigente (por banco + tipo de imóvel) ──
+  const taxaBase = mcmvAtivo && enquadramento?.faixa ? enquadramento.faixa.taxaAnual : condicao.taxaAnual;
   const taxaAnual = taxaCustom ?? taxaBase;
 
   // ── Prazo (limites) ──
@@ -74,14 +75,21 @@ export default function SimuladorFinanciamento() {
 
   const sistemasDisponiveis = banco.sistemas;
 
+  // LTV do MCMV Faixa 4 exige 20% de entrada; demais usam a cota do banco/tipo.
+  const financiaAteVigente = mcmvAtivo && enquadramento?.faixa?.entradaMinima
+    ? 1 - enquadramento.faixa.entradaMinima
+    : condicao.financiaAte;
+
   const financiadoAlerta = useMemo(() => {
     if (valorImovel <= 0) return null;
     const pctFinanciado = valorFinanciado / valorImovel;
-    if (pctFinanciado > banco.financiaAte) {
-      return `Este banco financia até ${(banco.financiaAte * 100).toFixed(0)}% do imóvel. Aumente a entrada.`;
+    if (pctFinanciado > financiaAteVigente + 1e-9) {
+      const rotulo = mcmvAtivo ? "Nesta faixa do MCMV" : `Para imóvel ${tipoImovel}, este banco`;
+      return `${rotulo} financia até ${(financiaAteVigente * 100).toFixed(0)}% do imóvel. Aumente a entrada.`;
     }
     return null;
-  }, [valorImovel, valorFinanciado, banco]);
+  }, [valorImovel, valorFinanciado, financiaAteVigente, mcmvAtivo, tipoImovel]);
+
 
   function handleSimular() {
     if (valorImovel <= 0) {
