@@ -13,14 +13,9 @@ import {
 import { enquadrarMCMV } from "./mcmvFaixas";
 
 describe("taxaAnualParaMensal", () => {
-  it("converte 11,19% a.a. em taxa mensal composta", () => {
+  it("converte 11,19% a.a. nominal em mensal (a.a./12)", () => {
     const im = taxaAnualParaMensal(0.1119);
-    expect(im).toBeCloseTo(0.008875, 5);
-  });
-  it("mantém consistência: (1+im)^12 = 1+ia", () => {
-    const ia = 0.117;
-    const im = taxaAnualParaMensal(ia);
-    expect(Math.pow(1 + im, 12) - 1).toBeCloseTo(ia, 10);
+    expect(im).toBeCloseTo(0.009325, 6);
   });
 });
 
