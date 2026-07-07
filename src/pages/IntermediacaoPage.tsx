@@ -249,10 +249,10 @@ export default function IntermediacaoPage() {
 
   // Aviso quando a soma das parcelas diverge do valor total da corretagem.
   const somaParcelas = useMemo(
-    () => round2(parcelas.reduce((s, p) => s + num(p.valor), 0)),
+    () => round2(parcelas.reduce((s, p) => s + parseCurrencyToNumber(p.valor), 0)),
     [parcelas],
   );
-  const parcelasDivergem = num(valorTotal) > 0 && Math.abs(somaParcelas - num(valorTotal)) > 0.01;
+  const parcelasDivergem = parseCurrencyToNumber(valorTotal) > 0 && Math.abs(somaParcelas - parseCurrencyToNumber(valorTotal)) > 0.01;
 
   // Atalhos de preenchimento de testemunhas: Carolina + corretores/gerentes carregados.
   const opcoesTestemunha = useMemo<Testemunha[]>(() => {
