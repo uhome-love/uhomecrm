@@ -423,6 +423,7 @@ Deno.serve(async (req) => {
         corretores: body.corretores.map((c) => c.nome),
         arquivo_path: arquivoPath,
         filename,
+        payload: body,
       });
       if (insertErr) throw insertErr;
     } catch (histErr) {
