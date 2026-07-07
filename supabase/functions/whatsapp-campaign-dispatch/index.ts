@@ -402,6 +402,17 @@ serve(async (req) => {
             consecutiveFails++;
           }
 
+          // Pausa somente após MAX_CONSECUTIVE_FAILS falhas SEGUIDAS. Abaixo disso, continua disparando.
+          if (consecutiveFails >= MAX_CONSECUTIVE_FAILS) {
+            const reason = `Auto-pausa: ${consecutiveFails} falhas consecutivas. Disparo interrompido para evitar dano à reputação do número.`;
+            await supabase
+              .from("whatsapp_campaign_batches")
+              .update({ status: "paused", error_message: reason, updated_at: new Date().toISOString() })
+              .eq("id", batch_id);
+            console.log(reason);
+            break;
+          }
+
           // Delay aleatório 3-6s entre mensagens (anti-spam Meta, parece humano)
           const jitter = 3000 + Math.floor(Math.random() * 3000);
           await new Promise((r) => setTimeout(r, jitter));
@@ -414,6 +425,16 @@ serve(async (req) => {
             })
             .eq("id", send.id);
           failCount++;
+          consecutiveFails++;
+          if (consecutiveFails >= MAX_CONSECUTIVE_FAILS) {
+            const reason = `Auto-pausa: ${consecutiveFails} falhas consecutivas. Disparo interrompido para evitar dano à reputação do número.`;
+            await supabase
+              .from("whatsapp_campaign_batches")
+              .update({ status: "paused", error_message: reason, updated_at: new Date().toISOString() })
+              .eq("id", batch_id);
+            console.log(reason);
+            break;
+          }
         }
       }
 
