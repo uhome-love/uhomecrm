@@ -732,6 +732,7 @@ interface IntermediacaoRegistro {
   corretores: string[];
   arquivo_path: string;
   filename: string;
+  payload: any;
 }
 
 const fmtDataHist = (iso: string) =>
@@ -740,7 +741,7 @@ const fmtDataHist = (iso: string) =>
     timeZone: "America/Sao_Paulo",
   });
 
-function HistoricoTab() {
+function HistoricoTab({ onEditar }: { onEditar: (payload: any) => void }) {
   const [registros, setRegistros] = useState<IntermediacaoRegistro[]>([]);
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
