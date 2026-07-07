@@ -283,9 +283,9 @@ export default function IntermediacaoPage() {
     if (tipoPessoa === "PJ" && (!razaoSocial.trim() || !socioAdmin.trim())) return toast.error("Informe Razão Social e sócio-administrador.");
     if (!empreendimento.trim() || !unidade.trim()) return toast.error("Informe empreendimento e unidade.");
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
-    if (num(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
+    if (parseCurrencyToNumber(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
     if (pctExcedido) return toast.error("A soma dos percentuais (corretores + Gabrielle + Diretoria) ultrapassa 100%.");
-    if (parcelas.some((p) => !p.vencimento || num(p.valor) <= 0)) return toast.error("Preencha todas as parcelas (vencimento e valor).");
+    if (parcelas.some((p) => !p.vencimento || parseCurrencyToNumber(p.valor) <= 0)) return toast.error("Preencha todas as parcelas (vencimento e valor).");
     if (!testemunha1.nome.trim() || !testemunha1.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 1.");
     if (!testemunha2.nome.trim() || !testemunha2.email.trim()) return toast.error("Preencha nome e e-mail da Testemunha 2.");
 
