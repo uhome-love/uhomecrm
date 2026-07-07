@@ -133,7 +133,7 @@ function buildHtml(d: DadosPdf): string {
     <div style="background:linear-gradient(135deg,${BRAND},${BRAND_DARK});padding:26px 32px;color:#fff;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          ${logoUHomePill(26)}
+          ${logoUHomePill(30)}
           <div style="font-size:13px;opacity:.92;margin-top:10px;font-weight:500;">Simulação de Financiamento Imobiliário</div>
         </div>
         <div style="text-align:right;font-size:12px;opacity:.9;font-weight:500;">
