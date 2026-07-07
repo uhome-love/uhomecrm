@@ -20,6 +20,7 @@ export interface DadosPdf {
   corretor: DadosCorretor;
   banco: string;
   modoLabel: string; // "Financiamento convencional" | "Minha Casa Minha Vida — Faixa X"
+  regiao?: string; // Região de referência das condições (ex.: Porto Alegre e RM)
   valorImovel: number;
   entrada: number;
   resultado: ResultadoSimulacao;
