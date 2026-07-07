@@ -1,0 +1,1 @@
+ALTER TABLE public.intermediacoes ADD COLUMN IF NOT EXISTS payload jsonb;

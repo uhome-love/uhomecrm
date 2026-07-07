@@ -3349,6 +3349,7 @@ export type Database = {
           empreendimento: string
           filename: string
           id: string
+          payload: Json | null
           tipo_pessoa: string
           unidade: string
           valor_comissao: number
@@ -3363,6 +3364,7 @@ export type Database = {
           empreendimento: string
           filename: string
           id?: string
+          payload?: Json | null
           tipo_pessoa: string
           unidade: string
           valor_comissao: number
@@ -3377,6 +3379,7 @@ export type Database = {
           empreendimento?: string
           filename?: string
           id?: string
+          payload?: Json | null
           tipo_pessoa?: string
           unidade?: string
           valor_comissao?: number
