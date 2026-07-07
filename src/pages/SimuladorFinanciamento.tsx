@@ -129,6 +129,20 @@ export default function SimuladorFinanciamento() {
 
   const analiseRenda = resultado ? analisarRenda(resultado.primeiraParcela, renda) : null;
 
+  // Seguros (MIP/DFI) + tarifa + CET aproximado — estimativa por seguradora/idade.
+  const seguros: ResultadoComSeguros | null = useMemo(() => {
+    if (!resultado || !incluirSeguros) return null;
+    return calcularSeguros(resultado, {
+      valorImovel,
+      bancoId,
+      idadeInicialMeses: dataNasc ? idadeEmMeses(dataNasc) : null,
+    });
+  }, [resultado, incluirSeguros, valorImovel, bancoId, dataNasc]);
+
+  // Parcela analisada para o comprometimento de renda: com seguros quando ativo.
+  const parcelaParaRenda = seguros ? seguros.primeiraParcelaTotal : resultado?.primeiraParcela ?? 0;
+  const analiseRendaEfetiva = resultado ? analisarRenda(parcelaParaRenda, renda) : null;
+
   async function handlePdf(acao: "download" | "share") {
     if (!resultado) return;
     setGerandoPdf(true);
