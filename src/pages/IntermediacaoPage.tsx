@@ -169,8 +169,8 @@ export default function IntermediacaoPage() {
 
   // Comissão
   const [valorTotal, setValorTotal] = useState("");
-  const [pctGabrielle, setPctGabrielle] = useState("15");
-  const [pctDiretoria, setPctDiretoria] = useState("10");
+  const [pctGabrielle, setPctGabrielle] = useState("10");
+  const [pctDiretoria, setPctDiretoria] = useState("5");
   const [parcelas, setParcelas] = useState<Parcela[]>([{ vencimento: "", valor: "" }]);
 
   // Data do contrato
