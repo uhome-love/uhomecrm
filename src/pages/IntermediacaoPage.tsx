@@ -586,7 +586,7 @@ export default function IntermediacaoPage() {
         <CardHeader><CardTitle className="text-base">Comissão</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid sm:grid-cols-4 gap-4">
-            <div className="space-y-2"><Label>Valor total da corretagem</Label><Input value={valorTotal} onChange={(e) => setValorTotal(e.target.value)} placeholder="R$ 00.000,00" /></div>
+            <div className="space-y-2"><Label>Valor total da corretagem</Label><Input value={formatCurrencyInput(valorTotal)} onChange={(e) => setValorTotal(handleCurrencyChange(e.target.value))} inputMode="numeric" placeholder="R$ 00.000,00" /></div>
             <div className="space-y-2"><Label>% Gabrielle</Label><Input value={pctGabrielle} onChange={(e) => setPctGabrielle(e.target.value)} /></div>
             <div className="space-y-2"><Label>% Diretoria</Label><Input value={pctDiretoria} onChange={(e) => setPctDiretoria(e.target.value)} /></div>
             <div className="space-y-2"><Label>% UHome (auto)</Label><Input value={`${round2(pctUhome)}%`} readOnly disabled /></div>
