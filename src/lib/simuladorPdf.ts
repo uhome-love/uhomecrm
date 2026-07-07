@@ -205,8 +205,35 @@ function buildHtml(d: DadosPdf): string {
   </div>`;
 }
 
+/** Garante que a fonte Montserrat esteja carregada antes de rasterizar o PDF. */
+async function ensureMontserrat() {
+  if (typeof document === "undefined") return;
+  const ID = "montserrat-pdf-font";
+  if (!document.getElementById(ID)) {
+    const link = document.createElement("link");
+    link.id = ID;
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap";
+    document.head.appendChild(link);
+  }
+  try {
+    if ((document as any).fonts?.load) {
+      await Promise.all([
+        (document as any).fonts.load("400 16px Montserrat"),
+        (document as any).fonts.load("600 16px Montserrat"),
+        (document as any).fonts.load("700 16px Montserrat"),
+        (document as any).fonts.load("800 16px Montserrat"),
+      ]);
+      await (document as any).fonts.ready;
+    }
+  } catch {
+    /* segue com fallback de fonte */
+  }
+}
+
 export async function gerarPdfSimulacao(d: DadosPdf, acao: "download" | "share" = "download") {
   const html2pdf = (await import("html2pdf.js")).default;
+  await ensureMontserrat();
   const container = document.createElement("div");
   container.innerHTML = buildHtml(d);
   container.style.position = "fixed";
