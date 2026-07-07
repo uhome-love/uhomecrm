@@ -436,27 +436,53 @@ export default function SimuladorFinanciamento() {
                   ) : null}
                 </div>
 
-                {/* Análise de renda */}
-                {analiseRenda && (
+                {/* Seguros + CET aproximado */}
+                {seguros && (
+                  <div className="mt-4 rounded-xl border border-primary/30 bg-accent/40 p-4">
+                    <p className="text-sm font-medium flex items-center gap-1.5">
+                      <Percent className="h-4 w-4 text-primary" /> Parcela com seguros e CET aproximado
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      <Metric label="1ª parcela + seguros" value={fmtMoney(seguros.primeiraParcelaTotal, "exact")} highlight />
+                      <Metric label="CET aproximado" value={`${(seguros.cetAnual * 100).toFixed(2)}% a.a.`} />
+                      <Metric label="Última + seguros" value={fmtMoney(seguros.ultimaParcelaTotal, "exact")} />
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                      <span>MIP (1ª): <strong className="text-foreground">{fmtMoney(seguros.parcelas[0].mip, "exact")}</strong></span>
+                      <span>DFI/mês: <strong className="text-foreground">{fmtMoney(seguros.parcelas[0].dfi, "exact")}</strong></span>
+                      <span>Tarifa: <strong className="text-foreground">{fmtMoney(seguros.parcelas[0].tarifa, "exact")}</strong></span>
+                    </div>
+                    <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                      <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      Estimativa via {seguros.seguradora}. MIP calculado para {seguros.idadeConsiderada} anos
+                      {seguros.idadeEstimada ? " (idade estimada — informe a data de nascimento p/ maior precisão)" : ""} e
+                      recalculado sobre o saldo devedor. CET não inclui TR/IOF; o oficial sai na carta do banco.
+                    </p>
+                  </div>
+                )}
+
+                {/* Análise de renda (considera seguros quando ativos) */}
+                {analiseRendaEfetiva && (
                   <div
                     className={`mt-4 flex items-start gap-2 rounded-lg border p-3 text-sm ${
-                      analiseRenda.aprovavel
+                      analiseRendaEfetiva.aprovavel
                         ? "border-success-300 bg-success-50/40"
                         : "border-danger-300 bg-danger-50/40"
                     }`}
                   >
-                    {analiseRenda.aprovavel ? (
+                    {analiseRendaEfetiva.aprovavel ? (
                       <CheckCircle2 className="h-4 w-4 mt-0.5 text-success-600 shrink-0" />
                     ) : (
                       <AlertTriangle className="h-4 w-4 mt-0.5 text-danger-500 shrink-0" />
                     )}
                     <div>
                       <p className="font-medium">
-                        {analiseRenda.aprovavel ? "Parcela dentro de 30% da renda" : "Comprometimento acima de 30% da renda"}
-                        {" "}({(analiseRenda.percentualComprometido * 100).toFixed(1)}%)
+                        {analiseRendaEfetiva.aprovavel ? "Parcela dentro de 30% da renda" : "Comprometimento acima de 30% da renda"}
+                        {" "}({(analiseRendaEfetiva.percentualComprometido * 100).toFixed(1)}%)
+                        {seguros ? " · já com seguros" : ""}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Parcela máxima recomendada (30%): {fmtMoney(analiseRenda.parcelaMaxima, "exact")}
+                        Parcela máxima recomendada (30%): {fmtMoney(analiseRendaEfetiva.parcelaMaxima, "exact")}
                       </p>
                     </div>
                   </div>
