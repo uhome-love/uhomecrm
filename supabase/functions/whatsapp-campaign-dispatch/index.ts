@@ -9,7 +9,10 @@ const corsHeaders = {
 };
 
 const META_GUARD_COOLDOWN_HOURS = 24;
-const META_GUARD_QUALITY_FAILS = 8;
+// Só auto-pausa quando o número acumula muitos bloqueios de qualidade (alinhado à regra de 50 falhas seguidas)
+const META_GUARD_QUALITY_FAILS = 50;
+// Máximo de falhas CONSECUTIVAS antes de pausar o disparo. Abaixo disso, continua.
+const MAX_CONSECUTIVE_FAILS = 50;
 
 async function uploadMetaMediaFromUrl(phoneNumberId: string, accessToken: string, imageUrl: string): Promise<string | null> {
   try {
@@ -189,6 +192,7 @@ serve(async (req) => {
 
       let sentCount = 0;
       let failCount = 0;
+      let consecutiveFails = 0;
       const startTime = Date.now();
       const MAX_EXECUTION_MS = 110_000; // 110s — espaço para delays maiores
 
@@ -356,6 +360,7 @@ serve(async (req) => {
               })
               .eq("id", send.id);
             sentCount++;
+            consecutiveFails = 0;
           } else {
             const errMsg = waResult?.error?.message || "Unknown WhatsApp error";
             const errCode = waResult?.error?.code ? String(waResult.error.code) : null;
@@ -394,6 +399,18 @@ serve(async (req) => {
               })
               .eq("id", send.id);
             failCount++;
+            consecutiveFails++;
+          }
+
+          // Pausa somente após MAX_CONSECUTIVE_FAILS falhas SEGUIDAS. Abaixo disso, continua disparando.
+          if (consecutiveFails >= MAX_CONSECUTIVE_FAILS) {
+            const reason = `Auto-pausa: ${consecutiveFails} falhas consecutivas. Disparo interrompido para evitar dano à reputação do número.`;
+            await supabase
+              .from("whatsapp_campaign_batches")
+              .update({ status: "paused", error_message: reason, updated_at: new Date().toISOString() })
+              .eq("id", batch_id);
+            console.log(reason);
+            break;
           }
 
           // Delay aleatório 3-6s entre mensagens (anti-spam Meta, parece humano)
@@ -408,6 +425,16 @@ serve(async (req) => {
             })
             .eq("id", send.id);
           failCount++;
+          consecutiveFails++;
+          if (consecutiveFails >= MAX_CONSECUTIVE_FAILS) {
+            const reason = `Auto-pausa: ${consecutiveFails} falhas consecutivas. Disparo interrompido para evitar dano à reputação do número.`;
+            await supabase
+              .from("whatsapp_campaign_batches")
+              .update({ status: "paused", error_message: reason, updated_at: new Date().toISOString() })
+              .eq("id", batch_id);
+            console.log(reason);
+            break;
+          }
         }
       }
 
