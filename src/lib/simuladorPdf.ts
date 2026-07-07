@@ -55,9 +55,10 @@ const MUTED = "#6B7280";
 const FONT = "'Montserrat','Segoe UI',Arial,sans-serif";
 
 /**
- * Logo oficial U.Home (PNG rasterizado em data-URI) sobre um "pill" branco.
- * Usamos imagem em vez de SVG inline porque o html2canvas rasteriza SVG com
- * transform/scale de forma inconsistente — o PNG garante fidelidade total.
+ * Logo oficial U.Home (PNG servido em /logo-uhome-pdf.png) sobre um "pill" branco.
+ * Usamos <img> em flex com dimensões explícitas e object-fit porque o html2canvas
+ * do html2pdf colapsa imagens em span/line-height:0 e rasteriza SVG com transform
+ * de forma inconsistente — este formato garante fidelidade total do logo no PDF.
  */
 function logoUHomePill(height: number): string {
   const width = Math.round(height * 3.659); // proporção real do PNG (1384×380)
