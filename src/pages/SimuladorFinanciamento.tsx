@@ -193,6 +193,30 @@ export default function SimuladorFinanciamento() {
             <p className="text-xs text-muted-foreground">Digite só os números — a formatação em reais é automática.</p>
           </div>
 
+          {/* Tipo de imóvel: novo x usado (afeta taxa e cota de financiamento) */}
+          <div className="space-y-1.5">
+            <Label>Tipo de imóvel</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["novo", "usado"] as TipoImovel[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => { setTipoImovel(t); setTaxaCustom(null); }}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium capitalize transition ${
+                    tipoImovel === t ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                  }`}
+                >
+                  {t === "novo" ? "Novo / na planta" : "Usado"}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {tipoImovel === "usado" && banco.observacaoUsado
+                ? banco.observacaoUsado
+                : `Financia até ${(condicao.financiaAte * 100).toFixed(0)}% · taxa ${(condicao.taxaAnual * 100).toFixed(2)}% a.a. (${REGIAO_REFERENCIA})`}
+            </p>
+          </div>
+
+
           {/* Entrada */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
