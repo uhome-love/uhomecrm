@@ -28,7 +28,7 @@ export function AtualizarTaxasDialog() {
       const { data, error } = await supabase.functions.invoke("verificar-taxas-financiamento", {
         body: {
           dataReferencia: DATA_REFERENCIA_TAXAS,
-          bancos: BANCOS.map((b) => ({ nome: b.nome, taxaAnual: b.taxaAnual })),
+          bancos: BANCOS.map((b) => ({ nome: b.nome, taxaAnual: b.regras.novo.taxaAnual })),
         },
       });
       if (error) throw error;
