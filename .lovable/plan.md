@@ -1,58 +1,32 @@
-# Mostrador de leads da Roleta: números reais de distribuição
-
 ## Objetivo
-Hoje o número "X leads" na página Roleta conta **todos** os leads que entraram na carteira do corretor no dia (roleta + manual + repasse interno + backfill + campanha direta), o que dá uma falsa impressão de desequilíbrio (ex.: Douglas aparece com 8, mas a roleta só entregou 2 pra ele).
 
-O mostrador passa a mostrar **apenas o que a roleta realmente distribuiu**, no formato:
+Reenviar o template **`lakebaical_novidade`** (Lake Baikal, mesma imagem de header) para os **314 leads** cuja **última tentativa desse template falhou** — ou seja, as falhas da campanha Lake Baikal direcionada ao público Lake Eyre. Disparo único, agora, sem criar recurso novo.
 
-```text
-5 distribuídos · 4 aceitos
-2 fora da roleta
-```
+## Como será feito (sem alterar código)
 
-- **Distribuídos** = quantos leads a roleta entregou ao corretor hoje (independe de aceite).
-- **Aceitos** = desses, quantos ele aceitou.
-- **Fora da roleta** = leads que entraram na carteira hoje por outra via (manual, repasse interno, backfill, campanha direta) — mostrados à parte, em texto menor/discreto, como referência.
+Reaproveito o motor de disparo já existente (`reengajamento-descartados-enqueue`) no modo "retomar fila pré-montada" (`run_id`), que já processa em lote, respeita o ritmo configurado e tem trava de qualidade automática.
 
-## Fonte de verdade
-`distribuicao_historico` é a única fonte confiável do que passou pela roleta (a coluna `roleta_distribuido_em` está praticamente vazia e **não** deve ser usada). O cálculo é feito **por lead**, casando os eventos do mesmo lead:
+Passos:
 
-- Evento `acao = 'distribuido'` → carrega `segmento_id` (permite quebra por segmento).
-- Evento `acao = 'aceito'` para o mesmo `pipeline_lead_id` + `corretor_id` → conta como aceito (o segmento vem do evento de distribuição correspondente).
-- "Fora da roleta" = leads que o corretor possui hoje (`pipeline_leads.corretor_id` + `distribuido_em >= início do dia BRT`) que **não** têm evento de distribuição da roleta para ele.
+1. **Montar o público (314 telefones)** — selecionar, no histórico de disparos (`reengajamento_meta_disparos`), os telefones cuja **última** entrada de `lakebaical_novidade` está com status `failed` (314 telefones distintos). Nome e telefone vêm da fila do disparo anterior (todos os 314 têm correspondência).
 
-Nada de mudança no banco, na lógica de distribuição ou na ordem da fila (o "Próximo" continua por `ultima_distribuicao_at`). É só troca do que o mostrador exibe.
+2. **Criar a execução** — inserir 1 registro em `reengajamento_dispatch_runs` com:
+   - `template_name`: `lakebaical_novidade`
+   - canal `meta`, idioma `pt_BR`
+   - mesma imagem de header já usada (`.../reengajamento/lakebaical-novidade.png`)
+   - marcação de origem "reenvio de falhas Lake Baikal/Lake Eyre"
 
-## Mudanças
+3. **Pré-carregar a fila** — inserir os 314 registros em `reengajamento_dispatch_queue` (status `pending`) vinculados a essa execução, com nome/telefone normalizado.
 
-### 1. `src/hooks/useRoleta.ts` — função `loadFila`
-- Adicionar uma consulta a `distribuicao_historico` do dia (BRT), trazendo `pipeline_lead_id, corretor_id, segmento_id, acao`.
-- Montar, por lead distribuído via roleta: o corretor (auth id), o segmento (do evento `distribuido`) e se houve `aceito` para aquele lead+corretor.
-- Agregar por **(corretor auth_id + segmento_id)**:
-  - `distribuidos_roleta`
-  - `aceitos_roleta`
-- Agregar por **corretor (global)**: `fora_roleta` = (leads possuídos hoje) − (leads distribuídos via roleta para ele). Reaproveita a consulta a `pipeline_leads` que já existe na função.
-- No `enriched.map`, preencher os novos campos por linha da fila usando o `auth_id` do corretor (via `profiles.user_id`, já carregado) + `segmento_id` da linha.
-- Manter a ordenação atual por `ultima_distribuicao_at`.
+4. **Iniciar o disparo** — chamar a função com `force` (a nutrição está com `enabled=false`, então o `force` é necessário para rodar fora do fluxo automático). Ela envia em lotes, com o ritmo configurado (intervalo de ~4–8 min entre mensagens), e se autocontinua até esvaziar a fila.
 
-### 2. `src/hooks/useRoleta.ts` — tipo `RoletaFilaItem` (~linha 229)
-Adicionar campos:
-- `distribuidos_roleta: number`
-- `aceitos_roleta: number`
-- `fora_roleta: number`
+## Pontos importantes que você deve saber
 
-(Manter `leads_recebidos` para não quebrar outros usos, mas ele deixa de ser exibido na Operação.)
+- **Chance real de nova falha:** dos 314, **120** falharam por *"Message undeliverable"* (número tende a falhar de novo) e **19** por *"experiment"*. Os **~175** de *"healthy ecosystem engagement"* (throttle de qualidade da Meta) têm a melhor chance de entregar agora.
+- **Trava de qualidade automática:** se a taxa de falha recente subir de novo, o próprio motor **pausa sozinho** para proteger a qualidade do número — é o comportamento esperado e seguro.
+- **Ritmo:** com o intervalo atual (~4–8 min/msg), 314 envios levam várias horas. Se quiser acelerar para este reenvio, posso reduzir o intervalo temporariamente — me avise.
+- **Acompanhamento:** dá pra acompanhar enviados/entregues/falhas em tempo real na Central de Reengajamento; posso te reportar o resultado ao final.
 
-### 3. `src/components/roleta/ceo/RoletaOperacaoTab.tsx` (~linha 211)
-Trocar o bloco `{f.leads_recebidos || 0} leads` por:
-- Linha principal: `{f.distribuidos_roleta} distribuídos · {f.aceitos_roleta} aceitos`.
-- Abaixo, em texto menor e discreto (muted), apenas quando `fora_roleta > 0`: `{f.fora_roleta} fora da roleta`.
-- Ajuste leve de layout do item da fila para caber as duas linhas à direita (o botão de remover `UserX` continua igual).
+## Confirmação
 
-## Escopo / não-objetivos
-- Não altera a distribuição, o credenciamento, as janelas nem a ordem da fila.
-- Não cria migration nem mexe em RLS.
-- A visão do corretor (`RoletaCorretorView`) e o painel `V4PanelRoleta` ficam como estão (podem ser alinhados depois, se você quiser, num passo separado).
-
-## Validação
-Conferir na tela que, para hoje, Douglas aparece com ~2 distribuídos (não 8) e o excedente vai para "fora da roleta"; Rafaela aparece com 1 distribuído · 0 aceitos (o lead que ela deixou dar timeout). Cruzar 2–3 corretores com a `distribuicao_historico` do dia para bater os números.
+Ao aprovar, eu monto a fila e **inicio o disparo** dos 314 imediatamente com o ritmo atual. Se preferir ritmo acelerado, me diga antes de aprovar.
