@@ -112,15 +112,15 @@ function buildHtml(d: DadosPdf): string {
       : "";
 
   return `
-  <div style="font-family:'Segoe UI',Arial,sans-serif;color:${INK};width:760px;padding:0;background:#fff;">
+  <div style="font-family:${FONT};color:${INK};width:760px;padding:0;background:#fff;">
     <!-- Header -->
     <div style="background:linear-gradient(135deg,${BRAND},${BRAND_DARK});padding:26px 32px;color:#fff;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <div style="font-size:22px;font-weight:800;letter-spacing:.02em;">U.HOME</div>
-          <div style="font-size:13px;opacity:.9;margin-top:2px;">Simulação de Financiamento Imobiliário</div>
+          ${logoUHome("#ffffff", 34)}
+          <div style="font-size:13px;opacity:.9;margin-top:8px;font-weight:500;">Simulação de Financiamento Imobiliário</div>
         </div>
-        <div style="text-align:right;font-size:12px;opacity:.9;">
+        <div style="text-align:right;font-size:12px;opacity:.9;font-weight:500;">
           ${d.modoLabel}<br/>
           ${d.regiao ? `${d.regiao}<br/>` : ""}
           Emitido em ${new Date().toLocaleDateString("pt-BR")}
