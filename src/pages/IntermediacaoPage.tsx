@@ -495,9 +495,9 @@ export default function IntermediacaoPage() {
           )}
 
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00" /></div>
-            <div className="space-y-2"><Label>RG</Label><Input value={rg} onChange={(e) => setRg(e.target.value)} placeholder="0000000000" /></div>
-            <div className="space-y-2"><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(51) 99999-9999" /></div>
+            <div className="space-y-2"><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(maskCPF(e.target.value))} inputMode="numeric" placeholder="000.000.000-00" /></div>
+            <div className="space-y-2"><Label>RG</Label><Input value={rg} onChange={(e) => setRg(maskRG(e.target.value))} placeholder="0000000000" /></div>
+            <div className="space-y-2"><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(maskTelefone(e.target.value))} inputMode="numeric" placeholder="(51) 99999-9999" /></div>
             <div className="space-y-2"><Label>E-mail</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@email.com" /></div>
             <div className="space-y-2 sm:col-span-2"><Label>Endereço completo</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Rua Exemplo, nº 123, Bairro, Porto Alegre/RS, CEP 90000-000" /></div>
           </div>
