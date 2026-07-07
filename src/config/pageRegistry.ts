@@ -120,6 +120,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   integracoes: lazyRetry(() => import("@/pages/IntegracoesPage")),
   intermediacao: lazyRetry(() => import("@/pages/IntermediacaoPage")),
   "leads-estagnados": lazyRetry(() => import("@/pages/LeadsEstagnados")),
+  "simulador-financiamento": lazyRetry(() => import("@/pages/SimuladorFinanciamento")),
 };
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
@@ -200,6 +201,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/materiais":             { key: "materiais",            label: "Materiais",           icon: "FolderOpen" },
   "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor", "diretor"] },
   "/leads-estagnados":      { key: "leads-estagnados",     label: "Leads Estagnados",    icon: "AlarmClock",    roles: ["admin", "gestor", "diretor"] },
+  "/simulador-financiamento": { key: "simulador-financiamento", label: "Simulador Financiamento", icon: "Calculator" },
 };
 
 // ─── DYNAMIC ROUTES ──────────────────────────────────────────────────────────
