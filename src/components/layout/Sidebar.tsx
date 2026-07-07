@@ -12,7 +12,7 @@ import {
   Trophy, GraduationCap, Lightbulb, Layers,
   Building2, Wallet, ListTodo, Database,
   BarChart2, GitBranch, Award, BellRing,
-  UserCheck, Clock, LineChart, PieChart, Link2, Smartphone, FolderOpen, Plug, RefreshCw, Activity, FileSignature, AlarmClock,
+  UserCheck, Clock, LineChart, PieChart, Link2, Smartphone, FolderOpen, Plug, RefreshCw, Activity, FileSignature, AlarmClock, Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
