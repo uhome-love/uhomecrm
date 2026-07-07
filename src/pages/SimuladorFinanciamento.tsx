@@ -52,6 +52,7 @@ export default function SimuladorFinanciamento() {
 
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null);
   const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [incluirSeguros, setIncluirSeguros] = useState(true);
 
   const banco = getBanco(bancoId)!;
   const isCaixa = bancoId === "caixa";
