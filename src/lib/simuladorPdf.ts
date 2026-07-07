@@ -93,7 +93,7 @@ function parcelasChave(r: ResultadoSimulacao) {
     .sort((a, b) => a.numero - b.numero);
 }
 
-export function buildHtml(d: DadosPdf): string {
+function buildHtml(d: DadosPdf): string {
   const r = d.resultado;
   const chave = parcelasChave(r);
   const iniciais = (d.corretor.nome || "U").split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
