@@ -551,17 +551,33 @@ Deno.serve(async (req) => {
           ? bodyAudience.lista_ids.map(String)
           : (bodyAudience.lista_id ? [String(bodyAudience.lista_id)] : []);
         if (listaIds.length === 0) throw new Error("audience.lista_id ou lista_ids obrigatório");
-        let q = supabase
-          .from("oferta_ativa_leads")
-          .select("id, nome, telefone, email")
-          .in("lista_id", listaIds)
-          .not("telefone", "is", null);
-        if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
-        if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
-        if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
-        const { data, error } = await q.order("created_at", { ascending: false }).limit(cap);
-        if (error) throw error;
-        const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead" as const }));
+        const buildQuery = () => {
+          let q = supabase
+            .from("oferta_ativa_leads")
+            .select("id, nome, telefone, email")
+            .in("lista_id", listaIds)
+            .not("telefone", "is", null);
+          if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
+          if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
+          if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
+          return q.order("created_at", { ascending: false });
+        };
+        // Paginação: PostgREST limita respostas a ~1000 linhas por padrão, então
+        // .limit(cap) sozinho nunca traz a lista inteira. Buscamos em páginas de 1000.
+        const PAGE = 1000;
+        const rows: any[] = [];
+        let off = 0;
+        while (rows.length < cap) {
+          const upper = Math.min(off + PAGE, cap) - 1;
+          const { data: pageData, error } = await buildQuery().range(off, upper);
+          if (error) throw error;
+          if (!pageData || pageData.length === 0) break;
+          rows.push(...pageData);
+          if (pageData.length < PAGE) break;
+          off += PAGE;
+        }
+        const cand = rows.map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead" as const }));
+
         const byEventos = await dedupViaEventos(cand, `oferta_ativa:${listaIds.slice().sort().join(",")}`);
         return dedupOfertaViaMetaTemplate(byEventos);
       };
