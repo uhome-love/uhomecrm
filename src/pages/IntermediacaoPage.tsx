@@ -605,7 +605,7 @@ export default function IntermediacaoPage() {
             {parcelas.map((p, i) => (
               <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
                 <div className="space-y-1"><Label className="text-xs">Vencimento</Label><Input type="date" value={p.vencimento} onChange={(e) => updateParcela(i, "vencimento", e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Valor</Label><Input value={p.valor} onChange={(e) => updateParcela(i, "valor", e.target.value)} placeholder="R$ 0.000,00" /></div>
+                <div className="space-y-1"><Label className="text-xs">Valor</Label><Input value={formatCurrencyInput(p.valor)} onChange={(e) => updateParcela(i, "valor", handleCurrencyChange(e.target.value))} inputMode="numeric" placeholder="R$ 0.000,00" /></div>
                 <Button variant="ghost" size="icon" onClick={() => removeParcela(i)} disabled={parcelas.length === 1}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))}
