@@ -16,7 +16,7 @@ export function TabelaParcelas({ resultado }: { resultado: ResultadoSimulacao })
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <div className="max-h-[420px] overflow-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[560px] text-sm">
           <thead className="sticky top-0 bg-muted/80 backdrop-blur text-xs text-muted-foreground">
             <tr>
               <th className="px-3 py-2 text-left font-medium">Parcela</th>
