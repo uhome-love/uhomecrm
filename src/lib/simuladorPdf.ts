@@ -108,11 +108,11 @@ function buildHtml(d: DadosPdf): string {
     .map(
       (p) => `
       <tr>
-        <td style="padding:6px 8px;border-bottom:1px solid #EEF0F5;">${p.numero}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #EEF0F5;text-align:right;font-weight:600;">${fmt(p.prestacao)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.juros)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.amortizacao)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #EEF0F5;text-align:right;">${fmt(p.saldoDevedor)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #EEF0F5;">${p.numero}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #EEF0F5;text-align:right;font-weight:600;">${fmt(p.prestacao)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.juros)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.amortizacao)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #EEF0F5;text-align:right;">${fmt(p.saldoDevedor)}</td>
       </tr>`,
     )
     .join("");
@@ -208,11 +208,11 @@ function buildHtml(d: DadosPdf): string {
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="color:${MUTED};text-align:left;">
-              <th style="padding:6px 8px;border-bottom:2px solid #E5E8F0;">Parcela</th>
-              <th style="padding:6px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Prestação</th>
-              <th style="padding:6px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Juros</th>
-              <th style="padding:6px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Amortização</th>
-              <th style="padding:6px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Saldo devedor</th>
+              <th style="padding:5px 8px;border-bottom:2px solid #E5E8F0;">Parcela</th>
+              <th style="padding:5px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Prestação</th>
+              <th style="padding:5px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Juros</th>
+              <th style="padding:5px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Amortização</th>
+              <th style="padding:5px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Saldo devedor</th>
             </tr>
           </thead>
           <tbody>${linhasTabela}</tbody>
