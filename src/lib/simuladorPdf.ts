@@ -170,8 +170,8 @@ function buildHtml(d: DadosPdf): string {
           <div style="font-size:11px;color:${MUTED};text-transform:uppercase;letter-spacing:.04em;">Seu corretor</div>
           <div style="font-size:16px;font-weight:700;color:${INK};">${d.corretor.nome}</div>
           <div style="font-size:12px;color:${MUTED};">
-            ${d.corretor.telefone ? `📱 ${d.corretor.telefone}` : ""}
-            ${d.corretor.email ? ` &nbsp;•&nbsp; ✉ ${d.corretor.email}` : ""}
+            ${d.corretor.telefone ? `Tel.: ${d.corretor.telefone}` : ""}
+            ${d.corretor.email ? ` &nbsp;•&nbsp; ${d.corretor.email}` : ""}
           </div>
         </div>
         <div style="background:${BRAND};color:#fff;padding:8px 16px;border-radius:10px;font-weight:600;font-size:13px;">Fale comigo</div>
