@@ -17,7 +17,28 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, FileSignature, Loader2, Download, Search } from "lucide-react";
+import { Plus, Trash2, FileSignature, Loader2, Download, Search, Pencil } from "lucide-react";
+import { formatCurrencyInput, handleCurrencyChange, parseCurrencyToNumber, numberToRawCurrency } from "@/utils/currencyFormat";
+
+// ─── Máscaras de documentos/contato ────────────────────────────────────────────
+const onlyDigits = (v: string) => v.replace(/\D/g, "");
+const maskCPF = (v: string) =>
+  onlyDigits(v).slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+const maskCNPJ = (v: string) =>
+  onlyDigits(v).slice(0, 14)
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+const maskTelefone = (v: string) => {
+  const d = onlyDigits(v).slice(0, 11);
+  if (d.length <= 10) return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d{1,4})$/, "$1-$2");
+  return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+};
+const maskRG = (v: string) => v.replace(/[^\dxX.-]/g, "").slice(0, 14);
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface CorretorOption {
