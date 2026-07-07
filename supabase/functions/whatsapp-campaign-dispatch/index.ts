@@ -399,6 +399,7 @@ serve(async (req) => {
               })
               .eq("id", send.id);
             failCount++;
+            consecutiveFails++;
           }
 
           // Delay aleatório 3-6s entre mensagens (anti-spam Meta, parece humano)
