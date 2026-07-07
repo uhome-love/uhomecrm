@@ -98,6 +98,7 @@ const App = () => (
             <Routes>
               {/* Public routes — no auth required */}
               <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
+              <Route path="/__sim_test" element={<Suspense fallback={<PageLoader />}><div className="p-4"><SimTest /></div></Suspense>} />
               <Route path="/welcome" element={<Suspense fallback={<PageLoader />}><Welcome /></Suspense>} />
               <Route path="/visita/:token" element={<Suspense fallback={<PageLoader />}><VisitaConfirmacao /></Suspense>} />
               <Route path="/indica/:codigo" element={<Suspense fallback={<PageLoader />}><ReferralPage /></Suspense>} />
