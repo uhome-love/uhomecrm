@@ -20,6 +20,7 @@ export interface DadosPdf {
   corretor: DadosCorretor;
   banco: string;
   modoLabel: string; // "Financiamento convencional" | "Minha Casa Minha Vida — Faixa X"
+  regiao?: string; // Região de referência das condições (ex.: Porto Alegre e RM)
   valorImovel: number;
   entrada: number;
   resultado: ResultadoSimulacao;
@@ -105,6 +106,7 @@ function buildHtml(d: DadosPdf): string {
         </div>
         <div style="text-align:right;font-size:12px;opacity:.9;">
           ${d.modoLabel}<br/>
+          ${d.regiao ? `${d.regiao}<br/>` : ""}
           Emitido em ${new Date().toLocaleDateString("pt-BR")}
         </div>
       </div>
