@@ -510,7 +510,7 @@ export default function IntermediacaoPage() {
         <CardContent className="grid sm:grid-cols-3 gap-4">
           <div className="space-y-2 sm:col-span-2"><Label>Empreendimento</Label><Input value={empreendimento} onChange={(e) => setEmpreendimento(e.target.value)} placeholder="Ex: Shift Torre Residencial" /></div>
           <div className="space-y-2"><Label>Unidade</Label><Input value={unidade} onChange={(e) => setUnidade(e.target.value)} placeholder="Ex: 1107" /></div>
-          <div className="space-y-2 sm:col-span-3"><Label>VGV (valor do imóvel)</Label><Input value={vgv} onChange={(e) => setVgv(e.target.value)} placeholder="R$ 000.000,00" /></div>
+          <div className="space-y-2 sm:col-span-3"><Label>VGV (valor do imóvel)</Label><Input value={formatCurrencyInput(vgv)} onChange={(e) => setVgv(handleCurrencyChange(e.target.value))} inputMode="numeric" placeholder="R$ 000.000,00" /></div>
         </CardContent>
       </Card>
 
