@@ -712,7 +712,7 @@ export default function IntermediacaoPage() {
         </TabsContent>
 
         <TabsContent value="historico">
-          <HistoricoTab />
+          <HistoricoTab onEditar={carregarIntermediacao} />
         </TabsContent>
       </Tabs>
     </div>
