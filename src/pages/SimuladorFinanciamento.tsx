@@ -14,8 +14,11 @@ import { AtualizarTaxasDialog } from "@/components/simulador/AtualizarTaxasDialo
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { fmtMoney } from "@/lib/fmtMoney";
 import {
-  simular, analisarRenda, analisarIdade, type SistemaAmortizacao, type ResultadoSimulacao,
+  simular, analisarRenda, analisarIdade, idadeEmMeses, type SistemaAmortizacao, type ResultadoSimulacao,
 } from "@/lib/financiamento";
+import {
+  calcularSeguros, DATA_REFERENCIA_SEGUROS, type ResultadoComSeguros,
+} from "@/lib/segurosFinanciamento";
 import { BANCOS, getBanco, getCondicao, DATA_REFERENCIA_TAXAS, REGIAO_REFERENCIA, type TipoImovel } from "@/lib/bancosFinanciamento";
 import {
   enquadrarMCMV, MCMV_PRAZO_MAX_MESES, DATA_REFERENCIA_MCMV, type EnquadramentoMCMV,
