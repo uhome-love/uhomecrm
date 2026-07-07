@@ -192,6 +192,7 @@ serve(async (req) => {
 
       let sentCount = 0;
       let failCount = 0;
+      let consecutiveFails = 0;
       const startTime = Date.now();
       const MAX_EXECUTION_MS = 110_000; // 110s — espaço para delays maiores
 
