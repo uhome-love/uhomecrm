@@ -429,7 +429,7 @@ export default function IntermediacaoPage() {
         </div>
       </header>
 
-      <Tabs defaultValue="gerar" className="space-y-6">
+      <Tabs value={aba} onValueChange={setAba} className="space-y-6">
         <TabsList>
           <TabsTrigger value="gerar">Gerar Intermediação</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
