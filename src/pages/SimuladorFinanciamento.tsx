@@ -353,7 +353,7 @@ export default function SimuladorFinanciamento() {
         </Card>
 
         {/* ─── Resultado ─── */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
           {mcmvAtivo && enquadramento && (
             <Card className="p-4 border-primary/30 bg-accent/40">
               <div className="flex items-center gap-2 text-sm font-medium">
