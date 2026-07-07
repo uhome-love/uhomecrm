@@ -1,0 +1,2 @@
+UPDATE public.roleta_campanhas SET ativo = true WHERE id = 'd001499d-a315-4670-a58a-0f50fe312543';
+UPDATE public.roleta_campanhas SET ativo = false WHERE id IN ('3e7308f9-5e45-4d1a-9115-0ce95f1468e1','b1563317-61a0-4345-9e28-9738637fac5b');
