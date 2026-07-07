@@ -5,8 +5,8 @@
  *  - PRICE: parcela fixa. PMT = PV·i / (1 − (1+i)^−n)
  *  - SAC:   amortização constante. amortização = PV/n; juros = saldo·i; parcela decrescente.
  *
- * Convenção de taxa: a taxa de entrada é ANUAL (a.a.). A taxa mensal é derivada
- * por capitalização composta: i_m = (1 + i_a)^(1/12) − 1.
+ * Convenção de taxa: a taxa de entrada é ANUAL (a.a., nominal). A taxa mensal segue
+ * a prática dos simuladores bancários brasileiros (SFH/SBPE): i_m = i_a / 12.
  *
  * IMPORTANTE: valores estimativos. Não incluem TR, seguros (MIP/DFI) nem CET.
  */
@@ -34,9 +34,12 @@ export interface ResultadoSimulacao {
   parcelas: ParcelaDetalhe[];
 }
 
-/** Converte taxa anual (ex.: 0.1119 = 11,19% a.a.) em taxa mensal composta. */
+/**
+ * Converte taxa anual nominal (ex.: 0.1119 = 11,19% a.a.) em taxa mensal.
+ * Convenção dos simuladores bancários brasileiros: i_m = i_a / 12.
+ */
 export function taxaAnualParaMensal(taxaAnual: number): number {
-  return Math.pow(1 + taxaAnual, 1 / 12) - 1;
+  return taxaAnual / 12;
 }
 
 /** Tabela PRICE — parcela fixa. */
