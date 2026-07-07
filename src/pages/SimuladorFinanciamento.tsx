@@ -172,7 +172,7 @@ export default function SimuladorFinanciamento() {
           <div>
             <h1 className="font-display text-xl text-foreground sm:text-2xl">Simulador de Financiamento</h1>
             <p className="text-xs text-muted-foreground">
-              Taxas de referência: {DATA_REFERENCIA_TAXAS} · valores estimativos (+ TR, sem seguros/CET)
+              {REGIAO_REFERENCIA} · Taxas de referência: {DATA_REFERENCIA_TAXAS} · estimativo (+ TR, sem seguros/CET)
             </p>
           </div>
         </div>
