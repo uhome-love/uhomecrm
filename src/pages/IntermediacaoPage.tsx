@@ -458,7 +458,7 @@ export default function IntermediacaoPage() {
           {tipoPessoa === "PJ" ? (
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Razão Social</Label><Input value={razaoSocial} onChange={(e) => setRazaoSocial(e.target.value)} placeholder="Ex: Empresa Exemplo LTDA." /></div>
-              <div className="space-y-2"><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="00.000.000/0001-00" /></div>
+              <div className="space-y-2"><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(maskCNPJ(e.target.value))} inputMode="numeric" placeholder="00.000.000/0001-00" /></div>
               <div className="space-y-2 sm:col-span-2"><Label>Nome do sócio-administrador</Label><Input value={socioAdmin} onChange={(e) => setSocioAdmin(e.target.value)} placeholder="Ex: Carlos Souza" /></div>
             </div>
           ) : (
