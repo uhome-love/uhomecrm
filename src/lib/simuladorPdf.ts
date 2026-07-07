@@ -16,6 +16,20 @@ export interface DadosCorretor {
   avatarUrl?: string | null;
 }
 
+export interface DadosSeguros {
+  seguradora: string;
+  cetAnual: number;
+  primeiraParcelaTotal: number;
+  ultimaParcelaTotal: number;
+  mip1: number;
+  dfi1: number;
+  tarifa: number;
+  totalSeguros: number;
+  idadeConsiderada: number;
+  idadeEstimada: boolean;
+  dataReferencia: string;
+}
+
 export interface DadosPdf {
   corretor: DadosCorretor;
   banco: string;
@@ -30,6 +44,8 @@ export interface DadosPdf {
   clienteNome?: string;
   fonteTaxas: string;
   dataReferencia: string;
+  /** Estimativa de seguros (MIP/DFI) + tarifa + CET aproximado, quando ativa. */
+  seguros?: DadosSeguros;
 }
 
 const BRAND = "#4969FF";
