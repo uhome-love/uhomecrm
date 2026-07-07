@@ -239,7 +239,12 @@ function buildHtml(d: DadosPdf): string {
       <!-- Rodapé / aviso legal -->
       <div style="margin-top:18px;font-size:10.5px;color:${MUTED};line-height:1.5;border-top:1px solid #EEF0F5;padding-top:12px;">
         <strong>Taxas de referência: ${d.dataReferencia}.</strong> Fonte: ${d.fonteTaxas}.
-        Simulação estimativa (+ TR, sem seguros/CET). No Minha Casa Minha Vida, o enquadramento, o subsídio e a taxa
+        ${
+          d.seguros
+            ? "Parcela já com estimativa de seguros MIP/DFI e tarifa de administração; CET aproximado (não inclui TR projetada, IOF nem tarifa de avaliação — o CET oficial sai na carta do banco). Seguros são estimativas de mercado por idade/seguradora e variam conforme a apólice."
+            : "Simulação estimativa (+ TR, sem seguros/CET)."
+        }
+        No Minha Casa Minha Vida, o enquadramento, o subsídio e a taxa
         dependem da análise da Caixa por renda/região. Condições finais sujeitas à aprovação do banco.
       </div>
     </div>
