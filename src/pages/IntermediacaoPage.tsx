@@ -184,6 +184,63 @@ export default function IntermediacaoPage() {
   const [gerando, setGerando] = useState(false);
   const [carregandoCorretores, setCarregandoCorretores] = useState(true);
 
+  // Aba ativa (controlada, para permitir "Editar" a partir do histórico)
+  const [aba, setAba] = useState("gerar");
+
+  // Carrega um payload salvo de volta no formulário (fluxo de edição).
+  const carregarIntermediacao = (p: any) => {
+    if (!p) return;
+    const c = p.comprador ?? {};
+    setTipoPessoa(c.tipoPessoa === "PJ" ? "PJ" : "PF");
+    setRazaoSocial(c.razaoSocial ?? "");
+    setCnpj(c.cnpj ?? "");
+    setSocioAdmin(c.socioAdmin ?? "");
+    setNomeCompleto(c.nomeCompleto ?? "");
+    setGenero(c.genero ?? "");
+    setProfissao(c.profissao ?? "");
+    setEstadoCivil(c.estadoCivil ?? "");
+    setRegimeBens(c.regimeBens ?? "");
+    setCpf(c.cpf ?? "");
+    setRg(c.rg ?? "");
+    setTelefone(c.telefone ?? "");
+    setEmail(c.email ?? "");
+    setEndereco(c.endereco ?? "");
+
+    const im = p.imovel ?? {};
+    setEmpreendimento(im.empreendimento ?? "");
+    setUnidade(im.unidade ?? "");
+    setVgv(numberToRawCurrency(im.vgv ?? 0));
+
+    const corrs = Array.isArray(p.corretores) ? p.corretores : [];
+    const mapCorr = (x: any): CorretorForm => ({
+      user_id: "",
+      nome: x?.nome ?? "",
+      cpf: x?.cpf ?? "",
+      rg: x?.rg ?? "",
+      email: x?.email ?? "",
+      percentual: x?.percentual != null ? String(x.percentual) : "",
+    });
+    setCorretor1(corrs[0] ? mapCorr(corrs[0]) : { ...emptyCorretor });
+    if (corrs[1]) { setUsarCorretor2(true); setCorretor2(mapCorr(corrs[1])); }
+    else { setUsarCorretor2(false); setCorretor2({ ...emptyCorretor }); }
+
+    const co = p.comissao ?? {};
+    setValorTotal(numberToRawCurrency(co.valorTotal ?? 0));
+    setPctGabrielle(co.pctGabrielle != null ? String(co.pctGabrielle) : "10");
+    setPctDiretoria(co.pctDiretoria != null ? String(co.pctDiretoria) : "5");
+    const pcs = Array.isArray(co.parcelas) ? co.parcelas : [];
+    setParcelas(pcs.length ? pcs.map((x: any) => ({ vencimento: x?.vencimento ?? "", valor: numberToRawCurrency(x?.valor ?? 0) })) : [{ vencimento: "", valor: "" }]);
+
+    const ts = Array.isArray(p.testemunhas) ? p.testemunhas : [];
+    setTestemunha1(ts[0] ? { nome: ts[0].nome ?? "", email: ts[0].email ?? "" } : { nome: "", email: "" });
+    setTestemunha2(ts[1] ? { nome: ts[1].nome ?? "", email: ts[1].email ?? "" } : { ...CAROLINA });
+
+    setDataContrato(p.dataContrato ?? hoje);
+    setAba("gerar");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.info("Dados carregados. Ajuste o que precisar e gere novamente.");
+  };
+
   // Carregar corretores (via RPC SECURITY DEFINER — contorna RLS de user_roles p/ gestores)
   useEffect(() => {
     (async () => {
