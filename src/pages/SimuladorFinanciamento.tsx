@@ -16,7 +16,7 @@ import { fmtMoney } from "@/lib/fmtMoney";
 import {
   simular, analisarRenda, analisarIdade, type SistemaAmortizacao, type ResultadoSimulacao,
 } from "@/lib/financiamento";
-import { BANCOS, getBanco, DATA_REFERENCIA_TAXAS } from "@/lib/bancosFinanciamento";
+import { BANCOS, getBanco, getCondicao, DATA_REFERENCIA_TAXAS, REGIAO_REFERENCIA, type TipoImovel } from "@/lib/bancosFinanciamento";
 import {
   enquadrarMCMV, MCMV_PRAZO_MAX_MESES, DATA_REFERENCIA_MCMV, type EnquadramentoMCMV,
 } from "@/lib/mcmvFaixas";
