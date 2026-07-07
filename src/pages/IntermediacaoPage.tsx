@@ -310,7 +310,7 @@ export default function IntermediacaoPage() {
 
     const payload = {
       comprador,
-      imovel: { empreendimento, unidade, vgv: num(vgv) },
+      imovel: { empreendimento, unidade, vgv: parseCurrencyToNumber(vgv) },
       corretores: [
         { nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
         ...(usarCorretor2 && corretor2.user_id
@@ -318,10 +318,10 @@ export default function IntermediacaoPage() {
           : []),
       ],
       comissao: {
-        valorTotal: num(valorTotal),
+        valorTotal: parseCurrencyToNumber(valorTotal),
         pctGabrielle: num(pctGabrielle),
         pctDiretoria: num(pctDiretoria),
-        parcelas: parcelas.map((p) => ({ vencimento: p.vencimento, valor: num(p.valor) })),
+        parcelas: parcelas.map((p) => ({ vencimento: p.vencimento, valor: parseCurrencyToNumber(p.valor) })),
       },
       testemunhas: [
         { nome: testemunha1.nome.trim(), email: testemunha1.email.trim() },
