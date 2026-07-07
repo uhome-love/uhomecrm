@@ -380,6 +380,15 @@ export default function SimuladorFinanciamento() {
             </p>
           </div>
 
+          {/* Seguros + CET */}
+          <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-accent/50 p-3">
+            <div>
+              <p className="text-sm font-medium flex items-center gap-1.5"><Percent className="h-4 w-4 text-primary" /> Incluir seguros e CET (estimado)</p>
+              <p className="text-xs text-muted-foreground">MIP + DFI + tarifa, deixando a parcela próxima da carta do banco</p>
+            </div>
+            <Switch checked={incluirSeguros} onCheckedChange={setIncluirSeguros} />
+          </div>
+
           <Button onClick={handleSimular} size="lg" className="w-full gap-2">
             <Calculator className="h-4 w-4" /> Simular financiamento
           </Button>
