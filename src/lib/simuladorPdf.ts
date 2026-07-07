@@ -108,11 +108,11 @@ function buildHtml(d: DadosPdf): string {
     .map(
       (p) => `
       <tr>
-        <td style="padding:6px 8px;border-bottom:1px solid #EEF0F5;">${p.numero}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #EEF0F5;text-align:right;font-weight:600;">${fmt(p.prestacao)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.juros)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.amortizacao)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #EEF0F5;text-align:right;">${fmt(p.saldoDevedor)}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEF0F5;">${p.numero}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEF0F5;text-align:right;font-weight:600;">${fmt(p.prestacao)}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.juros)}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.amortizacao)}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEF0F5;text-align:right;">${fmt(p.saldoDevedor)}</td>
       </tr>`,
     )
     .join("");
@@ -131,11 +131,11 @@ function buildHtml(d: DadosPdf): string {
   return `
   <div style="font-family:${FONT};color:${INK};width:760px;padding:0;background:#fff;border-radius:14px;overflow:hidden;box-sizing:border-box;">
     <!-- Header -->
-    <div style="background:linear-gradient(135deg,${BRAND},${BRAND_DARK});padding:26px 32px;color:#fff;">
+    <div style="background:linear-gradient(135deg,${BRAND},${BRAND_DARK});padding:18px 32px;color:#fff;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
           ${logoUHomePill(30)}
-          <div style="font-size:13px;opacity:.92;margin-top:10px;font-weight:500;">Simulação de Financiamento Imobiliário</div>
+          <div style="font-size:13px;opacity:.92;margin-top:6px;font-weight:500;">Simulação de Financiamento Imobiliário</div>
         </div>
         <div style="text-align:right;font-size:12px;opacity:.9;font-weight:500;">
           ${d.modoLabel}<br/>
@@ -145,8 +145,8 @@ function buildHtml(d: DadosPdf): string {
       </div>
     </div>
 
-    <div style="padding:24px 32px;">
-      ${d.clienteNome ? `<div style="font-size:13px;color:${MUTED};margin-bottom:12px;">Cliente: <strong style="color:${INK};">${d.clienteNome}</strong></div>` : ""}
+    <div style="padding:16px 32px 18px;">
+      ${d.clienteNome ? `<div style="font-size:13px;color:${MUTED};margin-bottom:8px;">Cliente: <strong style="color:${INK};">${d.clienteNome}</strong></div>` : ""}
 
       <!-- Hero cards -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
@@ -164,7 +164,7 @@ function buildHtml(d: DadosPdf): string {
       ${subsidioLinha}
 
       <!-- Resumo -->
-      <div class="avoid-break" style="margin-top:20px;background:#F7F8FC;border:1px solid #EEF0F5;border-radius:12px;padding:16px;">
+      <div class="avoid-break" style="margin-top:12px;background:#F7F8FC;border:1px solid #EEF0F5;border-radius:12px;padding:12px 14px;">
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:13px;">
           <div><span style="color:${MUTED};">Sistema</span><br/><strong>${r.sistema}</strong></div>
           <div><span style="color:${MUTED};">Taxa de juros</span><br/><strong>${(r.taxaAnual * 100).toFixed(2)}% a.a. (${(r.taxaMensal * 100).toFixed(3)}% a.m.)</strong></div>
@@ -173,7 +173,7 @@ function buildHtml(d: DadosPdf): string {
           <div><span style="color:${MUTED};">Total de juros</span><br/><strong>${fmt(r.totalJuros)}</strong></div>
           <div><span style="color:${MUTED};">Total pago</span><br/><strong>${fmt(r.totalPago)}</strong></div>
         </div>
-        <div style="margin-top:12px;">${rendaSelo}</div>
+        <div style="margin-top:8px;">${rendaSelo}</div>
         ${d.analiseIdade ? `<div style="margin-top:8px;font-size:12px;color:${MUTED};">Idade do proponente: ${d.analiseIdade.idadeAnos} anos — prazo dentro do limite de 80 anos e 6 meses ao fim do contrato.</div>` : ""}
       </div>
 
@@ -181,19 +181,19 @@ function buildHtml(d: DadosPdf): string {
         d.seguros
           ? `
       <!-- Seguros + CET -->
-      <div class="avoid-break" style="margin-top:16px;background:#F0F2FF;border:1px solid #DEE3FF;border-radius:12px;padding:16px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Parcela com seguros e CET aproximado</div>
+      <div class="avoid-break" style="margin-top:12px;background:#F0F2FF;border:1px solid #DEE3FF;border-radius:12px;padding:12px 14px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">Parcela com seguros e CET aproximado</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
           ${card("1ª parcela + seguros", fmt(d.seguros.primeiraParcelaTotal), true)}
           ${card("CET aproximado", `${(d.seguros.cetAnual * 100).toFixed(2)}% a.a.`)}
           ${card("Custo total dos seguros", fmt(d.seguros.totalSeguros))}
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:12px;margin-top:12px;color:${MUTED};">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:12px;margin-top:8px;color:${MUTED};">
           <div>MIP (1ª): <strong style="color:${INK};">${fmt(d.seguros.mip1)}</strong></div>
           <div>DFI (mensal): <strong style="color:${INK};">${fmt(d.seguros.dfi1)}</strong></div>
           <div>Tarifa adm.: <strong style="color:${INK};">${fmt(d.seguros.tarifa)}</strong></div>
         </div>
-        <div style="margin-top:10px;font-size:11px;color:${MUTED};">
+        <div style="margin-top:8px;font-size:11px;color:${MUTED};">
           Seguradora de referência: <strong style="color:${INK};">${d.seguros.seguradora}</strong>.
           MIP calculado para ${d.seguros.idadeConsiderada} anos${d.seguros.idadeEstimada ? " (idade estimada — informe a data de nascimento para maior precisão)" : ""}
           e recalculado sobre o saldo devedor a cada faixa etária. Valores estimados (ref. ${d.seguros.dataReferencia}).
@@ -203,16 +203,16 @@ function buildHtml(d: DadosPdf): string {
       }
 
       <!-- Tabela -->
-      <div class="avoid-break" style="margin-top:20px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">Evolução das parcelas</div>
+      <div class="avoid-break" style="margin-top:12px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:6px;">Evolução das parcelas</div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="color:${MUTED};text-align:left;">
-              <th style="padding:6px 8px;border-bottom:2px solid #E5E8F0;">Parcela</th>
-              <th style="padding:6px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Prestação</th>
-              <th style="padding:6px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Juros</th>
-              <th style="padding:6px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Amortização</th>
-              <th style="padding:6px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Saldo devedor</th>
+              <th style="padding:5px 8px;border-bottom:2px solid #E5E8F0;">Parcela</th>
+              <th style="padding:5px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Prestação</th>
+              <th style="padding:5px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Juros</th>
+              <th style="padding:5px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Amortização</th>
+              <th style="padding:5px 8px;border-bottom:2px solid #E5E8F0;text-align:right;">Saldo devedor</th>
             </tr>
           </thead>
           <tbody>${linhasTabela}</tbody>
@@ -220,7 +220,7 @@ function buildHtml(d: DadosPdf): string {
       </div>
 
       <!-- Corretor -->
-      <div class="avoid-break" style="margin-top:24px;display:flex;align-items:center;gap:14px;background:#F0F2FF;border:1px solid #DEE3FF;border-radius:12px;padding:16px;">
+      <div class="avoid-break" style="margin-top:14px;display:flex;align-items:center;gap:14px;background:#F0F2FF;border:1px solid #DEE3FF;border-radius:12px;padding:12px 14px;">
         ${
           d.corretor.avatarUrl
             ? `<img src="${d.corretor.avatarUrl}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;" />`
@@ -238,7 +238,7 @@ function buildHtml(d: DadosPdf): string {
       </div>
 
       <!-- Rodapé / aviso legal -->
-      <div class="avoid-break" style="margin-top:18px;font-size:10.5px;color:${MUTED};line-height:1.5;border-top:1px solid #EEF0F5;padding-top:12px;">
+      <div class="avoid-break" style="margin-top:12px;font-size:10.5px;color:${MUTED};line-height:1.45;border-top:1px solid #EEF0F5;padding-top:10px;">
         <strong>Taxas de referência: ${d.dataReferencia}.</strong> Fonte: ${d.fonteTaxas}.
         ${
           d.seguros
