@@ -127,7 +127,7 @@ export default function SimuladorFinanciamento() {
     setResultado(r);
   }
 
-  const analiseRenda = resultado ? analisarRenda(resultado.primeiraParcela, renda) : null;
+  // Análise de renda considera a parcela com seguros quando o toggle está ativo.
 
   // Seguros (MIP/DFI) + tarifa + CET aproximado — estimativa por seguradora/idade.
   const seguros: ResultadoComSeguros | null = useMemo(() => {
