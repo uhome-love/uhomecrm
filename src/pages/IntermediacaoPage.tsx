@@ -229,9 +229,9 @@ export default function IntermediacaoPage() {
       { nome: corretor1.nome || "Corretor 1", pct: num(corretor1.percentual) },
       ...(usarCorretor2 ? [{ nome: corretor2.nome || "Corretor 2", pct: num(corretor2.percentual) }] : []),
     ];
-    const valoresParcelas = parcelas.map((p) => num(p.valor));
+    const valoresParcelas = parcelas.map((p) => parseCurrencyToNumber(p.valor));
     return calcularCredores(
-      num(valorTotal),
+      parseCurrencyToNumber(valorTotal),
       corretoresInput,
       num(pctGabrielle),
       num(pctDiretoria),
