@@ -1,56 +1,36 @@
-# Melhorias na página de Intermediação
+# Ativar template connectjw_julho no Reengajamento
 
-## 1. Campos de moeda pré-formatados (R$ / BRL)
+## Objetivo
+Deixar o template Meta **connectjw_julho** (aprovado, cabeçalho de imagem + botões SIM/NÃO) pronto para disparo na Central de Disparos/Reengajamento e garantir que, ao reengajar (resposta **SIM**), o lead vá para **Reengajamento → Roleta → Fila do CEO** no segmento **S2 - Investimento**, com empreendimento **Connect JW**.
 
-Hoje os campos **VGV**, **Valor total da corretagem** e **Valor das parcelas** são texto livre. A função interna `num()` inclusive falha quando o usuário digita "R$ ..." (o prefixo quebra o `parseFloat`).
+## Situação atual
+- A lista de templates no card de disparo (`DisparoCustomizadoCard.tsx`) é puxada direto do Meta Business. Como o `connectjw_julho` está aprovado, ele **já aparece automaticamente** para seleção — não precisa "cadastrar" nada para existir.
+- Falta: (1) mapear a **imagem fixa do cabeçalho** para não colar a URL toda vez; (2) corrigir o roteamento por segmento na resposta SIM.
+- Hoje a função `reativar_lead_para_fila_ceo` só tem regra para casatua/vivid/lake/atrio. Para templates não mapeados (connectjw), ela mantém o segmento antigo do lead — ou seja, **não cai em Investimento**.
 
-Mudança:
-- Aplicar máscara de moeda brasileira nos 3 campos, formatando enquanto o usuário digita (ex.: digitar `900000` vira `R$ 900.000,00`).
-- Reaproveitar os utilitários já existentes no projeto (`formatCurrencyInput`, `handleCurrencyChange`, `parseCurrencyToNumber` em `src/utils/currencyFormat.ts`) — sem criar código novo de formatação.
-- Garantir que o cálculo em tempo real e o envio para geração usem o número correto (via `parseCurrencyToNumber`), corrigindo o bug atual do prefixo "R$".
+## O que será feito
 
-## 2. Taxas padrão
+### 1. Imagem do cabeçalho (imagem já recebida)
+- Enviar a imagem recebida (criativo "3 Quadras do Shopping Iguatemi") para o bucket `campaign-images/reengajamento/connectjw-julho.png`.
+- Mapear em `DisparoCustomizadoCard.tsx`:
+  - `connectjw_julho` → URL pública da imagem.
+- Resultado: ao selecionar o template no card, a imagem do header é preenchida sozinha.
 
-- **Gabrielle**: alterar o padrão de `15%` para `10%`.
-- **Diretoria**: alterar o padrão de `10%` para `5%`.
-- Continuam editáveis manualmente; muda apenas o valor inicial.
+### 2. Roteamento SIM → Fila do CEO no segmento Investimento
+- Atualizar a função `reativar_lead_para_fila_ceo` (migration) adicionando o ramo para Connect JW:
+  - Se o nome do template contém `connectjw` / `connect jw` / `connect_jw` →
+    - `segmento_id` = **S2 - Investimento** (`dd96ad01-7e76-40e9-8324-211166168b26`)
+    - `empreendimento` = **Connect JW**
+  - Mantém todo o fluxo já existente: cancela parcerias/tarefas, `reengajamento_status = respondeu_sim`, `origem = Reengajamento`, `aceite_status = pendente_distribuicao` (entra na Fila do CEO para distribuição manual), registra histórico.
+- Resposta **NÃO**: sem mudança (continua inativa + arquiva, sai dos descartados).
 
-## 3. Editar uma intermediação depois de gerada
-
-Hoje, se algo precisa ser alterado, é necessário preencher tudo de novo — o histórico só guarda um resumo, não os dados completos.
-
-Mudança:
-- Guardar o **conteúdo completo do formulário** (comprador, imóvel, corretores, comissão, parcelas, testemunhas, data) junto ao registro da intermediação.
-- No **Histórico**, adicionar um botão **"Editar"** ao lado de Download/Apagar. Ao clicar:
-  - Os dados são recarregados na aba "Gerar Intermediação".
-  - O usuário ajusta o que precisar e gera novamente o documento atualizado.
-- O documento continua sendo `.docx` (editável no Word), mas agora também dá para regerar direto pelo sistema com os dados preservados.
-
-```text
-Histórico
- ┌───────────────────────────────────────────────┐
- │ Cliente X · Empreendimento Y   [Editar][⬇][🗑] │
- └───────────────────────────────────────────────┘
-        │ clica "Editar"
-        ▼
- Aba "Gerar" preenchida com todos os dados → ajusta → Gerar
-```
-
-## 4. Melhorias gerais identificadas
-
-- **Máscaras de CPF/CNPJ/RG/telefone/CEP**: aplicar formatação automática nos campos de documento e contato (comprador e corretores), reduzindo erro de digitação no contrato.
-- **Correção do bug de valor**: como descrito no item 1, valores com "R$" hoje podem ser interpretados como zero — será corrigido.
-- **Percentuais**: adicionar sufixo `%` visual e impedir valores negativos nos campos de comissão.
-- **Feedback de soma**: já existe aviso quando parcelas divergem do total e quando % passa de 100% — manter e deixar mais visível.
+### 3. Validação
+- Confirmar via `meta-templates-list` que o `connectjw_julho` volta com `status = APPROVED` e `has_buttons = true`.
+- Conferir que não está na blacklist (`blocked_templates`).
+- Query de teste: após reengajar um lead, verificar que fica com `segmento_id` de Investimento, stage de novo lead e `aceite_status = pendente_distribuicao` (Fila do CEO).
 
 ## Detalhes técnicos
-
-- `src/pages/IntermediacaoPage.tsx`:
-  - Trocar `num()` por `parseCurrencyToNumber` nos campos monetários; usar `formatCurrencyInput`/`handleCurrencyChange` no `onChange`/`value`.
-  - Ajustar defaults `pctGabrielle="10"`, `pctDiretoria="5"`.
-  - Adicionar handler de "Editar" que popula todos os estados a partir do payload salvo e muda para a aba "gerar".
-- Migração de banco: adicionar coluna `payload jsonb` em `public.intermediacoes` (com os GRANTs já existentes mantidos).
-- `supabase/functions/gerar-intermediacao/index.ts`: incluir `payload: body` no `insert` do histórico.
-- `HistoricoTab`: incluir `payload` no select e o botão "Editar" via callback para o componente pai.
-
-Nenhuma alteração de layout estrutural — apenas formatação de campos, defaults e o fluxo de edição.
+- Frontend: `src/components/central-nutricao/DisparoCustomizadoCard.tsx` (mapa `TEMPLATE_HEADER_IMAGES`).
+- Migration: `CREATE OR REPLACE FUNCTION public.reativar_lead_para_fila_ceo(...)` com o novo ramo `v_is_connectjw` antes do `ELSE`.
+- Segmento Investimento: `dd96ad01-7e76-40e9-8324-211166168b26`.
+- Storage: bucket `campaign-images` (upload via ferramenta de storage).
