@@ -291,7 +291,7 @@ export default function IntermediacaoPage() {
 
     // Aviso não bloqueante: parcelas divergem do valor total.
     if (parcelasDivergem) {
-      toast.warning(`Atenção: a soma das parcelas (${brl(somaParcelas)}) difere do valor total (${brl(num(valorTotal))}).`);
+      toast.warning(`Atenção: a soma das parcelas (${brl(somaParcelas)}) difere do valor total (${brl(parseCurrencyToNumber(valorTotal))}).`);
     }
 
     // Comprador: envia apenas os campos do tipo selecionado.
