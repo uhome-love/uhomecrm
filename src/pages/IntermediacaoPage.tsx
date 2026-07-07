@@ -539,7 +539,7 @@ export default function IntermediacaoPage() {
               <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={corretor1.cpf} onChange={(e) => setCorretor1({ ...corretor1, cpf: maskCPF(e.target.value) })} inputMode="numeric" placeholder="000.000.000-00" /></div>
               <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={corretor1.rg} onChange={(e) => setCorretor1({ ...corretor1, rg: maskRG(e.target.value) })} placeholder="0000000000" /></div>
               <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={corretor1.email} onChange={(e) => setCorretor1({ ...corretor1, email: e.target.value })} placeholder="nome@uhome.imb.br" /></div>
-              <div className="space-y-1"><Label className="text-xs">% Comissão</Label><Input value={corretor1.percentual} onChange={(e) => setCorretor1({ ...corretor1, percentual: e.target.value })} /></div>
+              <div className="space-y-1"><Label className="text-xs">% Comissão</Label><Input type="number" min={0} max={100} value={corretor1.percentual} onChange={(e) => setCorretor1({ ...corretor1, percentual: e.target.value })} /></div>
             </div>
           </div>
 
