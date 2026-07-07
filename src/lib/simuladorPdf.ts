@@ -106,6 +106,7 @@ function buildHtml(d: DadosPdf): string {
         </div>
         <div style="text-align:right;font-size:12px;opacity:.9;">
           ${d.modoLabel}<br/>
+          ${d.regiao ? `${d.regiao}<br/>` : ""}
           Emitido em ${new Date().toLocaleDateString("pt-BR")}
         </div>
       </div>
