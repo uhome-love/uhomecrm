@@ -9,7 +9,10 @@ const corsHeaders = {
 };
 
 const META_GUARD_COOLDOWN_HOURS = 24;
-const META_GUARD_QUALITY_FAILS = 8;
+// Só auto-pausa quando o número acumula muitos bloqueios de qualidade (alinhado à regra de 50 falhas seguidas)
+const META_GUARD_QUALITY_FAILS = 50;
+// Máximo de falhas CONSECUTIVAS antes de pausar o disparo. Abaixo disso, continua.
+const MAX_CONSECUTIVE_FAILS = 50;
 
 async function uploadMetaMediaFromUrl(phoneNumberId: string, accessToken: string, imageUrl: string): Promise<string | null> {
   try {
