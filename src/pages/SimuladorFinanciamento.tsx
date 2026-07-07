@@ -14,8 +14,11 @@ import { AtualizarTaxasDialog } from "@/components/simulador/AtualizarTaxasDialo
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { fmtMoney } from "@/lib/fmtMoney";
 import {
-  simular, analisarRenda, analisarIdade, type SistemaAmortizacao, type ResultadoSimulacao,
+  simular, analisarRenda, analisarIdade, idadeEmMeses, type SistemaAmortizacao, type ResultadoSimulacao,
 } from "@/lib/financiamento";
+import {
+  calcularSeguros, DATA_REFERENCIA_SEGUROS, type ResultadoComSeguros,
+} from "@/lib/segurosFinanciamento";
 import { BANCOS, getBanco, getCondicao, DATA_REFERENCIA_TAXAS, REGIAO_REFERENCIA, type TipoImovel } from "@/lib/bancosFinanciamento";
 import {
   enquadrarMCMV, MCMV_PRAZO_MAX_MESES, DATA_REFERENCIA_MCMV, type EnquadramentoMCMV,
@@ -49,6 +52,7 @@ export default function SimuladorFinanciamento() {
 
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null);
   const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [incluirSeguros, setIncluirSeguros] = useState(true);
 
   const banco = getBanco(bancoId)!;
   const isCaixa = bancoId === "caixa";
@@ -123,7 +127,21 @@ export default function SimuladorFinanciamento() {
     setResultado(r);
   }
 
-  const analiseRenda = resultado ? analisarRenda(resultado.primeiraParcela, renda) : null;
+  // Análise de renda considera a parcela com seguros quando o toggle está ativo.
+
+  // Seguros (MIP/DFI) + tarifa + CET aproximado — estimativa por seguradora/idade.
+  const seguros: ResultadoComSeguros | null = useMemo(() => {
+    if (!resultado || !incluirSeguros) return null;
+    return calcularSeguros(resultado, {
+      valorImovel,
+      bancoId,
+      idadeInicialMeses: dataNasc ? idadeEmMeses(dataNasc) : null,
+    });
+  }, [resultado, incluirSeguros, valorImovel, bancoId, dataNasc]);
+
+  // Parcela analisada para o comprometimento de renda: com seguros quando ativo.
+  const parcelaParaRenda = seguros ? seguros.primeiraParcelaTotal : resultado?.primeiraParcela ?? 0;
+  const analiseRendaEfetiva = resultado ? analisarRenda(parcelaParaRenda, renda) : null;
 
   async function handlePdf(acao: "download" | "share") {
     if (!resultado) return;
@@ -147,12 +165,27 @@ export default function SimuladorFinanciamento() {
           valorImovel,
           entrada,
           resultado,
-          analiseRenda,
+          analiseRenda: analiseRendaEfetiva,
           analiseIdade,
           subsidioEstimado: enquadramento?.subsidioEstimado,
           clienteNome: clienteNome || undefined,
           fonteTaxas: mcmvAtivo ? `Portaria MCID 333/2026 (${DATA_REFERENCIA_MCMV})` : DATA_REFERENCIA_TAXAS,
           dataReferencia: mcmvAtivo ? DATA_REFERENCIA_MCMV : DATA_REFERENCIA_TAXAS,
+          seguros: seguros
+            ? {
+                seguradora: seguros.seguradora,
+                cetAnual: seguros.cetAnual,
+                primeiraParcelaTotal: seguros.primeiraParcelaTotal,
+                ultimaParcelaTotal: seguros.ultimaParcelaTotal,
+                mip1: seguros.parcelas[0]?.mip ?? 0,
+                dfi1: seguros.parcelas[0]?.dfi ?? 0,
+                tarifa: seguros.parcelas[0]?.tarifa ?? 0,
+                totalSeguros: seguros.totalSeguros,
+                idadeConsiderada: seguros.idadeConsiderada,
+                idadeEstimada: seguros.idadeEstimada,
+                dataReferencia: DATA_REFERENCIA_SEGUROS,
+              }
+            : undefined,
         },
         acao,
       );
@@ -174,7 +207,7 @@ export default function SimuladorFinanciamento() {
           <div>
             <h1 className="font-display text-xl text-foreground sm:text-2xl">Simulador de Financiamento</h1>
             <p className="text-xs text-muted-foreground">
-              {REGIAO_REFERENCIA} · Taxas de referência: {DATA_REFERENCIA_TAXAS} · estimativo (+ TR, sem seguros/CET)
+              {REGIAO_REFERENCIA} · Taxas: {DATA_REFERENCIA_TAXAS} · {incluirSeguros ? "com seguros MIP/DFI + CET estimado (+ TR)" : "estimativo (+ TR, sem seguros/CET)"}
             </p>
           </div>
         </div>
@@ -347,6 +380,15 @@ export default function SimuladorFinanciamento() {
             </p>
           </div>
 
+          {/* Seguros + CET */}
+          <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-accent/50 p-3">
+            <div>
+              <p className="text-sm font-medium flex items-center gap-1.5"><Percent className="h-4 w-4 text-primary" /> Incluir seguros e CET (estimado)</p>
+              <p className="text-xs text-muted-foreground">MIP + DFI + tarifa, deixando a parcela próxima da carta do banco</p>
+            </div>
+            <Switch checked={incluirSeguros} onCheckedChange={setIncluirSeguros} />
+          </div>
+
           <Button onClick={handleSimular} size="lg" className="w-full gap-2">
             <Calculator className="h-4 w-4" /> Simular financiamento
           </Button>
@@ -394,27 +436,53 @@ export default function SimuladorFinanciamento() {
                   ) : null}
                 </div>
 
-                {/* Análise de renda */}
-                {analiseRenda && (
+                {/* Seguros + CET aproximado */}
+                {seguros && (
+                  <div className="mt-4 rounded-xl border border-primary/30 bg-accent/40 p-4">
+                    <p className="text-sm font-medium flex items-center gap-1.5">
+                      <Percent className="h-4 w-4 text-primary" /> Parcela com seguros e CET aproximado
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      <Metric label="1ª parcela + seguros" value={fmtMoney(seguros.primeiraParcelaTotal, "exact")} highlight />
+                      <Metric label="CET aproximado" value={`${(seguros.cetAnual * 100).toFixed(2)}% a.a.`} />
+                      <Metric label="Última + seguros" value={fmtMoney(seguros.ultimaParcelaTotal, "exact")} />
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                      <span>MIP (1ª): <strong className="text-foreground">{fmtMoney(seguros.parcelas[0].mip, "exact")}</strong></span>
+                      <span>DFI/mês: <strong className="text-foreground">{fmtMoney(seguros.parcelas[0].dfi, "exact")}</strong></span>
+                      <span>Tarifa: <strong className="text-foreground">{fmtMoney(seguros.parcelas[0].tarifa, "exact")}</strong></span>
+                    </div>
+                    <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                      <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      Estimativa via {seguros.seguradora}. MIP calculado para {seguros.idadeConsiderada} anos
+                      {seguros.idadeEstimada ? " (idade estimada — informe a data de nascimento p/ maior precisão)" : ""} e
+                      recalculado sobre o saldo devedor. CET não inclui TR/IOF; o oficial sai na carta do banco.
+                    </p>
+                  </div>
+                )}
+
+                {/* Análise de renda (considera seguros quando ativos) */}
+                {analiseRendaEfetiva && (
                   <div
                     className={`mt-4 flex items-start gap-2 rounded-lg border p-3 text-sm ${
-                      analiseRenda.aprovavel
+                      analiseRendaEfetiva.aprovavel
                         ? "border-success-300 bg-success-50/40"
                         : "border-danger-300 bg-danger-50/40"
                     }`}
                   >
-                    {analiseRenda.aprovavel ? (
+                    {analiseRendaEfetiva.aprovavel ? (
                       <CheckCircle2 className="h-4 w-4 mt-0.5 text-success-600 shrink-0" />
                     ) : (
                       <AlertTriangle className="h-4 w-4 mt-0.5 text-danger-500 shrink-0" />
                     )}
                     <div>
                       <p className="font-medium">
-                        {analiseRenda.aprovavel ? "Parcela dentro de 30% da renda" : "Comprometimento acima de 30% da renda"}
-                        {" "}({(analiseRenda.percentualComprometido * 100).toFixed(1)}%)
+                        {analiseRendaEfetiva.aprovavel ? "Parcela dentro de 30% da renda" : "Comprometimento acima de 30% da renda"}
+                        {" "}({(analiseRendaEfetiva.percentualComprometido * 100).toFixed(1)}%)
+                        {seguros ? " · já com seguros" : ""}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Parcela máxima recomendada (30%): {fmtMoney(analiseRenda.parcelaMaxima, "exact")}
+                        Parcela máxima recomendada (30%): {fmtMoney(analiseRendaEfetiva.parcelaMaxima, "exact")}
                       </p>
                     </div>
                   </div>

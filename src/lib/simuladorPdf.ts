@@ -16,6 +16,20 @@ export interface DadosCorretor {
   avatarUrl?: string | null;
 }
 
+export interface DadosSeguros {
+  seguradora: string;
+  cetAnual: number;
+  primeiraParcelaTotal: number;
+  ultimaParcelaTotal: number;
+  mip1: number;
+  dfi1: number;
+  tarifa: number;
+  totalSeguros: number;
+  idadeConsiderada: number;
+  idadeEstimada: boolean;
+  dataReferencia: string;
+}
+
 export interface DadosPdf {
   corretor: DadosCorretor;
   banco: string;
@@ -30,6 +44,8 @@ export interface DadosPdf {
   clienteNome?: string;
   fonteTaxas: string;
   dataReferencia: string;
+  /** Estimativa de seguros (MIP/DFI) + tarifa + CET aproximado, quando ativa. */
+  seguros?: DadosSeguros;
 }
 
 const BRAND = "#4969FF";
@@ -160,6 +176,31 @@ function buildHtml(d: DadosPdf): string {
         ${d.analiseIdade ? `<div style="margin-top:8px;font-size:12px;color:${MUTED};">Idade do proponente: ${d.analiseIdade.idadeAnos} anos — prazo dentro do limite de 80 anos e 6 meses ao fim do contrato.</div>` : ""}
       </div>
 
+      ${
+        d.seguros
+          ? `
+      <!-- Seguros + CET -->
+      <div style="margin-top:16px;background:#F0F2FF;border:1px solid #DEE3FF;border-radius:12px;padding:16px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Parcela com seguros e CET aproximado</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          ${card("1ª parcela + seguros", fmt(d.seguros.primeiraParcelaTotal), true)}
+          ${card("CET aproximado", `${(d.seguros.cetAnual * 100).toFixed(2)}% a.a.`)}
+          ${card("Custo total dos seguros", fmt(d.seguros.totalSeguros))}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:12px;margin-top:12px;color:${MUTED};">
+          <div>MIP (1ª): <strong style="color:${INK};">${fmt(d.seguros.mip1)}</strong></div>
+          <div>DFI (mensal): <strong style="color:${INK};">${fmt(d.seguros.dfi1)}</strong></div>
+          <div>Tarifa adm.: <strong style="color:${INK};">${fmt(d.seguros.tarifa)}</strong></div>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:${MUTED};">
+          Seguradora de referência: <strong style="color:${INK};">${d.seguros.seguradora}</strong>.
+          MIP calculado para ${d.seguros.idadeConsiderada} anos${d.seguros.idadeEstimada ? " (idade estimada — informe a data de nascimento para maior precisão)" : ""}
+          e recalculado sobre o saldo devedor a cada faixa etária. Valores estimados (ref. ${d.seguros.dataReferencia}).
+        </div>
+      </div>`
+          : ""
+      }
+
       <!-- Tabela -->
       <div style="margin-top:20px;">
         <div style="font-size:14px;font-weight:700;margin-bottom:8px;">Evolução das parcelas</div>
@@ -198,7 +239,12 @@ function buildHtml(d: DadosPdf): string {
       <!-- Rodapé / aviso legal -->
       <div style="margin-top:18px;font-size:10.5px;color:${MUTED};line-height:1.5;border-top:1px solid #EEF0F5;padding-top:12px;">
         <strong>Taxas de referência: ${d.dataReferencia}.</strong> Fonte: ${d.fonteTaxas}.
-        Simulação estimativa (+ TR, sem seguros/CET). No Minha Casa Minha Vida, o enquadramento, o subsídio e a taxa
+        ${
+          d.seguros
+            ? "Parcela já com estimativa de seguros MIP/DFI e tarifa de administração; CET aproximado (não inclui TR projetada, IOF nem tarifa de avaliação — o CET oficial sai na carta do banco). Seguros são estimativas de mercado por idade/seguradora e variam conforme a apólice."
+            : "Simulação estimativa (+ TR, sem seguros/CET)."
+        }
+        No Minha Casa Minha Vida, o enquadramento, o subsídio e a taxa
         dependem da análise da Caixa por renda/região. Condições finais sujeitas à aprovação do banco.
       </div>
     </div>
