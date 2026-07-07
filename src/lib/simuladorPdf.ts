@@ -108,11 +108,11 @@ export function buildHtml(d: DadosPdf): string {
     .map(
       (p) => `
       <tr>
-        <td style="padding:4px 8px;border-bottom:1px solid #EEF0F5;">${p.numero}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #EEF0F5;text-align:right;font-weight:600;">${fmt(p.prestacao)}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.juros)}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.amortizacao)}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #EEF0F5;text-align:right;">${fmt(p.saldoDevedor)}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEF0F5;">${p.numero}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEF0F5;text-align:right;font-weight:600;">${fmt(p.prestacao)}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.juros)}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEF0F5;text-align:right;color:${MUTED};">${fmt(p.amortizacao)}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEF0F5;text-align:right;">${fmt(p.saldoDevedor)}</td>
       </tr>`,
     )
     .join("");
@@ -135,7 +135,7 @@ export function buildHtml(d: DadosPdf): string {
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
           ${logoUHomePill(30)}
-          <div style="font-size:13px;opacity:.92;margin-top:10px;font-weight:500;">Simulação de Financiamento Imobiliário</div>
+          <div style="font-size:13px;opacity:.92;margin-top:6px;font-weight:500;">Simulação de Financiamento Imobiliário</div>
         </div>
         <div style="text-align:right;font-size:12px;opacity:.9;font-weight:500;">
           ${d.modoLabel}<br/>
