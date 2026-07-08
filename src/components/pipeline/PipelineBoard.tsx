@@ -42,8 +42,8 @@ interface PipelineBoardProps {
   lensMode?: "leads" | "negocios";
 }
 
-// Etapas que pertencem ao ciclo do negócio (lente "Negócios")
-const DEAL_STAGE_TIPOS = new Set(["convertido", "proposta", "contrato_gerado", "venda", "caiu"]);
+// Etapas-âncora que NÃO viram coluna no board (destino do botão de descarte)
+const HIDDEN_STAGE_TIPOS = new Set(["descarte", "caiu"]);
 
 const COLUMN_WIDTH_DESKTOP = 268;
 const COLUMN_WIDTH_MOBILE = 268;
