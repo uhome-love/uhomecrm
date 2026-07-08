@@ -551,27 +551,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               </div>
             )}
 
-            {/* Toggle Funil / Radar (Inteligência) */}
-            {activeTab === "inteligencia" && (
-              <div className="flex items-center bg-[#f0f0f5] dark:bg-gray-800 rounded-[7px] p-0.5 ml-1 shrink-0">
-                {[
-                  { key: "funil", icon: <BarChart3 className="h-3 w-3 inline mr-1" />, label: "Funil" },
-                  { key: "radar", icon: <Radar className="h-3 w-3 inline mr-1" />, label: "Radar" },
-                ].map(v => (
-                  <button
-                    key={v.key}
-                    onClick={() => setIntelView(v.key as "funil" | "radar")}
-                    className={`px-2 py-[3px] rounded-md text-[11px] font-semibold border-none cursor-pointer ${
-                      intelView === v.key
-                        ? "bg-white dark:bg-gray-700 text-[#0a0a0a] dark:text-white"
-                        : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
-                    }`}
-                  >
-                    {v.icon}{v.label}
-                  </button>
-                ))}
-              </div>
-            )}
+
           </div>
 
           <div className="flex-1" />
