@@ -227,6 +227,31 @@ export function usePdn(mes: string) {
       });
     }
 
+    // Linhas de Visita Realizada (leads que visitaram mas ainda sem negócio ativo)
+    for (const v of visitasReal) {
+      if (v.temNegocio) continue; // já representado como negócio em outra coluna
+      out.push({
+        id: `visita-${v.id}`,
+        negocioId: null,
+        overrideId: null,
+        grupo: "visita_realizada",
+        nome: v.nome,
+        data: v.data,
+        empreendimento: v.empreendimento,
+        construtora: "",
+        vgv: 0,
+        fase: "visita_realizada",
+        situacaoLabel: "Visita realizada",
+        corretor: v.corretor,
+        equipe: "—",
+        observacoes: "",
+        proximaAcao: "",
+        diasParado: 0,
+        emRisco: false,
+        isManual: false,
+      });
+    }
+
     return out.sort((a, b) => (b.vgv - a.vgv));
   }, [negocios, corretorNomes, corretorInfoMap, overrideByNegocio, manualRows, mes]);
 
