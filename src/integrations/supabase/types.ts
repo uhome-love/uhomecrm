@@ -4958,6 +4958,7 @@ export type Database = {
       negocios: {
         Row: {
           auth_user_id: string | null
+          construtora: string | null
           corretor_id: string | null
           created_at: string | null
           data_assinatura: string | null
@@ -4994,6 +4995,7 @@ export type Database = {
         }
         Insert: {
           auth_user_id?: string | null
+          construtora?: string | null
           corretor_id?: string | null
           created_at?: string | null
           data_assinatura?: string | null
@@ -5030,6 +5032,7 @@ export type Database = {
         }
         Update: {
           auth_user_id?: string | null
+          construtora?: string | null
           corretor_id?: string | null
           created_at?: string | null
           data_assinatura?: string | null
