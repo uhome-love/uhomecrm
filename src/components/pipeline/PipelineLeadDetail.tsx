@@ -49,6 +49,7 @@ import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
 import DrawerTasksTab from "./drawer/DrawerTasksTab";
 import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
+import DrawerNegocioTab from "./drawer/DrawerNegocioTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 
 import NextActionModal from "./NextActionModal";
