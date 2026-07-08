@@ -10,8 +10,8 @@ export interface RoletaSegmento {
 const SEGMENTO_ORDER_BY_ID: Record<string, number> = {
   "9948f523-29f4-46a7-bc1b-81ff8bb8dd50": 1, // S1 - Moradia
   "409aeddf-077f-473a-97cc-dfc0692ed35e": 2, // S2 - Investimento
-  "5311aaaa-0000-4000-8000-000000000005": 3, // S3 - Foco
-  "93ca556c-9a32-4fb8-b1af-148100ea47f0": 4, // S4 - Alto Padrão
+  "5311aaaa-0000-4000-8000-000000000005": 3, // S3 - Alto Padrão
+  "93ca556c-9a32-4fb8-b1af-148100ea47f0": 4, // S4 - MCMV
 };
 
 export function getRoletaSegmentoOrder(nome: string | null | undefined) {
