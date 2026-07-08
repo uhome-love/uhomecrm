@@ -290,6 +290,14 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       }
     }
 
+    // Monta rótulos legíveis (origem/imóvel) com contagem por segmento
+    for (const seg of Object.keys(groups)) {
+      const counts = labelCounts[seg] || {};
+      groups[seg].empreendimentos = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, n]) => (n > 1 ? `${label} (${n})` : label));
+    }
+
     // Ordenação canônica: "Geral" primeiro, depois S1, S2, S3, S4.
     const segOrder = (nome: string): number => {
       if (nome === SEG_GERAL) return 0;
