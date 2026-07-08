@@ -647,6 +647,11 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <TabsTrigger value="visitas" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
                 📊 Visitas
               </TabsTrigger>
+              {lead.negocio_id && (
+                <TabsTrigger value="negocio" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
+                  💼 Negócio
+                </TabsTrigger>
+              )}
             </TabsList>
 
 
