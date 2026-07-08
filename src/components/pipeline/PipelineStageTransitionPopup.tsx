@@ -248,6 +248,52 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
 }
 
 // ─── Possível Visita ───
+function AquecimentoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
+  const [prazo, setPrazo] = useState<string>(((lead as any)?.flag_status?.prazo as string) || "30");
+  const [obs, setObs] = useState("");
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="text-base flex items-center gap-2">🔥 Aquecimento / Nutrição</DialogTitle>
+      </DialogHeader>
+      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-[10px] text-muted-foreground">Defina quando retomar o contato — aparece no card.</p>
+
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs">Quando retomar? *</Label>
+          <Select value={prazo} onValueChange={setPrazo}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {AQUECIMENTO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Observação</Label>
+          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Motivo do aquecimento, próximos passos..." />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button
+          size="sm"
+          className="text-xs gap-1"
+          onClick={() => onConfirm({
+            leadId: lead.id,
+            targetStageId,
+            observacao: `Aquecimento — retomar em ${prazo}D${obs ? ` | ${obs}` : ""}`,
+            extraData: { prazoRetomar: prazo, observacao: obs },
+          })}
+        >
+          🔥 Confirmar
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
 function PossivelVisitaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
   const [imovelTipo, setImovelTipo] = useState<"empreendimento" | "jetimob" | "manual">("empreendimento");
   const [empreendimento, setEmpreendimento] = useState(lead.empreendimento || "");
