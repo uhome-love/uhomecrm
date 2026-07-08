@@ -193,9 +193,14 @@ export default function RoletaCampanhasPanel() {
 
                 <Badge
                   variant="secondary"
-                  className={`text-[10px] shrink-0 ${segmentColor[segNome] || ""}`}
+                  className="text-[10px] shrink-0 border"
+                  style={{
+                    color: getSegmentoVisual(segNome).color,
+                    backgroundColor: getSegmentoVisual(segNome).bg,
+                    borderColor: getSegmentoVisual(segNome).border,
+                  }}
                 >
-                  {segNome}
+                  {getSegmentoVisual(segNome).icon} {segNome}
                 </Badge>
 
                 <Button
