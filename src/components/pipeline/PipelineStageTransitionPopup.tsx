@@ -815,18 +815,28 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
   const [construtora, setConstrutora] = useState("");
   const [empreendimento, setEmpreendimento] = useState(lead.empreendimento || "");
   const [dataAssinatura, setDataAssinatura] = useState("");
+  const [statusContrato, setStatusContrato] = useState<string>(((lead as any)?.flag_status?.status_contrato as string) || "em_confeccao");
   const [obs, setObs] = useState("");
   const vgvNum = Number(vgv.replace(/\./g, "").replace(",", ".")) || 0;
 
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="text-base flex items-center gap-2">📄 Contrato Gerado</DialogTitle>
+        <DialogTitle className="text-base flex items-center gap-2">📄 Contrato</DialogTitle>
       </DialogHeader>
       <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
       <p className="text-[10px] text-muted-foreground">Registre os dados do contrato — ficam salvos no histórico do lead e no PDN.</p>
 
       <div className="space-y-3">
+        <div>
+          <Label className="text-xs">Situação do contrato *</Label>
+          <Select value={statusContrato} onValueChange={setStatusContrato}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {CONTRATO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         <div>
           <Label className="text-xs">Empreendimento</Label>
           <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
