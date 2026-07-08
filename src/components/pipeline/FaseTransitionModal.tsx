@@ -90,7 +90,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
 
   // Caiu fields
   const [caiuMotivo, setCaiuMotivo] = useState("");
-  const [caiuDestino, setCaiuDestino] = useState<"pipeline" | "descarte">("pipeline");
+  const [caiuDestino, setCaiuDestino] = useState<"pipeline" | "descarte" | "inativar">("pipeline");
   const [caiuStageId, setCaiuStageId] = useState("");
   const [pipelineStages, setPipelineStages] = useState<{ id: string; nome: string }[]>([]);
 
