@@ -649,24 +649,44 @@ export default function AgendaVisitas() {
       updates.observacoes = [resultadoVisita.observacoes, observacoes].filter(Boolean).join(" | ");
     }
     await updateVisita(resultadoVisita.id, updates, true);
-    await updateStatus(resultadoVisita.id, "realizada");
 
-    if (resultadoVisita.pipeline_lead_id && feedback) {
-      const leadUpdates: any = {};
-      if (feedback.temperatura) leadUpdates.temperatura = feedback.temperatura;
-      if (feedback.proxima_acao) leadUpdates.proxima_acao = feedback.proxima_acao;
-      if (feedback.objecao) {
-        leadUpdates.observacoes = [resultadoVisita.observacoes, `Objeção: ${feedback.objecao}`].filter(Boolean).join(" | ");
-      }
-      if (Object.keys(leadUpdates).length > 0) {
-        await supabase.from("pipeline_leads").update({
-          ...leadUpdates,
-          ultima_acao_at: new Date().toISOString(),
-        } as any).eq("id", resultadoVisita.pipeline_lead_id);
+    // Status da visita conforme o resultado (integrado ao pipeline via updateStatus):
+    // não compareceu → no_show; reagendar → volta para marcada; demais → realizada.
+    const statusVisita: VisitaStatus =
+      resultado === "nao_compareceu" ? "no_show" : resultado === "reagendar" ? "marcada" : "realizada";
+    await updateStatus(resultadoVisita.id, statusVisita);
+
+    if (resultadoVisita.pipeline_lead_id) {
+      // Roteia o lead no pipeline de acordo com o resultado (fluxo único).
+      await routeLeadAfterVisita({
+        pipelineLeadId: resultadoVisita.pipeline_lead_id,
+        resultado,
+        userId: user?.id || resultadoVisita.corretor_id,
+        corretorId: resultadoVisita.corretor_id,
+        gerenteId: resultadoVisita.gerente_id,
+        nome: resultadoVisita.nome_cliente,
+        empreendimento: resultadoVisita.empreendimento,
+        telefone: resultadoVisita.telefone,
+        observacoes: feedback?.objecao || observacoes,
+      });
+
+      if (feedback) {
+        const leadUpdates: any = {};
+        if (feedback.temperatura) leadUpdates.temperatura = feedback.temperatura;
+        if (feedback.proxima_acao) leadUpdates.proxima_acao = feedback.proxima_acao;
+        if (feedback.objecao) {
+          leadUpdates.observacoes = [resultadoVisita.observacoes, `Objeção: ${feedback.objecao}`].filter(Boolean).join(" | ");
+        }
+        if (Object.keys(leadUpdates).length > 0) {
+          await supabase.from("pipeline_leads").update({
+            ...leadUpdates,
+            ultima_acao_at: new Date().toISOString(),
+          } as any).eq("id", resultadoVisita.pipeline_lead_id);
+        }
       }
     }
     setResultadoVisita(null);
-  }, [resultadoVisita, updateVisita, updateStatus]);
+  }, [resultadoVisita, updateVisita, updateStatus, user]);
 
   const showCorretor = isAdmin || isGestor || !showOnlyMine;
   const showWeekCalendar = period === "hoje" || period === "semana" || period === "proxima-semana";
