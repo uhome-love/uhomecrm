@@ -612,8 +612,6 @@ export default function PipelineKanban() {
         clearAllFilters={clearAllFilters}
         activeTab={activeTab as string}
         setActiveTab={setActiveTab as (v: string) => void}
-        intelView={intelView}
-        setIntelView={setIntelView}
         refreshing={refreshing}
         handleRefresh={handleRefresh}
         setAddOpen={setAddOpen}
