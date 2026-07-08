@@ -566,6 +566,26 @@ export function useVisitas(filters?: {
         }
       }
 
+      // Histórico padronizado da visita (realizada / no-show / reagendada).
+      const eventoMap: Partial<Record<VisitaStatus, "realizada" | "no_show" | "reagendada">> = {
+        realizada: "realizada",
+        no_show: "no_show",
+        reagendada: "reagendada",
+      };
+      const evento = eventoMap[newStatus];
+      if (visita?.pipeline_lead_id && evento) {
+        await logVisitaEvento({
+          pipelineLeadId: visita.pipeline_lead_id,
+          userId: userId || visita.corretor_id,
+          evento,
+          data: visita.data_visita,
+          hora: visita.hora_visita,
+          imovel: visita.empreendimento,
+          feedback,
+          responsavelId: visita.corretor_id,
+        });
+      }
+
       if (newStatus === "realizada" && visita?.pipeline_lead_id) {
         toast("✅ Visita realizada!", {
           description: "Quando o cliente evoluir, arraste o lead para 'Em Negociação' no Pipeline.",
