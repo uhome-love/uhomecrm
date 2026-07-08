@@ -29,6 +29,7 @@ import AddNegocioDialog from "@/components/pipeline/AddNegocioDialog";
 import NegocioDetailModal from "@/components/pipeline/NegocioDetailModal";
 import VendaCelebration from "@/components/pipeline/VendaCelebration";
 import FaseTransitionModal, { type TransitionData } from "@/components/pipeline/FaseTransitionModal";
+import { applyNegocioQueda, type QuedaDestino } from "@/lib/negocioQueda";
 import { supabase } from "@/integrations/supabase/client";
 
 // Categoria A — valor exato (drawer/cards de negócio individual). Compact ainda exportado p/ compat.
