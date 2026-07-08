@@ -122,7 +122,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     clientStatusFilter, setClientStatusFilter,
     negociosFilter, setNegociosFilter,
     hasAnyFilter, clearAllFilters,
-    activeTab, setActiveTab, intelView, setIntelView,
+    activeTab, setActiveTab,
     refreshing, handleRefresh, setAddOpen, setFocusModeOpen,
     filaCeoFilter, setFilaCeoFilter, openDispatch,
     selectionMode, setSelectionMode, clearSelection,
