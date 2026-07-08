@@ -37,6 +37,8 @@ interface PipelineBoardProps {
   // Opcional para preservar consumidores legados (ex: PosVendas) que ainda
   // não passam o mapa; nesse caso o Board faz fallback para query local.
   tarefasMap?: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
+  // Quando true, mostra APENAS a coluna Ganho (visão de leads vendidos/ganhos).
+  showGanhos?: boolean;
 }
 
 // Etapas-âncora / legadas que NÃO viram coluna no board ativo.
