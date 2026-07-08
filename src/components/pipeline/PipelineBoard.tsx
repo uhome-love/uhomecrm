@@ -687,6 +687,17 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       }
     }
 
+    // ─── Sub-status do Atendimento/Qualificação: grava no flag_status (mostrado no card) ───
+    if (extra.statusAtendimento && lead) {
+      try {
+        const nextFlag = { ...(lead.flag_status || {}), status_atendimento: String(extra.statusAtendimento) };
+        await supabase.from("pipeline_leads").update({ flag_status: nextFlag } as any).eq("id", lead.id);
+      } catch (err) {
+        console.error("[handleTransitionConfirm] Erro ao gravar status do atendimento:", err);
+      }
+    }
+
+
     // ─── Normal transition (non-descarte) ───
     completeTransition(result.leadId, result.targetStageId, result.observacao);
 
