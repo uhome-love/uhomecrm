@@ -5,6 +5,7 @@ import { useLeadProgression } from "@/hooks/useLeadProgression";
 import { toast } from "sonner";
 import { type Negocio, NEGOCIOS_FASES, NEGOCIO_FASE_PERDIDO } from "@/hooks/useNegocios";
 import { type TransitionData } from "@/components/pipeline/FaseTransitionModal";
+import { applyNegocioQueda, type QuedaDestino } from "@/lib/negocioQueda";
 
 // Fases que abrem o popup de transição (coleta de dados) antes de mover
 const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "vendido", "perdido"];
