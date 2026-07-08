@@ -32,6 +32,7 @@ import {
 } from "@/lib/leadHelpers";
 
 import { fmtMoney } from "@/lib/fmtMoney";
+import { substatusValueLabel } from "@/lib/pipelineAudit";
 
 export interface CardMinimalProximaTarefa {
   tipo: string | null;
