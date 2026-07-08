@@ -37,7 +37,7 @@ export const NEGOCIOS_FASES = [
   { key: "proposta", label: "Proposta", cor: "#4969FF", icon: "" },
   { key: "negociacao", label: "Negociação", cor: "#F59E0B", icon: "" },
   { key: "documentacao", label: "Contrato Gerado", cor: "#8B5CF6", icon: "" },
-  { key: "vendido", label: "Vendido", cor: "#22C55E", icon: "" },
+  { key: "vendido", label: "Ganho / Assinado", cor: "#22C55E", icon: "🏆" },
 ] as const;
 
 // Negócio perdido/caído — fica fora do board ativo, em base separada (aba "Caídos")
