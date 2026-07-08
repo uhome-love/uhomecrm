@@ -27,10 +27,14 @@ interface PipelineMobileViewProps {
 
 const LOAD_BATCH = 20;
 
+const HIDDEN_STAGE_TIPOS = new Set(["descarte", "caiu"]);
+
 const PipelineMobileView = memo(function PipelineMobileView({
-  stages, leads, corretorNomes, parcerias, onMoveLead,
+  stages: allStages, leads, corretorNomes, parcerias, onMoveLead,
   onSelectLead, selectionMode, selectedLeads, onToggleSelect,
 }: PipelineMobileViewProps) {
+  // Fluxo único: Descarte/Caiu não viram aba (só destino do botão de descarte).
+  const stages = useMemo(() => allStages.filter(s => !HIDDEN_STAGE_TIPOS.has(s.tipo)), [allStages]);
   const [activeStageId, setActiveStageId] = useState(stages[0]?.id || "");
   const tabsRef = useRef<HTMLDivElement>(null);
 
