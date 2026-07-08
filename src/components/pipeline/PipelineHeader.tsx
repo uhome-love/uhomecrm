@@ -136,24 +136,21 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
   } = props;
 
   // Tabs por role (Fase 1):
-  //  • Corretor: Kanban | Inteligência
-  //  • Gestor:   Modo Time | Kanban | Inteligência
-  //  • CEO:      Equipes   | Kanban | Inteligência
+  //  • Corretor: Kanban
+  //  • Gestor:   Modo Time | Kanban
+  //  • CEO:      Equipes   | Kanban
   const roleTabs: Array<{ key: string; icon: React.ReactNode; label: string }> = isAdmin
     ? [
         { key: "equipes", icon: <Building2 size={12} strokeWidth={1.5} />, label: "Equipes" },
         { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
-        { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
       ]
     : isGestor
     ? [
         { key: "time", icon: <Users size={12} strokeWidth={1.5} />, label: "Modo Time" },
         { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
-        { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
       ]
     : [
         { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
-        { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
       ];
 
 
