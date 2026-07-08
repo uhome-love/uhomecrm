@@ -871,8 +871,8 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
           onClick={() => onConfirm({
             leadId: lead.id,
             targetStageId,
-            observacao: `Contrato gerado | Unidade: ${unidade} | VGV: ${fmtMoney(vgvNum, "exact")}${construtora ? ` | ${construtora}` : ""}${dataAssinatura ? ` | Assinatura: ${dataAssinatura}` : ""}${obs ? ` | ${obs}` : ""}`,
-            extraData: { criarNegocio: true, vgv: vgvNum, empreendimento, unidade, construtora, dataContrato: dataAssinatura, observacao: obs },
+            observacao: `Contrato (${CONTRATO_SUBSTATUS.find(o => o.value === statusContrato)?.label || statusContrato}) | Unidade: ${unidade} | VGV: ${fmtMoney(vgvNum, "exact")}${construtora ? ` | ${construtora}` : ""}${dataAssinatura ? ` | Assinatura: ${dataAssinatura}` : ""}${obs ? ` | ${obs}` : ""}`,
+            extraData: { criarNegocio: true, vgv: vgvNum, empreendimento, unidade, construtora, dataContrato: dataAssinatura, observacao: obs, statusContrato },
           })}
         >
           📄 Confirmar contrato
