@@ -30,6 +30,8 @@ import {
   ACTION_ICON_COLOR,
   getLeadSubstatusBadge,
 } from "@/lib/leadHelpers";
+import { NEGOCIOS_FASES } from "@/hooks/useNegocios";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 export interface CardMinimalProximaTarefa {
   tipo: string | null;
@@ -46,6 +48,8 @@ interface CardMinimalProps {
   proximaTarefa?: CardMinimalProximaTarefa | null;
   /** Estado da cadência "Sem Contato" (tentativa atual + quando vence a próxima). */
   cadencia?: { tentativa: number; proxima_em: string | null } | null;
+  /** Negócio vinculado ao lead — marca discreta ◆ e enriquecimento na lente Negócios. */
+  negocioInfo?: { fase: string; vgv: number; fase_changed_at: string } | null;
   onClick: () => void;
   onDragStart: () => void;
   /** Stages do pipeline — necessário para o menu ··· (sub-menu "Mudar de etapa"). */
@@ -159,6 +163,7 @@ const CardMinimal = memo(function CardMinimal({
   parceiroNome,
   proximaTarefa,
   cadencia,
+  negocioInfo,
   onClick,
   onDragStart,
   stages,
@@ -230,6 +235,24 @@ const CardMinimal = memo(function CardMinimal({
     }
     return { label: `T${Math.min(7, n + 1)}`, when, tone, atrasado };
   }, [cadencia?.tentativa, cadencia?.proxima_em]);
+
+  // Marca discreta do negócio vinculado — fase, VGV e aging na fase (semáforo verde ≤3d / âmbar 4–7d / vermelho +7d)
+  const negocioBadge = useMemo(() => {
+    if (!negocioInfo) return null;
+    const faseLabel = NEGOCIOS_FASES.find((f) => f.key === negocioInfo.fase)?.label || negocioInfo.fase;
+    const vgvLabel = negocioInfo.vgv > 0 ? fmtMoney(negocioInfo.vgv, "short") : "";
+    let aging: number | null = null;
+    if (negocioInfo.fase_changed_at) {
+      const diff = Math.floor((Date.now() - new Date(negocioInfo.fase_changed_at).getTime()) / 86400000);
+      aging = diff >= 0 ? diff : null;
+    }
+    let tone: string;
+    if (aging == null) tone = "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300";
+    else if (aging > 7) tone = "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300";
+    else if (aging >= 4) tone = "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300";
+    else tone = "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
+    return { faseLabel, vgvLabel, aging, tone };
+  }, [negocioInfo?.fase, negocioInfo?.vgv, negocioInfo?.fase_changed_at]);
 
   const handleOpen = () => {
     trackPipelineEvent("pipeline_card_clicked", {
@@ -306,7 +329,18 @@ const CardMinimal = memo(function CardMinimal({
               {empreendimento}
             </div>
           )}
+          {negocioBadge && (
+            <div
+              className={`inline-flex items-center gap-1 mt-1 rounded-full px-1.5 py-px text-[9px] font-semibold ${negocioBadge.tone}`}
+              title={`Negócio · ${negocioBadge.faseLabel}${negocioBadge.vgvLabel ? ` · ${negocioBadge.vgvLabel}` : ""}${negocioBadge.aging != null ? ` · ${negocioBadge.aging}d na fase` : ""}`}
+            >
+              ◆ {negocioBadge.faseLabel}
+              {negocioBadge.vgvLabel ? ` · ${negocioBadge.vgvLabel}` : ""}
+              {negocioBadge.aging != null ? ` · ${negocioBadge.aging}d` : ""}
+            </div>
+          )}
         </div>
+
 
         {/* Menu ··· */}
         {menuEnabled && (

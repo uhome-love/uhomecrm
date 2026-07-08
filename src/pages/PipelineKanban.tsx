@@ -31,6 +31,7 @@ import BulkActionModal from "@/components/pipeline/BulkActionModal";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { fmtMoney } from "@/lib/fmtMoney";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchInBatchesWithRetry } from "@/lib/taskQueryUtils";
 import { toast } from "sonner";
@@ -376,6 +377,38 @@ export default function PipelineKanban() {
     return result;
   }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages, riscoFilter, riscoLeadIds]);
 
+  // Resumo da lente Negócios — total, VGV somado e em risco (>7d sem avanço de fase)
+  const negociosLeadIds = useMemo(
+    () => (negociosFilter ? filteredLeads.filter(l => l.negocio_id).map(l => l.negocio_id as string) : []),
+    [negociosFilter, filteredLeads]
+  );
+  const { data: negociosResumo } = useQuery({
+    queryKey: ["pipeline-negocios-resumo", negociosLeadIds.slice().sort().join(",")],
+    queryFn: async () => {
+      if (negociosLeadIds.length === 0) return { count: 0, vgv: 0, emRisco: 0 };
+      let vgv = 0, emRisco = 0, count = 0;
+      for (let i = 0; i < negociosLeadIds.length; i += 300) {
+        const chunk = negociosLeadIds.slice(i, i + 300);
+        const { data } = await supabase
+          .from("negocios")
+          .select("vgv_estimado, vgv_final, fase_changed_at")
+          .eq("status", "ativo")
+          .in("id", chunk);
+        for (const n of data || []) {
+          count++;
+          vgv += (n.vgv_final || n.vgv_estimado || 0);
+          if (n.fase_changed_at && (Date.now() - new Date(n.fase_changed_at).getTime()) / 86400000 > 7) emRisco++;
+        }
+      }
+      return { count, vgv, emRisco };
+    },
+    enabled: negociosFilter && negociosLeadIds.length > 0,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+
+
 
   // Bug-fix Bug 4: corretorNomes é "poliglota" (indexa cada pessoa sob user_id
   // E profile.id) e inclui gerente_id dos leads — Object.entries() duplicaria
@@ -638,6 +671,21 @@ export default function PipelineKanban() {
 
 
 
+      {negociosFilter && activeTab === "kanban" && negociosResumo && negociosResumo.count > 0 && (
+        <div className="flex items-center gap-2 flex-wrap shrink-0" style={{ padding: "8px 28px 0" }}>
+          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300 px-2.5 py-1 text-[11px] font-semibold">
+            ◆ {negociosResumo.count} negócio{negociosResumo.count > 1 ? "s" : ""}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 px-2.5 py-1 text-[11px] font-semibold">
+            VGV {fmtMoney(negociosResumo.vgv, "short")}
+          </span>
+          {negociosResumo.emRisco > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 px-2.5 py-1 text-[11px] font-semibold">
+              ⚠ {negociosResumo.emRisco} em risco (+7d)
+            </span>
+          )}
+        </div>
+      )}
       {hasAnyFilter && !(isMobile && activeTab === "kanban") && (
         <div className="flex items-center gap-1 flex-wrap shrink-0" style={{ padding: "6px 28px 0" }}>
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mr-1">
