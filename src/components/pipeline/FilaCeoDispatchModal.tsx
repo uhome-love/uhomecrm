@@ -64,6 +64,16 @@ interface SegmentoPreview {
   count: number;
 }
 
+/** Rótulo legível da origem/imóvel de um lead para a prévia. */
+function leadOrigemLabel(emp: string | null, origem: string | null): string {
+  const empName = (emp || "").trim();
+  if (empName) return empName;
+  const o = (origem || "").toLowerCase();
+  if (o.includes("imovelweb")) return "ImóvelWeb";
+  if (o.includes("site")) return "Site";
+  return "Avulso";
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
