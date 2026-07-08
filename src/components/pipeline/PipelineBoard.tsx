@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect, memo } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
 import CardMinimal from "./CardMinimal";
-import NegocioCriadoColumn from "./NegocioCriadoColumn";
 import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -38,12 +37,10 @@ interface PipelineBoardProps {
   // Opcional para preservar consumidores legados (ex: PosVendas) que ainda
   // não passam o mapa; nesse caso o Board faz fallback para query local.
   tarefasMap?: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
-  // Lente do board: "leads" mostra a prospecção; "negocios" mostra as etapas de negócio.
-  lensMode?: "leads" | "negocios";
 }
 
-// Etapas que pertencem ao ciclo do negócio (lente "Negócios")
-const DEAL_STAGE_TIPOS = new Set(["convertido", "proposta", "contrato_gerado", "venda", "caiu"]);
+// Etapas-âncora que NÃO viram coluna no board (destino do botão de descarte)
+const HIDDEN_STAGE_TIPOS = new Set(["descarte", "caiu"]);
 
 const COLUMN_WIDTH_DESKTOP = 268;
 const COLUMN_WIDTH_MOBILE = 268;
@@ -233,7 +230,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   );
 });
 
-export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap, lensMode = "leads" }: PipelineBoardProps) {
+export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap }: PipelineBoardProps) {
   const { isGestor, isAdmin } = useUserRole();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
@@ -408,11 +405,11 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
 
 
-  // Lente: "negocios" mostra só as etapas do negócio; "leads" só a prospecção.
+  // Fluxo ÚNICO: todas as etapas ativas viram coluna, exceto Descarte/Caiu
+  // (que são apenas destino do botão de descarte/inativação).
   const visibleStages = useMemo(() => {
-    if (lensMode === "negocios") return stages.filter(s => DEAL_STAGE_TIPOS.has(s.tipo));
-    return stages.filter(s => !DEAL_STAGE_TIPOS.has(s.tipo));
-  }, [stages, lensMode]);
+    return stages.filter(s => !HIDDEN_STAGE_TIPOS.has(s.tipo));
+  }, [stages]);
 
   const leadsByStage = useMemo(() => {
     // Dedup leads by ID before distributing to columns (definitivo)
@@ -689,6 +686,17 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         console.error("[handleTransitionConfirm] Erro ao gravar dados de negócio:", err);
       }
     }
+
+    // ─── Sub-status do Atendimento/Qualificação: grava no flag_status (mostrado no card) ───
+    if (extra.statusAtendimento && lead) {
+      try {
+        const nextFlag = { ...(lead.flag_status || {}), status_atendimento: String(extra.statusAtendimento) };
+        await supabase.from("pipeline_leads").update({ flag_status: nextFlag } as any).eq("id", lead.id);
+      } catch (err) {
+        console.error("[handleTransitionConfirm] Erro ao gravar status do atendimento:", err);
+      }
+    }
+
 
     // ─── Normal transition (non-descarte) ───
     completeTransition(result.leadId, result.targetStageId, result.observacao);
@@ -1031,20 +1039,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   <div className="h-1 my-1 rounded bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent animate-pulse" />
                 )}
 
-                {/* Cards list — convertido usa coluna com agrupamento próprio */}
-                {stage.tipo === "convertido" ? (
-                  <NegocioCriadoColumn
-                    stageLeads={stageLeads}
-                    stage={stage}
-                    corretorNomes={corretorNomes}
-                    parcerias={parcerias}
-                    onSelectLead={onSelectLead}
-                    handleDragStart={handleDragStart}
-                    selectionMode={selectionMode}
-                    selectedLeads={selectedLeads}
-                    onToggleSelect={onToggleSelect}
-                  />
-                ) : (
+                {/* Cards list — fluxo único, mesma renderização em todas as etapas */}
+                {(
+
                   <VirtualizedCardList
                     stageLeads={stageLeads}
                     stage={stage}

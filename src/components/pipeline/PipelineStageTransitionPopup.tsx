@@ -150,10 +150,17 @@ function ContatoInicialForm({ lead, onConfirm, targetStageId }: { lead: Pipeline
 
 // ─── Qualificação ───
 function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
+  const [statusAtend, setStatusAtend] = useState<string>(((lead as any)?.flag_status?.status_atendimento as string) || "contato_inicial");
   const [tipologia, setTipologia] = useState("");
   const [faixaValor, setFaixaValor] = useState("");
   const [regiao, setRegiao] = useState("");
   const [obs, setObs] = useState("");
+  const STATUS_ATEND: Record<string, string> = {
+    contato_inicial: "Contato inicial",
+    alinhamento_perfil: "Alinhamento de perfil",
+    busca: "Busca de imóveis",
+    follow_up: "Follow up",
+  };
 
   return (
     <>
@@ -163,6 +170,17 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
       <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
 
       <div className="space-y-3">
+        <div>
+          <Label className="text-xs">Status do atendimento *</Label>
+          <Select value={statusAtend} onValueChange={setStatusAtend}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(STATUS_ATEND).map(([k, label]) => (
+                <SelectItem key={k} value={k}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div>
           <Label className="text-xs">Tipologia de interesse</Label>
           <Select value={tipologia} onValueChange={setTipologia}>
@@ -208,7 +226,7 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
           size="sm"
           className="text-xs gap-1"
           onClick={() => {
-            const parts: string[] = [];
+            const parts: string[] = [`Status: ${STATUS_ATEND[statusAtend]}`];
             if (tipologia) parts.push(`Tipologia: ${tipologia.replace(/_/g, " ")}`);
             if (faixaValor) parts.push(`Valor: ${faixaValor.replace(/_/g, " ")}`);
             if (regiao) parts.push(`Região: ${regiao}`);
@@ -216,8 +234,8 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
             onConfirm({
               leadId: lead.id,
               targetStageId,
-              observacao: `Qualificação: ${parts.join(" | ")}`,
-              extraData: { tipologia, faixaValor, regiao, observacao: obs },
+              observacao: `Atendimento: ${parts.join(" | ")}`,
+              extraData: { statusAtendimento: statusAtend, tipologia, faixaValor, regiao, observacao: obs },
             });
           }}
         >
@@ -663,7 +681,182 @@ function NegocioCriadoForm({ lead, onConfirm, targetStageId }: { lead: PipelineL
   );
 }
 
-// ─── Main Component ───
+// ─── Proposta / Negociação ───
+function PropostaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
+  const [valor, setValor] = useState<string>(lead.valor_estimado ? String(lead.valor_estimado) : "");
+  const [empreendimento, setEmpreendimento] = useState(lead.empreendimento || "");
+  const [unidade, setUnidade] = useState("");
+  const [obs, setObs] = useState("");
+  const valorNum = Number(valor.replace(/\./g, "").replace(",", ".")) || 0;
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="text-base flex items-center gap-2">💰 Proposta / Negociação</DialogTitle>
+      </DialogHeader>
+      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-[10px] text-muted-foreground">Registre a proposta enviada — fica salva no histórico do lead.</p>
+
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs">Valor da proposta (R$) *</Label>
+          <Input type="text" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)} placeholder="Ex: 850000" className="h-8 text-xs" />
+        </div>
+        <div>
+          <Label className="text-xs">Empreendimento</Label>
+          <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
+        </div>
+        <div>
+          <Label className="text-xs">Unidade / imóvel</Label>
+          <Input value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className="h-8 text-xs" />
+        </div>
+        <div>
+          <Label className="text-xs">Detalhes da proposta</Label>
+          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Condições, entrada, forma de pagamento..." />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button
+          size="sm"
+          className="text-xs gap-1"
+          disabled={valorNum <= 0}
+          onClick={() => onConfirm({
+            leadId: lead.id,
+            targetStageId,
+            observacao: `Proposta: ${fmtMoney(valorNum, "exact")}${empreendimento ? ` | ${empreendimento}` : ""}${unidade ? ` | Unidade: ${unidade}` : ""}${obs ? ` | ${obs}` : ""}`,
+            extraData: { criarNegocio: true, vgv: valorNum, empreendimento, unidade, observacao: obs },
+          })}
+        >
+          💰 Confirmar proposta
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+// ─── Aprovação / Documentação ───
+function AprovacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
+  const [tipo, setTipo] = useState("");
+  const [obs, setObs] = useState("");
+  const TIPOS: Record<string, string> = {
+    financiamento: "Análise de financiamento",
+    credito: "Análise de crédito",
+    proposta_construtora: "Proposta enviada à construtora",
+    a_vista: "Pagamento à vista",
+    fgts: "Uso de FGTS",
+    outro: "Outro",
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="text-base flex items-center gap-2">📑 Aprovação / Documentação</DialogTitle>
+      </DialogHeader>
+      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-[10px] text-muted-foreground">Qual aprovação/documentação está em andamento? Fica salva no histórico do lead.</p>
+
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs">Tipo de aprovação *</Label>
+          <Select value={tipo} onValueChange={setTipo}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(TIPOS).map(([k, label]) => (
+                <SelectItem key={k} value={k}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Observação</Label>
+          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Banco, status, prazo, pendências..." />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button
+          size="sm"
+          className="text-xs gap-1"
+          disabled={!tipo}
+          onClick={() => onConfirm({
+            leadId: lead.id,
+            targetStageId,
+            observacao: `Aprovação: ${TIPOS[tipo]}${obs ? ` | ${obs}` : ""}`,
+            extraData: { aprovacaoTipo: tipo, observacao: obs },
+          })}
+        >
+          📑 Confirmar aprovação
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+// ─── Contrato Gerado ───
+function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
+  const [unidade, setUnidade] = useState("");
+  const [vgv, setVgv] = useState<string>(lead.valor_estimado ? String(lead.valor_estimado) : "");
+  const [construtora, setConstrutora] = useState("");
+  const [empreendimento, setEmpreendimento] = useState(lead.empreendimento || "");
+  const [dataAssinatura, setDataAssinatura] = useState("");
+  const [obs, setObs] = useState("");
+  const vgvNum = Number(vgv.replace(/\./g, "").replace(",", ".")) || 0;
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="text-base flex items-center gap-2">📄 Contrato Gerado</DialogTitle>
+      </DialogHeader>
+      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-[10px] text-muted-foreground">Registre os dados do contrato — ficam salvos no histórico do lead e no PDN.</p>
+
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs">Empreendimento</Label>
+          <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
+        </div>
+        <div>
+          <Label className="text-xs">Unidade *</Label>
+          <Input value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className="h-8 text-xs" />
+        </div>
+        <div>
+          <Label className="text-xs">VGV (R$) *</Label>
+          <Input type="text" inputMode="decimal" value={vgv} onChange={e => setVgv(e.target.value)} placeholder="Ex: 850000" className="h-8 text-xs" />
+        </div>
+        <div>
+          <Label className="text-xs">Construtora</Label>
+          <Input value={construtora} onChange={e => setConstrutora(e.target.value)} placeholder="Ex: Melnick" className="h-8 text-xs" />
+        </div>
+        <div>
+          <Label className="text-xs">Data de assinatura prevista</Label>
+          <Input type="date" value={dataAssinatura} onChange={e => setDataAssinatura(e.target.value)} className="h-8 text-xs" />
+        </div>
+        <div>
+          <Label className="text-xs">Observação</Label>
+          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Detalhes do contrato..." />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button
+          size="sm"
+          className="text-xs gap-1"
+          disabled={vgvNum <= 0 || !unidade.trim()}
+          onClick={() => onConfirm({
+            leadId: lead.id,
+            targetStageId,
+            observacao: `Contrato gerado | Unidade: ${unidade} | VGV: ${fmtMoney(vgvNum, "exact")}${construtora ? ` | ${construtora}` : ""}${dataAssinatura ? ` | Assinatura: ${dataAssinatura}` : ""}${obs ? ` | ${obs}` : ""}`,
+            extraData: { criarNegocio: true, vgv: vgvNum, empreendimento, unidade, construtora, dataContrato: dataAssinatura, observacao: obs },
+          })}
+        >
+          📄 Confirmar contrato
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
 export default function PipelineStageTransitionPopup({ open, onOpenChange, lead, targetStage, onConfirm, onCancel }: Props) {
   const handleClose = (v: boolean) => {
     if (!v) onCancel();
@@ -691,6 +884,15 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
     }
     if (stageType === "pos_visita" || stageType === "visita_realizada" || stageName.includes("pós-visita") || stageName.includes("visita realizada")) {
       return <VisitaRealizadaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    }
+    if (stageType === "proposta" || stageName.includes("proposta")) {
+      return <PropostaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    }
+    if (stageType === "documentacao" || stageName.includes("aprova") || stageName.includes("documenta")) {
+      return <AprovacaoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    }
+    if (stageType === "contrato_gerado" || stageName.includes("contrato")) {
+      return <ContratoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
     if (stageType === "convertido" || stageName.includes("negócio criado") || stageName.includes("negocio criado")) {
       return <NegocioCriadoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
@@ -734,6 +936,9 @@ export function needsTransitionPopup(stageName: string, stageType: string, lead?
   }
 
   if (stageType === "pos_visita" || stageType === "visita_realizada" || name.includes("pós-visita") || name.includes("visita realizada")) return true;
+  if (stageType === "proposta" || name.includes("proposta")) return true;
+  if (stageType === "documentacao" || name.includes("aprova") || name.includes("documenta")) return true;
+  if (stageType === "contrato_gerado" || name.includes("contrato")) return true;
   if (stageType === "convertido" || name.includes("negócio criado") || name.includes("negocio criado")) return true;
   if (stageType === "caiu" || name.includes("caiu")) return true;
   if (stageType === "descarte" || name.includes("descarte")) return true;

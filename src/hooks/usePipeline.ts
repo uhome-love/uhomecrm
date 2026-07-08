@@ -714,7 +714,8 @@ export function usePipeline(
     const DEAL_STAGE_FASE: Record<string, string> = {
       convertido: "novo_negocio",
       proposta: "proposta",
-      contrato_gerado: "documentacao",
+      documentacao: "negociacao",       // Aprovação / Documentação
+      contrato_gerado: "documentacao",  // Contrato Gerado
       venda: "vendido",
     };
     const dealFase = newStage ? DEAL_STAGE_FASE[newStage.tipo] : undefined;

@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo, memo, useCallback } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
 import CardMinimal from "./CardMinimal";
-import NegocioCriadoColumn from "./NegocioCriadoColumn";
 import { PIPELINE_STAGE_EMOJIS } from "@/lib/celebrations";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,10 +26,14 @@ interface PipelineMobileViewProps {
 
 const LOAD_BATCH = 20;
 
+const HIDDEN_STAGE_TIPOS = new Set(["descarte", "caiu"]);
+
 const PipelineMobileView = memo(function PipelineMobileView({
-  stages, leads, corretorNomes, parcerias, onMoveLead,
+  stages: allStages, leads, corretorNomes, parcerias, onMoveLead,
   onSelectLead, selectionMode, selectedLeads, onToggleSelect,
 }: PipelineMobileViewProps) {
+  // Fluxo único: Descarte/Caiu não viram aba (só destino do botão de descarte).
+  const stages = useMemo(() => allStages.filter(s => !HIDDEN_STAGE_TIPOS.has(s.tipo)), [allStages]);
   const [activeStageId, setActiveStageId] = useState(stages[0]?.id || "");
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -166,22 +169,9 @@ const PipelineMobileView = memo(function PipelineMobileView({
         })}
       </div>
 
-      {/* Cards List — Negócio Criado usa coluna especializada */}
-      {activeStage?.tipo === "convertido" ? (
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-[max(5rem,calc(env(safe-area-inset-bottom)+4rem))] pt-2">
-          <NegocioCriadoColumn
-            stageLeads={stageLeads}
-            stage={activeStage}
-            corretorNomes={corretorNomes}
-            parcerias={parcerias}
-            onSelectLead={onSelectLead}
-            handleDragStart={() => { /* mobile: sem drag */ }}
-            selectionMode={selectionMode}
-            selectedLeads={selectedLeads}
-            onToggleSelect={onToggleSelect}
-          />
-        </div>
-      ) : (
+      {/* Cards List — fluxo único, mesma renderização em todas as etapas */}
+      {(
+
         <div
           onScroll={handleScroll}
           style={{

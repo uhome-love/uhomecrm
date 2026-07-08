@@ -1,16 +1,9 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Briefcase, ChevronRight, Check, ExternalLink, TrendingUp, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, Briefcase, TrendingUp } from "lucide-react";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";
-import { useNegocioActions } from "@/hooks/useNegocioActions";
-import FaseTransitionModal from "../FaseTransitionModal";
-
-const NegocioDetailModal = lazy(() => import("../NegocioDetailModal"));
-const VendaCelebration = lazy(() => import("../VendaCelebration"));
 
 interface NegocioFull extends Negocio {
   unidade?: string | null;
@@ -21,6 +14,7 @@ interface NegocioFull extends Negocio {
   negociacao_pendencia?: string | null;
   documentacao_situacao?: string | null;
   motivo_queda?: string | null;
+  construtora?: string | null;
 }
 
 interface Props {
@@ -28,12 +22,17 @@ interface Props {
   corretorNome?: string;
 }
 
-const FASE_ORDER: string[] = NEGOCIOS_FASES.map((f) => f.key);
-
-export default function DrawerNegocioTab({ negocioId, corretorNome }: Props) {
+/**
+ * Aba Negócio do modal do lead — painel de INFORMAÇÕES do negócio.
+ *
+ * No fluxo único, as fases do negócio são as próprias etapas do pipeline de
+ * leads (Proposta/Negociação → Aprovação/Documentação → Contrato Gerado → Ganho).
+ * A mudança de fase acontece movendo o card no pipeline (com popup que grava no
+ * histórico do lead). Esta aba mostra o estado atual e os dados registrados.
+ */
+export default function DrawerNegocioTab({ negocioId }: Props) {
   const [negocio, setNegocio] = useState<NegocioFull | null>(null);
   const [loading, setLoading] = useState(true);
-  const [detailOpen, setDetailOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!negocioId) {
@@ -55,15 +54,6 @@ export default function DrawerNegocioTab({ negocioId, corretorNome }: Props) {
     load();
   }, [load]);
 
-  const {
-    transitionTarget,
-    setTransitionTarget,
-    celebrationData,
-    setCelebrationData,
-    requestMoveFase,
-    handleTransitionConfirm,
-  } = useNegocioActions(load);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -76,13 +66,14 @@ export default function DrawerNegocioTab({ negocioId, corretorNome }: Props) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-2">
         <Briefcase className="h-8 w-8 text-muted-foreground/40" />
-        <p className="text-sm text-muted-foreground">Nenhum negócio vinculado a este lead.</p>
+        <p className="text-sm text-muted-foreground">
+          Nenhum negócio ainda. Ao mover o lead para <strong>Proposta / Negociação</strong> o negócio é iniciado.
+        </p>
       </div>
     );
   }
 
   const faseInfo = NEGOCIOS_FASES.find((f) => f.key === negocio.fase);
-  const currentIdx = FASE_ORDER.indexOf(negocio.fase);
   const isPerdido = negocio.status === "perdido" || negocio.fase === "perdido";
   const vgv = negocio.vgv_final || negocio.vgv_estimado || 0;
 
@@ -99,6 +90,9 @@ export default function DrawerNegocioTab({ negocioId, corretorNome }: Props) {
               {negocio.empreendimento || "Sem empreendimento"}
               {negocio.unidade ? ` · ${negocio.unidade}` : ""}
             </p>
+            {negocio.construtora && (
+              <p className="text-[11px] text-muted-foreground truncate">{negocio.construtora}</p>
+            )}
           </div>
           <div className="text-right shrink-0">
             <div className="flex items-center gap-1 justify-end text-emerald-600 dark:text-emerald-400">
@@ -121,61 +115,15 @@ export default function DrawerNegocioTab({ negocioId, corretorNome }: Props) {
             {faseInfo?.label || negocio.fase}
           </Badge>
         )}
-      </div>
 
-      {/* Barra de fases clicável */}
-      {!isPerdido && (
-        <div className="rounded-xl border border-border/60 bg-card p-3">
-          <p className="text-[11px] font-medium text-muted-foreground mb-2 px-1">
-            Avançar fase
-          </p>
-          <div className="flex flex-col gap-1">
-            {NEGOCIOS_FASES.map((f, idx) => {
-              const done = idx < currentIdx;
-              const current = idx === currentIdx;
-              return (
-                <button
-                  key={f.key}
-                  disabled={current}
-                  onClick={() => requestMoveFase(negocio, f.key)}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors",
-                    current && "bg-muted font-semibold cursor-default",
-                    !current && "hover:bg-muted/60"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded-full text-[10px] shrink-0",
-                      done && "text-white",
-                      current && "ring-2 ring-offset-1 ring-offset-card",
-                      !done && !current && "bg-muted text-muted-foreground"
-                    )}
-                    style={
-                      done || current
-                        ? { backgroundColor: f.cor, ...(current ? { boxShadow: `0 0 0 2px ${f.cor}` } : {}) }
-                        : undefined
-                    }
-                  >
-                    {done ? <Check className="h-3 w-3" /> : idx + 1}
-                  </span>
-                  <span className={cn("flex-1", current ? "text-foreground" : "text-muted-foreground")}>
-                    {f.label}
-                  </span>
-                  {!current && idx > currentIdx && (
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-                  )}
-                  {current && <span className="text-[10px] text-primary">atual</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+        <p className="text-[10px] text-muted-foreground">
+          As fases avançam movendo o card no pipeline. Cada mudança fica registrada no Histórico do lead.
+        </p>
+      </div>
 
       {/* Resumo de seções */}
       <div className="grid grid-cols-1 gap-2">
-        <SummaryRow label="Proposta" value={negocio.proposta_situacao} />
+        <SummaryRow label="Proposta" value={negocio.proposta_situacao || (negocio.proposta_valor ? fmtMoney(negocio.proposta_valor, "exact") : null)} />
         <SummaryRow label="Negociação" value={negocio.negociacao_situacao || negocio.negociacao_pendencia} />
         <SummaryRow label="Documentação" value={negocio.documentacao_situacao} />
         {negocio.data_assinatura && (
@@ -183,73 +131,6 @@ export default function DrawerNegocioTab({ negocioId, corretorNome }: Props) {
         )}
         {negocio.observacoes && <SummaryRow label="Observações" value={negocio.observacoes} />}
       </div>
-
-      {/* Gestão completa */}
-      <Button
-        variant="outline"
-        className="w-full gap-2 rounded-xl"
-        onClick={() => setDetailOpen(true)}
-      >
-        <ExternalLink className="h-4 w-4" />
-        Gestão completa do negócio
-      </Button>
-
-      {!isPerdido && (
-        <Button
-          variant="ghost"
-          className="w-full gap-2 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={() => requestMoveFase(negocio, "perdido")}
-        >
-          <XCircle className="h-4 w-4" />
-          Negócio caiu
-        </Button>
-      )}
-
-      {/* Modais */}
-      {detailOpen && (
-        <Suspense fallback={null}>
-          <NegocioDetailModal
-            open={detailOpen}
-            onOpenChange={(o) => {
-              setDetailOpen(o);
-              if (!o) load();
-            }}
-            negocio={negocio}
-            onUpdate={async (id, updates) => {
-              await supabase
-                .from("negocios")
-                .update({ ...updates, updated_at: new Date().toISOString() } as any)
-                .eq("id", id);
-              await load();
-            }}
-            onMoveFase={(id, fase) => requestMoveFase(negocio, fase)}
-          />
-        </Suspense>
-      )}
-
-      {transitionTarget && (
-        <FaseTransitionModal
-          open={!!transitionTarget}
-          onOpenChange={(v) => {
-            if (!v) setTransitionTarget(null);
-          }}
-          targetFase={transitionTarget.fase}
-          negocio={negocio}
-          onConfirm={(data) => handleTransitionConfirm(negocio, data)}
-        />
-      )}
-
-      {celebrationData && (
-        <Suspense fallback={null}>
-          <VendaCelebration
-            nomeCliente={celebrationData.nomeCliente}
-            empreendimento={celebrationData.empreendimento}
-            vgv={celebrationData.vgv}
-            corretorNome={corretorNome}
-            onDismiss={() => setCelebrationData(null)}
-          />
-        </Suspense>
-      )}
     </div>
   );
 }

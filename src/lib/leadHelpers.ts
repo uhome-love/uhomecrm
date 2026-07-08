@@ -154,6 +154,16 @@ export function getLeadSubstatusBadge(
       return null;
     }
 
+    case "qualificacao": {
+      const map: Record<string, SubstatusBadge> = {
+        contato_inicial: { label: "📞 Contato inicial", className: PILL.indigo },
+        alinhamento_perfil: { label: "🎯 Alinhando perfil", className: PILL.purple },
+        busca: { label: "🔍 Busca", className: PILL.amber },
+        follow_up: { label: "🔁 Follow up", className: PILL.emerald },
+      };
+      return f.status_atendimento ? map[f.status_atendimento] ?? null : null;
+    }
+
     case "aquecimento": {
       const n = parseInt(f.prazo || "", 10);
       if (!Number.isFinite(n) || n <= 0) return null;
@@ -164,6 +174,7 @@ export function getLeadSubstatusBadge(
       const map: Record<string, SubstatusBadge> = {
         marcada: { label: "📅 Marcada", className: PILL.indigo },
         realizada: { label: "✅ Realizada", className: PILL.emerald },
+        pos_visita: { label: "📋 Pós-visita", className: PILL.purple },
         no_show: { label: "❌ No-show", className: PILL.red },
         reagendada: { label: "🔁 Reagendada", className: PILL.amber },
       };
