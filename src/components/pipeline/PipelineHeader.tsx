@@ -25,7 +25,7 @@ import PipelineCorretorSelect from "@/components/pipeline/header/PipelineCorreto
 import PipelineGestorSelect from "@/components/pipeline/header/PipelineGestorSelect";
 import PipelineScopeBadge from "@/components/pipeline/header/PipelineScopeBadge";
 
-export type PipelineTabMode = "kanban" | "inteligencia" | "time" | "equipes";
+export type PipelineTabMode = "kanban" | "time" | "equipes";
 export type ClientStatusFilter = "todos" | LeadClientStatus;
 
 export interface CampaignTag {
