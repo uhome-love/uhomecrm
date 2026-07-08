@@ -195,9 +195,9 @@ function GrupoTable({
   cor: string;
   rows: PdnRow[];
   onAdd: () => void;
-  onSaveOverride: (row: PdnRow, patch: Partial<Pick<PdnRow, "construtora" | "observacoes" | "proximaAcao">>) => void;
-  onUpdateManual: (id: string, patch: Record<string, any>) => void;
-  onDelete: (id: string) => void;
+  onSaveOverride: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao">>) => void;
+  onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
+  onDelete: (overrideId: string) => void;
 }) {
   const subtotal = rows.reduce((s, r) => s + r.vgv, 0);
   return (
