@@ -1168,8 +1168,13 @@ export default function MeusNegocios() {
                       <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] truncate max-w-[120px]">{corretorNomes[negocio.corretor_id]}</span>
                     )}
                   </div>
+                  {negocio.motivo_queda && (
+                    <div className="text-[11px] text-red-500/80 dark:text-red-400/80 mt-2 line-clamp-2">
+                      Motivo: {negocio.motivo_queda}
+                    </div>
+                  )}
                   {negocio.observacoes && (
-                    <div className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] mt-2 line-clamp-2 italic">"{negocio.observacoes}"</div>
+                    <div className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] mt-1 line-clamp-2 italic">"{negocio.observacoes}"</div>
                   )}
                 </div>
               ))}
