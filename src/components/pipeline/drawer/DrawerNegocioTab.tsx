@@ -119,7 +119,6 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
     const payload: Record<string, any> = {
       empreendimento: empreendimento || null,
       unidade: unidade || null,
-      construtora: construtora || null,
       vgv_estimado: vgvNum || null,
       proposta_valor: Number(propostaValor) || null,
       proposta_situacao: propostaSituacao || null,
