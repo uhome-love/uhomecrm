@@ -7,10 +7,10 @@ import { toast } from "sonner";
 export type DisponibilidadeStatus = "offline" | "na_empresa" | "em_pausa" | "em_visita";
 
 export const SEGMENTOS_OFICIAIS = [
-  { nome: "S1 - Moradia", badge: "S1 · Moradia", cor: "#60A5FA", empreendimentos: ["Open Bosque", "Orygem", "Las Casas", "Apice", "Terrace", "Imovelweb", "Site"] },
-  { nome: "S2 - Investimento", badge: "S2 · Investimento", cor: "#16A34A", empreendimentos: ["Átrio", "Shift", "Casa Bastian"] },
-  { nome: "S3 - Foco", badge: "S3 · Foco", cor: "#F472B6", empreendimentos: ["Casa Tua", "Vivid Terrace"] },
-  { nome: "S4 - Alto Padrão", badge: "S4 · Alto Padrão", cor: "#F0B95A", empreendimentos: ["Lake Eyre"] },
+  { nome: "S1 - Moradia", badge: "S1 · Moradia", cor: "#60A5FA", empreendimentos: ["Vivid", "Vivid Terrace", "Casa Tua", "Avulso", "Terrace"] },
+  { nome: "S2 - Investimento", badge: "S2 · Investimento", cor: "#4ADE80", empreendimentos: ["Connect JW", "Shift"] },
+  { nome: "S3 - Alto Padrão", badge: "S3 · Alto Padrão", cor: "#F0B95A", empreendimentos: ["Lake Baikal"] },
+  { nome: "S4 - MCMV", badge: "S4 · MCMV", cor: "#16A34A", empreendimentos: ["Flow"] },
 ] as const;
 
 
