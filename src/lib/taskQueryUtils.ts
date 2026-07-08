@@ -281,10 +281,11 @@ export function getLeadStatusFilter(
   proximaTarefa: ProximaTarefa | null,
   stageTipo?: string,
 ): LeadClientStatus {
-  // Leads descartados não são considerados atrasados/desatualizados
-  if (stageTipo === "descarte") return "em_dia";
-  // Leads com negócio criado (negocio_id) são sempre considerados "em dia"
-  if ((lead as any).negocio_id) return "em_dia";
+  // Etapas TERMINAIS não entram no fluxo de tarefas (nem atrasado, nem sem tarefa).
+  // Em Negociação (proposta), Contrato (contrato_gerado) e Aprovação/Documentação
+  // (documentacao) PARTICIPAM do fluxo — classificam pela tarefa real, mesmo tendo
+  // negocio_id vinculado.
+  if (stageTipo && ["descarte", "convertido", "venda", "caiu"].includes(stageTipo)) return "em_dia";
 
   // Sem tarefa pendente real (pipeline_tarefas): não usar fallback para
   // lead.data_proxima_acao — esse campo legado costuma ficar desatualizado
