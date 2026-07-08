@@ -9,8 +9,9 @@
  *   - leads_sem_tarefa:   LEADS ativos sem nenhuma tarefa pendente
  *   - leads_em_dia:       LEADS ativos com tarefas só no futuro
  *
- * Escopo de leads ativos: corretor_id = auth.users.id, arquivado=false,
- * negocio_id IS NULL, stage.tipo NOT IN ('descarte','convertido').
+  * Escopo de leads ativos: corretor_id = auth.users.id, arquivado=false,
+  * stage.tipo NOT IN ('descarte','convertido','venda','caiu'). Em Negociação e
+  * Contrato participam (têm negocio_id, mas seguem no fluxo de tarefas).
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
