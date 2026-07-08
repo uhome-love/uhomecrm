@@ -1011,6 +1011,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     tarefasMap={tarefasMap}
                     whatsappUnreadSet={whatsappUnreadSet}
                     cadenciaMap={cadenciaMap}
+                    negociosMap={negociosMap}
                   />
                 )}
               </div>
