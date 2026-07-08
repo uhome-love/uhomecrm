@@ -109,7 +109,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   stageLeads, stage, stages, segmentos, corretorNomes, corretorAvatars, parcerias,
   selectionMode, selectedLeads, arrivedLeadId,
   onToggleSelect, onSelectLead, onMoveLead, onTransferred, stageIndexMap, handleDragStart,
-  tarefasMap, whatsappUnreadSet, cadenciaMap,
+  tarefasMap, whatsappUnreadSet, cadenciaMap, negociosMap,
 }: {
   stageLeads: PipelineLead[];
   stage: PipelineStage;
