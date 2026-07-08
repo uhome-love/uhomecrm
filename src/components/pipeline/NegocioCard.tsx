@@ -90,7 +90,7 @@ const NegocioCard = memo(function NegocioCard({
               : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
           ].join(" ")}
         >
-          {isVendido ? "Vendido" : "Aguardando"}
+          {isVendido ? "🏆 Ganho" : "Aguardando"}
         </span>
       </div>
 
