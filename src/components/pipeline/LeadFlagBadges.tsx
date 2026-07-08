@@ -69,14 +69,29 @@ const LeadFlagBadges = memo(function LeadFlagBadges({ flagStatus, stageTipo }: P
 
   if (stageTipo === "aquecimento" && flagStatus.prazo) {
     badges.push({
-      label: `⏰ ${flagStatus.prazo} dias`,
+      label: `⏰ Retomar ${flagStatus.prazo}D`,
       color: "#D97706",
       bg: "rgba(217,119,6,0.12)",
     });
   }
 
+  if (stageTipo === "qualificacao" && flagStatus.status_atendimento && stageConfig) {
+    const cfg = stageConfig[flagStatus.status_atendimento];
+    if (cfg) badges.push(cfg);
+  }
+
   if (stageTipo === "visita" && flagStatus.status_visita && stageConfig) {
     const cfg = stageConfig[flagStatus.status_visita];
+    if (cfg) badges.push(cfg);
+  }
+
+  if (stageTipo === "proposta" && flagStatus.status_negociacao && stageConfig) {
+    const cfg = stageConfig[flagStatus.status_negociacao];
+    if (cfg) badges.push(cfg);
+  }
+
+  if (stageTipo === "contrato_gerado" && flagStatus.status_contrato && stageConfig) {
+    const cfg = stageConfig[flagStatus.status_contrato];
     if (cfg) badges.push(cfg);
   }
 
