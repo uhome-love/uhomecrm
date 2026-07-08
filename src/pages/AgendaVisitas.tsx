@@ -459,9 +459,7 @@ export default function AgendaVisitas() {
     : null;
 
   // Dialogs
-  const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [showReuniaoForm, setShowReuniaoForm] = useState(false);
   const [editingVisita, setEditingVisita] = useState<Visita | null>(null);
   const [resultadoVisita, setResultadoVisita] = useState<Visita | null>(null);
   const [showCobranca, setShowCobranca] = useState(false);
