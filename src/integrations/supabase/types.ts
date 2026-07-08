@@ -6078,6 +6078,7 @@ export type Database = {
       }
       pdn_entries: {
         Row: {
+          construtora: string | null
           corretor: string | null
           created_at: string
           created_from_visit: boolean
@@ -6107,6 +6108,7 @@ export type Database = {
           vgv: number | null
         }
         Insert: {
+          construtora?: string | null
           corretor?: string | null
           created_at?: string
           created_from_visit?: boolean
@@ -6136,6 +6138,7 @@ export type Database = {
           vgv?: number | null
         }
         Update: {
+          construtora?: string | null
           corretor?: string | null
           created_at?: string
           created_from_visit?: boolean
@@ -10961,6 +10964,7 @@ export type Database = {
       get_corretor_pdn: {
         Args: { p_mes?: string }
         Returns: {
+          construtora: string | null
           corretor: string | null
           created_at: string
           created_from_visit: boolean
