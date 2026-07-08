@@ -116,10 +116,10 @@ export default function PipelineKanban() {
   const tabStorageKey = `uhome:pipeline-mode:${roleKey}`;
   const defaultTabForRole = isCeoView ? "equipes" : isGestor ? "time" : "kanban";
   const allowedTabsForRole: string[] = isCeoView
-    ? ["equipes", "kanban", "inteligencia"]
+    ? ["equipes", "kanban"]
     : isGestor
-    ? ["time", "kanban", "inteligencia"]
-    : ["kanban", "inteligencia"];
+    ? ["time", "kanban"]
+    : ["kanban"];
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   // Default determinístico por role — sem persistência.
