@@ -256,6 +256,7 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       continue;
     }
 
+    const res = resultadoDoTitulo(a.titulo);
     const labelText = info?.label || a.tipo;
     // Título sem o trecho de resultado (após " — "), sem nome do lead e sem data solta
     const core = limparTexto((a.titulo || "").split(" — ")[0], lead.nome, res?.key);
