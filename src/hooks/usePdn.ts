@@ -5,39 +5,44 @@ import { useNegocios, type Negocio } from "@/hooks/useNegocios";
 import { toast } from "sonner";
 
 // ─── Grupos / status do PDN ──────────────────────────────────────────────────
-export type PdnGrupo = "andamento" | "gerado" | "assinado";
+export type PdnGrupo = "visita_realizada" | "em_negociacao" | "contrato" | "ganho";
 
 export const PDN_GRUPOS: { key: PdnGrupo; label: string; cor: string }[] = [
-  { key: "andamento", label: "Negócios (em andamento)", cor: "#4969FF" },
-  { key: "gerado", label: "Gerados (contrato)", cor: "#8B5CF6" },
-  { key: "assinado", label: "Assinados", cor: "#22C55E" },
+  { key: "visita_realizada", label: "Visita Realizada", cor: "#10B981" },
+  { key: "em_negociacao", label: "Em Negociação", cor: "#EC4899" },
+  { key: "contrato", label: "Contrato", cor: "#06B6D4" },
+  { key: "ganho", label: "Ganho", cor: "#22C55E" },
 ];
 
 // Probabilidade ponderada por fase (para forecast)
 const PROB_POR_FASE: Record<string, number> = {
-  novo_negocio: 0.1,
-  proposta: 0.3,
-  negociacao: 0.5,
+  visita_realizada: 0.2,
+  novo_negocio: 0.25,
+  proposta: 0.4,
+  negociacao: 0.55,
   documentacao: 0.8,
   vendido: 1,
 };
 
 function faseToGrupo(fase: string): PdnGrupo {
-  if (fase === "vendido") return "assinado";
-  if (fase === "documentacao") return "gerado";
-  return "andamento";
+  if (fase === "vendido") return "ganho";
+  if (fase === "documentacao") return "contrato";
+  // proposta, negociacao, novo_negocio → Em Negociação
+  return "em_negociacao";
 }
 
 function faseLabel(fase: string): string {
   switch (fase) {
-    case "novo_negocio": return "Novo Negócio";
-    case "proposta": return "Proposta";
+    case "novo_negocio": return "Em Negociação";
+    case "proposta": return "Proposta enviada";
     case "negociacao": return "Negociação";
-    case "documentacao": return "Contrato Gerado";
+    case "documentacao": return "Contrato";
     case "vendido": return "Ganho / Assinado";
+    case "visita_realizada": return "Visita realizada";
     default: return fase;
   }
 }
+
 
 // Data de referência do negócio para agrupar por mês
 function negocioRefDate(n: Negocio & { data_assinatura?: string | null }): string {
