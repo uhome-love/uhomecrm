@@ -496,7 +496,7 @@ export default function PipelineKanban() {
     return () => window.removeEventListener("pipeline-reload", handler);
   }, [pipeline.reload]);
 
-  const [intelView, setIntelView] = useState<"funil" | "radar">("funil");
+  
 
   const clearRisco = () => {
     setRiscoFilter(false);
