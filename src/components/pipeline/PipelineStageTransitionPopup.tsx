@@ -150,10 +150,17 @@ function ContatoInicialForm({ lead, onConfirm, targetStageId }: { lead: Pipeline
 
 // ─── Qualificação ───
 function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
+  const [statusAtend, setStatusAtend] = useState<string>(((lead as any)?.flag_status?.status_atendimento as string) || "contato_inicial");
   const [tipologia, setTipologia] = useState("");
   const [faixaValor, setFaixaValor] = useState("");
   const [regiao, setRegiao] = useState("");
   const [obs, setObs] = useState("");
+  const STATUS_ATEND: Record<string, string> = {
+    contato_inicial: "Contato inicial",
+    alinhamento_perfil: "Alinhamento de perfil",
+    busca: "Busca de imóveis",
+    follow_up: "Follow up",
+  };
 
   return (
     <>
