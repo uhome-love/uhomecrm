@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Trash2, Target, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
-import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
+import { compareRoletaSegmentosByNome, getSegmentoVisual } from "@/hooks/useRoletaSegmentos";
 
 interface Campanha {
   id: string;
