@@ -436,24 +436,17 @@ export function useVisitas(filters?: {
           .update(updatePayload as any)
           .eq("id", data.pipeline_lead_id);
 
-        if (moverEtapa) {
-          const dataFmt = new Date(`${data.data_visita}T${data.hora_visita || "12:00:00"}`).toLocaleString("pt-BR", {
-            timeZone: "America/Sao_Paulo",
-            day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
-          });
-          await supabase.from("pipeline_atividades").insert({
-            pipeline_lead_id: data.pipeline_lead_id,
-            tipo: "mudanca_etapa",
-            titulo: "Visita Agendada",
-            descricao: `Visita agendada para ${dataFmt}`,
-            status: "concluida",
-            responsavel_id: data.corretor_id,
-            created_by: user.id,
-            data: data.data_visita,
-            hora: data.hora_visita,
-            prioridade: "media",
-          } as any);
-        }
+        // Histórico padronizado: SEMPRE registra a visita agendada (mesmo sem
+        // mudança de etapa), para constar na timeline do lead.
+        await logVisitaEvento({
+          pipelineLeadId: data.pipeline_lead_id,
+          userId: user.id,
+          evento: "agendada",
+          data: data.data_visita,
+          hora: data.hora_visita,
+          imovel: data.empreendimento,
+          responsavelId: data.corretor_id,
+        });
 
         await supabase.from("lead_progressao").insert({
           lead_id: data.pipeline_lead_id,
