@@ -39,8 +39,15 @@ interface PipelineBoardProps {
   tarefasMap?: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
 }
 
-// Etapas-âncora que NÃO viram coluna no board (destino do botão de descarte)
-const HIDDEN_STAGE_TIPOS = new Set(["descarte", "caiu"]);
+// Etapas-âncora / legadas que NÃO viram coluna no board ativo.
+// Descarte/Caiu = destino do botão de descarte. Ganho (venda) = visão de filtro.
+// Demais tipos são etapas legadas consolidadas (sem uso no fluxo único).
+const HIDDEN_STAGE_TIPOS = new Set([
+  "descarte", "caiu", "venda",
+  "contato_inicial", "busca", "possibilidade_visita", "visita_marcada",
+  "visita_realizada", "pos_visita", "convertido", "documentacao", "negociacao",
+  "boas_vindas", "envio_oportunidades", "atualizacao_bem_estar", "indicacoes",
+]);
 
 const COLUMN_WIDTH_DESKTOP = 268;
 const COLUMN_WIDTH_MOBILE = 268;
