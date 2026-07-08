@@ -705,68 +705,60 @@ export function usePipeline(
 
     const newStage = stages.find(s => s.id === newStageId);
 
-    // ═══ AUTO-CREATE NEGÓCIO when moving to "Negócio Criado" (convertido) ═══
-    const isConvertido = newStage && (newStage.tipo === "convertido" || newStage.nome.toLowerCase().includes("negócio criado"));
-    console.log("[moveLead] Stage check:", { newStageTipo: newStage?.tipo, newStageNome: newStage?.nome, isConvertido });
+    // ═══ NEGÓCIO: garante o negócio e sincroniza a fase ao entrar em etapas de negócio ═══
+    // O negócio agora vive como etapas reais do pipeline de leads. Cada etapa de
+    // negócio mapeia para uma fase da tabela `negocios` (fonte para VGV, PDN,
+    // celebração de venda via realtime e pós-venda).
+    const DEAL_STAGE_FASE: Record<string, string> = {
+      convertido: "novo_negocio",
+      proposta: "proposta",
+      contrato_gerado: "documentacao",
+      venda: "vendido",
+    };
+    const dealFase = newStage ? DEAL_STAGE_FASE[newStage.tipo] : undefined;
 
-    if (isConvertido) {
+    if (dealFase) {
       try {
-        // Check if negócio already exists for this lead
-        const { data: existingNegocio, error: checkError } = await supabase
-          .from("negocios")
-          .select("id")
-          .eq("pipeline_lead_id", leadId)
-          .limit(1)
-          .maybeSingle();
+        // 1) Localiza negócio existente vinculado ao lead
+        let negocioId: string | null = updatedRow?.negocio_id || null;
+        if (!negocioId) {
+          const { data: existingNegocio } = await supabase
+            .from("negocios")
+            .select("id")
+            .eq("pipeline_lead_id", leadId)
+            .limit(1)
+            .maybeSingle();
+          negocioId = existingNegocio?.id || null;
+        }
 
-        console.log("[moveLead] Existing negocio check:", { existingNegocio, checkError });
-
-        if (!existingNegocio) {
-          // Resolve profiles.id from user_id for FK compatibility
+        // 2) Cria o negócio se ainda não existir (resolve profiles.id p/ FK)
+        if (!negocioId) {
           const corretorUserId = lead.corretor_id;
           const gerenteUserId = lead.gerente_id || user.id;
-
-          const { data: profileRows, error: profileError } = await supabase
+          const { data: profileRows } = await supabase
             .from("profiles")
             .select("id, user_id")
             .in("user_id", [corretorUserId, gerenteUserId].filter(Boolean) as string[]);
-
-          console.log("[moveLead] Profile resolution:", { corretorUserId, gerenteUserId, profileRows, profileError });
-
           const profileMap = new Map((profileRows || []).map(p => [p.user_id, p.id]));
-          const corretorProfileId = corretorUserId ? profileMap.get(corretorUserId) || null : null;
-          const gerenteProfileId = profileMap.get(gerenteUserId) || null;
-
-          const insertPayload = {
-            nome_cliente: lead.nome,
-            pipeline_lead_id: leadId,
-            corretor_id: corretorProfileId,
-            gerente_id: gerenteProfileId,
-            empreendimento: lead.empreendimento || null,
-            telefone: lead.telefone || null,
-            fase: "novo_negocio",
-            origem: "pipeline_convertido",
-            vgv_estimado: lead.valor_estimado || null,
-          };
-          console.log("[moveLead] Inserting negocio:", insertPayload);
 
           const { data: negocio, error: negError } = await supabase
             .from("negocios")
-            .insert(insertPayload)
+            .insert({
+              nome_cliente: lead.nome,
+              pipeline_lead_id: leadId,
+              corretor_id: corretorUserId ? profileMap.get(corretorUserId) || null : null,
+              gerente_id: profileMap.get(gerenteUserId) || null,
+              empreendimento: lead.empreendimento || null,
+              telefone: lead.telefone || null,
+              fase: dealFase,
+              origem: "pipeline_convertido",
+              vgv_estimado: lead.valor_estimado || null,
+            })
             .select("id")
             .single();
 
-          console.log("[moveLead] Negocio insert result:", { negocio, negError });
-
           if (negocio && !negError) {
-            await supabase.from("pipeline_leads").update({
-              negocio_id: negocio.id,
-            } as any).eq("id", leadId);
-
-            setLeads(prev => prev.map(l =>
-              l.id === leadId ? { ...l, negocio_id: negocio.id } : l
-            ));
-
+            negocioId = negocio.id;
             toast.success(`🎉 Negócio criado para ${lead.nome}!`, {
               description: "🎯 Envie a proposta em até 24h!",
               duration: 5000,
@@ -775,17 +767,61 @@ export function usePipeline(
             console.error("[moveLead] Erro ao criar negócio:", negError);
             toast.warning("Lead movido, mas houve erro ao criar negócio automaticamente.", { duration: 4000 });
           }
-        } else {
-          // Already has negócio, just link it
+        }
+
+        // 3) Vincula negocio_id ao lead e sincroniza a fase
+        if (negocioId) {
           if (!updatedRow?.negocio_id) {
-            await supabase.from("pipeline_leads").update({
-              negocio_id: existingNegocio.id,
-            } as any).eq("id", leadId);
+            await supabase.from("pipeline_leads").update({ negocio_id: negocioId } as any).eq("id", leadId);
+            const linkedId = negocioId;
+            setLeads(prev => prev.map(l => l.id === leadId ? { ...l, negocio_id: linkedId } : l));
+          }
+
+          const faseUpdate: Record<string, any> = { fase: dealFase, updated_at: now };
+          if (dealFase === "vendido") {
+            faseUpdate.status = "ativo";
+            faseUpdate.data_assinatura = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+          }
+          await supabase.from("negocios").update(faseUpdate as any).eq("id", negocioId);
+
+          // Registra a mudança de fase no histórico do negócio
+          await supabase.from("negocios_atividades").insert({
+            negocio_id: negocioId,
+            tipo: `fase_${dealFase}`,
+            titulo: `Fase: ${newStage?.nome || dealFase}`,
+            created_by: user.id,
+          } as any).then(() => {}, () => {});
+
+          // Venda fechada → cria entrada de pós-venda (guardado contra duplicidade)
+          if (dealFase === "vendido") {
+            const { data: existingPv } = await supabase
+              .from("pos_vendas")
+              .select("id")
+              .eq("negocio_id", negocioId)
+              .limit(1)
+              .maybeSingle();
+            if (!existingPv) {
+              const { data: negFull } = await supabase
+                .from("negocios")
+                .select("nome_cliente, telefone, empreendimento, corretor_id, vgv_final, vgv_estimado, data_assinatura")
+                .eq("id", negocioId)
+                .maybeSingle();
+              await onNegocioAssinado({
+                negocioId,
+                pipelineLeadId: leadId,
+                nomeCliente: negFull?.nome_cliente || lead.nome,
+                telefone: negFull?.telefone || lead.telefone || undefined,
+                empreendimento: negFull?.empreendimento || lead.empreendimento || undefined,
+                corretorId: negFull?.corretor_id || lead.corretor_id || user.id,
+                vgvFinal: negFull?.vgv_final || negFull?.vgv_estimado || lead.valor_estimado || undefined,
+                dataAssinatura: negFull?.data_assinatura || undefined,
+              });
+            }
           }
         }
       } catch (negocioError) {
-        console.error("[moveLead] Catch - Erro ao criar negócio:", negocioError);
-        toast.warning("Lead movido com sucesso, mas erro ao criar negócio.", { duration: 4000 });
+        console.error("[moveLead] Catch - Erro ao sincronizar negócio:", negocioError);
+        toast.warning("Lead movido, mas erro ao sincronizar o negócio.", { duration: 4000 });
       }
     }
 
