@@ -763,21 +763,6 @@ export default function PipelineKanban() {
                   sortOrder={sortOrder}
                   tarefasMap={kanbanTarefasMap}
                 />
-              ) : activeTab === "inteligencia" ? (
-                intelView === "funil" ? (
-                  <PipelineFlowDashboard
-                    stages={pipeline.stages}
-                    leads={filteredLeads}
-                    corretorNomes={pipeline.corretorNomes}
-                  />
-                ) : (
-                  <OpportunityRadar
-                    leads={pipeline.leads}
-                    stages={pipeline.stages}
-                    corretorNomes={pipeline.corretorNomes}
-                    onSelectLead={setSelectedLead}
-                  />
-                )
               ) : activeTab === "time" ? (
                 authUser?.id ? (
                   <ModoTimeView
