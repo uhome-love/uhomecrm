@@ -38,7 +38,12 @@ interface PipelineBoardProps {
   // Opcional para preservar consumidores legados (ex: PosVendas) que ainda
   // não passam o mapa; nesse caso o Board faz fallback para query local.
   tarefasMap?: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
+  // Lente do board: "leads" mostra a prospecção; "negocios" mostra as etapas de negócio.
+  lensMode?: "leads" | "negocios";
 }
+
+// Etapas que pertencem ao ciclo do negócio (lente "Negócios")
+const DEAL_STAGE_TIPOS = new Set(["convertido", "proposta", "contrato_gerado", "venda", "caiu"]);
 
 const COLUMN_WIDTH_DESKTOP = 268;
 const COLUMN_WIDTH_MOBILE = 268;
