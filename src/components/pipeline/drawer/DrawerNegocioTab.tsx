@@ -279,19 +279,19 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
             <Field label="Valor proposta (R$)"><MoneyInput className="h-8 text-xs" value={propostaValor} onValueChange={setPropostaValor} /></Field>
             <Field label="Data assinatura"><Input type="date" className="h-8 text-xs" value={dataAssinatura} onChange={(e) => setDataAssinatura(e.target.value)} /></Field>
           </div>
-          <Field label="Situação da proposta">
-            <Select value={propostaSituacao} onValueChange={setPropostaSituacao}>
+          <Field label="Situação da proposta (Em Negociação)">
+            <Select value={statusNegociacao} onValueChange={setStatusNegociacao}>
               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
               <SelectContent>
-                {NEGOCIACAO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.label}>{o.label}</SelectItem>)}
+                {NEGOCIACAO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </Field>
           <Field label="Situação do contrato">
-            <Select value={documentacaoSituacao} onValueChange={setDocumentacaoSituacao}>
+            <Select value={statusContrato} onValueChange={setStatusContrato}>
               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
               <SelectContent>
-                {CONTRATO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.label}>{o.label}</SelectItem>)}
+                {CONTRATO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </Field>
