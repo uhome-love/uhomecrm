@@ -536,10 +536,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               if (/ligaç|liga[rç]|telefon/.test(t)) return "ligacao";
               if (/whats|mensagem/.test(t)) return "whatsapp";
               if (/email|e-mail/.test(t)) return "email";
-              if (/visita|tour/.test(t)) return "visita";
+              if (/visita|tour|comparec|no-show|no show/.test(t)) return "visita";
               if (/reuni/.test(t)) return "reuniao";
               if (/follow/.test(t)) return "followup";
               if (/nota|anotaç/.test(t)) return "nota";
+              if (/substatus|etapa|movido/.test(t)) return "historico";
               if (/aceito|entrou|distribu/.test(t)) return "aceito";
               return undefined;
             })();
