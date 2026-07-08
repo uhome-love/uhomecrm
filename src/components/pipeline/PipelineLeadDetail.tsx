@@ -49,6 +49,7 @@ import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
 import DrawerTasksTab from "./drawer/DrawerTasksTab";
 import DrawerVisitsTab from "./drawer/DrawerVisitsTab";
+import DrawerNegocioTab from "./drawer/DrawerNegocioTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 
 import NextActionModal from "./NextActionModal";
@@ -647,6 +648,11 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <TabsTrigger value="visitas" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
                 📊 Visitas
               </TabsTrigger>
+              {lead.negocio_id && (
+                <TabsTrigger value="negocio" className="text-xs h-7 md:h-6 shrink-0 data-[state=active]:shadow-sm gap-1">
+                  💼 Negócio
+                </TabsTrigger>
+              )}
             </TabsList>
 
 
@@ -715,6 +721,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 onAgendarVisita={() => setScheduleVisitOpen(true)}
               />
             </TabsContent>
+
+            {/* ===== TAB: NEGÓCIO (Pipeline unificado — Fase 1) ===== */}
+            {lead.negocio_id && (
+              <TabsContent value="negocio" className="mt-0">
+                <DrawerNegocioTab
+                  negocioId={lead.negocio_id}
+                  corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                />
+              </TabsContent>
+            )}
+
+
 
 
             {/* Tabs radar/whatsapp removidas (Pipeline v2 Fase 4) */}
