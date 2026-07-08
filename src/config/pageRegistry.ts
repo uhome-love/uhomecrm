@@ -163,7 +163,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/homi-gerente":          { key: "homi-gerente",         label: "HOMI Gerente",        icon: "Bot",           roles: ["gestor", "admin", "diretor"] },
   "/homi-ceo":              { key: "homi-ceo",             label: "HOMI CEO",            icon: "Bot",           roles: ["admin"] },
   "/homi/base-conhecimento":{ key: "base-conhecimento",    label: "Base HOMI",           icon: "BookOpen",      roles: ["admin", "gestor"] },
-  "/pipeline-negocios":     { key: "negocios",             label: "Negócios",            icon: "BarChart3" },
+  // "/pipeline-negocios" desativado — negócios agora vivem no Pipeline de Leads (lente Negócios). Redirect em App.tsx.
   "/vendas-realizadas":     { key: "vendas-realizadas",    label: "Vendas",              icon: "TrendingUp" },
   "/pos-vendas":            { key: "pos-vendas",           label: "Pós-Vendas",          icon: "Heart" },
   "/imoveis":               { key: "imoveis",              label: "Imóveis",             icon: "Home" },

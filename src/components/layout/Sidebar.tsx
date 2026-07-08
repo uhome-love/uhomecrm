@@ -68,7 +68,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Vendas",
       items: [
-        { label: "Pipeline negócios",  path: "/pipeline-negocios", icon: <BarChart3    size={15} strokeWidth={1.5} /> },
         { label: "PDN",                path: "/pdn",               icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
@@ -136,7 +135,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Vendas",
       items: [
-        { label: "Pipeline negócios",  path: "/pipeline-negocios", icon: <BarChart3    size={15} strokeWidth={1.5} /> },
         { label: "PDN",                path: "/pdn",               icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
@@ -198,7 +196,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Gestão de Negócios",
       items: [
-        { label: "Pipeline negócios",  path: "/pipeline-negocios", icon: <BarChart3    size={15} strokeWidth={1.5} /> },
         { label: "PDN",                path: "/pdn",               icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
@@ -252,7 +249,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Negócios",
       items: [
-        { label: "Pipeline negócios",  path: "/pipeline-negocios", icon: <BarChart3    size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
         { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
         { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },

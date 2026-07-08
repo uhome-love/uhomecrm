@@ -24,7 +24,7 @@ export function useNegociosCount() {
         .from("pipeline_stages")
         .select("id")
         .eq("ativo", true)
-        .eq("tipo", "convertido");
+        .in("tipo", ["convertido", "proposta", "contrato_gerado", "venda", "caiu"]);
 
       const stageIds = (stages || []).map((s: any) => s.id as string);
       if (stageIds.length === 0) return 0;

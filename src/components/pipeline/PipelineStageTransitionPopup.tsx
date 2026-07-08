@@ -549,6 +549,63 @@ function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
   );
 }
 
+// ─── Caiu (queda do negócio) ───
+function CaiuForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
+  const [motivo, setMotivo] = useState("");
+  const [destino, setDestino] = useState<"descarte" | "inativar">("descarte");
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="text-base flex items-center gap-2">💔 Negócio caiu</DialogTitle>
+      </DialogHeader>
+      <p className="text-xs text-muted-foreground">Negócio: <strong>{lead.nome}</strong></p>
+      <p className="text-[10px] text-muted-foreground">Registre o motivo e escolha o destino do lead. O negócio ficará salvo como perdido (histórico e PDN).</p>
+
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs">Motivo da queda *</Label>
+          <Textarea value={motivo} onChange={e => setMotivo(e.target.value)} className="text-xs h-20" placeholder="Ex: cliente não aprovou crédito, comprou com outro, desistiu..." />
+        </div>
+        <div>
+          <Label className="text-xs mb-2 block">Destino do lead *</Label>
+          <RadioGroup value={destino} onValueChange={(v) => setDestino(v as "descarte" | "inativar")} className="space-y-2">
+            <div className="flex items-start gap-2">
+              <RadioGroupItem value="descarte" id="caiu-descarte" className="mt-0.5" />
+              <Label htmlFor="caiu-descarte" className="text-xs cursor-pointer font-normal">
+                🗑️ <strong>Descartar</strong> — vai para Descarte, reengajável por nutrição/oferta ativa
+              </Label>
+            </div>
+            <div className="flex items-start gap-2">
+              <RadioGroupItem value="inativar" id="caiu-inativar" className="mt-0.5" />
+              <Label htmlFor="caiu-inativar" className="text-xs cursor-pointer font-normal">
+                🚫 <strong>Inativar</strong> — arquiva o lead definitivamente
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button
+          size="sm"
+          variant="destructive"
+          className="text-xs gap-1"
+          disabled={!motivo.trim()}
+          onClick={() => onConfirm({
+            leadId: lead.id,
+            targetStageId,
+            observacao: `Negócio caiu: ${motivo.trim()} | Destino: ${destino === "inativar" ? "Inativado" : "Descarte"}`,
+            extraData: { queda: true, motivo: motivo.trim(), destino },
+          })}
+        >
+          💔 Confirmar queda
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
 // ─── Negócio Criado (convertido) ───
 function NegocioCriadoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
   const [vgv, setVgv] = useState<string>(lead.valor_estimado ? String(lead.valor_estimado) : "");
@@ -638,6 +695,9 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
     if (stageType === "convertido" || stageName.includes("negócio criado") || stageName.includes("negocio criado")) {
       return <NegocioCriadoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
+    if (stageType === "caiu" || stageName.includes("caiu")) {
+      return <CaiuForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    }
     if (stageType === "descarte" || stageName.includes("descarte")) {
       return <DescarteForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
@@ -675,6 +735,7 @@ export function needsTransitionPopup(stageName: string, stageType: string, lead?
 
   if (stageType === "pos_visita" || stageType === "visita_realizada" || name.includes("pós-visita") || name.includes("visita realizada")) return true;
   if (stageType === "convertido" || name.includes("negócio criado") || name.includes("negocio criado")) return true;
+  if (stageType === "caiu" || name.includes("caiu")) return true;
   if (stageType === "descarte" || name.includes("descarte")) return true;
   return false;
 }

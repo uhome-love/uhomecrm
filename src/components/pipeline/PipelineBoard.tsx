@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import PipelineStageTransitionPopup, { needsTransitionPopup, type TransitionResult } from "./PipelineStageTransitionPopup";
 import { sortLeads, type PipelineSortOrder } from "@/lib/pipelineSortOrder";
+import { applyNegocioQueda, type QuedaDestino } from "@/lib/negocioQueda";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 interface PipelineBoardProps {
@@ -37,7 +38,12 @@ interface PipelineBoardProps {
   // Opcional para preservar consumidores legados (ex: PosVendas) que ainda
   // não passam o mapa; nesse caso o Board faz fallback para query local.
   tarefasMap?: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
+  // Lente do board: "leads" mostra a prospecção; "negocios" mostra as etapas de negócio.
+  lensMode?: "leads" | "negocios";
 }
+
+// Etapas que pertencem ao ciclo do negócio (lente "Negócios")
+const DEAL_STAGE_TIPOS = new Set(["convertido", "proposta", "contrato_gerado", "venda", "caiu"]);
 
 const COLUMN_WIDTH_DESKTOP = 268;
 const COLUMN_WIDTH_MOBILE = 268;
@@ -227,7 +233,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   );
 });
 
-export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap }: PipelineBoardProps) {
+export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap, lensMode = "leads" }: PipelineBoardProps) {
   const { isGestor, isAdmin } = useUserRole();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
@@ -402,10 +408,11 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
 
 
-  // "Negócio Criado" (convertido) is now visible to ALL users (corretores included)
+  // Lente: "negocios" mostra só as etapas do negócio; "leads" só a prospecção.
   const visibleStages = useMemo(() => {
-    return stages;
-  }, [stages]);
+    if (lensMode === "negocios") return stages.filter(s => DEAL_STAGE_TIPOS.has(s.tipo));
+    return stages.filter(s => !DEAL_STAGE_TIPOS.has(s.tipo));
+  }, [stages, lensMode]);
 
   const leadsByStage = useMemo(() => {
     // Dedup leads by ID before distributing to columns (definitivo)
@@ -593,6 +600,55 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     const extra = result.extraData || {};
     const targetStage = stages.find(s => s.id === result.targetStageId);
     const isDescarte = targetStage?.tipo === "descarte";
+    const isCaiu = targetStage?.tipo === "caiu";
+
+    // ─── Negócio caiu: grava motivo, marca negócio perdido e trata o lead ───
+    if (isCaiu && lead) {
+      try {
+        const destino = (extra.destino as QuedaDestino) || "descarte";
+        const motivo = String(extra.motivo || result.observacao || "");
+
+        // Resolve o negócio vinculado (state pode estar defasado)
+        let negocioId = lead.negocio_id;
+        if (!negocioId) {
+          const { data } = await supabase
+            .from("negocios").select("id").eq("pipeline_lead_id", lead.id).limit(1).maybeSingle();
+          negocioId = data?.id || null;
+        }
+
+        if (negocioId) {
+          await applyNegocioQueda({ negocioId, pipelineLeadId: lead.id, motivo, destino });
+          await supabase
+            .from("negocios")
+            .update({ fase: "perdido", status: "perdido", updated_at: new Date().toISOString() } as any)
+            .eq("id", negocioId);
+        } else {
+          // Sem negócio vinculado — trata só o lead
+          const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+          if (destino === "inativar") {
+            await supabase.from("pipeline_leads").update({
+              motivo_descarte: buildMotivoDescarte("definitivo", motivo || "Sem motivo"),
+              tipo_descarte: "definitivo", arquivado: true, negocio_id: null,
+            } as any).eq("id", lead.id);
+            toast.success("Lead inativado definitivamente");
+          } else {
+            const descarteStage = stages.find(s => s.tipo === "descarte");
+            await supabase.from("pipeline_leads").update({
+              motivo_descarte: buildMotivoDescarte("reengajavel", motivo || "Sem motivo"),
+              tipo_descarte: "reengajavel", negocio_id: null,
+              ...(descarteStage ? { stage_id: descarteStage.id, stage_changed_at: new Date().toISOString() } : {}),
+            } as any).eq("id", lead.id);
+            toast.info("Lead movido para Descarte (reengajável)");
+          }
+        }
+      } catch (err) {
+        console.error("Error in queda flow:", err);
+        toast.error("Erro ao registrar a queda do negócio.");
+      }
+      window.dispatchEvent(new CustomEvent("pipeline-reload"));
+      return;
+    }
+
 
     if (isDescarte && lead) {
       try {
@@ -765,7 +821,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
             <button
               key={stage.id}
               onClick={() => scrollToIndex(idx)}
-              title={stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
+              title={stage.tipo === "convertido" ? "Negócio" : stage.nome}
               className="transition-all hover:opacity-100"
               style={{
                 display: "flex", alignItems: "center", gap: 5,
@@ -780,7 +836,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
               }}
             >
               {emoji && <span style={{ fontSize: 11 }}>{emoji}</span>}
-              <span>{stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}</span>
+              <span>{stage.tipo === "convertido" ? "Negócio" : stage.nome}</span>
               <span style={{ fontWeight: 700, marginLeft: 1 }}>
                 {stageLeads.length}
               </span>
@@ -838,7 +894,12 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
               "Visita": makeTheme("--stage-visita"),
               "Pós-Visita": makeTheme("--stage-pos-visita"),
               "Descarte": makeTheme("--stage-descarte"),
+              "Negócio": makeTheme("--stage-negocio-criado"),
               "Negócio Criado": makeTheme("--stage-negocio-criado"),
+              "Proposta": makeTheme("--stage-aquecimento"),
+              "Contrato Gerado": makeTheme("--stage-visita"),
+              "Ganho": makeTheme("--stage-negocio-criado"),
+              "Caiu": makeTheme("--stage-descarte"),
               // Legacy
               "Qualificação": makeTheme("--stage-busca"),
               "Possível Visita": makeTheme("--stage-aquecimento"),
@@ -901,7 +962,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                       {emoji}
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 600, color: isDragOver ? "#16a34a" : "hsl(var(--pipeline-text-primary))", flex: 1, transition: "color 0.2s ease" }}>
-                      {stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
+                      {stage.tipo === "convertido" ? "Negócio" : stage.nome}
                     </span>
                     <span style={{
                       fontSize: 13, fontWeight: 700,
