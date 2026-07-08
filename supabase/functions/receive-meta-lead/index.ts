@@ -477,6 +477,14 @@ Deno.serve(async (req) => {
       empreendimento = "Lake Baikal";
     }
 
+    // Canonicaliza formulários "Uhome - Flow - (Video 1D/2D/Studio)" → "Flow".
+    // Após remover o sufixo de mídia sobra "Uhome - flow -", que não casa com a
+    // campanha "Flow" (S4 - MCMV) na roleta_campanhas. Força o nome canônico.
+    if (empreendimento && /\bflow\b/i.test(empreendimento)) {
+      empreendimento = "Flow";
+    }
+
+
     L.info("Parsed", { name, telefone, campaignId, propertyCode, empreendimento, externalLeadId, isTestLead });
 
     // ── Atribuição direta por campanha específica (não passa pela roleta) ──
