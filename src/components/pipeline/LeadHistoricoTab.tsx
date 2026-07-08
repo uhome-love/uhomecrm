@@ -234,7 +234,28 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       continue;
     }
 
-    const res = resultadoDoTitulo(a.titulo);
+    // Eventos já padronizados (visita / substatus / etapa): exibir título e
+    // descrição exatamente como gravados — sem "limpeza" que embaralha o texto.
+    if (["visita", "sistema", "mudanca_etapa"].includes(a.tipo)) {
+      const iconMap: Record<string, any> = { visita: MapPin, sistema: ArrowRight, mudanca_etapa: ArrowRight };
+      const colorMap: Record<string, string> = {
+        visita: "bg-sky-100 text-sky-600",
+        sistema: "bg-violet-100 text-violet-600",
+        mudanca_etapa: "bg-primary/10 text-primary",
+      };
+      items.push({
+        title: a.titulo || "Evento",
+        description: a.descricao || undefined,
+        date: a.created_at,
+        icon: iconMap[a.tipo] || FileText,
+        color: colorMap[a.tipo] || "bg-muted text-muted-foreground",
+        autor: nome(a.created_by),
+        sourceType: "atividade",
+        sourceId: a.id,
+      });
+      continue;
+    }
+
     const labelText = info?.label || a.tipo;
     // Título sem o trecho de resultado (após " — "), sem nome do lead e sem data solta
     const core = limparTexto((a.titulo || "").split(" — ")[0], lead.nome, res?.key);
