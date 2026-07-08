@@ -104,6 +104,7 @@ export function usePdn(mes: string) {
   const { negocios, corretorNomes, corretorInfoMap, loading: negLoading } = useNegocios();
   const [overrides, setOverrides] = useState<PdnEntry[]>([]);
   const [manualRows, setManualRows] = useState<PdnEntry[]>([]);
+  const [visitasReal, setVisitasReal] = useState<{ id: string; nome: string; data: string; empreendimento: string; corretor: string; temNegocio: boolean }[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
 
   const loadEntries = useCallback(async () => {
