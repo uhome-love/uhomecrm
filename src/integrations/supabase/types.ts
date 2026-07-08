@@ -6078,6 +6078,7 @@ export type Database = {
       }
       pdn_entries: {
         Row: {
+          construtora: string | null
           corretor: string | null
           created_at: string
           created_from_visit: boolean
@@ -6091,6 +6092,7 @@ export type Database = {
           linked_visit_id: string | null
           mes: string
           motivo_queda: string | null
+          negocio_id: string | null
           nome: string
           objecao_cliente: string | null
           observacoes: string | null
@@ -6107,6 +6109,7 @@ export type Database = {
           vgv: number | null
         }
         Insert: {
+          construtora?: string | null
           corretor?: string | null
           created_at?: string
           created_from_visit?: boolean
@@ -6120,6 +6123,7 @@ export type Database = {
           linked_visit_id?: string | null
           mes: string
           motivo_queda?: string | null
+          negocio_id?: string | null
           nome: string
           objecao_cliente?: string | null
           observacoes?: string | null
@@ -6136,6 +6140,7 @@ export type Database = {
           vgv?: number | null
         }
         Update: {
+          construtora?: string | null
           corretor?: string | null
           created_at?: string
           created_from_visit?: boolean
@@ -6149,6 +6154,7 @@ export type Database = {
           linked_visit_id?: string | null
           mes?: string
           motivo_queda?: string | null
+          negocio_id?: string | null
           nome?: string
           objecao_cliente?: string | null
           observacoes?: string | null
@@ -6177,6 +6183,13 @@ export type Database = {
             columns: ["linked_visit_id"]
             isOneToOne: false
             referencedRelation: "visitas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdn_entries_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
             referencedColumns: ["id"]
           },
         ]
@@ -10961,6 +10974,7 @@ export type Database = {
       get_corretor_pdn: {
         Args: { p_mes?: string }
         Returns: {
+          construtora: string | null
           corretor: string | null
           created_at: string
           created_from_visit: boolean
@@ -10974,6 +10988,7 @@ export type Database = {
           linked_visit_id: string | null
           mes: string
           motivo_queda: string | null
+          negocio_id: string | null
           nome: string
           objecao_cliente: string | null
           observacoes: string | null
