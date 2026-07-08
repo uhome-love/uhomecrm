@@ -14,7 +14,7 @@ import { fmtMoney } from "@/lib/fmtMoney";
 import { MoneyInput } from "@/components/simulador/MoneyInput";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";
 import { NEGOCIACAO_SUBSTATUS, CONTRATO_SUBSTATUS } from "@/lib/leadHelpers";
-import { logSubstatusChange } from "@/lib/pipelineAudit";
+import { logSubstatusChange, substatusValueLabel } from "@/lib/pipelineAudit";
 import { toast } from "sonner";
 
 interface NegocioFull extends Negocio {
