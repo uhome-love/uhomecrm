@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
+import { routeLeadAfterVisita } from "@/lib/visitaResultadoRouting";
 import VisitasCobrancaDialog from "@/components/visitas/VisitasCobrancaDialog";
 import { toast } from "sonner";
 
