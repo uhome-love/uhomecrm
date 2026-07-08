@@ -121,7 +121,7 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
       try {
         await supabase.from("pipeline_atividades").insert({
           pipeline_lead_id: pipelineLeadId,
-          tipo: "nota",
+          tipo: "sistema",
           titulo: "Informações do negócio atualizadas",
           descricao: [
             empreendimento && `Empreendimento: ${empreendimento}${unidade ? ` · ${unidade}` : ""}`,
