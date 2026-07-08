@@ -363,10 +363,11 @@ export default function PipelineKanban() {
   }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap, partnerLeadsByCorretor, isCeoView, gestorFilter, gestorTeamUserIds, minhaCarteira, authUser?.id]);
 
   const filteredLeads = useMemo(() => {
+    const DEAL_TIPOS = new Set(["convertido", "proposta", "contrato_gerado", "venda", "caiu"]);
     const stageMap = new Map(pipeline.stages.map(s => [s.id, s.tipo]));
     let result = preFilteredLeads;
     if (negociosFilter) {
-      result = result.filter(l => stageMap.get(l.stage_id) === "convertido");
+      result = result.filter(l => DEAL_TIPOS.has(stageMap.get(l.stage_id) || ""));
     }
     if (clientStatusFilter !== "todos") {
       result = result.filter(l => getLeadStatusFilter(l, kanbanTarefasMap[l.id] || null, stageMap.get(l.stage_id)) === clientStatusFilter);
