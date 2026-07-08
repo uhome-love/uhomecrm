@@ -61,6 +61,10 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
   const [documentacaoSituacao, setDocumentacaoSituacao] = useState("");
   const [dataAssinatura, setDataAssinatura] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  // Substatus canônicos (values) — fonte única é flag_status do lead.
+  const [statusNegociacao, setStatusNegociacao] = useState("");
+  const [statusContrato, setStatusContrato] = useState("");
+  const [leadFlags, setLeadFlags] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     if (!negocioId) {
@@ -75,6 +79,17 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
       .maybeSingle();
     const n = (data as NegocioFull) || null;
     setNegocio(n);
+    // Lê flag_status do lead — fonte única dos substatus da etapa.
+    let flags: Record<string, string> = {};
+    if (pipelineLeadId) {
+      const { data: leadRow } = await supabase
+        .from("pipeline_leads")
+        .select("flag_status")
+        .eq("id", pipelineLeadId)
+        .maybeSingle();
+      flags = ((leadRow as any)?.flag_status as Record<string, string>) || {};
+    }
+    setLeadFlags(flags);
     if (n) {
       setEmpreendimento(n.empreendimento || "");
       setUnidade(n.unidade || "");
@@ -84,11 +99,13 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
       setPropostaSituacao(n.proposta_situacao || "");
       setNegociacaoSituacao(n.negociacao_situacao || "");
       setDocumentacaoSituacao(n.documentacao_situacao || "");
+      setStatusNegociacao(flags.status_negociacao || "");
+      setStatusContrato(flags.status_contrato || "");
       setDataAssinatura(n.data_assinatura || "");
       setObservacoes(n.observacoes || "");
     }
     setLoading(false);
-  }, [negocioId]);
+  }, [negocioId, pipelineLeadId]);
 
   useEffect(() => {
     setLoading(true);
