@@ -171,6 +171,17 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
 
       <div className="space-y-3">
         <div>
+          <Label className="text-xs">Status do atendimento *</Label>
+          <Select value={statusAtend} onValueChange={setStatusAtend}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(STATUS_ATEND).map(([k, label]) => (
+                <SelectItem key={k} value={k}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
           <Label className="text-xs">Tipologia de interesse</Label>
           <Select value={tipologia} onValueChange={setTipologia}>
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
