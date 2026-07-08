@@ -64,6 +64,16 @@ interface SegmentoPreview {
   count: number;
 }
 
+/** Rótulo legível da origem/imóvel de um lead para a prévia. */
+function leadOrigemLabel(emp: string | null, origem: string | null): string {
+  const empName = (emp || "").trim();
+  if (empName) return empName;
+  const o = (origem || "").toLowerCase();
+  if (o.includes("imovelweb")) return "ImóvelWeb";
+  if (o.includes("site")) return "Site";
+  return "Avulso";
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -255,6 +265,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
   const { preview, unidentifiedCount, identifiedLeadIds, allLeadIds } = useMemo(() => {
     const groups: Record<string, SegmentoPreview> = {};
+    const labelCounts: Record<string, Record<string, number>> = {};
     let unidentified = 0;
     const identified: string[] = [];
     const all: string[] = [];
@@ -271,13 +282,20 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
           groups[segNome] = { segmento_nome: segNome, empreendimentos: [], count: 0 };
         }
         groups[segNome].count++;
-        const empName = lead.empreendimento || "";
-        if (!groups[segNome].empreendimentos.includes(empName)) {
-          groups[segNome].empreendimentos.push(empName);
-        }
+        const label = leadOrigemLabel(lead.empreendimento, lead.origem);
+        labelCounts[segNome] = labelCounts[segNome] || {};
+        labelCounts[segNome][label] = (labelCounts[segNome][label] || 0) + 1;
       } else {
         unidentified++;
       }
+    }
+
+    // Monta rótulos legíveis (origem/imóvel) com contagem por segmento
+    for (const seg of Object.keys(groups)) {
+      const counts = labelCounts[seg] || {};
+      groups[seg].empreendimentos = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, n]) => (n > 1 ? `${label} (${n})` : label));
     }
 
     // Ordenação canônica: "Geral" primeiro, depois S1, S2, S3, S4.
