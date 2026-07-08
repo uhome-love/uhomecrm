@@ -14,6 +14,7 @@ import { fmtMoney } from "@/lib/fmtMoney";
 import { MoneyInput } from "@/components/simulador/MoneyInput";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";
 import { NEGOCIACAO_SUBSTATUS, CONTRATO_SUBSTATUS } from "@/lib/leadHelpers";
+import { logSubstatusChange, substatusValueLabel } from "@/lib/pipelineAudit";
 import { toast } from "sonner";
 
 interface NegocioFull extends Negocio {
@@ -60,6 +61,10 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
   const [documentacaoSituacao, setDocumentacaoSituacao] = useState("");
   const [dataAssinatura, setDataAssinatura] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  // Substatus canônicos (values) — fonte única é flag_status do lead.
+  const [statusNegociacao, setStatusNegociacao] = useState("");
+  const [statusContrato, setStatusContrato] = useState("");
+  const [leadFlags, setLeadFlags] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     if (!negocioId) {
@@ -74,6 +79,17 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
       .maybeSingle();
     const n = (data as NegocioFull) || null;
     setNegocio(n);
+    // Lê flag_status do lead — fonte única dos substatus da etapa.
+    let flags: Record<string, string> = {};
+    if (pipelineLeadId) {
+      const { data: leadRow } = await supabase
+        .from("pipeline_leads")
+        .select("flag_status")
+        .eq("id", pipelineLeadId)
+        .maybeSingle();
+      flags = ((leadRow as any)?.flag_status as Record<string, string>) || {};
+    }
+    setLeadFlags(flags);
     if (n) {
       setEmpreendimento(n.empreendimento || "");
       setUnidade(n.unidade || "");
@@ -83,11 +99,13 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
       setPropostaSituacao(n.proposta_situacao || "");
       setNegociacaoSituacao(n.negociacao_situacao || "");
       setDocumentacaoSituacao(n.documentacao_situacao || "");
+      setStatusNegociacao(flags.status_negociacao || "");
+      setStatusContrato(flags.status_contrato || "");
       setDataAssinatura(n.data_assinatura || "");
       setObservacoes(n.observacoes || "");
     }
     setLoading(false);
-  }, [negocioId]);
+  }, [negocioId, pipelineLeadId]);
 
   useEffect(() => {
     setLoading(true);
@@ -117,6 +135,34 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
       setSaving(false);
       return;
     }
+
+    // Sincroniza os substatus canônicos no flag_status do lead — fonte única
+    // que alimenta o selo do card em Em Negociação e Contrato.
+    const oldNeg = leadFlags.status_negociacao || "";
+    const oldCon = leadFlags.status_contrato || "";
+    if (pipelineLeadId && (statusNegociacao !== oldNeg || statusContrato !== oldCon)) {
+      const newFlags = { ...leadFlags };
+      if (statusNegociacao) newFlags.status_negociacao = statusNegociacao;
+      else delete newFlags.status_negociacao;
+      if (statusContrato) newFlags.status_contrato = statusContrato;
+      else delete newFlags.status_contrato;
+      const { error: flagErr } = await supabase
+        .from("pipeline_leads")
+        .update({ flag_status: newFlags } as any)
+        .eq("id", pipelineLeadId);
+      if (!flagErr) {
+        setLeadFlags(newFlags);
+        if (user?.id) {
+          if (statusNegociacao !== oldNeg) {
+            logSubstatusChange({ pipelineLeadId, userId: user.id, field: "status_negociacao", oldValue: oldNeg, newValue: statusNegociacao });
+          }
+          if (statusContrato !== oldCon) {
+            logSubstatusChange({ pipelineLeadId, userId: user.id, field: "status_contrato", oldValue: oldCon, newValue: statusContrato });
+          }
+        }
+      }
+    }
+
     // Registra no histórico/timeline do lead
     if (pipelineLeadId && user) {
       try {
@@ -127,9 +173,7 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
           descricao: [
             empreendimento && `Empreendimento: ${empreendimento}${unidade ? ` · ${unidade}` : ""}`,
             vgvNum > 0 && `VGV: ${fmtMoney(vgvNum, "exact")}`,
-            propostaSituacao && `Proposta: ${propostaSituacao}`,
             negociacaoSituacao && `Negociação: ${negociacaoSituacao}`,
-            documentacaoSituacao && `Documentação: ${documentacaoSituacao}`,
             observacoes && `Obs: ${observacoes}`,
           ].filter(Boolean).join(" · ") || "Dados do negócio atualizados",
           created_by: user.id,
@@ -142,7 +186,7 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
     setEditing(false);
     setSaving(false);
     load();
-  }, [negocioId, pipelineLeadId, user, empreendimento, unidade, construtora, vgv, propostaValor, propostaSituacao, negociacaoSituacao, documentacaoSituacao, dataAssinatura, observacoes, load]);
+  }, [negocioId, pipelineLeadId, user, empreendimento, unidade, construtora, vgv, propostaValor, propostaSituacao, negociacaoSituacao, documentacaoSituacao, statusNegociacao, statusContrato, leadFlags, dataAssinatura, observacoes, load]);
 
   if (loading) {
     return (
@@ -215,9 +259,10 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
       {!editing ? (
         <>
           <div className="grid grid-cols-1 gap-2">
-            <SummaryRow label="Proposta" value={negocio.proposta_situacao || (negocio.proposta_valor ? fmtMoney(negocio.proposta_valor, "exact") : null)} />
-            <SummaryRow label="Negociação" value={negocio.negociacao_situacao || negocio.negociacao_pendencia} />
-            <SummaryRow label="Documentação" value={negocio.documentacao_situacao} />
+            <SummaryRow label="Em Negociação" value={leadFlags.status_negociacao ? substatusValueLabel("status_negociacao", leadFlags.status_negociacao) : null} />
+            <SummaryRow label="Negociação / pendência" value={negocio.negociacao_situacao || negocio.negociacao_pendencia} />
+            <SummaryRow label="Contrato" value={leadFlags.status_contrato ? substatusValueLabel("status_contrato", leadFlags.status_contrato) : null} />
+            {negocio.proposta_valor ? <SummaryRow label="Valor proposta" value={fmtMoney(negocio.proposta_valor, "exact")} /> : null}
             {negocio.data_assinatura && <SummaryRow label="Assinatura" value={negocio.data_assinatura} />}
             {negocio.observacoes && <SummaryRow label="Observações" value={negocio.observacoes} />}
           </div>
@@ -235,19 +280,19 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
             <Field label="Valor proposta (R$)"><MoneyInput className="h-8 text-xs" value={propostaValor} onValueChange={setPropostaValor} /></Field>
             <Field label="Data assinatura"><Input type="date" className="h-8 text-xs" value={dataAssinatura} onChange={(e) => setDataAssinatura(e.target.value)} /></Field>
           </div>
-          <Field label="Situação da proposta">
-            <Select value={propostaSituacao} onValueChange={setPropostaSituacao}>
+          <Field label="Situação da proposta (Em Negociação)">
+            <Select value={statusNegociacao} onValueChange={setStatusNegociacao}>
               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
               <SelectContent>
-                {NEGOCIACAO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.label}>{o.label}</SelectItem>)}
+                {NEGOCIACAO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </Field>
           <Field label="Situação do contrato">
-            <Select value={documentacaoSituacao} onValueChange={setDocumentacaoSituacao}>
+            <Select value={statusContrato} onValueChange={setStatusContrato}>
               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
               <SelectContent>
-                {CONTRATO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.label}>{o.label}</SelectItem>)}
+                {CONTRATO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </Field>

@@ -4,6 +4,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { logSubstatusChange } from "@/lib/pipelineAudit";
+import {
+  QUALIFICACAO_SUBSTATUS,
+  AQUECIMENTO_SUBSTATUS,
+  VISITA_SUBSTATUS,
+} from "@/lib/leadHelpers";
 
 interface Props {
   leadId: string;
@@ -13,13 +20,14 @@ interface Props {
 }
 
 export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpdate }: Props) {
+  const { user } = useAuth();
   const [flags, setFlags] = useState<Record<string, string>>(flagStatus || {});
 
   useEffect(() => {
     setFlags(flagStatus || {});
   }, [flagStatus]);
 
-  const save = useCallback(async (updated: Record<string, string>) => {
+  const save = useCallback(async (updated: Record<string, string>, changedKey?: string, oldValue?: string) => {
     setFlags(updated);
     const { error } = await supabase
       .from("pipeline_leads")
@@ -27,16 +35,27 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
       .eq("id", leadId);
     if (error) {
       toast.error("Erro ao salvar flag");
-    } else {
-      onUpdate?.(updated);
+      return;
     }
-  }, [leadId, onUpdate]);
+    onUpdate?.(updated);
+    // Auditoria: registra a alteração de substatus no Histórico do lead.
+    if (changedKey && user?.id) {
+      logSubstatusChange({
+        pipelineLeadId: leadId,
+        userId: user.id,
+        field: changedKey,
+        oldValue: oldValue ?? null,
+        newValue: updated[changedKey] ?? null,
+      });
+    }
+  }, [leadId, onUpdate, user?.id]);
 
-  const setFlag = (key: string, value: string) => save({ ...flags, [key]: value });
+  const setFlag = (key: string, value: string) => save({ ...flags, [key]: value }, key, flags[key]);
   const toggleFlag = (key: string) => {
+    const oldValue = flags[key];
     const updated = { ...flags };
     updated[key] = updated[key] === "sim" ? "nao" : "sim";
-    save(updated);
+    save(updated, key, oldValue);
   };
 
   const wrapper = (children: React.ReactNode) => (
@@ -55,6 +74,21 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
     return null;
   }
 
+  if (stageTipo === "qualificacao") {
+    return wrapper(
+      <>
+        <Label className="text-xs text-muted-foreground">Substatus:</Label>
+        <Select value={flags.status_atendimento || ""} onValueChange={(v) => setFlag("status_atendimento", v)}>
+          <SelectTrigger className="h-7 w-44 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+          <SelectContent>
+            {QUALIFICACAO_SUBSTATUS.map((o) => (
+              <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </>
+    );
+  }
 
   if (stageTipo === "contato_inicial") {
     return wrapper(
@@ -103,11 +137,11 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
       <>
         <Label className="text-xs text-muted-foreground">Prazo recontato:</Label>
         <Select value={flags.prazo || ""} onValueChange={(v) => setFlag("prazo", v)}>
-          <SelectTrigger className="h-7 w-24 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+          <SelectTrigger className="h-7 w-40 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="30" className="text-xs">30 dias</SelectItem>
-            <SelectItem value="60" className="text-xs">60 dias</SelectItem>
-            <SelectItem value="90" className="text-xs">90 dias</SelectItem>
+            {AQUECIMENTO_SUBSTATUS.map((o) => (
+              <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </>
@@ -119,11 +153,11 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
       <>
         <Label className="text-xs text-muted-foreground">Status visita:</Label>
         <Select value={flags.status_visita || ""} onValueChange={(v) => setFlag("status_visita", v)}>
-          <SelectTrigger className="h-7 w-32 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+          <SelectTrigger className="h-7 w-36 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="marcada" className="text-xs">📅 Marcada</SelectItem>
-            <SelectItem value="realizada" className="text-xs">✅ Realizada</SelectItem>
-            <SelectItem value="no_show" className="text-xs">❌ No-show</SelectItem>
+            {VISITA_SUBSTATUS.map((o) => (
+              <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
+            ))}
             <SelectItem value="reagendada" className="text-xs">🔁 Reagendada</SelectItem>
           </SelectContent>
         </Select>
