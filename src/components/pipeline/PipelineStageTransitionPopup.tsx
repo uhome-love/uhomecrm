@@ -13,6 +13,7 @@ import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtMoney } from "@/lib/fmtMoney";
+import { NEGOCIACAO_SUBSTATUS, CONTRATO_SUBSTATUS, AQUECIMENTO_SUBSTATUS } from "@/lib/leadHelpers";
 
 export interface TransitionResult {
   leadId: string;
