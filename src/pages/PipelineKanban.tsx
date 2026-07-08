@@ -812,6 +812,7 @@ export default function PipelineKanban() {
                   onToggleSelect={toggleLeadSelection}
                   sortOrder={sortOrder}
                   tarefasMap={kanbanTarefasMap}
+                  showGanhos={ganhosFilter}
                 />
               ) : activeTab === "time" ? (
                 authUser?.id ? (
