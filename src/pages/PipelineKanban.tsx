@@ -376,6 +376,38 @@ export default function PipelineKanban() {
     return result;
   }, [preFilteredLeads, clientStatusFilter, negociosFilter, kanbanTarefasMap, pipeline.stages, riscoFilter, riscoLeadIds]);
 
+  // Resumo da lente Negócios — total, VGV somado e em risco (>7d sem avanço de fase)
+  const negociosLeadIds = useMemo(
+    () => (negociosFilter ? filteredLeads.filter(l => l.negocio_id).map(l => l.negocio_id as string) : []),
+    [negociosFilter, filteredLeads]
+  );
+  const { data: negociosResumo } = useQuery({
+    queryKey: ["pipeline-negocios-resumo", negociosLeadIds.slice().sort().join(",")],
+    queryFn: async () => {
+      if (negociosLeadIds.length === 0) return { count: 0, vgv: 0, emRisco: 0 };
+      let vgv = 0, emRisco = 0, count = 0;
+      for (let i = 0; i < negociosLeadIds.length; i += 300) {
+        const chunk = negociosLeadIds.slice(i, i + 300);
+        const { data } = await supabase
+          .from("negocios")
+          .select("vgv_estimado, vgv_final, fase_changed_at")
+          .eq("status", "ativo")
+          .in("id", chunk);
+        for (const n of data || []) {
+          count++;
+          vgv += (n.vgv_final || n.vgv_estimado || 0);
+          if (n.fase_changed_at && (Date.now() - new Date(n.fase_changed_at).getTime()) / 86400000 > 7) emRisco++;
+        }
+      }
+      return { count, vgv, emRisco };
+    },
+    enabled: negociosFilter && negociosLeadIds.length > 0,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+
+
 
   // Bug-fix Bug 4: corretorNomes é "poliglota" (indexa cada pessoa sob user_id
   // E profile.id) e inclui gerente_id dos leads — Object.entries() duplicaria
