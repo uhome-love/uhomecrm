@@ -63,16 +63,17 @@ export function useCorretorKpisCarteira() {
         .eq("ativo", true);
       const excluded = new Set(
         (stages || [])
-          .filter((s: any) => s.tipo === "descarte" || s.tipo === "convertido")
+          .filter((s: any) => ["descarte", "convertido", "venda", "caiu"].includes(s.tipo))
           .map((s: any) => s.id as string)
       );
 
+      // Em Negociação (proposta) e Contrato (contrato_gerado) PARTICIPAM do fluxo
+      // de tarefas — não excluir por negocio_id, apenas por etapa terminal.
       const { data: leads } = await supabase
         .from("pipeline_leads")
         .select("id, stage_id")
         .eq("corretor_id", user.id)
-        .eq("arquivado", false)
-        .is("negocio_id", null);
+        .eq("arquivado", false);
       const ativos = (leads || [])
         .filter((l: any) => !excluded.has(l.stage_id))
         .map((l: any) => l.id as string);
