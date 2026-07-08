@@ -5,13 +5,14 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 
 // ─── Grupos / status do PDN ──────────────────────────────────────────────────
-export type PdnGrupo = "visita_realizada" | "em_negociacao" | "contrato" | "ganho";
+export type PdnGrupo = "visita_realizada" | "em_negociacao" | "contrato" | "ganho" | "caidos";
 
 export const PDN_GRUPOS: { key: PdnGrupo; label: string; cor: string }[] = [
   { key: "visita_realizada", label: "Visita Realizada", cor: "#10B981" },
   { key: "em_negociacao", label: "Em Negociação", cor: "#EC4899" },
   { key: "contrato", label: "Contrato", cor: "#06B6D4" },
   { key: "ganho", label: "Ganho", cor: "#22C55E" },
+  { key: "caidos", label: "Caídos", cor: "#EF4444" },
 ];
 
 // Probabilidade ponderada por grupo (para forecast)
@@ -20,6 +21,7 @@ const PROB_POR_GRUPO: Record<PdnGrupo, number> = {
   em_negociacao: 0.5,
   contrato: 0.8,
   ganho: 1,
+  caidos: 0,
 };
 
 // Etapas do pipeline (pipeline_stages.tipo) → grupo do PDN
@@ -38,7 +40,8 @@ export interface PdnRow {
   negocioId: string | null;   // negocios.id (se houver)
   pipelineLeadId: string | null; // pipeline_leads.id (fonte)
   overrideId: string | null;  // pdn_entries.id do overlay (se houver)
-  grupo: PdnGrupo;
+  grupo: PdnGrupo;            // grupo efetivo (caidos se caiu=true)
+  grupoOrigem: PdnGrupo;      // grupo natural (etapa) antes da queda
   nome: string;
   data: string;               // YYYY-MM-DD
   empreendimento: string;
@@ -49,6 +52,8 @@ export interface PdnRow {
   status: string;             // status livre do gerente (overlay)
   observacoes: string;
   proximaAcao: string;
+  caiu: boolean;
+  motivoQueda: string;
   diasParado: number;
   emRisco: boolean;
   isManual: boolean;
@@ -70,6 +75,8 @@ type PdnEntry = {
   status: string | null;
   observacoes: string | null;
   proxima_acao: string | null;
+  caiu: boolean | null;
+  motivo_queda: string | null;
 };
 
 function diffDays(dateStr: string): number {
@@ -112,7 +119,7 @@ export function usePdn(mes: string) {
     setLoadingEntries(true);
     const { data, error } = await supabase
       .from("pdn_entries")
-      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, nome, situacao, empreendimento, vgv, corretor, equipe, data_visita, status, observacoes, proxima_acao")
+      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, nome, situacao, empreendimento, vgv, corretor, equipe, data_visita, status, observacoes, proxima_acao, caiu, motivo_queda")
       .order("created_at", { ascending: true });
     if (error) {
       console.error("Erro ao carregar PDN:", error);
@@ -205,29 +212,6 @@ export function usePdn(mes: string) {
       };
     });
     setDeals(dealRows);
-
-    // Nomes/equipe dos corretores (auth id → nome), igual ao pipeline
-    const authIds = [...new Set(dealRows.map(d => d.corretorAuthId).filter(Boolean))] as string[];
-    if (authIds.length > 0) {
-      const [profRes, memRes] = await Promise.all([
-        supabase.from("profiles").select("user_id, nome").in("user_id", authIds),
-        supabase.from("team_members").select("user_id, nome, equipe").in("user_id", authIds),
-      ]);
-      const nameMap: Record<string, string> = {};
-      const equipeMap: Record<string, string> = {};
-      profRes.data?.forEach((p: any) => { if (p.user_id) nameMap[p.user_id] = p.nome; });
-      memRes.data?.forEach((m: any) => {
-        if (!m.user_id) return;
-        if (!nameMap[m.user_id] && m.nome) nameMap[m.user_id] = m.nome;
-        if (m.equipe) equipeMap[m.user_id] = m.equipe;
-      });
-      setNameByAuthId(nameMap);
-      setEquipeByAuthId(equipeMap);
-    } else {
-      setNameByAuthId({});
-      setEquipeByAuthId({});
-    }
-
     setLoadingDeals(false);
   }, [user, isAdmin, isGestor]);
 
@@ -261,6 +245,35 @@ export function usePdn(mes: string) {
     })();
   }, [user, mes, deals]);
 
+  // ── Nomes/equipe dos corretores (auth id → nome), cobrindo negócios E visitas ─
+  useEffect(() => {
+    (async () => {
+      const authIds = [...new Set([
+        ...deals.map(d => d.corretorAuthId),
+        ...visitasReal.map(v => v.corretorAuthId),
+      ].filter(Boolean))] as string[];
+      if (authIds.length === 0) {
+        setNameByAuthId({});
+        setEquipeByAuthId({});
+        return;
+      }
+      const [profRes, memRes] = await Promise.all([
+        supabase.from("profiles").select("user_id, nome").in("user_id", authIds),
+        supabase.from("team_members").select("user_id, nome, equipe").in("user_id", authIds),
+      ]);
+      const nameMap: Record<string, string> = {};
+      const equipeMap: Record<string, string> = {};
+      profRes.data?.forEach((p: any) => { if (p.user_id) nameMap[p.user_id] = p.nome; });
+      memRes.data?.forEach((m: any) => {
+        if (!m.user_id) return;
+        if (!nameMap[m.user_id] && m.nome) nameMap[m.user_id] = m.nome;
+        if (m.equipe) equipeMap[m.user_id] = m.equipe;
+      });
+      setNameByAuthId(nameMap);
+      setEquipeByAuthId(equipeMap);
+    })();
+  }, [deals, visitasReal]);
+
   // Overlay indexado por negocio_id e por pipeline_lead_id
   const overrideByNegocio = useMemo(() => {
     const map: Record<string, PdnEntry> = {};
@@ -290,13 +303,15 @@ export function usePdn(mes: string) {
       const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
       const proximaAcao = ov?.proxima_acao || "";
       const dias = diffDays(d.stageChangedAt);
-      const emRisco = d.grupo !== "ganho" && !proximaAcao && dias > 7;
+      const caiu = !!ov?.caiu;
+      const emRisco = !caiu && d.grupo !== "ganho" && !proximaAcao && dias > 7;
       out.push({
         id: `deal-${d.id}`,
         negocioId: d.negocioId,
         pipelineLeadId: d.id,
         overrideId: ov?.id ?? null,
-        grupo: d.grupo,
+        grupo: caiu ? "caidos" : d.grupo,
+        grupoOrigem: d.grupo,
         nome: d.nome,
         data,
         empreendimento: ov?.empreendimento || d.empreendimento || "—",
@@ -307,6 +322,8 @@ export function usePdn(mes: string) {
         status: ov?.status || "",
         observacoes: ov?.observacoes ?? d.observacoesNegocio ?? "",
         proximaAcao,
+        caiu,
+        motivoQueda: ov?.motivo_queda || "",
         diasParado: dias,
         emRisco,
         isManual: false,
@@ -319,12 +336,14 @@ export function usePdn(mes: string) {
       const ov = v.leadId ? overrideByLead[v.leadId] : undefined;
       const corretor = (v.corretorAuthId && nameByAuthId[v.corretorAuthId]) || ov?.corretor || "—";
       const equipe = (v.corretorAuthId && equipeByAuthId[v.corretorAuthId]) || ov?.equipe || "—";
+      const caiu = !!ov?.caiu;
       out.push({
         id: `visita-${v.id}`,
         negocioId: null,
         pipelineLeadId: v.leadId,
         overrideId: ov?.id ?? null,
-        grupo: "visita_realizada",
+        grupo: caiu ? "caidos" : "visita_realizada",
+        grupoOrigem: "visita_realizada",
         nome: v.nome,
         data: v.data,
         empreendimento: ov?.empreendimento || v.empreendimento,
@@ -335,6 +354,8 @@ export function usePdn(mes: string) {
         status: ov?.status || "",
         observacoes: ov?.observacoes || "",
         proximaAcao: ov?.proxima_acao || "",
+        caiu,
+        motivoQueda: ov?.motivo_queda || "",
         diasParado: 0,
         emRisco: false,
         isManual: false,
@@ -343,23 +364,27 @@ export function usePdn(mes: string) {
 
     // Linhas manuais (sem vínculo com pipeline)
     for (const m of manualRows) {
-      const grupo = (["visita_realizada", "em_negociacao", "contrato", "ganho"].includes(m.situacao) ? m.situacao : "em_negociacao") as PdnGrupo;
+      const base = (["visita_realizada", "em_negociacao", "contrato", "ganho"].includes(m.situacao) ? m.situacao : "em_negociacao") as PdnGrupo;
+      const caiu = !!m.caiu;
       out.push({
         id: `manual-${m.id}`,
         negocioId: null,
         pipelineLeadId: null,
         overrideId: m.id,
-        grupo,
+        grupo: caiu ? "caidos" : base,
+        grupoOrigem: base,
         nome: m.nome,
         data: m.data_visita || "",
         empreendimento: m.empreendimento || "—",
         vgv: Number(m.vgv) || 0,
-        situacaoLabel: PDN_GRUPOS.find(g => g.key === grupo)?.label || m.situacao,
+        situacaoLabel: PDN_GRUPOS.find(g => g.key === base)?.label || m.situacao,
         corretor: m.corretor || "—",
         equipe: m.equipe || "—",
         status: m.status || "",
         observacoes: m.observacoes || "",
         proximaAcao: m.proxima_acao || "",
+        caiu,
+        motivoQueda: m.motivo_queda || "",
         diasParado: 0,
         emRisco: false,
         isManual: true,
@@ -370,12 +395,14 @@ export function usePdn(mes: string) {
   }, [deals, visitasReal, manualRows, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes]);
 
   // ── Overlay: grava só em pdn_entries (nunca no pipeline/negócio) ──────────────
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status">>) => {
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda">>) => {
     if (!user) return;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
     if (patch.proximaAcao !== undefined) payload.proxima_acao = patch.proximaAcao || null;
     if (patch.status !== undefined) payload.status = patch.status || null;
+    if (patch.caiu !== undefined) payload.caiu = patch.caiu;
+    if (patch.motivoQueda !== undefined) payload.motivo_queda = patch.motivoQueda || null;
 
     if (row.overrideId) {
       const { error } = await supabase.from("pdn_entries").update(payload).eq("id", row.overrideId);
@@ -387,7 +414,7 @@ export function usePdn(mes: string) {
         pipeline_lead_id: row.negocioId ? null : row.pipelineLeadId,
         mes,
         nome: row.nome,
-        situacao: row.grupo,
+        situacao: row.grupoOrigem,
         empreendimento: row.empreendimento === "—" ? null : row.empreendimento,
         vgv: row.vgv,
         corretor: row.corretor === "—" ? null : row.corretor,
@@ -399,6 +426,15 @@ export function usePdn(mes: string) {
     await loadEntries();
   }, [user, mes, loadEntries]);
 
+  // ── Marcar / reverter queda ("caiu") — só no overlay ─────────────────────────
+  const marcarQueda = useCallback(async (row: PdnRow, motivo: string) => {
+    await saveOverride(row, { caiu: true, motivoQueda: motivo });
+  }, [saveOverride]);
+
+  const reativarQueda = useCallback(async (row: PdnRow) => {
+    await saveOverride(row, { caiu: false, motivoQueda: "" });
+  }, [saveOverride]);
+
   // ── Linha manual (CRUD completo) ─────────────────────────────────────────────
   const addManualRow = useCallback(async (grupo: PdnGrupo) => {
     if (!user) return;
@@ -406,7 +442,7 @@ export function usePdn(mes: string) {
       gerente_id: user.id,
       mes,
       nome: "Novo negócio",
-      situacao: grupo,
+      situacao: grupo === "caidos" ? "em_negociacao" : grupo,
     });
     if (error) { toast.error("Erro ao adicionar linha"); return; }
     await loadEntries();
@@ -424,20 +460,21 @@ export function usePdn(mes: string) {
     await loadEntries();
   }, [loadEntries]);
 
-  // ── Totais / resumo ──────────────────────────────────────────────────────────
+  // ── Totais / resumo (não conta caídos no VGV/forecast) ───────────────────────
   const resumo = useMemo(() => {
     const byGrupo: Record<PdnGrupo, { count: number; vgv: number }> = {
       visita_realizada: { count: 0, vgv: 0 },
       em_negociacao: { count: 0, vgv: 0 },
       contrato: { count: 0, vgv: 0 },
       ganho: { count: 0, vgv: 0 },
+      caidos: { count: 0, vgv: 0 },
     };
     let forecast = 0;
     let emRisco = 0;
     for (const r of rows) {
       byGrupo[r.grupo].count++;
       byGrupo[r.grupo].vgv += r.vgv;
-      forecast += r.vgv * (PROB_POR_GRUPO[r.grupo] ?? 0.3);
+      if (r.grupo !== "caidos") forecast += r.vgv * (PROB_POR_GRUPO[r.grupo] ?? 0.3);
       if (r.emRisco) emRisco++;
     }
     const vgvTotal = byGrupo.em_negociacao.vgv + byGrupo.contrato.vgv + byGrupo.ganho.vgv;
@@ -449,6 +486,8 @@ export function usePdn(mes: string) {
     resumo,
     loading: loadingDeals || loadingEntries,
     saveOverride,
+    marcarQueda,
+    reativarQueda,
     addManualRow,
     updateManualRow,
     deleteRow,
