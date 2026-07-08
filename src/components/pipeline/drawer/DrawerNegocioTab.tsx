@@ -78,8 +78,8 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
       setEmpreendimento(n.empreendimento || "");
       setUnidade(n.unidade || "");
       setConstrutora(n.construtora || "");
-      setVgv(String(n.vgv_final || n.vgv_estimado || ""));
-      setPropostaValor(String(n.proposta_valor || ""));
+      setVgv(Number(n.vgv_final || n.vgv_estimado || 0));
+      setPropostaValor(Number(n.proposta_valor || 0));
       setPropostaSituacao(n.proposta_situacao || "");
       setNegociacaoSituacao(n.negociacao_situacao || "");
       setDocumentacaoSituacao(n.documentacao_situacao || "");
