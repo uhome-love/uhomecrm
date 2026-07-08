@@ -223,7 +223,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         )}
 
 
-        {/* Tab switcher mobile — paridade com desktop (Kanban / Inteligência / Modo Time / Equipes) */}
+        {/* Tab switcher mobile — paridade com desktop (Kanban / Modo Time / Equipes) */}
         {roleTabs.length > 1 && (
           <div className="flex items-center gap-1 px-3 py-1.5 overflow-x-auto scrollbar-none">
             {roleTabs.map(tab => (
@@ -239,26 +239,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 {tab.icon} {tab.label}
               </button>
             ))}
-            {activeTab === "inteligencia" && (
-              <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-full p-0.5 ml-0.5 shrink-0">
-                {[
-                  { key: "funil", icon: <BarChart3 className="h-3 w-3 inline mr-1" />, label: "Funil" },
-                  { key: "radar", icon: <Radar className="h-3 w-3 inline mr-1" />, label: "Radar" },
-                ].map(v => (
-                  <button
-                    key={v.key}
-                    onClick={() => setIntelView(v.key as "funil" | "radar")}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border-none cursor-pointer ${
-                      intelView === v.key
-                        ? "bg-white dark:bg-gray-700 text-[#0a0a0a] dark:text-white"
-                        : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
-                    }`}
-                  >
-                    {v.icon}{v.label}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         )}
 
