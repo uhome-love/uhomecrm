@@ -1,60 +1,108 @@
-## Objetivo
-Unificar leads e negócios num único **Pipeline** (renomear "Pipeline de Leads" → "Pipeline"), gerir o status do negócio dentro do próprio pipeline, celebrar o ganho, tratar a queda (descartar/inativar), unificar a visita, remover a aba Inteligência (inútil hoje) e entregar um **PDN** para o gestor que substitui a planilha Google com vantagem. Tudo 100% funcional, validado ponta a ponta, organizado e fácil de gerir. Referência: `mockup-corretor.png` e `mockup-pdn.png`.
+# Reorganização final do Pipeline Único
 
-## Renomear "Pipeline de Leads" → "Pipeline" (Fase 0)
-- Registry já usa "Pipeline". Padronizar todo texto visível restante: `GlobalSearch`, `SectionPipelineLeads`, `central-v2/sections`, toasts (`MeusNegocios`, `AproveitadosPanel`, `BuscaLeads`), `V4QuickActions`, `RankingEquipe`, `FaseTransitionModal`, `NegocioDetailModal`. Manter rotas `/pipeline` e `/pipeline-leads` (alias).
+Consolidação das etapas, substatus inteligentes, emojis únicos, integração automática de visitas, aba de negócio editável inline e reestruturação do PDN do gestor — tudo preservando dados e sem quebrar o fluxo atual.
 
-## Remover a aba "Inteligência" (Fase 0.5)
-- Hoje é um view-mode em `PipelineHeader` (corretor, gestor e CEO) que renderiza dashboard de fluxo/radar no `PipelineKanban` — não é usado por ninguém.
-- Remover o item `inteligencia` das listas de tabs (todos os papéis), o branch de render no `PipelineKanban` e limpar os componentes órfãos (`PipelineFlowDashboard`/`OpportunityRadar`) se não usados em outro lugar. Ajustar default de `activeTab` para `kanban`.
-- **Substituto (opcional, futuro):** um "Meu Desempenho" enxuto para o corretor (leads ativos, visitas do mês, negócios em andamento/VGV, conversão) — só se aprovado; não recriar o dashboard atual que não funciona.
+## 1. Etapas definitivas (renomear e consolidar)
 
-## Variáveis do negócio (tudo entra no acompanhamento)
-Identidade: `nome_cliente`, `telefone`, `empreendimento`, `unidade`, `imovel_interesse`, `origem`, `pipeline_lead_id`. Fase/status: `fase`, `status`, `fase_changed_at`. Proposta: `proposta_imovel/valor/situacao`. Negociação: `negociacao_situacao/contra_proposta/pendencia`, `objecao_cliente`. Documentação: `documentacao_situacao`, `data_assinatura`. Valores: `vgv_estimado`, `vgv_final` (fallback final→estimado). Queda: `motivo_queda`. Pessoas: `corretor_id` (profiles.id), `gerente_id`, `auth_user_id`, `equipe_gerente_auth_id`, `requer_aprovacao_ceo`. Relacionados: `negocios_tarefas`, `negocios_atividades`.
+O board ativo passa a ter **7 colunas** + **Ganho** fora do board (filtro):
 
-## Fase 1 — Aba "Negócio" no drawer do lead + gestão de status
-1. Aba **"Negócio"** em `PipelineLeadDetail` (hoje: info/histórico/tarefas/visitas), visível quando há negócio vinculado; reusa lógica do `NegocioDetailModal` embutida (regra "Tudo no Lead").
-2. Barra de fases clicável: Novo Negócio → Proposta → Em Negociação → Contrato Gerado → Ganho/Assinado; troca abre `FaseTransitionModal`.
-3. Edição inline por seção (proposta, negociação, documentação) + observações + tarefas/atividades.
+```text
+🆕 Novo Lead → 📵 Sem Contato → 🔎 Qualificação → 🔥 Aquecimento →
+🏠 Visita → 🤝 Em Negociação → 📄 Contrato        [🏆 Ganho = filtro]
+```
 
-## Fase 2 — Lente "Leads ⇄ ◆ Negócios" no board
-- Toggle no `PipelineHeader` (estado por usuário). Lente Leads: card normal + marca discreta `◆ Negócio · VGV · fase`. Lente Negócios: só negócios ativos, card com fase, VGV, próxima ação e aging (verde ≤3d / âmbar 4–7d / vermelho +7d ou sem ação) + tira-resumo. Consolidar `NegocioCriadoColumn` com a lente.
+Mudanças de nome/consolidação (via migração, preservando leads):
+- `Atendimento / Qualificação` → **Qualificação**
+- `Nutrição / Aquecimento` → **Aquecimento**
+- `Proposta / Negociação` → **Em Negociação** (passa a absorver a antiga *Aprovação / Documentação*)
+- Leads que estavam em `Aprovação / Documentação` (tipo `documentacao`) são movidos para **Em Negociação** com substatus `documentacao_enviada`, e a coluna `documentacao` sai do board.
+- `Contrato Gerado` → **Contrato**
+- `Ganho` continua existindo, mas deixa de aparecer no board ativo.
 
-## Fase 3 — Ganho + celebração
-- Fase `vendido` como **"Ganho / Assinado"** (selo verde). Ao ganhar: grava `data_assinatura`, mantém regra VGV assinado, dispara `VendaCelebration` (via realtime), garantindo gatilho pelo drawer e pelo board.
+## 2. Emojis únicos por etapa
 
-## Fase 4 — Queda (descartar ou inativar)
-- Ação "Negócio caiu" → modal pede `motivo_queda` + destino via `buildMotivoDescarte`: Descartar (reengajável), Inativar (definitivo), Voltar ao Pipeline. Caídos na aba "Negócios caídos" com motivo e data.
+Hoje vários caem no fallback `📍` ou repetem 🔍/🔥. Corrigir o mapa em `celebrations.ts` usando os **nomes reais** das etapas, com um emoji distinto cada:
 
-## Fase 5 — Visita unificada
-- Em `AgendaVisitas`: remover `VisitaTypeSelector` e `ReuniaoNegocioForm`; agendar abre direto o formulário único de Visita. `tipo_visita` opcional/derivado. Registros antigos preservados.
+| Etapa | Emoji |
+|---|---|
+| Novo Lead | 🆕 |
+| Sem Contato | 📵 |
+| Qualificação | 🔎 |
+| Aquecimento | 🔥 |
+| Visita | 🏠 |
+| Em Negociação | 🤝 |
+| Contrato | 📄 |
+| Ganho | 🏆 |
 
-## Fase 6 — PDN do gestor (planilha Google, só que melhor)
-Gestores usam planilha manual por mês (nome, data, empreendimento, **construtora**, VGV, status, observação), separando Negócios / Gerados / Assinados. O CRM atual foi considerado difícil de enxergar. O PDN deve ser tão simples quanto a planilha, mas visual e integrado.
-1. **Vista por mês:** seletor de mês (usa `pdn_entries.mes`); tabela densa editável inline, familiar como Excel.
-2. **Colunas enxutas (iguais à planilha):** Nome · Data · Empreendimento · Construtora · VGV · Status · Observação. Extras (corretor, equipe, próxima ação, dias parado) colapsáveis. Migração pontual: coluna `construtora` em `pdn_entries` (+ GRANT).
-3. **Agrupamento por status:** Negócios (andamento) · Gerados (contrato) · Assinados, cada grupo com subtotal de VGV e contagem, total do mês no topo.
-4. **Edição inline:** status (dropdown), VGV (máscara), data (picker), observação (texto); adicionar/ordenar linhas manuais; salvamento otimista.
-5. **Integração automática:** negócios do pipeline populam o PDN (nome, empreendimento, VGV, status derivado da fase, corretor, data), sem digitação dupla, ainda editável manualmente.
-6. **Camada visual:** cartões de resumo (VGV total, assinados, gerados, andamento, forecast ponderado = VGV × prob. por fase, meta + gap), linhas em risco destacadas, filtros rápidos (equipe, corretor, em risco, fecha este mês). Escopo por `resolve_managed_brokers`; admin vê tudo.
-7. **Exportar** o mês em PDF/planilha; comparativo mês atual × anterior.
+Cores/bg (`PIPELINE_STAGE_COLORS` / `PIPELINE_STAGE_BG`) atualizadas para os novos nomes.
 
-## Ideias extras
-- Alerta HOMI de negócio parado (X dias sem próxima ação) via `homi_alerts`.
-- Modo Foco inclui negócios parados (hoje ignora `negocio_id`).
-- Badge de contagem (negócios ativos / em risco) no header.
-- Registro automático de atividade em `negocios_atividades` a cada mudança de fase.
+## 3. Substatus por etapa (aparecem no card + editáveis no modal)
 
-## Validação ponta a ponta (antes de declarar 100%)
-- Build + typecheck limpos e `vitest run` (inclui regressão id-mapping).
-- Playwright headless em `localhost:8080` como corretor: Pipeline (sem aba Inteligência) → alternar lente → abrir lead com negócio → mudar fase (proposta→negociação→ganho) → ver celebração → derrubar negócio → agendar visita única. Como gestor: PDN → trocar mês → editar linha inline → conferir subtotais e integração. Screenshots por passo.
-- Conferir no banco após cada ação; console/network sem erros; realtime atualizando o board.
+Guardados em `pipeline_leads.flag_status` (padrão atual), exibidos via `CardMinimal`/`LeadFlagBadges` e editáveis no popup de transição e no modal do lead:
 
-## Detalhes técnicos / qualidade
-- Única migração: `construtora` em `pdn_entries` (+ GRANT). Usa `negocios`, `negocios_tarefas`, `negocios_atividades`, `pdn_entries`.
-- IDs: `negocios.corretor_id = profiles.id`; joins de usuário via `auth_user_id`.
-- Design tokens (Indigo #4969FF, roxo p/ negócio, radius 12px); sem cores hardcoded.
-- Decompor arquivos grandes ao mexer (`MeusNegocios.tsx`, `NegocioDetailModal.tsx`, `PipelineLeadDetail.tsx`, `PipelineHeader.tsx`).
+- **Qualificação** (`status_atendimento`): Contato inicial · Alinhando perfil · Busca de imóveis · Follow up · Alinhando visita
+- **Aquecimento** (`prazo`): Retomar 30D · Retomar 60D · Retomar 90D
+- **Visita** (`status_visita`): Visita marcada · Visita realizada · No-show — **atualização automática** (ver item 4)
+- **Em Negociação** (`status_negociacao`): Proposta enviada · Proposta aprovada · Em aprovação bancária · Correspondente bancário · Aprovação proprietário · Documentação enviada
+- **Contrato** (`status_contrato`): Em confecção · Gerado · Em leitura
 
-## Sequência
-Fase 0 (rename) → 0.5 (remover Inteligência) → 1 (aba Negócio) → 2 (lente) → 3 (ganho) → 4 (queda) → 5 (visita única) → 6 (PDN). Validação ponta a ponta ao fim de cada fase.
+Cada substatus com emoji/cor próprios em `leadHelpers.ts` (badge do card) e `LeadFlagBadges.tsx`.
+
+## 4. Visita ↔ Agenda automática
+
+- Ao **criar** visita na agenda → lead vai para etapa Visita com `status_visita = marcada` (já funciona).
+- Ao marcar visita como **realizada** na agenda (`updateStatus`) → grava `status_visita = realizada` no `flag_status` do lead automaticamente.
+- Ao marcar **não compareceu / no_show** → grava `status_visita = no_show`.
+- Resultado da visita (`VisitaResultadoDialog`) mantém a movimentação existente, agora sincronizando o substatus.
+
+## 5. Ganho fora do pipeline ativo (proposta de UX)
+
+- **Ganho não vira coluna** do board ativo — entra em `HIDDEN_STAGE_TIPOS`.
+- Adiciono no header do pipeline um **toggle/filtro "Ganhos"** que abre uma visão só-leitura dos leads na etapa Ganho (cards com botão **"Reativar lead"** para quando o cliente quiser comprar outra coisa — volta o lead para Novo Lead / Qualificação, preservando histórico e negócio anterior).
+- Ao dar **Ganho** a partir de Contrato, o lead recebe `stage = Ganho`, dispara celebração de venda (já existe) e sai do board ativo automaticamente.
+
+## 6. Aba Negócio inline editável (modal do lead)
+
+`DrawerNegocioTab` deixa de ser só-leitura. Campos editáveis inline salvando em `negocios` e registrando no **Histórico do lead**:
+- VGV (estimado/final), empreendimento/unidade, construtora
+- Proposta (valor + situação), negociação (situação/pendência), documentação (situação)
+- Data de assinatura e observações do negócio
+
+## 7. PDN do Gestor por etapas
+
+`usePdn` + `PdnGestor` reestruturados para colunas baseadas na **jornada real do pipeline** (não só na fase do negócio):
+
+```text
+VISITA REALIZADA → EM NEGOCIAÇÃO → CONTRATO → GANHO
+```
+
+- **Visita Realizada**: leads com `status_visita = realizada` (fonte: `flag_status` + tabela `visitas`).
+- **Em Negociação / Contrato / Ganho**: leads nas etapas correspondentes (com VGV do negócio vinculado).
+- Mantém overlay manual (`pdn_entries`), forecast, risco e export CSV.
+
+## 8. Limpeza / integridade
+
+- Remover do board colunas mortas/duplicadas (`Contato Iniciado`, `Busca`, `Possível Visita`, `Visita Marcada`, `Visita Realizada`, `Pós-Visita`, `Negócio`, `Negociação`, `Boas-vindas`, etc.) mantendo só as 7 ativas + âncoras ocultas.
+- Preservar todos os dados (nenhum lead deletado; apenas remapeamento de `stage_id`).
+- Ajustar mobile (`PipelineMobileView`) para espelhar as 7 etapas + filtro Ganhos.
+
+## Detalhes técnicos
+
+**Migração SQL** (1 migração):
+- `UPDATE pipeline_stages` renomeando nomes e ajustando cor.
+- Remapear leads de `documentacao` → `proposta` (Em Negociação) com `flag_status.status_negociacao='documentacao_enviada'`.
+- Marcar etapas não usadas como fora do board (via `HIDDEN_STAGE_TIPOS` no código, sem apagar registros para preservar histórico).
+
+**Arquivos afetados:**
+- `supabase/migrations/*` (rename/remap de etapas)
+- `src/lib/celebrations.ts` (emojis/cores por nome real)
+- `src/lib/leadHelpers.ts` + `src/components/pipeline/LeadFlagBadges.tsx` (substatus novos)
+- `src/components/pipeline/PipelineStageTransitionPopup.tsx` (popups de Em Negociação e Contrato com substatus)
+- `src/components/pipeline/PipelineBoard.tsx` + `PipelineMobileView.tsx` (colunas ativas, filtro Ganhos)
+- `src/components/pipeline/PipelineHeader.tsx` (toggle "Ganhos")
+- `src/hooks/useVisitas.ts` (auto `status_visita` realizada/no_show)
+- `src/components/pipeline/drawer/DrawerNegocioTab.tsx` (edição inline)
+- `src/hooks/usePdn.ts` + `src/pages/PdnGestor.tsx` (colunas por etapa + Visita Realizada)
+- `src/hooks/usePipeline.ts` (mapeamento etapa→fase negócio + reativar lead)
+
+**Validação ponta a ponta:** `tsgo` limpo, testes (vitest) e Playwright headless (desktop + mobile) cobrindo: as 7 etapas com emojis únicos, substatus visíveis nos cards, transição Qualificação/Em Negociação/Contrato com substatus, visita marcada/realizada/no-show automática, aba Negócio editável salvando no histórico, Ganho saindo do board + filtro Ganhos com reativação, e PDN do gestor refletindo Visita Realizada → Em Negociação → Contrato → Ganho.
