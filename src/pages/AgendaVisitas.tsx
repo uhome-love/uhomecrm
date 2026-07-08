@@ -14,8 +14,6 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import VisitaForm from "@/components/visitas/VisitaForm";
-import VisitaTypeSelector from "@/components/visitas/VisitaTypeSelector";
-import ReuniaoNegocioForm from "@/components/visitas/ReuniaoNegocioForm";
 import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
 import VisitasCobrancaDialog from "@/components/visitas/VisitasCobrancaDialog";
 import { toast } from "sonner";
