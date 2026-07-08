@@ -58,6 +58,7 @@ export default function PdnGestor() {
   const [mes, setMes] = useState(monthOptions[0].value);
   const [filtroRisco, setFiltroRisco] = useState(false);
   const [filtroCorretor, setFiltroCorretor] = useState<string>("todos");
+  const [ordem, setOrdem] = useState<"recente" | "antigo">("recente");
 
   const { rows, resumo, loading, saveOverride, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
 
@@ -67,17 +68,24 @@ export default function PdnGestor() {
   }, [rows]);
 
   const filtered = useMemo(() => {
-    return rows.filter(r => {
+    const list = rows.filter(r => {
       if (filtroRisco && !r.emRisco) return false;
       if (filtroCorretor !== "todos" && r.corretor !== filtroCorretor) return false;
       return true;
     });
-  }, [rows, filtroRisco, filtroCorretor]);
+    // Ordena por data dentro de cada etapa (aplicado por grupo na renderização)
+    return list.sort((a, b) => {
+      const da = a.data || "";
+      const db = b.data || "";
+      if (da === db) return 0;
+      return ordem === "recente" ? (db > da ? 1 : -1) : (da > db ? 1 : -1);
+    });
+  }, [rows, filtroRisco, filtroCorretor, ordem]);
 
   function exportCSV() {
-    const header = ["Grupo", "Nome", "Data", "Empreendimento", "Construtora", "VGV", "Status", "Corretor", "Equipe", "Observação"];
+    const header = ["Grupo", "Nome", "Data", "Empreendimento", "VGV", "Status", "Corretor", "Equipe", "Observação"];
     const lines = filtered.map(r => [
-      r.grupo, r.nome, r.data, r.empreendimento, r.construtora, r.vgv, r.situacaoLabel, r.corretor, r.equipe, r.observacoes,
+      r.situacaoLabel, r.nome, r.data, r.empreendimento, r.vgv, r.status, r.corretor, r.equipe, r.observacoes,
     ].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","));
     const csv = [header.join(","), ...lines].join("\n");
     const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
@@ -86,6 +94,7 @@ export default function PdnGestor() {
     a.href = url; a.download = `PDN_${mes}.csv`; a.click();
     URL.revokeObjectURL(url);
   }
+
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 md:p-6">
