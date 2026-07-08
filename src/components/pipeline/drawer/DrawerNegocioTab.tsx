@@ -194,6 +194,17 @@ export default function DrawerNegocioTab({ negocioId, corretorNome }: Props) {
         Gestão completa do negócio
       </Button>
 
+      {!isPerdido && (
+        <Button
+          variant="ghost"
+          className="w-full gap-2 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={() => requestMoveFase(negocio, "perdido")}
+        >
+          <XCircle className="h-4 w-4" />
+          Negócio caiu
+        </Button>
+      )}
+
       {/* Modais */}
       {detailOpen && (
         <Suspense fallback={null}>
