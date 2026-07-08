@@ -223,4 +223,55 @@ export function getLeadSubstatusBadge(
   }
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Opções de substatus por etapa — fonte única para popups de transição
+// e edição no modal do lead. Cada item grava a chave em flag_status.
+// ─────────────────────────────────────────────────────────────────
+
+export interface SubstatusOption {
+  value: string;
+  label: string;
+}
+
+/** Etapa Qualificação → flag_status.status_atendimento */
+export const QUALIFICACAO_SUBSTATUS: SubstatusOption[] = [
+  { value: "contato_inicial", label: "📞 Contato inicial" },
+  { value: "alinhamento_perfil", label: "🎯 Alinhando perfil" },
+  { value: "busca", label: "🔍 Busca de imóveis" },
+  { value: "follow_up", label: "🔁 Follow up" },
+  { value: "alinhando_visita", label: "📅 Alinhando visita" },
+];
+
+/** Etapa Aquecimento → flag_status.prazo (dias) */
+export const AQUECIMENTO_SUBSTATUS: SubstatusOption[] = [
+  { value: "30", label: "⏰ Retomar 30D" },
+  { value: "60", label: "⏰ Retomar 60D" },
+  { value: "90", label: "⏰ Retomar 90D" },
+];
+
+/** Etapa Visita → flag_status.status_visita (sincronizado com a agenda) */
+export const VISITA_SUBSTATUS: SubstatusOption[] = [
+  { value: "marcada", label: "📅 Visita marcada" },
+  { value: "realizada", label: "✅ Visita realizada" },
+  { value: "no_show", label: "👻 No-show" },
+];
+
+/** Etapa Em Negociação → flag_status.status_negociacao */
+export const NEGOCIACAO_SUBSTATUS: SubstatusOption[] = [
+  { value: "proposta_enviada", label: "📤 Proposta enviada" },
+  { value: "proposta_aprovada", label: "✅ Proposta aprovada" },
+  { value: "aprovacao_bancaria", label: "🏦 Em aprovação bancária" },
+  { value: "correspondente_bancario", label: "🤝 Correspondente bancário" },
+  { value: "aprovacao_proprietario", label: "👤 Aprovação proprietário" },
+  { value: "documentacao_enviada", label: "📄 Documentação enviada" },
+];
+
+/** Etapa Contrato → flag_status.status_contrato */
+export const CONTRATO_SUBSTATUS: SubstatusOption[] = [
+  { value: "em_confeccao", label: "✍️ Em confecção" },
+  { value: "gerado", label: "📄 Gerado" },
+  { value: "em_leitura", label: "📖 Em leitura" },
+];
+
+
 
