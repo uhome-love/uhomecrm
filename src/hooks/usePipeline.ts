@@ -80,6 +80,7 @@ export function usePipeline(
   options?: { scopeCorretorIds?: string[] | null; realtime?: boolean }
 ) {
   const { user } = useAuth();
+  const { onNegocioAssinado } = useLeadProgression();
   const userId = user?.id ?? null;
   // Ping leve do backend: usado só para não disparar auto-retry às cegas quando
   // a conexão está claramente caída (evita marteladas na rede).
