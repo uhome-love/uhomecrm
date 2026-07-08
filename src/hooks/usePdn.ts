@@ -173,7 +173,7 @@ export function usePdn(mes: string) {
 
     // Linhas manuais (sem negócio vinculado)
     for (const m of manualRows) {
-      const grupo = (["andamento", "gerado", "assinado"].includes(m.situacao) ? m.situacao : "andamento") as PdnGrupo;
+      const grupo = (["visita_realizada", "em_negociacao", "contrato", "ganho"].includes(m.situacao) ? m.situacao : "em_negociacao") as PdnGrupo;
       out.push({
         id: m.id,
         negocioId: null,
