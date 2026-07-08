@@ -686,18 +686,28 @@ function PropostaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
   const [valor, setValor] = useState<string>(lead.valor_estimado ? String(lead.valor_estimado) : "");
   const [empreendimento, setEmpreendimento] = useState(lead.empreendimento || "");
   const [unidade, setUnidade] = useState("");
+  const [statusNeg, setStatusNeg] = useState<string>(((lead as any)?.flag_status?.status_negociacao as string) || "proposta_enviada");
   const [obs, setObs] = useState("");
   const valorNum = Number(valor.replace(/\./g, "").replace(",", ".")) || 0;
 
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="text-base flex items-center gap-2">💰 Proposta / Negociação</DialogTitle>
+        <DialogTitle className="text-base flex items-center gap-2">🤝 Em Negociação</DialogTitle>
       </DialogHeader>
       <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
-      <p className="text-[10px] text-muted-foreground">Registre a proposta enviada — fica salva no histórico do lead.</p>
+      <p className="text-[10px] text-muted-foreground">Registre a negociação — fica salva no histórico do lead.</p>
 
       <div className="space-y-3">
+        <div>
+          <Label className="text-xs">Situação da negociação *</Label>
+          <Select value={statusNeg} onValueChange={setStatusNeg}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {NEGOCIACAO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         <div>
           <Label className="text-xs">Valor da proposta (R$) *</Label>
           <Input type="text" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)} placeholder="Ex: 850000" className="h-8 text-xs" />
@@ -721,19 +731,23 @@ function PropostaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
           size="sm"
           className="text-xs gap-1"
           disabled={valorNum <= 0}
-          onClick={() => onConfirm({
-            leadId: lead.id,
-            targetStageId,
-            observacao: `Proposta: ${fmtMoney(valorNum, "exact")}${empreendimento ? ` | ${empreendimento}` : ""}${unidade ? ` | Unidade: ${unidade}` : ""}${obs ? ` | ${obs}` : ""}`,
-            extraData: { criarNegocio: true, vgv: valorNum, empreendimento, unidade, observacao: obs },
-          })}
+          onClick={() => {
+            const subLabel = NEGOCIACAO_SUBSTATUS.find(o => o.value === statusNeg)?.label || "";
+            onConfirm({
+              leadId: lead.id,
+              targetStageId,
+              observacao: `${subLabel} — ${fmtMoney(valorNum, "exact")}${empreendimento ? ` | ${empreendimento}` : ""}${unidade ? ` | Unidade: ${unidade}` : ""}${obs ? ` | ${obs}` : ""}`,
+              extraData: { criarNegocio: true, vgv: valorNum, empreendimento, unidade, observacao: obs, statusNegociacao: statusNeg },
+            });
+          }}
         >
-          💰 Confirmar proposta
+          🤝 Confirmar
         </Button>
       </DialogFooter>
     </>
   );
 }
+
 
 // ─── Aprovação / Documentação ───
 function AprovacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
