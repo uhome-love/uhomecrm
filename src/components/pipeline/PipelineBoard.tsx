@@ -408,10 +408,11 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
 
 
-  // "Negócio Criado" (convertido) is now visible to ALL users (corretores included)
+  // Lente: "negocios" mostra só as etapas do negócio; "leads" só a prospecção.
   const visibleStages = useMemo(() => {
-    return stages;
-  }, [stages]);
+    if (lensMode === "negocios") return stages.filter(s => DEAL_STAGE_TIPOS.has(s.tipo));
+    return stages.filter(s => !DEAL_STAGE_TIPOS.has(s.tipo));
+  }, [stages, lensMode]);
 
   const leadsByStage = useMemo(() => {
     // Dedup leads by ID before distributing to columns (definitivo)
