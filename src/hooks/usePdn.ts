@@ -138,8 +138,8 @@ export function usePdn(mes: string) {
     setLoadingDeals(true);
 
     // Escopo de corretores (auth ids)
-    let corretorAuthIds: string[] | null = null; // null = admin/CEO (todos)
-    if (!isAdmin) {
+    let corretorAuthIds: string[] | null = null; // null = admin/diretor/CEO (todas as equipes)
+    if (!isAdmin && !isDiretor) {
       if (isGestor) {
         const { data: managed } = await supabase.rpc("resolve_managed_brokers", { _gestor: user.id });
         const ids = (managed || []).map((m: { user_id: string }) => m.user_id).filter(Boolean) as string[];
