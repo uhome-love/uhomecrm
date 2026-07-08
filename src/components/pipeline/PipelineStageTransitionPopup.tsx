@@ -947,7 +947,10 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
     if (stageType === "busca" || stageType === "qualificacao" || stageName.includes("qualifica") || stageName.includes("busca")) {
       return <QualificacaoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if (stageType === "aquecimento" || stageType === "possibilidade_visita" || (stageName.includes("poss") && stageName.includes("visita")) || stageName.includes("aquecimento")) {
+    if (stageType === "aquecimento" || stageName.includes("aquecimento") || stageName.includes("nutri")) {
+      return <AquecimentoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    }
+    if (stageType === "possibilidade_visita" || (stageName.includes("poss") && stageName.includes("visita"))) {
       return <PossivelVisitaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
     if (stageType === "visita" || stageType === "visita_marcada" || stageName === "visita" || stageName.includes("visita marcada")) {
