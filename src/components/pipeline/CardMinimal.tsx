@@ -46,6 +46,8 @@ interface CardMinimalProps {
   proximaTarefa?: CardMinimalProximaTarefa | null;
   /** Estado da cadência "Sem Contato" (tentativa atual + quando vence a próxima). */
   cadencia?: { tentativa: number; proxima_em: string | null } | null;
+  /** Negócio vinculado ao lead — marca discreta ◆ e enriquecimento na lente Negócios. */
+  negocioInfo?: { fase: string; vgv: number; fase_changed_at: string } | null;
   onClick: () => void;
   onDragStart: () => void;
   /** Stages do pipeline — necessário para o menu ··· (sub-menu "Mudar de etapa"). */
