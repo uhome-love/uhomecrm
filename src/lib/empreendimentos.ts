@@ -18,6 +18,7 @@ export const EMPREENDIMENTOS: string[] = [
   "Connect JW",
   "Duetto",
   "Essenza Club",
+  "Flow",
   "Go Carlos Bosque",
   "Go Carlos Gomes",
   "High Garden Iguatemi",
