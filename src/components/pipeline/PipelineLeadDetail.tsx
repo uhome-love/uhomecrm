@@ -721,6 +721,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               />
             </TabsContent>
 
+            {/* ===== TAB: NEGÓCIO (Pipeline unificado — Fase 1) ===== */}
+            {lead.negocio_id && (
+              <TabsContent value="negocio" className="mt-0">
+                <DrawerNegocioTab
+                  negocioId={lead.negocio_id}
+                  corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                />
+              </TabsContent>
+            )}
+
+
+
 
             {/* Tabs radar/whatsapp removidas (Pipeline v2 Fase 4) */}
           </ScrollArea>
