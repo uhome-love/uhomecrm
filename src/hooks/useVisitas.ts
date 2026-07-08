@@ -531,7 +531,7 @@ export function useVisitas(filters?: {
     return true;
   }, [queryClient]);
 
-  const updateStatus = useCallback(async (id: string, newStatus: VisitaStatus) => {
+  const updateStatus = useCallback(async (id: string, newStatus: VisitaStatus, feedback?: string, userId?: string) => {
     const result = await updateVisita(id, { status: newStatus } as any, true);
 
     if (result) {
