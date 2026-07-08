@@ -281,10 +281,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
           groups[segNome] = { segmento_nome: segNome, empreendimentos: [], count: 0 };
         }
         groups[segNome].count++;
-        const empName = lead.empreendimento || "";
-        if (!groups[segNome].empreendimentos.includes(empName)) {
-          groups[segNome].empreendimentos.push(empName);
-        }
+        const label = leadOrigemLabel(lead.empreendimento, lead.origem);
+        labelCounts[segNome] = labelCounts[segNome] || {};
+        labelCounts[segNome][label] = (labelCounts[segNome][label] || 0) + 1;
       } else {
         unidentified++;
       }
