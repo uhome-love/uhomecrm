@@ -417,8 +417,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   // Fluxo ÚNICO: todas as etapas ativas viram coluna, exceto Descarte/Caiu
   // (que são apenas destino do botão de descarte/inativação).
   const visibleStages = useMemo(() => {
+    if (showGanhos) return stages.filter(s => s.tipo === "venda");
     return stages.filter(s => !HIDDEN_STAGE_TIPOS.has(s.tipo));
-  }, [stages]);
+  }, [stages, showGanhos]);
 
   const leadsByStage = useMemo(() => {
     // Dedup leads by ID before distributing to columns (definitivo)
