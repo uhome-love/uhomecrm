@@ -718,7 +718,7 @@ export default function AgendaVisitas() {
 
           {/* Nova Visita */}
           <button
-            onClick={() => setShowTypeSelector(true)}
+            onClick={() => setShowForm(true)}
             className="h-[32px] px-3 sm:px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors shrink-0"
           >
             <Plus size={13} strokeWidth={2} /> <span className="hidden sm:inline">Nova Visita</span><span className="sm:hidden">Nova</span>
