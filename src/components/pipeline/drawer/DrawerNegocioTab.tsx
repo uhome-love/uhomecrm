@@ -131,7 +131,7 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
             documentacaoSituacao && `Documentação: ${documentacaoSituacao}`,
             observacoes && `Obs: ${observacoes}`,
           ].filter(Boolean).join(" · ") || "Dados do negócio atualizados",
-          criado_por: user.id,
+          created_by: user.id,
         } as any);
       } catch (e) {
         console.error("Erro ao registrar no histórico:", e);
