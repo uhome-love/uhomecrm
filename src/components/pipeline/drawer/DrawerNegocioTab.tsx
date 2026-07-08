@@ -231,8 +231,8 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
             <Field label="Empreendimento"><Input className="h-8 text-xs" value={empreendimento} onChange={(e) => setEmpreendimento(e.target.value)} /></Field>
             <Field label="Unidade"><Input className="h-8 text-xs" value={unidade} onChange={(e) => setUnidade(e.target.value)} /></Field>
             <Field label="Construtora"><Input className="h-8 text-xs" value={construtora} onChange={(e) => setConstrutora(e.target.value)} /></Field>
-            <Field label="VGV (R$)"><Input type="number" className="h-8 text-xs" value={vgv} onChange={(e) => setVgv(e.target.value)} /></Field>
-            <Field label="Valor proposta (R$)"><Input type="number" className="h-8 text-xs" value={propostaValor} onChange={(e) => setPropostaValor(e.target.value)} /></Field>
+            <Field label="VGV (R$)"><MoneyInput className="h-8 text-xs" value={vgv} onValueChange={setVgv} /></Field>
+            <Field label="Valor proposta (R$)"><MoneyInput className="h-8 text-xs" value={propostaValor} onValueChange={setPropostaValor} /></Field>
             <Field label="Data assinatura"><Input type="date" className="h-8 text-xs" value={dataAssinatura} onChange={(e) => setDataAssinatura(e.target.value)} /></Field>
           </div>
           <Field label="Situação da proposta">
