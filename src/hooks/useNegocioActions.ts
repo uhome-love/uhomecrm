@@ -128,25 +128,15 @@ export function useNegocioActions(reload?: () => void | Promise<void>) {
         await supabase.from("negocios").update(updates as any).eq("id", negocio.id);
       }
 
-      // Destino "caiu" → retornar lead ao pipeline
-      if (
-        data.fase === "perdido" &&
-        data.fields.destino === "pipeline" &&
-        negocio.pipeline_lead_id
-      ) {
-        const stageId = data.fields.stage_id;
-        if (stageId) {
-          await supabase
-            .from("pipeline_leads")
-            .update({
-              stage_id: stageId,
-              negocio_id: null,
-              stage_changed_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            } as any)
-            .eq("id", negocio.pipeline_lead_id);
-          toast.success("🔄 Lead retornado ao Pipeline");
-        }
+      // Queda do negócio → tratar o lead conforme o destino escolhido
+      if (data.fase === "perdido") {
+        await applyNegocioQueda({
+          negocioId: negocio.id,
+          pipelineLeadId: negocio.pipeline_lead_id,
+          motivo: data.fields.motivo || "",
+          destino: (data.fields.destino as QuedaDestino) || "descarte",
+          stageId: data.fields.stage_id,
+        });
       }
 
       setTransitionTarget(null);
