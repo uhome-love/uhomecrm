@@ -727,6 +727,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <TabsContent value="negocio" className="mt-0">
                 <DrawerNegocioTab
                   negocioId={lead.negocio_id}
+                  pipelineLeadId={lead.id}
                   corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
                 />
               </TabsContent>
