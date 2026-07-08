@@ -102,7 +102,7 @@ interface PipelineDeal {
 
 export function usePdn(mes: string) {
   const { user } = useAuth();
-  const { isAdmin, isGestor } = useUserRole();
+  const { isAdmin, isGestor, isDiretor } = useUserRole();
   const [deals, setDeals] = useState<PipelineDeal[]>([]);
   const [nameByAuthId, setNameByAuthId] = useState<Record<string, string>>({});
   const [equipeByAuthId, setEquipeByAuthId] = useState<Record<string, string>>({});
