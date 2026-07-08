@@ -239,25 +239,33 @@ const CardMinimal = memo(function CardMinimal({
     return { label: `T${Math.min(7, n + 1)}`, when, tone, atrasado };
   }, [cadencia?.tentativa, cadencia?.proxima_em]);
 
-  // Marca discreta do negócio vinculado — fase, VGV e aging na fase (semáforo verde ≤3d / âmbar 4–7d / vermelho +7d)
+  // Selo de negócio padronizado: "sub-status · VGV · imóvel"
+  // (ex.: "📤 Proposta enviada · R$ 389 mil · Terrace"). Semáforo por aging na fase.
   const negocioBadge = useMemo(() => {
     if (!negocioInfo) return null;
     const vgvLabel = negocioInfo.vgv > 0 ? fmtMoney(negocioInfo.vgv, "short") : "";
+    // Sub-status conforme a etapa do negócio (Em Negociação / Contrato).
+    const flags = (lead.flag_status || {}) as Record<string, any>;
+    const field = stage?.tipo === "contrato_gerado" ? "status_contrato" : "status_negociacao";
+    const subRaw = flags[field];
+    const subLabel = subRaw ? substatusValueLabel(field, subRaw) : "";
+    const imovel = (empreendimento || "").split("·")[0]?.trim() || "";
+
     let aging: number | null = null;
     if (negocioInfo.fase_changed_at) {
       const diff = Math.floor((Date.now() - new Date(negocioInfo.fase_changed_at).getTime()) / 86400000);
       aging = diff >= 0 ? diff : null;
     }
-    // Selo apenas de VALOR do negócio — a fase/etapa é comunicada pelo selo de
-    // substatus da etapa. Nada é exibido se não há VGV.
-    if (!vgvLabel) return null;
+    // Nada a mostrar se não há sub-status nem VGV.
+    if (!subLabel && !vgvLabel) return null;
+    const parts = [subLabel, vgvLabel, imovel].filter(Boolean);
     let tone: string;
     if (aging == null) tone = "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300";
     else if (aging > 7) tone = "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300";
     else if (aging >= 4) tone = "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300";
     else tone = "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
-    return { vgvLabel, aging, tone };
-  }, [negocioInfo?.vgv, negocioInfo?.fase_changed_at]);
+    return { text: parts.join(" · "), aging, tone };
+  }, [negocioInfo?.vgv, negocioInfo?.fase_changed_at, lead.flag_status, stage?.tipo, empreendimento]);
 
   const handleOpen = () => {
     trackPipelineEvent("pipeline_card_clicked", {
