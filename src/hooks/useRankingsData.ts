@@ -120,7 +120,7 @@ async function fetchPresencasLeads(filters: RankingFilters, corretores: Corretor
   return rows.sort((a, b) => b.leads_recebidos - a.leads_recebidos || b.presencas_total - a.presencas_total);
 }
 
-// ====== 2. Pipeline de Leads ======
+// ====== 2. Pipeline ======
 export interface PipelineLeadsRow extends CorretorBase {
   ativos: number;             // snapshot atual: leads não arquivados, fora de Descarte
   recebidos_periodo: number;  // leads recebidos no período (data_lead)

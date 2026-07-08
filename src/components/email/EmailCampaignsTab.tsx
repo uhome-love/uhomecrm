@@ -375,7 +375,7 @@ export default function EmailCampaignsTab() {
                 <Label className="text-xs font-semibold">Fonte de Dados</Label>
                 <div className="flex gap-2">
                   <Button variant={fonte === "pipeline" ? "default" : "outline"} size="sm" onClick={() => { setFonte("pipeline"); setPreviewLeads([]); }} className="gap-1.5 flex-1">
-                    <Database className="h-3.5 w-3.5" /> Pipeline de Leads
+                    <Database className="h-3.5 w-3.5" /> Pipeline
                   </Button>
                   <Button variant={fonte === "oferta_ativa" ? "default" : "outline"} size="sm" onClick={() => { setFonte("oferta_ativa"); setPreviewLeads([]); }} className="gap-1.5 flex-1">
                     <FileSpreadsheet className="h-3.5 w-3.5" /> Oferta Ativa

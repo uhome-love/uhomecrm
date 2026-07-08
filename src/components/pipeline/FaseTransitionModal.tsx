@@ -310,7 +310,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
                 <RadioGroup value={caiuDestino} onValueChange={(v) => setCaiuDestino(v as "pipeline" | "descarte")} className="space-y-2">
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="pipeline" id="dest-pipeline" />
-                    <Label htmlFor="dest-pipeline" className="text-xs cursor-pointer">🔄 Voltar para Pipeline de Leads</Label>
+                    <Label htmlFor="dest-pipeline" className="text-xs cursor-pointer">🔄 Voltar para Pipeline</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="descarte" id="dest-descarte" />

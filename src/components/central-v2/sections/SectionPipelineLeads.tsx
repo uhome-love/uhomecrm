@@ -32,12 +32,12 @@ export function SectionPipelineLeads({ query }: Props) {
     <section className="flex flex-col gap-3">
       <SectionHeading
         icon={Users}
-        title="Pipeline de Leads"
+        title="Pipeline"
         subtitle="Entrada, atividade e conversão de leads no funil comercial"
       />
 
       {query.error ? (
-        <SectionError query={query} label="Pipeline de Leads" />
+        <SectionError query={query} label="Pipeline" />
       ) : (
         <KpiGrid loading={loading} items={data ? buildKpis(data) : undefined} />
       )}
