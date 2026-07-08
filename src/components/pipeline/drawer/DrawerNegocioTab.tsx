@@ -28,7 +28,7 @@ interface Props {
   corretorNome?: string;
 }
 
-const FASE_ORDER = NEGOCIOS_FASES.map((f) => f.key);
+const FASE_ORDER: string[] = NEGOCIOS_FASES.map((f) => f.key);
 
 export default function DrawerNegocioTab({ negocioId, corretorNome }: Props) {
   const [negocio, setNegocio] = useState<NegocioFull | null>(null);
