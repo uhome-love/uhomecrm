@@ -707,6 +707,21 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       }
     }
 
+    // ─── Sub-status Em Negociação / Contrato / Aquecimento: grava no flag_status ───
+    if (lead && (extra.statusNegociacao || extra.statusContrato || extra.prazoRetomar)) {
+      try {
+        const nextFlag = { ...(lead.flag_status || {}) };
+        if (extra.statusNegociacao) nextFlag.status_negociacao = String(extra.statusNegociacao);
+        if (extra.statusContrato) nextFlag.status_contrato = String(extra.statusContrato);
+        if (extra.prazoRetomar) nextFlag.prazo = String(extra.prazoRetomar);
+        await supabase.from("pipeline_leads").update({ flag_status: nextFlag } as any).eq("id", lead.id);
+      } catch (err) {
+        console.error("[handleTransitionConfirm] Erro ao gravar substatus:", err);
+      }
+    }
+
+
+
 
     // ─── Normal transition (non-descarte) ───
     completeTransition(result.leadId, result.targetStageId, result.observacao);
