@@ -918,6 +918,9 @@ export function needsTransitionPopup(stageName: string, stageType: string, lead?
   }
 
   if (stageType === "pos_visita" || stageType === "visita_realizada" || name.includes("pós-visita") || name.includes("visita realizada")) return true;
+  if (stageType === "proposta" || name.includes("proposta")) return true;
+  if (stageType === "documentacao" || name.includes("aprova") || name.includes("documenta")) return true;
+  if (stageType === "contrato_gerado" || name.includes("contrato")) return true;
   if (stageType === "convertido" || name.includes("negócio criado") || name.includes("negocio criado")) return true;
   if (stageType === "caiu" || name.includes("caiu")) return true;
   if (stageType === "descarte" || name.includes("descarte")) return true;
