@@ -14,8 +14,6 @@ import { useQueryClient, useQuery, keepPreviousData } from "@tanstack/react-quer
 import { todayBRT } from "@/lib/utils";
 import { useParceriasMap, usePartnerLeadsByCorretor } from "@/hooks/useParcerias";
 
-const PipelineFlowDashboard = lazy(() => import("@/components/pipeline/PipelineFlowDashboard"));
-const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRadar"));
 
 const PipelineManagerActions = lazy(() => import("@/components/pipeline/PipelineManagerActions"));
 const PipelineTeamVisitas = lazy(() => import("@/components/pipeline/PipelineTeamVisitas"));
