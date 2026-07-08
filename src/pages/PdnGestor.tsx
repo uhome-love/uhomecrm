@@ -219,9 +219,9 @@ function GrupoTable({
               <TableHead className="min-w-[160px]">Nome</TableHead>
               <TableHead className="w-[120px]">Data</TableHead>
               <TableHead className="min-w-[150px]">Empreendimento</TableHead>
-              <TableHead className="min-w-[130px]">Construtora</TableHead>
               <TableHead className="w-[130px]">VGV</TableHead>
               <TableHead className="min-w-[120px]">Corretor</TableHead>
+              <TableHead className="min-w-[140px]">Status</TableHead>
               <TableHead className="min-w-[180px]">Observação</TableHead>
               <TableHead className="w-[40px]" />
             </TableRow>
@@ -233,7 +233,7 @@ function GrupoTable({
               <TableRow key={r.id} className={r.emRisco ? "bg-amber-500/5" : ""}>
                 <TableCell className="font-medium">
                   {r.isManual ? (
-                    <EditableCell value={r.nome} onCommit={(v) => onUpdateManual(r.id, { nome: v })} />
+                    <EditableCell value={r.nome} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { nome: v })} />
                   ) : (
                     <div className="flex items-center gap-1.5">
                       {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
@@ -243,45 +243,46 @@ function GrupoTable({
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {r.isManual
-                    ? <EditableCell type="date" value={r.data} onCommit={(v) => onUpdateManual(r.id, { data_visita: v })} />
+                    ? <EditableCell type="date" value={r.data} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { data_visita: v })} />
                     : (r.data ? formatBRT(r.data, "dd/MM/yy") : "—")}
                 </TableCell>
                 <TableCell className="text-sm">
                   {r.isManual
-                    ? <EditableCell value={r.empreendimento === "—" ? "" : r.empreendimento} onCommit={(v) => onUpdateManual(r.id, { empreendimento: v })} />
+                    ? <EditableCell value={r.empreendimento === "—" ? "" : r.empreendimento} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { empreendimento: v })} />
                     : r.empreendimento}
-                </TableCell>
-                <TableCell>
-                  <EditableCell
-                    value={r.construtora}
-                    placeholder="—"
-                    onCommit={(v) => r.isManual ? onUpdateManual(r.id, { construtora: v }) : onSaveOverride(r, { construtora: v })}
-                  />
                 </TableCell>
                 <TableCell className="text-sm font-medium">
                   {r.isManual
-                    ? <EditableCell type="number" value={r.vgv || ""} onCommit={(v) => onUpdateManual(r.id, { vgv: Number(v) || 0 })} />
+                    ? <EditableCell type="number" value={r.vgv || ""} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { vgv: Number(v) || 0 })} />
                     : fmtMoney(r.vgv, "exact")}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {r.isManual
-                    ? <EditableCell value={r.corretor === "—" ? "" : r.corretor} onCommit={(v) => onUpdateManual(r.id, { corretor: v })} />
+                    ? <EditableCell value={r.corretor === "—" ? "" : r.corretor} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { corretor: v })} />
                     : r.corretor}
+                </TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={r.status}
+                    placeholder="—"
+                    onCommit={(v) => r.isManual && r.overrideId ? onUpdateManual(r.overrideId, { status: v }) : onSaveOverride(r, { status: v })}
+                  />
                 </TableCell>
                 <TableCell>
                   <EditableCell
                     value={r.observacoes}
                     placeholder="—"
-                    onCommit={(v) => r.isManual ? onUpdateManual(r.id, { observacoes: v }) : onSaveOverride(r, { observacoes: v })}
+                    onCommit={(v) => r.isManual && r.overrideId ? onUpdateManual(r.overrideId, { observacoes: v }) : onSaveOverride(r, { observacoes: v })}
                   />
                 </TableCell>
                 <TableCell>
-                  {r.isManual && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onDelete(r.id)}>
+                  {r.isManual && r.overrideId && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onDelete(r.overrideId!)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   )}
                 </TableCell>
+
               </TableRow>
             ))}
           </TableBody>
