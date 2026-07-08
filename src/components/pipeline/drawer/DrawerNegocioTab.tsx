@@ -135,6 +135,34 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
       setSaving(false);
       return;
     }
+
+    // Sincroniza os substatus canônicos no flag_status do lead — fonte única
+    // que alimenta o selo do card em Em Negociação e Contrato.
+    const oldNeg = leadFlags.status_negociacao || "";
+    const oldCon = leadFlags.status_contrato || "";
+    if (pipelineLeadId && (statusNegociacao !== oldNeg || statusContrato !== oldCon)) {
+      const newFlags = { ...leadFlags };
+      if (statusNegociacao) newFlags.status_negociacao = statusNegociacao;
+      else delete newFlags.status_negociacao;
+      if (statusContrato) newFlags.status_contrato = statusContrato;
+      else delete newFlags.status_contrato;
+      const { error: flagErr } = await supabase
+        .from("pipeline_leads")
+        .update({ flag_status: newFlags } as any)
+        .eq("id", pipelineLeadId);
+      if (!flagErr) {
+        setLeadFlags(newFlags);
+        if (user?.id) {
+          if (statusNegociacao !== oldNeg) {
+            logSubstatusChange({ pipelineLeadId, userId: user.id, field: "status_negociacao", oldValue: oldNeg, newValue: statusNegociacao });
+          }
+          if (statusContrato !== oldCon) {
+            logSubstatusChange({ pipelineLeadId, userId: user.id, field: "status_contrato", oldValue: oldCon, newValue: statusContrato });
+          }
+        }
+      }
+    }
+
     // Registra no histórico/timeline do lead
     if (pipelineLeadId && user) {
       try {
@@ -145,9 +173,7 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
           descricao: [
             empreendimento && `Empreendimento: ${empreendimento}${unidade ? ` · ${unidade}` : ""}`,
             vgvNum > 0 && `VGV: ${fmtMoney(vgvNum, "exact")}`,
-            propostaSituacao && `Proposta: ${propostaSituacao}`,
             negociacaoSituacao && `Negociação: ${negociacaoSituacao}`,
-            documentacaoSituacao && `Documentação: ${documentacaoSituacao}`,
             observacoes && `Obs: ${observacoes}`,
           ].filter(Boolean).join(" · ") || "Dados do negócio atualizados",
           created_by: user.id,
@@ -160,7 +186,7 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
     setEditing(false);
     setSaving(false);
     load();
-  }, [negocioId, pipelineLeadId, user, empreendimento, unidade, construtora, vgv, propostaValor, propostaSituacao, negociacaoSituacao, documentacaoSituacao, dataAssinatura, observacoes, load]);
+  }, [negocioId, pipelineLeadId, user, empreendimento, unidade, construtora, vgv, propostaValor, propostaSituacao, negociacaoSituacao, documentacaoSituacao, statusNegociacao, statusContrato, leadFlags, dataAssinatura, observacoes, load]);
 
   if (loading) {
     return (
