@@ -213,7 +213,7 @@ export function usePdn(mes: string) {
     });
     setDeals(dealRows);
     setLoadingDeals(false);
-  }, [user, isAdmin, isGestor]);
+  }, [user, isAdmin, isGestor, isDiretor]);
 
   useEffect(() => { loadDeals(); }, [loadDeals]);
 
