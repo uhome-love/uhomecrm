@@ -30,6 +30,8 @@ import {
   ACTION_ICON_COLOR,
   getLeadSubstatusBadge,
 } from "@/lib/leadHelpers";
+import { NEGOCIOS_FASES } from "@/hooks/useNegocios";
+import { fmtMoney } from "@/lib/fmtMoney";
 
 export interface CardMinimalProximaTarefa {
   tipo: string | null;
