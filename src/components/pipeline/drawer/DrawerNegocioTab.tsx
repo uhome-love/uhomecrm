@@ -259,9 +259,10 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
       {!editing ? (
         <>
           <div className="grid grid-cols-1 gap-2">
-            <SummaryRow label="Proposta" value={negocio.proposta_situacao || (negocio.proposta_valor ? fmtMoney(negocio.proposta_valor, "exact") : null)} />
-            <SummaryRow label="Negociação" value={negocio.negociacao_situacao || negocio.negociacao_pendencia} />
-            <SummaryRow label="Documentação" value={negocio.documentacao_situacao} />
+            <SummaryRow label="Em Negociação" value={leadFlags.status_negociacao ? substatusValueLabel("status_negociacao", leadFlags.status_negociacao) : null} />
+            <SummaryRow label="Negociação / pendência" value={negocio.negociacao_situacao || negocio.negociacao_pendencia} />
+            <SummaryRow label="Contrato" value={leadFlags.status_contrato ? substatusValueLabel("status_contrato", leadFlags.status_contrato) : null} />
+            {negocio.proposta_valor ? <SummaryRow label="Valor proposta" value={fmtMoney(negocio.proposta_valor, "exact")} /> : null}
             {negocio.data_assinatura && <SummaryRow label="Assinatura" value={negocio.data_assinatura} />}
             {negocio.observacoes && <SummaryRow label="Observações" value={negocio.observacoes} />}
           </div>
