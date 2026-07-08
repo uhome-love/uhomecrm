@@ -157,6 +157,7 @@ export default function PipelineKanban() {
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
   const [clientStatusFilter, setClientStatusFilter] = useState<ClientStatusFilter>("todos");
   const [negociosFilter, setNegociosFilter] = useState(false);
+  const [ganhosFilter, setGanhosFilter] = useState(false);
   // Filtro "em risco de estagnação" — ativado via ?risco=estagnacao (vindo do dashboard).
   const [riscoFilter, setRiscoFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
