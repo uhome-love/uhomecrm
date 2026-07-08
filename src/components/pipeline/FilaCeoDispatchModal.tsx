@@ -265,6 +265,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
   const { preview, unidentifiedCount, identifiedLeadIds, allLeadIds } = useMemo(() => {
     const groups: Record<string, SegmentoPreview> = {};
+    const labelCounts: Record<string, Record<string, number>> = {};
     let unidentified = 0;
     const identified: string[] = [];
     const all: string[] = [];
