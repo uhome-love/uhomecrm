@@ -29,6 +29,7 @@ import AddNegocioDialog from "@/components/pipeline/AddNegocioDialog";
 import NegocioDetailModal from "@/components/pipeline/NegocioDetailModal";
 import VendaCelebration from "@/components/pipeline/VendaCelebration";
 import FaseTransitionModal, { type TransitionData } from "@/components/pipeline/FaseTransitionModal";
+import { applyNegocioQueda, type QuedaDestino } from "@/lib/negocioQueda";
 import { supabase } from "@/integrations/supabase/client";
 
 // Categoria A — valor exato (drawer/cards de negócio individual). Compact ainda exportado p/ compat.
@@ -823,18 +824,15 @@ export default function MeusNegocios() {
       await supabase.from("negocios").update(updates as any).eq("id", negocioId);
     }
 
-    // Handle "caiu" destination — return lead to pipeline
-    if (data.fase === "perdido" && data.fields.destino === "pipeline" && negocio.pipeline_lead_id) {
-      const stageId = data.fields.stage_id;
-      if (stageId) {
-        await supabase.from("pipeline_leads").update({
-          stage_id: stageId,
-          negocio_id: null,
-          stage_changed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as any).eq("id", negocio.pipeline_lead_id);
-        toast.success("🔄 Lead retornado ao Pipeline");
-      }
+    // Queda do negócio → tratar o lead conforme o destino escolhido
+    if (data.fase === "perdido") {
+      await applyNegocioQueda({
+        negocioId,
+        pipelineLeadId: negocio.pipeline_lead_id,
+        motivo: data.fields.motivo || "",
+        destino: (data.fields.destino as QuedaDestino) || "descarte",
+        stageId: data.fields.stage_id,
+      });
     }
 
     setTransitionTarget(null);
@@ -1170,8 +1168,13 @@ export default function MeusNegocios() {
                       <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] truncate max-w-[120px]">{corretorNomes[negocio.corretor_id]}</span>
                     )}
                   </div>
+                  {negocio.motivo_queda && (
+                    <div className="text-[11px] text-red-500/80 dark:text-red-400/80 mt-2 line-clamp-2">
+                      Motivo: {negocio.motivo_queda}
+                    </div>
+                  )}
                   {negocio.observacoes && (
-                    <div className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] mt-2 line-clamp-2 italic">"{negocio.observacoes}"</div>
+                    <div className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] mt-1 line-clamp-2 italic">"{negocio.observacoes}"</div>
                   )}
                 </div>
               ))}

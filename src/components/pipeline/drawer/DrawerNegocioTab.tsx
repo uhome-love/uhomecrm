@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Briefcase, ChevronRight, Check, ExternalLink, TrendingUp } from "lucide-react";
+import { Loader2, Briefcase, ChevronRight, Check, ExternalLink, TrendingUp, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";
@@ -193,6 +193,17 @@ export default function DrawerNegocioTab({ negocioId, corretorNome }: Props) {
         <ExternalLink className="h-4 w-4" />
         Gestão completa do negócio
       </Button>
+
+      {!isPerdido && (
+        <Button
+          variant="ghost"
+          className="w-full gap-2 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={() => requestMoveFase(negocio, "perdido")}
+        >
+          <XCircle className="h-4 w-4" />
+          Negócio caiu
+        </Button>
+      )}
 
       {/* Modais */}
       {detailOpen && (

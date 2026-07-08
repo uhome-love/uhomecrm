@@ -18,6 +18,7 @@ export interface Negocio {
   vgv_estimado: number | null;
   vgv_final: number | null;
   observacoes: string | null;
+  motivo_queda?: string | null;
   origem: string | null;
   status: string;
   fase_changed_at: string;
@@ -67,7 +68,7 @@ export function useNegocios() {
 
     let query = supabase
       .from("negocios")
-      .select("id, lead_id, visita_id, pipeline_lead_id, corretor_id, gerente_id, nome_cliente, telefone, empreendimento, fase, vgv_estimado, vgv_final, observacoes, origem, status, fase_changed_at, created_at, updated_at")
+      .select("id, lead_id, visita_id, pipeline_lead_id, corretor_id, gerente_id, nome_cliente, telefone, empreendimento, fase, vgv_estimado, vgv_final, observacoes, origem, status, fase_changed_at, created_at, updated_at, motivo_queda")
       .in("status", ["ativo", "perdido"])
       .order("updated_at", { ascending: false })
       .limit(500);
@@ -129,7 +130,7 @@ export function useNegocios() {
         const existingIds = new Set(rows.map(n => n.id));
         const { data: partnerNegocios } = await supabase
           .from("negocios")
-          .select("id, lead_id, visita_id, pipeline_lead_id, corretor_id, gerente_id, nome_cliente, telefone, empreendimento, fase, vgv_estimado, vgv_final, observacoes, origem, status, fase_changed_at, created_at, updated_at")
+          .select("id, lead_id, visita_id, pipeline_lead_id, corretor_id, gerente_id, nome_cliente, telefone, empreendimento, fase, vgv_estimado, vgv_final, observacoes, origem, status, fase_changed_at, created_at, updated_at, motivo_queda")
           .in("status", ["ativo", "perdido"])
           .in("pipeline_lead_id", partnerLeadIds);
 

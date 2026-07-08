@@ -90,7 +90,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
 
   // Caiu fields
   const [caiuMotivo, setCaiuMotivo] = useState("");
-  const [caiuDestino, setCaiuDestino] = useState<"pipeline" | "descarte">("pipeline");
+  const [caiuDestino, setCaiuDestino] = useState<"pipeline" | "descarte" | "inativar">("pipeline");
   const [caiuStageId, setCaiuStageId] = useState("");
   const [pipelineStages, setPipelineStages] = useState<{ id: string; nome: string }[]>([]);
 
@@ -307,14 +307,18 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
               </div>
               <div>
                 <Label className="text-xs mb-2 block">O que fazer com o lead?</Label>
-                <RadioGroup value={caiuDestino} onValueChange={(v) => setCaiuDestino(v as "pipeline" | "descarte")} className="space-y-2">
+                <RadioGroup value={caiuDestino} onValueChange={(v) => setCaiuDestino(v as "pipeline" | "descarte" | "inativar")} className="space-y-2">
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="pipeline" id="dest-pipeline" />
                     <Label htmlFor="dest-pipeline" className="text-xs cursor-pointer">🔄 Voltar para Pipeline</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="descarte" id="dest-descarte" />
-                    <Label htmlFor="dest-descarte" className="text-xs cursor-pointer">🗑️ Descartar para Oferta Ativa</Label>
+                    <Label htmlFor="dest-descarte" className="text-xs cursor-pointer">🗑️ Descartar (reengajável — nutrição/oferta ativa)</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="inativar" id="dest-inativar" />
+                    <Label htmlFor="dest-inativar" className="text-xs cursor-pointer">🚫 Inativar (definitivo — fica fora de tudo)</Label>
                   </div>
                 </RadioGroup>
               </div>

@@ -5,6 +5,7 @@ import { useLeadProgression } from "@/hooks/useLeadProgression";
 import { toast } from "sonner";
 import { type Negocio, NEGOCIOS_FASES, NEGOCIO_FASE_PERDIDO } from "@/hooks/useNegocios";
 import { type TransitionData } from "@/components/pipeline/FaseTransitionModal";
+import { applyNegocioQueda, type QuedaDestino } from "@/lib/negocioQueda";
 
 // Fases que abrem o popup de transição (coleta de dados) antes de mover
 const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "vendido", "perdido"];
@@ -128,25 +129,15 @@ export function useNegocioActions(reload?: () => void | Promise<void>) {
         await supabase.from("negocios").update(updates as any).eq("id", negocio.id);
       }
 
-      // Destino "caiu" → retornar lead ao pipeline
-      if (
-        data.fase === "perdido" &&
-        data.fields.destino === "pipeline" &&
-        negocio.pipeline_lead_id
-      ) {
-        const stageId = data.fields.stage_id;
-        if (stageId) {
-          await supabase
-            .from("pipeline_leads")
-            .update({
-              stage_id: stageId,
-              negocio_id: null,
-              stage_changed_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            } as any)
-            .eq("id", negocio.pipeline_lead_id);
-          toast.success("🔄 Lead retornado ao Pipeline");
-        }
+      // Queda do negócio → tratar o lead conforme o destino escolhido
+      if (data.fase === "perdido") {
+        await applyNegocioQueda({
+          negocioId: negocio.id,
+          pipelineLeadId: negocio.pipeline_lead_id,
+          motivo: data.fields.motivo || "",
+          destino: (data.fields.destino as QuedaDestino) || "descarte",
+          stageId: data.fields.stage_id,
+        });
       }
 
       setTransitionTarget(null);
