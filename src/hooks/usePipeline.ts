@@ -836,7 +836,7 @@ export function usePipeline(
     }
 
     setTimeout(() => { localMutationRef.current = false; }, 2000);
-  }, [user, leads, stages]);
+  }, [user, leads, stages, onNegocioAssinado]);
 
   const addLead = useCallback(async (lead: Partial<PipelineLead>) => {
     if (!user) return null;
