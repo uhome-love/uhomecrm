@@ -30,12 +30,15 @@ const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = 
 };
 
 const RESULTADO_MAP: Record<string, string> = {
+  gostou_quer_proposta: "🔥 Quer proposta",
   quer_proposta: "🎯 Quer proposta",
+  gostou_vai_pensar: "🤔 Vai pensar",
   vai_pensar: "🤔 Vai pensar",
   nao_gostou: "👎 Não gostou",
-  nao_compareceu: "❌ Não compareceu",
+  nao_compareceu: "👻 Não compareceu",
   reagendar: "🔄 Reagendar",
-  quer_ver_outro: "🔍 Quer ver outro",
+  quer_ver_outro: "🔎 Ver outras opções",
+  continuar_visitando: "🏠 Continuar visitando",
 };
 
 export default function OpportunityVisitasTab({ pipelineLeadId }: { pipelineLeadId: string }) {
