@@ -399,9 +399,11 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     refetchOnWindowFocus: false,
   });
   const negociosMap = useMemo(() => {
+    // Fases encerradas (negócio caído) não decoram o card — ficam só no histórico.
+    const FASES_OCULTAS = new Set(["distrato", "perdido", "cancelado", "n"]);
     const map: Record<string, { fase: string; vgv: number; fase_changed_at: string }> = {};
     for (const r of negociosRows) {
-      if (r.pipeline_lead_id) {
+      if (r.pipeline_lead_id && !FASES_OCULTAS.has(r.fase)) {
         map[r.pipeline_lead_id] = {
           fase: r.fase,
           vgv: r.vgv_final || r.vgv_estimado || 0,
