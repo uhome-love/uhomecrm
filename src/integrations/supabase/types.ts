@@ -6099,9 +6099,11 @@ export type Database = {
           nome: string
           objecao_cliente: string | null
           observacoes: string | null
+          pipeline_lead_id: string | null
           proxima_acao: string | null
           quando_assina: string | null
           situacao: string
+          status: string | null
           status_pagamento: string | null
           temperatura: string
           tipo_visita: string | null
@@ -6130,9 +6132,11 @@ export type Database = {
           nome: string
           objecao_cliente?: string | null
           observacoes?: string | null
+          pipeline_lead_id?: string | null
           proxima_acao?: string | null
           quando_assina?: string | null
           situacao?: string
+          status?: string | null
           status_pagamento?: string | null
           temperatura?: string
           tipo_visita?: string | null
@@ -6161,9 +6165,11 @@ export type Database = {
           nome?: string
           objecao_cliente?: string | null
           observacoes?: string | null
+          pipeline_lead_id?: string | null
           proxima_acao?: string | null
           quando_assina?: string | null
           situacao?: string
+          status?: string | null
           status_pagamento?: string | null
           temperatura?: string
           tipo_visita?: string | null
@@ -10995,9 +11001,11 @@ export type Database = {
           nome: string
           objecao_cliente: string | null
           observacoes: string | null
+          pipeline_lead_id: string | null
           proxima_acao: string | null
           quando_assina: string | null
           situacao: string
+          status: string | null
           status_pagamento: string | null
           temperatura: string
           tipo_visita: string | null

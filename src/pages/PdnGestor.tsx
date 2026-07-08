@@ -58,6 +58,7 @@ export default function PdnGestor() {
   const [mes, setMes] = useState(monthOptions[0].value);
   const [filtroRisco, setFiltroRisco] = useState(false);
   const [filtroCorretor, setFiltroCorretor] = useState<string>("todos");
+  const [ordem, setOrdem] = useState<"recente" | "antigo">("recente");
 
   const { rows, resumo, loading, saveOverride, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
 
@@ -67,17 +68,24 @@ export default function PdnGestor() {
   }, [rows]);
 
   const filtered = useMemo(() => {
-    return rows.filter(r => {
+    const list = rows.filter(r => {
       if (filtroRisco && !r.emRisco) return false;
       if (filtroCorretor !== "todos" && r.corretor !== filtroCorretor) return false;
       return true;
     });
-  }, [rows, filtroRisco, filtroCorretor]);
+    // Ordena por data dentro de cada etapa (aplicado por grupo na renderização)
+    return list.sort((a, b) => {
+      const da = a.data || "";
+      const db = b.data || "";
+      if (da === db) return 0;
+      return ordem === "recente" ? (db > da ? 1 : -1) : (da > db ? 1 : -1);
+    });
+  }, [rows, filtroRisco, filtroCorretor, ordem]);
 
   function exportCSV() {
-    const header = ["Grupo", "Nome", "Data", "Empreendimento", "Construtora", "VGV", "Status", "Corretor", "Equipe", "Observação"];
+    const header = ["Grupo", "Nome", "Data", "Empreendimento", "VGV", "Status", "Corretor", "Equipe", "Observação"];
     const lines = filtered.map(r => [
-      r.grupo, r.nome, r.data, r.empreendimento, r.construtora, r.vgv, r.situacaoLabel, r.corretor, r.equipe, r.observacoes,
+      r.situacaoLabel, r.nome, r.data, r.empreendimento, r.vgv, r.status, r.corretor, r.equipe, r.observacoes,
     ].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","));
     const csv = [header.join(","), ...lines].join("\n");
     const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
@@ -86,6 +94,7 @@ export default function PdnGestor() {
     a.href = url; a.download = `PDN_${mes}.csv`; a.click();
     URL.revokeObjectURL(url);
   }
+
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-5 p-4 md:p-6">
@@ -129,7 +138,15 @@ export default function PdnGestor() {
             {corretores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={ordem} onValueChange={(v) => setOrdem(v as "recente" | "antigo")}>
+          <SelectTrigger className="w-[170px]"><SelectValue placeholder="Ordenar" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="recente">Data ↓ (mais recente)</SelectItem>
+            <SelectItem value="antigo">Data ↑ (mais antigo)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
 
       {loading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -178,9 +195,9 @@ function GrupoTable({
   cor: string;
   rows: PdnRow[];
   onAdd: () => void;
-  onSaveOverride: (row: PdnRow, patch: Partial<Pick<PdnRow, "construtora" | "observacoes" | "proximaAcao">>) => void;
-  onUpdateManual: (id: string, patch: Record<string, any>) => void;
-  onDelete: (id: string) => void;
+  onSaveOverride: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao">>) => void;
+  onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
+  onDelete: (overrideId: string) => void;
 }) {
   const subtotal = rows.reduce((s, r) => s + r.vgv, 0);
   return (
@@ -202,9 +219,9 @@ function GrupoTable({
               <TableHead className="min-w-[160px]">Nome</TableHead>
               <TableHead className="w-[120px]">Data</TableHead>
               <TableHead className="min-w-[150px]">Empreendimento</TableHead>
-              <TableHead className="min-w-[130px]">Construtora</TableHead>
               <TableHead className="w-[130px]">VGV</TableHead>
               <TableHead className="min-w-[120px]">Corretor</TableHead>
+              <TableHead className="min-w-[140px]">Status</TableHead>
               <TableHead className="min-w-[180px]">Observação</TableHead>
               <TableHead className="w-[40px]" />
             </TableRow>
@@ -216,7 +233,7 @@ function GrupoTable({
               <TableRow key={r.id} className={r.emRisco ? "bg-amber-500/5" : ""}>
                 <TableCell className="font-medium">
                   {r.isManual ? (
-                    <EditableCell value={r.nome} onCommit={(v) => onUpdateManual(r.id, { nome: v })} />
+                    <EditableCell value={r.nome} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { nome: v })} />
                   ) : (
                     <div className="flex items-center gap-1.5">
                       {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
@@ -226,45 +243,46 @@ function GrupoTable({
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {r.isManual
-                    ? <EditableCell type="date" value={r.data} onCommit={(v) => onUpdateManual(r.id, { data_visita: v })} />
+                    ? <EditableCell type="date" value={r.data} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { data_visita: v })} />
                     : (r.data ? formatBRT(r.data, "dd/MM/yy") : "—")}
                 </TableCell>
                 <TableCell className="text-sm">
                   {r.isManual
-                    ? <EditableCell value={r.empreendimento === "—" ? "" : r.empreendimento} onCommit={(v) => onUpdateManual(r.id, { empreendimento: v })} />
+                    ? <EditableCell value={r.empreendimento === "—" ? "" : r.empreendimento} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { empreendimento: v })} />
                     : r.empreendimento}
-                </TableCell>
-                <TableCell>
-                  <EditableCell
-                    value={r.construtora}
-                    placeholder="—"
-                    onCommit={(v) => r.isManual ? onUpdateManual(r.id, { construtora: v }) : onSaveOverride(r, { construtora: v })}
-                  />
                 </TableCell>
                 <TableCell className="text-sm font-medium">
                   {r.isManual
-                    ? <EditableCell type="number" value={r.vgv || ""} onCommit={(v) => onUpdateManual(r.id, { vgv: Number(v) || 0 })} />
+                    ? <EditableCell type="number" value={r.vgv || ""} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { vgv: Number(v) || 0 })} />
                     : fmtMoney(r.vgv, "exact")}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {r.isManual
-                    ? <EditableCell value={r.corretor === "—" ? "" : r.corretor} onCommit={(v) => onUpdateManual(r.id, { corretor: v })} />
+                    ? <EditableCell value={r.corretor === "—" ? "" : r.corretor} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { corretor: v })} />
                     : r.corretor}
+                </TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={r.status}
+                    placeholder="—"
+                    onCommit={(v) => r.isManual && r.overrideId ? onUpdateManual(r.overrideId, { status: v }) : onSaveOverride(r, { status: v })}
+                  />
                 </TableCell>
                 <TableCell>
                   <EditableCell
                     value={r.observacoes}
                     placeholder="—"
-                    onCommit={(v) => r.isManual ? onUpdateManual(r.id, { observacoes: v }) : onSaveOverride(r, { observacoes: v })}
+                    onCommit={(v) => r.isManual && r.overrideId ? onUpdateManual(r.overrideId, { observacoes: v }) : onSaveOverride(r, { observacoes: v })}
                   />
                 </TableCell>
                 <TableCell>
-                  {r.isManual && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onDelete(r.id)}>
+                  {r.isManual && r.overrideId && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onDelete(r.overrideId!)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   )}
                 </TableCell>
+
               </TableRow>
             ))}
           </TableBody>
