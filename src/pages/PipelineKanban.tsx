@@ -671,6 +671,21 @@ export default function PipelineKanban() {
 
 
 
+      {negociosFilter && activeTab === "kanban" && negociosResumo && negociosResumo.count > 0 && (
+        <div className="flex items-center gap-2 flex-wrap shrink-0" style={{ padding: "8px 28px 0" }}>
+          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300 px-2.5 py-1 text-[11px] font-semibold">
+            ◆ {negociosResumo.count} negócio{negociosResumo.count > 1 ? "s" : ""}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 px-2.5 py-1 text-[11px] font-semibold">
+            VGV {fmtMoney(negociosResumo.vgv, "short")}
+          </span>
+          {negociosResumo.emRisco > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 px-2.5 py-1 text-[11px] font-semibold">
+              ⚠ {negociosResumo.emRisco} em risco (+7d)
+            </span>
+          )}
+        </div>
+      )}
       {hasAnyFilter && !(isMobile && activeTab === "kanban") && (
         <div className="flex items-center gap-1 flex-wrap shrink-0" style={{ padding: "6px 28px 0" }}>
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mr-1">
