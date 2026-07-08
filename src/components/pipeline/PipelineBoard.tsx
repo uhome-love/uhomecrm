@@ -207,6 +207,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
                 parceiroNome={parcerias[lead.id]}
                 proximaTarefa={tarefasMap[lead.id] || null}
                 cadencia={cadenciaMap[lead.id] || null}
+                negocioInfo={negociosMap[lead.id] || null}
                 onDragStart={() => !selectionMode && handleDragStart(lead.id)}
                 onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
               />
