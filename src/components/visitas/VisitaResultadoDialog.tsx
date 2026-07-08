@@ -12,15 +12,17 @@ export type ResultadoVisita =
   | "nao_gostou"
   | "nao_compareceu"
   | "reagendar"
-  | "quer_ver_outro";
+  | "quer_ver_outro"
+  | "continuar_visitando";
 
 export const RESULTADO_OPTIONS: { value: ResultadoVisita; label: string; emoji: string; desc: string }[] = [
-  { value: "gostou_quer_proposta", label: "Quer proposta", emoji: "🔥", desc: "→ Negociação" },
-  { value: "gostou_vai_pensar", label: "Vai pensar", emoji: "🤔", desc: "→ Negociação" },
+  { value: "gostou_quer_proposta", label: "Quer proposta", emoji: "🔥", desc: "→ Em Negociação" },
+  { value: "continuar_visitando", label: "Continuar visitando", emoji: "🏠", desc: "Visitar mais imóveis" },
+  { value: "quer_ver_outro", label: "Ver outras opções", emoji: "🔎", desc: "→ Qualificação" },
+  { value: "gostou_vai_pensar", label: "Vai pensar", emoji: "🤔", desc: "→ Aquecimento" },
   { value: "nao_gostou", label: "Não gostou", emoji: "👎", desc: "→ Descarte" },
-  { value: "nao_compareceu", label: "Não compareceu", emoji: "👻", desc: "→ Atendimento" },
-  { value: "reagendar", label: "Reagendar", emoji: "🔄", desc: "→ Visita Marcada" },
-  { value: "quer_ver_outro", label: "Quer ver outro", emoji: "🏠", desc: "→ Qualificação" },
+  { value: "reagendar", label: "Reagendar", emoji: "🔄", desc: "→ Visita marcada" },
+  { value: "nao_compareceu", label: "Não compareceu", emoji: "👻", desc: "→ No-show" },
 ];
 
 export const RESULTADO_LABELS: Record<string, string> = Object.fromEntries(
