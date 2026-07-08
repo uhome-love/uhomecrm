@@ -53,8 +53,8 @@ export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
   const [empreendimento, setEmpreendimento] = useState("");
   const [unidade, setUnidade] = useState("");
   const [construtora, setConstrutora] = useState("");
-  const [vgv, setVgv] = useState("");
-  const [propostaValor, setPropostaValor] = useState("");
+  const [vgv, setVgv] = useState(0);
+  const [propostaValor, setPropostaValor] = useState(0);
   const [propostaSituacao, setPropostaSituacao] = useState("");
   const [negociacaoSituacao, setNegociacaoSituacao] = useState("");
   const [documentacaoSituacao, setDocumentacaoSituacao] = useState("");
