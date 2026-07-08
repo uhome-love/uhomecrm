@@ -253,7 +253,7 @@ export function usePdn(mes: string) {
     }
 
     return out.sort((a, b) => (b.vgv - a.vgv));
-  }, [negocios, corretorNomes, corretorInfoMap, overrideByNegocio, manualRows, mes]);
+  }, [negocios, corretorNomes, corretorInfoMap, overrideByNegocio, manualRows, visitasReal, mes]);
 
   // ── Overlay de negócio (construtora, observação, próxima ação) ───────────────
   const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "construtora" | "observacoes" | "proximaAcao">>) => {
