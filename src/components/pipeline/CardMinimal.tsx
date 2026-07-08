@@ -239,20 +239,22 @@ const CardMinimal = memo(function CardMinimal({
   // Marca discreta do negócio vinculado — fase, VGV e aging na fase (semáforo verde ≤3d / âmbar 4–7d / vermelho +7d)
   const negocioBadge = useMemo(() => {
     if (!negocioInfo) return null;
-    const faseLabel = NEGOCIOS_FASES.find((f) => f.key === negocioInfo.fase)?.label || negocioInfo.fase;
     const vgvLabel = negocioInfo.vgv > 0 ? fmtMoney(negocioInfo.vgv, "short") : "";
     let aging: number | null = null;
     if (negocioInfo.fase_changed_at) {
       const diff = Math.floor((Date.now() - new Date(negocioInfo.fase_changed_at).getTime()) / 86400000);
       aging = diff >= 0 ? diff : null;
     }
+    // Selo apenas de VALOR do negócio — a fase/etapa é comunicada pelo selo de
+    // substatus da etapa. Nada é exibido se não há VGV.
+    if (!vgvLabel) return null;
     let tone: string;
     if (aging == null) tone = "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300";
     else if (aging > 7) tone = "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300";
     else if (aging >= 4) tone = "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300";
     else tone = "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
-    return { faseLabel, vgvLabel, aging, tone };
-  }, [negocioInfo?.fase, negocioInfo?.vgv, negocioInfo?.fase_changed_at]);
+    return { vgvLabel, aging, tone };
+  }, [negocioInfo?.vgv, negocioInfo?.fase_changed_at]);
 
   const handleOpen = () => {
     trackPipelineEvent("pipeline_card_clicked", {
