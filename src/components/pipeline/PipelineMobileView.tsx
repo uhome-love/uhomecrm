@@ -170,22 +170,9 @@ const PipelineMobileView = memo(function PipelineMobileView({
         })}
       </div>
 
-      {/* Cards List — Negócio Criado usa coluna especializada */}
-      {activeStage?.tipo === "convertido" ? (
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-[max(5rem,calc(env(safe-area-inset-bottom)+4rem))] pt-2">
-          <NegocioCriadoColumn
-            stageLeads={stageLeads}
-            stage={activeStage}
-            corretorNomes={corretorNomes}
-            parcerias={parcerias}
-            onSelectLead={onSelectLead}
-            handleDragStart={() => { /* mobile: sem drag */ }}
-            selectionMode={selectionMode}
-            selectedLeads={selectedLeads}
-            onToggleSelect={onToggleSelect}
-          />
-        </div>
-      ) : (
+      {/* Cards List — fluxo único, mesma renderização em todas as etapas */}
+      {(
+
         <div
           onScroll={handleScroll}
           style={{
