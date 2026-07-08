@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import PipelineStageTransitionPopup, { needsTransitionPopup, type TransitionResult } from "./PipelineStageTransitionPopup";
 import { sortLeads, type PipelineSortOrder } from "@/lib/pipelineSortOrder";
+import { applyNegocioQueda, type QuedaDestino } from "@/lib/negocioQueda";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
 
 interface PipelineBoardProps {
