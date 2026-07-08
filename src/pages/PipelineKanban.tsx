@@ -157,6 +157,7 @@ export default function PipelineKanban() {
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
   const [clientStatusFilter, setClientStatusFilter] = useState<ClientStatusFilter>("todos");
   const [negociosFilter, setNegociosFilter] = useState(false);
+  const [ganhosFilter, setGanhosFilter] = useState(false);
   // Filtro "em risco de estagnação" — ativado via ?risco=estagnacao (vindo do dashboard).
   const [riscoFilter, setRiscoFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
@@ -640,6 +641,8 @@ export default function PipelineKanban() {
         setClientStatusFilter={setClientStatusFilter}
         negociosFilter={negociosFilter}
         setNegociosFilter={setNegociosFilter}
+        ganhosFilter={ganhosFilter}
+        setGanhosFilter={setGanhosFilter}
         hasAnyFilter={hasAnyFilter}
         clearAllFilters={clearAllFilters}
         activeTab={activeTab as string}
@@ -809,6 +812,7 @@ export default function PipelineKanban() {
                   onToggleSelect={toggleLeadSelection}
                   sortOrder={sortOrder}
                   tarefasMap={kanbanTarefasMap}
+                  showGanhos={ganhosFilter}
                 />
               ) : activeTab === "time" ? (
                 authUser?.id ? (

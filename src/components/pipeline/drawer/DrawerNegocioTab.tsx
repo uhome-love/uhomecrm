@@ -1,9 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Briefcase, TrendingUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Briefcase, TrendingUp, Save, Pencil } from "lucide-react";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";
+import { NEGOCIACAO_SUBSTATUS, CONTRATO_SUBSTATUS } from "@/lib/leadHelpers";
+import { toast } from "sonner";
 
 interface NegocioFull extends Negocio {
   unidade?: string | null;
@@ -19,20 +29,36 @@ interface NegocioFull extends Negocio {
 
 interface Props {
   negocioId: string | null;
+  pipelineLeadId?: string;
   corretorNome?: string;
 }
 
 /**
- * Aba Negócio do modal do lead — painel de INFORMAÇÕES do negócio.
+ * Aba Negócio do modal do lead — painel de INFORMAÇÕES editáveis do negócio.
  *
  * No fluxo único, as fases do negócio são as próprias etapas do pipeline de
- * leads (Proposta/Negociação → Aprovação/Documentação → Contrato Gerado → Ganho).
- * A mudança de fase acontece movendo o card no pipeline (com popup que grava no
- * histórico do lead). Esta aba mostra o estado atual e os dados registrados.
+ * leads (Em Negociação → Contrato → Ganho). A mudança de fase acontece movendo
+ * o card no pipeline. Esta aba mostra e permite editar os dados do negócio,
+ * registrando cada alteração no Histórico do lead.
  */
-export default function DrawerNegocioTab({ negocioId }: Props) {
+export default function DrawerNegocioTab({ negocioId, pipelineLeadId }: Props) {
+  const { user } = useAuth();
   const [negocio, setNegocio] = useState<NegocioFull | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Campos editáveis
+  const [empreendimento, setEmpreendimento] = useState("");
+  const [unidade, setUnidade] = useState("");
+  const [construtora, setConstrutora] = useState("");
+  const [vgv, setVgv] = useState("");
+  const [propostaValor, setPropostaValor] = useState("");
+  const [propostaSituacao, setPropostaSituacao] = useState("");
+  const [negociacaoSituacao, setNegociacaoSituacao] = useState("");
+  const [documentacaoSituacao, setDocumentacaoSituacao] = useState("");
+  const [dataAssinatura, setDataAssinatura] = useState("");
+  const [observacoes, setObservacoes] = useState("");
 
   const load = useCallback(async () => {
     if (!negocioId) {
@@ -45,7 +71,20 @@ export default function DrawerNegocioTab({ negocioId }: Props) {
       .select("*")
       .eq("id", negocioId)
       .maybeSingle();
-    setNegocio((data as NegocioFull) || null);
+    const n = (data as NegocioFull) || null;
+    setNegocio(n);
+    if (n) {
+      setEmpreendimento(n.empreendimento || "");
+      setUnidade(n.unidade || "");
+      setConstrutora(n.construtora || "");
+      setVgv(String(n.vgv_final || n.vgv_estimado || ""));
+      setPropostaValor(String(n.proposta_valor || ""));
+      setPropostaSituacao(n.proposta_situacao || "");
+      setNegociacaoSituacao(n.negociacao_situacao || "");
+      setDocumentacaoSituacao(n.documentacao_situacao || "");
+      setDataAssinatura(n.data_assinatura || "");
+      setObservacoes(n.observacoes || "");
+    }
     setLoading(false);
   }, [negocioId]);
 
@@ -53,6 +92,56 @@ export default function DrawerNegocioTab({ negocioId }: Props) {
     setLoading(true);
     load();
   }, [load]);
+
+  const handleSave = useCallback(async () => {
+    if (!negocioId) return;
+    setSaving(true);
+    const vgvNum = Number(vgv) || 0;
+    const payload: Record<string, any> = {
+      empreendimento: empreendimento || null,
+      unidade: unidade || null,
+      construtora: construtora || null,
+      vgv_estimado: vgvNum || null,
+      proposta_valor: Number(propostaValor) || null,
+      proposta_situacao: propostaSituacao || null,
+      negociacao_situacao: negociacaoSituacao || null,
+      documentacao_situacao: documentacaoSituacao || null,
+      data_assinatura: dataAssinatura || null,
+      observacoes: observacoes || null,
+    };
+    const { error } = await supabase.from("negocios").update(payload).eq("id", negocioId);
+    if (error) {
+      console.error("Erro ao salvar negócio:", error);
+      toast.error("Erro ao salvar informações do negócio.");
+      setSaving(false);
+      return;
+    }
+    // Registra no histórico/timeline do lead
+    if (pipelineLeadId && user) {
+      try {
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: pipelineLeadId,
+          tipo: "sistema",
+          titulo: "Informações do negócio atualizadas",
+          descricao: [
+            empreendimento && `Empreendimento: ${empreendimento}${unidade ? ` · ${unidade}` : ""}`,
+            vgvNum > 0 && `VGV: ${fmtMoney(vgvNum, "exact")}`,
+            propostaSituacao && `Proposta: ${propostaSituacao}`,
+            negociacaoSituacao && `Negociação: ${negociacaoSituacao}`,
+            documentacaoSituacao && `Documentação: ${documentacaoSituacao}`,
+            observacoes && `Obs: ${observacoes}`,
+          ].filter(Boolean).join(" · ") || "Dados do negócio atualizados",
+          created_by: user.id,
+        } as any);
+      } catch (e) {
+        console.error("Erro ao registrar no histórico:", e);
+      }
+    }
+    toast.success("Negócio atualizado!");
+    setEditing(false);
+    setSaving(false);
+    load();
+  }, [negocioId, pipelineLeadId, user, empreendimento, unidade, construtora, vgv, propostaValor, propostaSituacao, negociacaoSituacao, documentacaoSituacao, dataAssinatura, observacoes, load]);
 
   if (loading) {
     return (
@@ -67,7 +156,7 @@ export default function DrawerNegocioTab({ negocioId }: Props) {
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-2">
         <Briefcase className="h-8 w-8 text-muted-foreground/40" />
         <p className="text-sm text-muted-foreground">
-          Nenhum negócio ainda. Ao mover o lead para <strong>Proposta / Negociação</strong> o negócio é iniciado.
+          Nenhum negócio ainda. Ao mover o lead para <strong>Em Negociação</strong> o negócio é iniciado.
         </p>
       </div>
     );
@@ -75,7 +164,7 @@ export default function DrawerNegocioTab({ negocioId }: Props) {
 
   const faseInfo = NEGOCIOS_FASES.find((f) => f.key === negocio.fase);
   const isPerdido = negocio.status === "perdido" || negocio.fase === "perdido";
-  const vgv = negocio.vgv_final || negocio.vgv_estimado || 0;
+  const vgvView = negocio.vgv_final || negocio.vgv_estimado || 0;
 
   return (
     <div className="px-3 md:px-5 py-4 space-y-4">
@@ -97,7 +186,7 @@ export default function DrawerNegocioTab({ negocioId }: Props) {
           <div className="text-right shrink-0">
             <div className="flex items-center gap-1 justify-end text-emerald-600 dark:text-emerald-400">
               <TrendingUp className="h-3.5 w-3.5" />
-              <span className="text-sm font-bold">{vgv > 0 ? fmtMoney(vgv, "short") : "—"}</span>
+              <span className="text-sm font-bold">{vgvView > 0 ? fmtMoney(vgvView, "short") : "—"}</span>
             </div>
             <span className="text-[10px] text-muted-foreground">VGV</span>
           </div>
@@ -117,20 +206,76 @@ export default function DrawerNegocioTab({ negocioId }: Props) {
         )}
 
         <p className="text-[10px] text-muted-foreground">
-          As fases avançam movendo o card no pipeline. Cada mudança fica registrada no Histórico do lead.
+          As fases avançam movendo o card no pipeline. Cada alteração fica registrada no Histórico do lead.
         </p>
       </div>
 
-      {/* Resumo de seções */}
-      <div className="grid grid-cols-1 gap-2">
-        <SummaryRow label="Proposta" value={negocio.proposta_situacao || (negocio.proposta_valor ? fmtMoney(negocio.proposta_valor, "exact") : null)} />
-        <SummaryRow label="Negociação" value={negocio.negociacao_situacao || negocio.negociacao_pendencia} />
-        <SummaryRow label="Documentação" value={negocio.documentacao_situacao} />
-        {negocio.data_assinatura && (
-          <SummaryRow label="Assinatura" value={negocio.data_assinatura} />
-        )}
-        {negocio.observacoes && <SummaryRow label="Observações" value={negocio.observacoes} />}
-      </div>
+      {/* Modo edição vs leitura */}
+      {!editing ? (
+        <>
+          <div className="grid grid-cols-1 gap-2">
+            <SummaryRow label="Proposta" value={negocio.proposta_situacao || (negocio.proposta_valor ? fmtMoney(negocio.proposta_valor, "exact") : null)} />
+            <SummaryRow label="Negociação" value={negocio.negociacao_situacao || negocio.negociacao_pendencia} />
+            <SummaryRow label="Documentação" value={negocio.documentacao_situacao} />
+            {negocio.data_assinatura && <SummaryRow label="Assinatura" value={negocio.data_assinatura} />}
+            {negocio.observacoes && <SummaryRow label="Observações" value={negocio.observacoes} />}
+          </div>
+          <Button variant="outline" size="sm" className="w-full" onClick={() => setEditing(true)}>
+            <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar informações do negócio
+          </Button>
+        </>
+      ) : (
+        <div className="space-y-3 rounded-xl border border-border/60 bg-card p-4">
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Empreendimento"><Input className="h-8 text-xs" value={empreendimento} onChange={(e) => setEmpreendimento(e.target.value)} /></Field>
+            <Field label="Unidade"><Input className="h-8 text-xs" value={unidade} onChange={(e) => setUnidade(e.target.value)} /></Field>
+            <Field label="Construtora"><Input className="h-8 text-xs" value={construtora} onChange={(e) => setConstrutora(e.target.value)} /></Field>
+            <Field label="VGV (R$)"><Input type="number" className="h-8 text-xs" value={vgv} onChange={(e) => setVgv(e.target.value)} /></Field>
+            <Field label="Valor proposta (R$)"><Input type="number" className="h-8 text-xs" value={propostaValor} onChange={(e) => setPropostaValor(e.target.value)} /></Field>
+            <Field label="Data assinatura"><Input type="date" className="h-8 text-xs" value={dataAssinatura} onChange={(e) => setDataAssinatura(e.target.value)} /></Field>
+          </div>
+          <Field label="Situação da proposta">
+            <Select value={propostaSituacao} onValueChange={setPropostaSituacao}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+              <SelectContent>
+                {NEGOCIACAO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.label}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Situação do contrato">
+            <Select value={documentacaoSituacao} onValueChange={setDocumentacaoSituacao}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+              <SelectContent>
+                {CONTRATO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.label}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Negociação / pendência">
+            <Input className="h-8 text-xs" value={negociacaoSituacao} onChange={(e) => setNegociacaoSituacao(e.target.value)} />
+          </Field>
+          <Field label="Observações do negócio">
+            <Textarea className="text-xs min-h-[60px]" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
+          </Field>
+          <div className="flex gap-2">
+            <Button size="sm" className="flex-1" onClick={handleSave} disabled={saving}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
+              Salvar
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setEditing(false); load(); }} disabled={saving}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-[11px] text-muted-foreground">{label}</Label>
+      {children}
     </div>
   );
 }

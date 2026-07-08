@@ -543,19 +543,45 @@ export function useVisitas(filters?: {
     if (result) {
       toast.success(`Status atualizado para ${STATUS_LABELS[newStatus]}`);
 
-      if (newStatus === "realizada") {
-        const visita = visitas.find((v) => v.id === id);
-        if (visita?.pipeline_lead_id) {
-          toast("✅ Visita realizada!", {
-            description: "Quando o cliente evoluir, arraste o lead para 'Negócio Criado' no Pipeline.",
-            duration: 5000,
-          });
+      // Sincroniza o substatus da etapa Visita no card do lead automaticamente.
+      const visita = visitas.find((v) => v.id === id);
+      const subMap: Partial<Record<VisitaStatus, string>> = {
+        marcada: "marcada",
+        confirmada: "marcada",
+        realizada: "realizada",
+        reagendada: "reagendada",
+        no_show: "no_show",
+      };
+      const novoSub = subMap[newStatus];
+      if (visita?.pipeline_lead_id && novoSub) {
+        try {
+          const { data: leadAtual } = await supabase
+            .from("pipeline_leads")
+            .select("flag_status")
+            .eq("id", visita.pipeline_lead_id)
+            .maybeSingle();
+          const oldFlags = ((leadAtual as any)?.flag_status as Record<string, any>) || {};
+          await supabase
+            .from("pipeline_leads")
+            .update({ flag_status: { ...oldFlags, status_visita: novoSub } } as any)
+            .eq("id", visita.pipeline_lead_id);
+          queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] });
+          queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+        } catch (e) {
+          console.error("Erro ao sincronizar substatus de visita:", e);
         }
+      }
+
+      if (newStatus === "realizada" && visita?.pipeline_lead_id) {
+        toast("✅ Visita realizada!", {
+          description: "Quando o cliente evoluir, arraste o lead para 'Em Negociação' no Pipeline.",
+          duration: 5000,
+        });
       }
     }
 
     return result;
-  }, [updateVisita, visitas]);
+  }, [updateVisita, visitas, queryClient]);
 
   const deleteVisita = useCallback(async (id: string) => {
     const { error } = await supabase

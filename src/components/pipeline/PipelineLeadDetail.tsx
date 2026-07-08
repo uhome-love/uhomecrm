@@ -392,6 +392,20 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </PopoverContent>
           </Popover>
 
+          {currentStage?.tipo === "venda" && (
+            <button
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors shrink-0"
+              title="Reativar este lead para uma nova compra"
+              onClick={() => {
+                const destino = stages.find(s => s.tipo === "qualificacao") || stages.find(s => s.tipo === "novo_lead");
+                if (destino) handleMoveStage(destino.id);
+              }}
+            >
+              🔄 Reativar lead
+            </button>
+          )}
+
+
           {(() => {
             const diasSemContato = noContactAlert
               ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
@@ -727,6 +741,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <TabsContent value="negocio" className="mt-0">
                 <DrawerNegocioTab
                   negocioId={lead.negocio_id}
+                  pipelineLeadId={lead.id}
                   corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
                 />
               </TabsContent>

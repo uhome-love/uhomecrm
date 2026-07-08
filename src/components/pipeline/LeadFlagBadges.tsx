@@ -6,11 +6,31 @@ interface Props {
 }
 
 const FLAG_CONFIGS: Record<string, Record<string, { label: string; color: string; bg: string }>> = {
+  qualificacao: {
+    contato_inicial: { label: "📞 Contato inicial", color: "hsl(var(--primary-600))", bg: "rgba(37,99,235,0.12)" },
+    alinhamento_perfil: { label: "🎯 Alinhando perfil", color: "#7C3AED", bg: "rgba(124,58,237,0.12)" },
+    busca: { label: "🔍 Busca de imóveis", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
+    follow_up: { label: "🔁 Follow up", color: "#059669", bg: "rgba(5,150,105,0.12)" },
+    alinhando_visita: { label: "📅 Alinhando visita", color: "hsl(var(--primary-600))", bg: "rgba(37,99,235,0.12)" },
+  },
   visita: {
-    marcada: { label: "📅 Marcada", color: "hsl(var(--primary-600))", bg: "rgba(37,99,235,0.12)" },
-    realizada: { label: "✅ Realizada", color: "#059669", bg: "rgba(5,150,105,0.12)" },
-    no_show: { label: "❌ No-show", color: "#DC2626", bg: "rgba(220,38,38,0.12)" },
+    marcada: { label: "📅 Visita marcada", color: "hsl(var(--primary-600))", bg: "rgba(37,99,235,0.12)" },
+    realizada: { label: "✅ Visita realizada", color: "#059669", bg: "rgba(5,150,105,0.12)" },
+    no_show: { label: "👻 No-show", color: "#DC2626", bg: "rgba(220,38,38,0.12)" },
     reagendada: { label: "🔁 Reagendada", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
+  },
+  proposta: {
+    proposta_enviada: { label: "📤 Proposta enviada", color: "hsl(var(--primary-600))", bg: "rgba(37,99,235,0.12)" },
+    proposta_aprovada: { label: "✅ Proposta aprovada", color: "#059669", bg: "rgba(5,150,105,0.12)" },
+    aprovacao_bancaria: { label: "🏦 Aprovação bancária", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
+    correspondente_bancario: { label: "🤝 Correspondente", color: "#7C3AED", bg: "rgba(124,58,237,0.12)" },
+    aprovacao_proprietario: { label: "👤 Aprov. proprietário", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
+    documentacao_enviada: { label: "📄 Documentação enviada", color: "#059669", bg: "rgba(5,150,105,0.12)" },
+  },
+  contrato_gerado: {
+    em_confeccao: { label: "✍️ Em confecção", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
+    gerado: { label: "📄 Gerado", color: "hsl(var(--primary-600))", bg: "rgba(37,99,235,0.12)" },
+    em_leitura: { label: "📖 Em leitura", color: "#059669", bg: "rgba(5,150,105,0.12)" },
   },
   sem_contato: {
     tentativa: { label: "☎️", color: "#6B7280", bg: "rgba(107,114,128,0.12)" },
@@ -49,14 +69,29 @@ const LeadFlagBadges = memo(function LeadFlagBadges({ flagStatus, stageTipo }: P
 
   if (stageTipo === "aquecimento" && flagStatus.prazo) {
     badges.push({
-      label: `⏰ ${flagStatus.prazo} dias`,
+      label: `⏰ Retomar ${flagStatus.prazo}D`,
       color: "#D97706",
       bg: "rgba(217,119,6,0.12)",
     });
   }
 
+  if (stageTipo === "qualificacao" && flagStatus.status_atendimento && stageConfig) {
+    const cfg = stageConfig[flagStatus.status_atendimento];
+    if (cfg) badges.push(cfg);
+  }
+
   if (stageTipo === "visita" && flagStatus.status_visita && stageConfig) {
     const cfg = stageConfig[flagStatus.status_visita];
+    if (cfg) badges.push(cfg);
+  }
+
+  if (stageTipo === "proposta" && flagStatus.status_negociacao && stageConfig) {
+    const cfg = stageConfig[flagStatus.status_negociacao];
+    if (cfg) badges.push(cfg);
+  }
+
+  if (stageTipo === "contrato_gerado" && flagStatus.status_contrato && stageConfig) {
+    const cfg = stageConfig[flagStatus.status_contrato];
     if (cfg) badges.push(cfg);
   }
 

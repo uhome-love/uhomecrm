@@ -69,6 +69,8 @@ export interface PipelineHeaderProps {
   setClientStatusFilter: React.Dispatch<React.SetStateAction<ClientStatusFilter>>;
   negociosFilter: boolean;
   setNegociosFilter: React.Dispatch<React.SetStateAction<boolean>>;
+  ganhosFilter: boolean;
+  setGanhosFilter: React.Dispatch<React.SetStateAction<boolean>>;
   hasAnyFilter: boolean;
   clearAllFilters: () => void;
 
@@ -121,6 +123,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     campaignTagFilter, setCampaignTagFilter,
     clientStatusFilter, setClientStatusFilter,
     negociosFilter, setNegociosFilter,
+    ganhosFilter, setGanhosFilter,
     hasAnyFilter, clearAllFilters,
     activeTab, setActiveTab,
     refreshing, handleRefresh, setAddOpen, setFocusModeOpen,
@@ -317,6 +320,14 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                   setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
                 }}
               />
+              <button
+                type="button"
+                onClick={() => setGanhosFilter(v => !v)}
+                className={`px-2.5 h-7 text-[11px] font-semibold rounded-full border transition-colors whitespace-nowrap ${ganhosFilter ? "bg-emerald-600 text-white border-emerald-600" : "text-emerald-700 border-emerald-300 bg-emerald-50 hover:bg-emerald-100"}`}
+                title="Ver leads ganhos / vendidos"
+              >
+                🏆 Ganhos
+              </button>
             </div>
           </div>
           {hasAnyFilter && (
@@ -583,6 +594,14 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 setClientStatusFilter(key ? map[key as Exclude<PipelineFiltroKey, "negocios">] : "todos");
               }}
             />
+            <button
+              type="button"
+              onClick={() => setGanhosFilter(v => !v)}
+              className={`ml-1.5 px-2.5 h-7 text-[11px] font-semibold rounded-full border transition-colors whitespace-nowrap ${ganhosFilter ? "bg-emerald-600 text-white border-emerald-600" : "text-emerald-700 border-emerald-300 bg-emerald-50 hover:bg-emerald-100"}`}
+              title="Ver leads ganhos / vendidos"
+            >
+              🏆 Ganhos
+            </button>
           </div>
 
           {/* Ações primárias */}

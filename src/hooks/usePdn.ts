@@ -5,39 +5,44 @@ import { useNegocios, type Negocio } from "@/hooks/useNegocios";
 import { toast } from "sonner";
 
 // ─── Grupos / status do PDN ──────────────────────────────────────────────────
-export type PdnGrupo = "andamento" | "gerado" | "assinado";
+export type PdnGrupo = "visita_realizada" | "em_negociacao" | "contrato" | "ganho";
 
 export const PDN_GRUPOS: { key: PdnGrupo; label: string; cor: string }[] = [
-  { key: "andamento", label: "Negócios (em andamento)", cor: "#4969FF" },
-  { key: "gerado", label: "Gerados (contrato)", cor: "#8B5CF6" },
-  { key: "assinado", label: "Assinados", cor: "#22C55E" },
+  { key: "visita_realizada", label: "Visita Realizada", cor: "#10B981" },
+  { key: "em_negociacao", label: "Em Negociação", cor: "#EC4899" },
+  { key: "contrato", label: "Contrato", cor: "#06B6D4" },
+  { key: "ganho", label: "Ganho", cor: "#22C55E" },
 ];
 
 // Probabilidade ponderada por fase (para forecast)
 const PROB_POR_FASE: Record<string, number> = {
-  novo_negocio: 0.1,
-  proposta: 0.3,
-  negociacao: 0.5,
+  visita_realizada: 0.2,
+  novo_negocio: 0.25,
+  proposta: 0.4,
+  negociacao: 0.55,
   documentacao: 0.8,
   vendido: 1,
 };
 
 function faseToGrupo(fase: string): PdnGrupo {
-  if (fase === "vendido") return "assinado";
-  if (fase === "documentacao") return "gerado";
-  return "andamento";
+  if (fase === "vendido") return "ganho";
+  if (fase === "documentacao") return "contrato";
+  // proposta, negociacao, novo_negocio → Em Negociação
+  return "em_negociacao";
 }
 
 function faseLabel(fase: string): string {
   switch (fase) {
-    case "novo_negocio": return "Novo Negócio";
-    case "proposta": return "Proposta";
+    case "novo_negocio": return "Em Negociação";
+    case "proposta": return "Proposta enviada";
     case "negociacao": return "Negociação";
-    case "documentacao": return "Contrato Gerado";
+    case "documentacao": return "Contrato";
     case "vendido": return "Ganho / Assinado";
+    case "visita_realizada": return "Visita realizada";
     default: return fase;
   }
 }
+
 
 // Data de referência do negócio para agrupar por mês
 function negocioRefDate(n: Negocio & { data_assinatura?: string | null }): string {
@@ -99,6 +104,7 @@ export function usePdn(mes: string) {
   const { negocios, corretorNomes, corretorInfoMap, loading: negLoading } = useNegocios();
   const [overrides, setOverrides] = useState<PdnEntry[]>([]);
   const [manualRows, setManualRows] = useState<PdnEntry[]>([]);
+  const [visitasReal, setVisitasReal] = useState<{ id: string; nome: string; data: string; empreendimento: string; corretor: string; temNegocio: boolean }[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
 
   const loadEntries = useCallback(async () => {
@@ -120,6 +126,36 @@ export function usePdn(mes: string) {
   }, [user, mes]);
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
+
+  // Visitas realizadas no mês → alimentam a coluna "Visita Realizada" do PDN.
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const inicio = `${mes}-01`;
+      const [ano, m] = mes.split("-").map(Number);
+      const fim = new Date(ano, m, 0).toISOString().slice(0, 10);
+      const { data, error } = await supabase
+        .from("visitas")
+        .select("id, nome_cliente, data_visita, empreendimento, pipeline_lead_id, status")
+        .eq("status", "realizada")
+        .gte("data_visita", inicio)
+        .lte("data_visita", fim);
+      if (error) { console.error("Erro ao carregar visitas do PDN:", error); return; }
+      const negocioLeadIds = new Set(
+        (negocios as any[]).filter(n => n.status === "ativo" && n.pipeline_lead_id).map(n => n.pipeline_lead_id)
+      );
+      const rows = (data || []).map((v: any) => ({
+        id: v.id as string,
+        nome: (v.nome_cliente as string) || "—",
+        data: (v.data_visita as string) || "",
+        empreendimento: (v.empreendimento as string) || "—",
+        corretor: "—",
+        temNegocio: v.pipeline_lead_id ? negocioLeadIds.has(v.pipeline_lead_id) : false,
+      }));
+      setVisitasReal(rows);
+    })();
+  }, [user, mes, negocios]);
+
 
   const overrideByNegocio = useMemo(() => {
     const map: Record<string, PdnEntry> = {};
@@ -168,7 +204,7 @@ export function usePdn(mes: string) {
 
     // Linhas manuais (sem negócio vinculado)
     for (const m of manualRows) {
-      const grupo = (["andamento", "gerado", "assinado"].includes(m.situacao) ? m.situacao : "andamento") as PdnGrupo;
+      const grupo = (["visita_realizada", "em_negociacao", "contrato", "ganho"].includes(m.situacao) ? m.situacao : "em_negociacao") as PdnGrupo;
       out.push({
         id: m.id,
         negocioId: null,
@@ -191,8 +227,33 @@ export function usePdn(mes: string) {
       });
     }
 
+    // Linhas de Visita Realizada (leads que visitaram mas ainda sem negócio ativo)
+    for (const v of visitasReal) {
+      if (v.temNegocio) continue; // já representado como negócio em outra coluna
+      out.push({
+        id: `visita-${v.id}`,
+        negocioId: null,
+        overrideId: null,
+        grupo: "visita_realizada",
+        nome: v.nome,
+        data: v.data,
+        empreendimento: v.empreendimento,
+        construtora: "",
+        vgv: 0,
+        fase: "visita_realizada",
+        situacaoLabel: "Visita realizada",
+        corretor: v.corretor,
+        equipe: "—",
+        observacoes: "",
+        proximaAcao: "",
+        diasParado: 0,
+        emRisco: false,
+        isManual: false,
+      });
+    }
+
     return out.sort((a, b) => (b.vgv - a.vgv));
-  }, [negocios, corretorNomes, corretorInfoMap, overrideByNegocio, manualRows, mes]);
+  }, [negocios, corretorNomes, corretorInfoMap, overrideByNegocio, manualRows, visitasReal, mes]);
 
   // ── Overlay de negócio (construtora, observação, próxima ação) ───────────────
   const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "construtora" | "observacoes" | "proximaAcao">>) => {
@@ -251,9 +312,10 @@ export function usePdn(mes: string) {
   // ── Totais / resumo ──────────────────────────────────────────────────────────
   const resumo = useMemo(() => {
     const byGrupo: Record<PdnGrupo, { count: number; vgv: number }> = {
-      andamento: { count: 0, vgv: 0 },
-      gerado: { count: 0, vgv: 0 },
-      assinado: { count: 0, vgv: 0 },
+      visita_realizada: { count: 0, vgv: 0 },
+      em_negociacao: { count: 0, vgv: 0 },
+      contrato: { count: 0, vgv: 0 },
+      ganho: { count: 0, vgv: 0 },
     };
     let forecast = 0;
     let emRisco = 0;
@@ -263,7 +325,7 @@ export function usePdn(mes: string) {
       forecast += r.vgv * (PROB_POR_FASE[r.fase] ?? 0.3);
       if (r.emRisco) emRisco++;
     }
-    const vgvTotal = byGrupo.andamento.vgv + byGrupo.gerado.vgv + byGrupo.assinado.vgv;
+    const vgvTotal = byGrupo.em_negociacao.vgv + byGrupo.contrato.vgv + byGrupo.ganho.vgv;
     return { byGrupo, vgvTotal, forecast, emRisco, total: rows.length };
   }, [rows]);
 

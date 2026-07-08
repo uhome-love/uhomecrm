@@ -37,10 +37,19 @@ interface PipelineBoardProps {
   // Opcional para preservar consumidores legados (ex: PosVendas) que ainda
   // não passam o mapa; nesse caso o Board faz fallback para query local.
   tarefasMap?: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
+  // Quando true, mostra APENAS a coluna Ganho (visão de leads vendidos/ganhos).
+  showGanhos?: boolean;
 }
 
-// Etapas-âncora que NÃO viram coluna no board (destino do botão de descarte)
-const HIDDEN_STAGE_TIPOS = new Set(["descarte", "caiu"]);
+// Etapas-âncora / legadas que NÃO viram coluna no board ativo.
+// Descarte/Caiu = destino do botão de descarte. Ganho (venda) = visão de filtro.
+// Demais tipos são etapas legadas consolidadas (sem uso no fluxo único).
+const HIDDEN_STAGE_TIPOS = new Set([
+  "descarte", "caiu", "venda",
+  "contato_inicial", "busca", "possibilidade_visita", "visita_marcada",
+  "visita_realizada", "pos_visita", "convertido", "documentacao", "negociacao",
+  "boas_vindas", "envio_oportunidades", "atualizacao_bem_estar", "indicacoes",
+]);
 
 const COLUMN_WIDTH_DESKTOP = 268;
 const COLUMN_WIDTH_MOBILE = 268;
@@ -230,7 +239,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   );
 });
 
-export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap }: PipelineBoardProps) {
+export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect, sortOrder = "atividade", tarefasMap: providedTarefasMap, showGanhos = false }: PipelineBoardProps) {
   const { isGestor, isAdmin } = useUserRole();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
@@ -408,8 +417,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   // Fluxo ÚNICO: todas as etapas ativas viram coluna, exceto Descarte/Caiu
   // (que são apenas destino do botão de descarte/inativação).
   const visibleStages = useMemo(() => {
+    if (showGanhos) return stages.filter(s => s.tipo === "venda");
     return stages.filter(s => !HIDDEN_STAGE_TIPOS.has(s.tipo));
-  }, [stages]);
+  }, [stages, showGanhos]);
 
   const leadsByStage = useMemo(() => {
     // Dedup leads by ID before distributing to columns (definitivo)
@@ -696,6 +706,21 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         console.error("[handleTransitionConfirm] Erro ao gravar status do atendimento:", err);
       }
     }
+
+    // ─── Sub-status Em Negociação / Contrato / Aquecimento: grava no flag_status ───
+    if (lead && (extra.statusNegociacao || extra.statusContrato || extra.prazoRetomar)) {
+      try {
+        const nextFlag = { ...(lead.flag_status || {}) };
+        if (extra.statusNegociacao) nextFlag.status_negociacao = String(extra.statusNegociacao);
+        if (extra.statusContrato) nextFlag.status_contrato = String(extra.statusContrato);
+        if (extra.prazoRetomar) nextFlag.prazo = String(extra.prazoRetomar);
+        await supabase.from("pipeline_leads").update({ flag_status: nextFlag } as any).eq("id", lead.id);
+      } catch (err) {
+        console.error("[handleTransitionConfirm] Erro ao gravar substatus:", err);
+      }
+    }
+
+
 
 
     // ─── Normal transition (non-descarte) ───
