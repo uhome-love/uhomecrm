@@ -158,8 +158,9 @@ export function getLeadSubstatusBadge(
       const map: Record<string, SubstatusBadge> = {
         contato_inicial: { label: "📞 Contato inicial", className: PILL.indigo },
         alinhamento_perfil: { label: "🎯 Alinhando perfil", className: PILL.purple },
-        busca: { label: "🔍 Busca", className: PILL.amber },
+        busca: { label: "🔍 Busca de imóveis", className: PILL.amber },
         follow_up: { label: "🔁 Follow up", className: PILL.emerald },
+        alinhando_visita: { label: "📅 Alinhando visita", className: PILL.indigo },
       };
       return f.status_atendimento ? map[f.status_atendimento] ?? null : null;
     }
@@ -167,18 +168,41 @@ export function getLeadSubstatusBadge(
     case "aquecimento": {
       const n = parseInt(f.prazo || "", 10);
       if (!Number.isFinite(n) || n <= 0) return null;
-      return { label: `⏰ ${n}d`, className: PILL.amber };
+      return { label: `⏰ Retomar ${n}D`, className: PILL.amber };
     }
 
     case "visita": {
       const map: Record<string, SubstatusBadge> = {
-        marcada: { label: "📅 Marcada", className: PILL.indigo },
-        realizada: { label: "✅ Realizada", className: PILL.emerald },
+        marcada: { label: "📅 Visita marcada", className: PILL.indigo },
+        realizada: { label: "✅ Visita realizada", className: PILL.emerald },
         pos_visita: { label: "📋 Pós-visita", className: PILL.purple },
-        no_show: { label: "❌ No-show", className: PILL.red },
+        no_show: { label: "👻 No-show", className: PILL.red },
         reagendada: { label: "🔁 Reagendada", className: PILL.amber },
       };
       return f.status_visita ? map[f.status_visita] ?? null : null;
+    }
+
+    // Em Negociação (tipo `proposta`, absorve documentação)
+    case "proposta": {
+      const map: Record<string, SubstatusBadge> = {
+        proposta_enviada: { label: "📤 Proposta enviada", className: PILL.indigo },
+        proposta_aprovada: { label: "✅ Proposta aprovada", className: PILL.emerald },
+        aprovacao_bancaria: { label: "🏦 Aprovação bancária", className: PILL.amber },
+        correspondente_bancario: { label: "🤝 Correspondente", className: PILL.purple },
+        aprovacao_proprietario: { label: "👤 Aprov. proprietário", className: PILL.amber },
+        documentacao_enviada: { label: "📄 Documentação enviada", className: PILL.emerald },
+      };
+      return f.status_negociacao ? map[f.status_negociacao] ?? null : null;
+    }
+
+    // Contrato (tipo `contrato_gerado`)
+    case "contrato_gerado": {
+      const map: Record<string, SubstatusBadge> = {
+        em_confeccao: { label: "✍️ Em confecção", className: PILL.amber },
+        gerado: { label: "📄 Gerado", className: PILL.indigo },
+        em_leitura: { label: "📖 Em leitura", className: PILL.emerald },
+      };
+      return f.status_contrato ? map[f.status_contrato] ?? null : null;
     }
 
     case "pos_visita": {
