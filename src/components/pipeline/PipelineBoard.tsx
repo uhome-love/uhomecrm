@@ -363,6 +363,43 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     return map;
   }, [cadenciaRows]);
 
+  // Negócios vinculados — mapa leadId -> { fase, vgv, fase_changed_at } (lente Leads ⇄ Negócios, Fase 2)
+  const { data: negociosRows = [] as { pipeline_lead_id: string; fase: string; vgv_estimado: number | null; vgv_final: number | null; fase_changed_at: string }[] } = useQuery({
+    queryKey: ["pipeline-negocios-map", leadIdsKey],
+    queryFn: async () => {
+      if (leadIds.length === 0) return [];
+      const chunks: string[][] = [];
+      for (let i = 0; i < leadIds.length; i += 500) chunks.push(leadIds.slice(i, i + 500));
+      const results = await Promise.all(chunks.map(async (chunk) => {
+        const { data } = await supabase
+          .from("negocios")
+          .select("pipeline_lead_id, fase, vgv_estimado, vgv_final, fase_changed_at")
+          .eq("status", "ativo")
+          .in("pipeline_lead_id", chunk);
+        return data || [];
+      }));
+      return results.flat();
+    },
+    enabled: leadIds.length > 0,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const negociosMap = useMemo(() => {
+    const map: Record<string, { fase: string; vgv: number; fase_changed_at: string }> = {};
+    for (const r of negociosRows) {
+      if (r.pipeline_lead_id) {
+        map[r.pipeline_lead_id] = {
+          fase: r.fase,
+          vgv: r.vgv_final || r.vgv_estimado || 0,
+          fase_changed_at: r.fase_changed_at,
+        };
+      }
+    }
+    return map;
+  }, [negociosRows]);
+
+
+
   // "Negócio Criado" (convertido) is now visible to ALL users (corretores included)
   const visibleStages = useMemo(() => {
     return stages;
