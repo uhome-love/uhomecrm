@@ -226,7 +226,7 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
           size="sm"
           className="text-xs gap-1"
           onClick={() => {
-            const parts: string[] = [];
+            const parts: string[] = [`Status: ${STATUS_ATEND[statusAtend]}`];
             if (tipologia) parts.push(`Tipologia: ${tipologia.replace(/_/g, " ")}`);
             if (faixaValor) parts.push(`Valor: ${faixaValor.replace(/_/g, " ")}`);
             if (regiao) parts.push(`Região: ${regiao}`);
@@ -234,8 +234,8 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
             onConfirm({
               leadId: lead.id,
               targetStageId,
-              observacao: `Qualificação: ${parts.join(" | ")}`,
-              extraData: { tipologia, faixaValor, regiao, observacao: obs },
+              observacao: `Atendimento: ${parts.join(" | ")}`,
+              extraData: { statusAtendimento: statusAtend, tipologia, faixaValor, regiao, observacao: obs },
             });
           }}
         >
