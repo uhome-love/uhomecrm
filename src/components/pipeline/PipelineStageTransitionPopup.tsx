@@ -867,6 +867,15 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
     if (stageType === "pos_visita" || stageType === "visita_realizada" || stageName.includes("pós-visita") || stageName.includes("visita realizada")) {
       return <VisitaRealizadaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
+    if (stageType === "proposta" || stageName.includes("proposta")) {
+      return <PropostaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    }
+    if (stageType === "documentacao" || stageName.includes("aprova") || stageName.includes("documenta")) {
+      return <AprovacaoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    }
+    if (stageType === "contrato_gerado" || stageName.includes("contrato")) {
+      return <ContratoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    }
     if (stageType === "convertido" || stageName.includes("negócio criado") || stageName.includes("negocio criado")) {
       return <NegocioCriadoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
