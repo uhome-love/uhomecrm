@@ -408,11 +408,11 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
 
 
-  // Lente: "negocios" mostra só as etapas do negócio; "leads" só a prospecção.
+  // Fluxo ÚNICO: todas as etapas ativas viram coluna, exceto Descarte/Caiu
+  // (que são apenas destino do botão de descarte/inativação).
   const visibleStages = useMemo(() => {
-    if (lensMode === "negocios") return stages.filter(s => DEAL_STAGE_TIPOS.has(s.tipo));
-    return stages.filter(s => !DEAL_STAGE_TIPOS.has(s.tipo));
-  }, [stages, lensMode]);
+    return stages.filter(s => !HIDDEN_STAGE_TIPOS.has(s.tipo));
+  }, [stages]);
 
   const leadsByStage = useMemo(() => {
     // Dedup leads by ID before distributing to columns (definitivo)
