@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";
 import { useNegocioActions } from "@/hooks/useNegocioActions";
-import FaseTransitionModal from "./FaseTransitionModal";
+import FaseTransitionModal from "../FaseTransitionModal";
 
-const NegocioDetailModal = lazy(() => import("./NegocioDetailModal"));
-const VendaCelebration = lazy(() => import("./VendaCelebration"));
+const NegocioDetailModal = lazy(() => import("../NegocioDetailModal"));
+const VendaCelebration = lazy(() => import("../VendaCelebration"));
 
 interface NegocioFull extends Negocio {
   unidade?: string | null;
