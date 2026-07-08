@@ -641,6 +641,8 @@ export default function PipelineKanban() {
         setClientStatusFilter={setClientStatusFilter}
         negociosFilter={negociosFilter}
         setNegociosFilter={setNegociosFilter}
+        ganhosFilter={ganhosFilter}
+        setGanhosFilter={setGanhosFilter}
         hasAnyFilter={hasAnyFilter}
         clearAllFilters={clearAllFilters}
         activeTab={activeTab as string}
