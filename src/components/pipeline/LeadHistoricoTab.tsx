@@ -206,8 +206,8 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       continue;
     }
     items.push({
-      title: `Movido para ${to?.nome || "?"}`,
-      description: from ? `De: ${from.nome}${h.observacao ? ` • ${h.observacao}` : ""}` : h.observacao || undefined,
+      title: to?.nome ? `Movido para ${to.nome}` : (h.observacao || "Etapa atualizada"),
+      description: from ? `De: ${from.nome}${h.observacao && to?.nome ? ` • ${h.observacao}` : ""}` : (to?.nome ? h.observacao || undefined : undefined),
       date: h.created_at,
       icon: ArrowRight,
       color: "bg-primary/10 text-primary",
