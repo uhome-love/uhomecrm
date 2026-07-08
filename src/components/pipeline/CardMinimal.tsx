@@ -311,7 +311,18 @@ const CardMinimal = memo(function CardMinimal({
               {empreendimento}
             </div>
           )}
+          {negocioBadge && (
+            <div
+              className={`inline-flex items-center gap-1 mt-1 rounded-full px-1.5 py-px text-[9px] font-semibold ${negocioBadge.tone}`}
+              title={`Negócio · ${negocioBadge.faseLabel}${negocioBadge.vgvLabel ? ` · ${negocioBadge.vgvLabel}` : ""}${negocioBadge.aging != null ? ` · ${negocioBadge.aging}d na fase` : ""}`}
+            >
+              ◆ {negocioBadge.faseLabel}
+              {negocioBadge.vgvLabel ? ` · ${negocioBadge.vgvLabel}` : ""}
+              {negocioBadge.aging != null ? ` · ${negocioBadge.aging}d` : ""}
+            </div>
+          )}
         </div>
+
 
         {/* Menu ··· */}
         {menuEnabled && (
