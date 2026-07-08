@@ -1,87 +1,60 @@
+## Objetivo
+Unificar leads e negócios num único **Pipeline** (renomear "Pipeline de Leads" → "Pipeline"), gerir o status do negócio dentro do próprio pipeline, celebrar o ganho, tratar a queda (descartar/inativar), unificar a visita, remover a aba Inteligência (inútil hoje) e entregar um **PDN** para o gestor que substitui a planilha Google com vantagem. Tudo 100% funcional, validado ponta a ponta, organizado e fácil de gerir. Referência: `mockup-corretor.png` e `mockup-pdn.png`.
 
-# Simulador de Financiamento Imobiliário (crítico, taxas auditadas Jul/2026)
+## Renomear "Pipeline de Leads" → "Pipeline" (Fase 0)
+- Registry já usa "Pipeline". Padronizar todo texto visível restante: `GlobalSearch`, `SectionPipelineLeads`, `central-v2/sections`, toasts (`MeusNegocios`, `AproveitadosPanel`, `BuscaLeads`), `V4QuickActions`, `RankingEquipe`, `FaseTransitionModal`, `NegocioDetailModal`. Manter rotas `/pipeline` e `/pipeline-leads` (alias).
 
-Ferramenta no CRM para o corretor simular financiamento com taxas reais e auditadas dos principais bancos e pelo **Minha Casa Minha Vida (Caixa)**, com demonstrativo de parcelas e PDF moderno para enviar no WhatsApp. Como a simulação é crítica, inclui verificação de atualização de taxas, limites de idade e validação/testes ao final.
+## Remover a aba "Inteligência" (Fase 0.5)
+- Hoje é um view-mode em `PipelineHeader` (corretor, gestor e CEO) que renderiza dashboard de fluxo/radar no `PipelineKanban` — não é usado por ninguém.
+- Remover o item `inteligencia` das listas de tabs (todos os papéis), o branch de render no `PipelineKanban` e limpar os componentes órfãos (`PipelineFlowDashboard`/`OpportunityRadar`) se não usados em outro lugar. Ajustar default de `activeTab` para `kanban`.
+- **Substituto (opcional, futuro):** um "Meu Desempenho" enxuto para o corretor (leads ativos, visitas do mês, negócios em andamento/VGV, conversão) — só se aprovado; não recriar o dashboard atual que não funciona.
 
-## Onde fica
-- Item **"Simulador de Financiamento"** no menu lateral, grupo **Vendas**. Rota `/simulador-financiamento`. Todos os corretores + gestão.
+## Variáveis do negócio (tudo entra no acompanhamento)
+Identidade: `nome_cliente`, `telefone`, `empreendimento`, `unidade`, `imovel_interesse`, `origem`, `pipeline_lead_id`. Fase/status: `fase`, `status`, `fase_changed_at`. Proposta: `proposta_imovel/valor/situacao`. Negociação: `negociacao_situacao/contra_proposta/pendencia`, `objecao_cliente`. Documentação: `documentacao_situacao`, `data_assinatura`. Valores: `vgv_estimado`, `vgv_final` (fallback final→estimado). Queda: `motivo_queda`. Pessoas: `corretor_id` (profiles.id), `gerente_id`, `auth_user_id`, `equipe_gerente_auth_id`, `requer_aprovacao_ceo`. Relacionados: `negocios_tarefas`, `negocios_atividades`.
 
-## Dois modos
-1. **Convencional (SBPE/SFH)** — Caixa, Itaú, Santander, Bradesco, BB.
-2. **Minha Casa Minha Vida** — habilitado quando o banco é **Caixa** (toggle).
+## Fase 1 — Aba "Negócio" no drawer do lead + gestão de status
+1. Aba **"Negócio"** em `PipelineLeadDetail` (hoje: info/histórico/tarefas/visitas), visível quando há negócio vinculado; reusa lógica do `NegocioDetailModal` embutida (regra "Tudo no Lead").
+2. Barra de fases clicável: Novo Negócio → Proposta → Em Negociação → Contrato Gerado → Ganho/Assinado; troca abre `FaseTransitionModal`.
+3. Edição inline por seção (proposta, negociação, documentação) + observações + tarefas/atividades.
 
-## Campos (auto-formatados e fáceis)
-- Dinheiro (**valor do imóvel, entrada, valor financiado, renda**) pré-formatado em R$ via `src/utils/currencyFormat.ts`. Entrada alterna R$ ↔ %; financiado recalcula. Ajuda curta por campo; botão grande "Simular".
-- **Banco**, **Sistema** (SAC/PRICE), **Taxa a.a.** (pré-preenchida e editável), **Prazo** (atalhos 20/25/30/35 anos).
-- **Data de nascimento / idade** (novo — necessária para o limite de idade).
+## Fase 2 — Lente "Leads ⇄ ◆ Negócios" no board
+- Toggle no `PipelineHeader` (estado por usuário). Lente Leads: card normal + marca discreta `◆ Negócio · VGV · fase`. Lente Negócios: só negócios ativos, card com fase, VGV, próxima ação e aging (verde ≤3d / âmbar 4–7d / vermelho +7d ou sem ação) + tira-resumo. Consolidar `NegocioCriadoColumn` com a lente.
 
-## Limites de idade (regra bancária brasileira)
-- **Idade mínima: 18 anos** (ou emancipado).
-- **Idade final máxima: 80 anos e 6 meses** (padrão Caixa e maioria dos bancos) → o simulador calcula o **prazo máximo permitido** = `(80 anos 6 meses − idade atual)`, em meses, e o limita automaticamente também ao teto do banco/faixa. Se o prazo escolhido estourar, avisa e ajusta.
+## Fase 3 — Ganho + celebração
+- Fase `vendido` como **"Ganho / Assinado"** (selo verde). Ao ganhar: grava `data_assinatura`, mantém regra VGV assinado, dispara `VendaCelebration` (via realtime), garantindo gatilho pelo drawer e pelo board.
 
-## Auditoria — taxas convencionais (Jul/2026)
-Fontes cruzadas (Monitor LARYA + SFH Finaqui). Selic 14,25%, teto SFH R$ 2,25 mi. Taxas + TR, sujeitas à análise de crédito.
+## Fase 4 — Queda (descartar ou inativar)
+- Ação "Negócio caiu" → modal pede `motivo_queda` + destino via `buildMotivoDescarte`: Descartar (reengajável), Inativar (definitivo), Voltar ao Pipeline. Caídos na aba "Negócios caídos" com motivo e data.
 
-```text
-Banco             Taxa a.a. (balcão)   Sistemas     Prazo máx.   Financia até
-Caixa             a partir de 11,19%   SAC / PRICE  420 meses    80% (SFH)
-Itaú              a partir de 11,60%   SAC / PRICE  360 meses    82%
-Santander         a partir de 11,70%   SAC / PRICE  420 meses    80%
-Bradesco          a partir de 11,70%   SAC / PRICE  360 meses    80%
-Banco do Brasil   a partir de 12,00%   SAC / PRICE  420 meses    80%
-```
+## Fase 5 — Visita unificada
+- Em `AgendaVisitas`: remover `VisitaTypeSelector` e `ReuniaoNegocioForm`; agendar abre direto o formulário único de Visita. `tipo_visita` opcional/derivado. Registros antigos preservados.
 
-## Auditoria — Minha Casa Minha Vida 2026 (Portaria MCID 333; Caixa desde 22/04/2026)
-Confirmado em gov.br + fontes cruzadas. Indexador TR, comprometimento máx. 30% da renda, prazo até 420 meses.
+## Fase 6 — PDN do gestor (planilha Google, só que melhor)
+Gestores usam planilha manual por mês (nome, data, empreendimento, **construtora**, VGV, status, observação), separando Negócios / Gerados / Assinados. O CRM atual foi considerado difícil de enxergar. O PDN deve ser tão simples quanto a planilha, mas visual e integrado.
+1. **Vista por mês:** seletor de mês (usa `pdn_entries.mes`); tabela densa editável inline, familiar como Excel.
+2. **Colunas enxutas (iguais à planilha):** Nome · Data · Empreendimento · Construtora · VGV · Status · Observação. Extras (corretor, equipe, próxima ação, dias parado) colapsáveis. Migração pontual: coluna `construtora` em `pdn_entries` (+ GRANT).
+3. **Agrupamento por status:** Negócios (andamento) · Gerados (contrato) · Assinados, cada grupo com subtotal de VGV e contagem, total do mês no topo.
+4. **Edição inline:** status (dropdown), VGV (máscara), data (picker), observação (texto); adicionar/ordenar linhas manuais; salvamento otimista.
+5. **Integração automática:** negócios do pipeline populam o PDN (nome, empreendimento, VGV, status derivado da fase, corretor, data), sem digitação dupla, ainda editável manualmente.
+6. **Camada visual:** cartões de resumo (VGV total, assinados, gerados, andamento, forecast ponderado = VGV × prob. por fase, meta + gap), linhas em risco destacadas, filtros rápidos (equipe, corretor, em risco, fecha este mês). Escopo por `resolve_managed_brokers`; admin vê tudo.
+7. **Exportar** o mês em PDF/planilha; comparativo mês atual × anterior.
 
-```text
-Faixa    Renda bruta familiar     Taxa a.a. (ref.)        Teto imóvel   Observação
-Faixa 1  até R$ 3.200            4,00% (N/NE) · 4,25%       ~R$ 255–270k  Seleção via prefeitura/HabitaCaixa (sem cálculo de parcela)
-Faixa 2  R$ 3.200,01–5.000       ~5,5–6,5%                  R$ 270–350k   Subsídio até ~R$ 55.000 (estimativa, decrescente c/ renda)
-Faixa 3  R$ 5.000,01–9.600       até 7,66%                  R$ 400.000    Sem subsídio direto
-Faixa 4  R$ 9.600,01–13.000      10%                        R$ 600.000    Entrada mín. 20%, sem subsídio
-```
-- **Enquadramento automático** por renda + valor do imóvel; aplica a taxa da faixa (editável), valida teto do imóvel e entrada mínima; avisa quando não se enquadra. Faixa 1 apenas informa o caminho (não simula parcela). Notas de tipo de imóvel (novo/usado/planta) e FGTS como informativo.
+## Ideias extras
+- Alerta HOMI de negócio parado (X dias sem próxima ação) via `homi_alerts`.
+- Modo Foco inclui negócios parados (hoje ignora `negocio_id`).
+- Badge de contagem (negócios ativos / em risco) no header.
+- Registro automático de atividade em `negocios_atividades` a cada mudança de fase.
 
-## Verificação/atualização de taxas (botão "Atualizar taxas")
-- Botão que chama uma **edge function** para buscar as **taxas de referência atuais** (via pesquisa web/Firecrawl das fontes auditadas e, quando disponível, dados públicos do Banco Central) e **comparar** com as taxas configuradas no código.
-- Mostra um painel: taxa configurada × taxa encontrada por banco/faixa, **data da última auditoria** e um selo "✅ atualizado" ou "⚠️ divergência encontrada — revisar".
-- **Não reescreve o código sozinho** (segurança): sinaliza a divergência para você aprovar a atualização. Assim a simulação continua 100% controlada e auditável.
-- Cada banco/faixa exibe `data_referencia`; a tela e o PDF sempre mostram "Taxas de referência: Jul/2026".
+## Validação ponta a ponta (antes de declarar 100%)
+- Build + typecheck limpos e `vitest run` (inclui regressão id-mapping).
+- Playwright headless em `localhost:8080` como corretor: Pipeline (sem aba Inteligência) → alternar lente → abrir lead com negócio → mudar fase (proposta→negociação→ganho) → ver celebração → derrubar negócio → agendar visita única. Como gestor: PDN → trocar mês → editar linha inline → conferir subtotais e integração. Screenshots por passo.
+- Conferir no banco após cada ação; console/network sem erros; realtime atualizando o board.
 
-## Consulta de CPF / restrição (fase opcional, requer aprovação)
-- Verificar restrição de CPF (Serasa/SPC/Boa Vista/Quod) exige **API paga de bureau de crédito** + tratamento de dados pessoais sob **LGPD** (consentimento do titular, finalidade, não armazenar sem base legal).
-- Proposta: **Fase 2 opcional** — implementar via edge function segura com a chave da API (guardada como secret) **somente após você contratar um provedor e confirmar**. Incluiria: campo CPF com máscara/validação de dígito, botão "Consultar restrições", retorno resumido (sem expor score bruto indevidamente) e checkbox de consentimento.
-- Nesta primeira entrega deixo o ponto preparado (espaço na UI + aviso), sem chamar bureau até você fechar o provedor.
+## Detalhes técnicos / qualidade
+- Única migração: `construtora` em `pdn_entries` (+ GRANT). Usa `negocios`, `negocios_tarefas`, `negocios_atividades`, `pdn_entries`.
+- IDs: `negocios.corretor_id = profiles.id`; joins de usuário via `auth_user_id`.
+- Design tokens (Indigo #4969FF, roxo p/ negócio, radius 12px); sem cores hardcoded.
+- Decompor arquivos grandes ao mexer (`MeusNegocios.tsx`, `NegocioDetailModal.tsx`, `PipelineLeadDetail.tsx`, `PipelineHeader.tsx`).
 
-## Resultado (demonstrativo)
-- **Resumo:** financiado, taxa a.a./a.m., prazo, sistema, 1ª/última parcela, total pago, total de juros; no MCMV: faixa + subsídio estimado (quando aplicável).
-- **Análise de renda:** 1ª parcela vs **30% da renda** (limite oficial) — selo verde/vermelho + parcela máxima.
-- **Análise de idade:** confirma prazo dentro do limite de 80 anos e 6 meses.
-- **Tabela de parcelas:** nº, prestação, juros, amortização, saldo (resumo anual + primeiras/últimas, "ver todas").
-
-## PDF personalizado, moderno e pronto para WhatsApp
-- A4 retrato, logo U.Home, faixa em gradiente do design system.
-- **Bloco do corretor:** nome, foto, WhatsApp, e-mail (perfil autenticado) + CTA "Fale comigo".
-- Cartões de destaque (imóvel, entrada, financiado, banco/faixa, 1ª parcela grande), resumo com ícones, selos de renda/idade, mini tabela anual.
-- Rodapé com fonte + data e aviso legal: *"Simulação estimativa (Jul/2026, + TR, sem seguros/CET). No MCMV, enquadramento/subsídio/taxa dependem da análise da Caixa. Condições finais sujeitas à aprovação do banco."*
-- Botões **"Baixar PDF"** e **"Compartilhar"** (Web Share API → WhatsApp).
-
-## Lógica de cálculo
-- PRICE: `PMT = PV·i/(1−(1+i)^−n)`. SAC: amortização `PV/n`, juros `saldo·i`, decrescente. `i_m=(1+i_a)^(1/12)−1`. Valores via `fmtMoney`.
-
-## Validação e testes (ao final — obrigatório)
-- **Testes unitários** dos cálculos (`src/lib/financiamento.ts`): PRICE e SAC conferidos contra referência auditada (R$400k/360m SAC Caixa ≈ R$4.839; 1ª parcela, última, total de juros), enquadramento MCMV por renda/valor, e limite de idade/prazo.
-- **Teste de fluxo (Playwright)** na preview: preencher, simular convencional e MCMV, ver demonstrativo, gerar PDF, acionar "Atualizar taxas" — com screenshots e verificação de console/erros.
-- Correção de bugs até zerar; só então concluo. Relato o que foi verificado.
-
-## Detalhes técnicos
-- `src/pages/SimuladorFinanciamento.tsx`; cálculos em `src/lib/financiamento.ts`; config em `src/lib/bancosFinanciamento.ts` + `src/lib/mcmvFaixas.ts`.
-- Edge function `verificar-taxas-financiamento` (Firecrawl/web + BCB) para o botão de atualização.
-- Campos monetários reusam `src/utils/currencyFormat.ts`. PDF via html2pdf (base `centralPdf.ts`) com dados do corretor.
-- Registro em `pageRegistry.ts` + item no grupo Vendas. UI no design system (tokens, radius 12px, sem cores hardcoded).
-
-## Fora de escopo desta entrega
-- Consulta real de CPF (Fase 2, requer API paga + LGPD).
-- CET completo, TR variável, seguros MIP/DFI e cálculo exato de FGTS/subsídio.
-- Reescrita automática das taxas (o botão apenas sinaliza divergência para aprovação).
+## Sequência
+Fase 0 (rename) → 0.5 (remover Inteligência) → 1 (aba Negócio) → 2 (lente) → 3 (ganho) → 4 (queda) → 5 (visita única) → 6 (PDN). Validação ponta a ponta ao fim de cada fase.
