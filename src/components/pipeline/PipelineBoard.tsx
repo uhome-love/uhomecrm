@@ -1031,20 +1031,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   <div className="h-1 my-1 rounded bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent animate-pulse" />
                 )}
 
-                {/* Cards list — convertido usa coluna com agrupamento próprio */}
-                {stage.tipo === "convertido" ? (
-                  <NegocioCriadoColumn
-                    stageLeads={stageLeads}
-                    stage={stage}
-                    corretorNomes={corretorNomes}
-                    parcerias={parcerias}
-                    onSelectLead={onSelectLead}
-                    handleDragStart={handleDragStart}
-                    selectionMode={selectionMode}
-                    selectedLeads={selectedLeads}
-                    onToggleSelect={onToggleSelect}
-                  />
-                ) : (
+                {/* Cards list — fluxo único, mesma renderização em todas as etapas */}
+                {(
+
                   <VirtualizedCardList
                     stageLeads={stageLeads}
                     stage={stage}
