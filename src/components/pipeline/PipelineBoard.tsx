@@ -821,7 +821,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
             <button
               key={stage.id}
               onClick={() => scrollToIndex(idx)}
-              title={stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
+              title={stage.tipo === "convertido" ? "Negócio" : stage.nome}
               className="transition-all hover:opacity-100"
               style={{
                 display: "flex", alignItems: "center", gap: 5,
@@ -836,7 +836,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
               }}
             >
               {emoji && <span style={{ fontSize: 11 }}>{emoji}</span>}
-              <span>{stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}</span>
+              <span>{stage.tipo === "convertido" ? "Negócio" : stage.nome}</span>
               <span style={{ fontWeight: 700, marginLeft: 1 }}>
                 {stageLeads.length}
               </span>
@@ -957,7 +957,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                       {emoji}
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 600, color: isDragOver ? "#16a34a" : "hsl(var(--pipeline-text-primary))", flex: 1, transition: "color 0.2s ease" }}>
-                      {stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
+                      {stage.tipo === "convertido" ? "Negócio" : stage.nome}
                     </span>
                     <span style={{
                       fontSize: 13, fontWeight: 700,
