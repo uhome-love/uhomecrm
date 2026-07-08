@@ -593,6 +593,55 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     const extra = result.extraData || {};
     const targetStage = stages.find(s => s.id === result.targetStageId);
     const isDescarte = targetStage?.tipo === "descarte";
+    const isCaiu = targetStage?.tipo === "caiu";
+
+    // ─── Negócio caiu: grava motivo, marca negócio perdido e trata o lead ───
+    if (isCaiu && lead) {
+      try {
+        const destino = (extra.destino as QuedaDestino) || "descarte";
+        const motivo = String(extra.motivo || result.observacao || "");
+
+        // Resolve o negócio vinculado (state pode estar defasado)
+        let negocioId = lead.negocio_id;
+        if (!negocioId) {
+          const { data } = await supabase
+            .from("negocios").select("id").eq("pipeline_lead_id", lead.id).limit(1).maybeSingle();
+          negocioId = data?.id || null;
+        }
+
+        if (negocioId) {
+          await applyNegocioQueda({ negocioId, pipelineLeadId: lead.id, motivo, destino });
+          await supabase
+            .from("negocios")
+            .update({ fase: "perdido", status: "perdido", updated_at: new Date().toISOString() } as any)
+            .eq("id", negocioId);
+        } else {
+          // Sem negócio vinculado — trata só o lead
+          const { buildMotivoDescarte } = await import("@/lib/leadOutcome");
+          if (destino === "inativar") {
+            await supabase.from("pipeline_leads").update({
+              motivo_descarte: buildMotivoDescarte("definitivo", motivo || "Sem motivo"),
+              tipo_descarte: "definitivo", arquivado: true, negocio_id: null,
+            } as any).eq("id", lead.id);
+            toast.success("Lead inativado definitivamente");
+          } else {
+            const descarteStage = stages.find(s => s.tipo === "descarte");
+            await supabase.from("pipeline_leads").update({
+              motivo_descarte: buildMotivoDescarte("reengajavel", motivo || "Sem motivo"),
+              tipo_descarte: "reengajavel", negocio_id: null,
+              ...(descarteStage ? { stage_id: descarteStage.id, stage_changed_at: new Date().toISOString() } : {}),
+            } as any).eq("id", lead.id);
+            toast.info("Lead movido para Descarte (reengajável)");
+          }
+        }
+      } catch (err) {
+        console.error("Error in queda flow:", err);
+        toast.error("Erro ao registrar a queda do negócio.");
+      }
+      window.dispatchEvent(new CustomEvent("pipeline-reload"));
+      return;
+    }
+
 
     if (isDescarte && lead) {
       try {
