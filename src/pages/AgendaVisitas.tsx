@@ -1013,20 +1013,10 @@ export default function AgendaVisitas() {
       </div>
 
       {/* ═══════ DIALOGS ═══════ */}
-      <VisitaTypeSelector
-        open={showTypeSelector}
-        onClose={() => setShowTypeSelector(false)}
-        onSelectImovel={() => { setShowTypeSelector(false); setShowForm(true); }}
-        onSelectReuniao={() => { setShowTypeSelector(false); setShowReuniaoForm(true); }}
-      />
-
       {showForm && (
         <VisitaForm open={showForm} onClose={() => setShowForm(false)} onSubmit={createVisita} />
       )}
 
-      {showReuniaoForm && (
-        <ReuniaoNegocioForm open={showReuniaoForm} onClose={() => setShowReuniaoForm(false)} onSubmit={createVisita} />
-      )}
 
       {editingVisita && (
         <VisitaForm
