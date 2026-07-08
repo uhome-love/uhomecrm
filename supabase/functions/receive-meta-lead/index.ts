@@ -384,6 +384,10 @@ Deno.serve(async (req) => {
       "Uhome - Lake Baycal": "Lake Baikal",
       "Uhome - Lake Baikal": "Lake Baikal",
       "Uhome - Lake Baical": "Lake Baikal",
+      "Uhome - Flow - (Video 1D)": "Flow",
+      "Uhome - Flow - (Video 2D)": "Flow",
+      "Uhome - Flow - (Studio)": "Flow",
+      "Uhome - Flow - (Video Studio)": "Flow",
     };
 
     // Resolve form name from ID map, then fallback to raw ID
