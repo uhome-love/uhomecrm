@@ -176,7 +176,7 @@ const NegocioCriadoColumn = memo(function NegocioCriadoColumn({
         <>
           <div className="flex items-center gap-2 px-1 py-1.5 mt-3">
             <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-              ✅ Vendidos
+              🏆 Ganhos / Assinados
             </span>
             <span className="text-[10px] font-semibold text-muted-foreground">
               {vendidos.length}
