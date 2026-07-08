@@ -695,6 +695,9 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
     if (stageType === "convertido" || stageName.includes("negócio criado") || stageName.includes("negocio criado")) {
       return <NegocioCriadoForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
+    if (stageType === "caiu" || stageName.includes("caiu")) {
+      return <CaiuForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
+    }
     if (stageType === "descarte" || stageName.includes("descarte")) {
       return <DescarteForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
