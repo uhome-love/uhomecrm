@@ -256,9 +256,10 @@ export function usePdn(mes: string) {
   // ── Totais / resumo ──────────────────────────────────────────────────────────
   const resumo = useMemo(() => {
     const byGrupo: Record<PdnGrupo, { count: number; vgv: number }> = {
-      andamento: { count: 0, vgv: 0 },
-      gerado: { count: 0, vgv: 0 },
-      assinado: { count: 0, vgv: 0 },
+      visita_realizada: { count: 0, vgv: 0 },
+      em_negociacao: { count: 0, vgv: 0 },
+      contrato: { count: 0, vgv: 0 },
+      ganho: { count: 0, vgv: 0 },
     };
     let forecast = 0;
     let emRisco = 0;
@@ -268,7 +269,7 @@ export function usePdn(mes: string) {
       forecast += r.vgv * (PROB_POR_FASE[r.fase] ?? 0.3);
       if (r.emRisco) emRisco++;
     }
-    const vgvTotal = byGrupo.andamento.vgv + byGrupo.gerado.vgv + byGrupo.assinado.vgv;
+    const vgvTotal = byGrupo.em_negociacao.vgv + byGrupo.contrato.vgv + byGrupo.ganho.vgv;
     return { byGrupo, vgvTotal, forecast, emRisco, total: rows.length };
   }, [rows]);
 
