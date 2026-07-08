@@ -203,6 +203,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor", "diretor"] },
   "/leads-estagnados":      { key: "leads-estagnados",     label: "Leads Estagnados",    icon: "AlarmClock",    roles: ["admin", "gestor", "diretor"] },
   "/simulador-financiamento": { key: "simulador-financiamento", label: "Simulador Financiamento", icon: "Calculator" },
+  "/pdn":                   { key: "pdn",                  label: "PDN",                 icon: "ClipboardList", roles: ["gestor", "admin", "diretor"] },
 };
 
 // ─── DYNAMIC ROUTES ──────────────────────────────────────────────────────────
