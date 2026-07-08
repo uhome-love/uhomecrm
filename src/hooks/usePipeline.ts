@@ -6,6 +6,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { fetchInBatchesWithRetry, runQueryWithRetry } from "@/lib/taskQueryUtils";
 import { withTimeout as withTimeoutLib } from "@/lib/queryTimeout";
 import { useBackendHealth } from "@/hooks/useBackendHealth";
+import { useLeadProgression } from "@/hooks/useLeadProgression";
 import { toast } from "sonner";
 
 export interface PipelineStage {
