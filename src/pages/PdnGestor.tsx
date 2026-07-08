@@ -111,8 +111,8 @@ export default function PdnGestor() {
       {/* Resumo */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <SummaryCard label="VGV Total" value={fmtMoney(resumo.vgvTotal, "short")} accent="text-foreground" />
-        <SummaryCard label="Assinados" value={fmtMoney(resumo.byGrupo.assinado.vgv, "short")} sub={`${resumo.byGrupo.assinado.count} negócios`} accent="text-emerald-500" icon={<FileSignature className="h-4 w-4" />} />
-        <SummaryCard label="Gerados" value={fmtMoney(resumo.byGrupo.gerado.vgv, "short")} sub={`${resumo.byGrupo.gerado.count} contratos`} accent="text-violet-500" />
+        <SummaryCard label="Ganhos" value={fmtMoney(resumo.byGrupo.ganho.vgv, "short")} sub={`${resumo.byGrupo.ganho.count} negócios`} accent="text-emerald-500" icon={<FileSignature className="h-4 w-4" />} />
+        <SummaryCard label="Contrato" value={fmtMoney(resumo.byGrupo.contrato.vgv, "short")} sub={`${resumo.byGrupo.contrato.count} contratos`} accent="text-cyan-500" />
         <SummaryCard label="Forecast ponderado" value={fmtMoney(resumo.forecast, "short")} accent="text-primary" icon={<TrendingUp className="h-4 w-4" />} />
         <SummaryCard label="Em risco" value={String(resumo.emRisco)} sub="parados +7d" accent="text-amber-500" icon={<AlertTriangle className="h-4 w-4" />} />
       </div>
