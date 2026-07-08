@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Briefcase, ChevronRight, Check, ExternalLink, TrendingUp } from "lucide-react";
+import { Loader2, Briefcase, ChevronRight, Check, ExternalLink, TrendingUp, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";
