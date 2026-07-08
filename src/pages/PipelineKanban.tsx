@@ -31,6 +31,7 @@ import BulkActionModal from "@/components/pipeline/BulkActionModal";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { fmtMoney } from "@/lib/fmtMoney";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchInBatchesWithRetry } from "@/lib/taskQueryUtils";
 import { toast } from "sonner";
