@@ -26,7 +26,12 @@ interface PipelineMobileViewProps {
 
 const LOAD_BATCH = 20;
 
-const HIDDEN_STAGE_TIPOS = new Set(["descarte", "caiu"]);
+const HIDDEN_STAGE_TIPOS = new Set([
+  "descarte", "caiu", "venda",
+  "contato_inicial", "busca", "possibilidade_visita", "visita_marcada",
+  "visita_realizada", "pos_visita", "convertido", "documentacao", "negociacao",
+  "boas_vindas", "envio_oportunidades", "atualizacao_bem_estar", "indicacoes",
+]);
 
 const PipelineMobileView = memo(function PipelineMobileView({
   stages: allStages, leads, corretorNomes, parcerias, onMoveLead,
