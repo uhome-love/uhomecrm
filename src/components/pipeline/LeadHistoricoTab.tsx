@@ -284,11 +284,35 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
   }
 
   for (const t of tarefas) {
+    const tTitulo = limparTexto(t.titulo, lead.nome) || t.titulo || "Tarefa";
+    // Tarefa criada (qual ação)
+    if (t.created_at) {
+      items.push({
+        title: `Tarefa criada: ${tTitulo}`,
+        date: t.created_at,
+        icon: Plus,
+        color: "bg-blue-100 text-blue-600",
+        autor: nome(t.created_by),
+        sourceType: "tarefa",
+        sourceId: `${t.id}-criada`,
+      });
+    }
+    // Tarefa concluída (feedback)
     if (t.status === "concluida" && t.concluida_em) {
-      const tTitulo = limparTexto(t.titulo, lead.nome) || t.titulo || "Tarefa";
-      items.push({ title: `✅ ${tTitulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600", autor: nome(t.created_by), sourceType: "tarefa", sourceId: t.id });
+      const feedback = limparTexto(t.descricao, lead.nome) || undefined;
+      items.push({
+        title: `Tarefa concluída: ${tTitulo}`,
+        description: feedback,
+        date: t.concluida_em,
+        icon: CheckCircle2,
+        color: "bg-green-100 text-green-600",
+        autor: nome(t.created_by),
+        sourceType: "tarefa",
+        sourceId: t.id,
+      });
     }
   }
+
 
 
   // Lead-imóvel events
