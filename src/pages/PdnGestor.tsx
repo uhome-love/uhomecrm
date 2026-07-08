@@ -138,7 +138,15 @@ export default function PdnGestor() {
             {corretores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={ordem} onValueChange={(v) => setOrdem(v as "recente" | "antigo")}>
+          <SelectTrigger className="w-[170px]"><SelectValue placeholder="Ordenar" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="recente">Data ↓ (mais recente)</SelectItem>
+            <SelectItem value="antigo">Data ↑ (mais antigo)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
 
       {loading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
