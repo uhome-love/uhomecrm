@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Briefcase, TrendingUp, Save, Pencil } from "lucide-react";
 import { fmtMoney } from "@/lib/fmtMoney";
+import { MoneyInput } from "@/components/simulador/MoneyInput";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";
 import { NEGOCIACAO_SUBSTATUS, CONTRATO_SUBSTATUS } from "@/lib/leadHelpers";
 import { toast } from "sonner";
