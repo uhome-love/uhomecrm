@@ -123,6 +123,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     campaignTagFilter, setCampaignTagFilter,
     clientStatusFilter, setClientStatusFilter,
     negociosFilter, setNegociosFilter,
+    ganhosFilter, setGanhosFilter,
     hasAnyFilter, clearAllFilters,
     activeTab, setActiveTab,
     refreshing, handleRefresh, setAddOpen, setFocusModeOpen,
