@@ -127,6 +127,36 @@ export function usePdn(mes: string) {
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
 
+  // Visitas realizadas no mês → alimentam a coluna "Visita Realizada" do PDN.
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const inicio = `${mes}-01`;
+      const [ano, m] = mes.split("-").map(Number);
+      const fim = new Date(ano, m, 0).toISOString().slice(0, 10);
+      const { data, error } = await supabase
+        .from("visitas")
+        .select("id, nome_cliente, data_visita, empreendimento, pipeline_lead_id, status")
+        .eq("status", "realizada")
+        .gte("data_visita", inicio)
+        .lte("data_visita", fim);
+      if (error) { console.error("Erro ao carregar visitas do PDN:", error); return; }
+      const negocioLeadIds = new Set(
+        (negocios as any[]).filter(n => n.status === "ativo" && n.pipeline_lead_id).map(n => n.pipeline_lead_id)
+      );
+      const rows = (data || []).map((v: any) => ({
+        id: v.id as string,
+        nome: (v.nome_cliente as string) || "—",
+        data: (v.data_visita as string) || "",
+        empreendimento: (v.empreendimento as string) || "—",
+        corretor: "—",
+        temNegocio: v.pipeline_lead_id ? negocioLeadIds.has(v.pipeline_lead_id) : false,
+      }));
+      setVisitasReal(rows);
+    })();
+  }, [user, mes, negocios]);
+
+
   const overrideByNegocio = useMemo(() => {
     const map: Record<string, PdnEntry> = {};
     for (const o of overrides) if (o.negocio_id) map[o.negocio_id] = o;
