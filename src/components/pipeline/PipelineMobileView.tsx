@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo, memo, useCallback } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
 import CardMinimal from "./CardMinimal";
-import NegocioCriadoColumn from "./NegocioCriadoColumn";
 import { PIPELINE_STAGE_EMOJIS } from "@/lib/celebrations";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
