@@ -833,7 +833,7 @@ export default function MeusNegocios() {
           stage_changed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         } as any).eq("id", negocio.pipeline_lead_id);
-        toast.success("🔄 Lead retornado ao Pipeline de Leads");
+        toast.success("🔄 Lead retornado ao Pipeline");
       }
     }
 

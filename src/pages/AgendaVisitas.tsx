@@ -14,8 +14,6 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import VisitaForm from "@/components/visitas/VisitaForm";
-import VisitaTypeSelector from "@/components/visitas/VisitaTypeSelector";
-import ReuniaoNegocioForm from "@/components/visitas/ReuniaoNegocioForm";
 import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
 import VisitasCobrancaDialog from "@/components/visitas/VisitasCobrancaDialog";
 import { toast } from "sonner";
@@ -461,9 +459,7 @@ export default function AgendaVisitas() {
     : null;
 
   // Dialogs
-  const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [showReuniaoForm, setShowReuniaoForm] = useState(false);
   const [editingVisita, setEditingVisita] = useState<Visita | null>(null);
   const [resultadoVisita, setResultadoVisita] = useState<Visita | null>(null);
   const [showCobranca, setShowCobranca] = useState(false);
@@ -718,7 +714,7 @@ export default function AgendaVisitas() {
 
           {/* Nova Visita */}
           <button
-            onClick={() => setShowTypeSelector(true)}
+            onClick={() => setShowForm(true)}
             className="h-[32px] px-3 sm:px-4 bg-primary hover:bg-primary-600 text-white text-[12px] font-semibold rounded-[8px] flex items-center gap-1.5 transition-colors shrink-0"
           >
             <Plus size={13} strokeWidth={2} /> <span className="hidden sm:inline">Nova Visita</span><span className="sm:hidden">Nova</span>
@@ -1013,20 +1009,10 @@ export default function AgendaVisitas() {
       </div>
 
       {/* ═══════ DIALOGS ═══════ */}
-      <VisitaTypeSelector
-        open={showTypeSelector}
-        onClose={() => setShowTypeSelector(false)}
-        onSelectImovel={() => { setShowTypeSelector(false); setShowForm(true); }}
-        onSelectReuniao={() => { setShowTypeSelector(false); setShowReuniaoForm(true); }}
-      />
-
       {showForm && (
         <VisitaForm open={showForm} onClose={() => setShowForm(false)} onSubmit={createVisita} />
       )}
 
-      {showReuniaoForm && (
-        <ReuniaoNegocioForm open={showReuniaoForm} onClose={() => setShowReuniaoForm(false)} onSubmit={createVisita} />
-      )}
 
       {editingVisita && (
         <VisitaForm

@@ -58,7 +58,7 @@ export default function AproveitadosPanel() {
           .limit(1);
         if (existing && existing.length > 0) {
           setPipelineStatus(prev => ({ ...prev, [lead.id]: "exists" }));
-          toast.info("Este lead já existe no Pipeline de Leads");
+          toast.info("Este lead já existe no Pipeline");
           setAddingToPlId(null);
           return;
         }
@@ -99,7 +99,7 @@ export default function AproveitadosPanel() {
         // dedup acima não casou. Tratamos como "já existe" em vez de erro.
         if ((error as { code?: string }).code === "23505") {
           setPipelineStatus(prev => ({ ...prev, [lead.id]: "exists" }));
-          toast.info("Este lead já existe no Pipeline de Leads");
+          toast.info("Este lead já existe no Pipeline");
           setAddingToPlId(null);
           return;
         }
@@ -267,7 +267,7 @@ export default function AproveitadosPanel() {
                   {addingToPlId === lead.id ? (
                     <><Loader2 className="h-3 w-3 animate-spin" /> Incluindo...</>
                   ) : (
-                    <><UserPlus className="h-3.5 w-3.5" /> Incluir no Pipeline de Leads</>
+                    <><UserPlus className="h-3.5 w-3.5" /> Incluir no Pipeline</>
                   )}
                 </button>
               )}

@@ -273,13 +273,13 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
     await supabase.from("negocios_atividades").insert({
       negocio_id: negocio.id,
       tipo: "regressao_pipeline",
-      titulo: "Regredido para Pipeline de Leads",
+      titulo: "Regredido para Pipeline",
       descricao: `Lead retornado para o Pipeline`,
       created_by: user.id,
     } as any);
     setRegressOpen(false);
     onOpenChange(false);
-    toast.success("🔄 Lead retornado ao Pipeline de Leads");
+    toast.success("🔄 Lead retornado ao Pipeline");
   };
 
   // ── Register activity ──
@@ -1016,7 +1016,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
       <Dialog open={regressOpen} onOpenChange={setRegressOpen}>
         <DialogContent className="sm:max-w-sm space-y-3">
           <DialogHeader>
-            <DialogTitle className="text-base">🔄 Regredir para Pipeline de Leads</DialogTitle>
+            <DialogTitle className="text-base">🔄 Regredir para Pipeline</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground">O negócio será movido para "Caiu" e o lead voltará ao Pipeline.</p>
           <div>

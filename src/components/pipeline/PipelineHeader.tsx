@@ -10,7 +10,7 @@
 // Mantém todos os classNames, estados e callbacks idênticos ao original.
 // ─────────────────────────────────────────────────────────────────
 import React from "react";
-import { Brain, BarChart3, Radar, LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square, Users, Building2, MoreHorizontal, ChevronDown, Inbox } from "lucide-react";
+import { LayoutGrid, Plus, RefreshCw, Search, X, Zap, CheckSquare, Square, Users, Building2, MoreHorizontal, ChevronDown, Inbox } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -25,7 +25,7 @@ import PipelineCorretorSelect from "@/components/pipeline/header/PipelineCorreto
 import PipelineGestorSelect from "@/components/pipeline/header/PipelineGestorSelect";
 import PipelineScopeBadge from "@/components/pipeline/header/PipelineScopeBadge";
 
-export type PipelineTabMode = "kanban" | "inteligencia" | "time" | "equipes";
+export type PipelineTabMode = "kanban" | "time" | "equipes";
 export type ClientStatusFilter = "todos" | LeadClientStatus;
 
 export interface CampaignTag {
@@ -75,8 +75,6 @@ export interface PipelineHeaderProps {
   // Tabs / views
   activeTab: string;
   setActiveTab: (v: string) => void;
-  intelView: "funil" | "radar";
-  setIntelView: (v: "funil" | "radar") => void;
 
   // Actions
   refreshing: boolean;
@@ -124,7 +122,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
     clientStatusFilter, setClientStatusFilter,
     negociosFilter, setNegociosFilter,
     hasAnyFilter, clearAllFilters,
-    activeTab, setActiveTab, intelView, setIntelView,
+    activeTab, setActiveTab,
     refreshing, handleRefresh, setAddOpen, setFocusModeOpen,
     filaCeoFilter, setFilaCeoFilter, openDispatch,
     selectionMode, setSelectionMode, clearSelection,
@@ -136,24 +134,21 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
   } = props;
 
   // Tabs por role (Fase 1):
-  //  • Corretor: Kanban | Inteligência
-  //  • Gestor:   Modo Time | Kanban | Inteligência
-  //  • CEO:      Equipes   | Kanban | Inteligência
+  //  • Corretor: Kanban
+  //  • Gestor:   Modo Time | Kanban
+  //  • CEO:      Equipes   | Kanban
   const roleTabs: Array<{ key: string; icon: React.ReactNode; label: string }> = isAdmin
     ? [
         { key: "equipes", icon: <Building2 size={12} strokeWidth={1.5} />, label: "Equipes" },
         { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
-        { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
       ]
     : isGestor
     ? [
         { key: "time", icon: <Users size={12} strokeWidth={1.5} />, label: "Modo Time" },
         { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
-        { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
       ]
     : [
         { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
-        { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
       ];
 
 
@@ -226,7 +221,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
         )}
 
 
-        {/* Tab switcher mobile — paridade com desktop (Kanban / Inteligência / Modo Time / Equipes) */}
+        {/* Tab switcher mobile — paridade com desktop (Kanban / Modo Time / Equipes) */}
         {roleTabs.length > 1 && (
           <div className="flex items-center gap-1 px-3 py-1.5 overflow-x-auto scrollbar-none">
             {roleTabs.map(tab => (
@@ -242,26 +237,6 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
                 {tab.icon} {tab.label}
               </button>
             ))}
-            {activeTab === "inteligencia" && (
-              <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-full p-0.5 ml-0.5 shrink-0">
-                {[
-                  { key: "funil", icon: <BarChart3 className="h-3 w-3 inline mr-1" />, label: "Funil" },
-                  { key: "radar", icon: <Radar className="h-3 w-3 inline mr-1" />, label: "Radar" },
-                ].map(v => (
-                  <button
-                    key={v.key}
-                    onClick={() => setIntelView(v.key as "funil" | "radar")}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border-none cursor-pointer ${
-                      intelView === v.key
-                        ? "bg-white dark:bg-gray-700 text-[#0a0a0a] dark:text-white"
-                        : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
-                    }`}
-                  >
-                    {v.icon}{v.label}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         )}
 
@@ -574,27 +549,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
               </div>
             )}
 
-            {/* Toggle Funil / Radar (Inteligência) */}
-            {activeTab === "inteligencia" && (
-              <div className="flex items-center bg-[#f0f0f5] dark:bg-gray-800 rounded-[7px] p-0.5 ml-1 shrink-0">
-                {[
-                  { key: "funil", icon: <BarChart3 className="h-3 w-3 inline mr-1" />, label: "Funil" },
-                  { key: "radar", icon: <Radar className="h-3 w-3 inline mr-1" />, label: "Radar" },
-                ].map(v => (
-                  <button
-                    key={v.key}
-                    onClick={() => setIntelView(v.key as "funil" | "radar")}
-                    className={`px-2 py-[3px] rounded-md text-[11px] font-semibold border-none cursor-pointer ${
-                      intelView === v.key
-                        ? "bg-white dark:bg-gray-700 text-[#0a0a0a] dark:text-white"
-                        : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
-                    }`}
-                  >
-                    {v.icon}{v.label}
-                  </button>
-                ))}
-              </div>
-            )}
+
           </div>
 
           <div className="flex-1" />

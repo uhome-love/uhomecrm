@@ -14,8 +14,6 @@ import { useQueryClient, useQuery, keepPreviousData } from "@tanstack/react-quer
 import { todayBRT } from "@/lib/utils";
 import { useParceriasMap, usePartnerLeadsByCorretor } from "@/hooks/useParcerias";
 
-const PipelineFlowDashboard = lazy(() => import("@/components/pipeline/PipelineFlowDashboard"));
-const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRadar"));
 
 const PipelineManagerActions = lazy(() => import("@/components/pipeline/PipelineManagerActions"));
 const PipelineTeamVisitas = lazy(() => import("@/components/pipeline/PipelineTeamVisitas"));
@@ -116,10 +114,10 @@ export default function PipelineKanban() {
   const tabStorageKey = `uhome:pipeline-mode:${roleKey}`;
   const defaultTabForRole = isCeoView ? "equipes" : isGestor ? "time" : "kanban";
   const allowedTabsForRole: string[] = isCeoView
-    ? ["equipes", "kanban", "inteligencia"]
+    ? ["equipes", "kanban"]
     : isGestor
-    ? ["time", "kanban", "inteligencia"]
-    : ["kanban", "inteligencia"];
+    ? ["time", "kanban"]
+    : ["kanban"];
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   // Default determinístico por role — sem persistência.
@@ -496,7 +494,7 @@ export default function PipelineKanban() {
     return () => window.removeEventListener("pipeline-reload", handler);
   }, [pipeline.reload]);
 
-  const [intelView, setIntelView] = useState<"funil" | "radar">("funil");
+  
 
   const clearRisco = () => {
     setRiscoFilter(false);
@@ -612,8 +610,6 @@ export default function PipelineKanban() {
         clearAllFilters={clearAllFilters}
         activeTab={activeTab as string}
         setActiveTab={setActiveTab as (v: string) => void}
-        intelView={intelView}
-        setIntelView={setIntelView}
         refreshing={refreshing}
         handleRefresh={handleRefresh}
         setAddOpen={setAddOpen}
@@ -765,21 +761,6 @@ export default function PipelineKanban() {
                   sortOrder={sortOrder}
                   tarefasMap={kanbanTarefasMap}
                 />
-              ) : activeTab === "inteligencia" ? (
-                intelView === "funil" ? (
-                  <PipelineFlowDashboard
-                    stages={pipeline.stages}
-                    leads={filteredLeads}
-                    corretorNomes={pipeline.corretorNomes}
-                  />
-                ) : (
-                  <OpportunityRadar
-                    leads={pipeline.leads}
-                    stages={pipeline.stages}
-                    corretorNomes={pipeline.corretorNomes}
-                    onSelectLead={setSelectedLead}
-                  />
-                )
               ) : activeTab === "time" ? (
                 authUser?.id ? (
                   <ModoTimeView

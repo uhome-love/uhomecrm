@@ -1,6 +1,6 @@
 /**
  * PipelineTeamVisitas — Compact collapsible panel showing the gerente's team visits
- * Displayed below manager actions in the Pipeline de Leads page.
+ * Displayed below manager actions in the Pipeline page.
  */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";

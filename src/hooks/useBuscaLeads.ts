@@ -103,7 +103,7 @@ export function useBuscaLeads() {
       if (filters.dataFim) oaQuery = oaQuery.lte("data_lead", filters.dataFim);
 
       // ───────────────────────────────────────────────
-      // 2) Busca em Pipeline de Leads
+      // 2) Busca em Pipeline
       // ───────────────────────────────────────────────
       let plQuery = supabase
         .from("pipeline_leads")

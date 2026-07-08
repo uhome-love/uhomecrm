@@ -100,7 +100,7 @@ export default function RankingEquipe() {
   const tabs = [
     { key: "visao" as const, label: "Visão Geral", icon: LayoutGrid, color: "bg-primary" },
     { key: "presencas" as const, label: "Presenças & Leads", icon: Users, color: "bg-blue-600" },
-    { key: "pipeline" as const, label: "Pipeline de Leads", icon: ClipboardList, color: "bg-purple-600" },
+    { key: "pipeline" as const, label: "Pipeline", icon: ClipboardList, color: "bg-purple-600" },
     { key: "visitas" as const, label: "Visitas", icon: Eye, color: "bg-amber-600" },
     { key: "negocios" as const, label: "Pipeline de Negócios", icon: Briefcase, color: "bg-emerald-600" },
     { key: "oferta_ativa" as const, label: "Oferta Ativa", icon: PhoneCall, color: "bg-rose-600" },
@@ -134,7 +134,7 @@ export default function RankingEquipe() {
             rows: all.presencas.map(r => [r.nome, r.presencas_diurna, r.presencas_noturna, r.presencas_domingo, r.presencas_total, r.leads_recebidos]),
           },
           {
-            title: "2. Pipeline de Leads (ordenado por conversão real no período)",
+            title: "2. Pipeline (ordenado por conversão real no período)",
             caption: "Conversão = Virou visita / Recebidos no período · SLA atrasado = sem ação há +48h",
             headers: ["Corretor", "Ativos", "Recebidos", "Virou visita", "Virou negócio", "SLA atrasado", "Conversão"],
             rows: all.pipeline.map(r => [r.nome, r.ativos, r.recebidos_periodo, r.virou_visita, r.virou_negocio, r.sla_atrasado, `${r.conversao_pct.toFixed(1)}%`]),

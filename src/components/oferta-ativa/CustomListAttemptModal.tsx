@@ -425,7 +425,7 @@ export default function CustomListAttemptModal({ open, onClose, onSubmit, leadNa
                     </div>
 
                     <p className="text-[10px] text-amber-500/70">
-                      📌 Tarefa será criada automaticamente no Pipeline de Leads deste lead.
+                      📌 Tarefa será criada automaticamente no Pipeline deste lead.
                     </p>
                   </div>
                 )}
