@@ -41,5 +41,7 @@ export const EMPREENDIMENTOS: string[] = [
   "Supreme",
   "Terrace",
   "Vista Menino Deus",
+  "Vivid",
+  "Vivid Terrace",
   "Vértice",
 ];
