@@ -69,6 +69,8 @@ export interface PipelineHeaderProps {
   setClientStatusFilter: React.Dispatch<React.SetStateAction<ClientStatusFilter>>;
   negociosFilter: boolean;
   setNegociosFilter: React.Dispatch<React.SetStateAction<boolean>>;
+  ganhosFilter: boolean;
+  setGanhosFilter: React.Dispatch<React.SetStateAction<boolean>>;
   hasAnyFilter: boolean;
   clearAllFilters: () => void;
 
