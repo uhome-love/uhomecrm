@@ -75,8 +75,6 @@ export interface PipelineHeaderProps {
   // Tabs / views
   activeTab: string;
   setActiveTab: (v: string) => void;
-  intelView: "funil" | "radar";
-  setIntelView: (v: "funil" | "radar") => void;
 
   // Actions
   refreshing: boolean;
