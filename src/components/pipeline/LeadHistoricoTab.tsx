@@ -206,8 +206,8 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       continue;
     }
     items.push({
-      title: `Movido para ${to?.nome || "?"}`,
-      description: from ? `De: ${from.nome}${h.observacao ? ` • ${h.observacao}` : ""}` : h.observacao || undefined,
+      title: to?.nome ? `Movido para ${to.nome}` : (h.observacao || "Etapa atualizada"),
+      description: from ? `De: ${from.nome}${h.observacao && to?.nome ? ` • ${h.observacao}` : ""}` : (to?.nome ? h.observacao || undefined : undefined),
       date: h.created_at,
       icon: ArrowRight,
       color: "bg-primary/10 text-primary",
@@ -228,6 +228,28 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
         date: a.created_at,
         icon: info?.icon || Plus,
         color: info?.color || "bg-emerald-100 text-emerald-600",
+        sourceType: "atividade",
+        sourceId: a.id,
+      });
+      continue;
+    }
+
+    // Eventos já padronizados (visita / substatus / etapa): exibir título e
+    // descrição exatamente como gravados — sem "limpeza" que embaralha o texto.
+    if (["visita", "sistema", "mudanca_etapa"].includes(a.tipo)) {
+      const iconMap: Record<string, any> = { visita: MapPin, sistema: ArrowRight, mudanca_etapa: ArrowRight };
+      const colorMap: Record<string, string> = {
+        visita: "bg-sky-100 text-sky-600",
+        sistema: "bg-violet-100 text-violet-600",
+        mudanca_etapa: "bg-primary/10 text-primary",
+      };
+      items.push({
+        title: a.titulo || "Evento",
+        description: a.descricao || undefined,
+        date: a.created_at,
+        icon: iconMap[a.tipo] || FileText,
+        color: colorMap[a.tipo] || "bg-muted text-muted-foreground",
+        autor: nome(a.created_by),
         sourceType: "atividade",
         sourceId: a.id,
       });
@@ -262,11 +284,35 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
   }
 
   for (const t of tarefas) {
+    const tTitulo = limparTexto(t.titulo, lead.nome) || t.titulo || "Tarefa";
+    // Tarefa criada (qual ação)
+    if (t.created_at) {
+      items.push({
+        title: `Tarefa criada: ${tTitulo}`,
+        date: t.created_at,
+        icon: Plus,
+        color: "bg-blue-100 text-blue-600",
+        autor: nome(t.created_by),
+        sourceType: "tarefa",
+        sourceId: `${t.id}-criada`,
+      });
+    }
+    // Tarefa concluída (feedback)
     if (t.status === "concluida" && t.concluida_em) {
-      const tTitulo = limparTexto(t.titulo, lead.nome) || t.titulo || "Tarefa";
-      items.push({ title: `✅ ${tTitulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600", autor: nome(t.created_by), sourceType: "tarefa", sourceId: t.id });
+      const feedback = limparTexto(t.descricao, lead.nome) || undefined;
+      items.push({
+        title: `Tarefa concluída: ${tTitulo}`,
+        description: feedback,
+        date: t.concluida_em,
+        icon: CheckCircle2,
+        color: "bg-green-100 text-green-600",
+        autor: nome(t.created_by),
+        sourceType: "tarefa",
+        sourceId: t.id,
+      });
     }
   }
+
 
 
   // Lead-imóvel events
@@ -490,10 +536,11 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               if (/ligaç|liga[rç]|telefon/.test(t)) return "ligacao";
               if (/whats|mensagem/.test(t)) return "whatsapp";
               if (/email|e-mail/.test(t)) return "email";
-              if (/visita|tour/.test(t)) return "visita";
+              if (/visita|tour|comparec|no-show|no show/.test(t)) return "visita";
               if (/reuni/.test(t)) return "reuniao";
               if (/follow/.test(t)) return "followup";
               if (/nota|anotaç/.test(t)) return "nota";
+              if (/substatus|etapa|movido/.test(t)) return "historico";
               if (/aceito|entrou|distribu/.test(t)) return "aceito";
               return undefined;
             })();

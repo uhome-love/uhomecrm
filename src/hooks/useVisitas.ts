@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
+import { logVisitaEvento } from "@/lib/pipelineAudit";
 
 export interface Visita {
   id: string;
@@ -436,24 +437,17 @@ export function useVisitas(filters?: {
           .update(updatePayload as any)
           .eq("id", data.pipeline_lead_id);
 
-        if (moverEtapa) {
-          const dataFmt = new Date(`${data.data_visita}T${data.hora_visita || "12:00:00"}`).toLocaleString("pt-BR", {
-            timeZone: "America/Sao_Paulo",
-            day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
-          });
-          await supabase.from("pipeline_atividades").insert({
-            pipeline_lead_id: data.pipeline_lead_id,
-            tipo: "mudanca_etapa",
-            titulo: "Visita Agendada",
-            descricao: `Visita agendada para ${dataFmt}`,
-            status: "concluida",
-            responsavel_id: data.corretor_id,
-            created_by: user.id,
-            data: data.data_visita,
-            hora: data.hora_visita,
-            prioridade: "media",
-          } as any);
-        }
+        // Histórico padronizado: SEMPRE registra a visita agendada (mesmo sem
+        // mudança de etapa), para constar na timeline do lead.
+        await logVisitaEvento({
+          pipelineLeadId: data.pipeline_lead_id,
+          userId: user.id,
+          evento: "agendada",
+          data: data.data_visita,
+          hora: data.hora_visita,
+          imovel: data.empreendimento,
+          responsavelId: data.corretor_id,
+        });
 
         await supabase.from("lead_progressao").insert({
           lead_id: data.pipeline_lead_id,
@@ -537,7 +531,7 @@ export function useVisitas(filters?: {
     return true;
   }, [queryClient]);
 
-  const updateStatus = useCallback(async (id: string, newStatus: VisitaStatus) => {
+  const updateStatus = useCallback(async (id: string, newStatus: VisitaStatus, feedback?: string, userId?: string) => {
     const result = await updateVisita(id, { status: newStatus } as any, true);
 
     if (result) {
@@ -570,6 +564,26 @@ export function useVisitas(filters?: {
         } catch (e) {
           console.error("Erro ao sincronizar substatus de visita:", e);
         }
+      }
+
+      // Histórico padronizado da visita (realizada / no-show / reagendada).
+      const eventoMap: Partial<Record<VisitaStatus, "realizada" | "no_show" | "reagendada">> = {
+        realizada: "realizada",
+        no_show: "no_show",
+        reagendada: "reagendada",
+      };
+      const evento = eventoMap[newStatus];
+      if (visita?.pipeline_lead_id && evento) {
+        await logVisitaEvento({
+          pipelineLeadId: visita.pipeline_lead_id,
+          userId: userId || visita.corretor_id,
+          evento,
+          data: visita.data_visita,
+          hora: visita.hora_visita,
+          imovel: visita.empreendimento,
+          feedback,
+          responsavelId: visita.corretor_id,
+        });
       }
 
       if (newStatus === "realizada" && visita?.pipeline_lead_id) {

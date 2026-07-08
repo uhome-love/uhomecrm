@@ -14,7 +14,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import VisitaForm from "@/components/visitas/VisitaForm";
-import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
+import VisitaResultadoDialog, { type ResultadoVisita, RESULTADO_LABELS } from "@/components/visitas/VisitaResultadoDialog";
 import { routeLeadAfterVisita } from "@/lib/visitaResultadoRouting";
 import VisitasCobrancaDialog from "@/components/visitas/VisitasCobrancaDialog";
 import { toast } from "sonner";
@@ -654,7 +654,17 @@ export default function AgendaVisitas() {
     // não compareceu → no_show; reagendar → volta para marcada; demais → realizada.
     const statusVisita: VisitaStatus =
       resultado === "nao_compareceu" ? "no_show" : resultado === "reagendar" ? "marcada" : "realizada";
-    await updateStatus(resultadoVisita.id, statusVisita);
+    // Feedback padronizado para o Histórico do lead.
+    const temperaturaLabel: Record<string, string> = {
+      muito_quente: "🔥 Muito quente", quente: "⚡ Quente", morno: "🌡️ Morno", frio: "🧊 Frio",
+    };
+    const feedbackHist = [
+      `Resultado: ${RESULTADO_LABELS[resultado] || resultado}`,
+      feedback?.temperatura ? `Temperatura: ${temperaturaLabel[feedback.temperatura] || feedback.temperatura}` : null,
+      feedback?.objecao ? `Objeção: ${feedback.objecao}` : null,
+      observacoes || null,
+    ].filter(Boolean).join(" · ");
+    await updateStatus(resultadoVisita.id, statusVisita, feedbackHist, user?.id);
 
     if (resultadoVisita.pipeline_lead_id) {
       // Roteia o lead no pipeline de acordo com o resultado (fluxo único).

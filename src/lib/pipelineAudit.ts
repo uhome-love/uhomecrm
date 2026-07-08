@@ -123,3 +123,76 @@ export async function logStageChange(ctx: StageChangeCtx): Promise<void> {
     console.error("[logStageChange] erro ao registrar histórico:", e);
   }
 }
+
+// ─────────────────────────────────────────────────────────────────
+// logVisitaEvento — registra ações de visita no Histórico do lead
+// (pipeline_atividades) com formato PADRONIZADO. Fonte única: Agenda.
+//   agendada  → "Visita agendada"   · DD/MM/AAAA · HH:mm · Imóvel: X
+//   realizada → "Visita realizada"  · DD/MM/AAAA · HH:mm · Imóvel: X · <feedback>
+//   no_show   → "Não compareceu (no-show)" · DD/MM/AAAA · Imóvel: X · <motivo>
+//   reagendada→ "Visita reagendada" · Imóvel: X
+// ─────────────────────────────────────────────────────────────────
+export type VisitaEventoTipo = "agendada" | "realizada" | "no_show" | "reagendada";
+
+interface VisitaEventoCtx {
+  pipelineLeadId: string;
+  userId: string;
+  evento: VisitaEventoTipo;
+  data?: string | null;   // yyyy-mm-dd
+  hora?: string | null;   // HH:mm[:ss]
+  imovel?: string | null;
+  feedback?: string | null; // resultado/observações/motivo
+  responsavelId?: string | null;
+}
+
+function fmtDataBR(data?: string | null): string | null {
+  if (!data) return null;
+  try {
+    return new Date(`${data}T12:00:00`).toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit", month: "2-digit", year: "numeric",
+    });
+  } catch {
+    return data;
+  }
+}
+
+const VISITA_EVENTO_TITULO: Record<VisitaEventoTipo, string> = {
+  agendada: "Visita agendada",
+  realizada: "Visita realizada",
+  no_show: "Não compareceu (no-show)",
+  reagendada: "Visita reagendada",
+};
+
+export async function logVisitaEvento(ctx: VisitaEventoCtx): Promise<void> {
+  const { pipelineLeadId, userId, evento } = ctx;
+  if (!pipelineLeadId || !userId) return;
+
+  const titulo = VISITA_EVENTO_TITULO[evento];
+  const dataBR = fmtDataBR(ctx.data);
+  const hora = ctx.hora ? ctx.hora.slice(0, 5) : null;
+  const imovel = ctx.imovel?.trim() || null;
+
+  const partes = [
+    dataBR,
+    evento !== "no_show" && evento !== "reagendada" ? hora : null,
+    imovel ? `Imóvel: ${imovel}` : null,
+    ctx.feedback?.trim() || null,
+  ].filter(Boolean);
+
+  try {
+    await supabase.from("pipeline_atividades").insert({
+      pipeline_lead_id: pipelineLeadId,
+      tipo: "visita",
+      titulo,
+      descricao: partes.join(" · ") || null,
+      status: "concluida",
+      responsavel_id: ctx.responsavelId || userId,
+      created_by: userId,
+      data: ctx.data || null,
+      hora: ctx.hora || null,
+    } as any);
+  } catch (e) {
+    console.error("[logVisitaEvento] erro ao registrar histórico:", e);
+  }
+}

@@ -149,19 +149,23 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
   }
 
   if (stageTipo === "visita") {
+    // Sub-status da Visita é dirigido EXCLUSIVAMENTE pela Agenda de visitas
+    // (marcar / no-show / resultado). Aqui é somente-leitura.
+    const visitaLabelMap: Record<string, string> = {
+      ...Object.fromEntries(VISITA_SUBSTATUS.map((o) => [o.value, o.label])),
+      reagendada: "🔁 Reagendada",
+    };
+    const atual = flags.status_visita ? (visitaLabelMap[flags.status_visita] || flags.status_visita) : "—";
     return wrapper(
-      <>
-        <Label className="text-xs text-muted-foreground">Status visita:</Label>
-        <Select value={flags.status_visita || ""} onValueChange={(v) => setFlag("status_visita", v)}>
-          <SelectTrigger className="h-7 w-36 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
-          <SelectContent>
-            {VISITA_SUBSTATUS.map((o) => (
-              <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-            ))}
-            <SelectItem value="reagendada" className="text-xs">🔁 Reagendada</SelectItem>
-          </SelectContent>
-        </Select>
-      </>
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-2">
+          <Label className="text-xs text-muted-foreground">Status visita:</Label>
+          <span className="inline-flex items-center rounded-full bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300 px-2 py-0.5 text-xs font-semibold">
+            {atual}
+          </span>
+        </div>
+        <span className="text-[10px] text-muted-foreground/70">Atualizado pela Agenda de visitas</span>
+      </div>
     );
   }
 
