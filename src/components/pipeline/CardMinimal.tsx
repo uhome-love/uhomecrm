@@ -161,6 +161,7 @@ const CardMinimal = memo(function CardMinimal({
   parceiroNome,
   proximaTarefa,
   cadencia,
+  negocioInfo,
   onClick,
   onDragStart,
   stages,
