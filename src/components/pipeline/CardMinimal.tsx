@@ -68,6 +68,8 @@ function resolveStatus(
 ): StatusKey {
   if (stageTipo === "convertido") return "convertido";
   if (stageTipo === "descarte") return "descarte";
+  // Etapas terminais (Ganho/Caiu) não entram no fluxo de tarefas.
+  if (stageTipo === "venda" || stageTipo === "caiu") return "convertido";
   if (!tarefa?.vence_em) return "sem";
   const hoje = todayBRT();
   if (tarefa.vence_em < hoje) return "atrasada";
