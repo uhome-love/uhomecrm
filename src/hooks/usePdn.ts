@@ -327,9 +327,11 @@ export function usePdn(mes: string) {
       const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || ov?.corretor || "—";
       const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
       const proximaAcao = ov?.proxima_acao || "";
+      const proximaAcaoData = ov?.proxima_acao_data || "";
       const dias = diffDays(d.stageChangedAt);
       const caiu = !!ov?.caiu;
-      const emRisco = !caiu && d.grupo !== "ganho" && !proximaAcao && dias > 7;
+      const riscoManual = !!ov?.risco_manual;
+      const emRisco = !caiu && (riscoManual || (d.grupo !== "ganho" && !proximaAcao && dias > 7));
       out.push({
         id: `deal-${d.id}`,
         negocioId: d.negocioId,
@@ -352,6 +354,12 @@ export function usePdn(mes: string) {
         diasParado: dias,
         emRisco,
         isManual: false,
+        proximaAcaoData,
+        prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
+        riscoManual,
+        riscoMotivo: ov?.risco_motivo || "",
+        proximaAcaoVencida: !caiu && isVencida(proximaAcaoData),
+        novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
       });
     }
 
