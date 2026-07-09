@@ -98,7 +98,7 @@ export function PdnCardDrawer({
               </div>
               <div className="space-y-1">
                 <Label>VGV</Label>
-                <Input type="number" value={vgv} onChange={(e) => setVgv(e.target.value)} placeholder="0" />
+                <MoneyInput value={vgv} onCommit={setVgv} variant="field" />
               </div>
               <div className="flex justify-between"><span className="text-muted-foreground">Corretor</span><span className="font-medium">{row.corretor}</span></div>
               {row.equipe !== "—" && <div className="flex justify-between"><span className="text-muted-foreground">Equipe</span><span className="font-medium">Equipe {row.equipe}</span></div>}
