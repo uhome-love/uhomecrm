@@ -305,9 +305,6 @@ export default function PdnGestor() {
     else ocultarRow(row);
   };
 
-  const moveManual = (overrideId: string, grupo: PdnGrupo) => {
-    updateManualRow(overrideId, { situacao: grupo });
-  };
 
   // Resumo por corretor, agrupado por equipe (ignora o filtro de corretor p/ manter todos clicáveis)
   const resumoEquipes = useMemo(() => {
