@@ -306,6 +306,14 @@ export default function PdnGestor() {
               {monthOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <div className="flex items-center rounded-lg border p-0.5">
+            <Button variant={view === "planilha" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => setView("planilha")}>
+              <TableIcon className="mr-1.5 h-4 w-4" /> Planilha
+            </Button>
+            <Button variant={view === "kanban" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => setView("kanban")}>
+              <LayoutGrid className="mr-1.5 h-4 w-4" /> Kanban
+            </Button>
+          </div>
           <Button variant="outline" size="sm" onClick={exportCSV}><Download className="mr-1.5 h-4 w-4" /> Exportar</Button>
         </div>
       </div>
