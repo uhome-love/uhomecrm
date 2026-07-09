@@ -540,6 +540,9 @@ export function usePdn(mes: string) {
     if (patch.empreendimento !== undefined) payload.empreendimento = patch.empreendimento || null;
     if (patch.vgv !== undefined) payload.vgv = Number(patch.vgv) || 0;
     if (patch.oculto !== undefined) payload.oculto = patch.oculto;
+    if (patch.grupoOverride !== undefined) payload.grupo_override = patch.grupoOverride || null;
+    if (patch.avisadoEm !== undefined) payload.corretor_avisado_em = patch.avisadoEm || null;
+    if (patch.avisadoEtapa !== undefined) payload.corretor_avisado_etapa = patch.avisadoEtapa || null;
 
     if (row.overrideId) {
       const { error } = await supabase.from("pdn_entries").update(payload).eq("id", row.overrideId);
