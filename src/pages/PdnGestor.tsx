@@ -358,7 +358,33 @@ export default function PdnGestor() {
         {kpiFilter && (
           <Button variant="ghost" size="sm" onClick={() => setKpiFilter(null)}>Limpar recorte</Button>
         )}
+        {hiddenRows.length > 0 && (
+          <Button variant={showOcultos ? "default" : "outline"} size="sm" onClick={() => setShowOcultos(v => !v)}>
+            {showOcultos ? "Ocultar removidos" : `Mostrar removidos (${hiddenRows.length})`}
+          </Button>
+        )}
       </div>
+
+      {/* Negócios removidos da planilha (overlay) — restauráveis, sem afetar o pipeline */}
+      {showOcultos && hiddenRows.length > 0 && (
+        <Card className="border-dashed p-4">
+          <div className="mb-2 text-sm font-semibold text-muted-foreground">Removidos da planilha</div>
+          <div className="space-y-1.5">
+            {hiddenRows.map(r => (
+              <div key={r.id} className="flex items-center justify-between gap-2 rounded-md border bg-muted/20 px-3 py-1.5 text-sm">
+                <div className="min-w-0">
+                  <span className="font-medium">{r.nome}</span>
+                  <span className="text-muted-foreground"> · {r.empreendimento !== "—" ? r.empreendimento : "sem empreendimento"} · {fmtMoney(r.vgv, "short")} · {r.corretor}</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => restaurarRow(r)}>
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Restaurar
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
 
       {loading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
