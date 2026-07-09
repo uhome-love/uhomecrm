@@ -336,12 +336,14 @@ export function usePdn(mes: string) {
     // Linhas do pipeline (Em Negociação / Contrato / Ganho)
     for (const d of deals) {
       // Ganho: recorte por mês do fechamento. Em Negociação/Contrato: snapshot ao vivo.
+      // Fonte do mês (nunca stage_changed_at, que é volátil): data_assinatura → 1ª entrada na venda.
+      const ganhoRef = d.grupo === "ganho" ? (d.dataAssinatura || d.primeiraVendaEm) : null;
       if (d.grupo === "ganho") {
-        const refMes = mesOf(d.dataAssinatura || d.stageChangedAt);
-        if (refMes !== mes) continue;
+        if (!ganhoRef) continue;           // sem data confiável: fora do recorte mensal
+        if (mesOf(ganhoRef) !== mes) continue;
       }
       const ov = d.negocioId ? overrideByNegocio[d.negocioId] : overrideByLead[d.id];
-      const data = d.grupo === "ganho" ? (d.dataAssinatura || d.stageChangedAt.slice(0, 10)) : d.stageChangedAt.slice(0, 10);
+      const data = d.grupo === "ganho" ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
       const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || ov?.corretor || "—";
       const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
       const proximaAcao = ov?.proxima_acao || "";
