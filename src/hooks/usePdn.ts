@@ -158,6 +158,21 @@ interface PipelineDeal {
   dataAssinatura: string | null;
   primeiraVendaEm: string | null; // 1ª entrada na etapa de venda (histórico) — fallback estável
   observacoesNegocio: string;
+  negocioVendido: boolean; // negocios.fase === 'vendido' (fonte de Vendas Realizadas)
+}
+
+// Venda do mês (negocios.fase='vendido') — usada como fallback para o PDN mostrar
+// SEMPRE como Ganho, mesmo que a etapa do lead no pipeline esteja atrasada ou o lead
+// esteja arquivado. Garante PDN Ganho == Vendas Realizadas.
+interface VendaMes {
+  negocioId: string;
+  pipelineLeadId: string | null;
+  nome: string;
+  empreendimento: string;
+  vgv: number;
+  dataAssinatura: string;
+  corretorAuthId: string | null;
+  observacoesNegocio: string;
 }
 
 export function usePdn(mes: string) {
