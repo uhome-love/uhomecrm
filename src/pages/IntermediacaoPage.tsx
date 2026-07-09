@@ -430,8 +430,17 @@ export default function IntermediacaoPage() {
 
   const handleGerar = async () => {
     // validações básicas
-    if (tipoPessoa === "PF" && !nomeCompleto.trim()) return toast.error("Informe o nome completo do comprador.");
-    if (tipoPessoa === "PJ" && (!razaoSocial.trim() || !socioAdmin.trim())) return toast.error("Informe Razão Social e sócio-administrador.");
+    const validarComprador = (c: CompradorForm, rotulo: string): string | null => {
+      if (c.tipoPessoa === "PF" && !c.nomeCompleto.trim()) return `Informe o nome completo do ${rotulo}.`;
+      if (c.tipoPessoa === "PJ" && (!c.razaoSocial.trim() || !c.socioAdmin.trim())) return `Informe Razão Social e sócio-administrador do ${rotulo}.`;
+      return null;
+    };
+    const erro1 = validarComprador(comprador1, "comprador");
+    if (erro1) return toast.error(erro1);
+    if (usarComprador2) {
+      const erro2 = validarComprador(comprador2, "comprador 2");
+      if (erro2) return toast.error(erro2);
+    }
     if (!empreendimento.trim() || !unidade.trim()) return toast.error("Informe empreendimento e unidade.");
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
     if (parseCurrencyToNumber(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
@@ -446,21 +455,28 @@ export default function IntermediacaoPage() {
     }
 
     // Comprador: envia apenas os campos do tipo selecionado.
-    const comprador = tipoPessoa === "PJ"
-      ? {
-          tipoPessoa, razaoSocial, cnpj, socioAdmin,
-          nomeCompleto: "", genero: "", profissao: "", estadoCivil: "", regimeBens: "",
-          cpf, rg, telefone, email, endereco,
-        }
-      : {
-          tipoPessoa, razaoSocial: "", cnpj: "", socioAdmin: "",
-          nomeCompleto, genero, profissao, estadoCivil,
-          regimeBens: estadoCivil === "casado(a)" ? regimeBens : "",
-          cpf, rg, telefone, email, endereco,
-        };
+    const normalizarComprador = (c: CompradorForm) =>
+      c.tipoPessoa === "PJ"
+        ? {
+            tipoPessoa: c.tipoPessoa, razaoSocial: c.razaoSocial, cnpj: c.cnpj, socioAdmin: c.socioAdmin,
+            nomeCompleto: "", genero: "", profissao: "", estadoCivil: "", regimeBens: "",
+            cpf: c.cpf, rg: c.rg, telefone: c.telefone, email: c.email, endereco: c.endereco,
+          }
+        : {
+            tipoPessoa: c.tipoPessoa, razaoSocial: "", cnpj: "", socioAdmin: "",
+            nomeCompleto: c.nomeCompleto, genero: c.genero, profissao: c.profissao, estadoCivil: c.estadoCivil,
+            regimeBens: c.estadoCivil === "casado(a)" ? c.regimeBens : "",
+            cpf: c.cpf, rg: c.rg, telefone: c.telefone, email: c.email, endereco: c.endereco,
+          };
+
+    const compradores = [
+      normalizarComprador(comprador1),
+      ...(usarComprador2 ? [normalizarComprador(comprador2)] : []),
+    ];
 
     const payload = {
-      comprador,
+      comprador: compradores[0], // compat com consumidores antigos
+      compradores,
       imovel: { empreendimento, unidade, vgv: parseCurrencyToNumber(vgv) },
       corretores: [
         { nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
