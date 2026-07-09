@@ -515,6 +515,24 @@ export function usePdn(mes: string) {
     await saveOverride(row, { caiu: false, motivoQueda: "" });
   }, [saveOverride]);
 
+  // ── Ocultar / restaurar negócio na planilha (só overlay, nunca no pipeline) ────
+  const ocultarRow = useCallback(async (row: PdnRow) => {
+    await saveOverride(row, { oculto: true });
+  }, [saveOverride]);
+
+  const restaurarRow = useCallback(async (row: PdnRow) => {
+    await saveOverride(row, { oculto: false });
+  }, [saveOverride]);
+
+  // ── Editar empreendimento / VGV (overlay do gestor) ──────────────────────────
+  const editarEmpreendimento = useCallback(async (row: PdnRow, empreendimento: string) => {
+    await saveOverride(row, { empreendimento });
+  }, [saveOverride]);
+
+  const editarVgv = useCallback(async (row: PdnRow, vgv: number) => {
+    await saveOverride(row, { vgv });
+  }, [saveOverride]);
+
   // ── Linha manual (CRUD completo) ─────────────────────────────────────────────
   const addManualRow = useCallback(async (grupo: PdnGrupo) => {
     if (!user) return;
