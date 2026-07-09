@@ -70,6 +70,7 @@ const TIPO_CONFIG: Record<string, { emoji: string; borderColor: string; bgUnread
   corretor_ajuda: { emoji: "💬", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
   zero_ligacoes: { emoji: "⚠️", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
   alertas: { emoji: "⚠️", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
+  pdn: { emoji: "📋", borderColor: "#4969FF", bgUnread: "#EFF6FF" },
 };
 
 interface Props {
