@@ -89,6 +89,7 @@ type PdnEntry = {
   prioridade: string | null;
   risco_manual: boolean | null;
   risco_motivo: string | null;
+  oculto: boolean | null;
 };
 
 const MS_DAY = 86400000;
