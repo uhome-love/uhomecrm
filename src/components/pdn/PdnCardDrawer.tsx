@@ -66,6 +66,8 @@ export function PdnCardDrawer({
       status, observacoes: obs, proximaAcao: proxAcao, proximaAcaoData: proxData,
       prioridade: (prioridade as PdnRow["prioridade"]) || "",
       riscoManual, riscoMotivo,
+      // Empreendimento/VGV também são editáveis para negócios do pipeline (overlay do gestor)
+      ...(row.isManual ? {} : { empreendimento: empreend, vgv: Number(vgv) || 0 }),
     });
     if (row.isManual && row.overrideId) {
       onUpdateManual(row.overrideId, {
