@@ -73,6 +73,9 @@ export default function LeadsGeradosTab() {
         .order("created_at", { ascending: sortOrder === "asc" })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
+      // Exclui vendas fechadas (etapa Ganho) da contagem de leads gerados (Mkt)
+      query = query.neq("stage_id", "2d7739eb-1787-4ad6-887a-7a4a32dcfc05");
+
       if (dateFrom) {
         query = query.gte("created_at", dateFrom);
       }
