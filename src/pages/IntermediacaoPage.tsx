@@ -475,8 +475,8 @@ export default function IntermediacaoPage() {
     const compradoresPayload = compradores.map(normalizarComprador);
 
     const payload = {
-      comprador: compradores[0], // compat com consumidores antigos
-      compradores,
+      comprador: compradoresPayload[0], // compat com consumidores antigos
+      compradores: compradoresPayload,
       imovel: { empreendimento, unidade, vgv: parseCurrencyToNumber(vgv) },
       corretores: [
         { nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
