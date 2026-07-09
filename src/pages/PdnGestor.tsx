@@ -603,6 +603,7 @@ function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
   isMobile, colWidths, onColResize, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
+  onMudarEtapa, onAvisar,
 }: {
   grupo: PdnGrupo;
   label: string;
@@ -623,9 +624,12 @@ function GrupoBloco({
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
+  onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
+  onAvisar: (row: PdnRow, mensagem: string) => void;
 }) {
   const isCaidos = grupo === "caidos";
   const subtotal = rows.reduce((s, r) => s + r.vgv, 0);
+
 
   return (
     <Card className={`overflow-hidden ${isCaidos ? "border-red-500/40" : ""}`}>
