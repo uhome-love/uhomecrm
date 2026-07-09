@@ -113,9 +113,15 @@ export function PdnKanban({
                 ))}
               </div>
 
-              <div className="border-t px-3 py-2 text-xs">
-                <span className="text-muted-foreground">Total </span>
-                <span className="font-semibold" style={{ color: g.cor }}>{fmtMoney(subtotal, "short")}</span>
+              <div className="flex items-center justify-between gap-2 border-t px-3 py-2 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Total </span>
+                  <span className="font-semibold" style={{ color: g.cor }}>{fmtMoney(subtotal, "short")}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {novosCount > 0 && <span className="text-primary">{novosCount} novo{novosCount > 1 ? "s" : ""}</span>}
+                  {riscoCount > 0 && <span className="text-amber-600 dark:text-amber-400">{riscoCount} risco</span>}
+                </div>
               </div>
             </div>
           );
