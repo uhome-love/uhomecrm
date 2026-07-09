@@ -275,7 +275,7 @@ export default function IntermediacaoPage() {
   // Carrega um payload salvo de volta no formulário (fluxo de edição).
   const carregarIntermediacao = (p: any) => {
     if (!p) return;
-    const c = p.comprador ?? {};
+    
     const mapComprador = (x: any): CompradorForm => ({
       tipoPessoa: x?.tipoPessoa === "PJ" ? "PJ" : "PF",
       razaoSocial: x?.razaoSocial ?? "",
