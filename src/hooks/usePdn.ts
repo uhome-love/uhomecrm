@@ -464,6 +464,9 @@ export function usePdn(mes: string) {
     return out;
   }, [deals, visitasReal, manualRows, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes]);
 
+  const rows = useMemo<PdnRow[]>(() => allRows.filter(r => !r.oculto), [allRows]);
+  const hiddenRows = useMemo<PdnRow[]>(() => allRows.filter(r => r.oculto), [allRows]);
+
   // ── Overlay: grava só em pdn_entries (nunca no pipeline/negócio) ──────────────
   const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>) => {
     if (!user) return;
