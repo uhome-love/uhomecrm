@@ -390,8 +390,14 @@ export function usePdn(mes: string) {
         caiu,
         motivoQueda: ov?.motivo_queda || "",
         diasParado: 0,
-        emRisco: false,
+        emRisco: !caiu && !!ov?.risco_manual,
         isManual: false,
+        proximaAcaoData: ov?.proxima_acao_data || "",
+        prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
+        riscoManual: !!ov?.risco_manual,
+        riscoMotivo: ov?.risco_motivo || "",
+        proximaAcaoVencida: !caiu && isVencida(ov?.proxima_acao_data || ""),
+        novoDesdeOntem: isNovoDesdeOntem(v.data),
       });
     }
 
