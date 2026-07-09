@@ -269,9 +269,15 @@ export default function PdnGestor() {
     URL.revokeObjectURL(url);
   }
 
-  const handleSave = (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>) => {
+  const handleSave = (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "empreendimento" | "vgv">>) => {
     // saveOverride grava em pdn_entries por overrideId (manual) ou cria overlay (pipeline).
     saveOverride(row, patch);
+  };
+
+  // Remover da planilha: linha manual = exclui de vez; negócio do pipeline = oculta (overlay), sem tocar no pipeline.
+  const handleRemove = (row: PdnRow) => {
+    if (row.isManual && row.overrideId) deleteRow(row.overrideId);
+    else ocultarRow(row);
   };
 
   const moveManual = (overrideId: string, grupo: PdnGrupo) => {
