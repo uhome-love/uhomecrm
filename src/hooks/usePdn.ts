@@ -31,6 +31,30 @@ const STAGE_TIPO_TO_GRUPO: Record<string, PdnGrupo> = {
   venda: "ganho",
 };
 
+const GRUPO_KEYS: PdnGrupo[] = ["visita_realizada", "em_negociacao", "contrato", "ganho", "caidos"];
+
+// Normaliza qualquer código de situação (inclui formatos legados) para um grupo do PDN.
+function normalizeGrupo(situacao: string | null | undefined): PdnGrupo {
+  const s = (situacao || "").toLowerCase().trim();
+  if (GRUPO_KEYS.includes(s as PdnGrupo)) return s as PdnGrupo;
+  switch (s) {
+    case "visita": return "visita_realizada";
+    case "proposta": return "em_negociacao";
+    case "gerado": case "em_confeccao": case "contrato_gerado": return "contrato";
+    case "assinado": case "venda": case "vendido": return "ganho";
+    case "caiu": case "perdido": return "caidos";
+    default: return "em_negociacao";
+  }
+}
+
+const GRUPO_LABEL: Record<PdnGrupo, string> = {
+  visita_realizada: "Visita Realizada",
+  em_negociacao: "Em Negociação",
+  contrato: "Contrato",
+  ganho: "Ganho",
+  caidos: "Caídos",
+};
+
 function mesOf(dateStr: string): string {
   return (dateStr || "").slice(0, 7); // YYYY-MM
 }
