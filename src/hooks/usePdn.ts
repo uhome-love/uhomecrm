@@ -581,11 +581,16 @@ export function usePdn(mes: string) {
 
   return {
     rows,
+    hiddenRows,
     resumo,
     loading: loadingDeals || loadingEntries,
     saveOverride,
     marcarQueda,
     reativarQueda,
+    ocultarRow,
+    restaurarRow,
+    editarEmpreendimento,
+    editarVgv,
     addManualRow,
     updateManualRow,
     deleteRow,
