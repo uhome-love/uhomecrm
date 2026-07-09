@@ -352,7 +352,43 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (force) {
+    // Uma continuação automática (micro-lote seguinte) NÃO deve limpar a pausa/cancelamento
+    // do usuário. Detectamos continuação por run_id no body OU iniciado_por "*_continuacao".
+    const isContinuation = !!bodyRunId || /_continuacao$/.test(iniciadoPor);
+
+    // Se for continuação e o usuário já pediu para pausar/parar, encerra sem processar mais nada.
+    if (isContinuation) {
+      const { data: liveCfgPre } = await supabase
+        .from("reengajamento_config").select("paused, enabled").eq("id", cfg.id).maybeSingle();
+      let cancelRequested = false;
+      if (bodyRunId) {
+        const { data: runPre } = await supabase
+          .from("reengajamento_dispatch_runs").select("cancel_requested").eq("id", bodyRunId).maybeSingle();
+        cancelRequested = !!(runPre as any)?.cancel_requested;
+      }
+      if (cancelRequested || (liveCfgPre as any)?.paused) {
+        if (bodyRunId) {
+          await supabase.from("reengajamento_dispatch_runs").update({
+            status: cancelRequested ? "cancelled" : "paused",
+            finished_at: new Date().toISOString(),
+            motivo_parada: cancelRequested ? "Parado pelo usuário" : "Pausado pelo usuário",
+          } as any).eq("id", bodyRunId);
+          // Libera itens presos em "processing" para não travar a fila.
+          await supabase.from("reengajamento_dispatch_queue")
+            .update({ status: "pending", locked_at: null } as any)
+            .eq("run_id", bodyRunId).eq("status", "processing");
+        }
+        return new Response(JSON.stringify({
+          skipped: true,
+          paused: !cancelRequested,
+          cancelled: cancelRequested,
+          reason: cancelRequested ? "cancelled" : "paused",
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // Só limpa a pausa em um início manual (force sem ser continuação).
+    if (force && !isContinuation) {
       await supabase.from("reengajamento_config").update({
         paused: false,
         paused_until_release: false,
@@ -361,6 +397,7 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       } as any).eq("id", cfg.id);
     }
+
 
     const { data: activeRuns } = await supabase
       .from("reengajamento_dispatch_runs")

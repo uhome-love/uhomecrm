@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Send, RefreshCw, MessageCircle, XCircle, Wifi, WifiOff, QrCode, Play, Pause, AlertCircle, CheckCircle2, Shield, Zap, Plus, Trash2 } from "lucide-react";
+import { Loader2, Send, RefreshCw, MessageCircle, XCircle, Wifi, WifiOff, QrCode, Play, Pause, Square, AlertCircle, CheckCircle2, Shield, Zap, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 import CentralInteligenciaPanel from "./CentralInteligenciaPanel";
@@ -389,6 +389,35 @@ export default function ReengajamentoTab() {
     }
   }
 
+  async function pararDisparo() {
+    if (!cfg?.id) return;
+    if (!confirm("Parar definitivamente o disparo em andamento? Ele encerra após a mensagem atual e não retoma automaticamente.")) return;
+    try {
+      await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
+      if (activeRun?.id) {
+        await supabase
+          .from("reengajamento_dispatch_runs" as any)
+          .update({
+            cancel_requested: true,
+            status: "cancelled",
+            finished_at: new Date().toISOString(),
+            motivo_parada: "Parado pelo usuário",
+            enviados: activeRun.enviados || 0,
+            falhas: activeRun.falhas || 0,
+            ignorados: activeRun.ignorados || 0,
+          })
+          .eq("id", activeRun.id);
+      }
+      toast.info("⏹️ Parada solicitada — encerra após a mensagem atual");
+      qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
+      qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
+      qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
+    } catch (e: any) {
+      toast.error("Erro ao parar: " + e.message);
+    }
+  }
+
+
   // ===== Conexão da instância de nutrição =====
   const instanceName = (draft?.evolution_instance ?? cfg?.evolution_instance) || "uhome-nutricao";
   const [waStatus, setWaStatus] = useState<"open" | "close" | "connecting" | "loading">("loading");
@@ -620,10 +649,16 @@ export default function ReengajamentoTab() {
                 Disparo em andamento
                 {isPausing && <Badge className="bg-amber-200 text-amber-900">Pausando…</Badge>}
               </span>
-              <Button size="sm" variant="destructive" onClick={pausarDisparo} disabled={isPausing}>
-                <Pause className="h-3.5 w-3.5 mr-1" />
-                {isPausing ? "Pausando…" : "Pausar agora"}
-              </Button>
+              <span className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={pausarDisparo} disabled={isPausing}>
+                  <Pause className="h-3.5 w-3.5 mr-1" />
+                  {isPausing ? "Pausando…" : "Pausar"}
+                </Button>
+                <Button size="sm" variant="destructive" onClick={pararDisparo}>
+                  <Square className="h-3.5 w-3.5 mr-1" />
+                  Parar
+                </Button>
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -1046,10 +1081,16 @@ export default function ReengajamentoTab() {
               <Badge className="bg-amber-100 text-amber-800 mr-auto">⏸️ Pausado</Badge>
             )}
             {isRunning ? (
-              <Button variant="destructive" size="sm" onClick={pausarDisparo} disabled={isPausing}>
-                <Pause className="h-3.5 w-3.5 mr-1" />
-                {isPausing ? "Pausando…" : "Pausar agora"}
-              </Button>
+              <>
+                <Button variant="outline" size="sm" onClick={pausarDisparo} disabled={isPausing}>
+                  <Pause className="h-3.5 w-3.5 mr-1" />
+                  {isPausing ? "Pausando…" : "Pausar"}
+                </Button>
+                <Button variant="destructive" size="sm" onClick={pararDisparo}>
+                  <Square className="h-3.5 w-3.5 mr-1" />
+                  Parar
+                </Button>
+              </>
             ) : (
               <Button
                 variant="outline"
