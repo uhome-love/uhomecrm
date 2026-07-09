@@ -21,13 +21,13 @@ const STATUS_PRESETS = [
 ];
 
 export function PdnCardDrawer({
-  row, onClose, onSave, onUpdateManual, onDelete, onQueda, onReativar,
+  row, onClose, onSave, onUpdateManual, onRemove, onQueda, onReativar,
 }: {
   row: PdnRow | null;
   onClose: () => void;
   onSave: (row: PdnRow, patch: PdnSavePatch) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
-  onDelete: (overrideId: string) => void;
+  onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
 }) {
