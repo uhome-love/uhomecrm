@@ -845,6 +845,40 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
   );
 }
 
+function AvisarButton({ row, onAvisar, mobile }: { row: PdnRow; onAvisar: (row: PdnRow, mensagem: string) => void; mobile?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const etapa = PDN_GRUPOS.find(g => g.key === row.grupo)?.label || "";
+  const [msg, setMsg] = useState("");
+  useEffect(() => { if (open) setMsg(`Atualize o pipeline de ${row.nome} para "${etapa}".`); }, [open]);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        {mobile ? (
+          <Button variant="outline" size="sm" className="h-7 text-xs">
+            <Send className="mr-1 h-3 w-3" /> Avisar{row.avisadoEm ? " ✓" : ""}
+          </Button>
+        ) : (
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${row.avisadoEm ? "text-emerald-600" : "text-muted-foreground hover:text-primary"}`} title={row.avisadoEm ? `Avisado ${formatBRT(row.avisadoEm, "dd/MM HH:mm")}` : "Avisar corretor"}>
+            <Send className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-2" align="end">
+        <div className="mb-1 text-xs font-medium text-foreground">Avisar {row.corretor}</div>
+        <Textarea value={msg} onChange={(e) => setMsg(e.target.value)} className="min-h-[70px] text-sm" />
+        <div className="mt-2 flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button size="sm" onClick={() => { onAvisar(row, msg.trim()); setOpen(false); }}>
+            <Send className="mr-1.5 h-3.5 w-3.5" /> Enviar
+          </Button>
+        </div>
+        {row.avisadoEm && <div className="mt-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">Último aviso: {formatBRT(row.avisadoEm, "dd/MM HH:mm")}</div>}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
 function QuedaDialog({ row, onClose, onConfirm }: {
   row: PdnRow | null;
   onClose: () => void;
