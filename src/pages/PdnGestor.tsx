@@ -812,6 +812,15 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
         <span className="text-muted-foreground">{r.corretor}{r.equipe !== "—" ? ` · ${r.equipe}` : ""}</span>
         <StatusSelector value={r.status} onChange={(v) => onSave(r, { status: v })} />
       </div>
+      <div className="flex items-center gap-2">
+        <Select value={r.grupo} onValueChange={(v) => onMudarEtapa(r, v as PdnGrupo)}>
+          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {PDN_GRUPOS.map(g => <SelectItem key={g.key} value={g.key} className="text-xs">{g.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {r.etapaAjustada && <Badge variant="secondary" className="shrink-0 text-[9px]">ajustada</Badge>}
+      </div>
       {r.caiu && r.motivoQueda ? (
         <div className="rounded-md bg-red-500/5 px-2 py-1 text-xs"><span className="font-medium text-red-600 dark:text-red-400">Queda:</span> {r.motivoQueda}</div>
       ) : (
