@@ -83,6 +83,17 @@ function getNotificationRoute(n: Notification): string | null {
   const tipo = n.tipo;
   const categoria = n.categoria;
   const leadId = d.pipeline_lead_id || d.lead_id;
+
+  // PDN — aviso do gestor: link direto para o pipeline com lead + etapa sugerida
+  if (tipo === "pdn") {
+    const pdnLeadId = d.pipeline_lead_id || d.pdn_lead_id || d.lead_id;
+    if (pdnLeadId) {
+      const etapa = d.etapa_sugerida ? `&etapaSugerida=${encodeURIComponent(d.etapa_sugerida)}` : "";
+      return `/pipeline-leads?lead=${pdnLeadId}${etapa}`;
+    }
+    return "/pipeline-leads";
+  }
+
   const isLeadAcceptanceNotification = ["lead", "leads", "lead_roleta", "lead_urgente", "lead_ultimo_alerta"].includes(tipo)
     || ["lead_novo", "lead_atribuido"].includes(categoria);
 
