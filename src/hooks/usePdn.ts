@@ -122,6 +122,7 @@ interface PipelineDeal {
   empreendimento: string;
   vgv: number;
   dataAssinatura: string | null;
+  primeiraVendaEm: string | null; // 1ª entrada na etapa de venda (histórico) — fallback estável
   observacoesNegocio: string;
 }
 
@@ -220,6 +221,22 @@ export function usePdn(mes: string) {
       }
     }
 
+    // 1ª entrada na etapa de venda (Ganho), lida do histórico — fallback estável para o mês
+    const vendaStageIds = Object.keys(stageGrupo).filter((sid) => stageGrupo[sid] === "ganho");
+    const primeiraVendaByLead: Record<string, string> = {};
+    if (leadIds.length > 0 && vendaStageIds.length > 0) {
+      const { data: hist } = await supabase
+        .from("pipeline_historico")
+        .select("pipeline_lead_id, created_at, stage_novo_id")
+        .in("pipeline_lead_id", leadIds)
+        .in("stage_novo_id", vendaStageIds)
+        .order("created_at", { ascending: true });
+      for (const h of hist || []) {
+        const lid = (h as any).pipeline_lead_id;
+        if (!primeiraVendaByLead[lid]) primeiraVendaByLead[lid] = (h as any).created_at;
+      }
+    }
+
     const dealRows: PipelineDeal[] = (leads || []).map((l: any) => {
       const n = negocioByLead[l.id];
       const grupo = stageGrupo[l.stage_id];
@@ -233,6 +250,7 @@ export function usePdn(mes: string) {
         empreendimento: n?.empreendimento || "—",
         vgv: Number(n?.vgv_final ?? n?.vgv_estimado ?? 0) || 0,
         dataAssinatura: n?.data_assinatura || null,
+        primeiraVendaEm: primeiraVendaByLead[l.id] || null,
         observacoesNegocio: n?.observacoes || "",
       };
     });
@@ -318,12 +336,14 @@ export function usePdn(mes: string) {
     // Linhas do pipeline (Em Negociação / Contrato / Ganho)
     for (const d of deals) {
       // Ganho: recorte por mês do fechamento. Em Negociação/Contrato: snapshot ao vivo.
+      // Fonte do mês (nunca stage_changed_at, que é volátil): data_assinatura → 1ª entrada na venda.
+      const ganhoRef = d.grupo === "ganho" ? (d.dataAssinatura || d.primeiraVendaEm) : null;
       if (d.grupo === "ganho") {
-        const refMes = mesOf(d.dataAssinatura || d.stageChangedAt);
-        if (refMes !== mes) continue;
+        if (!ganhoRef) continue;           // sem data confiável: fora do recorte mensal
+        if (mesOf(ganhoRef) !== mes) continue;
       }
       const ov = d.negocioId ? overrideByNegocio[d.negocioId] : overrideByLead[d.id];
-      const data = d.grupo === "ganho" ? (d.dataAssinatura || d.stageChangedAt.slice(0, 10)) : d.stageChangedAt.slice(0, 10);
+      const data = d.grupo === "ganho" ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
       const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || ov?.corretor || "—";
       const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
       const proximaAcao = ov?.proxima_acao || "";
