@@ -445,7 +445,9 @@ export default function PdnGestor() {
           onRemove={handleRemove}
           onQueda={setQuedaRow}
           onReativar={reativarQueda}
-          onMoveManual={moveManual}
+          onMudarEtapa={mudarEtapa}
+          onLimparEtapa={limparEtapaOverride}
+          onAvisar={avisarCorretor}
           onAdd={addManualRow}
         />
       ) : (
