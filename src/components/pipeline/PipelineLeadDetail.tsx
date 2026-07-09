@@ -468,6 +468,34 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const bodyNode = (
     <>
+      {/* Sugestão de etapa do gestor (via aviso do PDN) */}
+      {stageSugerido && (
+        <div className="mb-3 rounded-lg border border-[#4969FF]/40 bg-[#4969FF]/8 p-3">
+          <div className="flex items-start gap-2">
+            <span className="text-lg leading-none">📋</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">
+                Seu gestor sugeriu atualizar a etapa para{" "}
+                <span className="font-semibold" style={{ color: stageSugerido.cor }}>
+                  {PDN_GRUPO_LABEL[etapaSugerida!] ?? stageSugerido.nome}
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Nada muda no seu pipeline até você aplicar.
+              </p>
+              <Button
+                size="sm"
+                className="mt-2"
+                onClick={() => handleMoveStage(stageSugerido.id)}
+              >
+                Aplicar etapa
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* Aviso de cadência Sem Contato (apenas nessa etapa) */}
       <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} leadNome={lead.nome} leadEmpreendimento={(lead as any).empreendimento} />
 
