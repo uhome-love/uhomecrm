@@ -122,6 +122,7 @@ interface PipelineDeal {
   empreendimento: string;
   vgv: number;
   dataAssinatura: string | null;
+  primeiraVendaEm: string | null; // 1ª entrada na etapa de venda (histórico) — fallback estável
   observacoesNegocio: string;
 }
 
