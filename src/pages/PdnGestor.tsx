@@ -524,7 +524,7 @@ function SortHeader({ label, active, dir, onClick, className = "" }: {
 
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
-  isMobile, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
+  isMobile, colWidths, onColResize, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
 }: {
   grupo: PdnGrupo;
   label: string;
@@ -537,6 +537,8 @@ function GrupoBloco({
   sortDir: "asc" | "desc";
   onSort: (k: SortKey) => void;
   isMobile: boolean;
+  colWidths: Record<string, number>;
+  onColResize: (key: string, w: number) => void;
   onAdd: () => void;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
