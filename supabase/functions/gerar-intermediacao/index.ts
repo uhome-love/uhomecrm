@@ -309,7 +309,8 @@ async function montarDoc(b: Body): Promise<Document> {
     children: [new TextRun({ text: "INSTRUMENTO PARTICULAR DE INTERMEDIAÇÃO IMOBILIÁRIA", bold: true, underline: {} })],
   }));
 
-  children.push(runsParagraph(qualificacaoContratante(b.comprador)));
+  const compradores = listaCompradores(b);
+  children.push(runsParagraph(qualificacaoContratante(compradores)));
   children.push(runsParagraph(qualificacaoContratados(b.corretores)));
   children.push(NORMAL("Isoladamente denominadas \u201CParte\u201D e, em conjunto \u201CPartes\u201D, têm entre si, justo e acertado o quanto abaixo segue."));
 
