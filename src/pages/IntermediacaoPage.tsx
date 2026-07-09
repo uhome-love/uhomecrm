@@ -301,9 +301,8 @@ export default function IntermediacaoPage() {
     const comps = Array.isArray(p.compradores) && p.compradores.length
       ? p.compradores
       : [p.comprador ?? {}];
-    setComprador1(mapComprador(comps[0] ?? {}));
-    if (comps[1]) { setUsarComprador2(true); setComprador2(mapComprador(comps[1])); }
-    else { setUsarComprador2(false); setComprador2({ ...emptyComprador }); }
+    const mapeados = comps.map((c: any) => mapComprador(c ?? {}));
+    setCompradores(mapeados.length ? mapeados : [{ ...emptyComprador }]);
 
     const im = p.imovel ?? {};
     setEmpreendimento(im.empreendimento ?? "");
