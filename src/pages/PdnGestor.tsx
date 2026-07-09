@@ -784,13 +784,15 @@ function GrupoBloco({
   );
 }
 
-function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar }: {
+function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar }: {
   r: PdnRow;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
+  onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
+  onAvisar: (row: PdnRow, mensagem: string) => void;
 }) {
   return (
     <div className={`space-y-2 p-3 ${r.emRisco ? "bg-amber-500/5" : ""} ${r.caiu ? "opacity-70" : ""}`}>
