@@ -190,8 +190,31 @@ export default function PdnGestor() {
 
   const { isDiretor, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
-  const { rows, hiddenRows, resumo, loading, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows, hiddenRows, resumo, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
   const [showOcultos, setShowOcultos] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await refreshAll(); } finally { setRefreshing(false); }
+  };
+
+  // Larguras de coluna redimensionáveis (planilha), persistidas por sessão
+  const DEFAULT_COL_WIDTHS: Record<string, number> = {
+    nome: 190, data: 110, empreendimento: 170, vgv: 140, corretor: 140, status: 150, obs: 220,
+  };
+  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
+    try {
+      const raw = sessionStorage.getItem("pdn:colWidths");
+      return raw ? { ...DEFAULT_COL_WIDTHS, ...JSON.parse(raw) } : DEFAULT_COL_WIDTHS;
+    } catch { return DEFAULT_COL_WIDTHS; }
+  });
+  useEffect(() => { try { sessionStorage.setItem("pdn:colWidths", JSON.stringify(colWidths)); } catch { /* ignore */ } }, [colWidths]);
+  const setColWidth = (key: string, w: number) => setColWidths(prev => ({ ...prev, [key]: Math.max(70, w) }));
+  const colsCustomized = useMemo(
+    () => Object.keys(DEFAULT_COL_WIDTHS).some(k => colWidths[k] !== DEFAULT_COL_WIDTHS[k]),
+    [colWidths],
+  );
+  const resetColWidths = () => setColWidths({ ...DEFAULT_COL_WIDTHS });
 
   useEffect(() => {
     try { sessionStorage.setItem("pdn:collapsed", JSON.stringify([...collapsed])); } catch { /* ignore */ }
