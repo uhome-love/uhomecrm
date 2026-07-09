@@ -147,7 +147,7 @@ function ObsSelector({ value, onChange }: { value: string; onChange: (v: string)
   return (
     <Popover open={open} onOpenChange={(o) => { if (!o) commit(); else setOpen(true); }}>
       <PopoverTrigger asChild>
-        <button className="line-clamp-2 w-full whitespace-pre-wrap text-left text-sm text-muted-foreground hover:text-foreground">
+        <button className="line-clamp-4 w-full whitespace-pre-wrap break-words text-left text-sm text-muted-foreground hover:text-foreground">
           {value ? value : <span className="text-muted-foreground/60">—</span>}
         </button>
       </PopoverTrigger>
@@ -158,6 +158,39 @@ function ObsSelector({ value, onChange }: { value: string; onChange: (v: string)
           placeholder="Anotações do gestor (uso interno)…"
           onChange={(e) => setLocal(e.target.value)}
           className="min-h-[120px] resize-y text-sm"
+        />
+        <div className="mt-2 flex justify-end">
+          <Button size="sm" onClick={commit}>Salvar</Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ─── Célula editável com quebra de linha (empreendimento) ─────────────────────
+function EditableWrapCell({ value, onCommit, placeholder }: {
+  value: string;
+  onCommit: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [local, setLocal] = useState(value ?? "");
+  useEffect(() => { setLocal(value ?? ""); }, [value]);
+  const commit = () => { if (local !== (value ?? "")) onCommit(local); setOpen(false); };
+  return (
+    <Popover open={open} onOpenChange={(o) => { if (!o) commit(); else setOpen(true); }}>
+      <PopoverTrigger asChild>
+        <button className="w-full whitespace-pre-wrap break-words text-left text-sm hover:text-foreground">
+          {value ? value : <span className="text-muted-foreground/60">{placeholder || "—"}</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-2" align="start">
+        <Textarea
+          autoFocus
+          value={local}
+          placeholder={placeholder || "Empreendimento…"}
+          onChange={(e) => setLocal(e.target.value)}
+          className="min-h-[70px] resize-y text-sm"
         />
         <div className="mt-2 flex justify-end">
           <Button size="sm" onClick={commit}>Salvar</Button>
@@ -748,8 +781,9 @@ function GrupoBloco({
                         : (r.data ? formatBRT(r.data, "dd/MM/yy") : "—")}
                     </TableCell>
                     <TableCell className="text-sm">
-                      <EditableCell
+                      <EditableWrapCell
                         value={r.empreendimento === "—" ? "" : r.empreendimento}
+                        placeholder="Empreendimento…"
                         onCommit={(v) => r.isManual
                           ? (r.overrideId && onUpdateManual(r.overrideId, { empreendimento: v }))
                           : onSave(r, { empreendimento: v })}
