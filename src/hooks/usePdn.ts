@@ -364,40 +364,50 @@ export function usePdn(mes: string) {
   }, [entries]);
   const manualRows = useMemo(() => entries.filter(e => !e.negocio_id && !e.pipeline_lead_id && e.mes === mes), [entries, mes]);
 
+  const mesAtual = useMemo(() => new Date().toISOString().slice(0, 7), []);
+
   const allRows = useMemo<PdnRow[]>(() => {
     const out: PdnRow[] = [];
+    const isMesCorrente = mes === mesAtual;
 
     // Linhas do pipeline (Em Negociação / Contrato / Ganho)
     for (const d of deals) {
-      // Ganho: recorte por mês do fechamento. Em Negociação/Contrato: snapshot ao vivo.
-      // Fonte do mês (nunca stage_changed_at, que é volátil): data_assinatura → 1ª entrada na venda.
+      const ov = d.negocioId ? overrideByNegocio[d.negocioId] : overrideByLead[d.id];
+      // Ganho: recorte por mês do fechamento. Em Negociação/Contrato: só no mês corrente
+      // (ou em mês passado se o gestor registrou algo naquele mês) — evita vazar entre meses.
       const ganhoRef = d.grupo === "ganho" ? (d.dataAssinatura || d.primeiraVendaEm) : null;
       if (d.grupo === "ganho") {
         if (!ganhoRef) continue;           // sem data confiável: fora do recorte mensal
         if (mesOf(ganhoRef) !== mes) continue;
+      } else {
+        if (!isMesCorrente && ov?.mes !== mes) continue;
       }
-      const ov = d.negocioId ? overrideByNegocio[d.negocioId] : overrideByLead[d.id];
+      const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
+      const caiu = !!ov?.caiu;
+      const grupoBase = grupoOverride ?? d.grupo;
       const data = d.grupo === "ganho" ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
       const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || ov?.corretor || "—";
       const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
       const proximaAcao = ov?.proxima_acao || "";
       const proximaAcaoData = ov?.proxima_acao_data || "";
       const dias = diffDays(d.stageChangedAt);
-      const caiu = !!ov?.caiu;
       const riscoManual = !!ov?.risco_manual;
-      const emRisco = !caiu && (riscoManual || (d.grupo !== "ganho" && !proximaAcao && dias > 7));
+      const emRisco = !caiu && (riscoManual || (grupoBase !== "ganho" && !proximaAcao && dias > 7));
       out.push({
         id: `deal-${d.id}`,
         negocioId: d.negocioId,
         pipelineLeadId: d.id,
+        corretorAuthId: d.corretorAuthId,
         overrideId: ov?.id ?? null,
-        grupo: caiu ? "caidos" : d.grupo,
+        grupo: caiu ? "caidos" : grupoBase,
         grupoOrigem: d.grupo,
+        grupoOverride,
+        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== d.grupo,
         nome: d.nome,
         data,
         empreendimento: ov?.empreendimento || d.empreendimento || "—",
         vgv: Number(ov?.vgv ?? d.vgv) || 0,
-        situacaoLabel: PDN_GRUPOS.find(g => g.key === d.grupo)?.label || d.grupo,
+        situacaoLabel: GRUPO_LABEL[grupoBase],
         corretor,
         equipe,
         status: ov?.status || "",
@@ -415,28 +425,35 @@ export function usePdn(mes: string) {
         proximaAcaoVencida: !caiu && isVencida(proximaAcaoData),
         novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
         oculto: !!ov?.oculto,
+        avisadoEm: ov?.corretor_avisado_em ?? null,
+        avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
       });
     }
 
-    // Visitas realizadas (sem negócio ativo)
+    // Visitas realizadas (sem negócio ativo) — já filtradas pelo mês na consulta
     for (const v of visitasReal) {
       if (v.temNegocio) continue;
       const ov = v.leadId ? overrideByLead[v.leadId] : undefined;
       const corretor = (v.corretorAuthId && nameByAuthId[v.corretorAuthId]) || ov?.corretor || "—";
       const equipe = (v.corretorAuthId && equipeByAuthId[v.corretorAuthId]) || ov?.equipe || "—";
+      const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
       const caiu = !!ov?.caiu;
+      const grupoBase = grupoOverride ?? "visita_realizada";
       out.push({
         id: `visita-${v.id}`,
         negocioId: null,
         pipelineLeadId: v.leadId,
+        corretorAuthId: v.corretorAuthId,
         overrideId: ov?.id ?? null,
-        grupo: caiu ? "caidos" : "visita_realizada",
+        grupo: caiu ? "caidos" : grupoBase,
         grupoOrigem: "visita_realizada",
+        grupoOverride,
+        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== "visita_realizada",
         nome: v.nome,
         data: v.data,
         empreendimento: ov?.empreendimento || v.empreendimento,
         vgv: Number(ov?.vgv ?? 0) || 0,
-        situacaoLabel: "Visita realizada",
+        situacaoLabel: GRUPO_LABEL[grupoBase],
         corretor,
         equipe,
         status: ov?.status || "",
@@ -454,25 +471,30 @@ export function usePdn(mes: string) {
         proximaAcaoVencida: !caiu && isVencida(ov?.proxima_acao_data || ""),
         novoDesdeOntem: isNovoDesdeOntem(v.data),
         oculto: !!ov?.oculto,
+        avisadoEm: ov?.corretor_avisado_em ?? null,
+        avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
       });
     }
 
     // Linhas manuais (sem vínculo com pipeline)
     for (const m of manualRows) {
-      const base = (["visita_realizada", "em_negociacao", "contrato", "ganho"].includes(m.situacao) ? m.situacao : "em_negociacao") as PdnGrupo;
+      const base = normalizeGrupo(m.situacao) === "caidos" ? "em_negociacao" : normalizeGrupo(m.situacao);
       const caiu = !!m.caiu;
       out.push({
         id: `manual-${m.id}`,
         negocioId: null,
         pipelineLeadId: null,
+        corretorAuthId: null,
         overrideId: m.id,
         grupo: caiu ? "caidos" : base,
         grupoOrigem: base,
+        grupoOverride: null,
+        etapaAjustada: false,
         nome: m.nome,
         data: m.data_visita || "",
         empreendimento: m.empreendimento || "—",
         vgv: Number(m.vgv) || 0,
-        situacaoLabel: PDN_GRUPOS.find(g => g.key === base)?.label || m.situacao,
+        situacaoLabel: GRUPO_LABEL[base],
         corretor: m.corretor || "—",
         equipe: m.equipe || "—",
         status: m.status || "",
@@ -490,11 +512,14 @@ export function usePdn(mes: string) {
         proximaAcaoVencida: !caiu && isVencida(m.proxima_acao_data || ""),
         novoDesdeOntem: isNovoDesdeOntem(m.data_visita),
         oculto: !!m.oculto,
+        avisadoEm: null,
+        avisadoEtapa: null,
       });
     }
 
     return out;
-  }, [deals, visitasReal, manualRows, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes]);
+  }, [deals, visitasReal, manualRows, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes, mesAtual]);
+
 
   const rows = useMemo<PdnRow[]>(() => allRows.filter(r => !r.oculto), [allRows]);
   const hiddenRows = useMemo<PdnRow[]>(() => allRows.filter(r => r.oculto), [allRows]);
