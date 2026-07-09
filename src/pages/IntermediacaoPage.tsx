@@ -276,20 +276,29 @@ export default function IntermediacaoPage() {
   const carregarIntermediacao = (p: any) => {
     if (!p) return;
     const c = p.comprador ?? {};
-    setTipoPessoa(c.tipoPessoa === "PJ" ? "PJ" : "PF");
-    setRazaoSocial(c.razaoSocial ?? "");
-    setCnpj(c.cnpj ?? "");
-    setSocioAdmin(c.socioAdmin ?? "");
-    setNomeCompleto(c.nomeCompleto ?? "");
-    setGenero(c.genero ?? "");
-    setProfissao(c.profissao ?? "");
-    setEstadoCivil(c.estadoCivil ?? "");
-    setRegimeBens(c.regimeBens ?? "");
-    setCpf(c.cpf ?? "");
-    setRg(c.rg ?? "");
-    setTelefone(c.telefone ?? "");
-    setEmail(c.email ?? "");
-    setEndereco(c.endereco ?? "");
+    const mapComprador = (x: any): CompradorForm => ({
+      tipoPessoa: x?.tipoPessoa === "PJ" ? "PJ" : "PF",
+      razaoSocial: x?.razaoSocial ?? "",
+      cnpj: x?.cnpj ?? "",
+      socioAdmin: x?.socioAdmin ?? "",
+      nomeCompleto: x?.nomeCompleto ?? "",
+      genero: x?.genero ?? "",
+      profissao: x?.profissao ?? "",
+      estadoCivil: x?.estadoCivil ?? "",
+      regimeBens: x?.regimeBens ?? "",
+      cpf: x?.cpf ?? "",
+      rg: x?.rg ?? "",
+      telefone: x?.telefone ?? "",
+      email: x?.email ?? "",
+      endereco: x?.endereco ?? "",
+    });
+    // Compat: payloads antigos têm apenas `comprador`; os novos têm `compradores` (array).
+    const comps = Array.isArray(p.compradores) && p.compradores.length
+      ? p.compradores
+      : [p.comprador ?? {}];
+    setComprador1(mapComprador(comps[0] ?? {}));
+    if (comps[1]) { setUsarComprador2(true); setComprador2(mapComprador(comps[1])); }
+    else { setUsarComprador2(false); setComprador2({ ...emptyComprador }); }
 
     const im = p.imovel ?? {};
     setEmpreendimento(im.empreendimento ?? "");
