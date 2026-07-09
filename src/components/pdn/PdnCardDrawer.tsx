@@ -195,11 +195,9 @@ export function PdnCardDrawer({
         </div>
 
         <div className="mt-6 flex items-center justify-between">
-          {row.isManual && row.overrideId ? (
-            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { onDelete(row.overrideId!); onClose(); }}>
-              <Trash2 className="mr-1.5 h-4 w-4" /> Excluir
-            </Button>
-          ) : <span />}
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { onRemove(row); onClose(); }}>
+            <Trash2 className="mr-1.5 h-4 w-4" /> {row.isManual ? "Excluir" : "Remover da planilha"}
+          </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
             <Button onClick={save}>Salvar</Button>
