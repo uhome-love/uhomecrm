@@ -1,41 +1,35 @@
-# Corrigir venda Victor Ourique (Alto Lindóia 411 Torre D)
+# Pausar todos os nurturings e disparos automáticos do CRM
 
-## Situação atual
-Existem **2 registros de venda** (`negocios`) para o mesmo cliente, ambos `fase='vendido'` e atribuídos ao corretor **Junior Padilha** na equipe do gerente **Gabriel Vieira**:
+## Objetivo
+Nenhuma mensagem automática (WhatsApp/e-mail) de nurturing/reengajamento/sequência deve ser disparada pelo CRM. Disparos **manuais** (Central de Disparos, feitos pelo usuário) continuam existindo, mas nada roda sozinho.
 
-1. `1f56b82f` — "Victor Ouriques", sem unidade, VGV 368.000, **data assinatura 09/07/2026** → é este que faz a venda aparecer indevidamente em **julho**.
-2. `b5e6447b` — "Victor Ourique", unidade "411 D", VGV 368.466, data assinatura 10/02/2026.
+## Estado atual levantado
+Crons de nurturing **já inativos**: `cron-smart-nurturing-daily`, `nurturing-sequencer-15min`, `nurturing-sequencer-every-30min`, `reactivate-cold-leads-weekly`, `reengajamento-descartados-diario`, `visita-amanha-auto-2min`, `visita-reminder-daily-09h`.
 
-Há também 1 card no pipeline (`pipeline_leads` id `d9913603`) "Victor Ouriques" na etapa **Ganho**, corretor Junior, **sem gerente** e **sem valor**.
+Ainda ligados / com dados ativos:
+- Cron `execute-sequences-every-5min` (ativo) — motor de sequências de nurturing.
+- `nurturing_cadencias`: **10 cadências ativas**.
+- `lead_nurturing_state`: **234 leads com status `active`** (inscritos em nurturing).
+- `automations`: 0 ativas · `pipeline_sequencias`: 0 ativas · `reengajamento_config`: 0 habilitada (já desligados).
 
-Dado correto informado: venda realizada em **15/02/2026**, Alto Lindóia — **411 Torre D**, **R$ 368.466,00**, corretor **Junior** (hoje gerente), equipe **Gabriel Vieira**.
+## Ações
 
-## Correções
+### 1. Desligar os crons que disparam mensagens automáticas
+- Desativar `execute-sequences-every-5min` (motor de nurturing/sequências).
+- Garantir que permaneçam desativados os crons de nurturing/reengajamento/visita já listados acima.
+- **Mantidos ligados** (não são disparo de nurturing): roleta, limpezas, relatórios, escalação, sync de catálogo, health checks. `mailgun-batch-send` é o entregador de campanhas de e-mail disparadas manualmente — será mantido, pois só envia o que o usuário enfileira; se preferir, também desligamos.
 
-### 1. Remover o registro duplicado de julho
-Excluir o `negocios` `1f56b82f` (o de 09/07 sem unidade e com VGV 368.000). Isso remove a venda incorreta do mês de julho.
+### 2. Pausar as cadências de nurturing (dados)
+- `nurturing_cadencias`: marcar as 10 como `is_active = false`.
+- `lead_nurturing_state`: mudar os 234 registros `active` para pausado (status `paused`), preservando o histórico para reativar depois se quiser.
 
-### 2. Consolidar o registro correto em fevereiro
-No `negocios` `b5e6447b`, ajustar:
-- `data_assinatura` → **2026-02-15** (hoje está 10/02)
-- `unidade` → **"411 - Torre D"**
-- `vgv_estimado` → **368466** (mantém)
-- `fase` = `vendido` (mantém)
-- `corretor_id` = Junior Padilha (mantém)
-- `auth_user_id` = Junior (mantém)
-- `equipe_gerente_auth_id` = Gabriel Vieira (mantém)
-
-Resultado: a venda passa a constar **apenas em fevereiro/2026**, com corretor Junior e equipe Gabriel Vieira preservados.
-
-### 3. Alinhar o card do pipeline (etapa Ganho)
-No `pipeline_leads` `d9913603`:
-- manter na etapa **Ganho** e corretor **Junior**
-- preencher `gerente_id` = Gabriel Vieira
-- preencher `valor_estimado` = 368466
-- (opcional) padronizar `nome` para "Victor Ourique"
+### 3. Confirmar reengajamento desligado
+- `reengajamento_config` já está `enabled = false` — apenas confirmar.
 
 ## Validação final
-- `SELECT` em `negocios` retorna **1 único** registro Victor Ourique, fase vendido, 15/02/2026, 411 Torre D, 368.466, Junior / Gabriel Vieira.
-- Venda **não aparece mais em julho**; aparece em **fevereiro** na página Vendas Realizadas.
-- Card no pipeline segue em **Ganho** com corretor e gerente corretos.
-- Contagem/VGV de fevereiro do corretor Junior e da equipe Gabriel Vieira permanece consistente com a planilha.
+- `SELECT` confirma: `execute-sequences-every-5min` inativo; nenhum cron de nurturing/reengajamento ativo.
+- `nurturing_cadencias` com 0 ativas; `lead_nurturing_state` com 0 `active`.
+- Nenhum disparo automático parte do CRM; apenas disparos manuais permanecem sob controle do usuário.
+
+## Observação (fora do escopo do pause)
+A venda/pergunta do print: a lead **Josiane Corrêa Barcella** respondeu ao disparo do empreendimento **Connect JW** (template `connectjw_julho`). Já informado ao usuário para repassar ao corretor.
