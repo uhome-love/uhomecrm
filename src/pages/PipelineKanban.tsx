@@ -877,9 +877,11 @@ export default function PipelineKanban() {
           segmentos={pipeline.segmentos}
           corretorNomes={pipeline.corretorNomes}
           open={!!selectedLead}
+          etapaSugerida={etapaSugerida ?? undefined}
           onOpenChange={(open) => {
             if (!open) {
               setSelectedLead(null);
+              setEtapaSugerida(null);
               queryClient.invalidateQueries({ queryKey: ["pipeline-kanban-tarefas"] });
               pipeline.reload();
             }
