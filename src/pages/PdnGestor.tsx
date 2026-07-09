@@ -479,9 +479,9 @@ function GrupoBloco({
   onSort: (k: SortKey) => void;
   isMobile: boolean;
   onAdd: () => void;
-  onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao">>) => void;
+  onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
-  onDelete: (overrideId: string) => void;
+  onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
 }) {
