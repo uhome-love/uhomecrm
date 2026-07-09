@@ -136,7 +136,11 @@ export function PdnKanban({
         onRemove={onRemove}
         onQueda={onQueda}
         onReativar={onReativar}
+        onMudarEtapa={onMudarEtapa}
+        onLimparEtapa={onLimparEtapa}
+        onAvisar={onAvisar}
       />
+
     </>
   );
 }
