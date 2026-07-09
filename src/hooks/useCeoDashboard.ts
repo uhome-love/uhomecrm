@@ -197,6 +197,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           supabase
             .from("pipeline_leads")
             .select("id, stage_id, empreendimento, updated_at, created_at, origem, corretor_id")
+            // Exclui vendas fechadas (etapa Ganho) da contagem da Roleta
+            .neq("stage_id", "2d7739eb-1787-4ad6-887a-7a4a32dcfc05")
             .gte("created_at", startUtc)
             .lt("created_at", endUtc)
             .order("created_at", { ascending: true })
