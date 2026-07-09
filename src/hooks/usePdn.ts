@@ -221,6 +221,22 @@ export function usePdn(mes: string) {
       }
     }
 
+    // 1ª entrada na etapa de venda (Ganho), lida do histórico — fallback estável para o mês
+    const vendaStageIds = Object.keys(stageGrupo).filter((sid) => stageGrupo[sid] === "ganho");
+    const primeiraVendaByLead: Record<string, string> = {};
+    if (leadIds.length > 0 && vendaStageIds.length > 0) {
+      const { data: hist } = await supabase
+        .from("pipeline_historico")
+        .select("pipeline_lead_id, created_at, stage_novo_id")
+        .in("pipeline_lead_id", leadIds)
+        .in("stage_novo_id", vendaStageIds)
+        .order("created_at", { ascending: true });
+      for (const h of hist || []) {
+        const lid = (h as any).pipeline_lead_id;
+        if (!primeiraVendaByLead[lid]) primeiraVendaByLead[lid] = (h as any).created_at;
+      }
+    }
+
     const dealRows: PipelineDeal[] = (leads || []).map((l: any) => {
       const n = negocioByLead[l.id];
       const grupo = stageGrupo[l.stage_id];
@@ -234,6 +250,7 @@ export function usePdn(mes: string) {
         empreendimento: n?.empreendimento || "—",
         vgv: Number(n?.vgv_final ?? n?.vgv_estimado ?? 0) || 0,
         dataAssinatura: n?.data_assinatura || null,
+        primeiraVendaEm: primeiraVendaByLead[l.id] || null,
         observacoesNegocio: n?.observacoes || "",
       };
     });
