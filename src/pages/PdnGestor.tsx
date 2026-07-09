@@ -181,6 +181,10 @@ export default function PdnGestor() {
     } catch { return new Set(); }
   });
   const [quedaRow, setQuedaRow] = useState<PdnRow | null>(null);
+  const [view, setView] = useState<"planilha" | "kanban">(() => {
+    try { return (sessionStorage.getItem("pdn:view") as "planilha" | "kanban") || "planilha"; } catch { return "planilha"; }
+  });
+  useEffect(() => { try { sessionStorage.setItem("pdn:view", view); } catch { /* ignore */ } }, [view]);
 
   const { isDiretor, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
