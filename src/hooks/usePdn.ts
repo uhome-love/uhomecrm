@@ -267,7 +267,7 @@ export function usePdn(mes: string) {
     if (leadIds.length > 0) {
       const { data: negs } = await supabase
         .from("negocios")
-        .select("id, pipeline_lead_id, empreendimento, vgv_final, vgv_estimado, data_assinatura, observacoes, status")
+        .select("id, pipeline_lead_id, empreendimento, vgv_final, vgv_estimado, data_assinatura, observacoes, status, fase")
         .in("pipeline_lead_id", leadIds);
       for (const n of negs || []) {
         if ((n as any).status === "perdido") continue;
