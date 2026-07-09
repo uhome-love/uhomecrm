@@ -644,7 +644,7 @@ export function usePdn(mes: string) {
     }
 
     return out;
-  }, [deals, visitasReal, manualRows, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes, mesAtual]);
+  }, [deals, visitasReal, manualRows, vendasMes, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes, mesAtual]);
 
 
   const rows = useMemo<PdnRow[]>(() => allRows.filter(r => !r.oculto), [allRows]);
