@@ -593,6 +593,41 @@ export function usePdn(mes: string) {
     await saveOverride(row, { vgv });
   }, [saveOverride]);
 
+  // ── Mudar etapa no PDN (só overlay, NUNCA no pipeline do corretor) ────────────
+  const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnGrupo) => {
+    if (grupo === "caidos") { await saveOverride(row, { caiu: true }); return; }
+    if (row.isManual && row.overrideId) {
+      await updateManualRow(row.overrideId, { situacao: grupo, caiu: false });
+      return;
+    }
+    // Linha do pipeline: grava grupo_override. Se a etapa escolhida == etapa natural, limpa o override.
+    await saveOverride(row, {
+      grupoOverride: grupo === row.grupoOrigem ? null : grupo,
+      caiu: false,
+    });
+  }, [saveOverride, updateManualRow]);
+
+  const limparEtapaOverride = useCallback(async (row: PdnRow) => {
+    await saveOverride(row, { grupoOverride: null });
+  }, [saveOverride]);
+
+  // ── Avisar corretor (notificação no app) — não altera o pipeline ─────────────
+  const avisarCorretor = useCallback(async (row: PdnRow, mensagem: string) => {
+    if (!row.corretorAuthId) { toast.error("Sem corretor vinculado a este negócio."); return; }
+    const etapaLabel = GRUPO_LABEL[row.grupo];
+    const { error } = await supabase.rpc("criar_notificacao", {
+      p_user_id: row.corretorAuthId,
+      p_tipo: "pdn",
+      p_categoria: "pdn_atualizacao",
+      p_titulo: `Atualização do gestor: ${row.nome}`,
+      p_mensagem: mensagem || `Atualize o pipeline de ${row.nome} para "${etapaLabel}".`,
+      p_dados: { pdn_lead_id: row.pipelineLeadId, etapa_sugerida: row.grupo, empreendimento: row.empreendimento },
+    });
+    if (error) { toast.error("Erro ao avisar o corretor"); return; }
+    await saveOverride(row, { avisadoEm: new Date().toISOString(), avisadoEtapa: row.grupo });
+    toast.success("Corretor avisado no app.");
+  }, [saveOverride]);
+
   // ── Linha manual (CRUD completo) ─────────────────────────────────────────────
   const addManualRow = useCallback(async (grupo: PdnGrupo) => {
     if (!user) return;
