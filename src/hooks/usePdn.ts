@@ -229,6 +229,7 @@ export function usePdn(mes: string) {
       .from("pipeline_leads")
       .select("id, nome, corretor_id, stage_id, stage_changed_at, updated_at")
       .in("stage_id", stageIds)
+      .eq("arquivado", false)
       .limit(2000);
     if (corretorAuthIds) {
       if (corretorAuthIds.length === 0) { setDeals([]); setLoadingDeals(false); return; }
