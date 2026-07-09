@@ -66,6 +66,8 @@ export function PdnKanban({
         {PDN_GRUPOS.map(g => {
           const list = byGrupo[g.key] || [];
           const subtotal = list.reduce((s, r) => s + r.vgv, 0);
+          const riscoCount = list.filter(r => r.emRisco).length;
+          const novosCount = list.filter(r => r.novoDesdeOntem).length;
           const isCaidos = g.key === "caidos";
           if (isCaidos && list.length === 0) return null;
           return (
