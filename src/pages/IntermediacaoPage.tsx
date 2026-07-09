@@ -58,6 +58,29 @@ interface CorretorForm {
   percentual: string; // %
 }
 
+interface CompradorForm {
+  tipoPessoa: "PF" | "PJ";
+  razaoSocial: string;
+  cnpj: string;
+  socioAdmin: string;
+  nomeCompleto: string;
+  genero: string;
+  profissao: string;
+  estadoCivil: string;
+  regimeBens: string;
+  cpf: string;
+  rg: string;
+  telefone: string;
+  email: string;
+  endereco: string;
+}
+
+const emptyComprador: CompradorForm = {
+  tipoPessoa: "PF", razaoSocial: "", cnpj: "", socioAdmin: "",
+  nomeCompleto: "", genero: "", profissao: "", estadoCivil: "", regimeBens: "",
+  cpf: "", rg: "", telefone: "", email: "", endereco: "",
+};
+
 interface Parcela {
   vencimento: string; // yyyy-mm-dd
   valor: string;      // numérico
@@ -137,23 +160,85 @@ function calcularCredores(
   return { credores, totalLinha, zemo };
 }
 
+// ─── Formulário de um comprador (contratante) ──────────────────────────────────
+function CompradorFields({
+  value,
+  onChange,
+}: {
+  value: CompradorForm;
+  onChange: (patch: Partial<CompradorForm>) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Tipo de pessoa</Label>
+          <Select value={value.tipoPessoa} onValueChange={(v) => onChange({ tipoPessoa: v as "PF" | "PJ" })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PF">Pessoa Física</SelectItem>
+              <SelectItem value="PJ">Pessoa Jurídica</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {value.tipoPessoa === "PJ" ? (
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-2"><Label>Razão Social</Label><Input value={value.razaoSocial} onChange={(e) => onChange({ razaoSocial: e.target.value })} placeholder="Ex: Empresa Exemplo LTDA." /></div>
+          <div className="space-y-2"><Label>CNPJ</Label><Input value={value.cnpj} onChange={(e) => onChange({ cnpj: maskCNPJ(e.target.value) })} inputMode="numeric" placeholder="00.000.000/0001-00" /></div>
+          <div className="space-y-2 sm:col-span-2"><Label>Nome do sócio-administrador</Label><Input value={value.socioAdmin} onChange={(e) => onChange({ socioAdmin: e.target.value })} placeholder="Ex: Carlos Souza" /></div>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-2 sm:col-span-2"><Label>Nome completo</Label><Input value={value.nomeCompleto} onChange={(e) => onChange({ nomeCompleto: e.target.value })} placeholder="Ex: João da Silva Souza" /></div>
+          <div className="space-y-2">
+            <Label>Gênero</Label>
+            <Select value={value.genero} onValueChange={(v) => onChange({ genero: v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="masculino">Masculino</SelectItem>
+                <SelectItem value="feminino">Feminino</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2"><Label>Profissão</Label><Input value={value.profissao} onChange={(e) => onChange({ profissao: e.target.value })} placeholder="Ex: Engenheiro" /></div>
+          <div className="space-y-2">
+            <Label>Estado civil</Label>
+            <Select value={value.estadoCivil} onValueChange={(v) => onChange({ estadoCivil: v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="solteiro(a)">Solteiro(a)</SelectItem>
+                <SelectItem value="casado(a)">Casado(a)</SelectItem>
+                <SelectItem value="divorciado(a)">Divorciado(a)</SelectItem>
+                <SelectItem value="viúvo(a)">Viúvo(a)</SelectItem>
+                <SelectItem value="união estável">União estável</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {value.estadoCivil === "casado(a)" && (
+            <div className="space-y-2"><Label>Regime de bens</Label><Input value={value.regimeBens} onChange={(e) => onChange({ regimeBens: e.target.value })} /></div>
+          )}
+        </div>
+      )}
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-2"><Label>CPF</Label><Input value={value.cpf} onChange={(e) => onChange({ cpf: maskCPF(e.target.value) })} inputMode="numeric" placeholder="000.000.000-00" /></div>
+        <div className="space-y-2"><Label>RG</Label><Input value={value.rg} onChange={(e) => onChange({ rg: maskRG(e.target.value) })} placeholder="0000000000" /></div>
+        <div className="space-y-2"><Label>Telefone</Label><Input value={value.telefone} onChange={(e) => onChange({ telefone: maskTelefone(e.target.value) })} inputMode="numeric" placeholder="(51) 99999-9999" /></div>
+        <div className="space-y-2"><Label>E-mail</Label><Input value={value.email} onChange={(e) => onChange({ email: e.target.value })} placeholder="nome@email.com" /></div>
+        <div className="space-y-2 sm:col-span-2"><Label>Endereço completo</Label><Input value={value.endereco} onChange={(e) => onChange({ endereco: e.target.value })} placeholder="Rua Exemplo, nº 123, Bairro, Porto Alegre/RS, CEP 90000-000" /></div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Componente ────────────────────────────────────────────────────────────────
 export default function IntermediacaoPage() {
-  // Comprador
-  const [tipoPessoa, setTipoPessoa] = useState<"PF" | "PJ">("PF");
-  const [razaoSocial, setRazaoSocial] = useState("");
-  const [cnpj, setCnpj] = useState("");
-  const [socioAdmin, setSocioAdmin] = useState("");
-  const [nomeCompleto, setNomeCompleto] = useState("");
-  const [genero, setGenero] = useState("");
-  const [profissao, setProfissao] = useState("");
-  const [estadoCivil, setEstadoCivil] = useState("");
-  const [regimeBens, setRegimeBens] = useState("");
-  const [cpf, setCpf] = useState("");
-  const [rg, setRg] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [email, setEmail] = useState("");
-  const [endereco, setEndereco] = useState("");
+  // Comprador(es) — o segundo é opcional (casal / compra conjunta)
+  const [comprador1, setComprador1] = useState<CompradorForm>({ ...emptyComprador });
+  const [comprador2, setComprador2] = useState<CompradorForm>({ ...emptyComprador });
+  const [usarComprador2, setUsarComprador2] = useState(false);
 
   // Imóvel
   const [empreendimento, setEmpreendimento] = useState("");
@@ -190,21 +275,30 @@ export default function IntermediacaoPage() {
   // Carrega um payload salvo de volta no formulário (fluxo de edição).
   const carregarIntermediacao = (p: any) => {
     if (!p) return;
-    const c = p.comprador ?? {};
-    setTipoPessoa(c.tipoPessoa === "PJ" ? "PJ" : "PF");
-    setRazaoSocial(c.razaoSocial ?? "");
-    setCnpj(c.cnpj ?? "");
-    setSocioAdmin(c.socioAdmin ?? "");
-    setNomeCompleto(c.nomeCompleto ?? "");
-    setGenero(c.genero ?? "");
-    setProfissao(c.profissao ?? "");
-    setEstadoCivil(c.estadoCivil ?? "");
-    setRegimeBens(c.regimeBens ?? "");
-    setCpf(c.cpf ?? "");
-    setRg(c.rg ?? "");
-    setTelefone(c.telefone ?? "");
-    setEmail(c.email ?? "");
-    setEndereco(c.endereco ?? "");
+    
+    const mapComprador = (x: any): CompradorForm => ({
+      tipoPessoa: x?.tipoPessoa === "PJ" ? "PJ" : "PF",
+      razaoSocial: x?.razaoSocial ?? "",
+      cnpj: x?.cnpj ?? "",
+      socioAdmin: x?.socioAdmin ?? "",
+      nomeCompleto: x?.nomeCompleto ?? "",
+      genero: x?.genero ?? "",
+      profissao: x?.profissao ?? "",
+      estadoCivil: x?.estadoCivil ?? "",
+      regimeBens: x?.regimeBens ?? "",
+      cpf: x?.cpf ?? "",
+      rg: x?.rg ?? "",
+      telefone: x?.telefone ?? "",
+      email: x?.email ?? "",
+      endereco: x?.endereco ?? "",
+    });
+    // Compat: payloads antigos têm apenas `comprador`; os novos têm `compradores` (array).
+    const comps = Array.isArray(p.compradores) && p.compradores.length
+      ? p.compradores
+      : [p.comprador ?? {}];
+    setComprador1(mapComprador(comps[0] ?? {}));
+    if (comps[1]) { setUsarComprador2(true); setComprador2(mapComprador(comps[1])); }
+    else { setUsarComprador2(false); setComprador2({ ...emptyComprador }); }
 
     const im = p.imovel ?? {};
     setEmpreendimento(im.empreendimento ?? "");
@@ -336,8 +430,17 @@ export default function IntermediacaoPage() {
 
   const handleGerar = async () => {
     // validações básicas
-    if (tipoPessoa === "PF" && !nomeCompleto.trim()) return toast.error("Informe o nome completo do comprador.");
-    if (tipoPessoa === "PJ" && (!razaoSocial.trim() || !socioAdmin.trim())) return toast.error("Informe Razão Social e sócio-administrador.");
+    const validarComprador = (c: CompradorForm, rotulo: string): string | null => {
+      if (c.tipoPessoa === "PF" && !c.nomeCompleto.trim()) return `Informe o nome completo do ${rotulo}.`;
+      if (c.tipoPessoa === "PJ" && (!c.razaoSocial.trim() || !c.socioAdmin.trim())) return `Informe Razão Social e sócio-administrador do ${rotulo}.`;
+      return null;
+    };
+    const erro1 = validarComprador(comprador1, "comprador");
+    if (erro1) return toast.error(erro1);
+    if (usarComprador2) {
+      const erro2 = validarComprador(comprador2, "comprador 2");
+      if (erro2) return toast.error(erro2);
+    }
     if (!empreendimento.trim() || !unidade.trim()) return toast.error("Informe empreendimento e unidade.");
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
     if (parseCurrencyToNumber(valorTotal) <= 0) return toast.error("Informe o valor total da corretagem.");
@@ -352,21 +455,28 @@ export default function IntermediacaoPage() {
     }
 
     // Comprador: envia apenas os campos do tipo selecionado.
-    const comprador = tipoPessoa === "PJ"
-      ? {
-          tipoPessoa, razaoSocial, cnpj, socioAdmin,
-          nomeCompleto: "", genero: "", profissao: "", estadoCivil: "", regimeBens: "",
-          cpf, rg, telefone, email, endereco,
-        }
-      : {
-          tipoPessoa, razaoSocial: "", cnpj: "", socioAdmin: "",
-          nomeCompleto, genero, profissao, estadoCivil,
-          regimeBens: estadoCivil === "casado(a)" ? regimeBens : "",
-          cpf, rg, telefone, email, endereco,
-        };
+    const normalizarComprador = (c: CompradorForm) =>
+      c.tipoPessoa === "PJ"
+        ? {
+            tipoPessoa: c.tipoPessoa, razaoSocial: c.razaoSocial, cnpj: c.cnpj, socioAdmin: c.socioAdmin,
+            nomeCompleto: "", genero: "", profissao: "", estadoCivil: "", regimeBens: "",
+            cpf: c.cpf, rg: c.rg, telefone: c.telefone, email: c.email, endereco: c.endereco,
+          }
+        : {
+            tipoPessoa: c.tipoPessoa, razaoSocial: "", cnpj: "", socioAdmin: "",
+            nomeCompleto: c.nomeCompleto, genero: c.genero, profissao: c.profissao, estadoCivil: c.estadoCivil,
+            regimeBens: c.estadoCivil === "casado(a)" ? c.regimeBens : "",
+            cpf: c.cpf, rg: c.rg, telefone: c.telefone, email: c.email, endereco: c.endereco,
+          };
+
+    const compradores = [
+      normalizarComprador(comprador1),
+      ...(usarComprador2 ? [normalizarComprador(comprador2)] : []),
+    ];
 
     const payload = {
-      comprador,
+      comprador: compradores[0], // compat com consumidores antigos
+      compradores,
       imovel: { empreendimento, unidade, vgv: parseCurrencyToNumber(vgv) },
       corretores: [
         { nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
@@ -438,71 +548,37 @@ export default function IntermediacaoPage() {
         <TabsContent value="gerar" className="space-y-6">
 
 
-      {/* Comprador */}
+      {/* Comprador(es) */}
       <Card>
         <CardHeader><CardTitle className="text-base">Comprador (Contratante)</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tipo de pessoa</Label>
-              <Select value={tipoPessoa} onValueChange={(v) => setTipoPessoa(v as "PF" | "PJ")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PF">Pessoa Física</SelectItem>
-                  <SelectItem value="PJ">Pessoa Jurídica</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <CardContent className="space-y-5">
+          {usarComprador2 && <Label className="font-medium">Comprador 1</Label>}
+          <CompradorFields
+            value={comprador1}
+            onChange={(patch) => setComprador1((prev) => ({ ...prev, ...patch }))}
+          />
 
-          {tipoPessoa === "PJ" ? (
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Razão Social</Label><Input value={razaoSocial} onChange={(e) => setRazaoSocial(e.target.value)} placeholder="Ex: Empresa Exemplo LTDA." /></div>
-              <div className="space-y-2"><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(maskCNPJ(e.target.value))} inputMode="numeric" placeholder="00.000.000/0001-00" /></div>
-              <div className="space-y-2 sm:col-span-2"><Label>Nome do sócio-administrador</Label><Input value={socioAdmin} onChange={(e) => setSocioAdmin(e.target.value)} placeholder="Ex: Carlos Souza" /></div>
-            </div>
+          {!usarComprador2 ? (
+            <Button variant="outline" size="sm" onClick={() => setUsarComprador2(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Adicionar segundo comprador
+            </Button>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2 sm:col-span-2"><Label>Nome completo</Label><Input value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} placeholder="Ex: João da Silva Souza" /></div>
-              <div className="space-y-2">
-                <Label>Gênero</Label>
-                <Select value={genero} onValueChange={setGenero}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="masculino">Masculino</SelectItem>
-                    <SelectItem value="feminino">Feminino</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <Label className="font-medium">Comprador 2</Label>
+                <Button variant="ghost" size="sm" onClick={() => { setUsarComprador2(false); setComprador2({ ...emptyComprador }); }}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-              <div className="space-y-2"><Label>Profissão</Label><Input value={profissao} onChange={(e) => setProfissao(e.target.value)} placeholder="Ex: Engenheiro" /></div>
-              <div className="space-y-2">
-                <Label>Estado civil</Label>
-                <Select value={estadoCivil} onValueChange={setEstadoCivil}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="solteiro(a)">Solteiro(a)</SelectItem>
-                    <SelectItem value="casado(a)">Casado(a)</SelectItem>
-                    <SelectItem value="divorciado(a)">Divorciado(a)</SelectItem>
-                    <SelectItem value="viúvo(a)">Viúvo(a)</SelectItem>
-                    <SelectItem value="união estável">União estável</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {estadoCivil === "casado(a)" && (
-                <div className="space-y-2"><Label>Regime de bens</Label><Input value={regimeBens} onChange={(e) => setRegimeBens(e.target.value)} /></div>
-              )}
+              <CompradorFields
+                value={comprador2}
+                onChange={(patch) => setComprador2((prev) => ({ ...prev, ...patch }))}
+              />
             </div>
           )}
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(maskCPF(e.target.value))} inputMode="numeric" placeholder="000.000.000-00" /></div>
-            <div className="space-y-2"><Label>RG</Label><Input value={rg} onChange={(e) => setRg(maskRG(e.target.value))} placeholder="0000000000" /></div>
-            <div className="space-y-2"><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(maskTelefone(e.target.value))} inputMode="numeric" placeholder="(51) 99999-9999" /></div>
-            <div className="space-y-2"><Label>E-mail</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@email.com" /></div>
-            <div className="space-y-2 sm:col-span-2"><Label>Endereço completo</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Rua Exemplo, nº 123, Bairro, Porto Alegre/RS, CEP 90000-000" /></div>
-          </div>
         </CardContent>
       </Card>
+
 
       {/* Imóvel */}
       <Card>

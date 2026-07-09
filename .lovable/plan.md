@@ -1,51 +1,34 @@
 ## Objetivo
+Permitir cadastrar um **segundo comprador (contratante)** na página de Intermediação — para casos de casal ou compra em conjunto — refletindo no contrato .docx gerado, no histórico e no fluxo de edição, sem quebrar contratos antigos com apenas um comprador.
 
-Deixar o PDN (planilha + Kanban) 100% funcional, moderno e completo para o gestor gerir os negócios, sem alterar o pipeline do corretor.
+## Comportamento
+- Novo botão **"Adicionar segundo comprador"** no card "Comprador (Contratante)", no mesmo padrão já usado em "Adicionar Corretor 2" (com botão de remover).
+- O segundo comprador tem os **mesmos campos** do primeiro (Tipo PF/PJ, nome/razão social, gênero, profissão, estado civil, regime de bens, CPF, RG, telefone, e-mail, endereço).
+- Quando houver dois compradores, o contrato lista os dois na qualificação ("CONTRATANTE(S): FULANO..., e CICLANO...") e gera **dois blocos de assinatura** de contratante.
+- O nome do arquivo e o registro no histórico passam a refletir os dois nomes (ex.: "Fulano e Ciclano").
+- Editar um contrato antigo (um só comprador) continua funcionando; o segundo comprador aparece vazio/oculto.
 
-## O que muda
+## Alterações
 
-### 1. VGV formatado em BRL na edição
-Hoje o campo VGV é um `<input type="number">` cru (mostra `250000`). Vou criar um componente `MoneyInput` que:
-- Exibe o valor formatado em BRL enquanto edita (`R$ 250.000`).
-- Aceita digitação natural, faz o parse para número no commit (blur/Enter).
-- Ganha largura adequada (`w-[130px]`) para caber o valor completo sem cortar.
-- Usado na planilha (célula VGV), no drawer do Kanban e no card manual.
+### Frontend — `src/pages/IntermediacaoPage.tsx`
+1. Extrair os campos do comprador para um estado estruturado reutilizável (um tipo `CompradorForm` com todos os campos) para `comprador1` e `comprador2`, mais um flag `usarComprador2`. Alternativa mínima: replicar os estados com sufixo `2`. Vou usar um objeto `CompradorForm` para manter o código enxuto.
+2. Renderizar o formulário do comprador via um subcomponente/bloco reutilizável, exibido 1x (Comprador 1) e opcionalmente 2x (Comprador 2) com botão adicionar/remover.
+3. Validação no `handleGerar`: se `usarComprador2` estiver ativo, exigir os campos obrigatórios do comprador 2 (nome/razão social conforme o tipo).
+4. Montar o payload novo: enviar `comprador` (o primeiro, mantido para compatibilidade) **e** `compradores: [comprador1, comprador2?]`. Assim o backend novo usa o array e qualquer consumidor antigo ainda lê `comprador`.
+5. `carregarIntermediacao`: ler `p.compradores` (array) quando existir; senão, cair no `p.comprador` único (compat).
 
-### 2. Colunas da planilha redimensionáveis
-- Adicionar redimensionamento por arrastar a borda do cabeçalho (drag handle no `<th>`).
-- Larguras persistidas em `sessionStorage` (`pdn:colWidths`) por coluna.
-- Botão "Redefinir larguras" quando houver ajustes.
-- Larguras padrão pensadas para caber conteúdo (Nome, Data, Empreendimento, VGV, Corretor, Status, Observação).
-
-### 3. Botão "Atualizar"
-- Hoje `reload` só recarrega o overlay (`pdn_entries`), não busca novos negócios do pipeline.
-- Expor no hook um `refreshAll()` que roda `loadDeals()` + `loadEntries()` em paralelo (busca os últimos negócios que entraram em cada etapa: Visita, Em Negociação, Contrato, Ganho).
-- Botão "Atualizar" no header com ícone de refresh e estado de carregando (spin). Funciona tanto na planilha quanto no Kanban.
-
-### 4. Resumo por corretor clicável + agrupado por equipe
-- No rodapé "Resumo por corretor", cada card vira clicável: ao clicar, aplica `filtroCorretor` = aquele corretor (e destaca o card ativo). Clicar de novo limpa.
-- Agrupar os cards por equipe: um subtítulo por equipe, com subtotal de VGV e nº de negócios da equipe, e os corretores daquela equipe abaixo.
-- Corretores sem equipe vão para um grupo "Sem equipe".
-- Ordenação: equipes por VGV desc; dentro da equipe, corretores por VGV desc.
-
-### 5. Melhorias de qualidade (Kanban + planilha)
-- **Kanban — resumo de corretor/equipe** no rodapé de cada coluna já existe VGV total; adicionar contagem "em risco" e "novos" por coluna quando houver.
-- **Kanban — filtros aplicados**: garantir que o Kanban recebe `filtered` (já recebe) e reflete filtro por corretor/equipe/risco corretamente ao clicar no resumo.
-- **Kanban — feedback de drag**: manter arraste para "Caídos" (marca queda) e reativar ao arrastar para fora; deixar claro visualmente com highlight (já existe) e cursor.
-- **Kanban — botão Atualizar** compartilhado com a planilha.
-- **Empty states** e contadores consistentes entre as duas visões.
-- Validar que salvar empreendimento/VGV/status no drawer atualiza o card imediatamente (já usa `selectedLive`).
+### Edge function — `supabase/functions/gerar-intermediacao/index.ts`
+1. Ampliar o `BodySchema`: adicionar `compradores: z.array(CompradorSchema).min(1).max(2).optional()`, mantendo `comprador` obrigatório. No handler, normalizar para uma lista `compradores = body.compradores ?? [body.comprador]`.
+2. `qualificacaoContratante`: aceitar a lista e emitir a qualificação de cada comprador, separadas por "; e " (ou " e " para o último).
+3. Assinaturas: gerar um bloco `CONTRATANTE:` para cada comprador da lista.
+4. Nome do arquivo e `comprador_nome` do histórico: juntar os nomes (ex.: "Fulano e Ciclano").
+5. Coluna `payload` já guarda o corpo inteiro, então o array fica persistido para reedição.
 
 ## Detalhes técnicos
-
-- `src/lib/fmtMoney.ts`: reaproveitar; criar helper `parseMoney(str): number` e `formatMoneyInput(n): string` (ou colocar o `MoneyInput` inline em PdnGestor e importar no drawer).
-- `src/hooks/usePdn.ts`: adicionar `refreshAll` ao retorno (Promise que aguarda `Promise.all([loadDeals(), loadEntries()])`); expor `loadDeals` via callback já existente.
-- `src/pages/PdnGestor.tsx`:
-  - Novo `MoneyInput` (substitui `EditableCell type="number"` no VGV).
-  - Estado `colWidths` + handlers de resize no `SortHeader`/`TableHead` do `GrupoBloco`.
-  - Botão "Atualizar" no header (com `isRefreshing`).
-  - Reescrever bloco "Resumo por corretor" para agrupar por equipe e tornar clicável (usa `setFiltroCorretor`).
-- `src/components/pdn/PdnKanban.tsx` e `PdnCardDrawer.tsx`: trocar input de VGV por `MoneyInput`; ajustar rodapé das colunas com contadores.
+- Sem migração de banco: a tabela `intermediacoes` guarda `comprador_nome` (texto) e `payload` (jsonb) — ambos comportam múltiplos compradores. As colunas `tipo_pessoa`/etc. do primeiro comprador seguem sendo preenchidas com o comprador 1.
+- Backward compatibility garantida em duas frentes: payload envia `comprador` + `compradores`; a função lê `compradores ?? [comprador]`.
+- Regime de bens do comprador 2 segue a mesma regra condicional (só quando "casado(a)").
 
 ## Fora de escopo
-Nenhuma mudança no pipeline do corretor, em `negocios` ou `pipeline_leads`. Sem migração de banco (a coluna `oculto` e campos de overlay já existem).
+- Não altero o cálculo de comissão/credores nem as regras de corretores.
+- Não adiciono um terceiro comprador (limite 2), salvo se você quiser mais.

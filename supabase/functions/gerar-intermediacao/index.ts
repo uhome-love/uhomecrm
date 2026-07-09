@@ -33,15 +33,18 @@ const CorretorSchema = z.object({
   nome: z.string().min(1), cpf: z.string().default(""), rg: z.string().default(""),
   email: z.string().default(""), percentual: z.number().min(0),
 });
+const CompradorSchema = z.object({
+  tipoPessoa: z.enum(["PF", "PJ"]),
+  razaoSocial: z.string().default(""), cnpj: z.string().default(""), socioAdmin: z.string().default(""),
+  nomeCompleto: z.string().default(""), genero: z.string().default(""), profissao: z.string().default(""),
+  estadoCivil: z.string().default(""), regimeBens: z.string().default(""),
+  cpf: z.string().default(""), rg: z.string().default(""), telefone: z.string().default(""),
+  email: z.string().default(""), endereco: z.string().default(""),
+});
 const BodySchema = z.object({
-  comprador: z.object({
-    tipoPessoa: z.enum(["PF", "PJ"]),
-    razaoSocial: z.string().default(""), cnpj: z.string().default(""), socioAdmin: z.string().default(""),
-    nomeCompleto: z.string().default(""), genero: z.string().default(""), profissao: z.string().default(""),
-    estadoCivil: z.string().default(""), regimeBens: z.string().default(""),
-    cpf: z.string().default(""), rg: z.string().default(""), telefone: z.string().default(""),
-    email: z.string().default(""), endereco: z.string().default(""),
-  }),
+  comprador: CompradorSchema,
+  // Novo: lista de compradores (casal / compra conjunta). Compat: se ausente, usa [comprador].
+  compradores: z.array(CompradorSchema).min(1).max(2).optional(),
   imovel: z.object({ empreendimento: z.string().min(1), unidade: z.string().min(1), vgv: z.number().nonnegative() }),
   corretores: z.array(CorretorSchema).min(1).max(2),
   comissao: z.object({
@@ -54,6 +57,15 @@ const BodySchema = z.object({
 });
 
 type Body = z.infer<typeof BodySchema>;
+type Comprador = z.infer<typeof CompradorSchema>;
+
+// Normaliza para a lista de compradores (compat com payloads antigos que só têm `comprador`).
+const listaCompradores = (b: Body): Comprador[] =>
+  b.compradores && b.compradores.length ? b.compradores : [b.comprador];
+
+// Nome legível de um comprador (para arquivo / histórico / assinatura).
+const nomeComprador = (c: Comprador): string =>
+  c.tipoPessoa === "PJ" ? `${c.razaoSocial}${c.socioAdmin ? ` / ${c.socioAdmin}` : ""}` : c.nomeCompleto;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -239,19 +251,29 @@ const CLAUSULAS_FIXAS: string[] = [
   "As Partes concordam em assinar o presente instrumento, por: (i) meio de plataformas de assinatura digital, admitindo expressamente tal meio como válido, nos termos do permissivo contido no § 2º do artigo 10 da Medida Provisória nº 2.200-2/2001. Neste caso, fica dispensada a obrigatoriedade do uso de assinaturas, das Partes e/ou das testemunhas, por meio de certificados emitidos pela ICP-Brasil, nos mesmos termos do dispositivo mencionado no item acima, concordando as Partes que qualquer meio idôneo de certificação digital de autoria e integridade deste Instrumento será válido com comprovação de suas assinaturas e, na impossibilidade da assinatura neste formato digital; (ii) em 02 (duas) vias de igual teor e para um só fim, na presença de duas testemunhas abaixo qualificadas.",
 ];
 
-function qualificacaoContratante(c: Body["comprador"]): TextRun[] {
+function qualificacaoUmContratante(c: Comprador): TextRun[] {
+  const runs: TextRun[] = [];
+  if (c.tipoPessoa === "PJ") {
+    runs.push(new TextRun({ text: `${c.razaoSocial.toUpperCase()}`, bold: true }));
+    runs.push(new TextRun(`, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº ${c.cnpj}, neste ato representada por seu Sócio-Administrador ${c.socioAdmin.toUpperCase()}, inscrito no CPF sob o nº ${c.cpf}, portador do RG nº ${c.rg}, telefone ${c.telefone}, e-mail ${c.email}, residente e domiciliado na ${c.endereco}`));
+  } else {
+    const generoTxt = c.genero === "feminino" ? "brasileira" : "brasileiro";
+    runs.push(new TextRun({ text: `${c.nomeCompleto.toUpperCase()}`, bold: true }));
+    runs.push(new TextRun(`, ${generoTxt}, ${c.profissao}, ${c.estadoCivil}${c.estadoCivil === "casado(a)" && c.regimeBens ? ` sob o regime de ${c.regimeBens}` : ""}, inscrito(a) no CPF sob o nº ${c.cpf}, portador(a) do RG nº ${c.rg}, telefone ${c.telefone}, e-mail ${c.email}, residente e domiciliado(a) na ${c.endereco}`));
+  }
+  return runs;
+}
+
+function qualificacaoContratante(compradores: Comprador[]): TextRun[] {
   const runs: TextRun[] = [];
   runs.push(new TextRun("Pelo presente instrumento particular de intermediação imobiliária, de um lado, como "));
   runs.push(new TextRun({ text: "CONTRATANTE(S)", bold: true }));
   runs.push(new TextRun(": "));
-  if (c.tipoPessoa === "PJ") {
-    runs.push(new TextRun({ text: `${c.razaoSocial.toUpperCase()}`, bold: true }));
-    runs.push(new TextRun(`, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº ${c.cnpj}, neste ato representada por seu Sócio-Administrador ${c.socioAdmin.toUpperCase()}, inscrito no CPF sob o nº ${c.cpf}, portador do RG nº ${c.rg}, telefone ${c.telefone}, e-mail ${c.email}, residente e domiciliado na ${c.endereco}.`));
-  } else {
-    const generoTxt = c.genero === "feminino" ? "brasileira" : "brasileiro";
-    runs.push(new TextRun({ text: `${c.nomeCompleto.toUpperCase()}`, bold: true }));
-    runs.push(new TextRun(`, ${generoTxt}, ${c.profissao}, ${c.estadoCivil}${c.estadoCivil === "casado(a)" && c.regimeBens ? ` sob o regime de ${c.regimeBens}` : ""}, inscrito(a) no CPF sob o nº ${c.cpf}, portador(a) do RG nº ${c.rg}, telefone ${c.telefone}, e-mail ${c.email}, residente e domiciliado(a) na ${c.endereco}.`));
-  }
+  compradores.forEach((c, i) => {
+    if (i > 0) runs.push(new TextRun(i === compradores.length - 1 ? "; e " : "; "));
+    runs.push(...qualificacaoUmContratante(c));
+  });
+  runs.push(new TextRun("."));
   return runs;
 }
 
@@ -287,7 +309,8 @@ async function montarDoc(b: Body): Promise<Document> {
     children: [new TextRun({ text: "INSTRUMENTO PARTICULAR DE INTERMEDIAÇÃO IMOBILIÁRIA", bold: true, underline: {} })],
   }));
 
-  children.push(runsParagraph(qualificacaoContratante(b.comprador)));
+  const compradores = listaCompradores(b);
+  children.push(runsParagraph(qualificacaoContratante(compradores)));
   children.push(runsParagraph(qualificacaoContratados(b.corretores)));
   children.push(NORMAL("Isoladamente denominadas \u201CParte\u201D e, em conjunto \u201CPartes\u201D, têm entre si, justo e acertado o quanto abaixo segue."));
 
@@ -313,12 +336,11 @@ async function montarDoc(b: Body): Promise<Document> {
 
   children.push(new Paragraph({ spacing: { before: 240, after: 240 }, children: [new TextRun(`Porto Alegre, ${dataExtenso(b.dataContrato)}.`)] }));
 
-  // Assinaturas
-  const compradorNome = b.comprador.tipoPessoa === "PJ"
-    ? `${b.comprador.razaoSocial.toUpperCase()} / ${b.comprador.socioAdmin.toUpperCase()}`
-    : b.comprador.nomeCompleto.toUpperCase();
-  children.push(assinatura("", ""));
-  children.push(assinaturaLabel(`CONTRATANTE: ${compradorNome}`));
+  // Assinaturas — um bloco por comprador (contratante)
+  compradores.forEach((c) => {
+    children.push(assinatura("", ""));
+    children.push(assinaturaLabel(`CONTRATANTE: ${nomeComprador(c).toUpperCase()}`));
+  });
   b.corretores.forEach((c) => {
     children.push(assinatura("", ""));
     children.push(assinaturaLabel(`CORRETOR: ${c.nome.toUpperCase()}`));
@@ -386,8 +408,9 @@ Deno.serve(async (req) => {
     const buffer = await Packer.toBuffer(doc);
     const base64 = bufferToBase64(buffer);
 
-    const nomeRef = body.comprador.tipoPessoa === "PJ" ? body.comprador.razaoSocial : body.comprador.nomeCompleto;
-    const filename = `intermediacao_${slug(nomeParaArquivo(body.comprador.tipoPessoa, nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
+    const compradoresBody = listaCompradores(body);
+    const nomeRef = compradoresBody.map(nomeComprador).filter((n) => n.trim()).join(" e ");
+    const filename = `intermediacao_${slug(nomeParaArquivo(compradoresBody[0].tipoPessoa, nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
 
     // Histórico (best-effort): grava arquivo no Storage e metadados na tabela.
     // Qualquer falha aqui NÃO bloqueia a geração/download do documento.
@@ -399,9 +422,7 @@ Deno.serve(async (req) => {
       const storageName = `${intermediacaoId.slice(0, 8)}_${filename}`;
       const arquivoPath = `${ano}/${storageName}`;
 
-      const compradorNome = body.comprador.tipoPessoa === "PJ"
-        ? `${body.comprador.razaoSocial} / ${body.comprador.socioAdmin}`
-        : body.comprador.nomeCompleto;
+      const compradorNome = compradoresBody.map(nomeComprador).filter((n) => n.trim()).join(" e ");
 
       const { error: uploadErr } = await supabase.storage
         .from("intermediacoes")
