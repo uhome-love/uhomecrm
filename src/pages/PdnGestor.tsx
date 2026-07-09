@@ -781,8 +781,9 @@ function GrupoBloco({
                         : (r.data ? formatBRT(r.data, "dd/MM/yy") : "—")}
                     </TableCell>
                     <TableCell className="text-sm">
-                      <EditableCell
+                      <EditableWrapCell
                         value={r.empreendimento === "—" ? "" : r.empreendimento}
+                        placeholder="Empreendimento…"
                         onCommit={(v) => r.isManual
                           ? (r.overrideId && onUpdateManual(r.overrideId, { empreendimento: v }))
                           : onSave(r, { empreendimento: v })}
