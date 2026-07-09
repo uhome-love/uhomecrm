@@ -227,6 +227,7 @@ export function usePdn(mes: string) {
         corretorAuthIds = [user.id];
       }
     }
+    setScopeAuthIds(corretorAuthIds);
 
     // Etapas de negócio do pipeline
     const { data: stages } = await supabase
