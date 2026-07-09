@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type PdnRow } from "@/hooks/usePdn";
+import { PDN_GRUPOS, type PdnGrupo, type PdnRow } from "@/hooks/usePdn";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { formatBRT } from "@/lib/brtTime";
 import {
@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Trash2, TrendingDown, RotateCcw, AlertTriangle } from "lucide-react";
+import { Trash2, TrendingDown, RotateCcw, AlertTriangle, Send, Undo2, CheckCircle2 } from "lucide-react";
 import type { PdnSavePatch } from "./PdnKanban";
 import { MoneyInput } from "./MoneyInput";
 
