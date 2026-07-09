@@ -408,8 +408,9 @@ Deno.serve(async (req) => {
     const buffer = await Packer.toBuffer(doc);
     const base64 = bufferToBase64(buffer);
 
-    const nomeRef = body.comprador.tipoPessoa === "PJ" ? body.comprador.razaoSocial : body.comprador.nomeCompleto;
-    const filename = `intermediacao_${slug(nomeParaArquivo(body.comprador.tipoPessoa, nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
+    const compradoresBody = listaCompradores(body);
+    const nomeRef = compradoresBody.map(nomeComprador).filter((n) => n.trim()).join(" e ");
+    const filename = `intermediacao_${slug(nomeParaArquivo(compradoresBody[0].tipoPessoa, nomeRef))}_${slug(body.imovel.empreendimento)}_${slug(body.imovel.unidade)}_UHome.docx`;
 
     // Histórico (best-effort): grava arquivo no Storage e metadados na tabela.
     // Qualquer falha aqui NÃO bloqueia a geração/download do documento.
