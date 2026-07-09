@@ -235,10 +235,15 @@ function CompradorFields({
 
 // ─── Componente ────────────────────────────────────────────────────────────────
 export default function IntermediacaoPage() {
-  // Comprador(es) — o segundo é opcional (casal / compra conjunta)
-  const [comprador1, setComprador1] = useState<CompradorForm>({ ...emptyComprador });
-  const [comprador2, setComprador2] = useState<CompradorForm>({ ...emptyComprador });
-  const [usarComprador2, setUsarComprador2] = useState(false);
+  // Comprador(es) — lista dinâmica (aquisição pode ter vários compradores)
+  const MAX_COMPRADORES = 6;
+  const [compradores, setCompradores] = useState<CompradorForm[]>([{ ...emptyComprador }]);
+  const updateComprador = (idx: number, patch: Partial<CompradorForm>) =>
+    setCompradores((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
+  const addComprador = () =>
+    setCompradores((prev) => (prev.length >= MAX_COMPRADORES ? prev : [...prev, { ...emptyComprador }]));
+  const removeComprador = (idx: number) =>
+    setCompradores((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
 
   // Imóvel
   const [empreendimento, setEmpreendimento] = useState("");
