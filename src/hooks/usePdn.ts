@@ -440,7 +440,7 @@ export function usePdn(mes: string) {
   }, [deals, visitasReal, manualRows, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes]);
 
   // ── Overlay: grava só em pdn_entries (nunca no pipeline/negócio) ──────────────
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda">>) => {
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>) => {
     if (!user) return;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
@@ -448,6 +448,10 @@ export function usePdn(mes: string) {
     if (patch.status !== undefined) payload.status = patch.status || null;
     if (patch.caiu !== undefined) payload.caiu = patch.caiu;
     if (patch.motivoQueda !== undefined) payload.motivo_queda = patch.motivoQueda || null;
+    if (patch.proximaAcaoData !== undefined) payload.proxima_acao_data = patch.proximaAcaoData || null;
+    if (patch.prioridade !== undefined) payload.prioridade = patch.prioridade || null;
+    if (patch.riscoManual !== undefined) payload.risco_manual = patch.riscoManual;
+    if (patch.riscoMotivo !== undefined) payload.risco_motivo = patch.riscoMotivo || null;
 
     if (row.overrideId) {
       const { error } = await supabase.from("pdn_entries").update(payload).eq("id", row.overrideId);
