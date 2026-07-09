@@ -623,7 +623,13 @@ export function usePdn(mes: string) {
       p_categoria: "pdn_atualizacao",
       p_titulo: `Atualização do gestor: ${row.nome}`,
       p_mensagem: mensagem || `Atualize o pipeline de ${row.nome} para "${etapaLabel}".`,
-      p_dados: { pdn_lead_id: row.pipelineLeadId, etapa_sugerida: row.grupo, empreendimento: row.empreendimento },
+      p_dados: {
+        pipeline_lead_id: row.pipelineLeadId,
+        pdn_lead_id: row.pipelineLeadId,
+        etapa_sugerida: row.grupo,
+        etapa_sugerida_label: etapaLabel,
+        empreendimento: row.empreendimento,
+      },
     });
     if (error) { toast.error("Erro ao avisar o corretor"); return; }
     await saveOverride(row, { avisadoEm: new Date().toISOString(), avisadoEtapa: row.grupo });

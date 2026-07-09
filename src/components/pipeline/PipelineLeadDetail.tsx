@@ -81,11 +81,26 @@ interface Props {
   onUpdate: (leadId: string, updates: Partial<PipelineLead>) => Promise<void>;
   onMove: (leadId: string, newStageId: string, observacao?: string) => Promise<void>;
   onDelete?: (leadId: string) => Promise<void>;
+  etapaSugerida?: string;
 }
 
 // TEMPERATURA_MAP removido — substituído por chip de status Atualizado/Desatualizado
 
-export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
+// Mapa grupo do PDN → nome do stage ativo no board do pipeline
+const PDN_GRUPO_STAGE_NOME: Record<string, string> = {
+  visita_realizada: "Visita",
+  em_negociacao: "Em Negociação",
+  contrato: "Contrato",
+  ganho: "Ganho",
+};
+const PDN_GRUPO_LABEL: Record<string, string> = {
+  visita_realizada: "Visita Realizada",
+  em_negociacao: "Em Negociação",
+  contrato: "Contrato",
+  ganho: "Ganho",
+};
+
+export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete, etapaSugerida }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
@@ -172,6 +187,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
+
+  // Sugestão de etapa vinda do aviso do gestor (PDN)
+  const stageSugerido = useMemo(() => {
+    if (!etapaSugerida) return null;
+    const nome = PDN_GRUPO_STAGE_NOME[etapaSugerida];
+    if (!nome) return null;
+    const s = stages.find(st => st.nome === nome);
+    if (!s || s.id === lead.stage_id) return null;
+    return s;
+  }, [etapaSugerida, stages, lead.stage_id]);
   const hoursInStage = differenceInHoursSafe(lead.stage_changed_at) ?? 0;
   const lastActivity = leadData.atividades[0];
   const pendingTasks = leadData.tarefas.filter(t => t.status === "pendente").length;
@@ -443,6 +468,34 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const bodyNode = (
     <>
+      {/* Sugestão de etapa do gestor (via aviso do PDN) */}
+      {stageSugerido && (
+        <div className="mb-3 rounded-lg border border-[#4969FF]/40 bg-[#4969FF]/8 p-3">
+          <div className="flex items-start gap-2">
+            <span className="text-lg leading-none">📋</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">
+                Seu gestor sugeriu atualizar a etapa para{" "}
+                <span className="font-semibold" style={{ color: stageSugerido.cor }}>
+                  {PDN_GRUPO_LABEL[etapaSugerida!] ?? stageSugerido.nome}
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Nada muda no seu pipeline até você aplicar.
+              </p>
+              <Button
+                size="sm"
+                className="mt-2"
+                onClick={() => handleMoveStage(stageSugerido.id)}
+              >
+                Aplicar etapa
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* Aviso de cadência Sem Contato (apenas nessa etapa) */}
       <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} leadNome={lead.nome} leadEmpreendimento={(lead as any).empreendimento} />
 

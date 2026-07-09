@@ -59,6 +59,15 @@ export function useNotifications() {
     const dados = notification?.dados as Record<string, any> | undefined;
     if (typeof dados?.url === "string" && dados.url.length > 0) return dados.url;
 
+    // PDN — aviso do gestor: link direto para o pipeline com lead + etapa sugerida
+    if ((notification as any)?.tipo === "pdn") {
+      const pdnLeadId = dados?.pipeline_lead_id || dados?.pdn_lead_id || dados?.lead_id;
+      if (typeof pdnLeadId === "string" && pdnLeadId.length > 0) {
+        const etapa = dados?.etapa_sugerida ? `&etapaSugerida=${encodeURIComponent(dados.etapa_sugerida)}` : "";
+        return `/pipeline-leads?lead=${pdnLeadId}${etapa}`;
+      }
+    }
+
     const leadId = dados?.pipeline_lead_id || dados?.lead_id;
     if (typeof leadId === "string" && leadId.length > 0) {
       return `/aceite?lead=${leadId}`;

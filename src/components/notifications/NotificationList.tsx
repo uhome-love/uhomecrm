@@ -38,6 +38,7 @@ const TIPO_LABELS: Record<string, string> = {
   zero_ligacoes: "Alerta",
   alertas: "Alertas",
   radar_intencao: "Radar de Intenção",
+  pdn: "Gestor",
 };
 
 const TIPO_CONFIG: Record<string, { emoji: string; borderColor: string; bgUnread: string }> = {
@@ -69,6 +70,7 @@ const TIPO_CONFIG: Record<string, { emoji: string; borderColor: string; bgUnread
   corretor_ajuda: { emoji: "💬", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
   zero_ligacoes: { emoji: "⚠️", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
   alertas: { emoji: "⚠️", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
+  pdn: { emoji: "📋", borderColor: "#4969FF", bgUnread: "#EFF6FF" },
 };
 
 interface Props {
@@ -83,6 +85,17 @@ function getNotificationRoute(n: Notification): string | null {
   const tipo = n.tipo;
   const categoria = n.categoria;
   const leadId = d.pipeline_lead_id || d.lead_id;
+
+  // PDN — aviso do gestor: link direto para o pipeline com lead + etapa sugerida
+  if (tipo === "pdn") {
+    const pdnLeadId = d.pipeline_lead_id || d.pdn_lead_id || d.lead_id;
+    if (pdnLeadId) {
+      const etapa = d.etapa_sugerida ? `&etapaSugerida=${encodeURIComponent(d.etapa_sugerida)}` : "";
+      return `/pipeline-leads?lead=${pdnLeadId}${etapa}`;
+    }
+    return "/pipeline-leads";
+  }
+
   const isLeadAcceptanceNotification = ["lead", "leads", "lead_roleta", "lead_urgente", "lead_ultimo_alerta"].includes(tipo)
     || ["lead_novo", "lead_atribuido"].includes(categoria);
 

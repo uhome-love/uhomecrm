@@ -104,6 +104,7 @@ export default function PipelineKanban() {
   const isMobile = useIsMobile();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
+  const [etapaSugerida, setEtapaSugerida] = useState<string | null>(null);
   const [filters, setFilters] = useState<PipelineFilters>({ ...EMPTY_FILTERS });
   const { data: parcerias = {} } = useParceriasMap();
   const { data: partnerLeadsByCorretor = {} } = usePartnerLeadsByCorretor();
@@ -212,7 +213,9 @@ export default function PipelineKanban() {
       const found = pipeline.leads.find(l => l.id === leadId);
       if (found) {
         setSelectedLead(found);
+        setEtapaSugerida(searchParams.get("etapaSugerida"));
         searchParams.delete("lead");
+        searchParams.delete("etapaSugerida");
         setSearchParams(searchParams, { replace: true });
       }
     }
@@ -874,9 +877,11 @@ export default function PipelineKanban() {
           segmentos={pipeline.segmentos}
           corretorNomes={pipeline.corretorNomes}
           open={!!selectedLead}
+          etapaSugerida={etapaSugerida ?? undefined}
           onOpenChange={(open) => {
             if (!open) {
               setSelectedLead(null);
+              setEtapaSugerida(null);
               queryClient.invalidateQueries({ queryKey: ["pipeline-kanban-tarefas"] });
               pipeline.reload();
             }
