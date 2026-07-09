@@ -81,11 +81,26 @@ interface Props {
   onUpdate: (leadId: string, updates: Partial<PipelineLead>) => Promise<void>;
   onMove: (leadId: string, newStageId: string, observacao?: string) => Promise<void>;
   onDelete?: (leadId: string) => Promise<void>;
+  etapaSugerida?: string;
 }
 
 // TEMPERATURA_MAP removido — substituído por chip de status Atualizado/Desatualizado
 
-export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
+// Mapa grupo do PDN → nome do stage ativo no board do pipeline
+const PDN_GRUPO_STAGE_NOME: Record<string, string> = {
+  visita_realizada: "Visita",
+  em_negociacao: "Em Negociação",
+  contrato: "Contrato",
+  ganho: "Ganho",
+};
+const PDN_GRUPO_LABEL: Record<string, string> = {
+  visita_realizada: "Visita Realizada",
+  em_negociacao: "Em Negociação",
+  contrato: "Contrato",
+  ganho: "Ganho",
+};
+
+export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete, etapaSugerida }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
