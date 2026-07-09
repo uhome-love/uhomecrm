@@ -42,7 +42,7 @@ export function PdnCardDrawer({
   // Campos de linha manual
   const [nome, setNome] = useState("");
   const [empreend, setEmpreend] = useState("");
-  const [vgv, setVgv] = useState("");
+  const [vgv, setVgv] = useState(0);
   const [corretor, setCorretor] = useState("");
 
   useEffect(() => {
