@@ -447,19 +447,22 @@ export function usePdn(mes: string) {
     // Linhas do pipeline (Em Negociação / Contrato / Ganho)
     for (const d of deals) {
       const ov = d.negocioId ? overrideByNegocio[d.negocioId] : overrideByLead[d.id];
+      // Vendido conta SEMPRE como Ganho, mesmo que a etapa do pipeline esteja atrasada.
+      const isGanho = d.grupo === "ganho" || d.negocioVendido;
       // Ganho: recorte por mês do fechamento. Em Negociação/Contrato: só no mês corrente
       // (ou em mês passado se o gestor registrou algo naquele mês) — evita vazar entre meses.
-      const ganhoRef = d.grupo === "ganho" ? (d.dataAssinatura || d.primeiraVendaEm) : null;
-      if (d.grupo === "ganho") {
+      const ganhoRef = isGanho ? (d.dataAssinatura || d.primeiraVendaEm) : null;
+      if (isGanho) {
         if (!ganhoRef) continue;           // sem data confiável: fora do recorte mensal
         if (mesOf(ganhoRef) !== mes) continue;
       } else {
         if (!isMesCorrente && ov?.mes !== mes) continue;
       }
+      const grupoNatural: PdnGrupo = isGanho ? "ganho" : d.grupo;
       const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
       const caiu = !!ov?.caiu;
-      const grupoBase = grupoOverride ?? d.grupo;
-      const data = d.grupo === "ganho" ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
+      const grupoBase = grupoOverride ?? grupoNatural;
+      const data = isGanho ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
       const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || ov?.corretor || "—";
       const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
       const proximaAcao = ov?.proxima_acao || "";
@@ -474,9 +477,9 @@ export function usePdn(mes: string) {
         corretorAuthId: d.corretorAuthId,
         overrideId: ov?.id ?? null,
         grupo: caiu ? "caidos" : grupoBase,
-        grupoOrigem: d.grupo,
+        grupoOrigem: grupoNatural,
         grupoOverride,
-        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== d.grupo,
+        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== grupoNatural,
         nome: d.nome,
         data,
         empreendimento: ov?.empreendimento || d.empreendimento || "—",
