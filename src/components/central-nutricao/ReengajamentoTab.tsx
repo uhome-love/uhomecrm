@@ -1081,10 +1081,16 @@ export default function ReengajamentoTab() {
               <Badge className="bg-amber-100 text-amber-800 mr-auto">⏸️ Pausado</Badge>
             )}
             {isRunning ? (
-              <Button variant="destructive" size="sm" onClick={pausarDisparo} disabled={isPausing}>
-                <Pause className="h-3.5 w-3.5 mr-1" />
-                {isPausing ? "Pausando…" : "Pausar agora"}
-              </Button>
+              <>
+                <Button variant="outline" size="sm" onClick={pausarDisparo} disabled={isPausing}>
+                  <Pause className="h-3.5 w-3.5 mr-1" />
+                  {isPausing ? "Pausando…" : "Pausar"}
+                </Button>
+                <Button variant="destructive" size="sm" onClick={pararDisparo}>
+                  <Square className="h-3.5 w-3.5 mr-1" />
+                  Parar
+                </Button>
+              </>
             ) : (
               <Button
                 variant="outline"
