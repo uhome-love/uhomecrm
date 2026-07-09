@@ -332,7 +332,7 @@ export function usePdn(mes: string) {
   }, [entries]);
   const manualRows = useMemo(() => entries.filter(e => !e.negocio_id && !e.pipeline_lead_id && e.mes === mes), [entries, mes]);
 
-  const rows = useMemo<PdnRow[]>(() => {
+  const allRows = useMemo<PdnRow[]>(() => {
     const out: PdnRow[] = [];
 
     // Linhas do pipeline (Em Negociação / Contrato / Ganho)
