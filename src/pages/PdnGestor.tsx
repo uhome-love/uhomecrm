@@ -369,7 +369,7 @@ export default function PdnGestor() {
           rows={filtered}
           onSave={handleSave}
           onUpdateManual={updateManualRow}
-          onDelete={deleteRow}
+          onRemove={handleRemove}
           onQueda={setQuedaRow}
           onReativar={reativarQueda}
           onMoveManual={moveManual}
