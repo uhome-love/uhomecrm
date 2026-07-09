@@ -439,11 +439,10 @@ export default function IntermediacaoPage() {
       if (c.tipoPessoa === "PJ" && (!c.razaoSocial.trim() || !c.socioAdmin.trim())) return `Informe Razão Social e sócio-administrador do ${rotulo}.`;
       return null;
     };
-    const erro1 = validarComprador(comprador1, "comprador");
-    if (erro1) return toast.error(erro1);
-    if (usarComprador2) {
-      const erro2 = validarComprador(comprador2, "comprador 2");
-      if (erro2) return toast.error(erro2);
+    for (let i = 0; i < compradores.length; i++) {
+      const rotulo = compradores.length > 1 ? `comprador ${i + 1}` : "comprador";
+      const erro = validarComprador(compradores[i], rotulo);
+      if (erro) return toast.error(erro);
     }
     if (!empreendimento.trim() || !unidade.trim()) return toast.error("Informe empreendimento e unidade.");
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
