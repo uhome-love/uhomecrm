@@ -468,7 +468,7 @@ export function usePdn(mes: string) {
   const hiddenRows = useMemo<PdnRow[]>(() => allRows.filter(r => r.oculto), [allRows]);
 
   // ── Overlay: grava só em pdn_entries (nunca no pipeline/negócio) ──────────────
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>) => {
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "empreendimento" | "vgv" | "oculto">>) => {
     if (!user) return;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
@@ -480,6 +480,9 @@ export function usePdn(mes: string) {
     if (patch.prioridade !== undefined) payload.prioridade = patch.prioridade || null;
     if (patch.riscoManual !== undefined) payload.risco_manual = patch.riscoManual;
     if (patch.riscoMotivo !== undefined) payload.risco_motivo = patch.riscoMotivo || null;
+    if (patch.empreendimento !== undefined) payload.empreendimento = patch.empreendimento || null;
+    if (patch.vgv !== undefined) payload.vgv = Number(patch.vgv) || 0;
+    if (patch.oculto !== undefined) payload.oculto = patch.oculto;
 
     if (row.overrideId) {
       const { error } = await supabase.from("pdn_entries").update(payload).eq("id", row.overrideId);
