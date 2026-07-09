@@ -22,8 +22,9 @@ import {
 import {
   Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
   ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
-  ArrowUpDown, TrendingDown, RotateCcw, Wallet,
+  ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
 } from "lucide-react";
+import { PdnKanban } from "@/components/pdn/PdnKanban";
 
 // ─── Status: opções fixas (com cores) + livre ─────────────────────────────────
 const STATUS_OPTS: { grupo: string; items: string[] }[] = [
@@ -180,6 +181,10 @@ export default function PdnGestor() {
     } catch { return new Set(); }
   });
   const [quedaRow, setQuedaRow] = useState<PdnRow | null>(null);
+  const [view, setView] = useState<"planilha" | "kanban">(() => {
+    try { return (sessionStorage.getItem("pdn:view") as "planilha" | "kanban") || "planilha"; } catch { return "planilha"; }
+  });
+  useEffect(() => { try { sessionStorage.setItem("pdn:view", view); } catch { /* ignore */ } }, [view]);
 
   const { isDiretor, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
@@ -263,16 +268,26 @@ export default function PdnGestor() {
     URL.revokeObjectURL(url);
   }
 
-  const handleSave = (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao">>) => {
-    if (row.isManual && row.overrideId) {
-      const dbPatch: Record<string, any> = {};
-      if (patch.status !== undefined) dbPatch.status = patch.status || null;
-      if (patch.observacoes !== undefined) dbPatch.observacoes = patch.observacoes || null;
-      updateManualRow(row.overrideId, dbPatch);
-    } else {
-      saveOverride(row, patch);
-    }
+  const handleSave = (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>) => {
+    // saveOverride grava em pdn_entries por overrideId (manual) ou cria overlay (pipeline).
+    saveOverride(row, patch);
   };
+
+  const moveManual = (overrideId: string, grupo: PdnGrupo) => {
+    updateManualRow(overrideId, { situacao: grupo });
+  };
+
+  // Resumo por corretor (VGV e nº de negócios, exclui caídos)
+  const resumoCorretor = useMemo(() => {
+    const map: Record<string, { count: number; vgv: number }> = {};
+    for (const r of filtered) {
+      if (r.grupo === "caidos" || r.corretor === "—") continue;
+      (map[r.corretor] ||= { count: 0, vgv: 0 });
+      map[r.corretor].count++;
+      map[r.corretor].vgv += r.vgv;
+    }
+    return Object.entries(map).map(([nome, v]) => ({ nome, ...v })).sort((a, b) => b.vgv - a.vgv);
+  }, [filtered]);
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
@@ -291,6 +306,14 @@ export default function PdnGestor() {
               {monthOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <div className="flex items-center rounded-lg border p-0.5">
+            <Button variant={view === "planilha" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => setView("planilha")}>
+              <TableIcon className="mr-1.5 h-4 w-4" /> Planilha
+            </Button>
+            <Button variant={view === "kanban" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => setView("kanban")}>
+              <LayoutGrid className="mr-1.5 h-4 w-4" /> Kanban
+            </Button>
+          </div>
           <Button variant="outline" size="sm" onClick={exportCSV}><Download className="mr-1.5 h-4 w-4" /> Exportar</Button>
         </div>
       </div>
@@ -334,6 +357,17 @@ export default function PdnGestor() {
         <div className="flex items-center justify-center py-20 text-muted-foreground">
           <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando…
         </div>
+      ) : view === "kanban" ? (
+        <PdnKanban
+          rows={filtered}
+          onSave={handleSave}
+          onUpdateManual={updateManualRow}
+          onDelete={deleteRow}
+          onQueda={setQuedaRow}
+          onReativar={reativarQueda}
+          onMoveManual={moveManual}
+          onAdd={addManualRow}
+        />
       ) : (
         <div className="space-y-5">
           {PDN_GRUPOS.filter(g => gruposVisiveis.includes(g.key)).map(g => {
@@ -363,6 +397,24 @@ export default function PdnGestor() {
             );
           })}
         </div>
+      )}
+
+      {/* Resumo por corretor */}
+      {!loading && resumoCorretor.length > 0 && (
+        <Card className="p-4">
+          <div className="mb-3 text-sm font-semibold text-foreground">Resumo por corretor</div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {resumoCorretor.map(c => (
+              <div key={c.nome} className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-foreground">{c.nome}</div>
+                  <div className="text-xs text-muted-foreground">{c.count} negócio{c.count > 1 ? "s" : ""}</div>
+                </div>
+                <div className="text-sm font-semibold text-primary">{fmtMoney(c.vgv, "short")}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
       <QuedaDialog

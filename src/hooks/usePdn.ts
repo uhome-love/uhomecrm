@@ -57,6 +57,13 @@ export interface PdnRow {
   diasParado: number;
   emRisco: boolean;
   isManual: boolean;
+  // ── Camada de gestão do gestor (interna) ──
+  proximaAcaoData: string;   // YYYY-MM-DD
+  prioridade: "alta" | "media" | "baixa" | "";
+  riscoManual: boolean;
+  riscoMotivo: string;
+  proximaAcaoVencida: boolean;
+  novoDesdeOntem: boolean;
 }
 
 type PdnEntry = {
@@ -77,7 +84,25 @@ type PdnEntry = {
   proxima_acao: string | null;
   caiu: boolean | null;
   motivo_queda: string | null;
+  proxima_acao_data: string | null;
+  prioridade: string | null;
+  risco_manual: boolean | null;
+  risco_motivo: string | null;
 };
+
+const MS_DAY = 86400000;
+function isNovoDesdeOntem(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
+  const t = new Date(dateStr).getTime();
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t <= MS_DAY;
+}
+function isVencida(dateStr: string): boolean {
+  if (!dateStr) return false;
+  const t = new Date(`${dateStr}T23:59:59`).getTime();
+  if (Number.isNaN(t)) return false;
+  return t < Date.now();
+}
 
 function diffDays(dateStr: string): number {
   if (!dateStr) return 0;
@@ -119,7 +144,7 @@ export function usePdn(mes: string) {
     setLoadingEntries(true);
     const { data, error } = await supabase
       .from("pdn_entries")
-      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, nome, situacao, empreendimento, vgv, corretor, equipe, data_visita, status, observacoes, proxima_acao, caiu, motivo_queda")
+      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, nome, situacao, empreendimento, vgv, corretor, equipe, data_visita, status, observacoes, proxima_acao, caiu, motivo_queda, proxima_acao_data, prioridade, risco_manual, risco_motivo")
       .order("created_at", { ascending: true });
     if (error) {
       console.error("Erro ao carregar PDN:", error);
@@ -302,9 +327,11 @@ export function usePdn(mes: string) {
       const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || ov?.corretor || "—";
       const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
       const proximaAcao = ov?.proxima_acao || "";
+      const proximaAcaoData = ov?.proxima_acao_data || "";
       const dias = diffDays(d.stageChangedAt);
       const caiu = !!ov?.caiu;
-      const emRisco = !caiu && d.grupo !== "ganho" && !proximaAcao && dias > 7;
+      const riscoManual = !!ov?.risco_manual;
+      const emRisco = !caiu && (riscoManual || (d.grupo !== "ganho" && !proximaAcao && dias > 7));
       out.push({
         id: `deal-${d.id}`,
         negocioId: d.negocioId,
@@ -327,6 +354,12 @@ export function usePdn(mes: string) {
         diasParado: dias,
         emRisco,
         isManual: false,
+        proximaAcaoData,
+        prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
+        riscoManual,
+        riscoMotivo: ov?.risco_motivo || "",
+        proximaAcaoVencida: !caiu && isVencida(proximaAcaoData),
+        novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
       });
     }
 
@@ -357,8 +390,14 @@ export function usePdn(mes: string) {
         caiu,
         motivoQueda: ov?.motivo_queda || "",
         diasParado: 0,
-        emRisco: false,
+        emRisco: !caiu && !!ov?.risco_manual,
         isManual: false,
+        proximaAcaoData: ov?.proxima_acao_data || "",
+        prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
+        riscoManual: !!ov?.risco_manual,
+        riscoMotivo: ov?.risco_motivo || "",
+        proximaAcaoVencida: !caiu && isVencida(ov?.proxima_acao_data || ""),
+        novoDesdeOntem: isNovoDesdeOntem(v.data),
       });
     }
 
@@ -386,8 +425,14 @@ export function usePdn(mes: string) {
         caiu,
         motivoQueda: m.motivo_queda || "",
         diasParado: 0,
-        emRisco: false,
+        emRisco: !caiu && !!m.risco_manual,
         isManual: true,
+        proximaAcaoData: m.proxima_acao_data || "",
+        prioridade: (m.prioridade as PdnRow["prioridade"]) || "",
+        riscoManual: !!m.risco_manual,
+        riscoMotivo: m.risco_motivo || "",
+        proximaAcaoVencida: !caiu && isVencida(m.proxima_acao_data || ""),
+        novoDesdeOntem: isNovoDesdeOntem(m.data_visita),
       });
     }
 
@@ -395,7 +440,7 @@ export function usePdn(mes: string) {
   }, [deals, visitasReal, manualRows, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes]);
 
   // ── Overlay: grava só em pdn_entries (nunca no pipeline/negócio) ──────────────
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda">>) => {
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>) => {
     if (!user) return;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
@@ -403,6 +448,10 @@ export function usePdn(mes: string) {
     if (patch.status !== undefined) payload.status = patch.status || null;
     if (patch.caiu !== undefined) payload.caiu = patch.caiu;
     if (patch.motivoQueda !== undefined) payload.motivo_queda = patch.motivoQueda || null;
+    if (patch.proximaAcaoData !== undefined) payload.proxima_acao_data = patch.proximaAcaoData || null;
+    if (patch.prioridade !== undefined) payload.prioridade = patch.prioridade || null;
+    if (patch.riscoManual !== undefined) payload.risco_manual = patch.riscoManual;
+    if (patch.riscoMotivo !== undefined) payload.risco_motivo = patch.riscoMotivo || null;
 
     if (row.overrideId) {
       const { error } = await supabase.from("pdn_entries").update(payload).eq("id", row.overrideId);
