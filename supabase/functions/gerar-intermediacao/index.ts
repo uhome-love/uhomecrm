@@ -33,15 +33,18 @@ const CorretorSchema = z.object({
   nome: z.string().min(1), cpf: z.string().default(""), rg: z.string().default(""),
   email: z.string().default(""), percentual: z.number().min(0),
 });
+const CompradorSchema = z.object({
+  tipoPessoa: z.enum(["PF", "PJ"]),
+  razaoSocial: z.string().default(""), cnpj: z.string().default(""), socioAdmin: z.string().default(""),
+  nomeCompleto: z.string().default(""), genero: z.string().default(""), profissao: z.string().default(""),
+  estadoCivil: z.string().default(""), regimeBens: z.string().default(""),
+  cpf: z.string().default(""), rg: z.string().default(""), telefone: z.string().default(""),
+  email: z.string().default(""), endereco: z.string().default(""),
+});
 const BodySchema = z.object({
-  comprador: z.object({
-    tipoPessoa: z.enum(["PF", "PJ"]),
-    razaoSocial: z.string().default(""), cnpj: z.string().default(""), socioAdmin: z.string().default(""),
-    nomeCompleto: z.string().default(""), genero: z.string().default(""), profissao: z.string().default(""),
-    estadoCivil: z.string().default(""), regimeBens: z.string().default(""),
-    cpf: z.string().default(""), rg: z.string().default(""), telefone: z.string().default(""),
-    email: z.string().default(""), endereco: z.string().default(""),
-  }),
+  comprador: CompradorSchema,
+  // Novo: lista de compradores (casal / compra conjunta). Compat: se ausente, usa [comprador].
+  compradores: z.array(CompradorSchema).min(1).max(2).optional(),
   imovel: z.object({ empreendimento: z.string().min(1), unidade: z.string().min(1), vgv: z.number().nonnegative() }),
   corretores: z.array(CorretorSchema).min(1).max(2),
   comissao: z.object({
@@ -54,6 +57,15 @@ const BodySchema = z.object({
 });
 
 type Body = z.infer<typeof BodySchema>;
+type Comprador = z.infer<typeof CompradorSchema>;
+
+// Normaliza para a lista de compradores (compat com payloads antigos que só têm `comprador`).
+const listaCompradores = (b: Body): Comprador[] =>
+  b.compradores && b.compradores.length ? b.compradores : [b.comprador];
+
+// Nome legível de um comprador (para arquivo / histórico / assinatura).
+const nomeComprador = (c: Comprador): string =>
+  c.tipoPessoa === "PJ" ? `${c.razaoSocial}${c.socioAdmin ? ` / ${c.socioAdmin}` : ""}` : c.nomeCompleto;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
