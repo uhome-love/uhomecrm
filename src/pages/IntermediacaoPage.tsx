@@ -58,6 +58,29 @@ interface CorretorForm {
   percentual: string; // %
 }
 
+interface CompradorForm {
+  tipoPessoa: "PF" | "PJ";
+  razaoSocial: string;
+  cnpj: string;
+  socioAdmin: string;
+  nomeCompleto: string;
+  genero: string;
+  profissao: string;
+  estadoCivil: string;
+  regimeBens: string;
+  cpf: string;
+  rg: string;
+  telefone: string;
+  email: string;
+  endereco: string;
+}
+
+const emptyComprador: CompradorForm = {
+  tipoPessoa: "PF", razaoSocial: "", cnpj: "", socioAdmin: "",
+  nomeCompleto: "", genero: "", profissao: "", estadoCivil: "", regimeBens: "",
+  cpf: "", rg: "", telefone: "", email: "", endereco: "",
+};
+
 interface Parcela {
   vencimento: string; // yyyy-mm-dd
   valor: string;      // numérico
