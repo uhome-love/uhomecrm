@@ -13,13 +13,13 @@ const PRIORIDADE_META: Record<string, { label: string; cls: string }> = {
   baixa: { label: "Baixa", cls: "bg-slate-500/15 text-slate-600 dark:text-slate-400" },
 };
 
-export type PdnSavePatch = Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>;
+export type PdnSavePatch = Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "empreendimento" | "vgv">>;
 
 interface PdnKanbanProps {
   rows: PdnRow[];
   onSave: (row: PdnRow, patch: PdnSavePatch) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
-  onDelete: (overrideId: string) => void;
+  onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
   onMoveManual: (overrideId: string, grupo: PdnGrupo) => void;
@@ -27,7 +27,7 @@ interface PdnKanbanProps {
 }
 
 export function PdnKanban({
-  rows, onSave, onUpdateManual, onDelete, onQueda, onReativar, onMoveManual, onAdd,
+  rows, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMoveManual, onAdd,
 }: PdnKanbanProps) {
   const [selected, setSelected] = useState<PdnRow | null>(null);
   const [dragOver, setDragOver] = useState<PdnGrupo | null>(null);
@@ -125,7 +125,7 @@ export function PdnKanban({
         onClose={() => setSelected(null)}
         onSave={onSave}
         onUpdateManual={onUpdateManual}
-        onDelete={onDelete}
+        onRemove={onRemove}
         onQueda={onQueda}
         onReativar={onReativar}
       />

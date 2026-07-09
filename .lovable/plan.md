@@ -1,31 +1,34 @@
-## Auditoria — por que Victor e Denis apareceram em "Ganho" de Julho
+## Objetivo
+No PDN, o gerente precisa poder (1) corrigir **empreendimento** e **VGV** de qualquer negócio, (2) **apagar/remover** um negócio errado da planilha — tudo isso **sem alterar o negócio/pipeline do corretor**. E confirmar que planilha e Kanban continuam se atualizando sozinhos.
 
-Ambos são negócios **antigos** que "reapareceram" em Julho por causa de uma falha na regra de recorte mensal do PDN.
+## Situação atual (auditoria)
+- A tabela de overlay `pdn_entries` já tem colunas `empreendimento` e `vgv`, e as linhas já resolvem `override → dado do pipeline`. Ou seja, a base para editar sem tocar no corretor **já existe**.
+- **Porém**: hoje empreendimento/VGV só são editáveis em linhas *manuais*. Para negócios vindos do pipeline eles aparecem como texto fixo.
+- **Excluir** também só existe para linhas manuais. Não há como remover um negócio errado que veio do pipeline (se apagar o overlay, ele volta do pipeline).
+- Atualização automática: já funciona — a planilha lê ao vivo de `pipeline_leads` / `negocios` / `visitas` a cada carga, e o overlay do gerente fica "por cima", nunca gravando no `negocios`/pipeline do corretor.
 
-- **Victor Ouriques** (`d991…`): assinado em fevereiro, mas **não tem registro de negócio** (sem `data_assinatura`, sem VGV). Hoje (09/07) o card foi movido para a etapa "Ganho/venda". Sem `data_assinatura`, o PDN usou a data da última mudança de etapa (09/07) → caiu em Julho.
-- **Denis** (`5c55…`): negócio Open Bosque, R$ 361.000, fase "vendido" criado em 25/03, mas com **`data_assinatura` em branco**. A etapa foi tocada em 08/07 → sem `data_assinatura`, usou 08/07 → Julho.
+## Mudanças
 
-**Causa raiz (código):** em `usePdn.ts`, o mês do Ganho é `mesOf(data_assinatura || stage_changed_at)`. O `stage_changed_at` é volátil (muda quando alguém mexe no card hoje), então negócios sem data de assinatura sempre "pulam" para o mês atual.
+### 1. Editar empreendimento e VGV (overlay, sem afetar o corretor)
+- Estender `saveOverride` para aceitar também `empreendimento` e `vgv` no patch, gravando em `pdn_entries` (camada do gerente). O corretor continua vendo o `negocios` original intacto.
+- **Planilha:** para negócios do pipeline, transformar as células de Empreendimento e VGV em campos editáveis (mesmo componente `EditableCell` já usado nas linhas manuais), salvando via `saveOverride`.
+- **Drawer (Kanban):** para negócios do pipeline, trocar os campos "Empreendimento" e "VGV" de somente-leitura para inputs editáveis, salvando via `saveOverride`. Mostrar uma dica de que o valor foi ajustado pelo gestor quando diferente do pipeline.
+- Nada disso escreve em `negocios` nem em `pipeline_leads`.
 
-## Correções
+### 2. Remover um negócio errado da planilha
+- Adicionar a coluna `oculto` (boolean, padrão falso) em `pdn_entries` (migração).
+- Nas linhas do PDN, ignorar negócios cujo overlay esteja com `oculto = true` (some da planilha e do Kanban).
+- Ação "Remover da planilha" disponível para negócios do pipeline (planilha, drawer e card do Kanban): cria/atualiza o overlay marcando `oculto = true`. Para linhas manuais, mantém a exclusão real que já existe.
+- Como isso é uma decisão de gestão que pode ser revertida, incluir um pequeno toggle "Mostrar ocultos" no cabeçalho para reexibir e um botão "Restaurar" nesses itens. Remover da planilha **não** apaga o negócio do corretor.
 
-### 1. Corrigir os dados dos dois negócios
-- **Denis**: preencher `data_assinatura = 29/01/2026` no negócio existente (Open Bosque). Ele passa a contar em Janeiro e sai de Julho.
-- **Victor**: criar o registro de negócio que faltava, vinculado ao lead, com `data_assinatura = 10/02/2026`, empreendimento "Alto Lindóia", corretor atual do lead, fase "vendido", status "ativo", VGV 0 (o gestor ajusta depois pelo PDN). Ele passa a contar em Fevereiro e sai de Julho.
-
-### 2. Corrigir a regra de recorte mensal do Ganho (estrutural)
-Em `usePdn.ts`, mudar o mês do Ganho para **nunca** usar `stage_changed_at`:
-- Prioridade 1: `data_assinatura`.
-- Prioridade 2 (quando faltar `data_assinatura`): **a primeira data em que o negócio entrou na etapa de venda**, lida do histórico (`pipeline_historico`), que é estável.
-- Se não houver nenhuma das duas, o negócio **não é atribuído a nenhum mês** (fica de fora do recorte até o gestor preencher a data), em vez de cair no mês atual.
-
-A coluna "Data" exibida no Ganho passa a seguir a mesma prioridade (`data_assinatura` → primeira data de venda), para bater com o mês do recorte.
+### 3. Verificação (planilha + Kanban)
+- Confirmar que empreendimento/VGV editados aparecem iguais nas duas visões e persistem após recarregar.
+- Confirmar que "Remover da planilha" tira o negócio das duas visões e não altera o pipeline do corretor.
+- Confirmar que novas visitas realizadas / mudanças de etapa (negociação, contrato, ganho) continuam entrando automaticamente, preservando os ajustes manuais do gerente por cima.
 
 ## Detalhes técnicos
-- Dados: um `UPDATE` em `negocios` (Denis) e um `INSERT` em `negocios` (Victor) via ferramenta de dados.
-- Código: adicionar no `loadDeals` uma busca em `pipeline_historico` (apenas para os leads em etapa de venda) para obter a menor data de entrada na etapa "venda" por lead; usar essa data como fallback no cálculo de `refMes` e no campo `data` do Ganho. Sem alteração de schema.
-- Nada disso altera o trabalho do corretor no pipeline; só corrige atribuição de mês e completa dados de negócio.
-
-## Verificação após aplicar
-- Confirmar que Victor sai de Julho e aparece em Fevereiro; Denis sai de Julho e aparece em Janeiro.
-- Reconfirmar as contagens de anomalia (negócios "vendido" sem `data_assinatura` e leads em "venda" sem negócio) — devem zerar para esses casos.
+- **Migração:** `ALTER TABLE public.pdn_entries ADD COLUMN oculto boolean NOT NULL DEFAULT false;` (sem mudança de RLS/grants — tabela já existente).
+- **`usePdn.ts`:** incluir `oculto` no `select` de `loadEntries` e no tipo `PdnEntry`; filtrar linhas ocultas em `rows`; ampliar o patch de `saveOverride` com `empreendimento`/`vgv`; adicionar helpers `ocultarRow(row)` e `restaurarRow(row)` (usam `saveOverride` com `oculto`).
+- **`PdnGestor.tsx`:** células editáveis de empreendimento/VGV para linhas do pipeline; ação de remover; toggle "Mostrar ocultos".
+- **`PdnCardDrawer.tsx` / `PdnKanban.tsx`:** inputs editáveis e ação de remover para negócios do pipeline.
+- Sem alterações em `negocios`, `pipeline_leads`, `visitas` ou na lógica do corretor.

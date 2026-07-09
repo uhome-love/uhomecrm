@@ -64,6 +64,7 @@ export interface PdnRow {
   riscoMotivo: string;
   proximaAcaoVencida: boolean;
   novoDesdeOntem: boolean;
+  oculto: boolean;           // removido da planilha pelo gestor (overlay), sem afetar o pipeline
 }
 
 type PdnEntry = {
@@ -88,6 +89,7 @@ type PdnEntry = {
   prioridade: string | null;
   risco_manual: boolean | null;
   risco_motivo: string | null;
+  oculto: boolean | null;
 };
 
 const MS_DAY = 86400000;
@@ -145,7 +147,7 @@ export function usePdn(mes: string) {
     setLoadingEntries(true);
     const { data, error } = await supabase
       .from("pdn_entries")
-      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, nome, situacao, empreendimento, vgv, corretor, equipe, data_visita, status, observacoes, proxima_acao, caiu, motivo_queda, proxima_acao_data, prioridade, risco_manual, risco_motivo")
+      .select("id, negocio_id, pipeline_lead_id, gerente_id, mes, nome, situacao, empreendimento, vgv, corretor, equipe, data_visita, status, observacoes, proxima_acao, caiu, motivo_queda, proxima_acao_data, prioridade, risco_manual, risco_motivo, oculto")
       .order("created_at", { ascending: true });
     if (error) {
       console.error("Erro ao carregar PDN:", error);
@@ -330,7 +332,7 @@ export function usePdn(mes: string) {
   }, [entries]);
   const manualRows = useMemo(() => entries.filter(e => !e.negocio_id && !e.pipeline_lead_id && e.mes === mes), [entries, mes]);
 
-  const rows = useMemo<PdnRow[]>(() => {
+  const allRows = useMemo<PdnRow[]>(() => {
     const out: PdnRow[] = [];
 
     // Linhas do pipeline (Em Negociação / Contrato / Ganho)
@@ -380,6 +382,7 @@ export function usePdn(mes: string) {
         riscoMotivo: ov?.risco_motivo || "",
         proximaAcaoVencida: !caiu && isVencida(proximaAcaoData),
         novoDesdeOntem: isNovoDesdeOntem(d.stageChangedAt),
+        oculto: !!ov?.oculto,
       });
     }
 
@@ -418,6 +421,7 @@ export function usePdn(mes: string) {
         riscoMotivo: ov?.risco_motivo || "",
         proximaAcaoVencida: !caiu && isVencida(ov?.proxima_acao_data || ""),
         novoDesdeOntem: isNovoDesdeOntem(v.data),
+        oculto: !!ov?.oculto,
       });
     }
 
@@ -453,14 +457,18 @@ export function usePdn(mes: string) {
         riscoMotivo: m.risco_motivo || "",
         proximaAcaoVencida: !caiu && isVencida(m.proxima_acao_data || ""),
         novoDesdeOntem: isNovoDesdeOntem(m.data_visita),
+        oculto: !!m.oculto,
       });
     }
 
     return out;
   }, [deals, visitasReal, manualRows, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes]);
 
+  const rows = useMemo<PdnRow[]>(() => allRows.filter(r => !r.oculto), [allRows]);
+  const hiddenRows = useMemo<PdnRow[]>(() => allRows.filter(r => r.oculto), [allRows]);
+
   // ── Overlay: grava só em pdn_entries (nunca no pipeline/negócio) ──────────────
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>) => {
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "empreendimento" | "vgv" | "oculto">>) => {
     if (!user) return;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
@@ -472,6 +480,9 @@ export function usePdn(mes: string) {
     if (patch.prioridade !== undefined) payload.prioridade = patch.prioridade || null;
     if (patch.riscoManual !== undefined) payload.risco_manual = patch.riscoManual;
     if (patch.riscoMotivo !== undefined) payload.risco_motivo = patch.riscoMotivo || null;
+    if (patch.empreendimento !== undefined) payload.empreendimento = patch.empreendimento || null;
+    if (patch.vgv !== undefined) payload.vgv = Number(patch.vgv) || 0;
+    if (patch.oculto !== undefined) payload.oculto = patch.oculto;
 
     if (row.overrideId) {
       const { error } = await supabase.from("pdn_entries").update(payload).eq("id", row.overrideId);
@@ -502,6 +513,24 @@ export function usePdn(mes: string) {
 
   const reativarQueda = useCallback(async (row: PdnRow) => {
     await saveOverride(row, { caiu: false, motivoQueda: "" });
+  }, [saveOverride]);
+
+  // ── Ocultar / restaurar negócio na planilha (só overlay, nunca no pipeline) ────
+  const ocultarRow = useCallback(async (row: PdnRow) => {
+    await saveOverride(row, { oculto: true });
+  }, [saveOverride]);
+
+  const restaurarRow = useCallback(async (row: PdnRow) => {
+    await saveOverride(row, { oculto: false });
+  }, [saveOverride]);
+
+  // ── Editar empreendimento / VGV (overlay do gestor) ──────────────────────────
+  const editarEmpreendimento = useCallback(async (row: PdnRow, empreendimento: string) => {
+    await saveOverride(row, { empreendimento });
+  }, [saveOverride]);
+
+  const editarVgv = useCallback(async (row: PdnRow, vgv: number) => {
+    await saveOverride(row, { vgv });
   }, [saveOverride]);
 
   // ── Linha manual (CRUD completo) ─────────────────────────────────────────────
@@ -552,11 +581,16 @@ export function usePdn(mes: string) {
 
   return {
     rows,
+    hiddenRows,
     resumo,
     loading: loadingDeals || loadingEntries,
     saveOverride,
     marcarQueda,
     reativarQueda,
+    ocultarRow,
+    restaurarRow,
+    editarEmpreendimento,
+    editarVgv,
     addManualRow,
     updateManualRow,
     deleteRow,

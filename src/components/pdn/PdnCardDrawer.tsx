@@ -21,13 +21,13 @@ const STATUS_PRESETS = [
 ];
 
 export function PdnCardDrawer({
-  row, onClose, onSave, onUpdateManual, onDelete, onQueda, onReativar,
+  row, onClose, onSave, onUpdateManual, onRemove, onQueda, onReativar,
 }: {
   row: PdnRow | null;
   onClose: () => void;
   onSave: (row: PdnRow, patch: PdnSavePatch) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
-  onDelete: (overrideId: string) => void;
+  onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
 }) {
@@ -66,6 +66,8 @@ export function PdnCardDrawer({
       status, observacoes: obs, proximaAcao: proxAcao, proximaAcaoData: proxData,
       prioridade: (prioridade as PdnRow["prioridade"]) || "",
       riscoManual, riscoMotivo,
+      // Empreendimento/VGV também são editáveis para negócios do pipeline (overlay do gestor)
+      ...(row.isManual ? {} : { empreendimento: empreend, vgv: Number(vgv) || 0 }),
     });
     if (row.isManual && row.overrideId) {
       onUpdateManual(row.overrideId, {
@@ -86,15 +88,21 @@ export function PdnCardDrawer({
         </SheetHeader>
 
         <div className="mt-4 space-y-4">
-          {/* Cabeçalho de contexto (leitura) */}
+          {/* Empreendimento/VGV editáveis pelo gestor (overlay) + contexto do corretor (leitura) */}
           {!row.isManual && (
-            <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Empreendimento</span><span className="font-medium">{row.empreendimento}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">VGV</span><span className="font-medium">{fmtMoney(row.vgv, "exact")}</span></div>
+            <div className="space-y-3 rounded-lg border bg-muted/30 p-3 text-sm">
+              <div className="space-y-1">
+                <Label>Empreendimento</Label>
+                <Input value={empreend} onChange={(e) => setEmpreend(e.target.value)} placeholder="Nome do empreendimento" />
+              </div>
+              <div className="space-y-1">
+                <Label>VGV</Label>
+                <Input type="number" value={vgv} onChange={(e) => setVgv(e.target.value)} placeholder="0" />
+              </div>
               <div className="flex justify-between"><span className="text-muted-foreground">Corretor</span><span className="font-medium">{row.corretor}</span></div>
               {row.equipe !== "—" && <div className="flex justify-between"><span className="text-muted-foreground">Equipe</span><span className="font-medium">Equipe {row.equipe}</span></div>}
               {row.data && <div className="flex justify-between"><span className="text-muted-foreground">Data</span><span className="font-medium">{formatBRT(row.data, "dd/MM/yy")}</span></div>}
-              <p className="mt-2 text-[11px] text-muted-foreground">Edições abaixo são internas do gestor e não afetam o corretor.</p>
+              <p className="text-[11px] text-muted-foreground">Empreendimento e VGV ajustados aqui valem só para o PDN do gestor — não alteram o pipeline do corretor.</p>
             </div>
           )}
 
@@ -187,11 +195,9 @@ export function PdnCardDrawer({
         </div>
 
         <div className="mt-6 flex items-center justify-between">
-          {row.isManual && row.overrideId ? (
-            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { onDelete(row.overrideId!); onClose(); }}>
-              <Trash2 className="mr-1.5 h-4 w-4" /> Excluir
-            </Button>
-          ) : <span />}
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { onRemove(row); onClose(); }}>
+            <Trash2 className="mr-1.5 h-4 w-4" /> {row.isManual ? "Excluir" : "Remover da planilha"}
+          </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
             <Button onClick={save}>Salvar</Button>
