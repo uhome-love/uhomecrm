@@ -623,12 +623,11 @@ function GrupoBloco({
                       />
                     </TableCell>
                     <TableCell className="text-sm font-medium">
-                      <EditableCell
-                        type="number"
-                        value={r.vgv || ""}
+                      <MoneyInput
+                        value={r.vgv || 0}
                         onCommit={(v) => r.isManual
-                          ? (r.overrideId && onUpdateManual(r.overrideId, { vgv: Number(v) || 0 }))
-                          : onSave(r, { vgv: Number(v) || 0 })}
+                          ? (r.overrideId && onUpdateManual(r.overrideId, { vgv: v }))
+                          : onSave(r, { vgv: v })}
                       />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
