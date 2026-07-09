@@ -601,11 +601,9 @@ function GrupoBloco({
                             <TrendingDown className="h-3.5 w-3.5" />
                           </Button>
                         )}
-                        {r.isManual && r.overrideId && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onDelete(r.overrideId!)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title={r.isManual ? "Excluir" : "Remover da planilha (não afeta o corretor)"} onClick={() => onRemove(r)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
