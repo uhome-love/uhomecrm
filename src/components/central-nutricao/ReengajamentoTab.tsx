@@ -649,10 +649,16 @@ export default function ReengajamentoTab() {
                 Disparo em andamento
                 {isPausing && <Badge className="bg-amber-200 text-amber-900">Pausando…</Badge>}
               </span>
-              <Button size="sm" variant="destructive" onClick={pausarDisparo} disabled={isPausing}>
-                <Pause className="h-3.5 w-3.5 mr-1" />
-                {isPausing ? "Pausando…" : "Pausar agora"}
-              </Button>
+              <span className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={pausarDisparo} disabled={isPausing}>
+                  <Pause className="h-3.5 w-3.5 mr-1" />
+                  {isPausing ? "Pausando…" : "Pausar"}
+                </Button>
+                <Button size="sm" variant="destructive" onClick={pararDisparo}>
+                  <Square className="h-3.5 w-3.5 mr-1" />
+                  Parar
+                </Button>
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
