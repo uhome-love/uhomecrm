@@ -477,6 +477,8 @@ export default function PdnGestor() {
                 onRemove={handleRemove}
                 onQueda={setQuedaRow}
                 onReativar={reativarQueda}
+                onMudarEtapa={mudarEtapa}
+                onAvisar={avisarCorretor}
               />
             );
           })}
