@@ -147,7 +147,7 @@ function ObsSelector({ value, onChange }: { value: string; onChange: (v: string)
   return (
     <Popover open={open} onOpenChange={(o) => { if (!o) commit(); else setOpen(true); }}>
       <PopoverTrigger asChild>
-        <button className="line-clamp-2 w-full whitespace-pre-wrap text-left text-sm text-muted-foreground hover:text-foreground">
+        <button className="line-clamp-4 w-full whitespace-pre-wrap break-words text-left text-sm text-muted-foreground hover:text-foreground">
           {value ? value : <span className="text-muted-foreground/60">—</span>}
         </button>
       </PopoverTrigger>
