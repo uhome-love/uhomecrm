@@ -346,6 +346,9 @@ export default function PdnGestor() {
               <LayoutGrid className="mr-1.5 h-4 w-4" /> Kanban
             </Button>
           </div>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`mr-1.5 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Atualizar
+          </Button>
           <Button variant="outline" size="sm" onClick={exportCSV}><Download className="mr-1.5 h-4 w-4" /> Exportar</Button>
         </div>
       </div>
