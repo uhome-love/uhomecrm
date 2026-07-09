@@ -68,11 +68,11 @@ export function PdnCardDrawer({
       prioridade: (prioridade as PdnRow["prioridade"]) || "",
       riscoManual, riscoMotivo,
       // Empreendimento/VGV também são editáveis para negócios do pipeline (overlay do gestor)
-      ...(row.isManual ? {} : { empreendimento: empreend, vgv: Number(vgv) || 0 }),
+      ...(row.isManual ? {} : { empreendimento: empreend, vgv }),
     });
     if (row.isManual && row.overrideId) {
       onUpdateManual(row.overrideId, {
-        nome, empreendimento: empreend || null, vgv: Number(vgv) || 0, corretor: corretor || null,
+        nome, empreendimento: empreend || null, vgv, corretor: corretor || null,
       });
     }
     onClose();
