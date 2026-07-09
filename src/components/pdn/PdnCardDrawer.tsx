@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, TrendingDown, RotateCcw, AlertTriangle } from "lucide-react";
 import type { PdnSavePatch } from "./PdnKanban";
+import { MoneyInput } from "./MoneyInput";
 
 const STATUS_PRESETS = [
   "Aguardando docs", "Em aprovação", "Negociando", "Proposta", "Follow up",
