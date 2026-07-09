@@ -235,21 +235,10 @@ function CompradorFields({
 
 // ─── Componente ────────────────────────────────────────────────────────────────
 export default function IntermediacaoPage() {
-  // Comprador
-  const [tipoPessoa, setTipoPessoa] = useState<"PF" | "PJ">("PF");
-  const [razaoSocial, setRazaoSocial] = useState("");
-  const [cnpj, setCnpj] = useState("");
-  const [socioAdmin, setSocioAdmin] = useState("");
-  const [nomeCompleto, setNomeCompleto] = useState("");
-  const [genero, setGenero] = useState("");
-  const [profissao, setProfissao] = useState("");
-  const [estadoCivil, setEstadoCivil] = useState("");
-  const [regimeBens, setRegimeBens] = useState("");
-  const [cpf, setCpf] = useState("");
-  const [rg, setRg] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [email, setEmail] = useState("");
-  const [endereco, setEndereco] = useState("");
+  // Comprador(es) — o segundo é opcional (casal / compra conjunta)
+  const [comprador1, setComprador1] = useState<CompradorForm>({ ...emptyComprador });
+  const [comprador2, setComprador2] = useState<CompradorForm>({ ...emptyComprador });
+  const [usarComprador2, setUsarComprador2] = useState(false);
 
   // Imóvel
   const [empreendimento, setEmpreendimento] = useState("");
