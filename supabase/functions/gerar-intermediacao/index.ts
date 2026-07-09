@@ -251,19 +251,29 @@ const CLAUSULAS_FIXAS: string[] = [
   "As Partes concordam em assinar o presente instrumento, por: (i) meio de plataformas de assinatura digital, admitindo expressamente tal meio como válido, nos termos do permissivo contido no § 2º do artigo 10 da Medida Provisória nº 2.200-2/2001. Neste caso, fica dispensada a obrigatoriedade do uso de assinaturas, das Partes e/ou das testemunhas, por meio de certificados emitidos pela ICP-Brasil, nos mesmos termos do dispositivo mencionado no item acima, concordando as Partes que qualquer meio idôneo de certificação digital de autoria e integridade deste Instrumento será válido com comprovação de suas assinaturas e, na impossibilidade da assinatura neste formato digital; (ii) em 02 (duas) vias de igual teor e para um só fim, na presença de duas testemunhas abaixo qualificadas.",
 ];
 
-function qualificacaoContratante(c: Body["comprador"]): TextRun[] {
+function qualificacaoUmContratante(c: Comprador): TextRun[] {
+  const runs: TextRun[] = [];
+  if (c.tipoPessoa === "PJ") {
+    runs.push(new TextRun({ text: `${c.razaoSocial.toUpperCase()}`, bold: true }));
+    runs.push(new TextRun(`, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº ${c.cnpj}, neste ato representada por seu Sócio-Administrador ${c.socioAdmin.toUpperCase()}, inscrito no CPF sob o nº ${c.cpf}, portador do RG nº ${c.rg}, telefone ${c.telefone}, e-mail ${c.email}, residente e domiciliado na ${c.endereco}`));
+  } else {
+    const generoTxt = c.genero === "feminino" ? "brasileira" : "brasileiro";
+    runs.push(new TextRun({ text: `${c.nomeCompleto.toUpperCase()}`, bold: true }));
+    runs.push(new TextRun(`, ${generoTxt}, ${c.profissao}, ${c.estadoCivil}${c.estadoCivil === "casado(a)" && c.regimeBens ? ` sob o regime de ${c.regimeBens}` : ""}, inscrito(a) no CPF sob o nº ${c.cpf}, portador(a) do RG nº ${c.rg}, telefone ${c.telefone}, e-mail ${c.email}, residente e domiciliado(a) na ${c.endereco}`));
+  }
+  return runs;
+}
+
+function qualificacaoContratante(compradores: Comprador[]): TextRun[] {
   const runs: TextRun[] = [];
   runs.push(new TextRun("Pelo presente instrumento particular de intermediação imobiliária, de um lado, como "));
   runs.push(new TextRun({ text: "CONTRATANTE(S)", bold: true }));
   runs.push(new TextRun(": "));
-  if (c.tipoPessoa === "PJ") {
-    runs.push(new TextRun({ text: `${c.razaoSocial.toUpperCase()}`, bold: true }));
-    runs.push(new TextRun(`, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº ${c.cnpj}, neste ato representada por seu Sócio-Administrador ${c.socioAdmin.toUpperCase()}, inscrito no CPF sob o nº ${c.cpf}, portador do RG nº ${c.rg}, telefone ${c.telefone}, e-mail ${c.email}, residente e domiciliado na ${c.endereco}.`));
-  } else {
-    const generoTxt = c.genero === "feminino" ? "brasileira" : "brasileiro";
-    runs.push(new TextRun({ text: `${c.nomeCompleto.toUpperCase()}`, bold: true }));
-    runs.push(new TextRun(`, ${generoTxt}, ${c.profissao}, ${c.estadoCivil}${c.estadoCivil === "casado(a)" && c.regimeBens ? ` sob o regime de ${c.regimeBens}` : ""}, inscrito(a) no CPF sob o nº ${c.cpf}, portador(a) do RG nº ${c.rg}, telefone ${c.telefone}, e-mail ${c.email}, residente e domiciliado(a) na ${c.endereco}.`));
-  }
+  compradores.forEach((c, i) => {
+    if (i > 0) runs.push(new TextRun(i === compradores.length - 1 ? "; e " : "; "));
+    runs.push(...qualificacaoUmContratante(c));
+  });
+  runs.push(new TextRun("."));
   return runs;
 }
 
