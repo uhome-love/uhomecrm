@@ -56,7 +56,7 @@ export function PdnCardDrawer({
     setRiscoMotivo(row.riscoMotivo || "");
     setNome(row.nome || "");
     setEmpreend(row.empreendimento === "—" ? "" : row.empreendimento);
-    setVgv(row.vgv ? String(row.vgv) : "");
+    setVgv(row.vgv || 0);
     setCorretor(row.corretor === "—" ? "" : row.corretor);
   }, [row]);
 
