@@ -84,7 +84,25 @@ type PdnEntry = {
   proxima_acao: string | null;
   caiu: boolean | null;
   motivo_queda: string | null;
+  proxima_acao_data: string | null;
+  prioridade: string | null;
+  risco_manual: boolean | null;
+  risco_motivo: string | null;
 };
+
+const MS_DAY = 86400000;
+function isNovoDesdeOntem(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
+  const t = new Date(dateStr).getTime();
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t <= MS_DAY;
+}
+function isVencida(dateStr: string): boolean {
+  if (!dateStr) return false;
+  const t = new Date(`${dateStr}T23:59:59`).getTime();
+  if (Number.isNaN(t)) return false;
+  return t < Date.now();
+}
 
 function diffDays(dateStr: string): number {
   if (!dateStr) return 0;
