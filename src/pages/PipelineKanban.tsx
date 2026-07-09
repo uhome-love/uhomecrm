@@ -213,7 +213,9 @@ export default function PipelineKanban() {
       const found = pipeline.leads.find(l => l.id === leadId);
       if (found) {
         setSelectedLead(found);
+        setEtapaSugerida(searchParams.get("etapaSugerida"));
         searchParams.delete("lead");
+        searchParams.delete("etapaSugerida");
         setSearchParams(searchParams, { replace: true });
       }
     }
