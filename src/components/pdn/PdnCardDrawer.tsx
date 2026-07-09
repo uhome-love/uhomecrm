@@ -23,7 +23,7 @@ const STATUS_PRESETS = [
 ];
 
 export function PdnCardDrawer({
-  row, onClose, onSave, onUpdateManual, onRemove, onQueda, onReativar,
+  row, onClose, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar,
 }: {
   row: PdnRow | null;
   onClose: () => void;
@@ -32,6 +32,9 @@ export function PdnCardDrawer({
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
+  onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
+  onLimparEtapa: (row: PdnRow) => void;
+  onAvisar: (row: PdnRow, mensagem: string) => void;
 }) {
   const [status, setStatus] = useState("");
   const [obs, setObs] = useState("");
@@ -45,6 +48,9 @@ export function PdnCardDrawer({
   const [empreend, setEmpreend] = useState("");
   const [vgv, setVgv] = useState(0);
   const [corretor, setCorretor] = useState("");
+  // Avisar corretor
+  const [avisarOpen, setAvisarOpen] = useState(false);
+  const [avisoMsg, setAvisoMsg] = useState("");
 
   useEffect(() => {
     if (!row) return;
