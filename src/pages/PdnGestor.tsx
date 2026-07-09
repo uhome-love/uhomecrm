@@ -309,17 +309,33 @@ export default function PdnGestor() {
     updateManualRow(overrideId, { situacao: grupo });
   };
 
-  // Resumo por corretor (VGV e nº de negócios, exclui caídos)
-  const resumoCorretor = useMemo(() => {
-    const map: Record<string, { count: number; vgv: number }> = {};
-    for (const r of filtered) {
-      if (r.grupo === "caidos" || r.corretor === "—") continue;
-      (map[r.corretor] ||= { count: 0, vgv: 0 });
-      map[r.corretor].count++;
-      map[r.corretor].vgv += r.vgv;
+  // Resumo por corretor, agrupado por equipe (ignora o filtro de corretor p/ manter todos clicáveis)
+  const resumoEquipes = useMemo(() => {
+    const base = rows.filter(r => {
+      if (r.grupo === "caidos" || r.corretor === "—") return false;
+      if (filtroRisco && !r.emRisco) return false;
+      if (filtroEquipe !== "todas" && r.equipe !== filtroEquipe) return false;
+      if (kpiFilter === "risco" && !r.emRisco) return false;
+      return true;
+    });
+    const teamMap: Record<string, { equipe: string; count: number; vgv: number; corretores: Record<string, { count: number; vgv: number }> }> = {};
+    for (const r of base) {
+      const eq = r.equipe && r.equipe !== "—" ? r.equipe : "Sem equipe";
+      const t = (teamMap[eq] ||= { equipe: eq, count: 0, vgv: 0, corretores: {} });
+      t.count++; t.vgv += r.vgv;
+      const c = (t.corretores[r.corretor] ||= { count: 0, vgv: 0 });
+      c.count++; c.vgv += r.vgv;
     }
-    return Object.entries(map).map(([nome, v]) => ({ nome, ...v })).sort((a, b) => b.vgv - a.vgv);
-  }, [filtered]);
+    return Object.values(teamMap)
+      .map(t => ({
+        ...t,
+        corretores: Object.entries(t.corretores)
+          .map(([nome, v]) => ({ nome, ...v }))
+          .sort((a, b) => b.vgv - a.vgv),
+      }))
+      .sort((a, b) => b.vgv - a.vgv);
+  }, [rows, filtroRisco, filtroEquipe, kpiFilter]);
+
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
