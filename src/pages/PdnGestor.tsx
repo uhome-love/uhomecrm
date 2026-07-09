@@ -357,6 +357,17 @@ export default function PdnGestor() {
         <div className="flex items-center justify-center py-20 text-muted-foreground">
           <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando…
         </div>
+      ) : view === "kanban" ? (
+        <PdnKanban
+          rows={filtered}
+          onSave={handleSave}
+          onUpdateManual={updateManualRow}
+          onDelete={deleteRow}
+          onQueda={setQuedaRow}
+          onReativar={reativarQueda}
+          onMoveManual={moveManual}
+          onAdd={addManualRow}
+        />
       ) : (
         <div className="space-y-5">
           {PDN_GRUPOS.filter(g => gruposVisiveis.includes(g.key)).map(g => {
@@ -386,6 +397,24 @@ export default function PdnGestor() {
             );
           })}
         </div>
+      )}
+
+      {/* Resumo por corretor */}
+      {!loading && resumoCorretor.length > 0 && (
+        <Card className="p-4">
+          <div className="mb-3 text-sm font-semibold text-foreground">Resumo por corretor</div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {resumoCorretor.map(c => (
+              <div key={c.nome} className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-foreground">{c.nome}</div>
+                  <div className="text-xs text-muted-foreground">{c.count} negócio{c.count > 1 ? "s" : ""}</div>
+                </div>
+                <div className="text-sm font-semibold text-primary">{fmtMoney(c.vgv, "short")}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
       <QuedaDialog
