@@ -315,6 +315,59 @@ export function usePdn(mes: string) {
 
   useEffect(() => { loadDeals(); }, [loadDeals]);
 
+  // ── Vendas do mês (negocios.fase='vendido') — garante PDN Ganho == Vendas Realizadas ──
+  // Cobre casos onde o lead está arquivado ou com etapa atrasada no pipeline.
+  useEffect(() => {
+    if (!user || scopeAuthIds === undefined) return;
+    (async () => {
+      const inicio = `${mes}-01`;
+      const [ano, m] = mes.split("-").map(Number);
+      const fim = new Date(ano, m, 0).toISOString().slice(0, 10);
+      const { data: negs, error } = await supabase
+        .from("negocios")
+        .select("id, pipeline_lead_id, nome_cliente, empreendimento, vgv_final, vgv_estimado, data_assinatura, observacoes, fase, status")
+        .eq("fase", "vendido")
+        .neq("status", "perdido")
+        .gte("data_assinatura", inicio)
+        .lte("data_assinatura", fim)
+        .limit(2000);
+      if (error) { console.error("Erro ao carregar vendas do PDN:", error); return; }
+
+      const leadIds = [...new Set((negs || []).map((n: any) => n.pipeline_lead_id).filter(Boolean))] as string[];
+      // corretor (auth id) do lead vinculado — ignora arquivado/etapa de propósito
+      const corretorByLead: Record<string, string | null> = {};
+      if (leadIds.length > 0) {
+        const { data: leads } = await supabase
+          .from("pipeline_leads")
+          .select("id, corretor_id")
+          .in("id", leadIds);
+        for (const l of leads || []) corretorByLead[(l as any).id] = (l as any).corretor_id || null;
+      }
+
+      const rows: VendaMes[] = [];
+      for (const n of negs || []) {
+        const leadId = (n as any).pipeline_lead_id as string | null;
+        const corretorAuthId = leadId ? (corretorByLead[leadId] ?? null) : null;
+        // Aplica o mesmo escopo do PDN (por corretor). Sem lead vinculado só entra p/ admin/diretor.
+        if (scopeAuthIds !== null) {
+          if (!corretorAuthId || !scopeAuthIds.includes(corretorAuthId)) continue;
+        }
+        rows.push({
+          negocioId: (n as any).id,
+          pipelineLeadId: leadId,
+          nome: (n as any).nome_cliente || "—",
+          empreendimento: (n as any).empreendimento || "—",
+          vgv: Number((n as any).vgv_final ?? (n as any).vgv_estimado ?? 0) || 0,
+          dataAssinatura: (n as any).data_assinatura,
+          corretorAuthId,
+          observacoesNegocio: (n as any).observacoes || "",
+        });
+      }
+      setVendasMes(rows);
+    })();
+  }, [user, mes, scopeAuthIds]);
+
+
   // ── Visitas realizadas no mês (leads sem negócio ativo) ───────────────────────
   useEffect(() => {
     if (!user) return;
