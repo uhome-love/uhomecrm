@@ -704,10 +704,22 @@ function GrupoBloco({
                       ) : (
                         <div className="flex items-center gap-1.5">
                           {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
-                          {r.nome}
+                          <span className="truncate">{r.nome}</span>
+                          {r.etapaAjustada && <Badge variant="secondary" className="shrink-0 text-[9px] px-1">ajustada</Badge>}
                         </div>
                       )}
+                      <div className="mt-1">
+                        <Select value={r.grupo} onValueChange={(v) => onMudarEtapa(r, v as PdnGrupo)}>
+                          <SelectTrigger className="h-6 border-transparent bg-transparent px-1 text-[11px] text-muted-foreground hover:border-border">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PDN_GRUPOS.map(g => <SelectItem key={g.key} value={g.key} className="text-xs">{g.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
+
                     <TableCell className="text-sm text-muted-foreground">
                       {r.isManual
                         ? <EditableCell type="date" value={r.data} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { data_visita: v })} />
