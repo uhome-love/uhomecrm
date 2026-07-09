@@ -64,6 +64,7 @@ export interface PdnRow {
   riscoMotivo: string;
   proximaAcaoVencida: boolean;
   novoDesdeOntem: boolean;
+  oculto: boolean;           // removido da planilha pelo gestor (overlay), sem afetar o pipeline
 }
 
 type PdnEntry = {
