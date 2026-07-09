@@ -457,6 +457,7 @@ export function usePdn(mes: string) {
         riscoMotivo: m.risco_motivo || "",
         proximaAcaoVencida: !caiu && isVencida(m.proxima_acao_data || ""),
         novoDesdeOntem: isNovoDesdeOntem(m.data_visita),
+        oculto: !!m.oculto,
       });
     }
 
