@@ -425,8 +425,14 @@ export function usePdn(mes: string) {
         caiu,
         motivoQueda: m.motivo_queda || "",
         diasParado: 0,
-        emRisco: false,
+        emRisco: !caiu && !!m.risco_manual,
         isManual: true,
+        proximaAcaoData: m.proxima_acao_data || "",
+        prioridade: (m.prioridade as PdnRow["prioridade"]) || "",
+        riscoManual: !!m.risco_manual,
+        riscoMotivo: m.risco_motivo || "",
+        proximaAcaoVencida: !caiu && isVencida(m.proxima_acao_data || ""),
+        novoDesdeOntem: isNovoDesdeOntem(m.data_visita),
       });
     }
 
