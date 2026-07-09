@@ -655,6 +655,23 @@ export function usePdn(mes: string) {
     await loadEntries();
   }, [loadEntries]);
 
+  // ── Possíveis duplicados: mesmo cliente do pipeline em mais de uma etapa ──────
+  const duplicados = useMemo(() => {
+    const map: Record<string, PdnRow[]> = {};
+    for (const r of rows) {
+      if (r.isManual || !r.pipelineLeadId) continue;
+      const key = `${r.nome.toLowerCase().trim()}|${r.corretor.toLowerCase().trim()}`;
+      (map[key] ||= []).push(r);
+    }
+    return Object.values(map)
+      .filter(list => new Set(list.map(r => r.pipelineLeadId)).size > 1)
+      .map(list => ({
+        nome: list[0].nome,
+        corretor: list[0].corretor,
+        etapas: list.map(r => ({ id: r.id, etapa: GRUPO_LABEL[r.grupo], vgv: r.vgv })),
+      }));
+  }, [rows]);
+
   // ── Totais / resumo (não conta caídos no VGV/forecast) ───────────────────────
   const resumo = useMemo(() => {
     const byGrupo: Record<PdnGrupo, { count: number; vgv: number }> = {
