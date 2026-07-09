@@ -451,6 +451,8 @@ export default function PdnGestor() {
                 sortDir={sortDir}
                 onSort={toggleSort}
                 isMobile={isMobile}
+                colWidths={colWidths}
+                onColResize={setColWidth}
                 onAdd={() => addManualRow(g.key)}
                 onSave={handleSave}
                 onUpdateManual={updateManualRow}
