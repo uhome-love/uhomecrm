@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, TrendingDown, RotateCcw, AlertTriangle } from "lucide-react";
 import type { PdnSavePatch } from "./PdnKanban";
+import { MoneyInput } from "./MoneyInput";
 
 const STATUS_PRESETS = [
   "Aguardando docs", "Em aprovação", "Negociando", "Proposta", "Follow up",
@@ -41,7 +42,7 @@ export function PdnCardDrawer({
   // Campos de linha manual
   const [nome, setNome] = useState("");
   const [empreend, setEmpreend] = useState("");
-  const [vgv, setVgv] = useState("");
+  const [vgv, setVgv] = useState(0);
   const [corretor, setCorretor] = useState("");
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export function PdnCardDrawer({
     setRiscoMotivo(row.riscoMotivo || "");
     setNome(row.nome || "");
     setEmpreend(row.empreendimento === "—" ? "" : row.empreendimento);
-    setVgv(row.vgv ? String(row.vgv) : "");
+    setVgv(row.vgv || 0);
     setCorretor(row.corretor === "—" ? "" : row.corretor);
   }, [row]);
 
@@ -67,11 +68,11 @@ export function PdnCardDrawer({
       prioridade: (prioridade as PdnRow["prioridade"]) || "",
       riscoManual, riscoMotivo,
       // Empreendimento/VGV também são editáveis para negócios do pipeline (overlay do gestor)
-      ...(row.isManual ? {} : { empreendimento: empreend, vgv: Number(vgv) || 0 }),
+      ...(row.isManual ? {} : { empreendimento: empreend, vgv }),
     });
     if (row.isManual && row.overrideId) {
       onUpdateManual(row.overrideId, {
-        nome, empreendimento: empreend || null, vgv: Number(vgv) || 0, corretor: corretor || null,
+        nome, empreendimento: empreend || null, vgv, corretor: corretor || null,
       });
     }
     onClose();
@@ -97,7 +98,7 @@ export function PdnCardDrawer({
               </div>
               <div className="space-y-1">
                 <Label>VGV</Label>
-                <Input type="number" value={vgv} onChange={(e) => setVgv(e.target.value)} placeholder="0" />
+                <MoneyInput value={vgv} onCommit={setVgv} variant="field" />
               </div>
               <div className="flex justify-between"><span className="text-muted-foreground">Corretor</span><span className="font-medium">{row.corretor}</span></div>
               {row.equipe !== "—" && <div className="flex justify-between"><span className="text-muted-foreground">Equipe</span><span className="font-medium">Equipe {row.equipe}</span></div>}
@@ -119,7 +120,7 @@ export function PdnCardDrawer({
               </div>
               <div className="space-y-1">
                 <Label>VGV</Label>
-                <Input type="number" value={vgv} onChange={(e) => setVgv(e.target.value)} />
+                <MoneyInput value={vgv} onCommit={setVgv} variant="field" />
               </div>
               <div className="space-y-1">
                 <Label>Corretor</Label>

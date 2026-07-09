@@ -579,11 +579,17 @@ export function usePdn(mes: string) {
     return { byGrupo, vgvTotal, forecast, emRisco, total: rows.length };
   }, [rows]);
 
+  // Recarrega tudo: pipeline (últimos negócios por etapa) + overlay do gestor
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadDeals(), loadEntries()]);
+  }, [loadDeals, loadEntries]);
+
   return {
     rows,
     hiddenRows,
     resumo,
     loading: loadingDeals || loadingEntries,
+    refreshAll,
     saveOverride,
     marcarQueda,
     reativarQueda,

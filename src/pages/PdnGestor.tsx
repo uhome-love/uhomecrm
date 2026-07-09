@@ -23,8 +23,10 @@ import {
   Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
   ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
   ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
+  RefreshCw, Users,
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
+import { MoneyInput } from "@/components/pdn/MoneyInput";
 
 // ─── Status: opções fixas (com cores) + livre ─────────────────────────────────
 const STATUS_OPTS: { grupo: string; items: string[] }[] = [
@@ -188,8 +190,31 @@ export default function PdnGestor() {
 
   const { isDiretor, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
-  const { rows, hiddenRows, resumo, loading, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows, hiddenRows, resumo, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
   const [showOcultos, setShowOcultos] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await refreshAll(); } finally { setRefreshing(false); }
+  };
+
+  // Larguras de coluna redimensionáveis (planilha), persistidas por sessão
+  const DEFAULT_COL_WIDTHS: Record<string, number> = {
+    nome: 190, data: 110, empreendimento: 170, vgv: 140, corretor: 140, status: 150, obs: 220,
+  };
+  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
+    try {
+      const raw = sessionStorage.getItem("pdn:colWidths");
+      return raw ? { ...DEFAULT_COL_WIDTHS, ...JSON.parse(raw) } : DEFAULT_COL_WIDTHS;
+    } catch { return DEFAULT_COL_WIDTHS; }
+  });
+  useEffect(() => { try { sessionStorage.setItem("pdn:colWidths", JSON.stringify(colWidths)); } catch { /* ignore */ } }, [colWidths]);
+  const setColWidth = (key: string, w: number) => setColWidths(prev => ({ ...prev, [key]: Math.max(70, w) }));
+  const colsCustomized = useMemo(
+    () => Object.keys(DEFAULT_COL_WIDTHS).some(k => colWidths[k] !== DEFAULT_COL_WIDTHS[k]),
+    [colWidths],
+  );
+  const resetColWidths = () => setColWidths({ ...DEFAULT_COL_WIDTHS });
 
   useEffect(() => {
     try { sessionStorage.setItem("pdn:collapsed", JSON.stringify([...collapsed])); } catch { /* ignore */ }
@@ -284,17 +309,33 @@ export default function PdnGestor() {
     updateManualRow(overrideId, { situacao: grupo });
   };
 
-  // Resumo por corretor (VGV e nº de negócios, exclui caídos)
-  const resumoCorretor = useMemo(() => {
-    const map: Record<string, { count: number; vgv: number }> = {};
-    for (const r of filtered) {
-      if (r.grupo === "caidos" || r.corretor === "—") continue;
-      (map[r.corretor] ||= { count: 0, vgv: 0 });
-      map[r.corretor].count++;
-      map[r.corretor].vgv += r.vgv;
+  // Resumo por corretor, agrupado por equipe (ignora o filtro de corretor p/ manter todos clicáveis)
+  const resumoEquipes = useMemo(() => {
+    const base = rows.filter(r => {
+      if (r.grupo === "caidos" || r.corretor === "—") return false;
+      if (filtroRisco && !r.emRisco) return false;
+      if (filtroEquipe !== "todas" && r.equipe !== filtroEquipe) return false;
+      if (kpiFilter === "risco" && !r.emRisco) return false;
+      return true;
+    });
+    const teamMap: Record<string, { equipe: string; count: number; vgv: number; corretores: Record<string, { count: number; vgv: number }> }> = {};
+    for (const r of base) {
+      const eq = r.equipe && r.equipe !== "—" ? r.equipe : "Sem equipe";
+      const t = (teamMap[eq] ||= { equipe: eq, count: 0, vgv: 0, corretores: {} });
+      t.count++; t.vgv += r.vgv;
+      const c = (t.corretores[r.corretor] ||= { count: 0, vgv: 0 });
+      c.count++; c.vgv += r.vgv;
     }
-    return Object.entries(map).map(([nome, v]) => ({ nome, ...v })).sort((a, b) => b.vgv - a.vgv);
-  }, [filtered]);
+    return Object.values(teamMap)
+      .map(t => ({
+        ...t,
+        corretores: Object.entries(t.corretores)
+          .map(([nome, v]) => ({ nome, ...v }))
+          .sort((a, b) => b.vgv - a.vgv),
+      }))
+      .sort((a, b) => b.vgv - a.vgv);
+  }, [rows, filtroRisco, filtroEquipe, kpiFilter]);
+
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
@@ -321,6 +362,9 @@ export default function PdnGestor() {
               <LayoutGrid className="mr-1.5 h-4 w-4" /> Kanban
             </Button>
           </div>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`mr-1.5 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Atualizar
+          </Button>
           <Button variant="outline" size="sm" onClick={exportCSV}><Download className="mr-1.5 h-4 w-4" /> Exportar</Button>
         </div>
       </div>
@@ -362,6 +406,9 @@ export default function PdnGestor() {
           <Button variant={showOcultos ? "default" : "outline"} size="sm" onClick={() => setShowOcultos(v => !v)}>
             {showOcultos ? "Ocultar removidos" : `Mostrar removidos (${hiddenRows.length})`}
           </Button>
+        )}
+        {view === "planilha" && !isMobile && colsCustomized && (
+          <Button variant="ghost" size="sm" onClick={resetColWidths}>Redefinir larguras</Button>
         )}
       </div>
 
@@ -420,6 +467,8 @@ export default function PdnGestor() {
                 sortDir={sortDir}
                 onSort={toggleSort}
                 isMobile={isMobile}
+                colWidths={colWidths}
+                onColResize={setColWidth}
                 onAdd={() => addManualRow(g.key)}
                 onSave={handleSave}
                 onUpdateManual={updateManualRow}
@@ -432,18 +481,44 @@ export default function PdnGestor() {
         </div>
       )}
 
-      {/* Resumo por corretor */}
-      {!loading && resumoCorretor.length > 0 && (
+      {/* Resumo por corretor, agrupado por equipe (clicável = filtra pelo corretor) */}
+      {!loading && resumoEquipes.length > 0 && (
         <Card className="p-4">
-          <div className="mb-3 text-sm font-semibold text-foreground">Resumo por corretor</div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {resumoCorretor.map(c => (
-              <div key={c.nome} className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-foreground">{c.nome}</div>
-                  <div className="text-xs text-muted-foreground">{c.count} negócio{c.count > 1 ? "s" : ""}</div>
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Users className="h-4 w-4 text-primary" /> Resumo por corretor
+            {filtroCorretor !== "todos" && (
+              <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => setFiltroCorretor("todos")}>
+                Limpar filtro de corretor
+              </Button>
+            )}
+          </div>
+          <div className="space-y-4">
+            {resumoEquipes.map(t => (
+              <div key={t.equipe}>
+                <div className="mb-2 flex items-center justify-between border-b pb-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t.equipe === "Sem equipe" ? "Sem equipe" : `Equipe ${t.equipe}`} · {t.count} negócio{t.count > 1 ? "s" : ""}
+                  </span>
+                  <span className="text-xs font-semibold text-primary">{fmtMoney(t.vgv, "short")}</span>
                 </div>
-                <div className="text-sm font-semibold text-primary">{fmtMoney(c.vgv, "short")}</div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {t.corretores.map(c => {
+                    const active = filtroCorretor === c.nome;
+                    return (
+                      <button
+                        key={c.nome}
+                        onClick={() => setFiltroCorretor(active ? "todos" : c.nome)}
+                        className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left transition hover:shadow-sm ${active ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-muted/30"}`}
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-foreground">{c.nome}</div>
+                          <div className="text-xs text-muted-foreground">{c.count} negócio{c.count > 1 ? "s" : ""}</div>
+                        </div>
+                        <div className="text-sm font-semibold text-primary">{fmtMoney(c.vgv, "short")}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             ))}
           </div>
@@ -476,22 +551,54 @@ function SummaryCard({ label, value, sub, accent, icon, active, onClick }: {
   );
 }
 
-function SortHeader({ label, active, dir, onClick, className = "" }: {
-  label: string; active: boolean; dir: "asc" | "desc"; onClick: () => void; className?: string;
+function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort }: {
+  colKey: string;
+  width: number;
+  onResize: (key: string, w: number) => void;
+  label: string;
+  sortActive?: boolean;
+  dir?: "asc" | "desc";
+  onSort?: () => void;
 }) {
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startW = width;
+    const onMove = (ev: MouseEvent) => onResize(colKey, startW + (ev.clientX - startX));
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    document.body.style.cursor = "col-resize";
+  };
   return (
-    <TableHead className={className}>
-      <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={onClick}>
-        {label}
-        {active ? (dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-      </button>
+    <TableHead className="relative select-none">
+      {onSort ? (
+        <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={onSort}>
+          {label}
+          {sortActive ? (dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+        </button>
+      ) : (
+        <span>{label}</span>
+      )}
+      <span
+        onMouseDown={startResize}
+        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-primary/40"
+        title="Arraste para redimensionar"
+      />
     </TableHead>
   );
 }
 
+
+
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
-  isMobile, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
+  isMobile, colWidths, onColResize, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
 }: {
   grupo: PdnGrupo;
   label: string;
@@ -504,6 +611,8 @@ function GrupoBloco({
   sortDir: "asc" | "desc";
   onSort: (k: SortKey) => void;
   isMobile: boolean;
+  colWidths: Record<string, number>;
+  onColResize: (key: string, w: number) => void;
   onAdd: () => void;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
@@ -553,16 +662,26 @@ function GrupoBloco({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <Table>
+            <Table style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}>
+              <colgroup>
+                <col style={{ width: colWidths.nome }} />
+                <col style={{ width: colWidths.data }} />
+                <col style={{ width: colWidths.empreendimento }} />
+                <col style={{ width: colWidths.vgv }} />
+                <col style={{ width: colWidths.corretor }} />
+                <col style={{ width: colWidths.status }} />
+                <col style={{ width: colWidths.obs }} />
+                <col style={{ width: 70 }} />
+              </colgroup>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortHeader label="Nome" active={sortKey === "nome"} dir={sortDir} onClick={() => onSort("nome")} className="min-w-[150px]" />
-                  <SortHeader label="Data" active={sortKey === "data"} dir={sortDir} onClick={() => onSort("data")} className="w-[110px]" />
-                  <TableHead className="min-w-[140px]">Empreendimento</TableHead>
-                  <SortHeader label="VGV" active={sortKey === "vgv"} dir={sortDir} onClick={() => onSort("vgv")} className="w-[120px]" />
-                  <SortHeader label="Corretor" active={sortKey === "corretor"} dir={sortDir} onClick={() => onSort("corretor")} className="min-w-[120px]" />
-                  <SortHeader label="Status" active={sortKey === "status"} dir={sortDir} onClick={() => onSort("status")} className="min-w-[130px]" />
-                  <TableHead className="min-w-[200px]">Observação</TableHead>
+                  <ResizableHead colKey="nome" width={colWidths.nome} onResize={onColResize} label="Nome" sortActive={sortKey === "nome"} dir={sortDir} onSort={() => onSort("nome")} />
+                  <ResizableHead colKey="data" width={colWidths.data} onResize={onColResize} label="Data" sortActive={sortKey === "data"} dir={sortDir} onSort={() => onSort("data")} />
+                  <ResizableHead colKey="empreendimento" width={colWidths.empreendimento} onResize={onColResize} label="Empreendimento" />
+                  <ResizableHead colKey="vgv" width={colWidths.vgv} onResize={onColResize} label="VGV" sortActive={sortKey === "vgv"} dir={sortDir} onSort={() => onSort("vgv")} />
+                  <ResizableHead colKey="corretor" width={colWidths.corretor} onResize={onColResize} label="Corretor" sortActive={sortKey === "corretor"} dir={sortDir} onSort={() => onSort("corretor")} />
+                  <ResizableHead colKey="status" width={colWidths.status} onResize={onColResize} label="Status" sortActive={sortKey === "status"} dir={sortDir} onSort={() => onSort("status")} />
+                  <ResizableHead colKey="obs" width={colWidths.obs} onResize={onColResize} label="Observação" />
                   <TableHead className="w-[70px]" />
                 </TableRow>
               </TableHeader>
@@ -595,12 +714,11 @@ function GrupoBloco({
                       />
                     </TableCell>
                     <TableCell className="text-sm font-medium">
-                      <EditableCell
-                        type="number"
-                        value={r.vgv || ""}
+                      <MoneyInput
+                        value={r.vgv || 0}
                         onCommit={(v) => r.isManual
-                          ? (r.overrideId && onUpdateManual(r.overrideId, { vgv: Number(v) || 0 }))
-                          : onSave(r, { vgv: Number(v) || 0 })}
+                          ? (r.overrideId && onUpdateManual(r.overrideId, { vgv: v }))
+                          : onSave(r, { vgv: v })}
                       />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
