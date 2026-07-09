@@ -429,6 +429,31 @@ export default function PdnGestor() {
         </Card>
       )}
 
+      {/* Possíveis duplicados no pipeline (só informativo — não apaga nada) */}
+      {!loading && duplicados.length > 0 && (
+        <Card className="border-amber-500/40 bg-amber-500/5 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400">
+            <Copy className="h-4 w-4" /> Possíveis duplicados ({duplicados.length})
+          </div>
+          <p className="mb-2 text-xs text-muted-foreground">O mesmo cliente/corretor aparece em mais de uma etapa do pipeline. Revise no pipeline — nada é apagado automaticamente.</p>
+          <div className="space-y-1.5">
+            {duplicados.map((d, i) => (
+              <div key={i} className="flex flex-wrap items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm">
+                <span className="font-medium">{d.nome}</span>
+                <span className="text-muted-foreground">· {d.corretor}</span>
+                <span className="ml-auto flex flex-wrap gap-1">
+                  {d.etapas.map((e, j) => (
+                    <Badge key={j} variant="outline" className="text-[10px]">{e.etapa} · {fmtMoney(e.vgv, "short")}</Badge>
+                  ))}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+
+
 
       {loading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
