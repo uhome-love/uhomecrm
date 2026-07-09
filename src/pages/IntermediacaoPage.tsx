@@ -472,10 +472,7 @@ export default function IntermediacaoPage() {
             cpf: c.cpf, rg: c.rg, telefone: c.telefone, email: c.email, endereco: c.endereco,
           };
 
-    const compradores = [
-      normalizarComprador(comprador1),
-      ...(usarComprador2 ? [normalizarComprador(comprador2)] : []),
-    ];
+    const compradoresPayload = compradores.map(normalizarComprador);
 
     const payload = {
       comprador: compradores[0], // compat com consumidores antigos
