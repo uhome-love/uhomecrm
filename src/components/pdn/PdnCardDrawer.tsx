@@ -65,6 +65,8 @@ export function PdnCardDrawer({
     setEmpreend(row.empreendimento === "—" ? "" : row.empreendimento);
     setVgv(row.vgv || 0);
     setCorretor(row.corretor === "—" ? "" : row.corretor);
+    setAvisarOpen(false);
+    setAvisoMsg("");
   }, [row]);
 
   if (!row) return null;
