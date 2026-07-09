@@ -548,71 +548,37 @@ export default function IntermediacaoPage() {
         <TabsContent value="gerar" className="space-y-6">
 
 
-      {/* Comprador */}
+      {/* Comprador(es) */}
       <Card>
         <CardHeader><CardTitle className="text-base">Comprador (Contratante)</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tipo de pessoa</Label>
-              <Select value={tipoPessoa} onValueChange={(v) => setTipoPessoa(v as "PF" | "PJ")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PF">Pessoa Física</SelectItem>
-                  <SelectItem value="PJ">Pessoa Jurídica</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <CardContent className="space-y-5">
+          {usarComprador2 && <Label className="font-medium">Comprador 1</Label>}
+          <CompradorFields
+            value={comprador1}
+            onChange={(patch) => setComprador1((prev) => ({ ...prev, ...patch }))}
+          />
 
-          {tipoPessoa === "PJ" ? (
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Razão Social</Label><Input value={razaoSocial} onChange={(e) => setRazaoSocial(e.target.value)} placeholder="Ex: Empresa Exemplo LTDA." /></div>
-              <div className="space-y-2"><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(maskCNPJ(e.target.value))} inputMode="numeric" placeholder="00.000.000/0001-00" /></div>
-              <div className="space-y-2 sm:col-span-2"><Label>Nome do sócio-administrador</Label><Input value={socioAdmin} onChange={(e) => setSocioAdmin(e.target.value)} placeholder="Ex: Carlos Souza" /></div>
-            </div>
+          {!usarComprador2 ? (
+            <Button variant="outline" size="sm" onClick={() => setUsarComprador2(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Adicionar segundo comprador
+            </Button>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2 sm:col-span-2"><Label>Nome completo</Label><Input value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} placeholder="Ex: João da Silva Souza" /></div>
-              <div className="space-y-2">
-                <Label>Gênero</Label>
-                <Select value={genero} onValueChange={setGenero}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="masculino">Masculino</SelectItem>
-                    <SelectItem value="feminino">Feminino</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <Label className="font-medium">Comprador 2</Label>
+                <Button variant="ghost" size="sm" onClick={() => { setUsarComprador2(false); setComprador2({ ...emptyComprador }); }}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-              <div className="space-y-2"><Label>Profissão</Label><Input value={profissao} onChange={(e) => setProfissao(e.target.value)} placeholder="Ex: Engenheiro" /></div>
-              <div className="space-y-2">
-                <Label>Estado civil</Label>
-                <Select value={estadoCivil} onValueChange={setEstadoCivil}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="solteiro(a)">Solteiro(a)</SelectItem>
-                    <SelectItem value="casado(a)">Casado(a)</SelectItem>
-                    <SelectItem value="divorciado(a)">Divorciado(a)</SelectItem>
-                    <SelectItem value="viúvo(a)">Viúvo(a)</SelectItem>
-                    <SelectItem value="união estável">União estável</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {estadoCivil === "casado(a)" && (
-                <div className="space-y-2"><Label>Regime de bens</Label><Input value={regimeBens} onChange={(e) => setRegimeBens(e.target.value)} /></div>
-              )}
+              <CompradorFields
+                value={comprador2}
+                onChange={(patch) => setComprador2((prev) => ({ ...prev, ...patch }))}
+              />
             </div>
           )}
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(maskCPF(e.target.value))} inputMode="numeric" placeholder="000.000.000-00" /></div>
-            <div className="space-y-2"><Label>RG</Label><Input value={rg} onChange={(e) => setRg(maskRG(e.target.value))} placeholder="0000000000" /></div>
-            <div className="space-y-2"><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(maskTelefone(e.target.value))} inputMode="numeric" placeholder="(51) 99999-9999" /></div>
-            <div className="space-y-2"><Label>E-mail</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@email.com" /></div>
-            <div className="space-y-2 sm:col-span-2"><Label>Endereço completo</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Rua Exemplo, nº 123, Bairro, Porto Alegre/RS, CEP 90000-000" /></div>
-          </div>
         </CardContent>
       </Card>
+
 
       {/* Imóvel */}
       <Card>
