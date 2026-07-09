@@ -38,6 +38,7 @@ const TIPO_LABELS: Record<string, string> = {
   zero_ligacoes: "Alerta",
   alertas: "Alertas",
   radar_intencao: "Radar de Intenção",
+  pdn: "Gestor",
 };
 
 const TIPO_CONFIG: Record<string, { emoji: string; borderColor: string; bgUnread: string }> = {
