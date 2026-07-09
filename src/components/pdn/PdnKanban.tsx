@@ -125,7 +125,7 @@ export function PdnKanban({
         onClose={() => setSelected(null)}
         onSave={onSave}
         onUpdateManual={onUpdateManual}
-        onDelete={onDelete}
+        onRemove={onRemove}
         onQueda={onQueda}
         onReativar={onReativar}
       />
