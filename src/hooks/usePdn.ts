@@ -525,7 +525,7 @@ export function usePdn(mes: string) {
   const hiddenRows = useMemo<PdnRow[]>(() => allRows.filter(r => r.oculto), [allRows]);
 
   // ── Overlay: grava só em pdn_entries (nunca no pipeline/negócio) ──────────────
-  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "empreendimento" | "vgv" | "oculto">>) => {
+  const saveOverride = useCallback(async (row: PdnRow, patch: Partial<Pick<PdnRow, "observacoes" | "proximaAcao" | "status" | "caiu" | "motivoQueda" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo" | "empreendimento" | "vgv" | "oculto" | "grupoOverride" | "avisadoEm" | "avisadoEtapa">>) => {
     if (!user) return;
     const payload: Record<string, any> = {};
     if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
