@@ -786,12 +786,14 @@ Deno.serve(async (req) => {
 
     if (bodyRunId) {
       runId = bodyRunId;
+      // IMPORTANTE: não resetar cancel_requested aqui. Se o usuário clicou "Parar"
+      // durante o lote anterior, a continuação deve respeitar o cancelamento
+      // (o guard em isContinuation acima já encerra o run antes de chegar aqui).
       await updateRun({
         status: "running",
         started_at: new Date().toISOString(),
         finished_at: null,
         motivo_parada: "Retomando fila pendente em micro-lotes",
-        cancel_requested: false,
       } as any);
     } else {
       const { data: runRow } = await supabase
