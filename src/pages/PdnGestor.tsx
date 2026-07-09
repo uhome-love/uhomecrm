@@ -509,20 +509,6 @@ function SummaryCard({ label, value, sub, accent, icon, active, onClick }: {
   );
 }
 
-function SortHeader({ label, active, dir, onClick, className = "" }: {
-  label: string; active: boolean; dir: "asc" | "desc"; onClick: () => void; className?: string;
-}) {
-  return (
-    <TableHead className={className}>
-      <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={onClick}>
-        {label}
-        {active ? (dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-      </button>
-    </TableHead>
-  );
-}
-
-// Cabeçalho com ordenação opcional + alça de redimensionamento na borda direita
 function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort }: {
   colKey: string;
   width: number;
