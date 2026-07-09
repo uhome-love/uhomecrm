@@ -187,6 +187,9 @@ export function usePdn(mes: string) {
   >([]);
   const [loadingDeals, setLoadingDeals] = useState(true);
   const [loadingEntries, setLoadingEntries] = useState(true);
+  // Escopo de corretores resolvido (auth ids). undefined = ainda não resolvido; null = todos.
+  const [scopeAuthIds, setScopeAuthIds] = useState<string[] | null | undefined>(undefined);
+  const [vendasMes, setVendasMes] = useState<VendaMes[]>([]);
 
   // ── Overlay do gerente (pdn_entries) ─────────────────────────────────────────
   const loadEntries = useCallback(async () => {
