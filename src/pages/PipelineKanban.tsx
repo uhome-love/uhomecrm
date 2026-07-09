@@ -104,6 +104,7 @@ export default function PipelineKanban() {
   const isMobile = useIsMobile();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
+  const [etapaSugerida, setEtapaSugerida] = useState<string | null>(null);
   const [filters, setFilters] = useState<PipelineFilters>({ ...EMPTY_FILTERS });
   const { data: parcerias = {} } = useParceriasMap();
   const { data: partnerLeadsByCorretor = {} } = usePartnerLeadsByCorretor();
