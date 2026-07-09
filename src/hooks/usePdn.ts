@@ -306,6 +306,7 @@ export function usePdn(mes: string) {
         dataAssinatura: n?.data_assinatura || null,
         primeiraVendaEm: primeiraVendaByLead[l.id] || null,
         observacoesNegocio: n?.observacoes || "",
+        negocioVendido: n?.fase === "vendido",
       };
     });
     setDeals(dealRows);
