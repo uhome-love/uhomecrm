@@ -187,6 +187,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
+
+  // Sugestão de etapa vinda do aviso do gestor (PDN)
+  const stageSugerido = useMemo(() => {
+    if (!etapaSugerida) return null;
+    const nome = PDN_GRUPO_STAGE_NOME[etapaSugerida];
+    if (!nome) return null;
+    const s = stages.find(st => st.nome === nome);
+    if (!s || s.id === lead.stage_id) return null;
+    return s;
+  }, [etapaSugerida, stages, lead.stage_id]);
   const hoursInStage = differenceInHoursSafe(lead.stage_changed_at) ?? 0;
   const lastActivity = leadData.atividades[0];
   const pendingTasks = leadData.tarefas.filter(t => t.status === "pendente").length;
