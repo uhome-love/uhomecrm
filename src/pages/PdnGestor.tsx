@@ -465,7 +465,7 @@ function SortHeader({ label, active, dir, onClick, className = "" }: {
 
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
-  isMobile, onAdd, onSave, onUpdateManual, onDelete, onQueda, onReativar,
+  isMobile, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
 }: {
   grupo: PdnGrupo;
   label: string;
