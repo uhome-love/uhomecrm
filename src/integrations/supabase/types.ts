@@ -1884,6 +1884,33 @@ export type Database = {
         }
         Relationships: []
       }
+      corretor_metas_mensais: {
+        Row: {
+          created_at: string
+          id: string
+          mes: string
+          meta_vgv: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mes: string
+          meta_vgv?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mes?: string
+          meta_vgv?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       corretor_motivations: {
         Row: {
           autor: string | null
@@ -2708,6 +2735,30 @@ export type Database = {
           valor_min?: number | null
           valor_venda?: number | null
           video_url?: string | null
+        }
+        Relationships: []
+      }
+      empresa_metas_mensais: {
+        Row: {
+          created_at: string
+          id: string
+          mes: string
+          meta_vgv: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mes: string
+          meta_vgv?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mes?: string
+          meta_vgv?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -9374,6 +9425,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      venda_comissoes: {
+        Row: {
+          created_at: string
+          id: string
+          negocio_id: string
+          updated_at: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          negocio_id: string
+          updated_at?: string
+          user_id: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          negocio_id?: string
+          updated_at?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_comissoes_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       visita_amanha_config: {
         Row: {
