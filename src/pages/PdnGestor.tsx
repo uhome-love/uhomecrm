@@ -522,6 +522,52 @@ function SortHeader({ label, active, dir, onClick, className = "" }: {
   );
 }
 
+// Cabeçalho com ordenação opcional + alça de redimensionamento na borda direita
+function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort }: {
+  colKey: string;
+  width: number;
+  onResize: (key: string, w: number) => void;
+  label: string;
+  sortActive?: boolean;
+  dir?: "asc" | "desc";
+  onSort?: () => void;
+}) {
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startW = width;
+    const onMove = (ev: MouseEvent) => onResize(colKey, startW + (ev.clientX - startX));
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    document.body.style.cursor = "col-resize";
+  };
+  return (
+    <TableHead className="relative select-none">
+      {onSort ? (
+        <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={onSort}>
+          {label}
+          {sortActive ? (dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+        </button>
+      ) : (
+        <span>{label}</span>
+      )}
+      <span
+        onMouseDown={startResize}
+        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-primary/40"
+        title="Arraste para redimensionar"
+      />
+    </TableHead>
+  );
+}
+
+
+
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
   isMobile, colWidths, onColResize, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
