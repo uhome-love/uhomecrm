@@ -158,6 +158,21 @@ interface PipelineDeal {
   dataAssinatura: string | null;
   primeiraVendaEm: string | null; // 1ª entrada na etapa de venda (histórico) — fallback estável
   observacoesNegocio: string;
+  negocioVendido: boolean; // negocios.fase === 'vendido' (fonte de Vendas Realizadas)
+}
+
+// Venda do mês (negocios.fase='vendido') — usada como fallback para o PDN mostrar
+// SEMPRE como Ganho, mesmo que a etapa do lead no pipeline esteja atrasada ou o lead
+// esteja arquivado. Garante PDN Ganho == Vendas Realizadas.
+interface VendaMes {
+  negocioId: string;
+  pipelineLeadId: string | null;
+  nome: string;
+  empreendimento: string;
+  vgv: number;
+  dataAssinatura: string;
+  corretorAuthId: string | null;
+  observacoesNegocio: string;
 }
 
 export function usePdn(mes: string) {
@@ -172,6 +187,9 @@ export function usePdn(mes: string) {
   >([]);
   const [loadingDeals, setLoadingDeals] = useState(true);
   const [loadingEntries, setLoadingEntries] = useState(true);
+  // Escopo de corretores resolvido (auth ids). undefined = ainda não resolvido; null = todos.
+  const [scopeAuthIds, setScopeAuthIds] = useState<string[] | null | undefined>(undefined);
+  const [vendasMes, setVendasMes] = useState<VendaMes[]>([]);
 
   // ── Overlay do gerente (pdn_entries) ─────────────────────────────────────────
   const loadEntries = useCallback(async () => {
@@ -209,6 +227,7 @@ export function usePdn(mes: string) {
         corretorAuthIds = [user.id];
       }
     }
+    setScopeAuthIds(corretorAuthIds);
 
     // Etapas de negócio do pipeline
     const { data: stages } = await supabase
@@ -248,7 +267,7 @@ export function usePdn(mes: string) {
     if (leadIds.length > 0) {
       const { data: negs } = await supabase
         .from("negocios")
-        .select("id, pipeline_lead_id, empreendimento, vgv_final, vgv_estimado, data_assinatura, observacoes, status")
+        .select("id, pipeline_lead_id, empreendimento, vgv_final, vgv_estimado, data_assinatura, observacoes, status, fase")
         .in("pipeline_lead_id", leadIds);
       for (const n of negs || []) {
         if ((n as any).status === "perdido") continue;
@@ -287,6 +306,7 @@ export function usePdn(mes: string) {
         dataAssinatura: n?.data_assinatura || null,
         primeiraVendaEm: primeiraVendaByLead[l.id] || null,
         observacoesNegocio: n?.observacoes || "",
+        negocioVendido: n?.fase === "vendido",
       };
     });
     setDeals(dealRows);
@@ -294,6 +314,59 @@ export function usePdn(mes: string) {
   }, [user, isAdmin, isGestor, isDiretor]);
 
   useEffect(() => { loadDeals(); }, [loadDeals]);
+
+  // ── Vendas do mês (negocios.fase='vendido') — garante PDN Ganho == Vendas Realizadas ──
+  // Cobre casos onde o lead está arquivado ou com etapa atrasada no pipeline.
+  useEffect(() => {
+    if (!user || scopeAuthIds === undefined) return;
+    (async () => {
+      const inicio = `${mes}-01`;
+      const [ano, m] = mes.split("-").map(Number);
+      const fim = new Date(ano, m, 0).toISOString().slice(0, 10);
+      const { data: negs, error } = await supabase
+        .from("negocios")
+        .select("id, pipeline_lead_id, nome_cliente, empreendimento, vgv_final, vgv_estimado, data_assinatura, observacoes, fase, status")
+        .eq("fase", "vendido")
+        .neq("status", "perdido")
+        .gte("data_assinatura", inicio)
+        .lte("data_assinatura", fim)
+        .limit(2000);
+      if (error) { console.error("Erro ao carregar vendas do PDN:", error); return; }
+
+      const leadIds = [...new Set((negs || []).map((n: any) => n.pipeline_lead_id).filter(Boolean))] as string[];
+      // corretor (auth id) do lead vinculado — ignora arquivado/etapa de propósito
+      const corretorByLead: Record<string, string | null> = {};
+      if (leadIds.length > 0) {
+        const { data: leads } = await supabase
+          .from("pipeline_leads")
+          .select("id, corretor_id")
+          .in("id", leadIds);
+        for (const l of leads || []) corretorByLead[(l as any).id] = (l as any).corretor_id || null;
+      }
+
+      const rows: VendaMes[] = [];
+      for (const n of negs || []) {
+        const leadId = (n as any).pipeline_lead_id as string | null;
+        const corretorAuthId = leadId ? (corretorByLead[leadId] ?? null) : null;
+        // Aplica o mesmo escopo do PDN (por corretor). Sem lead vinculado só entra p/ admin/diretor.
+        if (scopeAuthIds !== null) {
+          if (!corretorAuthId || !scopeAuthIds.includes(corretorAuthId)) continue;
+        }
+        rows.push({
+          negocioId: (n as any).id,
+          pipelineLeadId: leadId,
+          nome: (n as any).nome_cliente || "—",
+          empreendimento: (n as any).empreendimento || "—",
+          vgv: Number((n as any).vgv_final ?? (n as any).vgv_estimado ?? 0) || 0,
+          dataAssinatura: (n as any).data_assinatura,
+          corretorAuthId,
+          observacoesNegocio: (n as any).observacoes || "",
+        });
+      }
+      setVendasMes(rows);
+    })();
+  }, [user, mes, scopeAuthIds]);
+
 
   // ── Visitas realizadas no mês (leads sem negócio ativo) ───────────────────────
   useEffect(() => {
@@ -374,19 +447,22 @@ export function usePdn(mes: string) {
     // Linhas do pipeline (Em Negociação / Contrato / Ganho)
     for (const d of deals) {
       const ov = d.negocioId ? overrideByNegocio[d.negocioId] : overrideByLead[d.id];
+      // Vendido conta SEMPRE como Ganho, mesmo que a etapa do pipeline esteja atrasada.
+      const isGanho = d.grupo === "ganho" || d.negocioVendido;
       // Ganho: recorte por mês do fechamento. Em Negociação/Contrato: só no mês corrente
       // (ou em mês passado se o gestor registrou algo naquele mês) — evita vazar entre meses.
-      const ganhoRef = d.grupo === "ganho" ? (d.dataAssinatura || d.primeiraVendaEm) : null;
-      if (d.grupo === "ganho") {
+      const ganhoRef = isGanho ? (d.dataAssinatura || d.primeiraVendaEm) : null;
+      if (isGanho) {
         if (!ganhoRef) continue;           // sem data confiável: fora do recorte mensal
         if (mesOf(ganhoRef) !== mes) continue;
       } else {
         if (!isMesCorrente && ov?.mes !== mes) continue;
       }
+      const grupoNatural: PdnGrupo = isGanho ? "ganho" : d.grupo;
       const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
       const caiu = !!ov?.caiu;
-      const grupoBase = grupoOverride ?? d.grupo;
-      const data = d.grupo === "ganho" ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
+      const grupoBase = grupoOverride ?? grupoNatural;
+      const data = isGanho ? (ganhoRef as string).slice(0, 10) : d.stageChangedAt.slice(0, 10);
       const corretor = (d.corretorAuthId && nameByAuthId[d.corretorAuthId]) || ov?.corretor || "—";
       const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
       const proximaAcao = ov?.proxima_acao || "";
@@ -401,9 +477,9 @@ export function usePdn(mes: string) {
         corretorAuthId: d.corretorAuthId,
         overrideId: ov?.id ?? null,
         grupo: caiu ? "caidos" : grupoBase,
-        grupoOrigem: d.grupo,
+        grupoOrigem: grupoNatural,
         grupoOverride,
-        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== d.grupo,
+        etapaAjustada: !caiu && !!grupoOverride && grupoOverride !== grupoNatural,
         nome: d.nome,
         data,
         empreendimento: ov?.empreendimento || d.empreendimento || "—",
@@ -430,6 +506,55 @@ export function usePdn(mes: string) {
         avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
       });
     }
+
+    // Fallback: vendas do mês (negocios.fase='vendido') cujo lead está arquivado ou
+    // com etapa atrasada e portanto NÃO veio em `deals`. Garante PDN Ganho == Vendas Realizadas.
+    const negocioIdsNoOut = new Set(out.map(r => r.negocioId).filter(Boolean) as string[]);
+    for (const vd of vendasMes) {
+      if (vd.negocioId && negocioIdsNoOut.has(vd.negocioId)) continue; // já representado por um deal
+      const ov = overrideByNegocio[vd.negocioId] || (vd.pipelineLeadId ? overrideByLead[vd.pipelineLeadId] : undefined);
+      if (ov?.caiu) continue;
+      const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
+      const corretor = (vd.corretorAuthId && nameByAuthId[vd.corretorAuthId]) || ov?.corretor || "—";
+      const equipe = (vd.corretorAuthId && equipeByAuthId[vd.corretorAuthId]) || ov?.equipe || "—";
+      const grupoBase = grupoOverride ?? "ganho";
+      out.push({
+        id: `venda-${vd.negocioId}`,
+        negocioId: vd.negocioId,
+        pipelineLeadId: vd.pipelineLeadId,
+        corretorAuthId: vd.corretorAuthId,
+        overrideId: ov?.id ?? null,
+        grupo: grupoBase,
+        grupoOrigem: "ganho",
+        grupoOverride,
+        etapaAjustada: false,
+        nome: vd.nome,
+        data: (vd.dataAssinatura || "").slice(0, 10),
+        empreendimento: ov?.empreendimento || vd.empreendimento || "—",
+        vgv: Number(ov?.vgv ?? vd.vgv) || 0,
+        situacaoLabel: GRUPO_LABEL[grupoBase],
+        corretor,
+        equipe,
+        status: ov?.status || "",
+        observacoes: ov?.observacoes ?? vd.observacoesNegocio ?? "",
+        proximaAcao: ov?.proxima_acao || "",
+        caiu: false,
+        motivoQueda: "",
+        diasParado: 0,
+        emRisco: false,
+        isManual: false,
+        proximaAcaoData: ov?.proxima_acao_data || "",
+        prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
+        riscoManual: !!ov?.risco_manual,
+        riscoMotivo: ov?.risco_motivo || "",
+        proximaAcaoVencida: false,
+        novoDesdeOntem: isNovoDesdeOntem(vd.dataAssinatura),
+        oculto: !!ov?.oculto,
+        avisadoEm: ov?.corretor_avisado_em ?? null,
+        avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
+      });
+    }
+
 
     // Visitas realizadas (sem negócio ativo) — já filtradas pelo mês na consulta
     for (const v of visitasReal) {
@@ -519,7 +644,7 @@ export function usePdn(mes: string) {
     }
 
     return out;
-  }, [deals, visitasReal, manualRows, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes, mesAtual]);
+  }, [deals, visitasReal, manualRows, vendasMes, overrideByNegocio, overrideByLead, nameByAuthId, equipeByAuthId, mes, mesAtual]);
 
 
   const rows = useMemo<PdnRow[]>(() => allRows.filter(r => !r.oculto), [allRows]);
