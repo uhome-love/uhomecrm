@@ -63,9 +63,12 @@ export interface PdnRow {
   id: string;                 // chave única da linha
   negocioId: string | null;   // negocios.id (se houver)
   pipelineLeadId: string | null; // pipeline_leads.id (fonte)
+  corretorAuthId: string | null; // auth id do corretor (para avisar)
   overrideId: string | null;  // pdn_entries.id do overlay (se houver)
-  grupo: PdnGrupo;            // grupo efetivo (caidos se caiu=true)
-  grupoOrigem: PdnGrupo;      // grupo natural (etapa) antes da queda
+  grupo: PdnGrupo;            // grupo efetivo (caidos se caiu=true; senão override → natural)
+  grupoOrigem: PdnGrupo;      // grupo natural (etapa do pipeline) — sem override
+  grupoOverride: PdnGrupo | null; // etapa ajustada pelo gestor (só PDN)
+  etapaAjustada: boolean;    // grupo efetivo difere da etapa do pipeline (só linhas do pipeline)
   nome: string;
   data: string;               // YYYY-MM-DD
   empreendimento: string;
@@ -89,6 +92,8 @@ export interface PdnRow {
   proximaAcaoVencida: boolean;
   novoDesdeOntem: boolean;
   oculto: boolean;           // removido da planilha pelo gestor (overlay), sem afetar o pipeline
+  avisadoEm: string | null;  // quando o gestor avisou o corretor
+  avisadoEtapa: string | null;
 }
 
 type PdnEntry = {
@@ -114,6 +119,9 @@ type PdnEntry = {
   risco_manual: boolean | null;
   risco_motivo: string | null;
   oculto: boolean | null;
+  grupo_override: string | null;
+  corretor_avisado_em: string | null;
+  corretor_avisado_etapa: string | null;
 };
 
 const MS_DAY = 86400000;
