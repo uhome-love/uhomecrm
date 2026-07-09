@@ -6100,6 +6100,7 @@ export type Database = {
           nome: string
           objecao_cliente: string | null
           observacoes: string | null
+          oculto: boolean
           pipeline_lead_id: string | null
           prioridade: string | null
           proxima_acao: string | null
@@ -6138,6 +6139,7 @@ export type Database = {
           nome: string
           objecao_cliente?: string | null
           observacoes?: string | null
+          oculto?: boolean
           pipeline_lead_id?: string | null
           prioridade?: string | null
           proxima_acao?: string | null
@@ -6176,6 +6178,7 @@ export type Database = {
           nome?: string
           objecao_cliente?: string | null
           observacoes?: string | null
+          oculto?: boolean
           pipeline_lead_id?: string | null
           prioridade?: string | null
           proxima_acao?: string | null
@@ -11017,6 +11020,7 @@ export type Database = {
           nome: string
           objecao_cliente: string | null
           observacoes: string | null
+          oculto: boolean
           pipeline_lead_id: string | null
           prioridade: string | null
           proxima_acao: string | null

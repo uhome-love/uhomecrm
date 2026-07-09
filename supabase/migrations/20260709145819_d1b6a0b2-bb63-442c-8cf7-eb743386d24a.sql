@@ -1,0 +1,1 @@
+ALTER TABLE public.pdn_entries ADD COLUMN IF NOT EXISTS oculto boolean NOT NULL DEFAULT false;
