@@ -99,3 +99,20 @@ export function fmtMoney(
     title: withSymbol(formatExact(abs, 0), hideSymbol, negative),
   };
 }
+
+/**
+ * Parse a user-typed BRL string ("R$ 250.000,50", "250000", "1,5") into a number.
+ * Treats "." as thousand separator and "," as decimal (pt-BR). Returns 0 for empty/invalid.
+ */
+export function parseMoney(input: string): number {
+  if (!input) return 0;
+  const cleaned = input.replace(/[^\d,-]/g, "").replace(/\./g, "").replace(",", ".");
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Format a number for editing inside an input: "R$ 250.000" (no decimals unless present). */
+export function formatMoneyInput(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value) || value === 0) return "";
+  return fmtMoney(value, "exact");
+}
