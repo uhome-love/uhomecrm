@@ -190,7 +190,7 @@ export default function PdnGestor() {
 
   const { isDiretor, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
-  const { rows, hiddenRows, resumo, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows, hiddenRows, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, mudarEtapa, limparEtapaOverride, avisarCorretor, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
   const [showOcultos, setShowOcultos] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
