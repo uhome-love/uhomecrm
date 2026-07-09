@@ -268,16 +268,26 @@ export default function PdnGestor() {
     URL.revokeObjectURL(url);
   }
 
-  const handleSave = (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao">>) => {
-    if (row.isManual && row.overrideId) {
-      const dbPatch: Record<string, any> = {};
-      if (patch.status !== undefined) dbPatch.status = patch.status || null;
-      if (patch.observacoes !== undefined) dbPatch.observacoes = patch.observacoes || null;
-      updateManualRow(row.overrideId, dbPatch);
-    } else {
-      saveOverride(row, patch);
-    }
+  const handleSave = (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "proximaAcaoData" | "prioridade" | "riscoManual" | "riscoMotivo">>) => {
+    // saveOverride grava em pdn_entries por overrideId (manual) ou cria overlay (pipeline).
+    saveOverride(row, patch);
   };
+
+  const moveManual = (overrideId: string, grupo: PdnGrupo) => {
+    updateManualRow(overrideId, { situacao: grupo });
+  };
+
+  // Resumo por corretor (VGV e nº de negócios, exclui caídos)
+  const resumoCorretor = useMemo(() => {
+    const map: Record<string, { count: number; vgv: number }> = {};
+    for (const r of filtered) {
+      if (r.grupo === "caidos" || r.corretor === "—") continue;
+      (map[r.corretor] ||= { count: 0, vgv: 0 });
+      map[r.corretor].count++;
+      map[r.corretor].vgv += r.vgv;
+    }
+    return Object.entries(map).map(([nome, v]) => ({ nome, ...v })).sort((a, b) => b.vgv - a.vgv);
+  }, [filtered]);
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
