@@ -597,7 +597,9 @@ export function usePdn(mes: string) {
   const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnGrupo) => {
     if (grupo === "caidos") { await saveOverride(row, { caiu: true }); return; }
     if (row.isManual && row.overrideId) {
-      await updateManualRow(row.overrideId, { situacao: grupo, caiu: false });
+      const { error } = await supabase.from("pdn_entries").update({ situacao: grupo, caiu: false }).eq("id", row.overrideId);
+      if (error) { toast.error("Erro ao salvar"); return; }
+      await loadEntries();
       return;
     }
     // Linha do pipeline: grava grupo_override. Se a etapa escolhida == etapa natural, limpa o override.
@@ -605,7 +607,7 @@ export function usePdn(mes: string) {
       grupoOverride: grupo === row.grupoOrigem ? null : grupo,
       caiu: false,
     });
-  }, [saveOverride, updateManualRow]);
+  }, [saveOverride, loadEntries]);
 
   const limparEtapaOverride = useCallback(async (row: PdnRow) => {
     await saveOverride(row, { grupoOverride: null });
