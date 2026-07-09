@@ -1,34 +1,51 @@
 ## Objetivo
-No PDN, o gerente precisa poder (1) corrigir **empreendimento** e **VGV** de qualquer negócio, (2) **apagar/remover** um negócio errado da planilha — tudo isso **sem alterar o negócio/pipeline do corretor**. E confirmar que planilha e Kanban continuam se atualizando sozinhos.
 
-## Situação atual (auditoria)
-- A tabela de overlay `pdn_entries` já tem colunas `empreendimento` e `vgv`, e as linhas já resolvem `override → dado do pipeline`. Ou seja, a base para editar sem tocar no corretor **já existe**.
-- **Porém**: hoje empreendimento/VGV só são editáveis em linhas *manuais*. Para negócios vindos do pipeline eles aparecem como texto fixo.
-- **Excluir** também só existe para linhas manuais. Não há como remover um negócio errado que veio do pipeline (se apagar o overlay, ele volta do pipeline).
-- Atualização automática: já funciona — a planilha lê ao vivo de `pipeline_leads` / `negocios` / `visitas` a cada carga, e o overlay do gerente fica "por cima", nunca gravando no `negocios`/pipeline do corretor.
+Deixar o PDN (planilha + Kanban) 100% funcional, moderno e completo para o gestor gerir os negócios, sem alterar o pipeline do corretor.
 
-## Mudanças
+## O que muda
 
-### 1. Editar empreendimento e VGV (overlay, sem afetar o corretor)
-- Estender `saveOverride` para aceitar também `empreendimento` e `vgv` no patch, gravando em `pdn_entries` (camada do gerente). O corretor continua vendo o `negocios` original intacto.
-- **Planilha:** para negócios do pipeline, transformar as células de Empreendimento e VGV em campos editáveis (mesmo componente `EditableCell` já usado nas linhas manuais), salvando via `saveOverride`.
-- **Drawer (Kanban):** para negócios do pipeline, trocar os campos "Empreendimento" e "VGV" de somente-leitura para inputs editáveis, salvando via `saveOverride`. Mostrar uma dica de que o valor foi ajustado pelo gestor quando diferente do pipeline.
-- Nada disso escreve em `negocios` nem em `pipeline_leads`.
+### 1. VGV formatado em BRL na edição
+Hoje o campo VGV é um `<input type="number">` cru (mostra `250000`). Vou criar um componente `MoneyInput` que:
+- Exibe o valor formatado em BRL enquanto edita (`R$ 250.000`).
+- Aceita digitação natural, faz o parse para número no commit (blur/Enter).
+- Ganha largura adequada (`w-[130px]`) para caber o valor completo sem cortar.
+- Usado na planilha (célula VGV), no drawer do Kanban e no card manual.
 
-### 2. Remover um negócio errado da planilha
-- Adicionar a coluna `oculto` (boolean, padrão falso) em `pdn_entries` (migração).
-- Nas linhas do PDN, ignorar negócios cujo overlay esteja com `oculto = true` (some da planilha e do Kanban).
-- Ação "Remover da planilha" disponível para negócios do pipeline (planilha, drawer e card do Kanban): cria/atualiza o overlay marcando `oculto = true`. Para linhas manuais, mantém a exclusão real que já existe.
-- Como isso é uma decisão de gestão que pode ser revertida, incluir um pequeno toggle "Mostrar ocultos" no cabeçalho para reexibir e um botão "Restaurar" nesses itens. Remover da planilha **não** apaga o negócio do corretor.
+### 2. Colunas da planilha redimensionáveis
+- Adicionar redimensionamento por arrastar a borda do cabeçalho (drag handle no `<th>`).
+- Larguras persistidas em `sessionStorage` (`pdn:colWidths`) por coluna.
+- Botão "Redefinir larguras" quando houver ajustes.
+- Larguras padrão pensadas para caber conteúdo (Nome, Data, Empreendimento, VGV, Corretor, Status, Observação).
 
-### 3. Verificação (planilha + Kanban)
-- Confirmar que empreendimento/VGV editados aparecem iguais nas duas visões e persistem após recarregar.
-- Confirmar que "Remover da planilha" tira o negócio das duas visões e não altera o pipeline do corretor.
-- Confirmar que novas visitas realizadas / mudanças de etapa (negociação, contrato, ganho) continuam entrando automaticamente, preservando os ajustes manuais do gerente por cima.
+### 3. Botão "Atualizar"
+- Hoje `reload` só recarrega o overlay (`pdn_entries`), não busca novos negócios do pipeline.
+- Expor no hook um `refreshAll()` que roda `loadDeals()` + `loadEntries()` em paralelo (busca os últimos negócios que entraram em cada etapa: Visita, Em Negociação, Contrato, Ganho).
+- Botão "Atualizar" no header com ícone de refresh e estado de carregando (spin). Funciona tanto na planilha quanto no Kanban.
+
+### 4. Resumo por corretor clicável + agrupado por equipe
+- No rodapé "Resumo por corretor", cada card vira clicável: ao clicar, aplica `filtroCorretor` = aquele corretor (e destaca o card ativo). Clicar de novo limpa.
+- Agrupar os cards por equipe: um subtítulo por equipe, com subtotal de VGV e nº de negócios da equipe, e os corretores daquela equipe abaixo.
+- Corretores sem equipe vão para um grupo "Sem equipe".
+- Ordenação: equipes por VGV desc; dentro da equipe, corretores por VGV desc.
+
+### 5. Melhorias de qualidade (Kanban + planilha)
+- **Kanban — resumo de corretor/equipe** no rodapé de cada coluna já existe VGV total; adicionar contagem "em risco" e "novos" por coluna quando houver.
+- **Kanban — filtros aplicados**: garantir que o Kanban recebe `filtered` (já recebe) e reflete filtro por corretor/equipe/risco corretamente ao clicar no resumo.
+- **Kanban — feedback de drag**: manter arraste para "Caídos" (marca queda) e reativar ao arrastar para fora; deixar claro visualmente com highlight (já existe) e cursor.
+- **Kanban — botão Atualizar** compartilhado com a planilha.
+- **Empty states** e contadores consistentes entre as duas visões.
+- Validar que salvar empreendimento/VGV/status no drawer atualiza o card imediatamente (já usa `selectedLive`).
 
 ## Detalhes técnicos
-- **Migração:** `ALTER TABLE public.pdn_entries ADD COLUMN oculto boolean NOT NULL DEFAULT false;` (sem mudança de RLS/grants — tabela já existente).
-- **`usePdn.ts`:** incluir `oculto` no `select` de `loadEntries` e no tipo `PdnEntry`; filtrar linhas ocultas em `rows`; ampliar o patch de `saveOverride` com `empreendimento`/`vgv`; adicionar helpers `ocultarRow(row)` e `restaurarRow(row)` (usam `saveOverride` com `oculto`).
-- **`PdnGestor.tsx`:** células editáveis de empreendimento/VGV para linhas do pipeline; ação de remover; toggle "Mostrar ocultos".
-- **`PdnCardDrawer.tsx` / `PdnKanban.tsx`:** inputs editáveis e ação de remover para negócios do pipeline.
-- Sem alterações em `negocios`, `pipeline_leads`, `visitas` ou na lógica do corretor.
+
+- `src/lib/fmtMoney.ts`: reaproveitar; criar helper `parseMoney(str): number` e `formatMoneyInput(n): string` (ou colocar o `MoneyInput` inline em PdnGestor e importar no drawer).
+- `src/hooks/usePdn.ts`: adicionar `refreshAll` ao retorno (Promise que aguarda `Promise.all([loadDeals(), loadEntries()])`); expor `loadDeals` via callback já existente.
+- `src/pages/PdnGestor.tsx`:
+  - Novo `MoneyInput` (substitui `EditableCell type="number"` no VGV).
+  - Estado `colWidths` + handlers de resize no `SortHeader`/`TableHead` do `GrupoBloco`.
+  - Botão "Atualizar" no header (com `isRefreshing`).
+  - Reescrever bloco "Resumo por corretor" para agrupar por equipe e tornar clicável (usa `setFiltroCorretor`).
+- `src/components/pdn/PdnKanban.tsx` e `PdnCardDrawer.tsx`: trocar input de VGV por `MoneyInput`; ajustar rodapé das colunas com contadores.
+
+## Fora de escopo
+Nenhuma mudança no pipeline do corretor, em `negocios` ou `pipeline_leads`. Sem migração de banco (a coluna `oculto` e campos de overlay já existem).
