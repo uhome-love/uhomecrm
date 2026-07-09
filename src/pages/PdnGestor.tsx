@@ -167,6 +167,39 @@ function ObsSelector({ value, onChange }: { value: string; onChange: (v: string)
   );
 }
 
+// ─── Célula editável com quebra de linha (empreendimento) ─────────────────────
+function EditableWrapCell({ value, onCommit, placeholder }: {
+  value: string;
+  onCommit: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [local, setLocal] = useState(value ?? "");
+  useEffect(() => { setLocal(value ?? ""); }, [value]);
+  const commit = () => { if (local !== (value ?? "")) onCommit(local); setOpen(false); };
+  return (
+    <Popover open={open} onOpenChange={(o) => { if (!o) commit(); else setOpen(true); }}>
+      <PopoverTrigger asChild>
+        <button className="w-full whitespace-pre-wrap break-words text-left text-sm hover:text-foreground">
+          {value ? value : <span className="text-muted-foreground/60">{placeholder || "—"}</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-2" align="start">
+        <Textarea
+          autoFocus
+          value={local}
+          placeholder={placeholder || "Empreendimento…"}
+          onChange={(e) => setLocal(e.target.value)}
+          className="min-h-[70px] resize-y text-sm"
+        />
+        <div className="mt-2 flex justify-end">
+          <Button size="sm" onClick={commit}>Salvar</Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function PdnGestor() {
   const monthOptions = useMemo(buildMonthOptions, []);
   const [mes, setMes] = useState(monthOptions[0].value);
