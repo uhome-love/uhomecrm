@@ -827,6 +827,7 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
         <ObsSelector value={r.observacoes} onChange={(v) => onSave(r, { observacoes: v })} />
       )}
       <div className="flex items-center justify-end gap-1">
+        {!r.isManual && r.corretorAuthId && !r.caiu && <AvisarButton row={r} onAvisar={onAvisar} mobile />}
         {r.caiu ? (
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onReativar(r)}>
             <RotateCcw className="mr-1 h-3 w-3" /> Reativar
