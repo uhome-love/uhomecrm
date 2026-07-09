@@ -391,6 +391,9 @@ export default function PdnGestor() {
             {showOcultos ? "Ocultar removidos" : `Mostrar removidos (${hiddenRows.length})`}
           </Button>
         )}
+        {view === "planilha" && !isMobile && colsCustomized && (
+          <Button variant="ghost" size="sm" onClick={resetColWidths}>Redefinir larguras</Button>
+        )}
       </div>
 
       {/* Negócios removidos da planilha (overlay) — restauráveis, sem afetar o pipeline */}
