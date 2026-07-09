@@ -98,6 +98,62 @@ export function PdnCardDrawer({
         </SheetHeader>
 
         <div className="mt-4 space-y-4">
+          {/* Etapa no PDN (interna — não altera o pipeline do corretor) */}
+          <div className="space-y-1 rounded-lg border p-3">
+            <div className="flex items-center gap-2">
+              <Label>Etapa no PDN</Label>
+              {row.etapaAjustada && <Badge variant="secondary" className="text-[10px]">ajustada pelo gestor</Badge>}
+            </div>
+            <Select value={row.grupo} onValueChange={(v) => onMudarEtapa(row, v as PdnGrupo)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PDN_GRUPOS.map(g => <SelectItem key={g.key} value={g.key}>{g.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {!row.isManual && row.etapaAjustada && (
+              <Button variant="ghost" size="sm" className="mt-1 h-7 text-xs text-muted-foreground" onClick={() => onLimparEtapa(row)}>
+                <Undo2 className="mr-1 h-3 w-3" /> Voltar à etapa do pipeline ({PDN_GRUPOS.find(g => g.key === row.grupoOrigem)?.label})
+              </Button>
+            )}
+            <p className="text-[11px] text-muted-foreground">Mudar a etapa aqui só reorganiza o PDN. O pipeline do corretor não é alterado.</p>
+          </div>
+
+          {/* Avisar corretor (notificação no app) */}
+          {!row.isManual && row.corretorAuthId && (
+            <div className="space-y-2 rounded-lg border p-3">
+              <div className="flex items-center justify-between">
+                <Label>Avisar corretor</Label>
+                {row.avisadoEm && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="h-3 w-3" /> Avisado {formatBRT(row.avisadoEm, "dd/MM HH:mm")}
+                  </span>
+                )}
+              </div>
+              {avisarOpen ? (
+                <>
+                  <Textarea
+                    autoFocus
+                    value={avisoMsg}
+                    onChange={(e) => setAvisoMsg(e.target.value)}
+                    className="min-h-[70px] text-sm"
+                    placeholder={`Ex.: Atualize o pipeline de ${row.nome} para "${PDN_GRUPOS.find(g => g.key === row.grupo)?.label}".`}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setAvisarOpen(false)}>Cancelar</Button>
+                    <Button size="sm" onClick={() => { onAvisar(row, avisoMsg.trim()); setAvisarOpen(false); setAvisoMsg(""); }}>
+                      <Send className="mr-1.5 h-3.5 w-3.5" /> Enviar aviso
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <Button variant="outline" size="sm" className="w-full" onClick={() => setAvisarOpen(true)}>
+                  <Send className="mr-1.5 h-3.5 w-3.5" /> Avisar corretor para atualizar o pipeline
+                </Button>
+              )}
+            </div>
+          )}
+
+
           {/* Empreendimento/VGV editáveis pelo gestor (overlay) + contexto do corretor (leitura) */}
           {!row.isManual && (
             <div className="space-y-3 rounded-lg border bg-muted/30 p-3 text-sm">
