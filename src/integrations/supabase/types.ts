@@ -6084,6 +6084,8 @@ export type Database = {
           caiu: boolean
           construtora: string | null
           corretor: string | null
+          corretor_avisado_em: string | null
+          corretor_avisado_etapa: string | null
           created_at: string
           created_from_visit: boolean
           data_proxima_acao: string | null
@@ -6092,6 +6094,7 @@ export type Database = {
           empreendimento: string | null
           equipe: string | null
           gerente_id: string
+          grupo_override: string | null
           id: string
           linked_visit_id: string | null
           mes: string
@@ -6123,6 +6126,8 @@ export type Database = {
           caiu?: boolean
           construtora?: string | null
           corretor?: string | null
+          corretor_avisado_em?: string | null
+          corretor_avisado_etapa?: string | null
           created_at?: string
           created_from_visit?: boolean
           data_proxima_acao?: string | null
@@ -6131,6 +6136,7 @@ export type Database = {
           empreendimento?: string | null
           equipe?: string | null
           gerente_id: string
+          grupo_override?: string | null
           id?: string
           linked_visit_id?: string | null
           mes: string
@@ -6162,6 +6168,8 @@ export type Database = {
           caiu?: boolean
           construtora?: string | null
           corretor?: string | null
+          corretor_avisado_em?: string | null
+          corretor_avisado_etapa?: string | null
           created_at?: string
           created_from_visit?: boolean
           data_proxima_acao?: string | null
@@ -6170,6 +6178,7 @@ export type Database = {
           empreendimento?: string | null
           equipe?: string | null
           gerente_id?: string
+          grupo_override?: string | null
           id?: string
           linked_visit_id?: string | null
           mes?: string
@@ -11004,6 +11013,8 @@ export type Database = {
           caiu: boolean
           construtora: string | null
           corretor: string | null
+          corretor_avisado_em: string | null
+          corretor_avisado_etapa: string | null
           created_at: string
           created_from_visit: boolean
           data_proxima_acao: string | null
@@ -11012,6 +11023,7 @@ export type Database = {
           empreendimento: string | null
           equipe: string | null
           gerente_id: string
+          grupo_override: string | null
           id: string
           linked_visit_id: string | null
           mes: string

@@ -23,7 +23,7 @@ import {
   Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
   ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
   ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
-  RefreshCw, Users,
+  RefreshCw, Users, Send, Copy,
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
@@ -190,7 +190,7 @@ export default function PdnGestor() {
 
   const { isDiretor, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
-  const { rows, hiddenRows, resumo, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows, hiddenRows, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, mudarEtapa, limparEtapaOverride, avisarCorretor, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
   const [showOcultos, setShowOcultos] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
@@ -305,9 +305,6 @@ export default function PdnGestor() {
     else ocultarRow(row);
   };
 
-  const moveManual = (overrideId: string, grupo: PdnGrupo) => {
-    updateManualRow(overrideId, { situacao: grupo });
-  };
 
   // Resumo por corretor, agrupado por equipe (ignora o filtro de corretor p/ manter todos clicáveis)
   const resumoEquipes = useMemo(() => {
@@ -432,6 +429,31 @@ export default function PdnGestor() {
         </Card>
       )}
 
+      {/* Possíveis duplicados no pipeline (só informativo — não apaga nada) */}
+      {!loading && duplicados.length > 0 && (
+        <Card className="border-amber-500/40 bg-amber-500/5 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400">
+            <Copy className="h-4 w-4" /> Possíveis duplicados ({duplicados.length})
+          </div>
+          <p className="mb-2 text-xs text-muted-foreground">O mesmo cliente/corretor aparece em mais de uma etapa do pipeline. Revise no pipeline — nada é apagado automaticamente.</p>
+          <div className="space-y-1.5">
+            {duplicados.map((d, i) => (
+              <div key={i} className="flex flex-wrap items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm">
+                <span className="font-medium">{d.nome}</span>
+                <span className="text-muted-foreground">· {d.corretor}</span>
+                <span className="ml-auto flex flex-wrap gap-1">
+                  {d.etapas.map((e, j) => (
+                    <Badge key={j} variant="outline" className="text-[10px]">{e.etapa} · {fmtMoney(e.vgv, "short")}</Badge>
+                  ))}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+
+
 
       {loading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -445,7 +467,9 @@ export default function PdnGestor() {
           onRemove={handleRemove}
           onQueda={setQuedaRow}
           onReativar={reativarQueda}
-          onMoveManual={moveManual}
+          onMudarEtapa={mudarEtapa}
+          onLimparEtapa={limparEtapaOverride}
+          onAvisar={avisarCorretor}
           onAdd={addManualRow}
         />
       ) : (
@@ -475,6 +499,8 @@ export default function PdnGestor() {
                 onRemove={handleRemove}
                 onQueda={setQuedaRow}
                 onReativar={reativarQueda}
+                onMudarEtapa={mudarEtapa}
+                onAvisar={avisarCorretor}
               />
             );
           })}
@@ -599,6 +625,7 @@ function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
   isMobile, colWidths, onColResize, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
+  onMudarEtapa, onAvisar,
 }: {
   grupo: PdnGrupo;
   label: string;
@@ -619,9 +646,12 @@ function GrupoBloco({
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
+  onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
+  onAvisar: (row: PdnRow, mensagem: string) => void;
 }) {
   const isCaidos = grupo === "caidos";
   const subtotal = rows.reduce((s, r) => s + r.vgv, 0);
+
 
   return (
     <Card className={`overflow-hidden ${isCaidos ? "border-red-500/40" : ""}`}>
@@ -657,7 +687,7 @@ function GrupoBloco({
             {rows.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">Nenhum negócio neste grupo.</div>
             ) : rows.map(r => (
-              <MobileCard key={r.id} r={r} onSave={onSave} onUpdateManual={onUpdateManual} onRemove={onRemove} onQueda={onQueda} onReativar={onReativar} />
+              <MobileCard key={r.id} r={r} onSave={onSave} onUpdateManual={onUpdateManual} onRemove={onRemove} onQueda={onQueda} onReativar={onReativar} onMudarEtapa={onMudarEtapa} onAvisar={onAvisar} />
             ))}
           </div>
         ) : (
@@ -696,10 +726,22 @@ function GrupoBloco({
                       ) : (
                         <div className="flex items-center gap-1.5">
                           {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
-                          {r.nome}
+                          <span className="truncate">{r.nome}</span>
+                          {r.etapaAjustada && <Badge variant="secondary" className="shrink-0 text-[9px] px-1">ajustada</Badge>}
                         </div>
                       )}
+                      <div className="mt-1">
+                        <Select value={r.grupo} onValueChange={(v) => onMudarEtapa(r, v as PdnGrupo)}>
+                          <SelectTrigger className="h-6 border-transparent bg-transparent px-1 text-[11px] text-muted-foreground hover:border-border">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PDN_GRUPOS.map(g => <SelectItem key={g.key} value={g.key} className="text-xs">{g.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
+
                     <TableCell className="text-sm text-muted-foreground">
                       {r.isManual
                         ? <EditableCell type="date" value={r.data} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { data_visita: v })} />
@@ -736,6 +778,9 @@ function GrupoBloco({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-0.5">
+                        {!r.isManual && r.corretorAuthId && !r.caiu && (
+                          <AvisarButton row={r} onAvisar={onAvisar} />
+                        )}
                         {r.caiu ? (
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-emerald-600" title="Reativar" onClick={() => onReativar(r)}>
                             <RotateCcw className="h-3.5 w-3.5" />
@@ -761,13 +806,15 @@ function GrupoBloco({
   );
 }
 
-function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar }: {
+function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar }: {
   r: PdnRow;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
+  onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
+  onAvisar: (row: PdnRow, mensagem: string) => void;
 }) {
   return (
     <div className={`space-y-2 p-3 ${r.emRisco ? "bg-amber-500/5" : ""} ${r.caiu ? "opacity-70" : ""}`}>
@@ -787,12 +834,22 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar }
         <span className="text-muted-foreground">{r.corretor}{r.equipe !== "—" ? ` · ${r.equipe}` : ""}</span>
         <StatusSelector value={r.status} onChange={(v) => onSave(r, { status: v })} />
       </div>
+      <div className="flex items-center gap-2">
+        <Select value={r.grupo} onValueChange={(v) => onMudarEtapa(r, v as PdnGrupo)}>
+          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {PDN_GRUPOS.map(g => <SelectItem key={g.key} value={g.key} className="text-xs">{g.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {r.etapaAjustada && <Badge variant="secondary" className="shrink-0 text-[9px]">ajustada</Badge>}
+      </div>
       {r.caiu && r.motivoQueda ? (
         <div className="rounded-md bg-red-500/5 px-2 py-1 text-xs"><span className="font-medium text-red-600 dark:text-red-400">Queda:</span> {r.motivoQueda}</div>
       ) : (
         <ObsSelector value={r.observacoes} onChange={(v) => onSave(r, { observacoes: v })} />
       )}
       <div className="flex items-center justify-end gap-1">
+        {!r.isManual && r.corretorAuthId && !r.caiu && <AvisarButton row={r} onAvisar={onAvisar} mobile />}
         {r.caiu ? (
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onReativar(r)}>
             <RotateCcw className="mr-1 h-3 w-3" /> Reativar
@@ -809,6 +866,40 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar }
     </div>
   );
 }
+
+function AvisarButton({ row, onAvisar, mobile }: { row: PdnRow; onAvisar: (row: PdnRow, mensagem: string) => void; mobile?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const etapa = PDN_GRUPOS.find(g => g.key === row.grupo)?.label || "";
+  const [msg, setMsg] = useState("");
+  useEffect(() => { if (open) setMsg(`Atualize o pipeline de ${row.nome} para "${etapa}".`); }, [open]);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        {mobile ? (
+          <Button variant="outline" size="sm" className="h-7 text-xs">
+            <Send className="mr-1 h-3 w-3" /> Avisar{row.avisadoEm ? " ✓" : ""}
+          </Button>
+        ) : (
+          <Button variant="ghost" size="icon" className={`h-7 w-7 ${row.avisadoEm ? "text-emerald-600" : "text-muted-foreground hover:text-primary"}`} title={row.avisadoEm ? `Avisado ${formatBRT(row.avisadoEm, "dd/MM HH:mm")}` : "Avisar corretor"}>
+            <Send className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-2" align="end">
+        <div className="mb-1 text-xs font-medium text-foreground">Avisar {row.corretor}</div>
+        <Textarea value={msg} onChange={(e) => setMsg(e.target.value)} className="min-h-[70px] text-sm" />
+        <div className="mt-2 flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button size="sm" onClick={() => { onAvisar(row, msg.trim()); setOpen(false); }}>
+            <Send className="mr-1.5 h-3.5 w-3.5" /> Enviar
+          </Button>
+        </div>
+        {row.avisadoEm && <div className="mt-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">Último aviso: {formatBRT(row.avisadoEm, "dd/MM HH:mm")}</div>}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 
 function QuedaDialog({ row, onClose, onConfirm }: {
   row: PdnRow | null;

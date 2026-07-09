@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type PdnRow } from "@/hooks/usePdn";
+import { PDN_GRUPOS, type PdnGrupo, type PdnRow } from "@/hooks/usePdn";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { formatBRT } from "@/lib/brtTime";
 import {
@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Trash2, TrendingDown, RotateCcw, AlertTriangle } from "lucide-react";
+import { Trash2, TrendingDown, RotateCcw, AlertTriangle, Send, Undo2, CheckCircle2 } from "lucide-react";
 import type { PdnSavePatch } from "./PdnKanban";
 import { MoneyInput } from "./MoneyInput";
 
@@ -22,7 +23,7 @@ const STATUS_PRESETS = [
 ];
 
 export function PdnCardDrawer({
-  row, onClose, onSave, onUpdateManual, onRemove, onQueda, onReativar,
+  row, onClose, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar,
 }: {
   row: PdnRow | null;
   onClose: () => void;
@@ -31,6 +32,9 @@ export function PdnCardDrawer({
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
+  onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
+  onLimparEtapa: (row: PdnRow) => void;
+  onAvisar: (row: PdnRow, mensagem: string) => void;
 }) {
   const [status, setStatus] = useState("");
   const [obs, setObs] = useState("");
@@ -44,6 +48,9 @@ export function PdnCardDrawer({
   const [empreend, setEmpreend] = useState("");
   const [vgv, setVgv] = useState(0);
   const [corretor, setCorretor] = useState("");
+  // Avisar corretor
+  const [avisarOpen, setAvisarOpen] = useState(false);
+  const [avisoMsg, setAvisoMsg] = useState("");
 
   useEffect(() => {
     if (!row) return;
@@ -58,6 +65,8 @@ export function PdnCardDrawer({
     setEmpreend(row.empreendimento === "—" ? "" : row.empreendimento);
     setVgv(row.vgv || 0);
     setCorretor(row.corretor === "—" ? "" : row.corretor);
+    setAvisarOpen(false);
+    setAvisoMsg("");
   }, [row]);
 
   if (!row) return null;
@@ -89,6 +98,62 @@ export function PdnCardDrawer({
         </SheetHeader>
 
         <div className="mt-4 space-y-4">
+          {/* Etapa no PDN (interna — não altera o pipeline do corretor) */}
+          <div className="space-y-1 rounded-lg border p-3">
+            <div className="flex items-center gap-2">
+              <Label>Etapa no PDN</Label>
+              {row.etapaAjustada && <Badge variant="secondary" className="text-[10px]">ajustada pelo gestor</Badge>}
+            </div>
+            <Select value={row.grupo} onValueChange={(v) => onMudarEtapa(row, v as PdnGrupo)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PDN_GRUPOS.map(g => <SelectItem key={g.key} value={g.key}>{g.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {!row.isManual && row.etapaAjustada && (
+              <Button variant="ghost" size="sm" className="mt-1 h-7 text-xs text-muted-foreground" onClick={() => onLimparEtapa(row)}>
+                <Undo2 className="mr-1 h-3 w-3" /> Voltar à etapa do pipeline ({PDN_GRUPOS.find(g => g.key === row.grupoOrigem)?.label})
+              </Button>
+            )}
+            <p className="text-[11px] text-muted-foreground">Mudar a etapa aqui só reorganiza o PDN. O pipeline do corretor não é alterado.</p>
+          </div>
+
+          {/* Avisar corretor (notificação no app) */}
+          {!row.isManual && row.corretorAuthId && (
+            <div className="space-y-2 rounded-lg border p-3">
+              <div className="flex items-center justify-between">
+                <Label>Avisar corretor</Label>
+                {row.avisadoEm && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="h-3 w-3" /> Avisado {formatBRT(row.avisadoEm, "dd/MM HH:mm")}
+                  </span>
+                )}
+              </div>
+              {avisarOpen ? (
+                <>
+                  <Textarea
+                    autoFocus
+                    value={avisoMsg}
+                    onChange={(e) => setAvisoMsg(e.target.value)}
+                    className="min-h-[70px] text-sm"
+                    placeholder={`Ex.: Atualize o pipeline de ${row.nome} para "${PDN_GRUPOS.find(g => g.key === row.grupo)?.label}".`}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setAvisarOpen(false)}>Cancelar</Button>
+                    <Button size="sm" onClick={() => { onAvisar(row, avisoMsg.trim()); setAvisarOpen(false); setAvisoMsg(""); }}>
+                      <Send className="mr-1.5 h-3.5 w-3.5" /> Enviar aviso
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <Button variant="outline" size="sm" className="w-full" onClick={() => setAvisarOpen(true)}>
+                  <Send className="mr-1.5 h-3.5 w-3.5" /> Avisar corretor para atualizar o pipeline
+                </Button>
+              )}
+            </div>
+          )}
+
+
           {/* Empreendimento/VGV editáveis pelo gestor (overlay) + contexto do corretor (leitura) */}
           {!row.isManual && (
             <div className="space-y-3 rounded-lg border bg-muted/30 p-3 text-sm">

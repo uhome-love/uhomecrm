@@ -22,12 +22,14 @@ interface PdnKanbanProps {
   onRemove: (row: PdnRow) => void;
   onQueda: (row: PdnRow) => void;
   onReativar: (row: PdnRow) => void;
-  onMoveManual: (overrideId: string, grupo: PdnGrupo) => void;
+  onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
+  onLimparEtapa: (row: PdnRow) => void;
+  onAvisar: (row: PdnRow, mensagem: string) => void;
   onAdd: (grupo: PdnGrupo) => void;
 }
 
 export function PdnKanban({
-  rows, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMoveManual, onAdd,
+  rows, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar, onAdd,
 }: PdnKanbanProps) {
   const [selected, setSelected] = useState<PdnRow | null>(null);
   const [dragOver, setDragOver] = useState<PdnGrupo | null>(null);
@@ -53,11 +55,9 @@ export function PdnKanban({
     if (!r || r.grupo === target) return;
 
     if (target === "caidos") { onQueda(r); return; }
-    if (r.grupo === "caidos") { onReativar(r); }
-    if (r.isManual && r.overrideId) {
-      onMoveManual(r.overrideId, target);
-    }
-    // Linhas do pipeline só mudam de coluna via Caídos (o restante segue o pipeline).
+    if (r.grupo === "caidos") { onReativar(r); return; }
+    // Muda a etapa apenas no PDN (pipeline do corretor não é alterado).
+    onMudarEtapa(r, target);
   }
 
   return (
@@ -136,7 +136,11 @@ export function PdnKanban({
         onRemove={onRemove}
         onQueda={onQueda}
         onReativar={onReativar}
+        onMudarEtapa={onMudarEtapa}
+        onLimparEtapa={onLimparEtapa}
+        onAvisar={onAvisar}
       />
+
     </>
   );
 }
