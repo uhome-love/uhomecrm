@@ -507,6 +507,55 @@ export function usePdn(mes: string) {
       });
     }
 
+    // Fallback: vendas do mês (negocios.fase='vendido') cujo lead está arquivado ou
+    // com etapa atrasada e portanto NÃO veio em `deals`. Garante PDN Ganho == Vendas Realizadas.
+    const negocioIdsNoOut = new Set(out.map(r => r.negocioId).filter(Boolean) as string[]);
+    for (const vd of vendasMes) {
+      if (vd.negocioId && negocioIdsNoOut.has(vd.negocioId)) continue; // já representado por um deal
+      const ov = overrideByNegocio[vd.negocioId] || (vd.pipelineLeadId ? overrideByLead[vd.pipelineLeadId] : undefined);
+      if (ov?.caiu) continue;
+      const grupoOverride = ov?.grupo_override ? normalizeGrupo(ov.grupo_override) : null;
+      const corretor = (vd.corretorAuthId && nameByAuthId[vd.corretorAuthId]) || ov?.corretor || "—";
+      const equipe = (vd.corretorAuthId && equipeByAuthId[vd.corretorAuthId]) || ov?.equipe || "—";
+      const grupoBase = grupoOverride ?? "ganho";
+      out.push({
+        id: `venda-${vd.negocioId}`,
+        negocioId: vd.negocioId,
+        pipelineLeadId: vd.pipelineLeadId,
+        corretorAuthId: vd.corretorAuthId,
+        overrideId: ov?.id ?? null,
+        grupo: grupoBase,
+        grupoOrigem: "ganho",
+        grupoOverride,
+        etapaAjustada: false,
+        nome: vd.nome,
+        data: (vd.dataAssinatura || "").slice(0, 10),
+        empreendimento: ov?.empreendimento || vd.empreendimento || "—",
+        vgv: Number(ov?.vgv ?? vd.vgv) || 0,
+        situacaoLabel: GRUPO_LABEL[grupoBase],
+        corretor,
+        equipe,
+        status: ov?.status || "",
+        observacoes: ov?.observacoes ?? vd.observacoesNegocio ?? "",
+        proximaAcao: ov?.proxima_acao || "",
+        caiu: false,
+        motivoQueda: "",
+        diasParado: 0,
+        emRisco: false,
+        isManual: false,
+        proximaAcaoData: ov?.proxima_acao_data || "",
+        prioridade: (ov?.prioridade as PdnRow["prioridade"]) || "",
+        riscoManual: !!ov?.risco_manual,
+        riscoMotivo: ov?.risco_motivo || "",
+        proximaAcaoVencida: false,
+        novoDesdeOntem: isNovoDesdeOntem(vd.dataAssinatura),
+        oculto: !!ov?.oculto,
+        avisadoEm: ov?.corretor_avisado_em ?? null,
+        avisadoEtapa: ov?.corretor_avisado_etapa ?? null,
+      });
+    }
+
+
     // Visitas realizadas (sem negócio ativo) — já filtradas pelo mês na consulta
     for (const v of visitasReal) {
       if (v.temNegocio) continue;
