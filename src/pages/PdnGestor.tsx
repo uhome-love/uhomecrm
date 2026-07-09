@@ -561,14 +561,21 @@ function GrupoBloco({
                         : (r.data ? formatBRT(r.data, "dd/MM/yy") : "—")}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {r.isManual
-                        ? <EditableCell value={r.empreendimento === "—" ? "" : r.empreendimento} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { empreendimento: v })} />
-                        : r.empreendimento}
+                      <EditableCell
+                        value={r.empreendimento === "—" ? "" : r.empreendimento}
+                        onCommit={(v) => r.isManual
+                          ? (r.overrideId && onUpdateManual(r.overrideId, { empreendimento: v }))
+                          : onSave(r, { empreendimento: v })}
+                      />
                     </TableCell>
                     <TableCell className="text-sm font-medium">
-                      {r.isManual
-                        ? <EditableCell type="number" value={r.vgv || ""} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { vgv: Number(v) || 0 })} />
-                        : fmtMoney(r.vgv, "exact")}
+                      <EditableCell
+                        type="number"
+                        value={r.vgv || ""}
+                        onCommit={(v) => r.isManual
+                          ? (r.overrideId && onUpdateManual(r.overrideId, { vgv: Number(v) || 0 }))
+                          : onSave(r, { vgv: Number(v) || 0 })}
+                      />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {r.isManual
