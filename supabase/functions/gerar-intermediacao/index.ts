@@ -43,8 +43,8 @@ const CompradorSchema = z.object({
 });
 const BodySchema = z.object({
   comprador: CompradorSchema,
-  // Novo: lista de compradores (casal / compra conjunta). Compat: se ausente, usa [comprador].
-  compradores: z.array(CompradorSchema).min(1).max(2).optional(),
+  // Novo: lista de compradores (aquisição conjunta). Compat: se ausente, usa [comprador].
+  compradores: z.array(CompradorSchema).min(1).max(6).optional(),
   imovel: z.object({ empreendimento: z.string().min(1), unidade: z.string().min(1), vgv: z.number().nonnegative() }),
   corretores: z.array(CorretorSchema).min(1).max(2),
   comissao: z.object({

@@ -235,10 +235,15 @@ function CompradorFields({
 
 // ─── Componente ────────────────────────────────────────────────────────────────
 export default function IntermediacaoPage() {
-  // Comprador(es) — o segundo é opcional (casal / compra conjunta)
-  const [comprador1, setComprador1] = useState<CompradorForm>({ ...emptyComprador });
-  const [comprador2, setComprador2] = useState<CompradorForm>({ ...emptyComprador });
-  const [usarComprador2, setUsarComprador2] = useState(false);
+  // Comprador(es) — lista dinâmica (aquisição pode ter vários compradores)
+  const MAX_COMPRADORES = 6;
+  const [compradores, setCompradores] = useState<CompradorForm[]>([{ ...emptyComprador }]);
+  const updateComprador = (idx: number, patch: Partial<CompradorForm>) =>
+    setCompradores((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
+  const addComprador = () =>
+    setCompradores((prev) => (prev.length >= MAX_COMPRADORES ? prev : [...prev, { ...emptyComprador }]));
+  const removeComprador = (idx: number) =>
+    setCompradores((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
 
   // Imóvel
   const [empreendimento, setEmpreendimento] = useState("");
@@ -296,9 +301,8 @@ export default function IntermediacaoPage() {
     const comps = Array.isArray(p.compradores) && p.compradores.length
       ? p.compradores
       : [p.comprador ?? {}];
-    setComprador1(mapComprador(comps[0] ?? {}));
-    if (comps[1]) { setUsarComprador2(true); setComprador2(mapComprador(comps[1])); }
-    else { setUsarComprador2(false); setComprador2({ ...emptyComprador }); }
+    const mapeados = comps.map((c: any) => mapComprador(c ?? {}));
+    setCompradores(mapeados.length ? mapeados : [{ ...emptyComprador }]);
 
     const im = p.imovel ?? {};
     setEmpreendimento(im.empreendimento ?? "");
@@ -435,11 +439,10 @@ export default function IntermediacaoPage() {
       if (c.tipoPessoa === "PJ" && (!c.razaoSocial.trim() || !c.socioAdmin.trim())) return `Informe Razão Social e sócio-administrador do ${rotulo}.`;
       return null;
     };
-    const erro1 = validarComprador(comprador1, "comprador");
-    if (erro1) return toast.error(erro1);
-    if (usarComprador2) {
-      const erro2 = validarComprador(comprador2, "comprador 2");
-      if (erro2) return toast.error(erro2);
+    for (let i = 0; i < compradores.length; i++) {
+      const rotulo = compradores.length > 1 ? `comprador ${i + 1}` : "comprador";
+      const erro = validarComprador(compradores[i], rotulo);
+      if (erro) return toast.error(erro);
     }
     if (!empreendimento.trim() || !unidade.trim()) return toast.error("Informe empreendimento e unidade.");
     if (!corretor1.user_id) return toast.error("Selecione o Corretor 1.");
@@ -469,14 +472,11 @@ export default function IntermediacaoPage() {
             cpf: c.cpf, rg: c.rg, telefone: c.telefone, email: c.email, endereco: c.endereco,
           };
 
-    const compradores = [
-      normalizarComprador(comprador1),
-      ...(usarComprador2 ? [normalizarComprador(comprador2)] : []),
-    ];
+    const compradoresPayload = compradores.map(normalizarComprador);
 
     const payload = {
-      comprador: compradores[0], // compat com consumidores antigos
-      compradores,
+      comprador: compradoresPayload[0], // compat com consumidores antigos
+      compradores: compradoresPayload,
       imovel: { empreendimento, unidade, vgv: parseCurrencyToNumber(vgv) },
       corretores: [
         { nome: corretor1.nome, cpf: corretor1.cpf, rg: corretor1.rg, email: corretor1.email, percentual: num(corretor1.percentual) },
@@ -552,29 +552,29 @@ export default function IntermediacaoPage() {
       <Card>
         <CardHeader><CardTitle className="text-base">Comprador (Contratante)</CardTitle></CardHeader>
         <CardContent className="space-y-5">
-          {usarComprador2 && <Label className="font-medium">Comprador 1</Label>}
-          <CompradorFields
-            value={comprador1}
-            onChange={(patch) => setComprador1((prev) => ({ ...prev, ...patch }))}
-          />
-
-          {!usarComprador2 ? (
-            <Button variant="outline" size="sm" onClick={() => setUsarComprador2(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Adicionar segundo comprador
-            </Button>
-          ) : (
-            <div className="space-y-4 border-t pt-4">
-              <div className="flex items-center justify-between">
-                <Label className="font-medium">Comprador 2</Label>
-                <Button variant="ghost" size="sm" onClick={() => { setUsarComprador2(false); setComprador2({ ...emptyComprador }); }}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+          {compradores.map((comp, idx) => (
+            <div key={idx} className={idx > 0 ? "space-y-4 border-t pt-4" : "space-y-4"}>
+              {compradores.length > 1 && (
+                <div className="flex items-center justify-between">
+                  <Label className="font-medium">Comprador {idx + 1}</Label>
+                  {idx > 0 && (
+                    <Button variant="ghost" size="sm" onClick={() => removeComprador(idx)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
               <CompradorFields
-                value={comprador2}
-                onChange={(patch) => setComprador2((prev) => ({ ...prev, ...patch }))}
+                value={comp}
+                onChange={(patch) => updateComprador(idx, patch)}
               />
             </div>
+          ))}
+
+          {compradores.length < MAX_COMPRADORES && (
+            <Button variant="outline" size="sm" onClick={addComprador}>
+              <Plus className="h-4 w-4 mr-1" /> Adicionar comprador
+            </Button>
           )}
         </CardContent>
       </Card>
