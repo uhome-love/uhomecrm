@@ -389,6 +389,35 @@ export default function ReengajamentoTab() {
     }
   }
 
+  async function pararDisparo() {
+    if (!cfg?.id) return;
+    if (!confirm("Parar definitivamente o disparo em andamento? Ele encerra após a mensagem atual e não retoma automaticamente.")) return;
+    try {
+      await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
+      if (activeRun?.id) {
+        await supabase
+          .from("reengajamento_dispatch_runs" as any)
+          .update({
+            cancel_requested: true,
+            status: "cancelled",
+            finished_at: new Date().toISOString(),
+            motivo_parada: "Parado pelo usuário",
+            enviados: activeRun.enviados || 0,
+            falhas: activeRun.falhas || 0,
+            ignorados: activeRun.ignorados || 0,
+          })
+          .eq("id", activeRun.id);
+      }
+      toast.info("⏹️ Parada solicitada — encerra após a mensagem atual");
+      qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
+      qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
+      qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
+    } catch (e: any) {
+      toast.error("Erro ao parar: " + e.message);
+    }
+  }
+
+
   // ===== Conexão da instância de nutrição =====
   const instanceName = (draft?.evolution_instance ?? cfg?.evolution_instance) || "uhome-nutricao";
   const [waStatus, setWaStatus] = useState<"open" | "close" | "connecting" | "loading">("loading");
