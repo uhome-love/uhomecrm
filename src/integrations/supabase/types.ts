@@ -6101,8 +6101,12 @@ export type Database = {
           objecao_cliente: string | null
           observacoes: string | null
           pipeline_lead_id: string | null
+          prioridade: string | null
           proxima_acao: string | null
+          proxima_acao_data: string | null
           quando_assina: string | null
+          risco_manual: boolean
+          risco_motivo: string | null
           situacao: string
           status: string | null
           status_pagamento: string | null
@@ -6135,8 +6139,12 @@ export type Database = {
           objecao_cliente?: string | null
           observacoes?: string | null
           pipeline_lead_id?: string | null
+          prioridade?: string | null
           proxima_acao?: string | null
+          proxima_acao_data?: string | null
           quando_assina?: string | null
+          risco_manual?: boolean
+          risco_motivo?: string | null
           situacao?: string
           status?: string | null
           status_pagamento?: string | null
@@ -6169,8 +6177,12 @@ export type Database = {
           objecao_cliente?: string | null
           observacoes?: string | null
           pipeline_lead_id?: string | null
+          prioridade?: string | null
           proxima_acao?: string | null
+          proxima_acao_data?: string | null
           quando_assina?: string | null
+          risco_manual?: boolean
+          risco_motivo?: string | null
           situacao?: string
           status?: string | null
           status_pagamento?: string | null
@@ -11006,8 +11018,12 @@ export type Database = {
           objecao_cliente: string | null
           observacoes: string | null
           pipeline_lead_id: string | null
+          prioridade: string | null
           proxima_acao: string | null
+          proxima_acao_data: string | null
           quando_assina: string | null
+          risco_manual: boolean
+          risco_motivo: string | null
           situacao: string
           status: string | null
           status_pagamento: string | null
