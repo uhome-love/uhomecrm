@@ -120,7 +120,7 @@ export function PdnCardDrawer({
               </div>
               <div className="space-y-1">
                 <Label>VGV</Label>
-                <Input type="number" value={vgv} onChange={(e) => setVgv(e.target.value)} />
+                <MoneyInput value={vgv} onCommit={setVgv} variant="field" />
               </div>
               <div className="space-y-1">
                 <Label>Corretor</Label>
