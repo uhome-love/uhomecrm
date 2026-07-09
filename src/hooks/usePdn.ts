@@ -57,6 +57,13 @@ export interface PdnRow {
   diasParado: number;
   emRisco: boolean;
   isManual: boolean;
+  // ── Camada de gestão do gestor (interna) ──
+  proximaAcaoData: string;   // YYYY-MM-DD
+  prioridade: "alta" | "media" | "baixa" | "";
+  riscoManual: boolean;
+  riscoMotivo: string;
+  proximaAcaoVencida: boolean;
+  novoDesdeOntem: boolean;
 }
 
 type PdnEntry = {
