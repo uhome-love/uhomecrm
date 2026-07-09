@@ -23,7 +23,7 @@ import {
   Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
   ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
   ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
-  RefreshCw, Users,
+  RefreshCw, Users, Send, Copy,
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
