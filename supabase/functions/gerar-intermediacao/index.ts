@@ -422,9 +422,7 @@ Deno.serve(async (req) => {
       const storageName = `${intermediacaoId.slice(0, 8)}_${filename}`;
       const arquivoPath = `${ano}/${storageName}`;
 
-      const compradorNome = body.comprador.tipoPessoa === "PJ"
-        ? `${body.comprador.razaoSocial} / ${body.comprador.socioAdmin}`
-        : body.comprador.nomeCompleto;
+      const compradorNome = compradoresBody.map(nomeComprador).filter((n) => n.trim()).join(" e ");
 
       const { error: uploadErr } = await supabase.storage
         .from("intermediacoes")
