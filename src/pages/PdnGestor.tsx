@@ -658,11 +658,9 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar }
             <TrendingDown className="mr-1 h-3 w-3" /> Caiu
           </Button>
         )}
-        {r.isManual && r.overrideId && (
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onDelete(r.overrideId!)}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        )}
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title={r.isManual ? "Excluir" : "Remover da planilha"} onClick={() => onRemove(r)}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
       </div>
     </div>
   );
