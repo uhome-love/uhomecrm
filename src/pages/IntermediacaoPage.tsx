@@ -552,29 +552,29 @@ export default function IntermediacaoPage() {
       <Card>
         <CardHeader><CardTitle className="text-base">Comprador (Contratante)</CardTitle></CardHeader>
         <CardContent className="space-y-5">
-          {usarComprador2 && <Label className="font-medium">Comprador 1</Label>}
-          <CompradorFields
-            value={comprador1}
-            onChange={(patch) => setComprador1((prev) => ({ ...prev, ...patch }))}
-          />
-
-          {!usarComprador2 ? (
-            <Button variant="outline" size="sm" onClick={() => setUsarComprador2(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Adicionar segundo comprador
-            </Button>
-          ) : (
-            <div className="space-y-4 border-t pt-4">
-              <div className="flex items-center justify-between">
-                <Label className="font-medium">Comprador 2</Label>
-                <Button variant="ghost" size="sm" onClick={() => { setUsarComprador2(false); setComprador2({ ...emptyComprador }); }}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+          {compradores.map((comp, idx) => (
+            <div key={idx} className={idx > 0 ? "space-y-4 border-t pt-4" : "space-y-4"}>
+              {compradores.length > 1 && (
+                <div className="flex items-center justify-between">
+                  <Label className="font-medium">Comprador {idx + 1}</Label>
+                  {idx > 0 && (
+                    <Button variant="ghost" size="sm" onClick={() => removeComprador(idx)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
               <CompradorFields
-                value={comprador2}
-                onChange={(patch) => setComprador2((prev) => ({ ...prev, ...patch }))}
+                value={comp}
+                onChange={(patch) => updateComprador(idx, patch)}
               />
             </div>
+          ))}
+
+          {compradores.length < MAX_COMPRADORES && (
+            <Button variant="outline" size="sm" onClick={addComprador}>
+              <Plus className="h-4 w-4 mr-1" /> Adicionar comprador
+            </Button>
           )}
         </CardContent>
       </Card>
