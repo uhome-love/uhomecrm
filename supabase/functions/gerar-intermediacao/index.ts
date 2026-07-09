@@ -336,12 +336,11 @@ async function montarDoc(b: Body): Promise<Document> {
 
   children.push(new Paragraph({ spacing: { before: 240, after: 240 }, children: [new TextRun(`Porto Alegre, ${dataExtenso(b.dataContrato)}.`)] }));
 
-  // Assinaturas
-  const compradorNome = b.comprador.tipoPessoa === "PJ"
-    ? `${b.comprador.razaoSocial.toUpperCase()} / ${b.comprador.socioAdmin.toUpperCase()}`
-    : b.comprador.nomeCompleto.toUpperCase();
-  children.push(assinatura("", ""));
-  children.push(assinaturaLabel(`CONTRATANTE: ${compradorNome}`));
+  // Assinaturas — um bloco por comprador (contratante)
+  compradores.forEach((c) => {
+    children.push(assinatura("", ""));
+    children.push(assinaturaLabel(`CONTRATANTE: ${nomeComprador(c).toUpperCase()}`));
+  });
   b.corretores.forEach((c) => {
     children.push(assinatura("", ""));
     children.push(assinaturaLabel(`CORRETOR: ${c.nome.toUpperCase()}`));
