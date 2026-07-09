@@ -22,8 +22,9 @@ import {
 import {
   Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
   ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
-  ArrowUpDown, TrendingDown, RotateCcw, Wallet,
+  ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
 } from "lucide-react";
+import { PdnKanban } from "@/components/pdn/PdnKanban";
 
 // ─── Status: opções fixas (com cores) + livre ─────────────────────────────────
 const STATUS_OPTS: { grupo: string; items: string[] }[] = [
