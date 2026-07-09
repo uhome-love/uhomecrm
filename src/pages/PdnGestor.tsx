@@ -397,7 +397,7 @@ export default function PdnGestor() {
                 onAdd={() => addManualRow(g.key)}
                 onSave={handleSave}
                 onUpdateManual={updateManualRow}
-                onDelete={deleteRow}
+                onRemove={handleRemove}
                 onQueda={setQuedaRow}
                 onReativar={reativarQueda}
               />
