@@ -588,16 +588,26 @@ function GrupoBloco({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <Table>
+            <Table style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}>
+              <colgroup>
+                <col style={{ width: colWidths.nome }} />
+                <col style={{ width: colWidths.data }} />
+                <col style={{ width: colWidths.empreendimento }} />
+                <col style={{ width: colWidths.vgv }} />
+                <col style={{ width: colWidths.corretor }} />
+                <col style={{ width: colWidths.status }} />
+                <col style={{ width: colWidths.obs }} />
+                <col style={{ width: 70 }} />
+              </colgroup>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortHeader label="Nome" active={sortKey === "nome"} dir={sortDir} onClick={() => onSort("nome")} className="min-w-[150px]" />
-                  <SortHeader label="Data" active={sortKey === "data"} dir={sortDir} onClick={() => onSort("data")} className="w-[110px]" />
-                  <TableHead className="min-w-[140px]">Empreendimento</TableHead>
-                  <SortHeader label="VGV" active={sortKey === "vgv"} dir={sortDir} onClick={() => onSort("vgv")} className="w-[120px]" />
-                  <SortHeader label="Corretor" active={sortKey === "corretor"} dir={sortDir} onClick={() => onSort("corretor")} className="min-w-[120px]" />
-                  <SortHeader label="Status" active={sortKey === "status"} dir={sortDir} onClick={() => onSort("status")} className="min-w-[130px]" />
-                  <TableHead className="min-w-[200px]">Observação</TableHead>
+                  <ResizableHead colKey="nome" width={colWidths.nome} onResize={onColResize} label="Nome" sortActive={sortKey === "nome"} dir={sortDir} onSort={() => onSort("nome")} />
+                  <ResizableHead colKey="data" width={colWidths.data} onResize={onColResize} label="Data" sortActive={sortKey === "data"} dir={sortDir} onSort={() => onSort("data")} />
+                  <ResizableHead colKey="empreendimento" width={colWidths.empreendimento} onResize={onColResize} label="Empreendimento" />
+                  <ResizableHead colKey="vgv" width={colWidths.vgv} onResize={onColResize} label="VGV" sortActive={sortKey === "vgv"} dir={sortDir} onSort={() => onSort("vgv")} />
+                  <ResizableHead colKey="corretor" width={colWidths.corretor} onResize={onColResize} label="Corretor" sortActive={sortKey === "corretor"} dir={sortDir} onSort={() => onSort("corretor")} />
+                  <ResizableHead colKey="status" width={colWidths.status} onResize={onColResize} label="Status" sortActive={sortKey === "status"} dir={sortDir} onSort={() => onSort("status")} />
+                  <ResizableHead colKey="obs" width={colWidths.obs} onResize={onColResize} label="Observação" />
                   <TableHead className="w-[70px]" />
                 </TableRow>
               </TableHeader>
