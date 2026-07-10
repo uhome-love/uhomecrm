@@ -129,6 +129,9 @@ export default function PlacarDoDia() {
   const [relogio, setRelogio] = useState(new Date());
   const [ultimaVisita, setUltimaVisita] = useState({});
   const [ultimasVisitas, setUltimasVisitas] = useState([]);
+  const [announcement, setAnnouncement] = useState(null);
+  const announcementQueue = useRef([]);
+  const announcementBusy = useRef(false);
 
   // Meta configurável
   const [meta, setMeta] = useState(DEFAULT_META);
@@ -228,23 +231,28 @@ export default function PlacarDoDia() {
         prevTotais.current[key] = novoTotal;
       }
 
-      // Detecção de sons por transição de status (marcada nova / realizada)
+      // Detecção de eventos por transição de status (marcada nova / realizada)
       const isFirstStatusLoad = Object.keys(prevStatusPorId.current).length === 0;
-      let tocouRealizada = false;
-      let tocouMarcada = false;
+      const equipeDeUser = (uid) =>
+        Object.entries(equipeIds).find(([, ids]) => ids.includes(uid))?.[0];
+      const eventos = [];
       todasVisitas.forEach((v) => {
         const prevStatus = prevStatusPorId.current[v.id];
         if (!isFirstStatusLoad) {
+          const nomeCompleto = nomeMap[v.corretor_id] || v.corretor_nome || "—";
+          const primeiroNome = nomeCompleto.split(" ")[0];
+          const corEquipe = EQUIPES.find(e => e.id === equipeDeUser(v.corretor_id))?.cor || "#F59E0B";
           if (v.status === "realizada" && prevStatus !== "realizada") {
-            tocouRealizada = true;
+            eventos.push({ tipo: "realizada", nome: primeiroNome, cliente: v.nome_cliente || null, empreendimento: v.empreendimento || null, cor: corEquipe });
           } else if (prevStatus === undefined) {
-            tocouMarcada = true;
+            eventos.push({ tipo: "marcada", nome: primeiroNome, cliente: v.nome_cliente || null, empreendimento: v.empreendimento || null, cor: corEquipe });
           }
         }
         prevStatusPorId.current[v.id] = v.status;
       });
-      if (tocouRealizada) tocarSom("realizada");
-      else if (tocouMarcada) tocarSom("marcada");
+      if (eventos.length > 0) {
+        announcementQueue.current.push(...eventos);
+      }
 
       const contagemPorUser = {};
       todasVisitas.forEach((v) => {
@@ -302,6 +310,23 @@ export default function PlacarDoDia() {
     };
   }, [atualizarTudo]);
 
+  // Consumidor da fila de anúncios: mostra um por vez (~4s) e toca o som do tipo
+  useEffect(() => {
+    const iv = setInterval(() => {
+      if (announcementBusy.current) return;
+      const proximo = announcementQueue.current.shift();
+      if (!proximo) return;
+      announcementBusy.current = true;
+      setAnnouncement({ ...proximo, key: Date.now() });
+      tocarSom(proximo.tipo);
+      setTimeout(() => setAnnouncement(null), 4000);
+      setTimeout(() => { announcementBusy.current = false; }, 4400);
+    }, 400);
+    return () => clearInterval(iv);
+  }, []);
+
+
+
   const totais = Object.fromEntries(EQUIPES.map(e => [e.id, (dados[e.id] || []).length]));
 
   const totalGeral = EQUIPES.reduce((sum, e) => sum + (totais[e.id] || 0), 0);
@@ -357,6 +382,14 @@ export default function PlacarDoDia() {
         .float-up { animation: floatUp 1.5s ease-out forwards; pointer-events: none; }
         .glow-leader { animation: glowPulse 2s ease-in-out infinite; }
         .festa-card { background-size: 200% 200% !important; animation: festaBg 3s ease infinite !important; }
+        @keyframes announceIn {
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+          15% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+          25% { transform: translate(-50%, -50%) scale(1); }
+          85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+        }
+        @keyframes announceBackdrop { 0%{opacity:0} 12%{opacity:1} 88%{opacity:1} 100%{opacity:0} }
       `}</style>
       <div style={{
         height: "100vh",
@@ -371,6 +404,72 @@ export default function PlacarDoDia() {
         position: "relative",
       }}>
         <Confetti active={metaGeralAtingida} />
+
+        {/* Anúncio no meio da tela */}
+        {announcement && (() => {
+          const realizada = announcement.tipo === "realizada";
+          const cor = announcement.cor || "#F59E0B";
+          const detalhe = [announcement.cliente, announcement.empreendimento].filter(Boolean).join(" · ");
+          return (
+            <div key={announcement.key} style={{
+              position: "fixed", inset: 0, zIndex: 9999,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              pointerEvents: "none",
+            }}>
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "radial-gradient(ellipse at center, #000000cc 0%, #000000e6 100%)",
+                animation: "announceBackdrop 4s ease forwards",
+              }} />
+              <div style={{
+                position: "absolute", top: "50%", left: "50%",
+                animation: "announceIn 4s ease forwards",
+                textAlign: "center",
+                padding: "40px 64px",
+                borderRadius: 28,
+                background: `linear-gradient(135deg, ${cor}22, #0d0d20, ${cor}11)`,
+                border: `3px solid ${cor}`,
+                boxShadow: `0 0 ${realizada ? 120 : 80}px ${cor}${realizada ? "cc" : "88"}, inset 0 0 60px ${cor}22`,
+                maxWidth: "90vw",
+              }}>
+                <div style={{
+                  fontSize: "clamp(28px, 4vw, 52px)",
+                  letterSpacing: 6,
+                  color: cor,
+                  textTransform: "uppercase",
+                  fontWeight: 900,
+                  textShadow: `0 0 30px ${cor}`,
+                  marginBottom: 8,
+                }}>
+                  {realizada ? "✅ Visita Realizada" : "🎯 Visita Marcada"}
+                </div>
+                <div style={{
+                  fontSize: "clamp(56px, 10vw, 140px)",
+                  lineHeight: 1,
+                  letterSpacing: 2,
+                  color: "#fff",
+                  textTransform: "uppercase",
+                  fontWeight: 900,
+                  textShadow: `0 0 50px ${cor}aa`,
+                }}>
+                  {announcement.nome}
+                </div>
+                {detalhe && (
+                  <div style={{
+                    fontSize: "clamp(14px, 2vw, 24px)",
+                    letterSpacing: 3,
+                    color: "#ffffffbb",
+                    marginTop: 14,
+                    fontFamily: "monospace",
+                    textTransform: "uppercase",
+                  }}>{detalhe}</div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+
 
         {/* Header */}
         <div style={{ textAlign: "center", padding: "6px 24px 4px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
