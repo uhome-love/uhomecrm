@@ -231,23 +231,28 @@ export default function PlacarDoDia() {
         prevTotais.current[key] = novoTotal;
       }
 
-      // Detecção de sons por transição de status (marcada nova / realizada)
+      // Detecção de eventos por transição de status (marcada nova / realizada)
       const isFirstStatusLoad = Object.keys(prevStatusPorId.current).length === 0;
-      let tocouRealizada = false;
-      let tocouMarcada = false;
+      const equipeDeUser = (uid) =>
+        Object.entries(equipeIds).find(([, ids]) => ids.includes(uid))?.[0];
+      const eventos = [];
       todasVisitas.forEach((v) => {
         const prevStatus = prevStatusPorId.current[v.id];
         if (!isFirstStatusLoad) {
+          const nomeCompleto = nomeMap[v.corretor_id] || v.corretor_nome || "—";
+          const primeiroNome = nomeCompleto.split(" ")[0];
+          const corEquipe = EQUIPES.find(e => e.id === equipeDeUser(v.corretor_id))?.cor || "#F59E0B";
           if (v.status === "realizada" && prevStatus !== "realizada") {
-            tocouRealizada = true;
+            eventos.push({ tipo: "realizada", nome: primeiroNome, cliente: v.nome_cliente || null, empreendimento: v.empreendimento || null, cor: corEquipe });
           } else if (prevStatus === undefined) {
-            tocouMarcada = true;
+            eventos.push({ tipo: "marcada", nome: primeiroNome, cliente: v.nome_cliente || null, empreendimento: v.empreendimento || null, cor: corEquipe });
           }
         }
         prevStatusPorId.current[v.id] = v.status;
       });
-      if (tocouRealizada) tocarSom("realizada");
-      else if (tocouMarcada) tocarSom("marcada");
+      if (eventos.length > 0) {
+        announcementQueue.current.push(...eventos);
+      }
 
       const contagemPorUser = {};
       todasVisitas.forEach((v) => {
