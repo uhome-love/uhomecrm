@@ -220,22 +220,46 @@ export default function PlacarDoDia() {
         if (prevTotais.current[key] !== undefined && novoTotal > prevTotais.current[key]) {
           setFlashEquipe(key);
           setFloatEquipe(key);
-          tocarSom();
           setTimeout(() => setFlashEquipe(null), 2000);
           setTimeout(() => setFloatEquipe(null), 1500);
         }
         prevTotais.current[key] = novoTotal;
       }
 
+      // Detecção de sons por transição de status (marcada nova / realizada)
+      const isFirstStatusLoad = Object.keys(prevStatusPorId.current).length === 0;
+      let tocouRealizada = false;
+      let tocouMarcada = false;
+      todasVisitas.forEach((v) => {
+        const prevStatus = prevStatusPorId.current[v.id];
+        if (!isFirstStatusLoad) {
+          if (v.status === "realizada" && prevStatus !== "realizada") {
+            tocouRealizada = true;
+          } else if (prevStatus === undefined) {
+            tocouMarcada = true;
+          }
+        }
+        prevStatusPorId.current[v.id] = v.status;
+      });
+      if (tocouRealizada) tocarSom("realizada");
+      else if (tocouMarcada) tocarSom("marcada");
+
       const contagemPorUser = {};
       todasVisitas.forEach((v) => {
         contagemPorUser[v.corretor_id] = (contagemPorUser[v.corretor_id] || 0) + 1;
       });
+      const equipeDoUser = (uid) =>
+        Object.entries(equipeIds).find(([, ids]) => ids.includes(uid))?.[0];
       const sorted = Object.entries(contagemPorUser)
-        .map(([uid, count]) => ({ nome: nomeMap[uid] || uid.slice(0, 8), count }))
+        .map(([uid, count]) => ({
+          nome: nomeMap[uid] || uid.slice(0, 8),
+          count,
+          cor: EQUIPES.find(e => e.id === equipeDoUser(uid))?.cor || "#F59E0B",
+        }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 3)
+        .slice(0, 5)
         .map((item, i) => ({ ...item, pos: i + 1 }));
+
 
       // Feed últimas visitas with client name
       const feedVisitas = [...todasVisitas]
