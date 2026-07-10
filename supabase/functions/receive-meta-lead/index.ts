@@ -125,7 +125,7 @@ async function verifyMetaSignature(rawBody: string, signatureHeader: string | nu
 
 /** Fetch a single lead's full data from the Graph API by leadgen_id. */
 async function fetchMetaLead(leadgenId: string, token: string): Promise<any> {
-  const fields = "id,created_time,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,form_id,form_name,platform,field_data";
+  const fields = "id,created_time,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,form_id,platform,field_data";
   const url = `${META_BASE}/${leadgenId}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(token)}`;
   const r = await fetch(url);
   const j = await r.json();
