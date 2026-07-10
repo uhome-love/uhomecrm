@@ -897,8 +897,8 @@ export default function VendasRealizadas() {
           <div className="bg-card border border-border rounded-[12px] p-4">
             <div className="flex items-center gap-2 mb-4">
               <Megaphone size={15} className="text-primary" />
-              <h2 className="text-[13px] font-bold text-foreground">Performance por origem</h2>
-              <Badge variant="outline" className="text-[10px] ml-auto">{origemAnalytics.breakdown.length} origens</Badge>
+              <h2 className="text-[13px] font-bold text-foreground">Performance por campanha</h2>
+              <Badge variant="outline" className="text-[10px] ml-auto">{origemAnalytics.breakdown.length} campanha{origemAnalytics.breakdown.length !== 1 ? "s" : ""}</Badge>
             </div>
             {origemAnalytics.breakdown.length === 0 ? (
               <div className="text-center py-8"><p className="text-muted-foreground text-sm">Nenhuma venda com origem rastreada no período</p></div>
