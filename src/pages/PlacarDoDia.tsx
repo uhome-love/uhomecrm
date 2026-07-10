@@ -141,24 +141,31 @@ export default function PlacarDoDia() {
   };
 
   const audioCtxRef = useRef(null);
-  function tocarSom() {
+  function tocarSom(tipo = "marcada") {
     try {
       if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       const ctx = audioCtxRef.current;
       const gainNode = ctx.createGain();
       gainNode.connect(ctx.destination);
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-      const notas = [523, 659, 784, 1047];
+      // Realizada = conquista maior: mais alto, sequência mais longa e brilhante
+      const realizada = tipo === "realizada";
+      gainNode.gain.setValueAtTime(realizada ? 0.4 : 0.3, ctx.currentTime);
+      const notas = realizada
+        ? [523, 659, 784, 1047, 1319, 1568, 2093]
+        : [523, 659, 784, 1047];
+      const passo = realizada ? 0.1 : 0.12;
+      const dur = realizada ? 0.18 : 0.15;
       notas.forEach((freq, i) => {
         const osc = ctx.createOscillator();
         osc.connect(gainNode);
         osc.frequency.value = freq;
-        osc.type = "sine";
-        osc.start(ctx.currentTime + i * 0.12);
-        osc.stop(ctx.currentTime + i * 0.12 + 0.15);
+        osc.type = realizada ? "triangle" : "sine";
+        osc.start(ctx.currentTime + i * passo);
+        osc.stop(ctx.currentTime + i * passo + dur);
       });
     } catch (_) {}
   }
+
 
   useEffect(() => {
     const iv = setInterval(() => setRelogio(new Date()), 1000);
