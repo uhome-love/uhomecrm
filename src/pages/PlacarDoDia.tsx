@@ -382,6 +382,14 @@ export default function PlacarDoDia() {
         .float-up { animation: floatUp 1.5s ease-out forwards; pointer-events: none; }
         .glow-leader { animation: glowPulse 2s ease-in-out infinite; }
         .festa-card { background-size: 200% 200% !important; animation: festaBg 3s ease infinite !important; }
+        @keyframes announceIn {
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+          15% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+          25% { transform: translate(-50%, -50%) scale(1); }
+          85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+        }
+        @keyframes announceBackdrop { 0%{opacity:0} 12%{opacity:1} 88%{opacity:1} 100%{opacity:0} }
       `}</style>
       <div style={{
         height: "100vh",
