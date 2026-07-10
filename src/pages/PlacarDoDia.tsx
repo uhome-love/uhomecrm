@@ -307,7 +307,7 @@ export default function PlacarDoDia() {
   const totalGeral = EQUIPES.reduce((sum, e) => sum + (totais[e.id] || 0), 0);
   const metaGeralAtingida = totalGeral >= meta;
 
-  const medalhas = ["🥇", "🥈", "🥉"];
+  const medalhas = ["🥇", "🥈", "🥉", "4º", "5º"];
   const ordemEquipes = [...EQUIPES].sort((a, b) => totais[b.id] - totais[a.id]);
   const liderEquipe = ordemEquipes[0]?.id;
 
