@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const DEFAULT_META = 20;
+const META_EQUIPE = 10;
 
 const EQUIPES = [
   { nome: "Bruno Schuler", cor: "#3350E6", corClara: "#EFF6FF", corBorda: "#1D4ED8", emoji: "💙", id: "bruno" },
