@@ -405,6 +405,72 @@ export default function PlacarDoDia() {
       }}>
         <Confetti active={metaGeralAtingida} />
 
+        {/* Anúncio no meio da tela */}
+        {announcement && (() => {
+          const realizada = announcement.tipo === "realizada";
+          const cor = announcement.cor || "#F59E0B";
+          const detalhe = [announcement.cliente, announcement.empreendimento].filter(Boolean).join(" · ");
+          return (
+            <div key={announcement.key} style={{
+              position: "fixed", inset: 0, zIndex: 9999,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              pointerEvents: "none",
+            }}>
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "radial-gradient(ellipse at center, #000000cc 0%, #000000e6 100%)",
+                animation: "announceBackdrop 4s ease forwards",
+              }} />
+              <div style={{
+                position: "absolute", top: "50%", left: "50%",
+                animation: "announceIn 4s ease forwards",
+                textAlign: "center",
+                padding: "40px 64px",
+                borderRadius: 28,
+                background: `linear-gradient(135deg, ${cor}22, #0d0d20, ${cor}11)`,
+                border: `3px solid ${cor}`,
+                boxShadow: `0 0 ${realizada ? 120 : 80}px ${cor}${realizada ? "cc" : "88"}, inset 0 0 60px ${cor}22`,
+                maxWidth: "90vw",
+              }}>
+                <div style={{
+                  fontSize: "clamp(28px, 4vw, 52px)",
+                  letterSpacing: 6,
+                  color: cor,
+                  textTransform: "uppercase",
+                  fontWeight: 900,
+                  textShadow: `0 0 30px ${cor}`,
+                  marginBottom: 8,
+                }}>
+                  {realizada ? "✅ Visita Realizada" : "🎯 Visita Marcada"}
+                </div>
+                <div style={{
+                  fontSize: "clamp(56px, 10vw, 140px)",
+                  lineHeight: 1,
+                  letterSpacing: 2,
+                  color: "#fff",
+                  textTransform: "uppercase",
+                  fontWeight: 900,
+                  textShadow: `0 0 50px ${cor}aa`,
+                }}>
+                  {announcement.nome}
+                </div>
+                {detalhe && (
+                  <div style={{
+                    fontSize: "clamp(14px, 2vw, 24px)",
+                    letterSpacing: 3,
+                    color: "#ffffffbb",
+                    marginTop: 14,
+                    fontFamily: "monospace",
+                    textTransform: "uppercase",
+                  }}>{detalhe}</div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+
+
         {/* Header */}
         <div style={{ textAlign: "center", padding: "6px 24px 4px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
           <div style={{ fontSize: 9, letterSpacing: 4, color: "#ffffff44", fontFamily: "monospace", marginBottom: 1 }}>
