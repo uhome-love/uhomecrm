@@ -529,10 +529,11 @@ export default function PlacarDoDia() {
                     <div style={{ fontSize: 10, letterSpacing: 2, color: "#ffffff55", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 6, minHeight: 14 }}>
                       {ultima ? `Última: ${ultima.nome} às ${ultima.hora}` : "visitas marcadas hoje"}
                     </div>
-                    <ProgressBar valor={total} meta={meta} cor={equipe.cor} />
+                    <ProgressBar valor={total} meta={META_EQUIPE} cor={equipe.cor} />
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "#ffffff44", fontFamily: "monospace", letterSpacing: 1 }}>
-                      <span>META: {meta}</span>
-                      <span>{metaBatida ? "✅ CONCLUÍDA" : `FALTAM: ${meta - total}`}</span>
+                      <span>META: {META_EQUIPE}</span>
+                      <span>{metaBatida ? "✅ CONCLUÍDA" : `FALTAM: ${META_EQUIPE - total}`}</span>
+
                     </div>
                     {metaBatida && (
                       <div style={{ textAlign: "center", marginTop: 8, fontSize: "clamp(14px, 2vw, 20px)", letterSpacing: 3, color: equipe.cor, animation: "metaPulse 1.5s infinite", fontWeight: 900 }}>
