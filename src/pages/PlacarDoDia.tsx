@@ -129,6 +129,9 @@ export default function PlacarDoDia() {
   const [relogio, setRelogio] = useState(new Date());
   const [ultimaVisita, setUltimaVisita] = useState({});
   const [ultimasVisitas, setUltimasVisitas] = useState([]);
+  const [announcement, setAnnouncement] = useState(null);
+  const announcementQueue = useRef([]);
+  const announcementBusy = useRef(false);
 
   // Meta configurável
   const [meta, setMeta] = useState(DEFAULT_META);
