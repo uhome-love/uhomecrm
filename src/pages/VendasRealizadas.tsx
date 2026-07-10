@@ -384,6 +384,52 @@ export default function VendasRealizadas() {
   const profileIdToAuthId = data?.profileIdToAuthId || {};
   const comissaoMap = data?.comissaoMap || {};
 
+  // ═══ Resolução dinâmica de nomes de formulário/campanha Meta ═══
+  // Coleta origem_detalhe que são IDs numéricos ainda não resolvidos pelo mapa estático.
+  const unresolvedFormIds = useMemo(() => {
+    const ids = new Set<string>();
+    Object.values(origemMap).forEach((info) => {
+      const raw = info?.origem_detalhe ? String(info.origem_detalhe).trim() : "";
+      if (!raw) return;
+      // Se resolveFormName devolver o genérico "Formulário Meta", o ID não está mapeado.
+      if (/^\d{6,}$/.test(raw) && resolveFormName(raw) === "Formulário Meta") ids.add(raw);
+    });
+    return [...ids];
+  }, [origemMap]);
+
+  const { data: dynamicFormNames } = useQuery({
+    queryKey: ["meta-form-names", unresolvedFormIds.sort().join(",")],
+    enabled: unresolvedFormIds.length > 0,
+    staleTime: 1000 * 60 * 60,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("resolve-meta-forms", {
+        body: { ids: unresolvedFormIds },
+      });
+      if (error) {
+        console.warn("[VendasRealizadas] resolve-meta-forms falhou:", error.message);
+        return {} as Record<string, string | null>;
+      }
+      return (data?.names || {}) as Record<string, string | null>;
+    },
+  });
+
+  // Resolve o nome de exibição da campanha: mapa estático → cache/Meta → ID cru.
+  const resolveDetalhe = useMemo(() => {
+    const dyn = dynamicFormNames || {};
+    return (raw: string | null | undefined): string | null => {
+      if (!raw) return null;
+      const trimmed = String(raw).trim();
+      if (!trimmed) return null;
+      const staticName = resolveFormName(trimmed);
+      if (staticName && staticName !== "Formulário Meta") return staticName;
+      const dynName = dyn[trimmed];
+      if (dynName) return dynName;
+      // Sem nome real conhecido: mostra o ID cru para rastreio manual na Meta.
+      if (/^\d{6,}$/.test(trimmed)) return `Meta #${trimmed}`;
+      return staticName || trimmed;
+    };
+  }, [dynamicFormNames]);
+
   // ═══ Metas ═══
   const { data: metaPessoal } = useQuery({
     queryKey: ["meta-pessoal", user?.id, mesStr],
