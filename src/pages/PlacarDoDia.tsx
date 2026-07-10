@@ -310,6 +310,23 @@ export default function PlacarDoDia() {
     };
   }, [atualizarTudo]);
 
+  // Consumidor da fila de anúncios: mostra um por vez (~4s) e toca o som do tipo
+  useEffect(() => {
+    const iv = setInterval(() => {
+      if (announcementBusy.current) return;
+      const proximo = announcementQueue.current.shift();
+      if (!proximo) return;
+      announcementBusy.current = true;
+      setAnnouncement({ ...proximo, key: Date.now() });
+      tocarSom(proximo.tipo);
+      setTimeout(() => setAnnouncement(null), 4000);
+      setTimeout(() => { announcementBusy.current = false; }, 4400);
+    }, 400);
+    return () => clearInterval(iv);
+  }, []);
+
+
+
   const totais = Object.fromEntries(EQUIPES.map(e => [e.id, (dados[e.id] || []).length]));
 
   const totalGeral = EQUIPES.reduce((sum, e) => sum + (totais[e.id] || 0), 0);
