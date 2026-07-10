@@ -473,7 +473,7 @@ export default function PlacarDoDia() {
             }}>
               {ordemEquipes.map((equipe, posGlobal) => {
                 const total = totais[equipe.id];
-                const metaBatida = total >= meta;
+                const metaBatida = total >= META_EQUIPE;
                 const isFlash = flashEquipe === equipe.id;
                 const isFloat = floatEquipe === equipe.id;
                 const isLider = equipe.id === liderEquipe && total > 0;
