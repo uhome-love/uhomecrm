@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const DEFAULT_META = 20;
+const META_EQUIPE = 10;
 
 const EQUIPES = [
   { nome: "Bruno Schuler", cor: "#3350E6", corClara: "#EFF6FF", corBorda: "#1D4ED8", emoji: "💙", id: "bruno" },
@@ -121,6 +122,7 @@ export default function PlacarDoDia() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const prevTotais = useRef({});
+  const prevStatusPorId = useRef({});
   const [flashEquipe, setFlashEquipe] = useState(null);
   const [floatEquipe, setFloatEquipe] = useState(null);
   const [ranking, setRanking] = useState([]);
@@ -141,24 +143,31 @@ export default function PlacarDoDia() {
   };
 
   const audioCtxRef = useRef(null);
-  function tocarSom() {
+  function tocarSom(tipo = "marcada") {
     try {
       if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       const ctx = audioCtxRef.current;
       const gainNode = ctx.createGain();
       gainNode.connect(ctx.destination);
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-      const notas = [523, 659, 784, 1047];
+      // Realizada = conquista maior: mais alto, sequência mais longa e brilhante
+      const realizada = tipo === "realizada";
+      gainNode.gain.setValueAtTime(realizada ? 0.4 : 0.3, ctx.currentTime);
+      const notas = realizada
+        ? [523, 659, 784, 1047, 1319, 1568, 2093]
+        : [523, 659, 784, 1047];
+      const passo = realizada ? 0.1 : 0.12;
+      const dur = realizada ? 0.18 : 0.15;
       notas.forEach((freq, i) => {
         const osc = ctx.createOscillator();
         osc.connect(gainNode);
         osc.frequency.value = freq;
-        osc.type = "sine";
-        osc.start(ctx.currentTime + i * 0.12);
-        osc.stop(ctx.currentTime + i * 0.12 + 0.15);
+        osc.type = realizada ? "triangle" : "sine";
+        osc.start(ctx.currentTime + i * passo);
+        osc.stop(ctx.currentTime + i * passo + dur);
       });
     } catch (_) {}
   }
+
 
   useEffect(() => {
     const iv = setInterval(() => setRelogio(new Date()), 1000);
@@ -213,22 +222,46 @@ export default function PlacarDoDia() {
         if (prevTotais.current[key] !== undefined && novoTotal > prevTotais.current[key]) {
           setFlashEquipe(key);
           setFloatEquipe(key);
-          tocarSom();
           setTimeout(() => setFlashEquipe(null), 2000);
           setTimeout(() => setFloatEquipe(null), 1500);
         }
         prevTotais.current[key] = novoTotal;
       }
 
+      // Detecção de sons por transição de status (marcada nova / realizada)
+      const isFirstStatusLoad = Object.keys(prevStatusPorId.current).length === 0;
+      let tocouRealizada = false;
+      let tocouMarcada = false;
+      todasVisitas.forEach((v) => {
+        const prevStatus = prevStatusPorId.current[v.id];
+        if (!isFirstStatusLoad) {
+          if (v.status === "realizada" && prevStatus !== "realizada") {
+            tocouRealizada = true;
+          } else if (prevStatus === undefined) {
+            tocouMarcada = true;
+          }
+        }
+        prevStatusPorId.current[v.id] = v.status;
+      });
+      if (tocouRealizada) tocarSom("realizada");
+      else if (tocouMarcada) tocarSom("marcada");
+
       const contagemPorUser = {};
       todasVisitas.forEach((v) => {
         contagemPorUser[v.corretor_id] = (contagemPorUser[v.corretor_id] || 0) + 1;
       });
+      const equipeDoUser = (uid) =>
+        Object.entries(equipeIds).find(([, ids]) => ids.includes(uid))?.[0];
       const sorted = Object.entries(contagemPorUser)
-        .map(([uid, count]) => ({ nome: nomeMap[uid] || uid.slice(0, 8), count }))
+        .map(([uid, count]) => ({
+          nome: nomeMap[uid] || uid.slice(0, 8),
+          count,
+          cor: EQUIPES.find(e => e.id === equipeDoUser(uid))?.cor || "#F59E0B",
+        }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 3)
+        .slice(0, 5)
         .map((item, i) => ({ ...item, pos: i + 1 }));
+
 
       // Feed últimas visitas with client name
       const feedVisitas = [...todasVisitas]
@@ -274,7 +307,7 @@ export default function PlacarDoDia() {
   const totalGeral = EQUIPES.reduce((sum, e) => sum + (totais[e.id] || 0), 0);
   const metaGeralAtingida = totalGeral >= meta;
 
-  const medalhas = ["🥇", "🥈", "🥉"];
+  const medalhas = ["🥇", "🥈", "🥉", "4º", "5º"];
   const ordemEquipes = [...EQUIPES].sort((a, b) => totais[b.id] - totais[a.id]);
   const liderEquipe = ordemEquipes[0]?.id;
 
@@ -440,7 +473,7 @@ export default function PlacarDoDia() {
             }}>
               {ordemEquipes.map((equipe, posGlobal) => {
                 const total = totais[equipe.id];
-                const metaBatida = total >= meta;
+                const metaBatida = total >= META_EQUIPE;
                 const isFlash = flashEquipe === equipe.id;
                 const isFloat = floatEquipe === equipe.id;
                 const isLider = equipe.id === liderEquipe && total > 0;
@@ -496,10 +529,11 @@ export default function PlacarDoDia() {
                     <div style={{ fontSize: 10, letterSpacing: 2, color: "#ffffff55", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 6, minHeight: 14 }}>
                       {ultima ? `Última: ${ultima.nome} às ${ultima.hora}` : "visitas marcadas hoje"}
                     </div>
-                    <ProgressBar valor={total} meta={meta} cor={equipe.cor} />
+                    <ProgressBar valor={total} meta={META_EQUIPE} cor={equipe.cor} />
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "#ffffff44", fontFamily: "monospace", letterSpacing: 1 }}>
-                      <span>META: {meta}</span>
-                      <span>{metaBatida ? "✅ CONCLUÍDA" : `FALTAM: ${meta - total}`}</span>
+                      <span>META: {META_EQUIPE}</span>
+                      <span>{metaBatida ? "✅ CONCLUÍDA" : `FALTAM: ${META_EQUIPE - total}`}</span>
+
                     </div>
                     {metaBatida && (
                       <div style={{ textAlign: "center", marginTop: 8, fontSize: "clamp(14px, 2vw, 20px)", letterSpacing: 3, color: equipe.cor, animation: "metaPulse 1.5s infinite", fontWeight: 900 }}>
@@ -514,19 +548,20 @@ export default function PlacarDoDia() {
             {/* Ranking individual */}
             {ranking.length > 0 && (
               <div style={{ flexShrink: 0 }}>
-                <div style={{ fontSize: "clamp(12px, 1.8vw, 16px)", letterSpacing: 4, textTransform: "uppercase", color: "#ffffff77", marginBottom: 6, textAlign: "center" }}>🏅 Top 3 corretores</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                <div style={{ fontSize: "clamp(12px, 1.8vw, 16px)", letterSpacing: 4, textTransform: "uppercase", color: "#ffffff77", marginBottom: 6, textAlign: "center" }}>🏅 Top 5 — Quem mais marcou hoje</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
                   {ranking.map((c, i) => (
                     <div key={c.nome} style={{
-                      background: i === 0 ? "#1a1400" : i === 1 ? "#0d0d14" : "#0a100a",
-                      border: `1px solid ${i === 0 ? "#F59E0B44" : i === 1 ? "#9CA3AF44" : "#16A34A44"}`,
+                      background: i === 0 ? "#1a1400" : "#0d0d14",
+                      border: `1px solid ${i === 0 ? "#F59E0B66" : c.cor + "44"}`,
                       borderRadius: 10, padding: "6px 6px", textAlign: "center",
                     }}>
                       <div style={{ fontSize: 18 }}>{medalhas[i]}</div>
-                      <div style={{ fontSize: "clamp(18px, 2.5vw, 28px)", fontWeight: 900, color: i === 0 ? "#F59E0B" : i === 1 ? "#9CA3AF" : "#16A34A", lineHeight: 1 }}>{c.count}</div>
+                      <div style={{ fontSize: "clamp(18px, 2.5vw, 28px)", fontWeight: 900, color: i === 0 ? "#F59E0B" : c.cor, lineHeight: 1 }}>{c.count}</div>
                       <div style={{ fontSize: "clamp(9px, 1.1vw, 12px)", color: "#ffffffcc", marginTop: 2, fontFamily: "monospace", letterSpacing: 1, wordBreak: "break-word" }}>{c.nome}</div>
                     </div>
                   ))}
+
                 </div>
               </div>
             )}
