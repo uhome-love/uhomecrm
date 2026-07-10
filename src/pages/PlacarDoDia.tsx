@@ -548,19 +548,20 @@ export default function PlacarDoDia() {
             {/* Ranking individual */}
             {ranking.length > 0 && (
               <div style={{ flexShrink: 0 }}>
-                <div style={{ fontSize: "clamp(12px, 1.8vw, 16px)", letterSpacing: 4, textTransform: "uppercase", color: "#ffffff77", marginBottom: 6, textAlign: "center" }}>🏅 Top 3 corretores</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                <div style={{ fontSize: "clamp(12px, 1.8vw, 16px)", letterSpacing: 4, textTransform: "uppercase", color: "#ffffff77", marginBottom: 6, textAlign: "center" }}>🏅 Top 5 — Quem mais marcou hoje</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
                   {ranking.map((c, i) => (
                     <div key={c.nome} style={{
-                      background: i === 0 ? "#1a1400" : i === 1 ? "#0d0d14" : "#0a100a",
-                      border: `1px solid ${i === 0 ? "#F59E0B44" : i === 1 ? "#9CA3AF44" : "#16A34A44"}`,
+                      background: i === 0 ? "#1a1400" : "#0d0d14",
+                      border: `1px solid ${i === 0 ? "#F59E0B66" : c.cor + "44"}`,
                       borderRadius: 10, padding: "6px 6px", textAlign: "center",
                     }}>
                       <div style={{ fontSize: 18 }}>{medalhas[i]}</div>
-                      <div style={{ fontSize: "clamp(18px, 2.5vw, 28px)", fontWeight: 900, color: i === 0 ? "#F59E0B" : i === 1 ? "#9CA3AF" : "#16A34A", lineHeight: 1 }}>{c.count}</div>
+                      <div style={{ fontSize: "clamp(18px, 2.5vw, 28px)", fontWeight: 900, color: i === 0 ? "#F59E0B" : c.cor, lineHeight: 1 }}>{c.count}</div>
                       <div style={{ fontSize: "clamp(9px, 1.1vw, 12px)", color: "#ffffffcc", marginTop: 2, fontFamily: "monospace", letterSpacing: 1, wordBreak: "break-word" }}>{c.nome}</div>
                     </div>
                   ))}
+
                 </div>
               </div>
             )}
