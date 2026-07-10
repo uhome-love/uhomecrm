@@ -4967,6 +4967,33 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_form_names: {
+        Row: {
+          created_at: string
+          encontrado: boolean
+          fonte: string
+          form_id: string
+          form_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          encontrado?: boolean
+          fonte?: string
+          form_id: string
+          form_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          encontrado?: boolean
+          fonte?: string
+          form_id?: string
+          form_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meta_supressao: {
         Row: {
           codigo: string | null

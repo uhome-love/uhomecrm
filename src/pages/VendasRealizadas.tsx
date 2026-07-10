@@ -384,6 +384,52 @@ export default function VendasRealizadas() {
   const profileIdToAuthId = data?.profileIdToAuthId || {};
   const comissaoMap = data?.comissaoMap || {};
 
+  // ═══ Resolução dinâmica de nomes de formulário/campanha Meta ═══
+  // Coleta origem_detalhe que são IDs numéricos ainda não resolvidos pelo mapa estático.
+  const unresolvedFormIds = useMemo(() => {
+    const ids = new Set<string>();
+    Object.values(origemMap).forEach((info) => {
+      const raw = info?.origem_detalhe ? String(info.origem_detalhe).trim() : "";
+      if (!raw) return;
+      // Se resolveFormName devolver o genérico "Formulário Meta", o ID não está mapeado.
+      if (/^\d{6,}$/.test(raw) && resolveFormName(raw) === "Formulário Meta") ids.add(raw);
+    });
+    return [...ids];
+  }, [origemMap]);
+
+  const { data: dynamicFormNames } = useQuery({
+    queryKey: ["meta-form-names", unresolvedFormIds.sort().join(",")],
+    enabled: unresolvedFormIds.length > 0,
+    staleTime: 1000 * 60 * 60,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("resolve-meta-forms", {
+        body: { ids: unresolvedFormIds },
+      });
+      if (error) {
+        console.warn("[VendasRealizadas] resolve-meta-forms falhou:", error.message);
+        return {} as Record<string, string | null>;
+      }
+      return (data?.names || {}) as Record<string, string | null>;
+    },
+  });
+
+  // Resolve o nome de exibição da campanha: mapa estático → cache/Meta → ID cru.
+  const resolveDetalhe = useMemo(() => {
+    const dyn = dynamicFormNames || {};
+    return (raw: string | null | undefined): string | null => {
+      if (!raw) return null;
+      const trimmed = String(raw).trim();
+      if (!trimmed) return null;
+      const staticName = resolveFormName(trimmed);
+      if (staticName && staticName !== "Formulário Meta") return staticName;
+      const dynName = dyn[trimmed];
+      if (dynName) return dynName;
+      // Sem nome real conhecido: mostra o ID cru para rastreio manual na Meta.
+      if (/^\d{6,}$/.test(trimmed)) return `Meta #${trimmed}`;
+      return staticName || trimmed;
+    };
+  }, [dynamicFormNames]);
+
   // ═══ Metas ═══
   const { data: metaPessoal } = useQuery({
     queryKey: ["meta-pessoal", user?.id, mesStr],
@@ -510,28 +556,29 @@ export default function VendasRealizadas() {
 
   const medalEmojis = ["🥇", "🥈", "🥉"];
 
-  // Origens analytics
+  // Origens analytics — agrupado por CAMPANHA específica (origem + formulário/detalhe)
   const origemAnalytics = useMemo(() => {
-    const byOrigem: Record<string, { count: number; vgv: number; empreendimentos: Set<string>; detalhe: Set<string> }> = {};
+    const byCampanha: Record<string, { origem: string; campanha: string | null; count: number; vgv: number; empreendimentos: Set<string> }> = {};
     const detailRows: { cliente: string; empreendimento: string | null; vgv: number; origem: string; detalhe: string | null; dataAssinatura: string | null; dataEntrada: string | null; corretor: string }[] = [];
     filtered.forEach(v => {
       const plId = v.pipeline_lead_id;
       const info = plId ? origemMap[plId] : null;
       const origem = info?.origem || "Não identificado";
-      const detalhe = resolveFormName(info?.origem_detalhe);
+      const detalhe = resolveDetalhe(info?.origem_detalhe);
       const vgv = v.vgv_final || v.vgv_estimado || 0;
       const corr = v.corretor_id ? profiles[v.corretor_id] : null;
-      if (!byOrigem[origem]) byOrigem[origem] = { count: 0, vgv: 0, empreendimentos: new Set(), detalhe: new Set() };
-      byOrigem[origem].count++; byOrigem[origem].vgv += vgv;
-      if (v.empreendimento) byOrigem[origem].empreendimentos.add(v.empreendimento);
-      if (detalhe) byOrigem[origem].detalhe.add(detalhe);
+      const key = `${origem}||${detalhe || ""}`;
+      if (!byCampanha[key]) byCampanha[key] = { origem, campanha: detalhe, count: 0, vgv: 0, empreendimentos: new Set() };
+      byCampanha[key].count++; byCampanha[key].vgv += vgv;
+      if (v.empreendimento) byCampanha[key].empreendimentos.add(v.empreendimento);
       detailRows.push({ cliente: v.nome_cliente, empreendimento: v.empreendimento, vgv, origem, detalhe, dataAssinatura: v.data_assinatura, dataEntrada: info?.created_at_lead || null, corretor: corr?.nome || "—" });
     });
-    const sorted = Object.entries(byOrigem)
-      .map(([origem, d]) => ({ origem, ...d, empreendimentos: [...d.empreendimentos], detalhe: [...d.detalhe] }))
+    const sorted = Object.values(byCampanha)
+      .map((d) => ({ ...d, empreendimentos: [...d.empreendimentos] }))
       .sort((a, b) => b.vgv - a.vgv);
     return { breakdown: sorted, details: detailRows, totalVGV };
-  }, [filtered, origemMap, profiles, totalVGV]);
+  }, [filtered, origemMap, profiles, totalVGV, resolveDetalhe]);
+
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -850,8 +897,8 @@ export default function VendasRealizadas() {
           <div className="bg-card border border-border rounded-[12px] p-4">
             <div className="flex items-center gap-2 mb-4">
               <Megaphone size={15} className="text-primary" />
-              <h2 className="text-[13px] font-bold text-foreground">Performance por origem</h2>
-              <Badge variant="outline" className="text-[10px] ml-auto">{origemAnalytics.breakdown.length} origens</Badge>
+              <h2 className="text-[13px] font-bold text-foreground">Performance por campanha</h2>
+              <Badge variant="outline" className="text-[10px] ml-auto">{origemAnalytics.breakdown.length} campanha{origemAnalytics.breakdown.length !== 1 ? "s" : ""}</Badge>
             </div>
             {origemAnalytics.breakdown.length === 0 ? (
               <div className="text-center py-8"><p className="text-muted-foreground text-sm">Nenhuma venda com origem rastreada no período</p></div>
@@ -862,12 +909,15 @@ export default function VendasRealizadas() {
                   const barColors = ["bg-primary", "bg-emerald-500", "bg-blue-500", "bg-amber-500", "bg-violet-500", "bg-rose-500"];
                   const barColor = barColors[i % barColors.length];
                   return (
-                    <div key={item.origem} className="rounded-[10px] border border-border/40 p-3.5 bg-accent/20">
+                    <div key={`${item.origem}-${item.campanha ?? "sem"}-${i}`} className="rounded-[10px] border border-border/40 p-3.5 bg-accent/20">
                       <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <div className={cn("h-3 w-3 rounded-full shrink-0", barColor)} />
-                          <span className="text-[13px] font-bold text-foreground">{item.origem}</span>
-                          <Badge variant="secondary" className="text-[9px] h-4">{item.count} venda{item.count > 1 ? "s" : ""}</Badge>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[13px] font-bold text-foreground truncate">{item.campanha || item.origem}</span>
+                            {item.campanha && <span className="text-[10px] text-muted-foreground truncate">{item.origem}</span>}
+                          </div>
+                          <Badge variant="secondary" className="text-[9px] h-4 shrink-0">{item.count} venda{item.count > 1 ? "s" : ""}</Badge>
                         </div>
                         <div className="text-right">
                           <span className="text-[13px] font-black text-emerald-500">{formatVgvExact(item.vgv)}</span>
@@ -878,7 +928,6 @@ export default function VendasRealizadas() {
                         <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6 }} className={cn("h-full rounded-full", barColor)} />
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {item.detalhe.map(d => <span key={d} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">📋 {d}</span>)}
                         {item.empreendimentos.slice(0, 5).map(emp => <span key={emp} className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">🏢 {emp}</span>)}
                         {item.empreendimentos.length > 5 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">+{item.empreendimentos.length - 5}</span>}
                       </div>
