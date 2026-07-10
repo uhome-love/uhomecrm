@@ -122,6 +122,7 @@ export default function PlacarDoDia() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const prevTotais = useRef({});
+  const prevStatusPorId = useRef({});
   const [flashEquipe, setFlashEquipe] = useState(null);
   const [floatEquipe, setFloatEquipe] = useState(null);
   const [ranking, setRanking] = useState([]);
