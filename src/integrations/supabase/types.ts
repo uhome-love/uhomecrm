@@ -11409,6 +11409,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_relatorio_equipes: {
+        Args: { p_end: string; p_gestor_id: string; p_start: string }
+        Returns: Json
+      }
       get_relatorio_metas: {
         Args: {
           p_end: string

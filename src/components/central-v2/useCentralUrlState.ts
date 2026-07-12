@@ -2,9 +2,9 @@ import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DEFAULT_SECTION, isCentralSection, type CentralSectionId } from "./sections";
 
-export type CentralPeriodo = "hoje" | "semana" | "mes" | "trimestre" | "custom";
+export type CentralPeriodo = "hoje" | "semana" | "mes" | "acumulado" | "trimestre" | "custom";
 
-const PERIODOS: CentralPeriodo[] = ["hoje", "semana", "mes", "trimestre", "custom"];
+const PERIODOS: CentralPeriodo[] = ["hoje", "semana", "mes", "acumulado", "trimestre", "custom"];
 
 function isPeriodo(v: string | null | undefined): v is CentralPeriodo {
   return !!v && PERIODOS.includes(v as CentralPeriodo);

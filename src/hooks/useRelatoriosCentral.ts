@@ -101,6 +101,11 @@ export function resolvePeriodo(
       end = ate ? new Date(`${ate}T00:00:00`) : today;
       break;
     }
+    case "acumulado":
+      // 1º dia do mês corrente até hoje (acumulado do mês)
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+      end = today;
+      break;
     case "mes":
     default:
       start = new Date(today.getFullYear(), today.getMonth(), 1);
