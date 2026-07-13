@@ -112,15 +112,17 @@ function HomiAvatarInner() {
       style={{ left: position.x, top: position.y, cursor: isDragging.current ? "grabbing" : "grab" }}
       title="Fale com o HOMI (tecle /)"
     >
-      {/* Botão recolher (aparece no hover) */}
+      {/* Botão fechar (sempre visível — reabra pelo header) */}
       <button
         onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => { e.stopPropagation(); setCollapsedPersist(true); }}
-        className="absolute -top-1 -left-1 z-10 h-5 w-5 rounded-full bg-foreground/80 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-        title="Recolher HOMI"
+        onClick={(e) => { e.stopPropagation(); setHiddenPersist(true); }}
+        className="absolute -top-1.5 -left-1.5 z-10 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity shadow-md"
+        title="Fechar (reabra pelo botão do HOMI no topo)"
+        aria-label="Fechar HOMI flutuante"
       >
         <span className="text-[11px] leading-none">×</span>
       </button>
+
 
       {/* Pulse ring when has unseen alerts */}
       {unseenCount > 0 && (
