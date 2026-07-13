@@ -18,6 +18,19 @@ interface FailRow {
   count: number;
 }
 
+// Falhas de elegibilidade/cobrança/throttle não podem ser reenviadas — insistir queima o número.
+function isQualityBlockingError(raw: string | null | undefined): boolean {
+  const t = (raw || "").toLowerCase();
+  return (
+    t.includes("eligibility") ||
+    t.includes("payment") ||
+    t.includes("cobran") ||
+    t.includes("131049") ||
+    t.includes("pacing") ||
+    t.includes("quality")
+  );
+}
+
 export default function FilaReenvioCard() {
   const qc = useQueryClient();
   const [retryingKey, setRetryingKey] = useState<string | null>(null);
@@ -80,13 +93,23 @@ export default function FilaReenvioCard() {
     qc.invalidateQueries({ queryKey: ["auditoria-webhook"] });
   };
 
+  // Se a maioria das falhas é por cobrança/qualidade, reenvio fica bloqueado.
+  const blockingCount = falhas.filter((f) => isQualityBlockingError(f.error_text)).length;
+  const isBlocked = falhas.length > 0 && blockingCount >= falhas.length / 2;
+
   async function retry(metaIds: string[], label: string) {
     try {
       const { data, error } = await supabase.functions.invoke("reengajamento-retry-falhas", {
         body: { meta_ids: metaIds },
       });
       if (error) throw error;
-      const reset = (data as { reset?: number } | null)?.reset ?? 0;
+      const res = data as { reset?: number; blocked?: boolean; message?: string } | null;
+      if (res?.blocked) {
+        toast.warning(res.message || "Reenvio bloqueado pela proteção de qualidade.");
+        invalidate();
+        return;
+      }
+      const reset = res?.reset ?? 0;
       if (reset === 0) toast.info("Nenhuma falha reprocessável encontrada.");
       else toast.success(`🔁 ${label}: ${reset} lead(s) reenviado(s) para a fila.`);
       invalidate();
@@ -138,7 +161,7 @@ export default function FilaReenvioCard() {
             size="sm"
             className="h-8 text-xs"
             onClick={handleRetryAll}
-            disabled={retryingAll || falhas.length === 0}
+            disabled={retryingAll || falhas.length === 0 || isBlocked}
           >
             {retryingAll ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RotateCcw className="h-3.5 w-3.5 mr-1" />}
             Tentar todos
@@ -146,6 +169,20 @@ export default function FilaReenvioCard() {
         </div>
       </CardHeader>
       <CardContent>
+        {isBlocked && (
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
+            <div className="text-[11px] leading-relaxed">
+              <p className="font-semibold text-destructive">Reenvio bloqueado — conta Meta com pendência</p>
+              <p className="text-muted-foreground mt-0.5">
+                As falhas são de <strong>elegibilidade/cobrança</strong> da conta WhatsApp Business
+                (ou limite de qualidade 131049). Reenviar agora <strong>queima a reputação do
+                número</strong>. Regularize o faturamento e a qualidade da conta na Meta antes de
+                tentar novamente.
+              </p>
+            </div>
+          </div>
+        )}
         {falhas.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
             <CheckCircle2 className="h-6 w-6 text-emerald-600" />
@@ -192,7 +229,7 @@ export default function FilaReenvioCard() {
                           variant="outline"
                           className="h-7 text-[10px]"
                           onClick={() => handleRetryOne(f)}
-                          disabled={retryingKey === f.phone || retryingAll}
+                          disabled={retryingKey === f.phone || retryingAll || isBlocked}
                         >
                           {retryingKey === f.phone ? <Loader2 className="h-3 w-3 animate-spin" /> : "🔁 Tentar"}
                         </Button>
@@ -225,7 +262,7 @@ export default function FilaReenvioCard() {
                       variant="outline"
                       className="h-7 text-[10px]"
                       onClick={() => handleRetryOne(f)}
-                      disabled={retryingKey === f.phone || retryingAll}
+                      disabled={retryingKey === f.phone || retryingAll || isBlocked}
                     >
                       {retryingKey === f.phone ? <Loader2 className="h-3 w-3 animate-spin" /> : "🔁 Tentar novamente"}
                     </Button>
