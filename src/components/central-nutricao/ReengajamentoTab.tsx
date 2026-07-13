@@ -275,8 +275,8 @@ export default function ReengajamentoTab() {
 
   async function dispararAgora() {
     // FIX A: pausa travada
-    if ((cfg as any)?.paused_until_release) {
-      toast.error("⛔ Central travada: " + ((cfg as any)?.paused_reason || "liberação manual via SQL admin necessária"));
+    if (cfg?.paused_until_release) {
+      toast.error("⛔ Central travada: " + (cfg?.paused_reason || "liberação manual via SQL admin necessária"));
       return;
     }
     // FIX B: template em blacklist
