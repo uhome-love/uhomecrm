@@ -42,7 +42,9 @@ export function buildRange(mode: PeriodMode, customDate?: Date): PeriodRange {
   if (mode === "semana") {
     const start = startOfDayBRT(now);
     start.setUTCDate(start.getUTCDate() - 6); // últimos 7 dias (hoje incluso)
-    return { from: start.toISOString(), to: now.toISOString(), mode, label: "Últimos 7 dias" };
+    // Limite superior no fim do dia BRT (não congela em "now"): envios que
+    // chegam depois de abrir a aba continuam entrando no intervalo em tempo real.
+    return { from: start.toISOString(), to: endOfDayBRT(now).toISOString(), mode, label: "Últimos 7 dias" };
   }
   if (mode === "custom" && customDate) {
     return {
@@ -52,8 +54,8 @@ export function buildRange(mode: PeriodMode, customDate?: Date): PeriodRange {
       label: format(customDate, "dd/MM/yyyy", { locale: ptBR }),
     };
   }
-  // hoje (default)
-  return { from: startOfDayBRT(now).toISOString(), to: now.toISOString(), mode: "hoje", label: "Hoje" };
+  // hoje (default) — limite superior no fim do dia BRT para captar envios ao vivo
+  return { from: startOfDayBRT(now).toISOString(), to: endOfDayBRT(now).toISOString(), mode: "hoje", label: "Hoje" };
 }
 
 export default function PeriodFilter({
