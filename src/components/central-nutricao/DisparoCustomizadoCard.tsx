@@ -332,7 +332,6 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
               { v: "descartados", label: "Descartados" },
               { v: "oferta_ativa_lista", label: "Oferta Ativa (listas)" },
               { v: "pipeline_ativo", label: "Pipeline ativo (etapas)" },
-              { v: "visita_amanha", label: "Visita amanhã" },
             ] as { v: Source; label: string }[]).map(({ v, label }) => (
               <Button
                 key={v}
@@ -352,10 +351,8 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
               Os públicos serão unidos em um único disparo. Cada lead recebe só 1 mensagem (dedup pelos últimos 8 dígitos do telefone; prioridade: descartados &gt; oferta ativa &gt; pipeline).
             </p>
           )}
-          {has("visita_amanha") && (
-            <p className="text-[10px] text-amber-600 mt-1">Visita amanhã é exclusiva e não combina com outros públicos.</p>
-          )}
         </div>
+
 
 
         {/* Filtros dinâmicos */}
