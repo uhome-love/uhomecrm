@@ -28,7 +28,7 @@ type Visao = "executivo" | "tematicos" | "um-a-um";
 const TAB_LABELS: Record<string, string> = {
   vendas: "Vendas", leads: "Leads", negocios: "Negócios",
   "oferta-ativa": "Oferta Ativa", conversao: "Conversão",
-  empreendimentos: "Empreendimentos", origem: "Origem", "origem-performance": "Origem+",
+  empreendimentos: "Empreendimentos", origem: "Origem",
   interacao: "Interação", visitas: "Visitas", tarefas: "Tarefas",
   mega: "✦ Mega",
 };
