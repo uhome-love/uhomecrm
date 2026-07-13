@@ -397,7 +397,7 @@ export default function ReengajamentoTab() {
       await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
       if (activeRun?.id) {
         await supabase
-          .from("reengajamento_dispatch_runs" as any)
+          .from("reengajamento_dispatch_runs")
           .update({
             cancel_requested: true,
             status: "cancelled",
