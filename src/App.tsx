@@ -112,7 +112,7 @@ const App = () => (
               <Route path="/ceo/telemetria-rede" element={<Suspense fallback={<PageLoader />}><TelemetriaRede /></Suspense>} />
               <Route path="/admin/ingestao" element={<Suspense fallback={<PageLoader />}><IngestaoPanel /></Suspense>} />
               <Route path="/admin/uso-paginas" element={<Suspense fallback={<PageLoader />}><UsoPaginasPanel /></Suspense>} />
-              <Route path="/admin/campanha-atrio" element={<Suspense fallback={<PageLoader />}><CampanhaAtrio /></Suspense>} />
+
 
               {/* Redirects */}
               <Route path="/fechamento-day" element={<Navigate to="/placar-do-dia" replace />} />
