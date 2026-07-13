@@ -147,7 +147,7 @@ function CriativoTable({ rows }: { rows: ResumoCriativo[] }) {
                       <td style={td} colSpan={3}></td>
                     </tr>
                   ))}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
