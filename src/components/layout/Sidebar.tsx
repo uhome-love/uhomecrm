@@ -149,6 +149,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Meu time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
         { label: "Relatórios 1:1",     path: "/relatorios",        icon: <FileText     size={15} strokeWidth={1.5} /> },
         { label: "Performance",        path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
+        { label: "Performance por Origem", path: "/relatorio-performance-origem", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
         { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
         { label: "Gestão WhatsApp",    path: "/gestor/whatsapp-dashboard", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
       ],
