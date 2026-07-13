@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { RefreshCw, Send, Activity, Settings, Sprout } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { RefreshCw, Send, Activity, Settings, Sprout, History, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import DisparoCustomizadoCard from "@/components/central-nutricao/DisparoCustomizadoCard";
 import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
 import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookTab";
@@ -11,6 +12,7 @@ import RespostasRecebidasHoje from "@/components/central-nutricao/RespostasReceb
 import NutricaoTab from "@/components/central-nutricao/NutricaoTab";
 import FilaReenvioCard from "@/components/central-nutricao/FilaReenvioCard";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
+import PeriodFilter, { buildRange, type PeriodRange } from "@/components/central-nutricao/PeriodFilter";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 
@@ -19,12 +21,29 @@ export default function CentralNutricaoPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") || "disparo";
   const [tab, setTab] = useState(initialTab);
+  const [period, setPeriod] = useState<PeriodRange>(() => buildRange("hoje"));
 
   useEffect(() => {
     const t = searchParams.get("tab");
     if (t && t !== tab) setTab(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // Existe algum disparo rodando agora? Governa o estado "limpo" da aba Ao vivo.
+  const { data: activeRun } = useQuery({
+    queryKey: ["reengajamento-active-run"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("reengajamento_dispatch_runs")
+        .select("id, status")
+        .eq("status", "running")
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    refetchInterval: (query) => (query.state.data ? 3000 : 15000),
+  });
 
   const handleTabChange = (v: string) => {
     setTab(v);
@@ -56,7 +75,7 @@ export default function CentralNutricaoPage() {
       <LiveDispatchBanner />
 
       <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
-        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-2 md:grid-cols-4 h-auto md:h-11">
+        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-3 md:grid-cols-5 h-auto md:h-11">
           <TabsTrigger value="disparo" className="gap-2 text-sm">
             <Send className="h-4 w-4" /> Disparo manual
           </TabsTrigger>
@@ -66,8 +85,10 @@ export default function CentralNutricaoPage() {
           <TabsTrigger value="aovivo" className="gap-2 text-sm">
             <Activity className="h-4 w-4" /> Ao vivo
           </TabsTrigger>
+          <TabsTrigger value="historico" className="gap-2 text-sm">
+            <History className="h-4 w-4" /> Histórico
+          </TabsTrigger>
           <TabsTrigger value="config" className="gap-2 text-sm">
-
             <Settings className="h-4 w-4" /> Configurações
           </TabsTrigger>
         </TabsList>
@@ -84,8 +105,24 @@ export default function CentralNutricaoPage() {
 
         {/* Aba 3: Ao vivo + resultado */}
         <TabsContent value="aovivo" className="mt-0 space-y-4">
-          <RespostasRecebidasHoje />
-          <FilaReenvioCard />
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <PeriodFilter value={period} onChange={setPeriod} />
+          </div>
+
+          {!activeRun && (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center gap-1.5 py-8 text-center">
+                <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+                <p className="text-sm font-medium">Nenhum disparo em andamento</p>
+                <p className="text-xs text-muted-foreground max-w-md">
+                  Tudo limpo e pronto para o próximo disparo. Quando você iniciar um envio, o progresso
+                  aparece aqui em tempo real. Abaixo ficam os resultados do período selecionado.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          <RespostasRecebidasHoje from={period.from} to={period.to} periodLabel={period.label} />
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Auditoria de webhooks — retorno dos disparos</CardTitle>
@@ -95,12 +132,17 @@ export default function CentralNutricaoPage() {
               </p>
             </CardHeader>
             <CardContent>
-              <AuditoriaWebhookTab />
+              <AuditoriaWebhookTab from={period.from} to={period.to} />
             </CardContent>
           </Card>
         </TabsContent>
-        {/* Aba 4: Configurações */}
 
+        {/* Aba 4: Histórico de envios (fila de reenvio por base) */}
+        <TabsContent value="historico" className="mt-0 space-y-4">
+          <FilaReenvioCard />
+        </TabsContent>
+
+        {/* Aba 5: Configurações */}
         <TabsContent value="config" className="mt-0 space-y-4">
           <Card>
             <CardHeader className="pb-3">
