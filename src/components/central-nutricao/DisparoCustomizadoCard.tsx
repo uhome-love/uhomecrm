@@ -376,14 +376,15 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                 "Reengajáveis" remove automaticamente quem respondeu NÃO, foi bloqueado ou está com tipo definitivo.
               </p>
             </div>
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input
-                type="checkbox"
+            <label className="flex items-start gap-2 text-xs cursor-pointer">
+              <Checkbox
                 checked={includeArchived}
-                onChange={(e) => { setIncludeArchived(e.target.checked); setPreview(null); }}
+                onCheckedChange={(v) => { setIncludeArchived(v === true); setPreview(null); }}
+                className="mt-0.5"
               />
-              Incluir leads arquivados (recomendado — descartados antigos ficam arquivados após 24h)
+              <span>Incluir leads arquivados (recomendado — descartados antigos ficam arquivados após 24h)</span>
             </label>
+
           </div>
         )}
 
