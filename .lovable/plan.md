@@ -1,36 +1,52 @@
-# Placar do Dia — Anúncio no meio da tela + sons distintos
+## O que está acontecendo (diagnóstico)
 
-Ajuste apenas de frontend em `src/pages/PlacarDoDia.tsx`. O backend (`rpc_placar_do_dia`) já devolve `id`, `status`, `corretor_nome`, `nome_cliente` e `empreendimento` de cada visita, então dá para detectar tudo no cliente. Nenhuma migração.
+Existe **sim** uma engine de disparo ativa via WhatsApp Meta — não é um envio manual seu, é o **motor de reengajamento de leads descartados** (`reengajamento-descartados-enqueue`). Ele dispara templates Meta em massa para uma base fria de leads descartados.
 
-## Problema atual
-1. **Não aparece anúncio no meio da tela.** Hoje, quando uma visita entra, só surge um pequeno "+1 🎯" flutuando dentro do card da equipe. Não existe o banner grande no centro ("FULANO MARCOU VISITA" / "FULANO REALIZOU VISITA") que foi aprovado no mockup.
-2. **Som igual para marcada e realizada.** A detecção dispara `tocarSom` de forma genérica e acaba tocando sempre parecido; o usuário não percebe diferença entre marcação e realização.
+**Volume dos últimos 6 dias (08 a 11/07):**
 
-## O que será feito
+```
+Total enviado: ~3.766 mensagens
+  read:      1.367
+  failed:    1.224   ← 32% de falha
+  delivered:   860
+  responded:   191
+  sent:        124
+Templates: connectjw_julho, flow_novidade2, lakebaikal_novidade2, casatua_*
+```
 
-### 1. Banner de anúncio no centro da tela
-- Novo overlay em tela cheia (posição fixa, centralizado, `zIndex` acima de tudo, sem bloquear o placar por trás com fundo semitransparente).
-- Conteúdo grande, no estilo do placar (Bebas Neue), com a cor da equipe do corretor:
-  - **Marcada:** `🎯 VISITA MARCADA` + `FULANO` (primeiro nome do corretor) + linha secundária com o cliente/empreendimento quando houver.
-  - **Realizada:** `✅ VISITA REALIZADA` + `FULANO` + linha secundária, com visual mais festivo (glow mais forte).
-- Animação de entrada/saída (escala + fade), fica ~4 segundos e some sozinho.
-- Fila de anúncios: se vários eventos chegarem no mesmo poll (15s), exibe um de cada vez em sequência, sem sobrepor.
+Uma taxa de falha de ~32% em base fria é exatamente o padrão que faz o Meta sinalizar **spam / queda de qualidade do número**.
 
-### 2. Detecção com nome e tipo
-- A detecção de transição de status (que já existe via `prevStatusPorId`) passa a montar uma lista de eventos `{ nome, tipo, cliente, empreendimento, corEquipe }`:
-  - visita nova (id não visto antes) → evento `marcada`.
-  - visita existente que muda para `realizada` → evento `realizada`.
-- Esses eventos alimentam tanto a fila do banner quanto o som — garantindo que cada anúncio toque o som do seu próprio tipo.
-- Mantém a proteção de primeiro carregamento (não dispara banner/som ao abrir a página).
+**Por que você não viu disparo hoje/ontem:** a janela do motor é **seg–sex, 09h–20h BRT**. Sábado (12) e domingo (13) ele fica parado — mas **está armado para voltar a disparar segunda-feira (14/07) às 09h**.
 
-### 3. Sons distintos garantidos
-- Cada anúncio, ao ser exibido, chama `tocarSom(tipo)` com o tipo daquele evento (não mais um único disparo por poll).
-- Reforço da diferença sonora entre os dois:
-  - **Marcada:** jingle curto e leve (sine, acorde ascendente curto).
-  - **Realizada:** sequência mais longa, brilhante e mais alta (triangle, mais notas), claramente diferente.
+**Estado atual (tudo ligado):**
+- `system_flags.campaign_dispatch_enabled = TRUE` (destravado manualmente em 10/07)
+- `reengajamento_config.enabled = TRUE`, `paused = FALSE`
+- **760 leads ainda pendentes** na fila (`reengajamento_dispatch_queue`, status `pending`) → seriam disparados na segunda
+
+## Plano — parar na fonte
+
+**1. Kill switch global (para tudo imediatamente)**
+- `system_flags.campaign_dispatch_enabled = FALSE` com `reason` explicando (aviso de spam do Meta, 13/07). Isso já bloqueia todas as edge functions de campanha via `campaign-gate.ts` (fail-safe já existente).
+
+**2. Desligar o motor de reengajamento na config**
+- `reengajamento_config`: `enabled = FALSE`, `paused = TRUE`, `paused_reason = 'Aviso de spam Meta - 13/07/2026'`, `paused_at_brt = now()`.
+
+**3. Esvaziar a fila pendente (impede o disparo de segunda)**
+- `UPDATE reengajamento_dispatch_queue SET status='cancelled' WHERE status='pending'` (760 registros). Nada é apagado do histórico — só cancelado para não enviar.
+- Marcar os `reengajamento_dispatch_runs` ainda em `running`/`pending` como cancelados.
+
+**4. Garantir que nenhum cron reative sozinho**
+- Verificar/remover qualquer `cron.schedule` que chame `reengajamento-descartados-enqueue`, `whatsapp-campaign-dispatch`, `test-reengajamento-wave2` ou `visita-amanha-enqueue` (via migration). O flag global já era "manual only", mas confirmo e travo.
+
+**5. Confirmação pós-execução**
+- Reconsultar as 3 travas + contagem da fila para provar que está tudo parado (0 pending, flags FALSE).
 
 ## Detalhes técnicos
-- Estado novo `announcement` (item atual) + `announcementQueue` (ref) para enfileirar; um `useEffect` consome a fila, mostra por ~4s, toca o som do tipo e passa ao próximo.
-- No loop de detecção, além de `prevStatusPorId`, empurrar os eventos detectados para a fila em vez de só setar `tocouMarcada/tocouRealizada`.
-- O "+1 🎯" e o flash/glow do card são mantidos como estão.
-- Nenhuma alteração em rotas, RPC ou dados.
+
+- Passos 1–4 são mudanças de dado/DDL → feitos via **migration** (não dá pra fazer por `psql`, que é só leitura/insert).
+- Nenhum histórico de disparo é apagado — `reengajamento_meta_disparos` fica intacto para auditoria. Só interrompo o que ainda não foi enviado.
+- Isso **não** desativa o WhatsApp do CRM (atendimento 1:1, respostas, inbox) — só o motor de marketing/reengajamento em massa.
+- Reativação futura fica manual e consciente (destravar os 3 pontos de novo), de preferência só depois que o número recuperar qualidade no Meta.
+
+## O que NÃO faço agora
+- Não excluo o motor nem os templates (podem ser reusados depois com base quente e volume controlado). Se você preferir remover de vez, me avise que ajusto o plano.
