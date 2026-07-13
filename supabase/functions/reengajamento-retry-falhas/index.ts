@@ -1,10 +1,16 @@
 // Fila de reenvio — reprocessa disparos que falharam.
 // Fonte primária: reengajamento_meta_disparos com status "failed" (falha de entrega reportada
-// pela Meta via webhook). Para cada falha, reabre o item correspondente na fila de disparo
-// (volta para "pending"), marca a falha como "retried", reabre a execução e reinvoca o
-// disparador em modo manual (bypass do gate global). Aciona apenas manualmente (usuário logado).
+// pela Meta via webhook).
+//
+// PROTEÇÕES (13/07/2026 — evitar queimar a base):
+//   1) Respeita o gate global (campaign_dispatch_enabled). Se estiver desligado, o reenvio é
+//      BLOQUEADO — não reabre run, não reprocessa fila, não limpa a pausa.
+//   2) Bloqueio por qualidade: se as falhas selecionadas forem por elegibilidade/cobrança da
+//      conta Meta ("Business eligibility payment issue") ou throttle 131049, recusa o reenvio.
+// Aciona apenas manualmente (usuário logado).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isCampaignDispatchEnabled } from "../_shared/campaign-gate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +20,19 @@ const corsHeaders = {
 const last8 = (raw: string | null | undefined): string => {
   const d = (raw || "").replace(/\D/g, "");
   return d.length >= 8 ? d.slice(-8) : d;
+};
+
+// Falhas que NÃO podem ser reenviadas — insistir queima a reputação do número.
+const isQualityBlockingError = (raw: string | null | undefined): boolean => {
+  const t = (raw || "").toLowerCase();
+  return (
+    t.includes("eligibility") ||
+    t.includes("payment") ||
+    t.includes("cobran") ||
+    t.includes("131049") ||
+    t.includes("pacing") ||
+    t.includes("quality")
+  );
 };
 
 Deno.serve(async (req) => {
