@@ -123,8 +123,8 @@ function CriativoTable({ rows }: { rows: ResumoCriativo[] }) {
             {rows.map((c) => {
               const isOpen = !!open[c.chave];
               return (
-                <>
-                  <tr key={c.chave} style={{ borderBottom: "0.5px solid #f5f5fa", cursor: "pointer" }} onClick={() => setOpen((o) => ({ ...o, [c.chave]: !o[c.chave] }))}>
+                <Fragment key={c.chave}>
+                  <tr style={{ borderBottom: "0.5px solid #f5f5fa", cursor: "pointer" }} onClick={() => setOpen((o) => ({ ...o, [c.chave]: !o[c.chave] }))}>
                     <td style={tdL}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                         {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
