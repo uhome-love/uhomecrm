@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
-import { Loader2, Send, Search, Target, Shield, Zap, Calendar, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw } from "lucide-react";
+import { Loader2, Send, Search, Target, Shield, Zap, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
