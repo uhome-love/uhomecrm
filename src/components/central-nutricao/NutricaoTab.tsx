@@ -150,7 +150,7 @@ export default function NutricaoTab() {
     try {
       const { data, error } = await supabase.functions.invoke("cron-nurturing-sequencer", { body: { manual: true } });
       if (error) throw error;
-      const d = data as any;
+      const d = data as { paused?: boolean; enviados?: number; erros?: number; processed?: number } | null;
       if (d?.paused) {
         toast.error("Nutrição desligada — ligue a chave mestra primeiro.");
       } else {
