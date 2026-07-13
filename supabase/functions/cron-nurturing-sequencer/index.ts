@@ -19,7 +19,21 @@ Deno.serve(async (req) => {
   const cronDenied = requireCronAuth(req);
   if (cronDenied) return cronDenied;
 
-
+  // GATE GLOBAL — nutrição NUNCA dispara automaticamente.
+  // Só envia quando o usuário libera a central (campaign_dispatch_enabled = true).
+  const gate = await isCampaignDispatchEnabled();
+  if (!gate.enabled) {
+    return new Response(
+      JSON.stringify({
+        paused: true,
+        function: "cron-nurturing-sequencer",
+        message: "Nutrição automática desligada — só dispara quando a central é liberada manualmente.",
+        flag_reason: gate.reason ?? null,
+        sent: 0,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
