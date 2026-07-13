@@ -676,9 +676,12 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             <p className="text-[10px] text-muted-foreground mt-1">Use {"{{nome}}"} como variável. Para descartados, a configuração padrão é usada.</p>
           </div>
         )}
+        </div>{/* /coluna direita */}
+        </div>{/* /grid 2 colunas */}
 
         {/* Preview + ação */}
         <div className="border-t pt-3 space-y-2">
+
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={doPreview} disabled={previewing}>
               {previewing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Search className="h-3.5 w-3.5 mr-1" />}
