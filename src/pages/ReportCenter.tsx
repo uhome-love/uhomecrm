@@ -149,7 +149,6 @@ export default function ReportCenter() {
       case "conversao": return <RelatorioConversao filters={filters} userRole={userRole} />;
       case "empreendimentos": return <RelatorioEmpreendimentos filters={filters} userRole={userRole} />;
       case "origem": return <RelatorioOrigem filters={filters} userRole={userRole} />;
-      case "origem-performance": return <RelatorioOrigemPerformance filters={filters} userRole={userRole} />;
       case "interacao": return <RelatorioInteracao filters={filters} userRole={userRole} />;
       case "visitas": return <RelatorioVisitas filters={filters} userRole={userRole} />;
       case "tarefas": return <RelatorioTarefas filters={filters} userRole={userRole} />;
