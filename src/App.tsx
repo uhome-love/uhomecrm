@@ -63,7 +63,7 @@ const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"))
 const TelemetriaRede = lazyRetry(() => import("./pages/admin/TelemetriaRede"));
 const IngestaoPanel = lazyRetry(() => import("./pages/admin/IngestaoPanel"));
 const UsoPaginasPanel = lazyRetry(() => import("./pages/admin/UsoPaginasPanel"));
-const CampanhaAtrio = lazyRetry(() => import("./pages/admin/CampanhaAtrio"));
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -112,7 +112,7 @@ const App = () => (
               <Route path="/ceo/telemetria-rede" element={<Suspense fallback={<PageLoader />}><TelemetriaRede /></Suspense>} />
               <Route path="/admin/ingestao" element={<Suspense fallback={<PageLoader />}><IngestaoPanel /></Suspense>} />
               <Route path="/admin/uso-paginas" element={<Suspense fallback={<PageLoader />}><UsoPaginasPanel /></Suspense>} />
-              <Route path="/admin/campanha-atrio" element={<Suspense fallback={<PageLoader />}><CampanhaAtrio /></Suspense>} />
+
 
               {/* Redirects */}
               <Route path="/fechamento-day" element={<Navigate to="/placar-do-dia" replace />} />

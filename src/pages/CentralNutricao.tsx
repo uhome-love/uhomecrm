@@ -1,6 +1,6 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { RefreshCw, Send, Activity, Settings, Sprout, Radio, Loader2 } from "lucide-react";
+import { RefreshCw, Send, Activity, Settings, Sprout } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,7 +12,6 @@ import NutricaoTab from "@/components/central-nutricao/NutricaoTab";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
 import { PageHeader } from "@/components/ui/PageHeader";
 
-const CampanhaOndasTab = lazy(() => import("@/components/central-nutricao/CampanhaOndasTab"));
 
 export default function CentralNutricaoPage() {
   const qc = useQueryClient();
@@ -56,7 +55,7 @@ export default function CentralNutricaoPage() {
       <LiveDispatchBanner />
 
       <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
-        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-2 md:grid-cols-5 h-auto md:h-11">
+        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-2 md:grid-cols-4 h-auto md:h-11">
           <TabsTrigger value="disparo" className="gap-2 text-sm">
             <Send className="h-4 w-4" /> Disparo manual
           </TabsTrigger>
@@ -66,10 +65,8 @@ export default function CentralNutricaoPage() {
           <TabsTrigger value="aovivo" className="gap-2 text-sm">
             <Activity className="h-4 w-4" /> Ao vivo
           </TabsTrigger>
-          <TabsTrigger value="ondas" className="gap-2 text-sm">
-            <Radio className="h-4 w-4" /> Campanhas em ondas
-          </TabsTrigger>
           <TabsTrigger value="config" className="gap-2 text-sm">
+
             <Settings className="h-4 w-4" /> Configurações
           </TabsTrigger>
         </TabsList>
@@ -100,15 +97,8 @@ export default function CentralNutricaoPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* Aba 4: Configurações */}
 
-        {/* Aba 4: Campanhas em ondas (Átrio) */}
-        <TabsContent value="ondas" className="mt-0 space-y-4">
-          <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <CampanhaOndasTab />
-          </Suspense>
-        </TabsContent>
-
-        {/* Aba 5: Configurações */}
         <TabsContent value="config" className="mt-0 space-y-4">
           <Card>
             <CardHeader className="pb-3">
