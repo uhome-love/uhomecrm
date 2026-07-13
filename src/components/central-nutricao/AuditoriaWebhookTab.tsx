@@ -272,76 +272,81 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
     if (activeRun?.id) setShowRuns(true);
   }, [activeRun?.id]);
 
-  const { data: queueActivityRaw = [], isFetching: isFetchingQueue } = useQuery({
-    queryKey: ["reengajamento-queue-activity", queueRunIds.join(",")],
-    queryFn: async (): Promise<QueueRow[]> => {
+  // Envios sendo processados — usa reengajamento_meta_disparos (mesma fonte do "Resumo de hoje")
+  const { data: queueActivity = [], isFetching: isFetchingQueue } = useQuery({
+    queryKey: ["reengajamento-envios-recentes", queueRunIds.join(",")],
+    queryFn: async (): Promise<ProcRow[]> => {
       if (queueRunIds.length === 0) return [];
       const { data, error } = await supabase
-        .from("reengajamento_dispatch_queue")
-        .select("id, run_id, lead_id, nome, telefone, phone_normalized, template_name, audience_source, status, attempts, locked_at, processed_at, error_text, wamid, created_at, updated_at")
-        .in("run_id", queueRunIds)
-        .order("updated_at", { ascending: false })
-        .limit(80);
-      if (error) throw error;
-      return (data ?? []) as QueueRow[];
-    },
-    enabled: queueRunIds.length > 0,
-    refetchInterval: activeRun ? 3000 : 10000,
-  });
-
-  // Correlaciona wamid -> read_at (leituras) via reengajamento_meta_disparos
-  const { data: readMap = {} } = useQuery({
-    queryKey: ["reengajamento-queue-reads", queueRunIds.join(",")],
-    queryFn: async (): Promise<Record<string, string>> => {
-      if (queueRunIds.length === 0) return {};
-      const { data, error } = await supabase
         .from("reengajamento_meta_disparos")
-        .select("wamid, read_at")
+        .select("id, run_id, lead_id, phone, template_name, audience_source, status, error_text, wamid, sent_at, delivered_at, read_at, responded_at, created_at")
         .in("run_id", queueRunIds)
-        .not("read_at", "is", null)
-        .limit(500);
+        .order("sent_at", { ascending: false, nullsFirst: false })
+        .limit(400);
       if (error) throw error;
-      const map: Record<string, string> = {};
-      (data ?? []).forEach((r: any) => {
-        if (r.wamid && r.read_at) map[r.wamid] = r.read_at;
-      });
-      return map;
+      const list = (data ?? []) as any[];
+      const leadIds = Array.from(new Set(list.map((d) => d.lead_id).filter(Boolean))) as string[];
+      let namesMap: Record<string, string> = {};
+      if (leadIds.length) {
+        const { data: leads } = await supabase
+          .from("pipeline_leads")
+          .select("id, nome")
+          .in("id", leadIds);
+        namesMap = Object.fromEntries((leads ?? []).map((l: any) => [l.id, l.nome ?? ""]));
+      }
+      return list.map((d) => ({
+        id: d.id,
+        lead_id: d.lead_id,
+        nome: d.lead_id ? namesMap[d.lead_id] || null : null,
+        phone: d.phone,
+        template_name: d.template_name,
+        audience_source: d.audience_source,
+        status: d.status,
+        error_text: d.error_text,
+        wamid: d.wamid,
+        sent_at: d.sent_at,
+        delivered_at: d.delivered_at,
+        read_at: d.read_at,
+        responded_at: d.responded_at,
+        created_at: d.created_at,
+        isSent: d.status !== "failed",
+        isDelivered: !!d.delivered_at,
+        isRead: !!d.read_at,
+        isResponded: d.status === "responded" || !!d.responded_at,
+        isFailed: d.status === "failed",
+      })) as ProcRow[];
     },
     enabled: queueRunIds.length > 0,
     refetchInterval: activeRun ? 3000 : 10000,
   });
 
-  const queueActivity = useMemo<(QueueRow & { isRead: boolean })[]>(
-    () => queueActivityRaw.map((r) => ({ ...r, isRead: !!(r.wamid && readMap[r.wamid]) })),
-    [queueActivityRaw, readMap]
-  );
-
-  const [queueFilter, setQueueFilter] = useState<"all" | "processing" | "sent" | "failed" | "skipped" | "read">("all");
+  const [queueFilter, setQueueFilter] = useState<"all" | "sent" | "delivered" | "read" | "responded" | "failed">("all");
 
   const filteredQueue = useMemo(() => {
     switch (queueFilter) {
-      case "processing":
-        return queueActivity.filter((r) => r.status === "processing");
       case "sent":
-        return queueActivity.filter((r) => r.status === "sent");
-      case "failed":
-        return queueActivity.filter((r) => r.status === "failed");
-      case "skipped":
-        return queueActivity.filter((r) => ["skipped", "suppressed", "cancelled"].includes(r.status || ""));
+        return queueActivity.filter((r) => r.isSent);
+      case "delivered":
+        return queueActivity.filter((r) => r.isDelivered);
       case "read":
         return queueActivity.filter((r) => r.isRead);
+      case "responded":
+        return queueActivity.filter((r) => r.isResponded);
+      case "failed":
+        return queueActivity.filter((r) => r.isFailed);
       default:
         return queueActivity;
     }
   }, [queueActivity, queueFilter]);
 
   const queueStats = useMemo(() => ({
-    processing: queueActivity.filter((r) => r.status === "processing").length,
-    sent: queueActivity.filter((r) => r.status === "sent").length,
-    failed: queueActivity.filter((r) => r.status === "failed").length,
-    skipped: queueActivity.filter((r) => ["skipped", "suppressed", "cancelled"].includes(r.status || "")).length,
+    sent: queueActivity.filter((r) => r.isSent).length,
+    delivered: queueActivity.filter((r) => r.isDelivered).length,
     read: queueActivity.filter((r) => r.isRead).length,
+    responded: queueActivity.filter((r) => r.isResponded).length,
+    failed: queueActivity.filter((r) => r.isFailed).length,
   }), [queueActivity]);
+
 
   
 
