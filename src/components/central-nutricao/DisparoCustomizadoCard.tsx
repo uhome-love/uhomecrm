@@ -771,7 +771,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
               <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
                 💡 Regra: SIM → volta para o pipeline · NÃO → inativa permanentemente · sem resposta → continua elegível no próximo ciclo (respeitando cooldown). Novos descartados entram automaticamente.
               </p>
-              {!includeArchived && preview.funil.arquivados > preview.funil.elegiveis && (
+              {!includeArchived && (preview.funil.arquivados ?? 0) > (preview.funil.elegiveis ?? 0) && (
                 <p className="text-[10px] text-amber-600 mt-1">
                   ⚠️ {preview.funil.arquivados} leads arquivados estão sendo excluídos. Marque "Incluir arquivados" para alcançar a base completa.
                 </p>
