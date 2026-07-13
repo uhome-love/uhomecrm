@@ -595,11 +595,11 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
               </div>
               <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
                 {([
-                  { key: "processing", label: "enviando", count: queueStats.processing, active: "bg-blue-600 text-white border-blue-600", idle: "bg-blue-50 text-blue-700 border-blue-200" },
-                  { key: "sent", label: "enviados", count: queueStats.sent, active: "bg-emerald-600 text-white border-emerald-600", idle: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-                  { key: "read", label: "lido", count: queueStats.read, active: "bg-indigo-600 text-white border-indigo-600", idle: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+                  { key: "sent", label: "enviados", count: queueStats.sent, active: "bg-neutral-700 text-white border-neutral-700", idle: "bg-neutral-100 text-neutral-700 border-neutral-200" },
+                  { key: "delivered", label: "entregues", count: queueStats.delivered, active: "bg-blue-600 text-white border-blue-600", idle: "bg-blue-50 text-blue-700 border-blue-200" },
+                  { key: "read", label: "lidos", count: queueStats.read, active: "bg-indigo-600 text-white border-indigo-600", idle: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+                  { key: "responded", label: "responderam", count: queueStats.responded, active: "bg-emerald-600 text-white border-emerald-600", idle: "bg-emerald-50 text-emerald-700 border-emerald-200" },
                   { key: "failed", label: "falhas", count: queueStats.failed, active: "bg-red-600 text-white border-red-600", idle: "bg-red-50 text-red-700 border-red-200" },
-                  { key: "skipped", label: "ignorados", count: queueStats.skipped, active: "bg-amber-600 text-white border-amber-600", idle: "bg-amber-50 text-amber-700 border-amber-200" },
                 ] as const).map((p) => {
                   const isActive = queueFilter === p.key;
                   return (
