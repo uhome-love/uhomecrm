@@ -4,31 +4,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, RotateCcw, AlertTriangle, CheckCircle2 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Loader2, RefreshCw, RotateCcw, AlertTriangle, CheckCircle2, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 
-interface FailRow {
-  phone: string;
-  nome: string | null;
-  template_name: string | null;
-  error_text: string | null;
-  created_at: string | null;
-  metaIds: string[];
-  count: number;
+interface BaseRow {
+  template_name: string;
+  total: number;
+  telefones: number;
+  ultima: string | null;
+  motivo_predominante: string | null;
 }
 
-// Falhas de elegibilidade/cobrança/throttle não podem ser reenviadas — insistir queima o número.
-function isQualityBlockingError(raw: string | null | undefined): boolean {
-  const t = (raw || "").toLowerCase();
-  return (
-    t.includes("eligibility") ||
-    t.includes("payment") ||
-    t.includes("cobran") ||
-    t.includes("131049") ||
-    t.includes("pacing") ||
-    t.includes("quality")
-  );
+interface LeadRow {
+  id: string;
+  phone: string;
+  nome: string | null;
+  error_text: string | null;
+  created_at: string | null;
 }
 
 export default function FilaReenvioCard() {
@@ -36,72 +35,46 @@ export default function FilaReenvioCard() {
   const [retryingKey, setRetryingKey] = useState<string | null>(null);
   const [retryingAll, setRetryingAll] = useState(false);
 
-  const { data: falhas = [], isFetching } = useQuery({
-    queryKey: ["reengajamento-fila-reenvio"],
-    queryFn: async (): Promise<FailRow[]> => {
-      const { data, error } = await supabase
-        .from("reengajamento_meta_disparos")
-        .select("id, lead_id, phone, template_name, error_text, created_at")
-        .eq("status", "failed")
-        .not("run_id", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(300);
-      if (error) throw error;
-      const rows = data || [];
-
-      // Nomes dos leads
-      const leadIds = Array.from(new Set(rows.map((r) => r.lead_id).filter(Boolean))) as string[];
-      const nameMap: Record<string, string> = {};
-      if (leadIds.length > 0) {
-        const { data: leads } = await supabase
-          .from("pipeline_leads")
-          .select("id, nome")
-          .in("id", leadIds);
-        for (const l of leads || []) nameMap[l.id] = l.nome || "";
-      }
-
-      // Agrupa por telefone (mantém o mais recente, junta os ids para reenvio)
-      const grouped = new Map<string, FailRow>();
-      for (const r of rows) {
-        const key = r.phone || r.id;
-        const existing = grouped.get(key);
-        if (existing) {
-          existing.metaIds.push(r.id);
-          existing.count += 1;
-        } else {
-          grouped.set(key, {
-            phone: r.phone || "—",
-            nome: (r.lead_id && nameMap[r.lead_id]) || null,
-            template_name: r.template_name,
-            error_text: r.error_text,
-            created_at: r.created_at,
-            metaIds: [r.id],
-            count: 1,
-          });
-        }
-      }
-      return Array.from(grouped.values());
+  // Gate global — reflete se o motor de disparo está liberado.
+  const { data: gateEnabled = false } = useQuery({
+    queryKey: ["reengajamento-dispatch-gate"],
+    queryFn: async (): Promise<boolean> => {
+      const { data } = await supabase
+        .from("system_flags")
+        .select("flag_value")
+        .eq("flag_name", "campaign_dispatch_enabled")
+        .maybeSingle();
+      return !!data?.flag_value;
     },
-    refetchInterval: 20000,
+    refetchInterval: 30000,
   });
 
+  // Fila agrupada por base (template).
+  const { data: bases = [], isFetching } = useQuery({
+    queryKey: ["reengajamento-fila-bases"],
+    queryFn: async (): Promise<BaseRow[]> => {
+      const { data, error } = await supabase.rpc("get_reengajamento_fila_bases");
+      if (error) throw error;
+      return (data || []) as BaseRow[];
+    },
+    refetchInterval: 30000,
+  });
+
+  const isBlocked = !gateEnabled;
+  const totalFalhas = bases.reduce((acc, b) => acc + Number(b.total || 0), 0);
+
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ["reengajamento-fila-reenvio"] });
+    qc.invalidateQueries({ queryKey: ["reengajamento-fila-bases"] });
+    qc.invalidateQueries({ queryKey: ["reengajamento-fila-base-leads"] });
     qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
     qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
     qc.invalidateQueries({ queryKey: ["auditoria-meta-today"] });
     qc.invalidateQueries({ queryKey: ["auditoria-webhook"] });
   };
 
-  // Se a maioria das falhas é por cobrança/qualidade, reenvio fica bloqueado.
-  const blockingCount = falhas.filter((f) => isQualityBlockingError(f.error_text)).length;
-  const isBlocked = falhas.length > 0 && blockingCount >= falhas.length / 2;
-
-  async function retry(metaIds: string[], label: string) {
+  async function retry(body: Record<string, unknown>, label: string) {
     try {
-      const { data, error } = await supabase.functions.invoke("reengajamento-retry-falhas", {
-        body: { meta_ids: metaIds },
-      });
+      const { data, error } = await supabase.functions.invoke("reengajamento-retry-falhas", { body });
       if (error) throw error;
       const res = data as { reset?: number; blocked?: boolean; message?: string } | null;
       if (res?.blocked) {
@@ -118,16 +91,25 @@ export default function FilaReenvioCard() {
     }
   }
 
-  async function handleRetryOne(row: FailRow) {
-    setRetryingKey(row.phone);
-    await retry(row.metaIds, "Reenvio");
+  async function handleRetryBase(base: BaseRow) {
+    setRetryingKey(base.template_name);
+    await retry({ template_name: base.template_name }, `Base ${base.template_name}`);
+    setRetryingKey(null);
+  }
+
+  async function handleRetryLead(lead: LeadRow) {
+    setRetryingKey(lead.id);
+    await retry({ meta_ids: [lead.id] }, "Reenvio");
     setRetryingKey(null);
   }
 
   async function handleRetryAll() {
-    if (falhas.length === 0) return;
+    if (bases.length === 0) return;
     setRetryingAll(true);
-    await retry(falhas.flatMap((f) => f.metaIds), "Reenvio em lote");
+    // Reenvia base a base para não estourar limites por chamada.
+    for (const b of bases) {
+      await retry({ template_name: b.template_name }, `Base ${b.template_name}`);
+    }
     setRetryingAll(false);
   }
 
@@ -138,13 +120,13 @@ export default function FilaReenvioCard() {
           <CardTitle className="text-base flex items-center gap-2">
             <RotateCcw className="h-4 w-4 text-primary" />
             Fila de reenvio
-            {falhas.length > 0 && (
-              <Badge variant="destructive" className="text-[10px]">{falhas.length}</Badge>
+            {totalFalhas > 0 && (
+              <Badge variant="destructive" className="text-[10px]">{totalFalhas}</Badge>
             )}
           </CardTitle>
           <p className="text-[11px] text-muted-foreground mt-1">
-            Leads cujo disparo falhou na entrega. Reenvie individualmente ou todos de uma vez — o
-            disparador reprocessa em modo manual, com o template original.
+            Falhas de entrega agrupadas por base (template). Expanda para ver os leads. Reenvie uma
+            base inteira ou todas — o disparador reprocessa em modo manual, com o template original.
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -152,7 +134,7 @@ export default function FilaReenvioCard() {
             size="icon"
             variant="ghost"
             className="h-7 w-7"
-            onClick={() => qc.invalidateQueries({ queryKey: ["reengajamento-fila-reenvio"] })}
+            onClick={() => qc.invalidateQueries({ queryKey: ["reengajamento-fila-bases"] })}
             title="Atualizar"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
@@ -161,10 +143,10 @@ export default function FilaReenvioCard() {
             size="sm"
             className="h-8 text-xs"
             onClick={handleRetryAll}
-            disabled={retryingAll || falhas.length === 0 || isBlocked}
+            disabled={retryingAll || bases.length === 0 || isBlocked}
           >
             {retryingAll ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RotateCcw className="h-3.5 w-3.5 mr-1" />}
-            Tentar todos
+            Tentar todas as bases
           </Button>
         </div>
       </CardHeader>
@@ -173,106 +155,145 @@ export default function FilaReenvioCard() {
           <div className="mb-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
             <div className="text-[11px] leading-relaxed">
-              <p className="font-semibold text-destructive">Reenvio bloqueado — conta Meta com pendência</p>
+              <p className="font-semibold text-destructive">Reenvio bloqueado — motor de disparo desligado</p>
               <p className="text-muted-foreground mt-0.5">
-                As falhas são de <strong>elegibilidade/cobrança</strong> da conta WhatsApp Business
-                (ou limite de qualidade 131049). Reenviar agora <strong>queima a reputação do
-                número</strong>. Regularize o faturamento e a qualidade da conta na Meta antes de
-                tentar novamente.
+                O reenvio só é liberado quando o motor global de disparo está ligado (conta Meta
+                saudável / pagamento regularizado). Ligue o disparo nas configurações para reenviar.
               </p>
             </div>
           </div>
         )}
-        {falhas.length === 0 ? (
+        {bases.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
             <CheckCircle2 className="h-6 w-6 text-emerald-600" />
             <p className="text-xs text-muted-foreground">Nenhuma falha na fila — tudo entregue ou pendente.</p>
           </div>
         ) : (
-          <>
-            {/* Desktop: tabela */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-muted-foreground">
-                    <th className="text-left py-2 px-2 font-medium">Lead</th>
-                    <th className="text-left py-2 px-2 font-medium">Telefone</th>
-                    <th className="text-center py-2 px-2 font-medium">Status</th>
-                    <th className="text-left py-2 px-2 font-medium">Template</th>
-                    <th className="text-left py-2 px-2 font-medium">Motivo da falha</th>
-                    <th className="text-left py-2 px-2 font-medium">Quando</th>
-                    <th className="text-center py-2 px-2 font-medium">Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {falhas.map((f) => (
-                    <tr key={f.phone} className="border-b hover:bg-muted/30 align-top">
-                      <td className="py-2 px-2 font-medium">
-                        {f.nome || "—"}
-                        {f.count > 1 && <Badge variant="outline" className="text-[9px] ml-1">{f.count}x</Badge>}
-                      </td>
-                      <td className="py-2 px-2 whitespace-nowrap">{f.phone}</td>
-                      <td className="py-2 px-2 text-center">
-                        <Badge className="bg-red-100 text-red-800 text-[10px]">❌ Falha</Badge>
-                      </td>
-                      <td className="py-2 px-2 whitespace-nowrap text-muted-foreground">{f.template_name || "—"}</td>
-                      <td className="py-2 px-2 max-w-[300px]">
-                        <span className="text-[11px] text-muted-foreground line-clamp-2 flex items-start gap-1">
-                          <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0 text-amber-600" />
-                          {f.error_text || "Motivo não informado"}
-                        </span>
-                      </td>
-                      <td className="py-2 px-2 whitespace-nowrap">{f.created_at ? formatBRT(f.created_at, "dd/MM HH:mm") : "—"}</td>
-                      <td className="py-2 px-2 text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-[10px]"
-                          onClick={() => handleRetryOne(f)}
-                          disabled={retryingKey === f.phone || retryingAll || isBlocked}
-                        >
-                          {retryingKey === f.phone ? <Loader2 className="h-3 w-3 animate-spin" /> : "🔁 Tentar"}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile: cards */}
-            <div className="md:hidden space-y-2">
-              {falhas.map((f) => (
-                <div key={f.phone} className="border rounded-lg p-3 space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium truncate">{f.nome || "—"}</span>
-                    <Badge className="bg-red-100 text-red-800 text-[10px] shrink-0">❌ Falha</Badge>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {f.phone}{f.template_name ? ` · ${f.template_name}` : ""}{f.count > 1 ? ` · ${f.count}x` : ""}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground flex items-start gap-1">
-                    <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0 text-amber-600" />
-                    {f.error_text || "Motivo não informado"}
-                  </p>
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[10px] text-muted-foreground">{f.created_at ? formatBRT(f.created_at, "dd/MM HH:mm") : "—"}</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-[10px]"
-                      onClick={() => handleRetryOne(f)}
-                      disabled={retryingKey === f.phone || retryingAll || isBlocked}
-                    >
-                      {retryingKey === f.phone ? <Loader2 className="h-3 w-3 animate-spin" /> : "🔁 Tentar novamente"}
-                    </Button>
-                  </div>
+          <Accordion type="multiple" className="space-y-2">
+            {bases.map((b) => (
+              <AccordionItem key={b.template_name} value={b.template_name} className="border rounded-lg px-3">
+                <div className="flex items-center gap-2">
+                  <AccordionTrigger className="flex-1 py-3 hover:no-underline">
+                    <div className="flex items-center gap-2 text-left">
+                      <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div>
+                        <div className="text-sm font-medium flex items-center gap-2">
+                          {b.template_name}
+                          <Badge variant="destructive" className="text-[10px]">{b.total}</Badge>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {b.telefones} telefone(s) · última {b.ultima ? formatBRT(b.ultima, "dd/MM HH:mm") : "—"}
+                          {b.motivo_predominante ? ` · ${b.motivo_predominante}` : ""}
+                        </div>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[10px] shrink-0"
+                    onClick={() => handleRetryBase(b)}
+                    disabled={retryingKey === b.template_name || retryingAll || isBlocked}
+                  >
+                    {retryingKey === b.template_name ? <Loader2 className="h-3 w-3 animate-spin" /> : "🔁 Tentar base"}
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </>
+                <AccordionContent className="pb-3">
+                  <BaseLeads
+                    templateName={b.template_name}
+                    onRetryLead={handleRetryLead}
+                    retryingKey={retryingKey}
+                    retryingAll={retryingAll}
+                    isBlocked={isBlocked}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function BaseLeads({
+  templateName,
+  onRetryLead,
+  retryingKey,
+  retryingAll,
+  isBlocked,
+}: {
+  templateName: string;
+  onRetryLead: (lead: LeadRow) => void;
+  retryingKey: string | null;
+  retryingAll: boolean;
+  isBlocked: boolean;
+}) {
+  const { data: leads = [], isLoading } = useQuery({
+    queryKey: ["reengajamento-fila-base-leads", templateName],
+    queryFn: async (): Promise<LeadRow[]> => {
+      const { data, error } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("id, lead_id, phone, error_text, created_at")
+        .eq("status", "failed")
+        .eq("template_name", templateName)
+        .not("run_id", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      const rows = data || [];
+      const leadIds = Array.from(new Set(rows.map((r) => r.lead_id).filter(Boolean))) as string[];
+      const nameMap: Record<string, string> = {};
+      if (leadIds.length > 0) {
+        const { data: pl } = await supabase.from("pipeline_leads").select("id, nome").in("id", leadIds);
+        for (const l of pl || []) nameMap[l.id] = l.nome || "";
+      }
+      return rows.map((r) => ({
+        id: r.id,
+        phone: r.phone || "—",
+        nome: (r.lead_id && nameMap[r.lead_id]) || null,
+        error_text: r.error_text,
+        created_at: r.created_at,
+      }));
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (leads.length === 0) {
+    return <p className="text-[11px] text-muted-foreground py-2">Sem leads para exibir.</p>;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] text-muted-foreground">Mostrando até 100 leads mais recentes desta base.</p>
+      {leads.map((l) => (
+        <div key={l.id} className="flex items-center justify-between gap-2 border-b py-1.5 last:border-b-0">
+          <div className="min-w-0">
+            <div className="text-xs font-medium truncate">{l.nome || "—"} · <span className="text-muted-foreground">{l.phone}</span></div>
+            <p className="text-[10px] text-muted-foreground flex items-start gap-1">
+              <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0 text-amber-600" />
+              {l.error_text || "Motivo não informado"}
+              {l.created_at ? ` · ${formatBRT(l.created_at, "dd/MM HH:mm")}` : ""}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-[10px] shrink-0"
+            onClick={() => onRetryLead(l)}
+            disabled={retryingKey === l.id || retryingAll || isBlocked}
+          >
+            {retryingKey === l.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "🔁 Tentar"}
+          </Button>
+        </div>
+      ))}
+    </div>
   );
 }
