@@ -1,38 +1,45 @@
-# Reorganização da Central de Reengajamento
+## Contexto do diagnóstico
 
-## Estado atual (verificado no banco)
-- **Nenhum disparo em andamento**: 0 pendentes na fila, última execução `cancelled`, nenhuma run `running`.
-- Motor de disparo **ligado** (`campaign_dispatch_enabled=true`).
-- 20.009 falhas acumuladas em `reengajamento_meta_disparos` que alimentam o card de reenvio.
-- Hoje a aba **Ao vivo** empilha: Respostas recebidas hoje + Fila de reenvio + Auditoria de webhooks.
+**1. O lead "sumido" (Rômulo / network, parceria Leo Dorneles + Jessica)**
+Localizei o lead:
+- `id`: `53fd5397-b2e5-4ef0-a741-c295c7278b3a`
+- Nome: **Rômulo (network)** · tel `510000000001` · etapa **Em Negociação** · negócio R$ 450k (fase proposta)
+- Corretor: **Leo Dorneles** · parceria com Jessica
 
-## O que muda
+Ele **não some por bug** — foi **inativado hoje** (13/07, 19:01 BRT):
+- `arquivado = true`
+- `tipo_descarte = definitivo`
+- `motivo_descarte = "Inativado: Teste"`
 
-### 1. Nova aba "Histórico"
-- Passa a existir uma 5ª aba (`Disparo manual`, `Nutrição`, `Ao vivo`, **`Histórico`**, `Configurações`).
-- A "Fila de reenvio" é movida para essa aba e renomeada para **"Histórico de envios"**.
-- Comportamento de reenvio (por base ou por lead) é mantido exatamente como está — é ali que o usuário tenta reenviar.
-- Só esse card fica na aba (conforme escolhido).
+Ou seja, alguém rodou uma inativação com motivo "Teste". Lead inativado sai do board e de todas as listas — por isso "sumiu".
 
-### 2. Aba "Ao vivo" enxuta + filtros de período
-- Sai a Fila de reenvio.
-- Fica focada em: **disparo em execução** e **resultados**.
-- **Sem disparo rodando** (caso atual): estado limpo com mensagem "Nenhum disparo em andamento" no lugar do banner.
-- **Com disparo rodando**: o `LiveDispatchBanner` aparece normalmente com progresso.
-- **Barra de filtros de período** no topo da aba: `Hoje` · `Semana` · `Data personalizada` (datepicker shadcn com `pointer-events-auto`).
-- Os resultados (Respostas recebidas + Auditoria de webhooks) passam a respeitar o período escolhido, em vez de fixos em "hoje".
+**2. Nome do lead ilegível em parceria**
+No card do pipeline (`CardMinimal.tsx`), quando é parceria o nome do lead divide a MESMA linha com o badge roxo "🤝 Parceria" **e** o badge de substatus (ex.: "Aprov. proprietário"). Em cards estreitos os dois badges ocupam quase toda a largura e o nome (`flex-1 truncate`) é espremido até desaparecer. Confirmado com o lead de nome longo "Dra. Eloisa Soldera | Harmonização Facial | Porto Alegre".
 
-### 3. Bugs / melhorias / preparo para o próximo disparo
-- `RespostasRecebidasHoje`: hoje a janela de tempo é fixa em 00:00 BRT do dia. Vira uma janela parametrizada pelo período selecionado (Hoje/Semana/Data). Título deixa de ser fixo "hoje".
-- `AuditoriaWebhookTab`: recebe o mesmo intervalo de período para manter a aba coerente.
-- Estado vazio consistente quando não há atividade (nada de cards vazios confusos).
-- Conferir que o card "Histórico de envios" continua lendo `get_reengajamento_fila_bases()` e os botões respeitam o gate global — sem alterar a lógica de reenvio.
+---
 
-## Detalhes técnicos
-- `src/pages/CentralNutricao.tsx`: adicionar a aba `historico`; mover `<FilaReenvioCard/>` para ela; reestruturar a `TabsContent` de `aovivo` com a barra de filtros e estado vazio; ajustar o grid da `TabsList` para 5 colunas.
-- Novo componente leve de filtro de período (`Hoje | Semana | Data personalizada`) reutilizado na aba Ao vivo, retornando `{ from, to }` em ISO (BRT via `@/lib/brtTime`).
-- `RespostasRecebidasHoje.tsx`: aceitar props `from`/`to`; usar no `.gte/.lte`; ajustar `queryKey` para incluir o período; renomear internamente para refletir "resultados".
-- `AuditoriaWebhookTab.tsx`: aceitar/propagar o mesmo intervalo (se hoje for fixo, parametrizar).
-- `FilaReenvioCard.tsx`: apenas o título/labels para "Histórico de envios"; nenhuma mudança de regra de negócio ou de backend.
-- Sem migrações de banco. Nenhuma mudança na RPC nem na edge function de reenvio.
-- Validação: `tsgo` + suíte de testes; conferência visual via preview de que Ao vivo fica limpo (sem run ativa) e o Histórico mostra as bases.
+## Plano
+
+### Parte 1 — Restaurar o lead Rômulo (network)
+Reverter a inativação via atualização de dados no lead `53fd5397-b2e5-4ef0-a741-c295c7278b3a`:
+- `arquivado` → `false`
+- `tipo_descarte` → `null`
+- `motivo_descarte` → `null`
+
+Ele permanece na etapa **Em Negociação** (nada mais mudou), então volta a aparecer no board do Leo imediatamente. Sem alteração de schema.
+
+### Parte 2 — Corrigir o visual do nome em parceria
+Reestruturar o cabeçalho do `CardMinimal.tsx` para que o **nome do lead fique sempre em uma linha própria, largura total e legível**:
+- Linha 1: badges (Novo / 🤝 Parceria / substatus / cadência) — podem quebrar/encolher à vontade.
+- Linha 2: nome do lead em `text-foreground`, `font-semibold`, largura total (sem competir com badges).
+
+Isso resolve a ilegibilidade tanto no tema claro quanto no escuro e vale para todos os cards (não só parceria). O rodapé com o nome do parceiro continua como está.
+
+### Verificação
+- Conferir no preview que o card de parceria mostra o nome completo do lead.
+- Confirmar que o lead Rômulo reaparece na coluna "Em Negociação".
+- `tsgo` para validar tipos.
+
+### Detalhes técnicos
+- Arquivo de código: `src/components/pipeline/CardMinimal.tsx` (bloco do header, ~linhas 309-354).
+- Dados: update em `pipeline_leads` (1 linha), sem migração de schema.
