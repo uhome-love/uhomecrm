@@ -7,7 +7,10 @@ import { useLocation } from "react-router-dom";
 
 export type HomiRole = "corretor" | "gestor" | "ceo";
 
-export type Message = { role: "user" | "assistant"; content: string };
+export type HomiAction = { tipo: string; lead_id?: string; lead_nome?: string; campos?: Record<string, any> } & Record<string, any>;
+export type HomiResult = { tipo: string } & Record<string, any>;
+
+export type Message = { role: "user" | "assistant"; content: string; actions?: HomiAction[]; results?: HomiResult[] };
 
 export type KnowledgeSourceInfo = {
   source: "db" | "fallback" | "partial";
@@ -165,7 +168,43 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     const functionName = CHAT_URL_MAP[homiRole];
     const url = `${EDGE_BASE_URL}/functions/v1/${functionName}`;
 
+    // ── Copilot mode (corretor): non-streaming tool-calling ──
+    if (homiRole === "corretor") {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ messages: newMessages, enableTools: true, stream: false }),
+        });
+        if (!resp.ok) {
+          if (resp.status === 429) throw new Error("Rate limit. Aguarde alguns segundos.");
+          if (resp.status === 402) throw new Error("Créditos esgotados.");
+          throw new Error("Erro ao conectar com o HOMI");
+        }
+        const data = await resp.json();
+        const assistantMsg: Message = {
+          role: "assistant",
+          content: data.content || "",
+          actions: Array.isArray(data.actions) && data.actions.length ? data.actions : undefined,
+          results: Array.isArray(data.results) && data.results.length ? data.results : undefined,
+        };
+        const finalMsgs = [...newMessages, assistantMsg];
+        setMessages(finalMsgs);
+        const newId = await saveConversation(finalMsgs, conversationId);
+        if (newId) setConversationId(newId);
+      } catch (e: any) {
+        console.error("HOMI copilot error:", e);
+        setMessages(prev => [...prev, { role: "assistant", content: `Erro: ${e.message || "Tente novamente."}` }]);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     let assistantContent = "";
+
 
     try {
       const body: any = { messages: newMessages };

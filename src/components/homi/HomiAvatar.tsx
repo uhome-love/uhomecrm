@@ -33,9 +33,15 @@ function HomiAvatarInner() {
   const { pathname } = useLocation();
   const defaultPos = { x: window.innerWidth - BUTTON_SIZE - SNAP_MARGIN, y: window.innerHeight - BUTTON_SIZE - SNAP_MARGIN };
   const [position, setPosition] = useState(() => loadSavedPosition() || defaultPos);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("homi-avatar-collapsed") === "1");
   const isDragging = useRef(false);
   const hasMoved = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
+
+  const setCollapsedPersist = useCallback((v: boolean) => {
+    setCollapsed(v);
+    localStorage.setItem("homi-avatar-collapsed", v ? "1" : "0");
+  }, []);
 
   // Persist position
   useEffect(() => {
@@ -91,6 +97,20 @@ function HomiAvatarInner() {
 
   if (isOpen || launcherHidden || pathname === "/imoveis") return null;
 
+  // Estado recolhido: mini aba discreta na borda direita
+  if (collapsed) {
+    const onRight = position.x + BUTTON_SIZE / 2 > window.innerWidth / 2;
+    return (
+      <button
+        onClick={() => setCollapsedPersist(false)}
+        className={`fixed z-[60] top-1/2 -translate-y-1/2 ${onRight ? "right-0 rounded-l-xl" : "left-0 rounded-r-xl"} bg-primary/90 text-primary-foreground shadow-lg h-14 w-6 flex items-center justify-center hover:w-8 transition-all`}
+        title="Reabrir HOMI"
+      >
+        <img src="/images/homi-mascot-official.png" alt="HOMI" className="h-5 w-5 object-contain" />
+      </button>
+    );
+  }
+
   return (
     <div
       onPointerDown={handlePointerDown}
@@ -100,6 +120,16 @@ function HomiAvatarInner() {
       style={{ left: position.x, top: position.y, cursor: isDragging.current ? "grabbing" : "grab" }}
       title="Fale com o HOMI (tecle /)"
     >
+      {/* Botão recolher (aparece no hover) */}
+      <button
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); setCollapsedPersist(true); }}
+        className="absolute -top-1 -left-1 z-10 h-5 w-5 rounded-full bg-foreground/80 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+        title="Recolher HOMI"
+      >
+        <span className="text-[11px] leading-none">×</span>
+      </button>
+
       {/* Pulse ring when has unseen alerts */}
       {unseenCount > 0 && (
         <div className="absolute inset-0 rounded-full bg-primary/25 animate-ping" style={{ animationDuration: "2s" }} />

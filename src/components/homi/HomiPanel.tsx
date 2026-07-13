@@ -7,14 +7,16 @@ import { useHomi } from "@/contexts/HomiContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import ReactMarkdown from "react-markdown";
 import HomiAnimated from "./HomiAnimated";
+import { HomiActionsRenderer, HomiResultsRenderer } from "./HomiActionCard";
 import type { HomiAnimState } from "./HomiAnimated";
 
 const QUICK_ACTIONS: Record<string, { label: string; prompt: string }[]> = {
   corretor: [
-    { label: "📞 Script de ligação", prompt: "Gere um script de ligação para um lead que pediu informações e parou de responder há 7 dias." },
-    { label: "💬 Quebrar objeção", prompt: "Me ajude a quebrar a objeção 'está caro' de um lead interessado em apartamento na planta." },
-    { label: "✉️ Follow-up WhatsApp", prompt: "Gere mensagem curta de follow-up WhatsApp para lead que visitou mas não deu retorno." },
-    { label: "🎯 Próxima ação", prompt: "Qual deve ser minha próxima ação agora? Analise meu dia e sugira o que fazer." },
+    { label: "⏰ O que tenho de atrasado?", prompt: "Mostra o que tenho de atrasado e pendente hoje." },
+    { label: "📋 Criar uma tarefa", prompt: "Quero criar uma tarefa." },
+    { label: "🏠 Marcar uma visita", prompt: "Quero marcar uma visita." },
+    { label: "🔎 Buscar um imóvel", prompt: "Me ajuda a buscar um imóvel." },
+    { label: "💬 Mensagem de WhatsApp", prompt: "Gere uma mensagem de follow-up curta para WhatsApp." },
   ],
   gestor: [
     { label: "📋 Checklist do dia", prompt: "Gere meu checklist para hoje como gerente. Rotinas de cobrança e foco em visitas." },
@@ -131,6 +133,26 @@ function HomiPanelInner() {
               </div>
             </div>
 
+            {/* Barra de acesso rápido (corretor) */}
+            {homiRole === "corretor" && (
+              <div className="flex gap-1.5 px-3 py-2 border-b border-border overflow-x-auto shrink-0 bg-card">
+                {[
+                  { label: "⏰ Atrasados", prompt: "Mostra o que tenho de atrasado e pendente hoje." },
+                  { label: "📋 Tarefa", prompt: "Quero criar uma tarefa." },
+                  { label: "🏠 Visita", prompt: "Quero marcar uma visita." },
+                  { label: "🔎 Imóvel", prompt: "Me ajuda a buscar um imóvel." },
+                  { label: "💬 WhatsApp", prompt: "Gere uma mensagem de follow-up curta para WhatsApp." },
+                ].map((q) => (
+                  <button key={q.label} disabled={isLoading} onClick={() => sendMessage(q.prompt)}
+                    className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-full border border-border hover:bg-primary/10 hover:border-primary/40 transition-all disabled:opacity-50">
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+
+
             {/* Messages */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.length === 0 ? (
@@ -170,17 +192,27 @@ function HomiPanelInner() {
                         />
                       </div>
                     )}
-                    <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-md"
-                        : "bg-muted rounded-bl-md"
-                    }`}>
-                      {msg.role === "assistant" ? (
-                        <div className="prose prose-sm max-w-none dark:prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <div className="max-w-[85%] min-w-0 space-y-1.5">
+                      {(msg.content || msg.role === "user") && (
+                        <div className={`rounded-xl px-3 py-2 text-sm ${
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-br-md inline-block"
+                            : "bg-muted rounded-bl-md"
+                        }`}>
+                          {msg.role === "assistant" ? (
+                            <div className="prose prose-sm max-w-none dark:prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            </div>
+                          ) : (
+                            <p>{msg.content}</p>
+                          )}
                         </div>
-                      ) : (
-                        <p>{msg.content}</p>
+                      )}
+                      {msg.role === "assistant" && (
+                        <>
+                          <HomiResultsRenderer results={msg.results} onPick={(t) => sendMessage(t)} />
+                          <HomiActionsRenderer actions={msg.actions} />
+                        </>
                       )}
                     </div>
                   </div>
