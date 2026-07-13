@@ -65,10 +65,8 @@ export default function CentralNutricaoPage() {
           <TabsTrigger value="aovivo" className="gap-2 text-sm">
             <Activity className="h-4 w-4" /> Ao vivo
           </TabsTrigger>
-          <TabsTrigger value="ondas" className="gap-2 text-sm">
-            <Radio className="h-4 w-4" /> Campanhas em ondas
-          </TabsTrigger>
           <TabsTrigger value="config" className="gap-2 text-sm">
+
             <Settings className="h-4 w-4" /> Configurações
           </TabsTrigger>
         </TabsList>
