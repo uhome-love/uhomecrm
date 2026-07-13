@@ -675,6 +675,8 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                                 <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                                 <span className="line-clamp-2">{row.error_text}</span>
                               </div>
+                            ) : row.isRead ? (
+                              <span className="text-indigo-700">Lido pelo lead</span>
                             ) : row.wamid ? (
                               <span className="text-emerald-700">Enviado para a Meta</span>
                             ) : row.status === "processing" ? (
