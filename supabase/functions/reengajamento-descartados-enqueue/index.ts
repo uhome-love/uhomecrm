@@ -229,15 +229,16 @@ async function sendMetaTemplate(params: {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // WABA RECOVERY — gatekeeper global de disparo de campanha
-  const gate = await isCampaignDispatchEnabled();
-  if (!gate.enabled) return pausedResponse("reengajamento-descartados-enqueue", gate, corsHeaders);
-
+  // NOTA: o gate global (campaign_dispatch_enabled) é verificado ABAIXO, após o parse do body.
+  // Disparos MANUAIS (iniciado_por começa com "manual" / "auto_resume_ui") — acionados
+  // explicitamente pelo usuário na Central — passam mesmo com o kill-switch global desligado.
+  // Qualquer chamada automática (cron/continuação não-manual) continua bloqueada.
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
+
 
   let bodyForce = false;
   let iniciadoPor = "cron";
@@ -263,6 +264,15 @@ Deno.serve(async (req) => {
       if ((b as any)?.run_id) bodyRunId = String((b as any).run_id);
     }
   } catch { /* ignore */ }
+
+  // GATE GLOBAL — bloqueia qualquer disparo automático. Só passa disparo manual
+  // explícito acionado pelo usuário (iniciado_por manual*/auto_resume_ui).
+  const isManualDispatch = /^(manual|auto_resume_ui)/.test(iniciadoPor);
+  if (!isManualDispatch) {
+    const gate = await isCampaignDispatchEnabled();
+    if (!gate.enabled) return pausedResponse("reengajamento-descartados-enqueue", gate, corsHeaders);
+  }
+
 
   // Fontes: aceita `sources: string[]` (combinado) ou `source` único (compat).
   const singleSourceKey = (src: string): string =>

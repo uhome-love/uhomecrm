@@ -1,39 +1,60 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireCronAuth } from "../_shared/cron-auth.ts";
-import { isCampaignDispatchEnabled } from "../_shared/campaign-gate.ts";
+import { isFlagEnabled } from "../_shared/campaign-gate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+// Valida se a chamada é de um usuário autenticado (Central de Nutrição, "Processar agora").
+async function isAuthenticatedUser(req: Request): Promise<boolean> {
+  try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) return false;
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data, error } = await client.auth.getUser();
+    return !error && !!data?.user;
+  } catch {
+    return false;
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const cronDenied = requireCronAuth(req);
-  if (cronDenied) return cronDenied;
+  // Autenticação: aceita cron (secret/service key) OU usuário autenticado (disparo manual).
+  const manualUser = await isAuthenticatedUser(req);
+  if (!manualUser) {
+    const cronDenied = requireCronAuth(req);
+    if (cronDenied) return cronDenied;
+  }
 
-  // GATE GLOBAL — nutrição NUNCA dispara automaticamente.
-  // Só envia quando o usuário libera a central (campaign_dispatch_enabled = true).
-  const gate = await isCampaignDispatchEnabled();
+  // GATE NUTRIÇÃO — só processa quando a chave mestra está LIGADA por você.
+  // Nunca dispara sozinho: crons ficam inativos e a chave começa desligada.
+  const gate = await isFlagEnabled("nutricao_enabled");
   if (!gate.enabled) {
     return new Response(
       JSON.stringify({
         paused: true,
         function: "cron-nurturing-sequencer",
-        message: "Nutrição automática desligada — só dispara quando a central é liberada manualmente.",
+        message: "Nutrição desligada — ligue a chave mestra na Central para processar o fluxo.",
         flag_reason: gate.reason ?? null,
         sent: 0,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
+
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

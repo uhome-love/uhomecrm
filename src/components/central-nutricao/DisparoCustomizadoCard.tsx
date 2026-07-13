@@ -10,11 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
-import { Loader2, Send, Search, Target, Shield, Zap, Calendar, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw } from "lucide-react";
+import { Loader2, Send, Search, Target, Shield, Zap, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
+type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista";
 type Canal = "meta" | "evolution";
 type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
 
@@ -35,8 +35,7 @@ const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
 
 export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => void }) {
   const [canal, setCanal] = useState<Canal>("meta");
-  // Multi-fonte: combina públicos (descartados + oferta ativa) com dedup por telefone.
-  // visita_amanha é exclusiva (usa função dedicada), então nunca combina.
+  // Multi-fonte: combina públicos (descartados + oferta ativa + pipeline) com dedup por telefone.
   const [sources, setSources] = useState<Source[]>(["descartados"]);
   const source = sources[0] ?? "descartados";
   const has = (s: Source) => sources.includes(s);
@@ -44,10 +43,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [tipoDescarte, setTipoDescarte] = useState<"reengajavel" | "definitivo" | "todos">("reengajavel");
   const [stageIds, setStageIds] = useState<string[]>([]);
   const [listaIds, setListaIds] = useState<string[]>([]);
-  const [dataVisita, setDataVisita] = useState<string>(() => {
-    const t = new Date(); t.setDate(t.getDate() + 1);
-    return t.toISOString().slice(0, 10);
-  });
+
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [empreendimento, setEmpreendimento] = useState<string>("");
@@ -100,15 +96,16 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   });
   const metaTemplates = metaTemplatesResp?.templates || [];
 
-  // Default template/language vindo da config (descartados / visita amanha)
+  // Default template/language vindo da config (descartados)
   const { data: cfgDefaults } = useQuery({
     queryKey: ["reengajamento-config-defaults"],
     queryFn: async () => {
-      const [{ data: reng }, { data: visita }] = await Promise.all([
-        supabase.from("reengajamento_config").select("meta_template_name, meta_template_name_2, meta_template_language").limit(1).maybeSingle(),
-        supabase.from("visita_amanha_config").select("meta_template_name, meta_template_language").limit(1).maybeSingle(),
-      ]);
-      return { reng, visita };
+      const { data: reng } = await supabase
+        .from("reengajamento_config")
+        .select("meta_template_name, meta_template_name_2, meta_template_language")
+        .limit(1)
+        .maybeSingle();
+      return { reng };
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -119,11 +116,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (source === "descartados" && cfgDefaults.reng?.meta_template_name) {
       setTemplateName(cfgDefaults.reng.meta_template_name);
       setTemplateLanguage(cfgDefaults.reng.meta_template_language || "pt_BR");
-    } else if (source === "visita_amanha" && cfgDefaults.visita?.meta_template_name) {
-      setTemplateName(cfgDefaults.visita.meta_template_name);
-      setTemplateLanguage(cfgDefaults.visita.meta_template_language || "pt_BR");
     }
   }, [canal, source, cfgDefaults, templateName]);
+
 
   // Auto-preenche a imagem fixa do header conforme o template selecionado
   useEffect(() => {
@@ -164,7 +159,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (has("descartados")) base.tipo_descarte = tipoDescarte;
     if (has("pipeline_ativo")) base.stage_ids = stageIds;
     if (has("oferta_ativa_lista")) base.lista_ids = listaIds;
-    if (has("visita_amanha")) base.data_visita = dataVisita;
+    
     if (canal === "meta" && templateName) {
       base.template_name = templateName;
       base.template_language = templateLanguage;
@@ -238,15 +233,10 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (!confirm(`Disparar para ${preview.count} leads via ${canal === "meta" ? "Meta" : "Evolution"}? Esta ação envia mensagens reais.`)) return;
     setFiring(true);
     try {
-      // visita_amanha delega para função dedicada (mantém lógica testada)
-      const isVisita = sources.length === 1 && sources[0] === "visita_amanha";
-      const fn = isVisita ? "visita-amanha-enqueue" : "reengajamento-descartados-enqueue";
-      const body = isVisita
-        ? { force: true, audience: buildAudience() }
-        : { force: true, iniciado_por: "manual_custom", audience: buildAudience() };
-
-      const { data, error } = await supabase.functions.invoke(fn, { body });
+      const body = { force: true, iniciado_por: "manual_custom", audience: buildAudience() };
+      const { data, error } = await supabase.functions.invoke("reengajamento-descartados-enqueue", { body });
       if (error) throw error;
+
       const resp = data as { reason?: string; motivo?: string; error?: string; run_id?: string } | null;
       const reason = String(resp?.reason || "");
       if (reason === "no_leads") {
@@ -275,12 +265,11 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   function toggleSource(s: Source) {
     setPreview(null);
     setSources((prev) => {
-      // visita_amanha é exclusiva
-      if (s === "visita_amanha") return prev.includes("visita_amanha") ? ["descartados"] : ["visita_amanha"];
-      const next = prev.includes(s) ? prev.filter((x) => x !== s) : [...prev.filter((x) => x !== "visita_amanha"), s];
+      const next = prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s];
       return next.length ? next : ["descartados"];
     });
   }
+
 
   function setPeriodoQuick(kind: "hoje" | "semana" | "mes" | "30d") {
     const now = new Date();
@@ -343,7 +332,6 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
               { v: "descartados", label: "Descartados" },
               { v: "oferta_ativa_lista", label: "Oferta Ativa (listas)" },
               { v: "pipeline_ativo", label: "Pipeline ativo (etapas)" },
-              { v: "visita_amanha", label: "Visita amanhã" },
             ] as { v: Source; label: string }[]).map(({ v, label }) => (
               <Button
                 key={v}
@@ -363,10 +351,8 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
               Os públicos serão unidos em um único disparo. Cada lead recebe só 1 mensagem (dedup pelos últimos 8 dígitos do telefone; prioridade: descartados &gt; oferta ativa &gt; pipeline).
             </p>
           )}
-          {has("visita_amanha") && (
-            <p className="text-[10px] text-amber-600 mt-1">Visita amanhã é exclusiva e não combina com outros públicos.</p>
-          )}
         </div>
+
 
 
         {/* Filtros dinâmicos */}
@@ -478,35 +464,22 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         )}
 
-        {has("visita_amanha") && (
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Data da visita</Label>
-              <Input type="date" value={dataVisita} onChange={(e) => setDataVisita(e.target.value)} className="h-9" />
-            </div>
-            <div className="text-[10px] text-muted-foreground self-end pb-1">
-              Convida leads ativos no pipeline para visita nesta data. Usa template com botões SIM/NÃO.
-            </div>
+        {/* Período */}
+        <div>
+          <Label className="text-xs">Período (opcional)</Label>
+          <div className="flex gap-2 items-end">
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 flex-1" />
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 flex-1" />
           </div>
-        )}
+          <div className="flex gap-1 mt-1">
+            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("hoje")}>Hoje</Button>
+            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("semana")}>Semana</Button>
+            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("mes")}>Mês</Button>
+            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("30d")}>30d</Button>
+            <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => { setFrom(""); setTo(""); }}>Limpar</Button>
+          </div>
+        </div>
 
-        {/* Período (não aplicável para visita_amanha) */}
-        {!has("visita_amanha") && (
-          <div>
-            <Label className="text-xs">Período (opcional)</Label>
-            <div className="flex gap-2 items-end">
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 flex-1" />
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 flex-1" />
-            </div>
-            <div className="flex gap-1 mt-1">
-              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("hoje")}>Hoje</Button>
-              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("semana")}>Semana</Button>
-              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("mes")}>Mês</Button>
-              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("30d")}>30d</Button>
-              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => { setFrom(""); setTo(""); }}>Limpar</Button>
-            </div>
-          </div>
-        )}
 
         {/* Empreendimento */}
         <div>
