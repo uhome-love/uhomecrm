@@ -1,43 +1,47 @@
-# Parar o disparo e resolver as falhas de envio
+## Objetivo
 
-## Diagnóstico (o que está acontecendo agora)
+1. Deixar a **Fila de reenvio** recolhida **por base** (agrupada por template/empreendimento), na aba "Ao vivo".
+2. **Liberar o reenvio** agora que o pagamento pendente na Meta foi regularizado.
+3. Fazer as validações para deixar **100% funcional**.
 
-Investiguei o banco e as edge functions. Os envios **não estão falhando por bug de código** — estão falhando na origem, no lado da Meta:
+## Contexto atual (investigado no banco)
 
-- **19.980 disparos com status `failed`**; os mais recentes (hoje, até 17:37) trazem o erro literal da Meta: **"Business eligibility payment issue"** (problema de cobrança/elegibilidade da conta WhatsApp Business).
-- A Meta aplicou **pacing/limite 131049** por causa de **100% de falha recente** — cada novo envio agora **queima a reputação do número**.
+- Travas de emergência ligadas: `system_flags.campaign_dispatch_enabled=false` e `reengajamento_config.paused=true`.
+- **20.009 disparos com `status='failed'`**, distribuídos em 11 bases (template): casatua_maio (6.073), casatua_junho25k (4.566), reativacao_opcoes_perfil_v2 (4.438), etc.
+- As falhas recentes trazem `Business eligibility payment issue`. Hoje o retry recusa exatamente essas falhas via `isQualityBlockingError` — então, mesmo reativando o gate, os itens que você quer reenviar ficariam travados. Isso precisa mudar.
+- O card atual busca só 300 linhas e agrupa por telefone, não por base — some parte das falhas.
 
-**Por que ainda está disparando mesmo com tudo "desligado":** todas as travas globais estão OFF (`campaign_dispatch_enabled=false`, `nutricao_enabled=false`, `reengajamento_config.enabled=false`), **porém existe uma execução ativa**:
+## O que será feito
 
-```text
-run 92d33fb8  status=running  cancel_requested=false
-fila: 433 pending + 2 processing (ainda vão disparar)
-motivo: "Auto-pausa por qualidade: 100% de falha... 131049"
-```
+### 1. Reativar o disparo (dados — pagamento regularizado)
+- `system_flags.campaign_dispatch_enabled = true`, com `reason` = "Pagamento Meta regularizado 13/07 — reenvio liberado".
+- `reengajamento_config.paused = false`, limpando o `paused_reason`.
+- (Não reabro nenhuma run automaticamente; o disparo volta a acontecer apenas por ação manual na fila/reenvio.)
 
-Essa run foi **reaberta pela função de reenvio** (`reengajamento-retry-falhas` / botão "Tentar novamente" da Fila de Reenvio). Ela chama o disparador com `iniciado_por: "manual_retry"` + `force: true`, o que **contorna o gate global e o check de `enabled`**, reabre a run e recoloca a fila para processar. Ou seja: o recurso de reenvio recém-criado é exatamente o que **reacendeu o motor** e voltou a queimar a base contra uma conta que está 100% falhando.
+### 2. Fila de reenvio recolhida por base (UI — `FilaReenvioCard.tsx`)
+Reescrever o card para listar **uma linha recolhida por base (template)**:
+- Cada base mostra: nome do template, nº de falhas, nº de telefones distintos, data da última falha e o motivo predominante.
+- Botão **"Tentar base"** por linha (reenvia todas as falhas daquela base) e um **"Tentar todas as bases"** no topo.
+- Ao **expandir** uma base, carrega sob demanda os leads daquela base (telefone, nome, template, motivo, quando) com botão "Tentar" individual — usando `Accordion` do shadcn.
+- Banner de bloqueio passa a refletir **o gate global** (lê `system_flags.campaign_dispatch_enabled`), não mais o texto de erro: quando o motor está ligado, os botões ficam habilitados; quando desligado, aparece o aviso e os botões desabilitam.
 
-## O que vou fazer
+### 3. Agregação por base (backend)
+- Criar função RPC `get_reengajamento_fila_bases()` (SECURITY DEFINER) que retorna, para `status='failed'` com `run_id` não nulo, o agregado por `template_name`: total, telefones distintos, última falha, motivo predominante. Isso evita puxar 20 mil linhas no cliente.
+- O detalhamento de uma base (leads) continua via consulta direta filtrando por `template_name` com `limit`.
 
-### 1. Parada de emergência (imediata)
-- Cancelar a run ativa `92d33fb8` (`status=cancelled`, `cancel_requested=true`, `finished_at=now`, motivo claro).
-- Marcar os itens `pending`/`processing` dessa fila como cancelados para que **nenhum envio adicional saia**.
-- Confirmar `reengajamento_config.paused=true` e os `system_flags` OFF.
+### 4. Liberar o reenvio das falhas de elegibilidade/cobrança (edge `reengajamento-retry-falhas`)
+- Como o pagamento foi regularizado, o retry deve **passar a reenviar** as falhas `Business eligibility payment issue`/elegibilidade quando o **gate global estiver ligado** (o gate ligado é o sinal humano de "conta saudável").
+- Mudança: o retry deixa de recusar por `eligibility/payment/cobrança`. Mantém a checagem do **gate global** (se desligado, bloqueia) e mantém apenas um alerta informativo para throttle `131049`, sem travar quando o usuário liberou.
+- Aceitar também reenvio **por base**: `body.template_name` (além de `meta_ids`), selecionando as falhas daquele template.
 
-### 2. Blindar o reenvio contra reignição (correção de código)
-Ajustar `supabase/functions/reengajamento-retry-falhas/index.ts` para que **nunca mais** reacenda um disparo em massa quando a conta está com problema de qualidade/cobrança:
-- **Respeitar o gate global**: se `campaign_dispatch_enabled=false`, o retry retorna bloqueado (não faz `force`, não reabre run, não limpa a pausa).
-- **Bloquear por qualidade**: se as falhas recentes forem de elegibilidade/pagamento (`Business eligibility payment issue`) ou throttle 131049, recusar o reenvio com mensagem explicativa.
-- Remover o `paused:false` automático e a reinvocação com `force:true` do disparador; o reenvio só deve reprocessar itens específicos **quando a conta estiver saudável e o gate ligado**.
-
-### 3. Deixar claro na UI (`FilaReenvioCard.tsx`)
-- Banner de alerta quando o motivo predominante for cobrança/elegibilidade/131049: explicar que o reenvio está **bloqueado até regularizar a conta na Meta** e desabilitar os botões "Tentar" / "Tentar todos" nesse estado.
-
-## Ação necessária do seu lado (fora do sistema)
-A causa raiz é **externa**: a conta WhatsApp Business está com **pendência de cobrança/elegibilidade** no Meta Business Manager. Enquanto isso não for regularizado (forma de pagamento/faturamento e qualidade do número), **nenhum envio vai passar** — e insistir só piora a reputação. Depois de regularizado, reativamos com base quente e volume controlado (warm-up).
+### 5. Validações (deixar 100%)
+- `tsgo` (typecheck) e a suíte de testes atual (`vitest`).
+- Testar a edge `reengajamento-retry-falhas` via chamada autenticada (gate ligado → reprocessa; conferir `reset`/`runs`).
+- Conferir no banco que os itens reenviados voltaram para `pending` na `reengajamento_dispatch_queue` e que as falhas viraram `retried`.
+- Conferir na UI (preview) que a fila aparece recolhida por base, expande e os botões estão habilitados com o gate ligado.
 
 ## Detalhes técnicos
-- Emergência via `UPDATE` em `reengajamento_dispatch_runs` e `reengajamento_dispatch_queue` (escopo apenas da run 92d33fb8).
-- `reengajamento-retry-falhas`: adicionar checagem `isCampaignDispatchEnabled()` no início; classificar falhas por `error_text`; só chamar o disparador sem `force` e com gate ligado.
-- `FilaReenvioCard`: estado derivado do `error_text` para banner + desabilitar ações.
-- Sem migrations de schema; sem alteração nas travas globais existentes.
+- Sem alteração nas travas globais além de ligar o gate e despausar a config.
+- RPC nova em migration (função SECURITY DEFINER, `search_path=public`); sem novas tabelas.
+- `FilaReenvioCard` usa `Accordion` (shadcn) já disponível; mantém layout desktop (tabela ao expandir) e mobile (cards).
+- Memória `mem://features/whatsapp/reengajamento-parado-spam-meta` será atualizada para registrar a reativação pós-pagamento e que o retry passa a ser governado pelo gate global.
