@@ -220,9 +220,9 @@ export default function ReengajamentoTab() {
   async function reativarManual(leadId: string, nome: string) {
     if (!confirm(`Reativar "${nome}" e mandar de volta para a roleta?`)) return;
     try {
-      const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual" as any, { p_lead_id: leadId });
+      const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual", { p_lead_id: leadId });
       if (error) throw error;
-      const dist = (data as any)?.distribuicao;
+      const dist = (data as DispatchInvokeResult | null)?.distribuicao;
       toast.success(dist?.success ? `🔄 ${nome} reativada e distribuída` : `🔄 ${nome} reativada (fila CEO)`);
       qc.invalidateQueries({ queryKey: ["reengajamento-ultimos"] });
       qc.invalidateQueries({ queryKey: ["reengajamento-kpis"] });
