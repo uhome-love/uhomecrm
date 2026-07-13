@@ -1,6 +1,6 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { RefreshCw, Send, Activity, Settings, Sprout, Radio, Loader2 } from "lucide-react";
+import { RefreshCw, Send, Activity, Settings, Sprout } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,7 +12,6 @@ import NutricaoTab from "@/components/central-nutricao/NutricaoTab";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
 import { PageHeader } from "@/components/ui/PageHeader";
 
-const CampanhaOndasTab = lazy(() => import("@/components/central-nutricao/CampanhaOndasTab"));
 
 export default function CentralNutricaoPage() {
   const qc = useQueryClient();
