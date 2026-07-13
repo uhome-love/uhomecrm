@@ -533,27 +533,8 @@ export default function ReengajamentoTab() {
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="animate-spin h-5 w-5" /></div>;
   if (!cfg) return <div className="text-sm text-muted-foreground">Sem configuração</div>;
 
-  const statusBadge = (s: string | null) => {
-    if (s === "respondeu_sim") return <Badge className="bg-green-100 text-green-800 text-[10px]">✅ SIM</Badge>;
-    if (s === "respondeu_nao") return <Badge className="bg-red-100 text-red-800 text-[10px]">❌ NÃO</Badge>;
-    if (s === "respondeu_outro") return <Badge className="bg-blue-100 text-blue-800 text-[10px]">💬 Outro</Badge>;
-    if (s === "telefone_invalido") return <Badge className="bg-gray-100 text-gray-800 text-[10px]">📵 Tel inválido</Badge>;
-    if (s === "enviado") return <Badge className="bg-amber-100 text-amber-800 text-[10px]">⏳ Aguardando</Badge>;
-    return <Badge variant="outline" className="text-[10px]">{s || "—"}</Badge>;
-  };
 
-  const runStatusBadge = (s: string) => {
-    const map: Record<string, { lbl: string; cls: string }> = {
-      running:   { lbl: "▶️ Em andamento", cls: "bg-blue-100 text-blue-800" },
-      completed: { lbl: "✅ Concluído",    cls: "bg-green-100 text-green-800" },
-      paused:    { lbl: "⏸️ Pausado",     cls: "bg-amber-100 text-amber-800" },
-      cancelled: { lbl: "⏹️ Parado",      cls: "bg-rose-100 text-rose-800" },
-      timeout:   { lbl: "⏱️ Tempo limite",cls: "bg-orange-100 text-orange-800" },
-      error:     { lbl: "❌ Erro",         cls: "bg-red-100 text-red-800" },
-    };
-    const m = map[s] || { lbl: s, cls: "bg-gray-100 text-gray-800" };
-    return <Badge className={`${m.cls} text-[10px]`}>{m.lbl}</Badge>;
-  };
+
 
   const waBadge =
     waStatus === "open"
