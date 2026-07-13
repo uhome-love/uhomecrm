@@ -122,6 +122,24 @@ export default function NutricaoTab() {
     }
   }
 
+  async function toggleGroup(stage: string, steps: Cadencia[], activate: boolean) {
+    setSavingGroup(stage);
+    try {
+      const { error } = await supabase
+        .from("nurturing_cadencias")
+        .update({ is_active: activate, updated_at: new Date().toISOString() })
+        .in("id", steps.map((s) => s.id));
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["nutricao-cadencias"] });
+      toast.success(activate ? "Fluxo ativado (todos os passos)" : "Fluxo desativado");
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setSavingGroup(null);
+    }
+  }
+
+
   async function processarAgora() {
     if (!enabled) {
       toast.error("Ligue a chave mestra da nutrição antes de processar.");
