@@ -6,7 +6,6 @@ const TABS = [
   { key: "conversao", label: "Conversão" },
   { key: "empreendimentos", label: "Empreend." },
   { key: "origem", label: "Origem" },
-  { key: "origem-performance", label: "Origem+" },
   { key: "interacao", label: "Interação" },
   { key: "visitas", label: "Visitas" },
   { key: "tarefas", label: "Tarefas" },
