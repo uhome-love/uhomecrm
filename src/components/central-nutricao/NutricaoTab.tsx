@@ -227,6 +227,11 @@ export default function NutricaoTab() {
             {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
             Processar fila de nutrição agora
           </Button>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <Switch checked={autoOff} onCheckedChange={setAutoOff} className="scale-90" />
+            Desligar a chave mestra automaticamente após processar (recomendado)
+          </label>
+
         </CardContent>
       </Card>
 
