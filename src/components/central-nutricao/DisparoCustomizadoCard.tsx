@@ -464,35 +464,22 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
         )}
 
-        {has("visita_amanha") && (
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Data da visita</Label>
-              <Input type="date" value={dataVisita} onChange={(e) => setDataVisita(e.target.value)} className="h-9" />
-            </div>
-            <div className="text-[10px] text-muted-foreground self-end pb-1">
-              Convida leads ativos no pipeline para visita nesta data. Usa template com botões SIM/NÃO.
-            </div>
+        {/* Período */}
+        <div>
+          <Label className="text-xs">Período (opcional)</Label>
+          <div className="flex gap-2 items-end">
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 flex-1" />
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 flex-1" />
           </div>
-        )}
+          <div className="flex gap-1 mt-1">
+            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("hoje")}>Hoje</Button>
+            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("semana")}>Semana</Button>
+            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("mes")}>Mês</Button>
+            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("30d")}>30d</Button>
+            <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => { setFrom(""); setTo(""); }}>Limpar</Button>
+          </div>
+        </div>
 
-        {/* Período (não aplicável para visita_amanha) */}
-        {!has("visita_amanha") && (
-          <div>
-            <Label className="text-xs">Período (opcional)</Label>
-            <div className="flex gap-2 items-end">
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 flex-1" />
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 flex-1" />
-            </div>
-            <div className="flex gap-1 mt-1">
-              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("hoje")}>Hoje</Button>
-              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("semana")}>Semana</Button>
-              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("mes")}>Mês</Button>
-              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("30d")}>30d</Button>
-              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => { setFrom(""); setTo(""); }}>Limpar</Button>
-            </div>
-          </div>
-        )}
 
         {/* Empreendimento */}
         <div>
