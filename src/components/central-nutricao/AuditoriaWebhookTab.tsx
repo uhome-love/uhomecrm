@@ -12,7 +12,7 @@ import { Loader2, CheckCircle2, XCircle, MessageSquare, ExternalLink, MousePoint
 import { formatBRT } from "@/lib/brtTime";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import RespostasRecebidasHoje from "./RespostasRecebidasHoje";
+
 
 interface Row {
   id: string;
@@ -224,7 +224,7 @@ export default function AuditoriaWebhookTab() {
     refetchInterval: 10000,
   });
   const [showRuns, setShowRuns] = useState(false);
-  const [showRespostas, setShowRespostas] = useState(false);
+  
 
   // Resumo de HOJE (server-side, agregado) — independente da paginação
   const { data: todayStats } = useQuery({
