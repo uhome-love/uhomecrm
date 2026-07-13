@@ -10,6 +10,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { User, Settings, LogOut, ChevronDown, Loader2, Users, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import HomiHeaderButton from "@/components/homi/HomiHeaderButton";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -202,6 +203,7 @@ export default function AppLayout() {
                   ⌘K
                 </kbd>
               </Button>
+              <HomiHeaderButton />
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
