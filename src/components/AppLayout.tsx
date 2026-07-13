@@ -202,6 +202,7 @@ export default function AppLayout() {
                   ⌘K
                 </kbd>
               </Button>
+              <HomiHeaderButton />
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
