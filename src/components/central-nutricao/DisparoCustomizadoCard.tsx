@@ -774,13 +774,15 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           )}
 
           <Button
-            className="w-full"
+            className="w-full h-11 text-base"
+            size="lg"
             onClick={disparar}
             disabled={firing || !preview || preview.count === 0}
           >
-            {firing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
-            {preview ? `Disparar para ${preview.count} leads` : "Faça o preview primeiro"}
+            {firing ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Send className="h-4 w-4 mr-1.5" />}
+            {preview ? `2. Disparar para ${preview.count.toLocaleString("pt-BR")} leads` : "2. Disparar (calcule o público primeiro)"}
           </Button>
+
         </div>
       </CardContent>
     </Card>
