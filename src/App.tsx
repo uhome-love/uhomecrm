@@ -63,7 +63,7 @@ const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"))
 const TelemetriaRede = lazyRetry(() => import("./pages/admin/TelemetriaRede"));
 const IngestaoPanel = lazyRetry(() => import("./pages/admin/IngestaoPanel"));
 const UsoPaginasPanel = lazyRetry(() => import("./pages/admin/UsoPaginasPanel"));
-const CampanhaAtrio = lazyRetry(() => import("./pages/admin/CampanhaAtrio"));
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
