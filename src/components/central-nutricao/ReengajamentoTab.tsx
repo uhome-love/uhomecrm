@@ -175,7 +175,7 @@ export default function ReengajamentoTab() {
           .eq("direction", "received")
           .order("timestamp", { ascending: false })
           .limit(500);
-        for (const m of (msgs || []) as any[]) {
+        for (const m of msgs || []) {
           if (!respostasMap[m.lead_id]) {
             respostasMap[m.lead_id] = { body: m.body, timestamp: m.timestamp };
           }
