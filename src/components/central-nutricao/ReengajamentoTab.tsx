@@ -316,8 +316,8 @@ export default function ReengajamentoTab() {
   }
 
   async function dispararWave2() {
-    if ((cfg as any)?.paused_until_release) {
-      toast.error("⛔ Central travada: " + ((cfg as any)?.paused_reason || "liberação manual via SQL admin necessária"));
+    if (cfg?.paused_until_release) {
+      toast.error("⛔ Central travada: " + (cfg?.paused_reason || "liberação manual via SQL admin necessária"));
       return;
     }
     const hasMsg = !!(local?.mensagem_template_2 || (local?.mensagens_variantes_2 && local.mensagens_variantes_2.length > 0));
