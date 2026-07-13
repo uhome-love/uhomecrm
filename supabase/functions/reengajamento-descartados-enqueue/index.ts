@@ -265,6 +265,15 @@ Deno.serve(async (req) => {
     }
   } catch { /* ignore */ }
 
+  // GATE GLOBAL — bloqueia qualquer disparo automático. Só passa disparo manual
+  // explícito acionado pelo usuário (iniciado_por manual*/auto_resume_ui).
+  const isManualDispatch = /^(manual|auto_resume_ui)/.test(iniciadoPor);
+  if (!isManualDispatch) {
+    const gate = await isCampaignDispatchEnabled();
+    if (!gate.enabled) return pausedResponse("reengajamento-descartados-enqueue", gate, corsHeaders);
+  }
+
+
   // Fontes: aceita `sources: string[]` (combinado) ou `source` único (compat).
   const singleSourceKey = (src: string): string =>
     src === "descartados"
