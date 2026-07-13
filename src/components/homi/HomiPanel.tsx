@@ -133,6 +133,26 @@ function HomiPanelInner() {
               </div>
             </div>
 
+            {/* Barra de acesso rápido (corretor) */}
+            {homiRole === "corretor" && (
+              <div className="flex gap-1.5 px-3 py-2 border-b border-border overflow-x-auto shrink-0 bg-card">
+                {[
+                  { label: "⏰ Atrasados", prompt: "Mostra o que tenho de atrasado e pendente hoje." },
+                  { label: "📋 Tarefa", prompt: "Quero criar uma tarefa." },
+                  { label: "🏠 Visita", prompt: "Quero marcar uma visita." },
+                  { label: "🔎 Imóvel", prompt: "Me ajuda a buscar um imóvel." },
+                  { label: "💬 WhatsApp", prompt: "Gere uma mensagem de follow-up curta para WhatsApp." },
+                ].map((q) => (
+                  <button key={q.label} disabled={isLoading} onClick={() => sendMessage(q.prompt)}
+                    className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-full border border-border hover:bg-primary/10 hover:border-primary/40 transition-all disabled:opacity-50">
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+
+
             {/* Messages */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.length === 0 ? (
