@@ -12,10 +12,11 @@ import type { HomiAnimState } from "./HomiAnimated";
 
 const QUICK_ACTIONS: Record<string, { label: string; prompt: string }[]> = {
   corretor: [
-    { label: "📞 Script de ligação", prompt: "Gere um script de ligação para um lead que pediu informações e parou de responder há 7 dias." },
-    { label: "💬 Quebrar objeção", prompt: "Me ajude a quebrar a objeção 'está caro' de um lead interessado em apartamento na planta." },
-    { label: "✉️ Follow-up WhatsApp", prompt: "Gere mensagem curta de follow-up WhatsApp para lead que visitou mas não deu retorno." },
-    { label: "🎯 Próxima ação", prompt: "Qual deve ser minha próxima ação agora? Analise meu dia e sugira o que fazer." },
+    { label: "⏰ O que tenho de atrasado?", prompt: "Mostra o que tenho de atrasado e pendente hoje." },
+    { label: "📋 Criar uma tarefa", prompt: "Quero criar uma tarefa." },
+    { label: "🏠 Marcar uma visita", prompt: "Quero marcar uma visita." },
+    { label: "🔎 Buscar um imóvel", prompt: "Me ajuda a buscar um imóvel." },
+    { label: "💬 Mensagem de WhatsApp", prompt: "Gere uma mensagem de follow-up curta para WhatsApp." },
   ],
   gestor: [
     { label: "📋 Checklist do dia", prompt: "Gere meu checklist para hoje como gerente. Rotinas de cobrança e foco em visitas." },
