@@ -7,6 +7,7 @@ import { useHomi } from "@/contexts/HomiContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import ReactMarkdown from "react-markdown";
 import HomiAnimated from "./HomiAnimated";
+import { HomiActionsRenderer, HomiResultsRenderer } from "./HomiActionCard";
 import type { HomiAnimState } from "./HomiAnimated";
 
 const QUICK_ACTIONS: Record<string, { label: string; prompt: string }[]> = {
