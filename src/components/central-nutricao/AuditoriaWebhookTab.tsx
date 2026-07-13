@@ -642,7 +642,7 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {queueActivity.map((row) => {
+                    {filteredQueue.map((row) => {
                       const status = QUEUE_STATUS[row.status || ""];
                       const when = queueWhen(row);
                       return (
@@ -657,10 +657,18 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                             <div className="text-[10px] text-muted-foreground truncate max-w-[190px]">{row.audience_source || "—"}</div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${status?.className || "bg-neutral-100 text-neutral-700"}`}>
-                              {status?.label || row.status || "—"}
-                            </Badge>
+                            <div className="flex flex-col gap-1">
+                              <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${status?.className || "bg-neutral-100 text-neutral-700"}`}>
+                                {status?.label || row.status || "—"}
+                              </Badge>
+                              {row.isRead && (
+                                <Badge variant="outline" className="text-[10px] whitespace-nowrap bg-indigo-50 text-indigo-700 border-indigo-200">
+                                  Lido
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
+
                           <TableCell className="text-xs">
                             {row.error_text ? (
                               <div className="flex items-start gap-1.5 text-red-700" title={row.error_text}>
