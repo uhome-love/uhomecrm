@@ -4,7 +4,7 @@ import { useHomi } from "@/contexts/HomiContext";
 import { useLocation } from "react-router-dom";
 
 const SNAP_MARGIN = 16;
-const BUTTON_SIZE = 56;
+const BUTTON_SIZE = 44;
 
 function getSnapPosition(x: number, y: number) {
   const w = window.innerWidth;
