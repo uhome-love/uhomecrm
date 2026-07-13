@@ -233,15 +233,10 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (!confirm(`Disparar para ${preview.count} leads via ${canal === "meta" ? "Meta" : "Evolution"}? Esta ação envia mensagens reais.`)) return;
     setFiring(true);
     try {
-      // visita_amanha delega para função dedicada (mantém lógica testada)
-      const isVisita = sources.length === 1 && sources[0] === "visita_amanha";
-      const fn = isVisita ? "visita-amanha-enqueue" : "reengajamento-descartados-enqueue";
-      const body = isVisita
-        ? { force: true, audience: buildAudience() }
-        : { force: true, iniciado_por: "manual_custom", audience: buildAudience() };
-
-      const { data, error } = await supabase.functions.invoke(fn, { body });
+      const body = { force: true, iniciado_por: "manual_custom", audience: buildAudience() };
+      const { data, error } = await supabase.functions.invoke("reengajamento-descartados-enqueue", { body });
       if (error) throw error;
+
       const resp = data as { reason?: string; motivo?: string; error?: string; run_id?: string } | null;
       const reason = String(resp?.reason || "");
       if (reason === "no_leads") {
