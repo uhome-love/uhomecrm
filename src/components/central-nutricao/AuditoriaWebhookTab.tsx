@@ -67,7 +67,7 @@ function KpiCell({ label, value, color, highlight }: { label: string; value: num
   );
 }
 
-export default function AuditoriaWebhookTab() {
+export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: string } = {}) {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<string>("all");
   const [audienceFilter, setAudienceFilter] = useState<string>("all");
@@ -110,18 +110,20 @@ export default function AuditoriaWebhookTab() {
   }, [qc]);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["auditoria-meta-webhook", page],
+    queryKey: ["auditoria-meta-webhook", page, from ?? null, to ?? null],
     queryFn: async () => {
-      const from = 0;
-      const to = (page + 1) * PAGE_SIZE - 1;
-      const { data: disparos, count, error } = await supabase
+      const rangeFrom = 0;
+      const rangeTo = (page + 1) * PAGE_SIZE - 1;
+      let q = supabase
         .from("reengajamento_meta_disparos")
         .select(
           "id, lead_id, phone, status, button_response, response_text, sent_at, responded_at, template_name, audience_source",
           { count: "estimated" }
         )
-        .order("sent_at", { ascending: false })
-        .range(from, to);
+        .order("sent_at", { ascending: false });
+      if (from) q = q.gte("sent_at", from);
+      if (to) q = q.lte("sent_at", to);
+      const { data: disparos, count, error } = await q.range(rangeFrom, rangeTo);
       if (error) throw error;
       const leadIds = Array.from(new Set((disparos ?? []).map((d) => d.lead_id).filter(Boolean))) as string[];
       let leadsMap: Record<string, { nome: string | null; reativado_por_nutricao: boolean | null; corretor_id: string | null; empreendimento: string | null }> = {};

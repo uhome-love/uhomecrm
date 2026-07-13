@@ -37,27 +37,41 @@ function classifyText(txt: string): "sim" | "nao" | "outro" {
   return "outro";
 }
 
-export default function RespostasRecebidasHoje() {
+export default function RespostasRecebidasHoje({
+  from,
+  to,
+  periodLabel = "hoje",
+}: {
+  from?: string;
+  to?: string;
+  periodLabel?: string;
+} = {}) {
   const [open, setOpen] = useState(true);
   const [filtroOrigem, setFiltroOrigem] = useState<string>("all");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["respostas-recebidas-hoje"],
+    queryKey: ["respostas-recebidas-hoje", from ?? null, to ?? null],
     queryFn: async (): Promise<Resposta[]> => {
-      const startBRT = new Date();
-      startBRT.setUTCHours(3, 0, 0, 0); // 00:00 BRT
-      const sinceIso = startBRT.toISOString();
+      let sinceIso = from;
+      if (!sinceIso) {
+        const startBRT = new Date();
+        startBRT.setUTCHours(3, 0, 0, 0); // 00:00 BRT
+        sinceIso = startBRT.toISOString();
+      }
+      const untilIso = to;
 
       // 1. Respostas via reengajamento_meta_disparos (botões e texto livre Meta)
-      const { data: disparos } = await supabase
+      let disparosQ = supabase
         .from("reengajamento_meta_disparos")
         .select("lead_id, phone, button_response, response_text, responded_at, audience_source")
         .gte("responded_at", sinceIso)
         .order("responded_at", { ascending: false })
         .limit(500);
+      if (untilIso) disparosQ = disparosQ.lte("responded_at", untilIso);
+      const { data: disparos } = await disparosQ;
 
-      // 2. Leads criados HOJE pela rota "remetente novo" (whatsapp-webhook)
-      const { data: novosReativados } = await supabase
+      // 2. Leads criados no período pela rota "remetente novo" (whatsapp-webhook)
+      let novosQ = supabase
         .from("pipeline_leads")
         .select("id, nome, telefone, observacoes, reativado_em")
         .eq("reativado_por_nutricao", true)
@@ -65,6 +79,8 @@ export default function RespostasRecebidasHoje() {
         .ilike("observacoes", "%remetente novo%")
         .order("reativado_em", { ascending: false })
         .limit(200);
+      if (untilIso) novosQ = novosQ.lte("reativado_em", untilIso);
+      const { data: novosReativados } = await novosQ;
 
       // Carrega nomes + status atual dos leads dos disparos
       const leadIds = Array.from(new Set((disparos ?? []).map((d) => d.lead_id).filter(Boolean))) as string[];
@@ -160,7 +176,7 @@ export default function RespostasRecebidasHoje() {
           <CardContent className="p-3 flex items-center justify-between hover:bg-emerald-100/40 rounded-t-lg transition">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-emerald-700" />
-              <span className="text-sm font-semibold text-emerald-900">💬 Respostas recebidas hoje — auditoria</span>
+              <span className="text-sm font-semibold text-emerald-900">💬 Respostas recebidas ({periodLabel}) — auditoria</span>
               <Badge variant="outline" className="text-[10px]">{stats.total}</Badge>
               <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]">✅ {stats.sim} SIM</Badge>
               <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">❌ {stats.nao} NÃO</Badge>
@@ -196,7 +212,7 @@ export default function RespostasRecebidasHoje() {
             {isLoading ? (
               <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-emerald-600" /></div>
             ) : filtered.length === 0 ? (
-              <div className="text-center py-8 text-sm text-muted-foreground">Nenhuma resposta hoje neste filtro.</div>
+              <div className="text-center py-8 text-sm text-muted-foreground">Nenhuma resposta neste período/filtro.</div>
             ) : (
               <div className="rounded-lg border bg-white overflow-hidden">
                 <Table>
