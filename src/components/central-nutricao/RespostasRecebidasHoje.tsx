@@ -212,7 +212,7 @@ export default function RespostasRecebidasHoje({
             {isLoading ? (
               <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-emerald-600" /></div>
             ) : filtered.length === 0 ? (
-              <div className="text-center py-8 text-sm text-muted-foreground">Nenhuma resposta hoje neste filtro.</div>
+              <div className="text-center py-8 text-sm text-muted-foreground">Nenhuma resposta neste período/filtro.</div>
             ) : (
               <div className="rounded-lg border bg-white overflow-hidden">
                 <Table>
