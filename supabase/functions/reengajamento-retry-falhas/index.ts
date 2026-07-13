@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     // --- Seleciona as falhas de entrega a reprocessar ---
     let sel = supabase
       .from("reengajamento_meta_disparos")
-      .select("id, lead_id, run_id, phone")
+      .select("id, lead_id, run_id, phone, error_text")
       .eq("status", "failed")
       .not("run_id", "is", null);
     if (metaIds.length > 0) sel = sel.in("id", metaIds);
@@ -98,6 +98,23 @@ Deno.serve(async (req) => {
     if (!fails || fails.length === 0) {
       return json({ ok: true, reset: 0, runs: 0, reason: "no_failed_items" });
     }
+
+    // --- Bloqueio por qualidade: falhas de elegibilidade/cobrança/throttle não podem reenviar ---
+    const blockingCount = fails.filter((f) => isQualityBlockingError(f.error_text)).length;
+    if (blockingCount > 0 && blockingCount >= fails.length / 2) {
+      return json({
+        ok: false,
+        blocked: true,
+        reason: "quality_block",
+        message:
+          "Reenvio bloqueado: as falhas são de elegibilidade/cobrança da conta Meta ou de " +
+          "limite de qualidade (131049). Reenviar agora queima a reputação do número. " +
+          "Regularize a conta na Meta antes de tentar novamente.",
+        blocking: blockingCount,
+        total: fails.length,
+      });
+    }
+
 
     // --- Reabre os itens de fila correspondentes (volta para "pending") ---
     const affectedRuns = new Set<string>();
