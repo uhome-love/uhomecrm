@@ -7,7 +7,10 @@ import { useLocation } from "react-router-dom";
 
 export type HomiRole = "corretor" | "gestor" | "ceo";
 
-export type Message = { role: "user" | "assistant"; content: string };
+export type HomiAction = { tipo: string; lead_id?: string; lead_nome?: string; campos?: Record<string, any> } & Record<string, any>;
+export type HomiResult = { tipo: string } & Record<string, any>;
+
+export type Message = { role: "user" | "assistant"; content: string; actions?: HomiAction[]; results?: HomiResult[] };
 
 export type KnowledgeSourceInfo = {
   source: "db" | "fallback" | "partial";
