@@ -33,9 +33,15 @@ function HomiAvatarInner() {
   const { pathname } = useLocation();
   const defaultPos = { x: window.innerWidth - BUTTON_SIZE - SNAP_MARGIN, y: window.innerHeight - BUTTON_SIZE - SNAP_MARGIN };
   const [position, setPosition] = useState(() => loadSavedPosition() || defaultPos);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("homi-avatar-collapsed") === "1");
   const isDragging = useRef(false);
   const hasMoved = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
+
+  const setCollapsedPersist = useCallback((v: boolean) => {
+    setCollapsed(v);
+    localStorage.setItem("homi-avatar-collapsed", v ? "1" : "0");
+  }, []);
 
   // Persist position
   useEffect(() => {
