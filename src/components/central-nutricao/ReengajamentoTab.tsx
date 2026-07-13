@@ -15,6 +15,8 @@ import { Loader2, Send, RefreshCw, MessageCircle, XCircle, Wifi, WifiOff, QrCode
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 import CentralInteligenciaPanel from "./CentralInteligenciaPanel";
+import ReengajamentoHistorico from "./ReengajamentoHistorico";
+import ReengajamentoUltimos from "./ReengajamentoUltimos";
 import type { DispatchRun, BlockedTemplate, DispatchInvokeResult } from "./types";
 
 const STALE_RUNNING_MS = 15 * 60 * 1000;
