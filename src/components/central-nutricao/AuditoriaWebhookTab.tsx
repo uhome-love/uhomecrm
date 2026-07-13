@@ -649,30 +649,23 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                   </TableHeader>
                   <TableBody>
                     {filteredQueue.map((row) => {
-                      const status = QUEUE_STATUS[row.status || ""];
+                      const status = procStatus(row);
                       const when = queueWhen(row);
                       return (
-                        <TableRow key={row.id} className={row.status === "failed" ? "bg-red-50/30" : row.status === "processing" ? "bg-blue-50/30" : ""}>
+                        <TableRow key={row.id} className={row.isFailed ? "bg-red-50/30" : ""}>
                           <TableCell className="text-xs whitespace-nowrap">{when ? formatBRT(when, "HH:mm:ss") : "—"}</TableCell>
                           <TableCell className="text-xs font-medium px-3 py-2">
                             <div className="truncate max-w-[210px]" title={row.nome || ""}>{row.nome || "—"}</div>
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{row.phone_normalized || row.telefone || "—"}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{row.phone || "—"}</TableCell>
                           <TableCell className="text-xs">
                             <div className="font-medium truncate max-w-[190px]" title={row.template_name || ""}>{row.template_name || "—"}</div>
                             <div className="text-[10px] text-muted-foreground truncate max-w-[190px]">{row.audience_source || "—"}</div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${status?.className || "bg-neutral-100 text-neutral-700"}`}>
-                                {status?.label || row.status || "—"}
-                              </Badge>
-                              {row.isRead && (
-                                <Badge variant="outline" className="text-[10px] whitespace-nowrap bg-indigo-50 text-indigo-700 border-indigo-200">
-                                  Lido
-                                </Badge>
-                              )}
-                            </div>
+                            <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${status.className}`}>
+                              {status.label}
+                            </Badge>
                           </TableCell>
 
                           <TableCell className="text-xs">
@@ -681,16 +674,14 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                                 <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                                 <span className="line-clamp-2">{row.error_text}</span>
                               </div>
+                            ) : row.isResponded ? (
+                              <span className="text-emerald-700">Respondeu ao disparo</span>
                             ) : row.isRead ? (
                               <span className="text-indigo-700">Lido pelo lead</span>
-                            ) : row.wamid ? (
-                              <span className="text-emerald-700">Enviado para a Meta</span>
-                            ) : row.status === "processing" ? (
-                              <span className="text-blue-700">Envio em andamento</span>
-                            ) : row.status === "pending" ? (
-                              <span className="text-muted-foreground">Aguardando lote</span>
+                            ) : row.isDelivered ? (
+                              <span className="text-blue-700">Entregue no WhatsApp</span>
                             ) : (
-                              <span className="text-muted-foreground">—</span>
+                              <span className="text-muted-foreground">Enviado para a Meta</span>
                             )}
                           </TableCell>
                         </TableRow>
