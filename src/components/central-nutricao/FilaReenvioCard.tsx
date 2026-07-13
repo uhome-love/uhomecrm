@@ -18,6 +18,19 @@ interface FailRow {
   count: number;
 }
 
+// Falhas de elegibilidade/cobrança/throttle não podem ser reenviadas — insistir queima o número.
+function isQualityBlockingError(raw: string | null | undefined): boolean {
+  const t = (raw || "").toLowerCase();
+  return (
+    t.includes("eligibility") ||
+    t.includes("payment") ||
+    t.includes("cobran") ||
+    t.includes("131049") ||
+    t.includes("pacing") ||
+    t.includes("quality")
+  );
+}
+
 export default function FilaReenvioCard() {
   const qc = useQueryClient();
   const [retryingKey, setRetryingKey] = useState<string | null>(null);
