@@ -1,52 +1,56 @@
-## O que está acontecendo (diagnóstico)
+# Central de Reengajamento — 100% manual, alta entrega
 
-Existe **sim** uma engine de disparo ativa via WhatsApp Meta — não é um envio manual seu, é o **motor de reengajamento de leads descartados** (`reengajamento-descartados-enqueue`). Ele dispara templates Meta em massa para uma base fria de leads descartados.
+Objetivo: nada dispara sozinho. Você abre a página, escolhe base + template (ou ativa uma cadência de nutrição), dispara, e acompanha ao vivo o que está sendo feito e o resultado. Visita Amanhã sai por completo. Automático fica bloqueado na fonte.
 
-**Volume dos últimos 6 dias (08 a 11/07):**
+## Como fica a página `/central-relatorios` (Central de Reengajamento)
+
+Uma página com abas:
 
 ```
-Total enviado: ~3.766 mensagens
-  read:      1.367
-  failed:    1.224   ← 32% de falha
-  delivered:   860
-  responded:   191
-  sent:        124
-Templates: connectjw_julho, flow_novidade2, lakebaikal_novidade2, casatua_*
+┌─────────────────────────────────────────────────────────┐
+│  Central de Reengajamento                                 │
+│  [ Disparo manual ] [ Nutrição ] [ Ao vivo ] [ Config ]  │
+└─────────────────────────────────────────────────────────┘
 ```
 
-Uma taxa de falha de ~32% em base fria é exatamente o padrão que faz o Meta sinalizar **spam / queda de qualidade do número**.
+1. **Disparo manual** — o card atual (base: Descartados / Oferta Ativa / Pipeline por etapa; template Meta com imagem de header; dedup por telefone; preview → disparar). Alta entrega via Meta (template oficial + supressão + throttle já existentes).
+2. **Nutrição** (nova) — chave mestra Liga/Desliga + escolher qual cadência ativar e para qual base, disparo manual do fluxo. Enquanto desligada, o sequenciador não envia nada.
+3. **Ao vivo** — o que está rodando agora (run ativo, fila, enviados/entregues/lidos/respostas em tempo real) + resultado consolidado. Junta o `LiveDispatchBanner` + `AuditoriaWebhookTab` + respostas recebidas.
+4. **Config** — instância WhatsApp, templates, janelas/throttle. Sem nenhum controle de automação (motor automático removido).
 
-**Por que você não viu disparo hoje/ontem:** a janela do motor é **seg–sex, 09h–20h BRT**. Sábado (12) e domingo (13) ele fica parado — mas **está armado para voltar a disparar segunda-feira (14/07) às 09h**.
+## O que muda
 
-**Estado atual (tudo ligado):**
-- `system_flags.campaign_dispatch_enabled = TRUE` (destravado manualmente em 10/07)
-- `reengajamento_config.enabled = TRUE`, `paused = FALSE`
-- **760 leads ainda pendentes** na fila (`reengajamento_dispatch_queue`, status `pending`) → seriam disparados na segunda
+### 1. Remover Visita Amanhã (completo)
+- Excluir `VisitaAmanhaTab.tsx` e a fonte `visita_amanha` de `DisparoCustomizadoCard.tsx` (botão, filtros, branch de disparo, defaults de config).
+- Remover o card "Histórico legado — Visita Amanhã" de `CentralNutricao.tsx`.
+- Apagar a edge function `visita-amanha-enqueue` e sua entrada no `config.toml`.
+- Desagendar/remover qualquer cron de visita-amanhã.
 
-## Plano — parar na fonte
+### 2. Bloqueio total de automático (na fonte)
+- Manter `system_flags.campaign_dispatch_enabled = false` como kill-switch de **crons** (já está false).
+- **Remover os gatilhos por evento**: as três chamadas a `nurturing-orchestrator` em `whatsapp-webhook`, `vitrine-public` e `elevenlabs-webhook` deixam de agendar/enviar. Elas passam a só registrar evento/scoring, sem criar sequência de envio automático (nada sai sozinho).
+- Confirmar todos os crons de nutrição/reengajamento/visita **inativos** em `cron.job`.
 
-**1. Kill switch global (para tudo imediatamente)**
-- `system_flags.campaign_dispatch_enabled = FALSE` com `reason` explicando (aviso de spam do Meta, 13/07). Isso já bloqueia todas as edge functions de campanha via `campaign-gate.ts` (fail-safe já existente).
+### 3. Nutrição acionável por você (nova tela + gate próprio)
+- Nova flag `system_flags.nutricao_enabled` (default `false`), controlada pela **chave mestra** da aba Nutrição.
+- `cron-nurturing-sequencer` passa a exigir `nutricao_enabled = true` (além do gate global). Como não há cron ativo chamando ele, o processamento do fluxo é disparado manualmente pelo botão "Processar agora" da tela quando você liga a chave.
+- Escolha da cadência: listar `nurturing_cadencias` ativas por `stage_tipo`; você seleciona o fluxo e a base, e enfileira as sequências (`lead_nurturing_sequences`) só nesse momento.
+- Recomendação de UX: banner "Nutrição LIGADA" persistente enquanto ativa, com 1 clique para desligar ao terminar.
 
-**2. Desligar o motor de reengajamento na config**
-- `reengajamento_config`: `enabled = FALSE`, `paused = TRUE`, `paused_reason = 'Aviso de spam Meta - 13/07/2026'`, `paused_at_brt = now()`.
+### 4. Disparo manual continua funcionando mesmo com kill-switch global
+- Hoje `reengajamento-descartados-enqueue` também checa `campaign_dispatch_enabled`, o que bloquearia até o disparo manual.
+- Ajuste: o gate distingue **chamada de cron** (bloqueada) de **chamada manual autenticada** (`iniciado_por: "manual_custom"` + JWT de usuário) → o disparo manual explícito passa; qualquer chamada sem usuário/por cron continua bloqueada. Mantém todas as travas de qualidade (blacklist de template, `paused_until_release`, auto-pausa por qualidade Meta).
 
-**3. Esvaziar a fila pendente (impede o disparo de segunda)**
-- `UPDATE reengajamento_dispatch_queue SET status='cancelled' WHERE status='pending'` (760 registros). Nada é apagado do histórico — só cancelado para não enviar.
-- Marcar os `reengajamento_dispatch_runs` ainda em `running`/`pending` como cancelados.
-
-**4. Garantir que nenhum cron reative sozinho**
-- Verificar/remover qualquer `cron.schedule` que chame `reengajamento-descartados-enqueue`, `whatsapp-campaign-dispatch`, `test-reengajamento-wave2` ou `visita-amanha-enqueue` (via migration). O flag global já era "manual only", mas confirmo e travo.
-
-**5. Confirmação pós-execução**
-- Reconsultar as 3 travas + contagem da fila para provar que está tudo parado (0 pending, flags FALSE).
+## Validação (end-to-end)
+1. `tsgo` + build limpos após remoções.
+2. Playwright no preview: abrir a página, checar as 4 abas, ausência total de Visita Amanhã.
+3. Preview de audiência real em cada base (Descartados/Oferta Ativa/Pipeline) retornando contagem.
+4. Disparo manual real de 1 lead de teste via Meta → confirmar entrega e aparecimento na aba "Ao vivo".
+5. Nutrição: ligar chave → "Processar agora" com 1 lead → confirmar envio; desligar → confirmar que nada mais sai.
+6. Confirmar via consulta que nenhum cron automático de nutrição/reengajamento/visita está ativo e que os webhooks não criam sequências.
 
 ## Detalhes técnicos
-
-- Passos 1–4 são mudanças de dado/DDL → feitos via **migration** (não dá pra fazer por `psql`, que é só leitura/insert).
-- Nenhum histórico de disparo é apagado — `reengajamento_meta_disparos` fica intacto para auditoria. Só interrompo o que ainda não foi enviado.
-- Isso **não** desativa o WhatsApp do CRM (atendimento 1:1, respostas, inbox) — só o motor de marketing/reengajamento em massa.
-- Reativação futura fica manual e consciente (destravar os 3 pontos de novo), de preferência só depois que o número recuperar qualidade no Meta.
-
-## O que NÃO faço agora
-- Não excluo o motor nem os templates (podem ser reusados depois com base quente e volume controlado). Se você preferir remover de vez, me avise que ajusto o plano.
+- Frontend: renomear/reestruturar `CentralNutricao.tsx` para as 4 abas; nova `NutricaoTab.tsx`; consolidar "Ao vivo" (LiveDispatchBanner + AuditoriaWebhookTab + RespostasRecebidasHoje); limpar `DisparoCustomizadoCard.tsx` e `ReengajamentoTab.tsx` (remover automação).
+- Backend: migração adiciona flag `nutricao_enabled`; editar `cron-nurturing-sequencer` (checar `nutricao_enabled`), `campaign-gate.ts` (permitir manual autenticado), `nurturing-orchestrator` chamadores (só scoring); apagar `visita-amanha-enqueue`.
+- Tabelas de nutrição (`nurturing_cadencias`, `lead_nurturing_sequences`, `lead_nurturing_state`) preservadas. WhatsApp 1:1 do CRM não é afetado.
+- Memória: atualizar `mem://features/whatsapp/nutricao-manual-only` e criar referência da nova tela.
