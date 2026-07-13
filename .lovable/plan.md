@@ -1,45 +1,28 @@
-## Contexto do diagnóstico
+## Diagnóstico
 
-**1. O lead "sumido" (Rômulo / network, parceria Leo Dorneles + Jessica)**
-Localizei o lead:
-- `id`: `53fd5397-b2e5-4ef0-a741-c295c7278b3a`
-- Nome: **Rômulo (network)** · tel `510000000001` · etapa **Em Negociação** · negócio R$ 450k (fase proposta)
-- Corretor: **Leo Dorneles** · parceria com Jessica
+- O disparo atual está realmente em andamento: começou às 16:42 BRT, com 576 alvos, 122 enviados, 1 falha síncrona e 33 ignorados no registro da execução.
+- A tabela de auditoria usa `reengajamento_meta_disparos`, que só recebe linha quando o envio Meta retorna sucesso. Falhas síncronas e ignorados ficam na fila (`reengajamento_dispatch_queue`) e/ou no resumo da execução, então a parte de baixo pode parecer parada ou vazia.
+- O painel “Disparos recentes” existe, mas está fechado por padrão. Isso esconde justamente o resumo que ajudaria a entender se está enviando, falhando ou ignorando.
 
-Ele **não some por bug** — foi **inativado hoje** (13/07, 19:01 BRT):
-- `arquivado = true`
-- `tipo_descarte = definitivo`
-- `motivo_descarte = "Inativado: Teste"`
+## Plano de correção
 
-Ou seja, alguém rodou uma inativação com motivo "Teste". Lead inativado sai do board e de todas as listas — por isso "sumiu".
+1. **Mostrar a execução atual sempre aberta no Ao vivo**
+   - Deixar “Disparos recentes” aberto automaticamente quando houver run `running`.
+   - Destacar o disparo em andamento com progresso, template, origem, enviados, falhas e ignorados.
 
-**2. Nome do lead ilegível em parceria**
-No card do pipeline (`CardMinimal.tsx`), quando é parceria o nome do lead divide a MESMA linha com o badge roxo "🤝 Parceria" **e** o badge de substatus (ex.: "Aprov. proprietário"). Em cards estreitos os dois badges ocupam quase toda a largura e o nome (`flex-1 truncate`) é espremido até desaparecer. Confirmado com o lead de nome longo "Dra. Eloisa Soldera | Harmonização Facial | Porto Alegre".
+2. **Criar uma lista de atividade em tempo real da fila**
+   - Na aba Ao vivo, consultar `reengajamento_dispatch_queue` do run atual/recentes.
+   - Exibir os últimos itens processados com: horário, lead, telefone, template, status (`sent`, `failed`, `skipped`, `suppressed`, `pending`, `processing`) e erro quando houver.
+   - Assim falhas que não aparecem em `reengajamento_meta_disparos` passam a aparecer imediatamente.
 
----
+3. **Manter a auditoria Meta como resultado final de entrega/resposta**
+   - A tabela atual de `reengajamento_meta_disparos` continua mostrando entregas, leituras e respostas.
+   - A nova lista da fila fica acima dela como “envios sendo processados agora”.
 
-## Plano
+4. **Ajustar atualização ao vivo**
+   - Recarregar a execução/fila em intervalo curto enquanto houver disparo em andamento.
+   - Invalidar os dados ao receber eventos realtime da fila, igual já acontece com a auditoria Meta.
 
-### Parte 1 — Restaurar o lead Rômulo (network)
-Reverter a inativação via atualização de dados no lead `53fd5397-b2e5-4ef0-a741-c295c7278b3a`:
-- `arquivado` → `false`
-- `tipo_descarte` → `null`
-- `motivo_descarte` → `null`
-
-Ele permanece na etapa **Em Negociação** (nada mais mudou), então volta a aparecer no board do Leo imediatamente. Sem alteração de schema.
-
-### Parte 2 — Corrigir o visual do nome em parceria
-Reestruturar o cabeçalho do `CardMinimal.tsx` para que o **nome do lead fique sempre em uma linha própria, largura total e legível**:
-- Linha 1: badges (Novo / 🤝 Parceria / substatus / cadência) — podem quebrar/encolher à vontade.
-- Linha 2: nome do lead em `text-foreground`, `font-semibold`, largura total (sem competir com badges).
-
-Isso resolve a ilegibilidade tanto no tema claro quanto no escuro e vale para todos os cards (não só parceria). O rodapé com o nome do parceiro continua como está.
-
-### Verificação
-- Conferir no preview que o card de parceria mostra o nome completo do lead.
-- Confirmar que o lead Rômulo reaparece na coluna "Em Negociação".
-- `tsgo` para validar tipos.
-
-### Detalhes técnicos
-- Arquivo de código: `src/components/pipeline/CardMinimal.tsx` (bloco do header, ~linhas 309-354).
-- Dados: update em `pipeline_leads` (1 linha), sem migração de schema.
+5. **Validar**
+   - Confirmar que o disparo atual mostra itens recentes mesmo quando há falhas ou ignorados.
+   - Rodar validação TypeScript após a alteração.

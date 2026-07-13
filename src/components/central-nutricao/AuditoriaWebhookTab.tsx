@@ -29,6 +29,25 @@ interface Row {
   corretor_nome?: string | null;
 }
 
+interface QueueRow {
+  id: string;
+  run_id: string | null;
+  lead_id: string | null;
+  nome: string | null;
+  telefone: string | null;
+  phone_normalized: string | null;
+  template_name: string | null;
+  audience_source: string | null;
+  status: string | null;
+  attempts: number | null;
+  locked_at: string | null;
+  processed_at: string | null;
+  error_text: string | null;
+  wamid: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   sent: { label: "Enviado", className: "bg-neutral-100 text-neutral-600" },
   delivered: { label: "Entregue", className: "bg-blue-50 text-blue-700" },
@@ -46,6 +65,20 @@ const AUDIENCE_LABEL: Record<string, { label: string; className: string }> = {
 };
 
 const PAGE_SIZE = 100;
+
+const QUEUE_STATUS: Record<string, { label: string; className: string }> = {
+  pending: { label: "Na fila", className: "bg-neutral-100 text-neutral-700 border-neutral-200" },
+  processing: { label: "Enviando", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  sent: { label: "Enviado", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  failed: { label: "Falhou", className: "bg-red-50 text-red-700 border-red-200" },
+  skipped: { label: "Ignorado", className: "bg-amber-50 text-amber-700 border-amber-200" },
+  suppressed: { label: "Suprimido", className: "bg-orange-50 text-orange-700 border-orange-200" },
+  cancelled: { label: "Cancelado", className: "bg-rose-50 text-rose-700 border-rose-200" },
+};
+
+function queueWhen(row: QueueRow): string | null {
+  return row.processed_at || row.locked_at || row.updated_at || row.created_at;
+}
 
 function parseResponse(raw: string | null): { text: string; type: string | null } {
   if (!raw) return { text: "—", type: null };
@@ -226,6 +259,42 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
     refetchInterval: 10000,
   });
   const [showRuns, setShowRuns] = useState(false);
+
+  const activeRun = recentRuns?.find((run: any) => run.status === "running") ?? null;
+  const queueRunIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (activeRun?.id) ids.add(activeRun.id);
+    (recentRuns ?? []).slice(0, 3).forEach((run: any) => run?.id && ids.add(run.id));
+    return Array.from(ids);
+  }, [activeRun?.id, recentRuns]);
+
+  useEffect(() => {
+    if (activeRun?.id) setShowRuns(true);
+  }, [activeRun?.id]);
+
+  const { data: queueActivity = [], isFetching: isFetchingQueue } = useQuery({
+    queryKey: ["reengajamento-queue-activity", queueRunIds.join(",")],
+    queryFn: async (): Promise<QueueRow[]> => {
+      if (queueRunIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("reengajamento_dispatch_queue")
+        .select("id, run_id, lead_id, nome, telefone, phone_normalized, template_name, audience_source, status, attempts, locked_at, processed_at, error_text, wamid, created_at, updated_at")
+        .in("run_id", queueRunIds)
+        .order("updated_at", { ascending: false })
+        .limit(80);
+      if (error) throw error;
+      return (data ?? []) as QueueRow[];
+    },
+    enabled: queueRunIds.length > 0,
+    refetchInterval: activeRun ? 3000 : 10000,
+  });
+
+  const queueStats = useMemo(() => ({
+    processing: queueActivity.filter((r) => r.status === "processing").length,
+    sent: queueActivity.filter((r) => r.status === "sent").length,
+    failed: queueActivity.filter((r) => r.status === "failed").length,
+    skipped: queueActivity.filter((r) => ["skipped", "suppressed", "cancelled"].includes(r.status || "")).length,
+  }), [queueActivity]);
   
 
   // Resumo de HOJE (server-side, agregado) — independente da paginação
@@ -461,6 +530,85 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
             </Card>
           </Collapsible>
         )}
+
+        <Card className={activeRun ? "border-blue-200 bg-blue-50/30" : undefined}>
+          <CardContent className="p-3 space-y-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Radio className={`h-4 w-4 ${activeRun ? "text-blue-600 animate-pulse" : "text-muted-foreground"}`} />
+                <span className="text-sm font-semibold">Envios sendo processados</span>
+                {isFetchingQueue && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{queueStats.processing} enviando</Badge>
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">{queueStats.sent} enviados</Badge>
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">{queueStats.failed} falhas</Badge>
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">{queueStats.skipped} ignorados</Badge>
+              </div>
+            </div>
+
+            {queueActivity.length === 0 ? (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                Nenhum item de fila encontrado para os disparos recentes.
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-card overflow-x-auto">
+                <Table className="min-w-[980px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[90px]">Horário</TableHead>
+                      <TableHead className="w-[210px]">Lead</TableHead>
+                      <TableHead className="w-[140px]">Telefone</TableHead>
+                      <TableHead className="w-[190px]">Template / Origem</TableHead>
+                      <TableHead className="w-[110px]">Status</TableHead>
+                      <TableHead>Resultado / erro</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {queueActivity.map((row) => {
+                      const status = QUEUE_STATUS[row.status || ""];
+                      const when = queueWhen(row);
+                      return (
+                        <TableRow key={row.id} className={row.status === "failed" ? "bg-red-50/30" : row.status === "processing" ? "bg-blue-50/30" : ""}>
+                          <TableCell className="text-xs whitespace-nowrap">{when ? formatBRT(when, "HH:mm:ss") : "—"}</TableCell>
+                          <TableCell className="text-xs font-medium px-3 py-2">
+                            <div className="truncate max-w-[210px]" title={row.nome || ""}>{row.nome || "—"}</div>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{row.phone_normalized || row.telefone || "—"}</TableCell>
+                          <TableCell className="text-xs">
+                            <div className="font-medium truncate max-w-[190px]" title={row.template_name || ""}>{row.template_name || "—"}</div>
+                            <div className="text-[10px] text-muted-foreground truncate max-w-[190px]">{row.audience_source || "—"}</div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${status?.className || "bg-neutral-100 text-neutral-700"}`}>
+                              {status?.label || row.status || "—"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {row.error_text ? (
+                              <div className="flex items-start gap-1.5 text-red-700" title={row.error_text}>
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                                <span className="line-clamp-2">{row.error_text}</span>
+                              </div>
+                            ) : row.wamid ? (
+                              <span className="text-emerald-700">Enviado para a Meta</span>
+                            ) : row.status === "processing" ? (
+                              <span className="text-blue-700">Envio em andamento</span>
+                            ) : row.status === "pending" ? (
+                              <span className="text-muted-foreground">Aguardando lote</span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filtros agrupados em barra única */}
