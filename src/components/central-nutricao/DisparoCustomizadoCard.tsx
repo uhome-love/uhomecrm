@@ -45,6 +45,7 @@ const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
   vividterrace2: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/vividterrace2.png",
   lakebaical_novidade: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/lakebaical-novidade.png",
   lakebaikal_novidade2: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/lakebaical-golden-lake.png",
+  lakebaikal_novidade3: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/lakebaikal-novidade3.png",
   connectjw_julho: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/connectjw-julho.png",
   flow_novidade2: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/flow-novidade2.jpg",
 };
