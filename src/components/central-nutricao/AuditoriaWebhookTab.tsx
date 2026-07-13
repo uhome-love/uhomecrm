@@ -29,23 +29,26 @@ interface Row {
   corretor_nome?: string | null;
 }
 
-interface QueueRow {
+interface ProcRow {
   id: string;
-  run_id: string | null;
   lead_id: string | null;
   nome: string | null;
-  telefone: string | null;
-  phone_normalized: string | null;
+  phone: string | null;
   template_name: string | null;
   audience_source: string | null;
   status: string | null;
-  attempts: number | null;
-  locked_at: string | null;
-  processed_at: string | null;
   error_text: string | null;
   wamid: string | null;
+  sent_at: string | null;
+  delivered_at: string | null;
+  read_at: string | null;
+  responded_at: string | null;
   created_at: string | null;
-  updated_at: string | null;
+  isSent: boolean;
+  isDelivered: boolean;
+  isRead: boolean;
+  isResponded: boolean;
+  isFailed: boolean;
 }
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
