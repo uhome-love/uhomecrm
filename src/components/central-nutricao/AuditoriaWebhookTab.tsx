@@ -369,26 +369,8 @@ export default function AuditoriaWebhookTab() {
       </Card>
 
       {/* Painéis colapsáveis (default fechados, abre conforme necessidade) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Respostas hoje (colapsável) */}
-        <Collapsible open={showRespostas} onOpenChange={setShowRespostas}>
-          <Card>
-            <CollapsibleTrigger className="w-full">
-              <CardContent className="p-3 flex items-center justify-between hover:bg-muted/40 transition">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-emerald-600" />
-                  <span className="text-sm font-semibold">Respostas recebidas hoje</span>
-                </div>
-                <ChevronDown className={`h-4 w-4 transition ${showRespostas ? "rotate-180" : ""}`} />
-              </CardContent>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="pt-0 pb-3 px-3">
-                <RespostasRecebidasHoje />
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+      <div className="grid grid-cols-1 gap-3">
+
 
         {/* Disparos recentes (colapsável) */}
         {recentRuns && recentRuns.length > 0 && (
