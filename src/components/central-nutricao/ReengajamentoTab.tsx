@@ -720,6 +720,15 @@ export default function ReengajamentoTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="rounded-md bg-muted/60 border border-border p-3 text-xs text-muted-foreground flex items-start gap-2">
+            <Shield className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+            <span>
+              <strong className="text-foreground">Modo 100% manual.</strong> Nada dispara sozinho — estes campos
+              (janelas de horário, limites, lookback e templates) só valem quando <strong className="text-foreground">você</strong> aciona
+              um disparo em <strong className="text-foreground">Disparo manual</strong> ou ativa uma cadência em <strong className="text-foreground">Nutrição</strong>.
+              Aqui é só configuração.
+            </span>
+          </div>
           <Tabs
             value={local.canal || "evolution"}
             onValueChange={(v) => setDraft({ ...local, canal: v })}
