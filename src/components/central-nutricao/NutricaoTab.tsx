@@ -31,6 +31,9 @@ export default function NutricaoTab() {
   const [toggling, setToggling] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [savingCadId, setSavingCadId] = useState<string | null>(null);
+  const [savingGroup, setSavingGroup] = useState<string | null>(null);
+  const [autoOff, setAutoOff] = useState(true);
+
 
   // Chave mestra
   const { data: flag, isLoading: loadingFlag } = useQuery({
@@ -119,6 +122,24 @@ export default function NutricaoTab() {
     }
   }
 
+  async function toggleGroup(stage: string, steps: Cadencia[], activate: boolean) {
+    setSavingGroup(stage);
+    try {
+      const { error } = await supabase
+        .from("nurturing_cadencias")
+        .update({ is_active: activate, updated_at: new Date().toISOString() })
+        .in("id", steps.map((s) => s.id));
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["nutricao-cadencias"] });
+      toast.success(activate ? "Fluxo ativado (todos os passos)" : "Fluxo desativado");
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setSavingGroup(null);
+    }
+  }
+
+
   async function processarAgora() {
     if (!enabled) {
       toast.error("Ligue a chave mestra da nutrição antes de processar.");
@@ -134,8 +155,13 @@ export default function NutricaoTab() {
         toast.error("Nutrição desligada — ligue a chave mestra primeiro.");
       } else {
         toast.success(`✅ Processado: ${d?.enviados ?? 0} enviados, ${d?.erros ?? 0} erros (${d?.processed ?? 0} na fila)`);
+        if (autoOff) {
+          await toggleMaster(false);
+          toast.info("Chave mestra desligada automaticamente após o processamento.");
+        }
       }
       qc.invalidateQueries({ queryKey: ["nutricao-fila"] });
+
     } catch (e: any) {
       toast.error("Erro ao processar: " + e.message);
     } finally {
@@ -201,6 +227,11 @@ export default function NutricaoTab() {
             {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
             Processar fila de nutrição agora
           </Button>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <Switch checked={autoOff} onCheckedChange={setAutoOff} className="scale-90" />
+            Desligar a chave mestra automaticamente após processar (recomendado)
+          </label>
+
         </CardContent>
       </Card>
 
@@ -222,12 +253,30 @@ export default function NutricaoTab() {
           ) : (
             Object.entries(grupos).map(([stage, steps]) => (
               <div key={stage} className="space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h4 className="text-sm font-medium">{STAGE_LABELS[stage] || stage}</h4>
                   <Badge variant="outline" className="text-[10px]">
                     {steps.filter((s) => s.is_active).length}/{steps.length} ativos
                   </Badge>
+                  <div className="ml-auto flex items-center gap-1">
+                    <Button
+                      size="sm" variant="outline" className="h-7 text-[11px] gap-1"
+                      disabled={savingGroup === stage || steps.every((s) => s.is_active)}
+                      onClick={() => toggleGroup(stage, steps, true)}
+                    >
+                      {savingGroup === stage ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                      Ativar fluxo
+                    </Button>
+                    <Button
+                      size="sm" variant="ghost" className="h-7 text-[11px]"
+                      disabled={savingGroup === stage || steps.every((s) => !s.is_active)}
+                      onClick={() => toggleGroup(stage, steps, false)}
+                    >
+                      Desativar
+                    </Button>
+                  </div>
                 </div>
+
                 <div className="space-y-1.5">
                   {steps.map((s) => (
                     <div key={s.id} className="flex items-center gap-3 rounded-md border p-2">

@@ -1,56 +1,71 @@
-# Central de Reengajamento — 100% manual, alta entrega
+# Reengajamento — Análise crítica + roteiro de qualificação
 
-Objetivo: nada dispara sozinho. Você abre a página, escolhe base + template (ou ativa uma cadência de nutrição), dispara, e acompanha ao vivo o que está sendo feito e o resultado. Visita Amanhã sai por completo. Automático fica bloqueado na fonte.
+Diagnóstico feito lendo o código (7 componentes, 3.700+ linhas) e capturando a UI ao vivo em desktop (1280px) e mobile (390px), nas 4 abas.
 
-## Como fica a página `/central-relatorios` (Central de Reengajamento)
+## 1. Diagnóstico visual (o que está fraco hoje)
 
-Uma página com abas:
+**Disparo manual**
+- No desktop o formulário é uma coluna única estreita com metade da tela vazia à direita — desperdício grave de espaço. Deveria ser 2 colunas (público/filtros | template/preview/ação).
+- A ação principal fica confusa: o botão grande "Faça o preview primeiro" aparece desabilitado e cinza, enquanto o "Calcular público" (o passo real) é discreto. O fluxo calcular→disparar não guia o olho.
+- Campos de data nativos em formato `mm/dd/yyyy` (americano) — quebra o padrão BRT/pt-BR do projeto.
+- Checkbox "Incluir arquivados" é `<input type=checkbox>` cru, fora do design system (resto usa shadcn).
+- URL da imagem do header exposta crua num input longo — poluição visual.
+- Excesso de textos `10px/11px` — legibilidade e acessibilidade ruins.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Central de Reengajamento                                 │
-│  [ Disparo manual ] [ Nutrição ] [ Ao vivo ] [ Config ]  │
-└─────────────────────────────────────────────────────────┘
-```
+**Nutrição**
+- Boa estrutura, mas só permite ligar/desligar passo a passo. Falta o "ativar um fluxo inteiro" com 1 clique (o pedido original: "escolher uma nutrição para ativar").
+- A chave mestra avisa "lembre de desligar", mas nada desliga sozinho — risco operacional. Falta salvaguarda (auto-desligar após processar, ou timer).
 
-1. **Disparo manual** — o card atual (base: Descartados / Oferta Ativa / Pipeline por etapa; template Meta com imagem de header; dedup por telefone; preview → disparar). Alta entrega via Meta (template oficial + supressão + throttle já existentes).
-2. **Nutrição** (nova) — chave mestra Liga/Desliga + escolher qual cadência ativar e para qual base, disparo manual do fluxo. Enquanto desligada, o sequenciador não envia nada.
-3. **Ao vivo** — o que está rodando agora (run ativo, fila, enviados/entregues/lidos/respostas em tempo real) + resultado consolidado. Junta o `LiveDispatchBanner` + `AuditoriaWebhookTab` + respostas recebidas.
-4. **Config** — instância WhatsApp, templates, janelas/throttle. Sem nenhum controle de automação (motor automático removido).
+**Ao vivo**
+- Conteúdo redundante: "Respostas recebidas hoje" aparece 2x (bloco fixo no topo + collapsible logo abaixo). IA confusa.
+- A tabela de disparos **estoura horizontalmente no mobile** (colunas cortadas, ilegível). Sem layout de cards responsivo.
+- Muitos "Falha" nos disparos recentes sem destaque de saúde de entrega no topo — informação crítica escondida.
 
-## O que muda
+**Configurações**
+- Contém controles do **motor automático** (Ativo, janelas de horário, limite diário, lookback, "Retomar disparo") que contradizem a diretriz "100% manual". Sobra de automação = confusão.
+- "Saúde do número" aparece vazia (`Qualidade: —`) sem estado de carregando/erro claro.
+- Mistura tudo num scroll gigante: instância, saúde, melhor lista, config, histórico.
 
-### 1. Remover Visita Amanhã (completo)
-- Excluir `VisitaAmanhaTab.tsx` e a fonte `visita_amanha` de `DisparoCustomizadoCard.tsx` (botão, filtros, branch de disparo, defaults de config).
-- Remover o card "Histórico legado — Visita Amanhã" de `CentralNutricao.tsx`.
-- Apagar a edge function `visita-amanha-enqueue` e sua entrada no `config.toml`.
-- Desagendar/remover qualquer cron de visita-amanhã.
+**Mobile (geral)**
+- Popup do HOMI AI sobrepõe o CTA inferior.
+- Formulários muito longos + datas nativas + tabela que vaza.
 
-### 2. Bloqueio total de automático (na fonte)
-- Manter `system_flags.campaign_dispatch_enabled = false` como kill-switch de **crons** (já está false).
-- **Remover os gatilhos por evento**: as três chamadas a `nurturing-orchestrator` em `whatsapp-webhook`, `vitrine-public` e `elevenlabs-webhook` deixam de agendar/enviar. Elas passam a só registrar evento/scoring, sem criar sequência de envio automático (nada sai sozinho).
-- Confirmar todos os crons de nutrição/reengajamento/visita **inativos** em `cron.job`.
+## 2. Diagnóstico de código (dívida técnica)
 
-### 3. Nutrição acionável por você (nova tela + gate próprio)
-- Nova flag `system_flags.nutricao_enabled` (default `false`), controlada pela **chave mestra** da aba Nutrição.
-- `cron-nurturing-sequencer` passa a exigir `nutricao_enabled = true` (além do gate global). Como não há cron ativo chamando ele, o processamento do fluxo é disparado manualmente pelo botão "Processar agora" da tela quando você liga a chave.
-- Escolha da cadência: listar `nurturing_cadencias` ativas por `stage_tipo`; você seleciona o fluxo e a base, e enfileira as sequências (`lead_nurturing_sequences`) só nesse momento.
-- Recomendação de UX: banner "Nutrição LIGADA" persistente enquanto ativa, com 1 clique para desligar ao terminar.
+- **Arquivos gigantes** violando as regras do projeto (>500/800 linhas): `ReengajamentoTab` 1.279, `DisparoCustomizadoCard` 773, `AuditoriaWebhookTab` 648.
+- **`as any` proibido em código novo**: 56 ocorrências (32 só no ReengajamentoTab) — tabelas sem tipagem (`reengajamento_config as any`, `blocked_templates as any`).
+- **Cores hardcoded** violando o design system: 217 ocorrências (`text-indigo-600`, `bg-white`, `text-red-700` etc.), várias sem variante dark → quebram no modo escuro (ex.: `RespostasRecebidasHoje` usa `bg-white`/`text-red-700` fixos).
+- **`confirm()`/`alert()` nativos** (6 usos) em vez de AlertDialog — visual amador e não temável.
+- **Lógica duplicada**: `classifyText` replicado no front espelhando o backend (whatsapp-webhook) → risco de divergência silenciosa.
+- Queries inline espalhadas, query-keys soltas, sem hooks compartilhados (`useReengajamento`).
 
-### 4. Disparo manual continua funcionando mesmo com kill-switch global
-- Hoje `reengajamento-descartados-enqueue` também checa `campaign_dispatch_enabled`, o que bloquearia até o disparo manual.
-- Ajuste: o gate distingue **chamada de cron** (bloqueada) de **chamada manual autenticada** (`iniciado_por: "manual_custom"` + JWT de usuário) → o disparo manual explícito passa; qualquer chamada sem usuário/por cron continua bloqueada. Mantém todas as travas de qualidade (blacklist de template, `paused_until_release`, auto-pausa por qualidade Meta).
+## 3. Roteiro de qualificação (proposto, por fases)
 
-## Validação (end-to-end)
-1. `tsgo` + build limpos após remoções.
-2. Playwright no preview: abrir a página, checar as 4 abas, ausência total de Visita Amanhã.
-3. Preview de audiência real em cada base (Descartados/Oferta Ativa/Pipeline) retornando contagem.
-4. Disparo manual real de 1 lead de teste via Meta → confirmar entrega e aparecimento na aba "Ao vivo".
-5. Nutrição: ligar chave → "Processar agora" com 1 lead → confirmar envio; desligar → confirmar que nada mais sai.
-6. Confirmar via consulta que nenhum cron automático de nutrição/reengajamento/visita está ativo e que os webhooks não criam sequências.
+**Fase 1 — UI/UX de alto nível (impacto visual imediato)**
+- Reconstruir "Disparo manual" em grid 2 colunas no desktop (público+filtros | template+preview+disparar), coluna única no mobile.
+- Barra de ação fixa/destacada: `Calcular público` → mostra contagem → `Disparar` habilita só após preview, com resumo do que vai ser enviado (canal, base, template, nº leads).
+- Trocar datas nativas por date picker localizado pt-BR; checkbox cru → shadcn `Checkbox`.
+- Padronizar tipografia (mínimo `text-xs`), esconder URL da imagem atrás de "avançado".
 
-## Detalhes técnicos
-- Frontend: renomear/reestruturar `CentralNutricao.tsx` para as 4 abas; nova `NutricaoTab.tsx`; consolidar "Ao vivo" (LiveDispatchBanner + AuditoriaWebhookTab + RespostasRecebidasHoje); limpar `DisparoCustomizadoCard.tsx` e `ReengajamentoTab.tsx` (remover automação).
-- Backend: migração adiciona flag `nutricao_enabled`; editar `cron-nurturing-sequencer` (checar `nutricao_enabled`), `campaign-gate.ts` (permitir manual autenticado), `nurturing-orchestrator` chamadores (só scoring); apagar `visita-amanha-enqueue`.
-- Tabelas de nutrição (`nurturing_cadencias`, `lead_nurturing_sequences`, `lead_nurturing_state`) preservadas. WhatsApp 1:1 do CRM não é afetado.
-- Memória: atualizar `mem://features/whatsapp/nutricao-manual-only` e criar referência da nova tela.
+**Fase 2 — Aba Ao vivo profissional**
+- Remover a duplicação de "Respostas recebidas hoje".
+- Card de **Saúde de entrega** no topo (enviados/entregues/lidos/falhas + % e alerta se falha alta).
+- Tabela → layout responsivo (cards no mobile) com scroll/colunas fixas no desktop.
+
+**Fase 3 — Nutrição acionável**
+- Botão "Ativar fluxo inteiro" por cadência (liga todos os passos de uma vez) + salvaguarda de auto-desligar a chave mestra após o processamento.
+
+**Fase 4 — Limpeza da aba Configurações**
+- Remover/ocultar os controles do motor automático incompatíveis com o modo manual; manter só instância, templates, saúde do número e histórico, em seções colapsáveis.
+
+**Fase 5 — Saúde do código (sem mudar comportamento)**
+- Quebrar os 3 arquivos grandes em subcomponentes (<300–400 linhas).
+- Extrair hooks (`useReengajamentoAudience`, `useNutricao`, `useDispatchRuns`) e tipar as tabelas para eliminar `as any`.
+- Substituir cores hardcoded por tokens semânticos (corrige dark mode) e `confirm()` por `AlertDialog`.
+- Centralizar `classifyText` num único módulo compartilhável.
+
+### Notas técnicas
+- Nada aqui altera regras de disparo/negócio nem o gate manual (`campaign_dispatch_enabled`) — Fases 1–4 são frontend; Fase 5 é refactor sem mudança de comportamento.
+- Tokens já existem em `index.css`/`tailwind.config.ts`; a migração de cores usa `primary/muted/destructive/emerald` via variantes.
+
+Posso implementar tudo em sequência ou só as fases que você priorizar. Recomendo começar pela Fase 1 (maior ganho visual) e Fase 2.

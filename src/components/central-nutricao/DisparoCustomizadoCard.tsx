@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -299,7 +300,11 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
+        <div className="grid lg:grid-cols-2 gap-x-5 gap-y-3 items-start">
+        {/* COLUNA ESQUERDA: público e filtros */}
+        <div className="space-y-3">
         {/* CANAL */}
+
         <div>
           <Label className="text-xs">Canal</Label>
           <div className="grid grid-cols-2 gap-2 mt-1">
@@ -372,14 +377,15 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                 "Reengajáveis" remove automaticamente quem respondeu NÃO, foi bloqueado ou está com tipo definitivo.
               </p>
             </div>
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input
-                type="checkbox"
+            <label className="flex items-start gap-2 text-xs cursor-pointer">
+              <Checkbox
                 checked={includeArchived}
-                onChange={(e) => { setIncludeArchived(e.target.checked); setPreview(null); }}
+                onCheckedChange={(v) => { setIncludeArchived(v === true); setPreview(null); }}
+                className="mt-0.5"
               />
-              Incluir leads arquivados (recomendado — descartados antigos ficam arquivados após 24h)
+              <span>Incluir leads arquivados (recomendado — descartados antigos ficam arquivados após 24h)</span>
             </label>
+
           </div>
         )}
 
@@ -486,8 +492,12 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           <Label className="text-xs">Empreendimento (opcional)</Label>
           <Input placeholder="ex.: Casa Tua" value={empreendimento} onChange={(e) => setEmpreendimento(e.target.value)} className="h-9" />
         </div>
+        </div>{/* /coluna esquerda */}
 
+        {/* COLUNA DIREITA: envio (dedup, limite, template, mensagem) */}
+        <div className="space-y-3">
         {/* Dedup */}
+
         <div>
           <Label className="text-xs">Quem já recebeu disparo</Label>
           <Select value={dedupMode} onValueChange={(v) => { setDedupMode(v as DedupMode); setPreview(null); }}>
@@ -676,20 +686,25 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             <p className="text-[10px] text-muted-foreground mt-1">Use {"{{nome}}"} como variável. Para descartados, a configuração padrão é usada.</p>
           </div>
         )}
+        </div>{/* /coluna direita */}
+        </div>{/* /grid 2 colunas */}
 
         {/* Preview + ação */}
-        <div className="border-t pt-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={doPreview} disabled={previewing}>
-              {previewing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Search className="h-3.5 w-3.5 mr-1" />}
-              Calcular público
+        <div className="border-t pt-4 space-y-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="outline" onClick={doPreview} disabled={previewing}>
+              {previewing ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Search className="h-4 w-4 mr-1.5" />}
+              1. Calcular público
             </Button>
-            {preview && (
+            {preview ? (
               <span className="text-sm">
-                <strong className="text-indigo-700">{preview.count}</strong> leads elegíveis
+                <strong className="text-primary text-lg">{preview.count.toLocaleString("pt-BR")}</strong> leads elegíveis
               </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">Calcule o público antes de disparar.</span>
             )}
           </div>
+
 
           {preview?.funil && isCombined && (preview.funil as any).por_fonte && (
             <div className="text-[11px] border rounded p-2 bg-background space-y-1">
@@ -759,13 +774,15 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           )}
 
           <Button
-            className="w-full"
+            className="w-full h-11 text-base"
+            size="lg"
             onClick={disparar}
             disabled={firing || !preview || preview.count === 0}
           >
-            {firing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
-            {preview ? `Disparar para ${preview.count} leads` : "Faça o preview primeiro"}
+            {firing ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Send className="h-4 w-4 mr-1.5" />}
+            {preview ? `2. Disparar para ${preview.count.toLocaleString("pt-BR")} leads` : "2. Disparar (calcule o público primeiro)"}
           </Button>
+
         </div>
       </CardContent>
     </Card>
