@@ -27,6 +27,24 @@ export async function isCampaignDispatchEnabled(): Promise<CampaignGateResult> {
   }
 }
 
+// Gate genérico por flag em system_flags. Usado pela nutrição (nutricao_enabled).
+export async function isFlagEnabled(flagName: string): Promise<CampaignGateResult> {
+  try {
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supa = createClient(url, key);
+    const { data, error } = await supa
+      .from("system_flags")
+      .select("flag_value, reason")
+      .eq("flag_name", flagName)
+      .maybeSingle();
+    if (error) return { enabled: false, reason: `flag check failed: ${error.message}` };
+    return { enabled: !!data?.flag_value, reason: data?.reason ?? undefined };
+  } catch (e) {
+    return { enabled: false, reason: `flag check exception: ${e instanceof Error ? e.message : String(e)}` };
+  }
+}
+
 export function pausedResponse(fnName: string, gate: CampaignGateResult, corsHeaders: Record<string, string>) {
   return new Response(
     JSON.stringify({
