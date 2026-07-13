@@ -176,7 +176,7 @@ export default function RespostasRecebidasHoje({
           <CardContent className="p-3 flex items-center justify-between hover:bg-emerald-100/40 rounded-t-lg transition">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-emerald-700" />
-              <span className="text-sm font-semibold text-emerald-900">💬 Respostas recebidas hoje — auditoria</span>
+              <span className="text-sm font-semibold text-emerald-900">💬 Respostas recebidas ({periodLabel}) — auditoria</span>
               <Badge variant="outline" className="text-[10px]">{stats.total}</Badge>
               <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]">✅ {stats.sim} SIM</Badge>
               <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">❌ {stats.nao} NÃO</Badge>
