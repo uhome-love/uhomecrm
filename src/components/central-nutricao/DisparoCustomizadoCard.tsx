@@ -96,15 +96,16 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   });
   const metaTemplates = metaTemplatesResp?.templates || [];
 
-  // Default template/language vindo da config (descartados / visita amanha)
+  // Default template/language vindo da config (descartados)
   const { data: cfgDefaults } = useQuery({
     queryKey: ["reengajamento-config-defaults"],
     queryFn: async () => {
-      const [{ data: reng }, { data: visita }] = await Promise.all([
-        supabase.from("reengajamento_config").select("meta_template_name, meta_template_name_2, meta_template_language").limit(1).maybeSingle(),
-        supabase.from("visita_amanha_config").select("meta_template_name, meta_template_language").limit(1).maybeSingle(),
-      ]);
-      return { reng, visita };
+      const { data: reng } = await supabase
+        .from("reengajamento_config")
+        .select("meta_template_name, meta_template_name_2, meta_template_language")
+        .limit(1)
+        .maybeSingle();
+      return { reng };
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -115,11 +116,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (source === "descartados" && cfgDefaults.reng?.meta_template_name) {
       setTemplateName(cfgDefaults.reng.meta_template_name);
       setTemplateLanguage(cfgDefaults.reng.meta_template_language || "pt_BR");
-    } else if (source === "visita_amanha" && cfgDefaults.visita?.meta_template_name) {
-      setTemplateName(cfgDefaults.visita.meta_template_name);
-      setTemplateLanguage(cfgDefaults.visita.meta_template_language || "pt_BR");
     }
   }, [canal, source, cfgDefaults, templateName]);
+
 
   // Auto-preenche a imagem fixa do header conforme o template selecionado
   useEffect(() => {
