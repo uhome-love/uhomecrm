@@ -159,7 +159,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (has("descartados")) base.tipo_descarte = tipoDescarte;
     if (has("pipeline_ativo")) base.stage_ids = stageIds;
     if (has("oferta_ativa_lista")) base.lista_ids = listaIds;
-    if (has("visita_amanha")) base.data_visita = dataVisita;
+    
     if (canal === "meta" && templateName) {
       base.template_name = templateName;
       base.template_language = templateLanguage;
