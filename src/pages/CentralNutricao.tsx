@@ -84,6 +84,7 @@ export default function CentralNutricaoPage() {
         {/* Aba 3: Ao vivo + resultado */}
         <TabsContent value="aovivo" className="mt-0 space-y-4">
           <RespostasRecebidasHoje />
+          <FilaReenvioCard />
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Auditoria de webhooks — retorno dos disparos</CardTitle>
