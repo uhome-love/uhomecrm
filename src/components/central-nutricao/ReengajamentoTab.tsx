@@ -1122,127 +1122,17 @@ export default function ReengajamentoTab() {
       </Card>
 
       {/* Histórico de execuções */}
-      <Card>
-        <CardHeader className="pb-3 flex-row items-center justify-between">
-          <CardTitle className="text-base">Histórico de disparos</CardTitle>
-          <Button size="icon" variant="ghost" className="h-7 w-7"
-            onClick={() => qc.invalidateQueries({ queryKey: ["reengajamento-runs"] })}>
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {runs.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-6">Nenhum disparo ainda</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-muted-foreground">
-                    <th className="text-left py-2 px-2 font-medium">Início</th>
-                    <th className="text-left py-2 px-2 font-medium">Status</th>
-                    <th className="text-center py-2 px-2 font-medium">Enviados</th>
-                    <th className="text-center py-2 px-2 font-medium">Falhas</th>
-                    <th className="text-center py-2 px-2 font-medium">Ignorados</th>
-                    <th className="text-left py-2 px-2 font-medium">Motivo da parada</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {runs.map((r: any) => (
-                    <tr key={r.id} className="border-b hover:bg-muted/30 align-top">
-                      <td className="py-2 px-2 whitespace-nowrap">{formatBRT(r.started_at, "dd/MM HH:mm:ss")}</td>
-                      <td className="py-2 px-2">{runStatusBadge(r.status)}</td>
-                      <td className="py-2 px-2 text-center font-semibold text-green-700">{r.enviados || 0}/{r.total_alvo || 0}</td>
-                      <td className="py-2 px-2 text-center text-red-600">{r.falhas || 0}</td>
-                      <td className="py-2 px-2 text-center text-amber-600">{r.ignorados || 0}</td>
-                      <td className="py-2 px-2 max-w-[320px]">
-                        <span className="text-[11px] text-muted-foreground line-clamp-2">{r.motivo_parada || "—"}</span>
-                        {Array.isArray(r.erros) && r.erros.length > 0 && (
-                          <details className="text-[10px] mt-1">
-                            <summary className="cursor-pointer text-red-600">Ver {r.erros.length} erro(s)</summary>
-                            <ul className="mt-1 space-y-0.5 max-h-32 overflow-auto">
-                              {r.erros.map((e: string, i: number) => (
-                                <li key={i} className="text-muted-foreground"><AlertCircle className="inline h-3 w-3 mr-1" />{e}</li>
-                              ))}
-                            </ul>
-                          </details>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ReengajamentoHistorico
+        runs={runs}
+        onRefresh={() => qc.invalidateQueries({ queryKey: ["reengajamento-runs"] })}
+      />
 
       {/* Tabela últimos envios */}
-      <Card>
-        <CardHeader className="pb-3 flex-row items-center justify-between">
-          <CardTitle className="text-base">Últimos leads contatados</CardTitle>
-          <Button size="icon" variant="ghost" className="h-7 w-7"
-            onClick={() => qc.invalidateQueries({ queryKey: ["reengajamento-ultimos"] })}>
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {ultimos.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-6">Nenhum envio ainda</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-muted-foreground">
-                    <th className="text-left py-2 px-2 font-medium">Lead</th>
-                    <th className="text-left py-2 px-2 font-medium">Telefone</th>
-                    <th className="text-left py-2 px-2 font-medium">Enviado</th>
-                    <th className="text-center py-2 px-2 font-medium">Status</th>
-                    <th className="text-left py-2 px-2 font-medium">Última resposta</th>
-                    <th className="text-center py-2 px-2 font-medium">Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ultimos.map((l: any) => {
-                    const podeReativar = !l.reativado_por_nutricao && (l.reengajamento_status === "respondeu_outro" || l.reengajamento_status === "respondeu_nao" || l.reengajamento_status === "enviado");
-                    return (
-                      <tr key={l.id} className="border-b hover:bg-muted/30 align-top">
-                        <td className="py-2 px-2 font-medium">
-                          {l.nome}
-                          {l.reativado_por_nutricao && (
-                            <Badge className="bg-orange-100 text-orange-800 text-[9px] ml-1">🔄 REATIVADO</Badge>
-                          )}
-                        </td>
-                        <td className="py-2 px-2 whitespace-nowrap">{l.telefone}</td>
-                        <td className="py-2 px-2 whitespace-nowrap">{l.reengajamento_enviado_at ? formatBRT(l.reengajamento_enviado_at, "dd/MM HH:mm") : "—"}</td>
-                        <td className="py-2 px-2 text-center">{statusBadge(l.reengajamento_status)}</td>
-                        <td className="py-2 px-2 max-w-[280px]">
-                          {l.ultimaResposta ? (
-                            <div className="text-[11px]">
-                              <div className="text-foreground line-clamp-2">"{l.ultimaResposta.body}"</div>
-                              <div className="text-[10px] text-muted-foreground mt-0.5">{formatBRT(l.ultimaResposta.timestamp, "dd/MM HH:mm")}</div>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">—</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-2 text-center">
-                          {podeReativar ? (
-                            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => reativarManual(l.id, l.nome)}>
-                              🔄 Reativar
-                            </Button>
-                          ) : l.reativado_por_nutricao ? (
-                            <span className="text-[10px] text-green-700"><CheckCircle2 className="inline h-3 w-3 mr-0.5" />Na roleta</span>
-                          ) : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ReengajamentoUltimos
+        ultimos={ultimos}
+        onRefresh={() => qc.invalidateQueries({ queryKey: ["reengajamento-ultimos"] })}
+        onReativar={reativarManual}
+      />
 
       {/* Modal QR Code */}
       <Dialog open={qrOpen} onOpenChange={(o) => {
