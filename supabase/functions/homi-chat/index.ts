@@ -8,6 +8,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { loadEnterpriseKnowledge, formatForList, formatForAssistant, createServiceClient } from "../_shared/enterprise-knowledge.ts";
+import { HOMI_TOOLS, executeHomiTool } from "./homi-tools.ts";
 
 // Generate embedding for RAG search
 async function getQueryEmbedding(text: string, openaiKey: string): Promise<number[] | null> {
@@ -75,7 +76,7 @@ serve(async (req) => {
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const { messages, empreendimento, stream: wantStream = true, system: customSystem } = await req.json();
+    const { messages, empreendimento, stream: wantStream = true, system: customSystem, enableTools = false } = await req.json();
     const shouldStream = wantStream !== false;
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
