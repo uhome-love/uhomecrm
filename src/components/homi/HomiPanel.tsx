@@ -170,17 +170,27 @@ function HomiPanelInner() {
                         />
                       </div>
                     )}
-                    <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-md"
-                        : "bg-muted rounded-bl-md"
-                    }`}>
-                      {msg.role === "assistant" ? (
-                        <div className="prose prose-sm max-w-none dark:prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <div className="max-w-[85%] min-w-0 space-y-1.5">
+                      {(msg.content || msg.role === "user") && (
+                        <div className={`rounded-xl px-3 py-2 text-sm ${
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-br-md inline-block"
+                            : "bg-muted rounded-bl-md"
+                        }`}>
+                          {msg.role === "assistant" ? (
+                            <div className="prose prose-sm max-w-none dark:prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            </div>
+                          ) : (
+                            <p>{msg.content}</p>
+                          )}
                         </div>
-                      ) : (
-                        <p>{msg.content}</p>
+                      )}
+                      {msg.role === "assistant" && (
+                        <>
+                          <HomiResultsRenderer results={msg.results} onPick={(t) => sendMessage(t)} />
+                          <HomiActionsRenderer actions={msg.actions} />
+                        </>
                       )}
                     </div>
                   </div>
