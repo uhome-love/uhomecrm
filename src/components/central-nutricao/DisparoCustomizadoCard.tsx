@@ -23,7 +23,12 @@ interface PreviewFunil {
   por_fonte?: Record<string, number>;
   duplicados_removidos?: number;
   total_em_descarte?: number;
-  [key: string]: unknown;
+  inativados_definitivos?: number;
+  sem_telefone?: number;
+  arquivados?: number;
+  em_cooldown?: number;
+  cooldown_dias?: number;
+  elegiveis?: number;
 }
 interface PreviewResult {
   count: number;
