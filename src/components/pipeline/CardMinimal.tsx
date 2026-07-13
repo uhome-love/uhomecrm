@@ -309,7 +309,8 @@ const CardMinimal = memo(function CardMinimal({
       {/* Header: badges + nome + substatus · avatar do corretor + menu ··· */}
       <div className="flex items-start gap-1.5 min-w-0">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0">
+          {/* Linha de badges: encolhe/quebra livremente, sem competir com o nome */}
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             {stage?.tipo === "novo_lead" && (
               <span className="shrink-0 inline-block bg-[#4F46E5] text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Novo
@@ -320,9 +321,6 @@ const CardMinimal = memo(function CardMinimal({
                 🤝 Parceria
               </span>
             )}
-            <div className="flex-1 min-w-0 text-[14px] font-semibold text-foreground tracking-tight leading-tight truncate">
-              {lead.nome || "Sem nome"}
-            </div>
             {cadenciaBadge && (
               <span
                 className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[9px] font-bold tabular-nums ${cadenciaBadge.tone}`}
@@ -336,6 +334,10 @@ const CardMinimal = memo(function CardMinimal({
                 {substatus.label}
               </span>
             )}
+          </div>
+          {/* Nome do lead: sempre em linha própria, largura total e legível */}
+          <div className="mt-0.5 text-[14px] font-semibold text-foreground tracking-tight leading-tight truncate">
+            {lead.nome || "Sem nome"}
           </div>
           {empreendimento && (
             <div className="text-[11px] text-muted-foreground truncate mt-0.5">
@@ -352,6 +354,7 @@ const CardMinimal = memo(function CardMinimal({
             </div>
           )}
         </div>
+
 
 
         {/* Menu ··· */}
