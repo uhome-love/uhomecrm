@@ -69,18 +69,16 @@ const AUDIENCE_LABEL: Record<string, { label: string; className: string }> = {
 
 const PAGE_SIZE = 100;
 
-const QUEUE_STATUS: Record<string, { label: string; className: string }> = {
-  pending: { label: "Na fila", className: "bg-neutral-100 text-neutral-700 border-neutral-200" },
-  processing: { label: "Enviando", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  sent: { label: "Enviado", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  failed: { label: "Falhou", className: "bg-red-50 text-red-700 border-red-200" },
-  skipped: { label: "Ignorado", className: "bg-amber-50 text-amber-700 border-amber-200" },
-  suppressed: { label: "Suprimido", className: "bg-orange-50 text-orange-700 border-orange-200" },
-  cancelled: { label: "Cancelado", className: "bg-rose-50 text-rose-700 border-rose-200" },
-};
+function procStatus(row: ProcRow): { label: string; className: string } {
+  if (row.isFailed) return { label: "Falhou", className: "bg-red-50 text-red-700 border-red-200" };
+  if (row.isResponded) return { label: "Respondido", className: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+  if (row.isRead) return { label: "Lido", className: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+  if (row.isDelivered) return { label: "Entregue", className: "bg-blue-50 text-blue-700 border-blue-200" };
+  return { label: "Enviado", className: "bg-neutral-100 text-neutral-700 border-neutral-200" };
+}
 
-function queueWhen(row: QueueRow): string | null {
-  return row.processed_at || row.locked_at || row.updated_at || row.created_at;
+function queueWhen(row: ProcRow): string | null {
+  return row.responded_at || row.read_at || row.delivered_at || row.sent_at || row.created_at;
 }
 
 function parseResponse(raw: string | null): { text: string; type: string | null } {
