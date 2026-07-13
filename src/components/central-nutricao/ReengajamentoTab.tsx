@@ -562,7 +562,7 @@ export default function ReengajamentoTab() {
       ? { label: "Carregando…", cls: "bg-muted text-muted-foreground border-border animate-pulse" }
       : { label: "Desconectada", cls: "bg-muted text-muted-foreground border-border" };
 
-  const isPausing = !!(cfg as any)?.paused && !!activeRun;
+  const isPausing = !!cfg?.paused && !!activeRun;
   const isRunning = !!activeRun;
   const progressPct = activeRun?.total_alvo > 0
     ? Math.round(((activeRun.enviados || 0) + (activeRun.falhas || 0) + (activeRun.ignorados || 0)) / activeRun.total_alvo * 100)
@@ -1082,12 +1082,12 @@ export default function ReengajamentoTab() {
           </Tabs>
 
           <div className="flex gap-2 justify-end items-center pt-3 border-t">
-            {(cfg as any)?.paused_until_release && (
-              <Badge className="bg-red-100 text-red-800 mr-auto" title={(cfg as any)?.paused_reason || ""}>
+            {cfg?.paused_until_release && (
+              <Badge className="bg-red-100 text-red-800 mr-auto" title={cfg?.paused_reason || ""}>
                 🔒 Travado — liberação manual via SQL
               </Badge>
             )}
-            {!(cfg as any)?.paused_until_release && (cfg as any)?.paused && !isRunning && (
+            {!cfg?.paused_until_release && cfg?.paused && !isRunning && (
               <Badge className="bg-amber-100 text-amber-800 mr-auto">⏸️ Pausado</Badge>
             )}
             {isRunning ? (
@@ -1106,11 +1106,11 @@ export default function ReengajamentoTab() {
                 variant="outline"
                 size="sm"
                 onClick={dispararAgora}
-                disabled={starting || !!(cfg as any)?.paused_until_release}
-                title={(cfg as any)?.paused_until_release ? ((cfg as any)?.paused_reason || "Central travada — destravar via SQL admin") : undefined}
+                disabled={starting || !!cfg?.paused_until_release}
+                title={cfg?.paused_until_release ? (cfg?.paused_reason || "Central travada — destravar via SQL admin") : undefined}
               >
                 {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
-                {(cfg as any)?.paused ? "Retomar disparo" : "Disparar agora"}
+                {cfg?.paused ? "Retomar disparo" : "Disparar agora"}
               </Button>
             )}
             <Button size="sm" onClick={save} disabled={saving || !draft}>
