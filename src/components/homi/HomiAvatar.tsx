@@ -100,21 +100,8 @@ function HomiAvatarInner() {
     }
   }, [position, toggleHomi]);
 
-  if (isOpen || launcherHidden || pathname === "/imoveis") return null;
+  if (isOpen || launcherHidden || hidden || pathname === "/imoveis") return null;
 
-  // Estado recolhido: mini aba discreta na borda direita
-  if (collapsed) {
-    const onRight = position.x + BUTTON_SIZE / 2 > window.innerWidth / 2;
-    return (
-      <button
-        onClick={() => setCollapsedPersist(false)}
-        className={`fixed z-[60] top-1/2 -translate-y-1/2 ${onRight ? "right-0 rounded-l-xl" : "left-0 rounded-r-xl"} bg-primary/90 text-primary-foreground shadow-lg h-14 w-6 flex items-center justify-center hover:w-8 transition-all`}
-        title="Reabrir HOMI"
-      >
-        <img src="/images/homi-mascot-official.png" alt="HOMI" className="h-5 w-5 object-contain" />
-      </button>
-    );
-  }
 
   return (
     <div
