@@ -29,23 +29,26 @@ interface Row {
   corretor_nome?: string | null;
 }
 
-interface QueueRow {
+interface ProcRow {
   id: string;
-  run_id: string | null;
   lead_id: string | null;
   nome: string | null;
-  telefone: string | null;
-  phone_normalized: string | null;
+  phone: string | null;
   template_name: string | null;
   audience_source: string | null;
   status: string | null;
-  attempts: number | null;
-  locked_at: string | null;
-  processed_at: string | null;
   error_text: string | null;
   wamid: string | null;
+  sent_at: string | null;
+  delivered_at: string | null;
+  read_at: string | null;
+  responded_at: string | null;
   created_at: string | null;
-  updated_at: string | null;
+  isSent: boolean;
+  isDelivered: boolean;
+  isRead: boolean;
+  isResponded: boolean;
+  isFailed: boolean;
 }
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -66,18 +69,16 @@ const AUDIENCE_LABEL: Record<string, { label: string; className: string }> = {
 
 const PAGE_SIZE = 100;
 
-const QUEUE_STATUS: Record<string, { label: string; className: string }> = {
-  pending: { label: "Na fila", className: "bg-neutral-100 text-neutral-700 border-neutral-200" },
-  processing: { label: "Enviando", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  sent: { label: "Enviado", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  failed: { label: "Falhou", className: "bg-red-50 text-red-700 border-red-200" },
-  skipped: { label: "Ignorado", className: "bg-amber-50 text-amber-700 border-amber-200" },
-  suppressed: { label: "Suprimido", className: "bg-orange-50 text-orange-700 border-orange-200" },
-  cancelled: { label: "Cancelado", className: "bg-rose-50 text-rose-700 border-rose-200" },
-};
+function procStatus(row: ProcRow): { label: string; className: string } {
+  if (row.isFailed) return { label: "Falhou", className: "bg-red-50 text-red-700 border-red-200" };
+  if (row.isResponded) return { label: "Respondido", className: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+  if (row.isRead) return { label: "Lido", className: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+  if (row.isDelivered) return { label: "Entregue", className: "bg-blue-50 text-blue-700 border-blue-200" };
+  return { label: "Enviado", className: "bg-neutral-100 text-neutral-700 border-neutral-200" };
+}
 
-function queueWhen(row: QueueRow): string | null {
-  return row.processed_at || row.locked_at || row.updated_at || row.created_at;
+function queueWhen(row: ProcRow): string | null {
+  return row.responded_at || row.read_at || row.delivered_at || row.sent_at || row.created_at;
 }
 
 function parseResponse(raw: string | null): { text: string; type: string | null } {
@@ -272,76 +273,81 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
     if (activeRun?.id) setShowRuns(true);
   }, [activeRun?.id]);
 
-  const { data: queueActivityRaw = [], isFetching: isFetchingQueue } = useQuery({
-    queryKey: ["reengajamento-queue-activity", queueRunIds.join(",")],
-    queryFn: async (): Promise<QueueRow[]> => {
+  // Envios sendo processados — usa reengajamento_meta_disparos (mesma fonte do "Resumo de hoje")
+  const { data: queueActivity = [], isFetching: isFetchingQueue } = useQuery({
+    queryKey: ["reengajamento-envios-recentes", queueRunIds.join(",")],
+    queryFn: async (): Promise<ProcRow[]> => {
       if (queueRunIds.length === 0) return [];
       const { data, error } = await supabase
-        .from("reengajamento_dispatch_queue")
-        .select("id, run_id, lead_id, nome, telefone, phone_normalized, template_name, audience_source, status, attempts, locked_at, processed_at, error_text, wamid, created_at, updated_at")
-        .in("run_id", queueRunIds)
-        .order("updated_at", { ascending: false })
-        .limit(80);
-      if (error) throw error;
-      return (data ?? []) as QueueRow[];
-    },
-    enabled: queueRunIds.length > 0,
-    refetchInterval: activeRun ? 3000 : 10000,
-  });
-
-  // Correlaciona wamid -> read_at (leituras) via reengajamento_meta_disparos
-  const { data: readMap = {} } = useQuery({
-    queryKey: ["reengajamento-queue-reads", queueRunIds.join(",")],
-    queryFn: async (): Promise<Record<string, string>> => {
-      if (queueRunIds.length === 0) return {};
-      const { data, error } = await supabase
         .from("reengajamento_meta_disparos")
-        .select("wamid, read_at")
+        .select("id, run_id, lead_id, phone, template_name, audience_source, status, error_text, wamid, sent_at, delivered_at, read_at, responded_at, created_at")
         .in("run_id", queueRunIds)
-        .not("read_at", "is", null)
-        .limit(500);
+        .order("sent_at", { ascending: false, nullsFirst: false })
+        .limit(400);
       if (error) throw error;
-      const map: Record<string, string> = {};
-      (data ?? []).forEach((r: any) => {
-        if (r.wamid && r.read_at) map[r.wamid] = r.read_at;
-      });
-      return map;
+      const list = (data ?? []) as any[];
+      const leadIds = Array.from(new Set(list.map((d) => d.lead_id).filter(Boolean))) as string[];
+      let namesMap: Record<string, string> = {};
+      if (leadIds.length) {
+        const { data: leads } = await supabase
+          .from("pipeline_leads")
+          .select("id, nome")
+          .in("id", leadIds);
+        namesMap = Object.fromEntries((leads ?? []).map((l: any) => [l.id, l.nome ?? ""]));
+      }
+      return list.map((d) => ({
+        id: d.id,
+        lead_id: d.lead_id,
+        nome: d.lead_id ? namesMap[d.lead_id] || null : null,
+        phone: d.phone,
+        template_name: d.template_name,
+        audience_source: d.audience_source,
+        status: d.status,
+        error_text: d.error_text,
+        wamid: d.wamid,
+        sent_at: d.sent_at,
+        delivered_at: d.delivered_at,
+        read_at: d.read_at,
+        responded_at: d.responded_at,
+        created_at: d.created_at,
+        isSent: d.status !== "failed",
+        isDelivered: !!d.delivered_at,
+        isRead: !!d.read_at,
+        isResponded: d.status === "responded" || !!d.responded_at,
+        isFailed: d.status === "failed",
+      })) as ProcRow[];
     },
     enabled: queueRunIds.length > 0,
     refetchInterval: activeRun ? 3000 : 10000,
   });
 
-  const queueActivity = useMemo<(QueueRow & { isRead: boolean })[]>(
-    () => queueActivityRaw.map((r) => ({ ...r, isRead: !!(r.wamid && readMap[r.wamid]) })),
-    [queueActivityRaw, readMap]
-  );
-
-  const [queueFilter, setQueueFilter] = useState<"all" | "processing" | "sent" | "failed" | "skipped" | "read">("all");
+  const [queueFilter, setQueueFilter] = useState<"all" | "sent" | "delivered" | "read" | "responded" | "failed">("all");
 
   const filteredQueue = useMemo(() => {
     switch (queueFilter) {
-      case "processing":
-        return queueActivity.filter((r) => r.status === "processing");
       case "sent":
-        return queueActivity.filter((r) => r.status === "sent");
-      case "failed":
-        return queueActivity.filter((r) => r.status === "failed");
-      case "skipped":
-        return queueActivity.filter((r) => ["skipped", "suppressed", "cancelled"].includes(r.status || ""));
+        return queueActivity.filter((r) => r.isSent);
+      case "delivered":
+        return queueActivity.filter((r) => r.isDelivered);
       case "read":
         return queueActivity.filter((r) => r.isRead);
+      case "responded":
+        return queueActivity.filter((r) => r.isResponded);
+      case "failed":
+        return queueActivity.filter((r) => r.isFailed);
       default:
         return queueActivity;
     }
   }, [queueActivity, queueFilter]);
 
   const queueStats = useMemo(() => ({
-    processing: queueActivity.filter((r) => r.status === "processing").length,
-    sent: queueActivity.filter((r) => r.status === "sent").length,
-    failed: queueActivity.filter((r) => r.status === "failed").length,
-    skipped: queueActivity.filter((r) => ["skipped", "suppressed", "cancelled"].includes(r.status || "")).length,
+    sent: queueActivity.filter((r) => r.isSent).length,
+    delivered: queueActivity.filter((r) => r.isDelivered).length,
     read: queueActivity.filter((r) => r.isRead).length,
+    responded: queueActivity.filter((r) => r.isResponded).length,
+    failed: queueActivity.filter((r) => r.isFailed).length,
   }), [queueActivity]);
+
 
   
 
@@ -589,11 +595,11 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
               </div>
               <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
                 {([
-                  { key: "processing", label: "enviando", count: queueStats.processing, active: "bg-blue-600 text-white border-blue-600", idle: "bg-blue-50 text-blue-700 border-blue-200" },
-                  { key: "sent", label: "enviados", count: queueStats.sent, active: "bg-emerald-600 text-white border-emerald-600", idle: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-                  { key: "read", label: "lido", count: queueStats.read, active: "bg-indigo-600 text-white border-indigo-600", idle: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+                  { key: "sent", label: "enviados", count: queueStats.sent, active: "bg-neutral-700 text-white border-neutral-700", idle: "bg-neutral-100 text-neutral-700 border-neutral-200" },
+                  { key: "delivered", label: "entregues", count: queueStats.delivered, active: "bg-blue-600 text-white border-blue-600", idle: "bg-blue-50 text-blue-700 border-blue-200" },
+                  { key: "read", label: "lidos", count: queueStats.read, active: "bg-indigo-600 text-white border-indigo-600", idle: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+                  { key: "responded", label: "responderam", count: queueStats.responded, active: "bg-emerald-600 text-white border-emerald-600", idle: "bg-emerald-50 text-emerald-700 border-emerald-200" },
                   { key: "failed", label: "falhas", count: queueStats.failed, active: "bg-red-600 text-white border-red-600", idle: "bg-red-50 text-red-700 border-red-200" },
-                  { key: "skipped", label: "ignorados", count: queueStats.skipped, active: "bg-amber-600 text-white border-amber-600", idle: "bg-amber-50 text-amber-700 border-amber-200" },
                 ] as const).map((p) => {
                   const isActive = queueFilter === p.key;
                   return (
@@ -643,30 +649,23 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                   </TableHeader>
                   <TableBody>
                     {filteredQueue.map((row) => {
-                      const status = QUEUE_STATUS[row.status || ""];
+                      const status = procStatus(row);
                       const when = queueWhen(row);
                       return (
-                        <TableRow key={row.id} className={row.status === "failed" ? "bg-red-50/30" : row.status === "processing" ? "bg-blue-50/30" : ""}>
+                        <TableRow key={row.id} className={row.isFailed ? "bg-red-50/30" : ""}>
                           <TableCell className="text-xs whitespace-nowrap">{when ? formatBRT(when, "HH:mm:ss") : "—"}</TableCell>
                           <TableCell className="text-xs font-medium px-3 py-2">
                             <div className="truncate max-w-[210px]" title={row.nome || ""}>{row.nome || "—"}</div>
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{row.phone_normalized || row.telefone || "—"}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{row.phone || "—"}</TableCell>
                           <TableCell className="text-xs">
                             <div className="font-medium truncate max-w-[190px]" title={row.template_name || ""}>{row.template_name || "—"}</div>
                             <div className="text-[10px] text-muted-foreground truncate max-w-[190px]">{row.audience_source || "—"}</div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${status?.className || "bg-neutral-100 text-neutral-700"}`}>
-                                {status?.label || row.status || "—"}
-                              </Badge>
-                              {row.isRead && (
-                                <Badge variant="outline" className="text-[10px] whitespace-nowrap bg-indigo-50 text-indigo-700 border-indigo-200">
-                                  Lido
-                                </Badge>
-                              )}
-                            </div>
+                            <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${status.className}`}>
+                              {status.label}
+                            </Badge>
                           </TableCell>
 
                           <TableCell className="text-xs">
@@ -675,16 +674,14 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                                 <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                                 <span className="line-clamp-2">{row.error_text}</span>
                               </div>
+                            ) : row.isResponded ? (
+                              <span className="text-emerald-700">Respondeu ao disparo</span>
                             ) : row.isRead ? (
                               <span className="text-indigo-700">Lido pelo lead</span>
-                            ) : row.wamid ? (
-                              <span className="text-emerald-700">Enviado para a Meta</span>
-                            ) : row.status === "processing" ? (
-                              <span className="text-blue-700">Envio em andamento</span>
-                            ) : row.status === "pending" ? (
-                              <span className="text-muted-foreground">Aguardando lote</span>
+                            ) : row.isDelivered ? (
+                              <span className="text-blue-700">Entregue no WhatsApp</span>
                             ) : (
-                              <span className="text-muted-foreground">—</span>
+                              <span className="text-muted-foreground">Enviado para a Meta</span>
                             )}
                           </TableCell>
                         </TableRow>
