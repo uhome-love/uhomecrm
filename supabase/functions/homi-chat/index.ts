@@ -196,6 +196,86 @@ Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + r
       ? customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + "\n\nDETALHES:\n" + detailedKnowledge + ragContext
       : systemPrompt;
 
+    // ── Copilot mode: function-calling (non-streaming JSON) ──
+    if (enableTools) {
+      const uid = (_claims.claims as any).sub as string;
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+
+      const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+
+      const copilotSystem = finalSystemPrompt + `
+
+VOCÊ É UM COPILOTO COM FERRAMENTAS. Você PODE executar ações no CRM chamando ferramentas:
+- ver_pendencias: mostrar tarefas atrasadas/hoje e visitas de hoje
+- buscar_imovel: encontrar imóveis no catálogo
+- criar_tarefa: preparar uma tarefa (o corretor confirma na tela)
+- criar_visita: preparar uma visita (o corretor confirma na tela)
+
+REGRAS DO COPILOTO:
+- Data de hoje (Brasília): ${todayStr}. Amanhã: ${tomorrowStr}. Converta "hoje/amanhã/segunda" para YYYY-MM-DD antes de chamar a ferramenta.
+- Quando o pedido for uma AÇÃO (ver pendências, buscar imóvel, criar tarefa/visita), CHAME a ferramenta certa em vez de responder só com texto.
+- Depois da ferramenta, responda em NO MÁXIMO 2 frases curtas. Nunca repita a lista/dados em texto — eles já aparecem em cartões na tela.
+- Se faltar um dado essencial (ex.: nome do lead), pergunte de forma curta.
+- Para pedidos de mensagem/script de WhatsApp, ligação ou objeção, responda com o texto pronto (sem ferramenta).`;
+
+      const toolMessages: any[] = [
+        { role: "system", content: copilotSystem },
+        ...messages,
+      ];
+      const collectedActions: any[] = [];
+      const collectedResults: any[] = [];
+      let finalContent = "";
+
+      for (let iter = 0; iter < 4; iter++) {
+        const tr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: toolMessages,
+            tools: HOMI_TOOLS,
+            tool_choice: "auto",
+          }),
+        });
+        if (!tr.ok) {
+          const t = await tr.text();
+          console.error("AI gateway (tools) error:", tr.status, t);
+          if (tr.status === 429) return new Response(JSON.stringify({ error: "Rate limit excedido, tente novamente em alguns segundos." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          if (tr.status === 402) return new Response(JSON.stringify({ error: "Créditos esgotados." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          throw new Error("AI gateway error");
+        }
+        const data = await tr.json();
+        const msg = data.choices?.[0]?.message;
+        if (!msg) break;
+        const toolCalls = msg.tool_calls || [];
+        if (toolCalls.length === 0) {
+          finalContent = msg.content || "";
+          break;
+        }
+        toolMessages.push({ role: "assistant", content: msg.content || "", tool_calls: toolCalls });
+        for (const call of toolCalls) {
+          let parsedArgs: Record<string, any> = {};
+          try { parsedArgs = JSON.parse(call.function?.arguments || "{}"); } catch { /* ignore */ }
+          const outcome = await executeHomiTool(call.function?.name, parsedArgs, userClient, uid);
+          if (outcome.action) collectedActions.push(outcome.action);
+          if (outcome.result) collectedResults.push(outcome.result);
+          toolMessages.push({ role: "tool", tool_call_id: call.id, content: outcome.modelResult });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ content: finalContent, actions: collectedActions, results: collectedResults }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
