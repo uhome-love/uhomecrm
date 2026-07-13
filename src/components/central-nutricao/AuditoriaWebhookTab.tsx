@@ -624,6 +624,10 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
               <div className="text-center py-6 text-sm text-muted-foreground">
                 Nenhum item de fila encontrado para os disparos recentes.
               </div>
+            ) : filteredQueue.length === 0 ? (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                Nenhum item para o filtro selecionado.
+              </div>
             ) : (
               <div className="rounded-lg border bg-card overflow-x-auto">
                 <Table className="min-w-[980px]">
