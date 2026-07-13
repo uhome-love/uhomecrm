@@ -257,7 +257,7 @@ export default function AuditoriaWebhookTab() {
         });
         return { total: list.length, sent, delivered, read, responded, failed, sim: simIds.size, nao: naoIds.size };
       }
-      return data as any;
+      return data as unknown as { total: number; sent: number; delivered: number; read: number; responded: number; failed: number; sim: number; nao: number };
     },
     refetchInterval: 15000,
   });
