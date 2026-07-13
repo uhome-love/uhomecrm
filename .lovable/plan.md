@@ -1,47 +1,38 @@
-## Objetivo
+# Reorganização da Central de Reengajamento
 
-1. Deixar a **Fila de reenvio** recolhida **por base** (agrupada por template/empreendimento), na aba "Ao vivo".
-2. **Liberar o reenvio** agora que o pagamento pendente na Meta foi regularizado.
-3. Fazer as validações para deixar **100% funcional**.
+## Estado atual (verificado no banco)
+- **Nenhum disparo em andamento**: 0 pendentes na fila, última execução `cancelled`, nenhuma run `running`.
+- Motor de disparo **ligado** (`campaign_dispatch_enabled=true`).
+- 20.009 falhas acumuladas em `reengajamento_meta_disparos` que alimentam o card de reenvio.
+- Hoje a aba **Ao vivo** empilha: Respostas recebidas hoje + Fila de reenvio + Auditoria de webhooks.
 
-## Contexto atual (investigado no banco)
+## O que muda
 
-- Travas de emergência ligadas: `system_flags.campaign_dispatch_enabled=false` e `reengajamento_config.paused=true`.
-- **20.009 disparos com `status='failed'`**, distribuídos em 11 bases (template): casatua_maio (6.073), casatua_junho25k (4.566), reativacao_opcoes_perfil_v2 (4.438), etc.
-- As falhas recentes trazem `Business eligibility payment issue`. Hoje o retry recusa exatamente essas falhas via `isQualityBlockingError` — então, mesmo reativando o gate, os itens que você quer reenviar ficariam travados. Isso precisa mudar.
-- O card atual busca só 300 linhas e agrupa por telefone, não por base — some parte das falhas.
+### 1. Nova aba "Histórico"
+- Passa a existir uma 5ª aba (`Disparo manual`, `Nutrição`, `Ao vivo`, **`Histórico`**, `Configurações`).
+- A "Fila de reenvio" é movida para essa aba e renomeada para **"Histórico de envios"**.
+- Comportamento de reenvio (por base ou por lead) é mantido exatamente como está — é ali que o usuário tenta reenviar.
+- Só esse card fica na aba (conforme escolhido).
 
-## O que será feito
+### 2. Aba "Ao vivo" enxuta + filtros de período
+- Sai a Fila de reenvio.
+- Fica focada em: **disparo em execução** e **resultados**.
+- **Sem disparo rodando** (caso atual): estado limpo com mensagem "Nenhum disparo em andamento" no lugar do banner.
+- **Com disparo rodando**: o `LiveDispatchBanner` aparece normalmente com progresso.
+- **Barra de filtros de período** no topo da aba: `Hoje` · `Semana` · `Data personalizada` (datepicker shadcn com `pointer-events-auto`).
+- Os resultados (Respostas recebidas + Auditoria de webhooks) passam a respeitar o período escolhido, em vez de fixos em "hoje".
 
-### 1. Reativar o disparo (dados — pagamento regularizado)
-- `system_flags.campaign_dispatch_enabled = true`, com `reason` = "Pagamento Meta regularizado 13/07 — reenvio liberado".
-- `reengajamento_config.paused = false`, limpando o `paused_reason`.
-- (Não reabro nenhuma run automaticamente; o disparo volta a acontecer apenas por ação manual na fila/reenvio.)
-
-### 2. Fila de reenvio recolhida por base (UI — `FilaReenvioCard.tsx`)
-Reescrever o card para listar **uma linha recolhida por base (template)**:
-- Cada base mostra: nome do template, nº de falhas, nº de telefones distintos, data da última falha e o motivo predominante.
-- Botão **"Tentar base"** por linha (reenvia todas as falhas daquela base) e um **"Tentar todas as bases"** no topo.
-- Ao **expandir** uma base, carrega sob demanda os leads daquela base (telefone, nome, template, motivo, quando) com botão "Tentar" individual — usando `Accordion` do shadcn.
-- Banner de bloqueio passa a refletir **o gate global** (lê `system_flags.campaign_dispatch_enabled`), não mais o texto de erro: quando o motor está ligado, os botões ficam habilitados; quando desligado, aparece o aviso e os botões desabilitam.
-
-### 3. Agregação por base (backend)
-- Criar função RPC `get_reengajamento_fila_bases()` (SECURITY DEFINER) que retorna, para `status='failed'` com `run_id` não nulo, o agregado por `template_name`: total, telefones distintos, última falha, motivo predominante. Isso evita puxar 20 mil linhas no cliente.
-- O detalhamento de uma base (leads) continua via consulta direta filtrando por `template_name` com `limit`.
-
-### 4. Liberar o reenvio das falhas de elegibilidade/cobrança (edge `reengajamento-retry-falhas`)
-- Como o pagamento foi regularizado, o retry deve **passar a reenviar** as falhas `Business eligibility payment issue`/elegibilidade quando o **gate global estiver ligado** (o gate ligado é o sinal humano de "conta saudável").
-- Mudança: o retry deixa de recusar por `eligibility/payment/cobrança`. Mantém a checagem do **gate global** (se desligado, bloqueia) e mantém apenas um alerta informativo para throttle `131049`, sem travar quando o usuário liberou.
-- Aceitar também reenvio **por base**: `body.template_name` (além de `meta_ids`), selecionando as falhas daquele template.
-
-### 5. Validações (deixar 100%)
-- `tsgo` (typecheck) e a suíte de testes atual (`vitest`).
-- Testar a edge `reengajamento-retry-falhas` via chamada autenticada (gate ligado → reprocessa; conferir `reset`/`runs`).
-- Conferir no banco que os itens reenviados voltaram para `pending` na `reengajamento_dispatch_queue` e que as falhas viraram `retried`.
-- Conferir na UI (preview) que a fila aparece recolhida por base, expande e os botões estão habilitados com o gate ligado.
+### 3. Bugs / melhorias / preparo para o próximo disparo
+- `RespostasRecebidasHoje`: hoje a janela de tempo é fixa em 00:00 BRT do dia. Vira uma janela parametrizada pelo período selecionado (Hoje/Semana/Data). Título deixa de ser fixo "hoje".
+- `AuditoriaWebhookTab`: recebe o mesmo intervalo de período para manter a aba coerente.
+- Estado vazio consistente quando não há atividade (nada de cards vazios confusos).
+- Conferir que o card "Histórico de envios" continua lendo `get_reengajamento_fila_bases()` e os botões respeitam o gate global — sem alterar a lógica de reenvio.
 
 ## Detalhes técnicos
-- Sem alteração nas travas globais além de ligar o gate e despausar a config.
-- RPC nova em migration (função SECURITY DEFINER, `search_path=public`); sem novas tabelas.
-- `FilaReenvioCard` usa `Accordion` (shadcn) já disponível; mantém layout desktop (tabela ao expandir) e mobile (cards).
-- Memória `mem://features/whatsapp/reengajamento-parado-spam-meta` será atualizada para registrar a reativação pós-pagamento e que o retry passa a ser governado pelo gate global.
+- `src/pages/CentralNutricao.tsx`: adicionar a aba `historico`; mover `<FilaReenvioCard/>` para ela; reestruturar a `TabsContent` de `aovivo` com a barra de filtros e estado vazio; ajustar o grid da `TabsList` para 5 colunas.
+- Novo componente leve de filtro de período (`Hoje | Semana | Data personalizada`) reutilizado na aba Ao vivo, retornando `{ from, to }` em ISO (BRT via `@/lib/brtTime`).
+- `RespostasRecebidasHoje.tsx`: aceitar props `from`/`to`; usar no `.gte/.lte`; ajustar `queryKey` para incluir o período; renomear internamente para refletir "resultados".
+- `AuditoriaWebhookTab.tsx`: aceitar/propagar o mesmo intervalo (se hoje for fixo, parametrizar).
+- `FilaReenvioCard.tsx`: apenas o título/labels para "Histórico de envios"; nenhuma mudança de regra de negócio ou de backend.
+- Sem migrações de banco. Nenhuma mudança na RPC nem na edge function de reenvio.
+- Validação: `tsgo` + suíte de testes; conferência visual via preview de que Ao vivo fica limpo (sem run ativa) e o Histórico mostra as bases.
