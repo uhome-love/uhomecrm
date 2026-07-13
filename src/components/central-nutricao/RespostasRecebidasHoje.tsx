@@ -37,27 +37,41 @@ function classifyText(txt: string): "sim" | "nao" | "outro" {
   return "outro";
 }
 
-export default function RespostasRecebidasHoje() {
+export default function RespostasRecebidasHoje({
+  from,
+  to,
+  periodLabel = "hoje",
+}: {
+  from?: string;
+  to?: string;
+  periodLabel?: string;
+} = {}) {
   const [open, setOpen] = useState(true);
   const [filtroOrigem, setFiltroOrigem] = useState<string>("all");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["respostas-recebidas-hoje"],
+    queryKey: ["respostas-recebidas-hoje", from ?? null, to ?? null],
     queryFn: async (): Promise<Resposta[]> => {
-      const startBRT = new Date();
-      startBRT.setUTCHours(3, 0, 0, 0); // 00:00 BRT
-      const sinceIso = startBRT.toISOString();
+      let sinceIso = from;
+      if (!sinceIso) {
+        const startBRT = new Date();
+        startBRT.setUTCHours(3, 0, 0, 0); // 00:00 BRT
+        sinceIso = startBRT.toISOString();
+      }
+      const untilIso = to;
 
       // 1. Respostas via reengajamento_meta_disparos (botões e texto livre Meta)
-      const { data: disparos } = await supabase
+      let disparosQ = supabase
         .from("reengajamento_meta_disparos")
         .select("lead_id, phone, button_response, response_text, responded_at, audience_source")
         .gte("responded_at", sinceIso)
         .order("responded_at", { ascending: false })
         .limit(500);
+      if (untilIso) disparosQ = disparosQ.lte("responded_at", untilIso);
+      const { data: disparos } = await disparosQ;
 
-      // 2. Leads criados HOJE pela rota "remetente novo" (whatsapp-webhook)
-      const { data: novosReativados } = await supabase
+      // 2. Leads criados no período pela rota "remetente novo" (whatsapp-webhook)
+      let novosQ = supabase
         .from("pipeline_leads")
         .select("id, nome, telefone, observacoes, reativado_em")
         .eq("reativado_por_nutricao", true)
@@ -65,6 +79,8 @@ export default function RespostasRecebidasHoje() {
         .ilike("observacoes", "%remetente novo%")
         .order("reativado_em", { ascending: false })
         .limit(200);
+      if (untilIso) novosQ = novosQ.lte("reativado_em", untilIso);
+      const { data: novosReativados } = await novosQ;
 
       // Carrega nomes + status atual dos leads dos disparos
       const leadIds = Array.from(new Set((disparos ?? []).map((d) => d.lead_id).filter(Boolean))) as string[];
