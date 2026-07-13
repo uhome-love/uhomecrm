@@ -11399,6 +11399,16 @@ export type Database = {
           visitas_realizadas: number
         }[]
       }
+      get_reengajamento_fila_bases: {
+        Args: never
+        Returns: {
+          motivo_predominante: string
+          telefones: number
+          template_name: string
+          total: number
+          ultima: string
+        }[]
+      }
       get_relatorio_cohort: {
         Args: {
           p_end: string
