@@ -93,13 +93,23 @@ export default function FilaReenvioCard() {
     qc.invalidateQueries({ queryKey: ["auditoria-webhook"] });
   };
 
+  // Se a maioria das falhas é por cobrança/qualidade, reenvio fica bloqueado.
+  const blockingCount = falhas.filter((f) => isQualityBlockingError(f.error_text)).length;
+  const isBlocked = falhas.length > 0 && blockingCount >= falhas.length / 2;
+
   async function retry(metaIds: string[], label: string) {
     try {
       const { data, error } = await supabase.functions.invoke("reengajamento-retry-falhas", {
         body: { meta_ids: metaIds },
       });
       if (error) throw error;
-      const reset = (data as { reset?: number } | null)?.reset ?? 0;
+      const res = data as { reset?: number; blocked?: boolean; message?: string } | null;
+      if (res?.blocked) {
+        toast.warning(res.message || "Reenvio bloqueado pela proteção de qualidade.");
+        invalidate();
+        return;
+      }
+      const reset = res?.reset ?? 0;
       if (reset === 0) toast.info("Nenhuma falha reprocessável encontrada.");
       else toast.success(`🔁 ${label}: ${reset} lead(s) reenviado(s) para a fila.`);
       invalidate();
