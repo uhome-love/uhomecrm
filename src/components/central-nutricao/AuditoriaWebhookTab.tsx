@@ -588,11 +588,36 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                 {isFetchingQueue && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
               </div>
               <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{queueStats.processing} enviando</Badge>
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">{queueStats.sent} enviados</Badge>
-                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">{queueStats.failed} falhas</Badge>
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">{queueStats.skipped} ignorados</Badge>
+                {([
+                  { key: "processing", label: "enviando", count: queueStats.processing, active: "bg-blue-600 text-white border-blue-600", idle: "bg-blue-50 text-blue-700 border-blue-200" },
+                  { key: "sent", label: "enviados", count: queueStats.sent, active: "bg-emerald-600 text-white border-emerald-600", idle: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+                  { key: "read", label: "lido", count: queueStats.read, active: "bg-indigo-600 text-white border-indigo-600", idle: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+                  { key: "failed", label: "falhas", count: queueStats.failed, active: "bg-red-600 text-white border-red-600", idle: "bg-red-50 text-red-700 border-red-200" },
+                  { key: "skipped", label: "ignorados", count: queueStats.skipped, active: "bg-amber-600 text-white border-amber-600", idle: "bg-amber-50 text-amber-700 border-amber-200" },
+                ] as const).map((p) => {
+                  const isActive = queueFilter === p.key;
+                  return (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => setQueueFilter(isActive ? "all" : p.key)}
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 font-medium transition ${isActive ? p.active : p.idle} ${isActive ? "ring-2 ring-offset-1 ring-current/30" : "hover:opacity-80"}`}
+                    >
+                      {p.count} {p.label}
+                    </button>
+                  );
+                })}
+                {queueFilter !== "all" && (
+                  <button
+                    type="button"
+                    onClick={() => setQueueFilter("all")}
+                    className="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 text-neutral-600 px-2 py-0.5 font-medium hover:opacity-80 transition"
+                  >
+                    limpar filtro
+                  </button>
+                )}
               </div>
+
             </div>
 
             {queueActivity.length === 0 ? (
