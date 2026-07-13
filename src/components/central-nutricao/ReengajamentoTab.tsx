@@ -197,7 +197,7 @@ export default function ReengajamentoTab() {
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(200);
-      const rows = (data || []) as any[];
+      const rows = data || [];
       if (rows.length === 0) return null;
       const total = rows.length;
       const failed = rows.filter((r) => r.status === "failed").length;
