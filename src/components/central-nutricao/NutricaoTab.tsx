@@ -31,6 +31,9 @@ export default function NutricaoTab() {
   const [toggling, setToggling] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [savingCadId, setSavingCadId] = useState<string | null>(null);
+  const [savingGroup, setSavingGroup] = useState<string | null>(null);
+  const [autoOff, setAutoOff] = useState(true);
+
 
   // Chave mestra
   const { data: flag, isLoading: loadingFlag } = useQuery({
