@@ -155,8 +155,13 @@ export default function NutricaoTab() {
         toast.error("Nutrição desligada — ligue a chave mestra primeiro.");
       } else {
         toast.success(`✅ Processado: ${d?.enviados ?? 0} enviados, ${d?.erros ?? 0} erros (${d?.processed ?? 0} na fila)`);
+        if (autoOff) {
+          await toggleMaster(false);
+          toast.info("Chave mestra desligada automaticamente após o processamento.");
+        }
       }
       qc.invalidateQueries({ queryKey: ["nutricao-fila"] });
+
     } catch (e: any) {
       toast.error("Erro ao processar: " + e.message);
     } finally {
