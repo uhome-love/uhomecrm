@@ -7,19 +7,20 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Pause, Square } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
+import type { DispatchRun } from "./types";
 
 const STALE_RUNNING_MS = 15 * 60 * 1000;
 
-async function recoverOrTimeoutStaleRun(data: any, qc: ReturnType<typeof useQueryClient>) {
+async function recoverOrTimeoutStaleRun(data: DispatchRun, qc: ReturnType<typeof useQueryClient>) {
   const { count } = await supabase
-    .from("reengajamento_dispatch_queue" as any)
+    .from("reengajamento_dispatch_queue")
     .select("id", { count: "exact", head: true })
     .eq("run_id", data.id)
     .in("status", ["pending", "processing"]);
 
   if ((count || 0) > 0) {
     await supabase
-      .from("reengajamento_dispatch_runs" as any)
+      .from("reengajamento_dispatch_runs")
       .update({
         started_at: new Date().toISOString(),
         finished_at: null,
@@ -36,7 +37,7 @@ async function recoverOrTimeoutStaleRun(data: any, qc: ReturnType<typeof useQuer
   }
 
   await supabase
-    .from("reengajamento_dispatch_runs" as any)
+    .from("reengajamento_dispatch_runs")
     .update({
       status: "timeout",
       finished_at: new Date().toISOString(),
@@ -58,7 +59,7 @@ export default function LiveDispatchBanner() {
     queryKey: ["reengajamento-active-run"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("reengajamento_dispatch_runs" as any)
+        .from("reengajamento_dispatch_runs")
         .select("*")
         .eq("status", "running")
         .order("started_at", { ascending: false })
@@ -67,7 +68,7 @@ export default function LiveDispatchBanner() {
       if (data?.started_at && Date.now() - new Date(data.started_at).getTime() > STALE_RUNNING_MS) {
         return recoverOrTimeoutStaleRun(data, qc);
       }
-      return data as any;
+      return data;
     },
     refetchInterval: (query) => (query.state.data ? 3000 : 15000),
   });
@@ -76,11 +77,11 @@ export default function LiveDispatchBanner() {
     queryKey: ["reengajamento-config-banner"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("reengajamento_config" as any)
+        .from("reengajamento_config")
         .select("id, paused")
         .limit(1)
         .maybeSingle();
-      return data as any;
+      return data;
     },
     refetchInterval: 15000,
   });
@@ -101,12 +102,12 @@ export default function LiveDispatchBanner() {
     }
     try {
       await supabase
-        .from("reengajamento_config" as any)
+        .from("reengajamento_config")
         .update({ paused: true })
         .eq("id", cfg.id);
       if (activeRun?.id) {
         await supabase
-          .from("reengajamento_dispatch_runs" as any)
+          .from("reengajamento_dispatch_runs")
           .update({
             status: "paused",
             finished_at: new Date().toISOString(),
@@ -132,7 +133,7 @@ export default function LiveDispatchBanner() {
     if (!confirm("Parar este disparo definitivamente? Os leads restantes não serão enviados e o disparo não poderá ser retomado.")) return;
     try {
       await supabase
-        .from("reengajamento_dispatch_runs" as any)
+        .from("reengajamento_dispatch_runs")
         .update({
           cancel_requested: true,
           status: "cancelled",
