@@ -14,7 +14,7 @@ import { Loader2, Send, Search, Target, Shield, Zap, Check, ChevronsUpDown, Mous
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
+type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista";
 type Canal = "meta" | "evolution";
 type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
 
