@@ -19,6 +19,7 @@ import RelatorioTarefas from "@/components/relatorios/RelatorioTarefas";
 import RelatorioNegocios from "@/components/relatorios/RelatorioNegocios";
 import RelatorioOfertaAtiva from "@/components/relatorios/RelatorioOfertaAtiva";
 import MegaRelatorio from "@/components/relatorios/MegaRelatorio";
+import RelatorioOrigemPerformance from "@/components/relatorios/RelatorioOrigemPerformance";
 
 const RelatorioSemanal = lazy(() => import("@/pages/RelatorioSemanal"));
 const RelatorioCorretor = lazy(() => import("@/pages/RelatorioCorretor"));
