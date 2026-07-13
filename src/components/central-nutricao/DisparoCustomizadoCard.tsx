@@ -35,8 +35,7 @@ const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
 
 export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => void }) {
   const [canal, setCanal] = useState<Canal>("meta");
-  // Multi-fonte: combina públicos (descartados + oferta ativa) com dedup por telefone.
-  // visita_amanha é exclusiva (usa função dedicada), então nunca combina.
+  // Multi-fonte: combina públicos (descartados + oferta ativa + pipeline) com dedup por telefone.
   const [sources, setSources] = useState<Source[]>(["descartados"]);
   const source = sources[0] ?? "descartados";
   const has = (s: Source) => sources.includes(s);
@@ -44,10 +43,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [tipoDescarte, setTipoDescarte] = useState<"reengajavel" | "definitivo" | "todos">("reengajavel");
   const [stageIds, setStageIds] = useState<string[]>([]);
   const [listaIds, setListaIds] = useState<string[]>([]);
-  const [dataVisita, setDataVisita] = useState<string>(() => {
-    const t = new Date(); t.setDate(t.getDate() + 1);
-    return t.toISOString().slice(0, 10);
-  });
+
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [empreendimento, setEmpreendimento] = useState<string>("");
