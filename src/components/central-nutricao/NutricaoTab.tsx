@@ -253,12 +253,30 @@ export default function NutricaoTab() {
           ) : (
             Object.entries(grupos).map(([stage, steps]) => (
               <div key={stage} className="space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h4 className="text-sm font-medium">{STAGE_LABELS[stage] || stage}</h4>
                   <Badge variant="outline" className="text-[10px]">
                     {steps.filter((s) => s.is_active).length}/{steps.length} ativos
                   </Badge>
+                  <div className="ml-auto flex items-center gap-1">
+                    <Button
+                      size="sm" variant="outline" className="h-7 text-[11px] gap-1"
+                      disabled={savingGroup === stage || steps.every((s) => s.is_active)}
+                      onClick={() => toggleGroup(stage, steps, true)}
+                    >
+                      {savingGroup === stage ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                      Ativar fluxo
+                    </Button>
+                    <Button
+                      size="sm" variant="ghost" className="h-7 text-[11px]"
+                      disabled={savingGroup === stage || steps.every((s) => !s.is_active)}
+                      onClick={() => toggleGroup(stage, steps, false)}
+                    >
+                      Desativar
+                    </Button>
+                  </div>
                 </div>
+
                 <div className="space-y-1.5">
                   {steps.map((s) => (
                     <div key={s.id} className="flex items-center gap-3 rounded-md border p-2">
