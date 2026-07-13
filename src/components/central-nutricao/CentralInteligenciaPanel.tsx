@@ -61,7 +61,7 @@ export default function CentralInteligenciaPanel({
   const { data: listas, isFetching: loadingListas, refetch: refetchListas } = useQuery<ListaDeliverability[]>({
     queryKey: ["reengajamento-deliverability-listas"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("reengajamento_deliverability_listas");
+      const { data, error } = await supabase.rpc("reengajamento_deliverability_listas");
       if (error) throw error;
       return (data || []) as ListaDeliverability[];
     },
