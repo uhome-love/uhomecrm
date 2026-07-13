@@ -18,16 +18,16 @@ import CentralInteligenciaPanel from "./CentralInteligenciaPanel";
 
 const STALE_RUNNING_MS = 15 * 60 * 1000;
 
-async function recoverOrTimeoutStaleRun(data: any, qc: ReturnType<typeof useQueryClient>) {
+async function recoverOrTimeoutStaleRun(data: DispatchRun, qc: ReturnType<typeof useQueryClient>) {
   const { count } = await supabase
-    .from("reengajamento_dispatch_queue" as any)
+    .from("reengajamento_dispatch_queue")
     .select("id", { count: "exact", head: true })
     .eq("run_id", data.id)
     .in("status", ["pending", "processing"]);
 
   if ((count || 0) > 0) {
     await supabase
-      .from("reengajamento_dispatch_runs" as any)
+      .from("reengajamento_dispatch_runs")
       .update({
         started_at: new Date().toISOString(),
         finished_at: null,
@@ -44,7 +44,7 @@ async function recoverOrTimeoutStaleRun(data: any, qc: ReturnType<typeof useQuer
   }
 
   await supabase
-    .from("reengajamento_dispatch_runs" as any)
+    .from("reengajamento_dispatch_runs")
     .update({
       status: "timeout",
       finished_at: new Date().toISOString(),
