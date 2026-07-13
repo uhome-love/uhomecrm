@@ -299,7 +299,11 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
+        <div className="grid lg:grid-cols-2 gap-x-5 gap-y-3 items-start">
+        {/* COLUNA ESQUERDA: público e filtros */}
+        <div className="space-y-3">
         {/* CANAL */}
+
         <div>
           <Label className="text-xs">Canal</Label>
           <div className="grid grid-cols-2 gap-2 mt-1">
