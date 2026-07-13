@@ -9,6 +9,7 @@ import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
 import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookTab";
 import RespostasRecebidasHoje from "@/components/central-nutricao/RespostasRecebidasHoje";
 import NutricaoTab from "@/components/central-nutricao/NutricaoTab";
+import FilaReenvioCard from "@/components/central-nutricao/FilaReenvioCard";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
 import { PageHeader } from "@/components/ui/PageHeader";
 
