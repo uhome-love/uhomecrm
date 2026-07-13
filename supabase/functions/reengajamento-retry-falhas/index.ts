@@ -122,6 +122,8 @@ Deno.serve(async (req) => {
     let reset = 0;
 
     for (const f of fails) {
+      // Nunca reprocessa falhas de qualidade/cobrança, mesmo em lote misto.
+      if (isQualityBlockingError(f.error_text)) continue;
       const runId = f.run_id as string;
       if (!runId) continue;
 
