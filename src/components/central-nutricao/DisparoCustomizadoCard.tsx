@@ -486,8 +486,12 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           <Label className="text-xs">Empreendimento (opcional)</Label>
           <Input placeholder="ex.: Casa Tua" value={empreendimento} onChange={(e) => setEmpreendimento(e.target.value)} className="h-9" />
         </div>
+        </div>{/* /coluna esquerda */}
 
+        {/* COLUNA DIREITA: envio (dedup, limite, template, mensagem) */}
+        <div className="space-y-3">
         {/* Dedup */}
+
         <div>
           <Label className="text-xs">Quem já recebeu disparo</Label>
           <Select value={dedupMode} onValueChange={(v) => { setDedupMode(v as DedupMode); setPreview(null); }}>
