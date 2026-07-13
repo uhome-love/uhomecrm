@@ -272,7 +272,7 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
     if (activeRun?.id) setShowRuns(true);
   }, [activeRun?.id]);
 
-  const { data: queueActivity = [], isFetching: isFetchingQueue } = useQuery({
+  const { data: queueActivityRaw = [], isFetching: isFetchingQueue } = useQuery({
     queryKey: ["reengajamento-queue-activity", queueRunIds.join(",")],
     queryFn: async (): Promise<QueueRow[]> => {
       if (queueRunIds.length === 0) return [];
@@ -289,12 +289,60 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
     refetchInterval: activeRun ? 3000 : 10000,
   });
 
+  // Correlaciona wamid -> read_at (leituras) via reengajamento_meta_disparos
+  const { data: readMap = {} } = useQuery({
+    queryKey: ["reengajamento-queue-reads", queueRunIds.join(",")],
+    queryFn: async (): Promise<Record<string, string>> => {
+      if (queueRunIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("wamid, read_at")
+        .in("run_id", queueRunIds)
+        .not("read_at", "is", null)
+        .limit(500);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((r: any) => {
+        if (r.wamid && r.read_at) map[r.wamid] = r.read_at;
+      });
+      return map;
+    },
+    enabled: queueRunIds.length > 0,
+    refetchInterval: activeRun ? 3000 : 10000,
+  });
+
+  const queueActivity = useMemo<(QueueRow & { isRead: boolean })[]>(
+    () => queueActivityRaw.map((r) => ({ ...r, isRead: !!(r.wamid && readMap[r.wamid]) })),
+    [queueActivityRaw, readMap]
+  );
+
+  const [queueFilter, setQueueFilter] = useState<"all" | "processing" | "sent" | "failed" | "skipped" | "read">("all");
+
+  const filteredQueue = useMemo(() => {
+    switch (queueFilter) {
+      case "processing":
+        return queueActivity.filter((r) => r.status === "processing");
+      case "sent":
+        return queueActivity.filter((r) => r.status === "sent");
+      case "failed":
+        return queueActivity.filter((r) => r.status === "failed");
+      case "skipped":
+        return queueActivity.filter((r) => ["skipped", "suppressed", "cancelled"].includes(r.status || ""));
+      case "read":
+        return queueActivity.filter((r) => r.isRead);
+      default:
+        return queueActivity;
+    }
+  }, [queueActivity, queueFilter]);
+
   const queueStats = useMemo(() => ({
     processing: queueActivity.filter((r) => r.status === "processing").length,
     sent: queueActivity.filter((r) => r.status === "sent").length,
     failed: queueActivity.filter((r) => r.status === "failed").length,
     skipped: queueActivity.filter((r) => ["skipped", "suppressed", "cancelled"].includes(r.status || "")).length,
+    read: queueActivity.filter((r) => r.isRead).length,
   }), [queueActivity]);
+
   
 
   // Resumo de HOJE (server-side, agregado) — independente da paginação
@@ -540,16 +588,45 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                 {isFetchingQueue && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
               </div>
               <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{queueStats.processing} enviando</Badge>
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">{queueStats.sent} enviados</Badge>
-                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">{queueStats.failed} falhas</Badge>
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">{queueStats.skipped} ignorados</Badge>
+                {([
+                  { key: "processing", label: "enviando", count: queueStats.processing, active: "bg-blue-600 text-white border-blue-600", idle: "bg-blue-50 text-blue-700 border-blue-200" },
+                  { key: "sent", label: "enviados", count: queueStats.sent, active: "bg-emerald-600 text-white border-emerald-600", idle: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+                  { key: "read", label: "lido", count: queueStats.read, active: "bg-indigo-600 text-white border-indigo-600", idle: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+                  { key: "failed", label: "falhas", count: queueStats.failed, active: "bg-red-600 text-white border-red-600", idle: "bg-red-50 text-red-700 border-red-200" },
+                  { key: "skipped", label: "ignorados", count: queueStats.skipped, active: "bg-amber-600 text-white border-amber-600", idle: "bg-amber-50 text-amber-700 border-amber-200" },
+                ] as const).map((p) => {
+                  const isActive = queueFilter === p.key;
+                  return (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => setQueueFilter(isActive ? "all" : p.key)}
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 font-medium transition ${isActive ? p.active : p.idle} ${isActive ? "ring-2 ring-offset-1 ring-current/30" : "hover:opacity-80"}`}
+                    >
+                      {p.count} {p.label}
+                    </button>
+                  );
+                })}
+                {queueFilter !== "all" && (
+                  <button
+                    type="button"
+                    onClick={() => setQueueFilter("all")}
+                    className="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 text-neutral-600 px-2 py-0.5 font-medium hover:opacity-80 transition"
+                  >
+                    limpar filtro
+                  </button>
+                )}
               </div>
+
             </div>
 
             {queueActivity.length === 0 ? (
               <div className="text-center py-6 text-sm text-muted-foreground">
                 Nenhum item de fila encontrado para os disparos recentes.
+              </div>
+            ) : filteredQueue.length === 0 ? (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                Nenhum item para o filtro selecionado.
               </div>
             ) : (
               <div className="rounded-lg border bg-card overflow-x-auto">
@@ -565,7 +642,7 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {queueActivity.map((row) => {
+                    {filteredQueue.map((row) => {
                       const status = QUEUE_STATUS[row.status || ""];
                       const when = queueWhen(row);
                       return (
@@ -580,16 +657,26 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                             <div className="text-[10px] text-muted-foreground truncate max-w-[190px]">{row.audience_source || "—"}</div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${status?.className || "bg-neutral-100 text-neutral-700"}`}>
-                              {status?.label || row.status || "—"}
-                            </Badge>
+                            <div className="flex flex-col gap-1">
+                              <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${status?.className || "bg-neutral-100 text-neutral-700"}`}>
+                                {status?.label || row.status || "—"}
+                              </Badge>
+                              {row.isRead && (
+                                <Badge variant="outline" className="text-[10px] whitespace-nowrap bg-indigo-50 text-indigo-700 border-indigo-200">
+                                  Lido
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
+
                           <TableCell className="text-xs">
                             {row.error_text ? (
                               <div className="flex items-start gap-1.5 text-red-700" title={row.error_text}>
                                 <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                                 <span className="line-clamp-2">{row.error_text}</span>
                               </div>
+                            ) : row.isRead ? (
+                              <span className="text-indigo-700">Lido pelo lead</span>
                             ) : row.wamid ? (
                               <span className="text-emerald-700">Enviado para a Meta</span>
                             ) : row.status === "processing" ? (

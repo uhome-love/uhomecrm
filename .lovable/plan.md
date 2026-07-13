@@ -1,28 +1,33 @@
-## Diagnóstico
+## Objetivo
 
-- O disparo atual está realmente em andamento: começou às 16:42 BRT, com 576 alvos, 122 enviados, 1 falha síncrona e 33 ignorados no registro da execução.
-- A tabela de auditoria usa `reengajamento_meta_disparos`, que só recebe linha quando o envio Meta retorna sucesso. Falhas síncronas e ignorados ficam na fila (`reengajamento_dispatch_queue`) e/ou no resumo da execução, então a parte de baixo pode parecer parada ou vazia.
-- O painel “Disparos recentes” existe, mas está fechado por padrão. Isso esconde justamente o resumo que ajudaria a entender se está enviando, falhando ou ignorando.
+Na seção **"Envios sendo processados"** (aba Ao vivo, `AuditoriaWebhookTab.tsx`):
+1. Adicionar a pílula **Lido** com a contagem de mensagens já lidas.
+2. Tornar as pílulas (**Enviando**, **Enviados**, **Falhas**, **Ignorados**, **Lido**) clicáveis para **filtrar a tabela** abaixo. Clicar de novo na pílula ativa limpa o filtro.
 
-## Plano de correção
+## Como funciona hoje
 
-1. **Mostrar a execução atual sempre aberta no Ao vivo**
-   - Deixar “Disparos recentes” aberto automaticamente quando houver run `running`.
-   - Destacar o disparo em andamento com progresso, template, origem, enviados, falhas e ignorados.
+A tabela lê `reengajamento_dispatch_queue` (status: pending/processing/sent/failed/skipped/suppressed/cancelled). Esses status **não incluem "lido"** — o "lido" vive em `reengajamento_meta_disparos.read_at` (correlacionado por `wamid` e `run_id`).
 
-2. **Criar uma lista de atividade em tempo real da fila**
-   - Na aba Ao vivo, consultar `reengajamento_dispatch_queue` do run atual/recentes.
-   - Exibir os últimos itens processados com: horário, lead, telefone, template, status (`sent`, `failed`, `skipped`, `suppressed`, `pending`, `processing`) e erro quando houver.
-   - Assim falhas que não aparecem em `reengajamento_meta_disparos` passam a aparecer imediatamente.
+## Mudanças (somente `src/components/central-nutricao/AuditoriaWebhookTab.tsx`)
 
-3. **Manter a auditoria Meta como resultado final de entrega/resposta**
-   - A tabela atual de `reengajamento_meta_disparos` continua mostrando entregas, leituras e respostas.
-   - A nova lista da fila fica acima dela como “envios sendo processados agora”.
+1. **Enriquecer os dados da fila com "lido":**
+   - Adicionar um `useQuery` (ou estender o existente) que busca de `reengajamento_meta_disparos` para os mesmos `queueRunIds`, selecionando `wamid, read_at, delivered_at, responded_at`.
+   - Montar um mapa `wamid → read_at` e derivar, para cada linha da fila, um flag `isRead` (quando existe `read_at`).
+   - Mesmo `refetchInterval` da fila (3s com run ativo, 10s caso contrário).
 
-4. **Ajustar atualização ao vivo**
-   - Recarregar a execução/fila em intervalo curto enquanto houver disparo em andamento.
-   - Invalidar os dados ao receber eventos realtime da fila, igual já acontece com a auditoria Meta.
+2. **Estatísticas:** adicionar `lido` ao `queueStats` (contagem de linhas com `isRead`).
 
-5. **Validar**
-   - Confirmar que o disparo atual mostra itens recentes mesmo quando há falhas ou ignorados.
-   - Rodar validação TypeScript após a alteração.
+3. **Estado de filtro:** novo estado `queueFilter` (`'all' | 'processing' | 'sent' | 'failed' | 'skipped' | 'read'`), default `'all'`. Derivar `filteredQueue` aplicando o filtro sobre `queueActivity`:
+   - `processing/sent/failed` → por `status`
+   - `skipped` → status em skipped/suppressed/cancelled
+   - `read` → linhas com `isRead`
+
+4. **Pílulas clicáveis:** transformar cada `Badge` num botão (`button`/`onClick`) que seta `queueFilter`; clicar na pílula já ativa volta para `'all'`. A pílula ativa recebe destaque visual (borda/anel mais forte). Adicionar a pílula **Lido** (esquema de cor violeta/roxo, coerente com o design system). Incluir uma pílula/estado "Todos" para limpar, ou usar o clique-para-alternar.
+
+5. **Coluna Status/Resultado:** exibir "Lido" quando `isRead` (badge dedicado no `QUEUE_STATUS` ou tratamento inline), mantendo o restante igual.
+
+6. A tabela passa a renderizar `filteredQueue` em vez de `queueActivity`; ajustar o empty-state para o caso de filtro sem resultados.
+
+## Validação
+- `tsgo` para checagem de tipos.
+- Conferir no preview que as pílulas filtram a tabela e que a contagem de **Lido** aparece com base em `read_at`.
