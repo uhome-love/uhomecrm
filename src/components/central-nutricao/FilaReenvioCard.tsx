@@ -161,7 +161,7 @@ export default function FilaReenvioCard() {
             size="sm"
             className="h-8 text-xs"
             onClick={handleRetryAll}
-            disabled={retryingAll || falhas.length === 0}
+            disabled={retryingAll || falhas.length === 0 || isBlocked}
           >
             {retryingAll ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RotateCcw className="h-3.5 w-3.5 mr-1" />}
             Tentar todos
@@ -169,6 +169,20 @@ export default function FilaReenvioCard() {
         </div>
       </CardHeader>
       <CardContent>
+        {isBlocked && (
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
+            <div className="text-[11px] leading-relaxed">
+              <p className="font-semibold text-destructive">Reenvio bloqueado — conta Meta com pendência</p>
+              <p className="text-muted-foreground mt-0.5">
+                As falhas são de <strong>elegibilidade/cobrança</strong> da conta WhatsApp Business
+                (ou limite de qualidade 131049). Reenviar agora <strong>queima a reputação do
+                número</strong>. Regularize o faturamento e a qualidade da conta na Meta antes de
+                tentar novamente.
+              </p>
+            </div>
+          </div>
+        )}
         {falhas.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
             <CheckCircle2 className="h-6 w-6 text-emerald-600" />
