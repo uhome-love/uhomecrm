@@ -229,7 +229,7 @@ export default function FilaReenvioCard() {
                           variant="outline"
                           className="h-7 text-[10px]"
                           onClick={() => handleRetryOne(f)}
-                          disabled={retryingKey === f.phone || retryingAll}
+                          disabled={retryingKey === f.phone || retryingAll || isBlocked}
                         >
                           {retryingKey === f.phone ? <Loader2 className="h-3 w-3 animate-spin" /> : "🔁 Tentar"}
                         </Button>
@@ -262,7 +262,7 @@ export default function FilaReenvioCard() {
                       variant="outline"
                       className="h-7 text-[10px]"
                       onClick={() => handleRetryOne(f)}
-                      disabled={retryingKey === f.phone || retryingAll}
+                      disabled={retryingKey === f.phone || retryingAll || isBlocked}
                     >
                       {retryingKey === f.phone ? <Loader2 className="h-3 w-3 animate-spin" /> : "🔁 Tentar novamente"}
                     </Button>
