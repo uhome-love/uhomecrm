@@ -187,11 +187,13 @@ export async function executeHomiTool(
 
     if (name === "buscar_imovel") {
       let q = userClient
-        .from("imoveis_catalog")
-        .select("codigo, titulo, empreendimento, bairro, tipo, valor_venda, dormitorios, suites, vagas, area, fotos_thumbs")
+        .from("properties")
+        .select("id, codigo, titulo, empreendimento, bairro, tipo, valor_venda, dormitorios, suites, vagas, area_privativa, fotos")
+        .eq("ativo", true)
+        .not("valor_venda", "is", null)
         .limit(6);
-      const termo = (args.termo || args.bairro || "").trim();
-      if (termo) q = q.ilike("search_text", `%${termo}%`);
+      const termo = (args.termo || "").trim();
+      if (termo) q = q.or(`bairro.ilike.%${termo}%,empreendimento.ilike.%${termo}%,titulo.ilike.%${termo}%`);
       if (args.bairro) q = q.ilike("bairro", `%${args.bairro}%`);
       if (typeof args.dormitorios === "number") q = q.gte("dormitorios", args.dormitorios);
       if (typeof args.valor_max === "number") q = q.lte("valor_venda", args.valor_max);
@@ -202,14 +204,24 @@ export async function executeHomiTool(
         return { modelResult: "Não consegui buscar imóveis agora." };
       }
       const imoveis = (data || []).map((r: any) => ({
-        ...r,
-        thumb: Array.isArray(r.fotos_thumbs) ? r.fotos_thumbs[0] : null,
+        codigo: r.codigo,
+        titulo: r.titulo,
+        empreendimento: r.empreendimento,
+        bairro: r.bairro,
+        tipo: r.tipo,
+        valor_venda: r.valor_venda,
+        dormitorios: r.dormitorios,
+        suites: r.suites,
+        vagas: r.vagas,
+        area: r.area_privativa,
+        thumb: Array.isArray(r.fotos) ? r.fotos[0] : null,
       }));
       return {
         result: { tipo: "imoveis", imoveis },
         modelResult: `Encontrei ${imoveis.length} imóveis. A lista já apareceu para o corretor. Comente em 1 frase o destaque.`,
       };
     }
+
 
     if (name === "criar_tarefa") {
       const r = await resolveLead(userClient, uid, args.lead_nome);
