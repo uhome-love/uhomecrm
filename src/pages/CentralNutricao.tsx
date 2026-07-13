@@ -1,14 +1,14 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
-import { RefreshCw, Send, Activity, Settings, Calendar, ChevronDown, ChevronUp, Radio, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { RefreshCw, Send, Activity, Settings, Sprout, Radio, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryClient } from "@tanstack/react-query";
 import DisparoCustomizadoCard from "@/components/central-nutricao/DisparoCustomizadoCard";
 import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
 import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookTab";
-import VisitaAmanhaTab from "@/components/central-nutricao/VisitaAmanhaTab";
+import RespostasRecebidasHoje from "@/components/central-nutricao/RespostasRecebidasHoje";
+import NutricaoTab from "@/components/central-nutricao/NutricaoTab";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -35,7 +35,6 @@ export default function CentralNutricaoPage() {
       return next;
     }, { replace: true });
   };
-  const [showVisitaLegacy, setShowVisitaLegacy] = useState(false);
 
   const onFired = () => {
     qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
@@ -43,27 +42,29 @@ export default function CentralNutricaoPage() {
     qc.invalidateQueries({ queryKey: ["reengajamento-ultimos"] });
     qc.invalidateQueries({ queryKey: ["reengajamento-kpis"] });
     qc.invalidateQueries({ queryKey: ["auditoria-meta-webhook"] });
-    qc.invalidateQueries({ queryKey: ["visita-amanha-stats"] });
-    setTab("retorno");
+    handleTabChange("aovivo");
   };
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1600px] mx-auto">
       <PageHeader
         title="Central de Reengajamento"
-        subtitle="Disparos avulsos e campanhas em ondas. Selecione a lista, o modelo e dispare via Meta ou Evolution. Acompanhe o retorno em tempo real em uma única página."
+        subtitle="Tudo manual, acionável por você: dispare por base e template via Meta, ative fluxos de nutrição quando quiser e acompanhe ao vivo o que está sendo feito e o resultado."
         icon={<RefreshCw className="h-5 w-5" />}
       />
 
       <LiveDispatchBanner />
 
       <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
-        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-2 md:grid-cols-4 h-auto md:h-11">
+        <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-2 md:grid-cols-5 h-auto md:h-11">
           <TabsTrigger value="disparo" className="gap-2 text-sm">
-            <Send className="h-4 w-4" /> Novo disparo
+            <Send className="h-4 w-4" /> Disparo manual
           </TabsTrigger>
-          <TabsTrigger value="retorno" className="gap-2 text-sm">
-            <Activity className="h-4 w-4" /> Retorno ao vivo
+          <TabsTrigger value="nutricao" className="gap-2 text-sm">
+            <Sprout className="h-4 w-4" /> Nutrição
+          </TabsTrigger>
+          <TabsTrigger value="aovivo" className="gap-2 text-sm">
+            <Activity className="h-4 w-4" /> Ao vivo
           </TabsTrigger>
           <TabsTrigger value="ondas" className="gap-2 text-sm">
             <Radio className="h-4 w-4" /> Campanhas em ondas
@@ -73,13 +74,19 @@ export default function CentralNutricaoPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Aba 1: Novo disparo */}
+        {/* Aba 1: Disparo manual */}
         <TabsContent value="disparo" className="mt-0 space-y-4">
           <DisparoCustomizadoCard onFired={onFired} />
         </TabsContent>
 
-        {/* Aba 2: Retorno em tempo real */}
-        <TabsContent value="retorno" className="mt-0 space-y-4">
+        {/* Aba 2: Nutrição (manual) */}
+        <TabsContent value="nutricao" className="mt-0 space-y-4">
+          <NutricaoTab />
+        </TabsContent>
+
+        {/* Aba 3: Ao vivo + resultado */}
+        <TabsContent value="aovivo" className="mt-0 space-y-4">
+          <RespostasRecebidasHoje />
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Auditoria de webhooks — retorno dos disparos</CardTitle>
@@ -94,14 +101,14 @@ export default function CentralNutricaoPage() {
           </Card>
         </TabsContent>
 
-        {/* Aba 3: Campanhas em ondas (Átrio) */}
+        {/* Aba 4: Campanhas em ondas (Átrio) */}
         <TabsContent value="ondas" className="mt-0 space-y-4">
           <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
             <CampanhaOndasTab />
           </Suspense>
         </TabsContent>
 
-        {/* Aba 4: Configurações */}
+        {/* Aba 5: Configurações */}
         <TabsContent value="config" className="mt-0 space-y-4">
           <Card>
             <CardHeader className="pb-3">
@@ -110,38 +117,12 @@ export default function CentralNutricaoPage() {
                 Templates, janelas, throttle e instância
               </CardTitle>
               <p className="text-[11px] text-muted-foreground">
-                Conexão da instância WhatsApp, templates Meta, variantes Evolution, janelas de horário,
-                throttle, pausa global e disparo padrão de descartados.
+                Conexão da instância WhatsApp, templates Meta, variantes Evolution, janelas de horário e throttle.
               </p>
             </CardHeader>
             <CardContent>
               <ReengajamentoTab />
             </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <button
-                className="flex items-center gap-2 text-left w-full"
-                onClick={() => setShowVisitaLegacy((v) => !v)}
-              >
-                <Calendar className="h-4 w-4 text-primary" />
-                <CardTitle className="text-base flex-1">Histórico legado — Visita Amanhã</CardTitle>
-                <Button variant="ghost" size="sm" className="h-6">
-                  {showVisitaLegacy ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
-              </button>
-              {!showVisitaLegacy && (
-                <p className="text-[11px] text-muted-foreground">
-                  Disparos enviados pelo cron automático antigo. Clique para expandir.
-                </p>
-              )}
-            </CardHeader>
-            {showVisitaLegacy && (
-              <CardContent>
-                <VisitaAmanhaTab />
-              </CardContent>
-            )}
           </Card>
         </TabsContent>
       </Tabs>
