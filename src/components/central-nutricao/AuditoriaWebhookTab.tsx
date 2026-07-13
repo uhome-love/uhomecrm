@@ -272,7 +272,7 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
     if (activeRun?.id) setShowRuns(true);
   }, [activeRun?.id]);
 
-  const { data: queueActivity = [], isFetching: isFetchingQueue } = useQuery({
+  const { data: queueActivityRaw = [], isFetching: isFetchingQueue } = useQuery({
     queryKey: ["reengajamento-queue-activity", queueRunIds.join(",")],
     queryFn: async (): Promise<QueueRow[]> => {
       if (queueRunIds.length === 0) return [];
@@ -289,12 +289,60 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
     refetchInterval: activeRun ? 3000 : 10000,
   });
 
+  // Correlaciona wamid -> read_at (leituras) via reengajamento_meta_disparos
+  const { data: readMap = {} } = useQuery({
+    queryKey: ["reengajamento-queue-reads", queueRunIds.join(",")],
+    queryFn: async (): Promise<Record<string, string>> => {
+      if (queueRunIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("wamid, read_at")
+        .in("run_id", queueRunIds)
+        .not("read_at", "is", null)
+        .limit(500);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((r: any) => {
+        if (r.wamid && r.read_at) map[r.wamid] = r.read_at;
+      });
+      return map;
+    },
+    enabled: queueRunIds.length > 0,
+    refetchInterval: activeRun ? 3000 : 10000,
+  });
+
+  const queueActivity = useMemo<(QueueRow & { isRead: boolean })[]>(
+    () => queueActivityRaw.map((r) => ({ ...r, isRead: !!(r.wamid && readMap[r.wamid]) })),
+    [queueActivityRaw, readMap]
+  );
+
+  const [queueFilter, setQueueFilter] = useState<"all" | "processing" | "sent" | "failed" | "skipped" | "read">("all");
+
+  const filteredQueue = useMemo(() => {
+    switch (queueFilter) {
+      case "processing":
+        return queueActivity.filter((r) => r.status === "processing");
+      case "sent":
+        return queueActivity.filter((r) => r.status === "sent");
+      case "failed":
+        return queueActivity.filter((r) => r.status === "failed");
+      case "skipped":
+        return queueActivity.filter((r) => ["skipped", "suppressed", "cancelled"].includes(r.status || ""));
+      case "read":
+        return queueActivity.filter((r) => r.isRead);
+      default:
+        return queueActivity;
+    }
+  }, [queueActivity, queueFilter]);
+
   const queueStats = useMemo(() => ({
     processing: queueActivity.filter((r) => r.status === "processing").length,
     sent: queueActivity.filter((r) => r.status === "sent").length,
     failed: queueActivity.filter((r) => r.status === "failed").length,
     skipped: queueActivity.filter((r) => ["skipped", "suppressed", "cancelled"].includes(r.status || "")).length,
+    read: queueActivity.filter((r) => r.isRead).length,
   }), [queueActivity]);
+
   
 
   // Resumo de HOJE (server-side, agregado) — independente da paginação
