@@ -119,7 +119,7 @@ export default function FilaReenvioCard() {
         <div>
           <CardTitle className="text-base flex items-center gap-2">
             <RotateCcw className="h-4 w-4 text-primary" />
-            Fila de reenvio
+            Histórico de envios
             {totalFalhas > 0 && (
               <Badge variant="destructive" className="text-[10px]">{totalFalhas}</Badge>
             )}
