@@ -19,6 +19,18 @@ type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista";
 type Canal = "meta" | "evolution";
 type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
 
+interface PreviewFunil {
+  por_fonte?: Record<string, number>;
+  duplicados_removidos?: number;
+  total_em_descarte?: number;
+  [key: string]: unknown;
+}
+interface PreviewResult {
+  count: number;
+  sample: unknown[];
+  funil?: PreviewFunil;
+}
+
 // Imagem fixa de header por template Meta (templates com cabeçalho de imagem).
 // Para um novo template, basta adicionar o nome → URL pública aqui (ou colar a URL no campo do card).
 const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
