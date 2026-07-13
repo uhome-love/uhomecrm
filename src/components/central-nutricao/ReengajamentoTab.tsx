@@ -80,7 +80,7 @@ export default function ReengajamentoTab() {
     queryKey: ["reengajamento-active-run"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("reengajamento_dispatch_runs" as any)
+        .from("reengajamento_dispatch_runs")
         .select("*")
         .eq("status", "running")
         .order("started_at", { ascending: false })
@@ -89,7 +89,7 @@ export default function ReengajamentoTab() {
       if (data?.started_at && Date.now() - new Date(data.started_at).getTime() > STALE_RUNNING_MS) {
         return recoverOrTimeoutStaleRun(data, qc);
       }
-      return data as any;
+      return data;
     },
     refetchInterval: (query) => (query.state.data ? 3000 : 15000),
   });
@@ -100,27 +100,27 @@ export default function ReengajamentoTab() {
     queryKey: ["blocked-templates"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("blocked_templates" as any)
+        .from("blocked_templates")
         .select("template_name, reason");
-      return (data as any[]) || [];
+      return (data as BlockedTemplate[]) || [];
     },
     refetchInterval: 30000,
   });
   const isBlocked = (name?: string | null) =>
-    !!name && (blockedTemplates || []).some((b: any) => b.template_name === name);
+    !!name && (blockedTemplates || []).some((b) => b.template_name === name);
   const blockedReason = (name?: string | null) =>
-    (blockedTemplates || []).find((b: any) => b.template_name === name)?.reason as string | undefined;
+    (blockedTemplates || []).find((b) => b.template_name === name)?.reason ?? undefined;
 
   // Histórico das últimas 10 execuções
   const { data: runs = [] } = useQuery({
     queryKey: ["reengajamento-runs"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("reengajamento_dispatch_runs" as any)
+        .from("reengajamento_dispatch_runs")
         .select("*")
         .order("started_at", { ascending: false })
         .limit(10);
-      return (data || []) as any[];
+      return (data || []) as DispatchRun[];
     },
     refetchInterval: dispatchActive ? 8000 : 30000,
   });
