@@ -60,6 +60,20 @@ Deno.serve(async (req) => {
     const { data: userData, error: userErr } = await authClient.auth.getUser(token);
     if (userErr || !userData?.user) return json({ error: "unauthorized" }, 401);
 
+    // --- GATE GLOBAL: se o motor de disparo está desligado, o reenvio é bloqueado ---
+    const gate = await isCampaignDispatchEnabled();
+    if (!gate.enabled) {
+      return json({
+        ok: false,
+        blocked: true,
+        reason: "dispatch_disabled",
+        message:
+          "Reenvio bloqueado: o motor de disparo está desligado (qualidade/cobrança Meta). " +
+          "Regularize a conta na Meta antes de reenviar.",
+        gate_reason: gate.reason ?? null,
+      });
+    }
+
     // --- Parse do body ---
     const body = await req.json().catch(() => ({}));
     const metaIds: string[] = Array.isArray(body?.meta_ids)
