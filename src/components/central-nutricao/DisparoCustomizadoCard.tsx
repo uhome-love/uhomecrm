@@ -19,6 +19,23 @@ type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista";
 type Canal = "meta" | "evolution";
 type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
 
+interface PreviewFunil {
+  por_fonte?: Record<string, number>;
+  duplicados_removidos?: number;
+  total_em_descarte?: number;
+  inativados_definitivos?: number;
+  sem_telefone?: number;
+  arquivados?: number;
+  em_cooldown?: number;
+  cooldown_dias?: number;
+  elegiveis?: number;
+}
+interface PreviewResult {
+  count: number;
+  sample: unknown[];
+  funil?: PreviewFunil;
+}
+
 // Imagem fixa de header por template Meta (templates com cabeçalho de imagem).
 // Para um novo template, basta adicionar o nome → URL pública aqui (ou colar a URL no campo do card).
 const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
@@ -60,7 +77,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   // Imagem fixa do header por template (Meta). Cada novo template pode ter sua imagem aqui.
   const [headerImageUrl, setHeaderImageUrl] = useState<string>("");
   const [mensagem, setMensagem] = useState<string>("");
-  const [preview, setPreview] = useState<{ count: number; sample: any[]; funil?: Record<string, number> } | null>(null);
+  const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [firing, setFiring] = useState(false);
 
@@ -186,9 +203,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         body: { audience: buildAudience() },
       });
       if (error) throw error;
-      const d = data as { error?: string; count?: number; sample?: unknown[]; funil?: Record<string, number> };
+      const d = data as { error?: string; count?: number; sample?: unknown[]; funil?: PreviewFunil };
       if (d?.error) throw new Error(d.error);
-      setPreview({ count: d.count || 0, sample: (d.sample as any[]) || [], funil: d.funil });
+      setPreview({ count: d.count || 0, sample: d.sample || [], funil: d.funil });
     } catch (e) {
       toast.error("Erro no preview: " + (e instanceof Error ? e.message : String(e)));
     } finally {
@@ -212,23 +229,23 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     // FIX B: bloquear templates em blacklist
     if (canal === "meta" && templateName) {
       const { data: blocked } = await supabase
-        .from("blocked_templates" as any)
+        .from("blocked_templates")
         .select("template_name, reason")
         .eq("template_name", templateName)
         .maybeSingle();
       if (blocked) {
-        toast.error(`⛔ Template "${templateName}" está bloqueado: ${(blocked as any).reason}. Verifique no Business Manager antes de remover da blacklist.`);
+        toast.error(`⛔ Template "${templateName}" está bloqueado: ${blocked.reason}. Verifique no Business Manager antes de remover da blacklist.`);
         return;
       }
     }
     // FIX A: respeitar pausa travada
     const { data: cfgLock } = await supabase
-      .from("reengajamento_config" as any)
+      .from("reengajamento_config")
       .select("paused_until_release, paused_reason")
       .limit(1)
       .maybeSingle();
-    if ((cfgLock as any)?.paused_until_release) {
-      toast.error("⛔ Central travada: " + ((cfgLock as any)?.paused_reason || "liberação manual via SQL admin necessária"));
+    if (cfgLock?.paused_until_release) {
+      toast.error("⛔ Central travada: " + (cfgLock?.paused_reason || "liberação manual via SQL admin necessária"));
       return;
     }
     if (!confirm(`Disparar para ${preview.count} leads via ${canal === "meta" ? "Meta" : "Evolution"}? Esta ação envia mensagens reais.`)) return;
@@ -706,20 +723,20 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           </div>
 
 
-          {preview?.funil && isCombined && (preview.funil as any).por_fonte && (
+          {preview?.funil && isCombined && preview.funil.por_fonte && (
             <div className="text-[11px] border rounded p-2 bg-background space-y-1">
               <div className="font-medium text-indigo-700 mb-1">Conferência — Público combinado</div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-                {Object.entries((preview.funil as any).por_fonte as Record<string, number>).map(([fonte, qtd]) => (
+                {Object.entries(preview.funil.por_fonte as Record<string, number>).map(([fonte, qtd]) => (
                   <div key={fonte} className="contents">
                     <span className="text-muted-foreground capitalize">{fonte.replace(/_/g, " ")}</span>
                     <span className="text-right font-mono">{qtd}</span>
                   </div>
                 ))}
-                {typeof (preview.funil as any).duplicados_removidos === "number" && (
+                {typeof preview.funil.duplicados_removidos === "number" && (
                   <>
                     <span className="text-muted-foreground">— Duplicados removidos (mesmo telefone)</span>
-                    <span className="text-right font-mono text-amber-600">−{(preview.funil as any).duplicados_removidos}</span>
+                    <span className="text-right font-mono text-amber-600">−{preview.funil.duplicados_removidos}</span>
                   </>
                 )}
                 <span className="font-medium pt-1 border-t mt-1">= Elegíveis (1 msg por telefone)</span>
@@ -754,7 +771,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
               <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
                 💡 Regra: SIM → volta para o pipeline · NÃO → inativa permanentemente · sem resposta → continua elegível no próximo ciclo (respeitando cooldown). Novos descartados entram automaticamente.
               </p>
-              {!includeArchived && preview.funil.arquivados > preview.funil.elegiveis && (
+              {!includeArchived && (preview.funil.arquivados ?? 0) > (preview.funil.elegiveis ?? 0) && (
                 <p className="text-[10px] text-amber-600 mt-1">
                   ⚠️ {preview.funil.arquivados} leads arquivados estão sendo excluídos. Marque "Incluir arquivados" para alcançar a base completa.
                 </p>

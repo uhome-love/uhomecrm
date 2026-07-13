@@ -15,19 +15,22 @@ import { Loader2, Send, RefreshCw, MessageCircle, XCircle, Wifi, WifiOff, QrCode
 import { toast } from "sonner";
 import { formatBRT } from "@/lib/brtTime";
 import CentralInteligenciaPanel from "./CentralInteligenciaPanel";
+import ReengajamentoHistorico from "./ReengajamentoHistorico";
+import ReengajamentoUltimos from "./ReengajamentoUltimos";
+import type { DispatchRun, BlockedTemplate, DispatchInvokeResult } from "./types";
 
 const STALE_RUNNING_MS = 15 * 60 * 1000;
 
-async function recoverOrTimeoutStaleRun(data: any, qc: ReturnType<typeof useQueryClient>) {
+async function recoverOrTimeoutStaleRun(data: DispatchRun, qc: ReturnType<typeof useQueryClient>) {
   const { count } = await supabase
-    .from("reengajamento_dispatch_queue" as any)
+    .from("reengajamento_dispatch_queue")
     .select("id", { count: "exact", head: true })
     .eq("run_id", data.id)
     .in("status", ["pending", "processing"]);
 
   if ((count || 0) > 0) {
     await supabase
-      .from("reengajamento_dispatch_runs" as any)
+      .from("reengajamento_dispatch_runs")
       .update({
         started_at: new Date().toISOString(),
         finished_at: null,
@@ -44,7 +47,7 @@ async function recoverOrTimeoutStaleRun(data: any, qc: ReturnType<typeof useQuer
   }
 
   await supabase
-    .from("reengajamento_dispatch_runs" as any)
+    .from("reengajamento_dispatch_runs")
     .update({
       status: "timeout",
       finished_at: new Date().toISOString(),
@@ -79,7 +82,7 @@ export default function ReengajamentoTab() {
     queryKey: ["reengajamento-active-run"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("reengajamento_dispatch_runs" as any)
+        .from("reengajamento_dispatch_runs")
         .select("*")
         .eq("status", "running")
         .order("started_at", { ascending: false })
@@ -88,7 +91,7 @@ export default function ReengajamentoTab() {
       if (data?.started_at && Date.now() - new Date(data.started_at).getTime() > STALE_RUNNING_MS) {
         return recoverOrTimeoutStaleRun(data, qc);
       }
-      return data as any;
+      return data;
     },
     refetchInterval: (query) => (query.state.data ? 3000 : 15000),
   });
@@ -99,27 +102,27 @@ export default function ReengajamentoTab() {
     queryKey: ["blocked-templates"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("blocked_templates" as any)
+        .from("blocked_templates")
         .select("template_name, reason");
-      return (data as any[]) || [];
+      return (data as BlockedTemplate[]) || [];
     },
     refetchInterval: 30000,
   });
   const isBlocked = (name?: string | null) =>
-    !!name && (blockedTemplates || []).some((b: any) => b.template_name === name);
+    !!name && (blockedTemplates || []).some((b) => b.template_name === name);
   const blockedReason = (name?: string | null) =>
-    (blockedTemplates || []).find((b: any) => b.template_name === name)?.reason as string | undefined;
+    (blockedTemplates || []).find((b) => b.template_name === name)?.reason ?? undefined;
 
   // Histórico das últimas 10 execuções
   const { data: runs = [] } = useQuery({
     queryKey: ["reengajamento-runs"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("reengajamento_dispatch_runs" as any)
+        .from("reengajamento_dispatch_runs")
         .select("*")
         .order("started_at", { ascending: false })
         .limit(10);
-      return (data || []) as any[];
+      return (data || []) as DispatchRun[];
     },
     refetchInterval: dispatchActive ? 8000 : 30000,
   });
@@ -174,7 +177,7 @@ export default function ReengajamentoTab() {
           .eq("direction", "received")
           .order("timestamp", { ascending: false })
           .limit(500);
-        for (const m of (msgs || []) as any[]) {
+        for (const m of msgs || []) {
           if (!respostasMap[m.lead_id]) {
             respostasMap[m.lead_id] = { body: m.body, timestamp: m.timestamp };
           }
@@ -196,7 +199,7 @@ export default function ReengajamentoTab() {
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(200);
-      const rows = (data || []) as any[];
+      const rows = data || [];
       if (rows.length === 0) return null;
       const total = rows.length;
       const failed = rows.filter((r) => r.status === "failed").length;
@@ -219,9 +222,9 @@ export default function ReengajamentoTab() {
   async function reativarManual(leadId: string, nome: string) {
     if (!confirm(`Reativar "${nome}" e mandar de volta para a roleta?`)) return;
     try {
-      const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual" as any, { p_lead_id: leadId });
+      const { data, error } = await supabase.rpc("reativar_lead_nutricao_manual", { p_lead_id: leadId });
       if (error) throw error;
-      const dist = (data as any)?.distribuicao;
+      const dist = (data as DispatchInvokeResult | null)?.distribuicao;
       toast.success(dist?.success ? `🔄 ${nome} reativada e distribuída` : `🔄 ${nome} reativada (fila CEO)`);
       qc.invalidateQueries({ queryKey: ["reengajamento-ultimos"] });
       qc.invalidateQueries({ queryKey: ["reengajamento-kpis"] });
@@ -274,8 +277,8 @@ export default function ReengajamentoTab() {
 
   async function dispararAgora() {
     // FIX A: pausa travada
-    if ((cfg as any)?.paused_until_release) {
-      toast.error("⛔ Central travada: " + ((cfg as any)?.paused_reason || "liberação manual via SQL admin necessária"));
+    if (cfg?.paused_until_release) {
+      toast.error("⛔ Central travada: " + (cfg?.paused_reason || "liberação manual via SQL admin necessária"));
       return;
     }
     // FIX B: template em blacklist
@@ -295,9 +298,9 @@ export default function ReengajamentoTab() {
         body: { force: true, iniciado_por: "manual" },
       }).then(({ data, error }) => {
         if (error) toast.error("Erro no disparo: " + error.message);
-        else if ((data as any)?.reason === "no_leads") toast.info("Nenhum lead elegível encontrado");
-        else if (["meta_quality_cooldown", "locked_quality_pause"].includes(String((data as any)?.reason || ""))) {
-          toast.error("⛔ Meta pausou por qualidade: " + String((data as any)?.motivo || "aguarde a recuperação antes de retomar"));
+        else if ((data as DispatchInvokeResult | null)?.reason === "no_leads") toast.info("Nenhum lead elegível encontrado");
+        else if (["meta_quality_cooldown", "locked_quality_pause"].includes(String((data as DispatchInvokeResult | null)?.reason || ""))) {
+          toast.error("⛔ Meta pausou por qualidade: " + String((data as DispatchInvokeResult | null)?.motivo || "aguarde a recuperação antes de retomar"));
         }
         qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
         qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
@@ -315,8 +318,8 @@ export default function ReengajamentoTab() {
   }
 
   async function dispararWave2() {
-    if ((cfg as any)?.paused_until_release) {
-      toast.error("⛔ Central travada: " + ((cfg as any)?.paused_reason || "liberação manual via SQL admin necessária"));
+    if (cfg?.paused_until_release) {
+      toast.error("⛔ Central travada: " + (cfg?.paused_reason || "liberação manual via SQL admin necessária"));
       return;
     }
     const hasMsg = !!(local?.mensagem_template_2 || (local?.mensagens_variantes_2 && local.mensagens_variantes_2.length > 0));
@@ -345,9 +348,9 @@ export default function ReengajamentoTab() {
         body: { force: true, wave: 2, iniciado_por: "manual_wave2" },
       }).then(({ data, error }) => {
         if (error) toast.error("Erro no disparo wave 2: " + error.message);
-        else if ((data as any)?.reason === "no_leads") toast.info("Nenhum lead elegível para 2ª onda ainda");
-        else if (["meta_quality_cooldown", "locked_quality_pause"].includes(String((data as any)?.reason || ""))) {
-          toast.error("⛔ Meta pausou por qualidade: " + String((data as any)?.motivo || "aguarde a recuperação antes de retomar"));
+        else if ((data as DispatchInvokeResult | null)?.reason === "no_leads") toast.info("Nenhum lead elegível para 2ª onda ainda");
+        else if (["meta_quality_cooldown", "locked_quality_pause"].includes(String((data as DispatchInvokeResult | null)?.reason || ""))) {
+          toast.error("⛔ Meta pausou por qualidade: " + String((data as DispatchInvokeResult | null)?.motivo || "aguarde a recuperação antes de retomar"));
         }
         qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
         qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
@@ -369,7 +372,7 @@ export default function ReengajamentoTab() {
       await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
       if (activeRun?.id) {
         await supabase
-          .from("reengajamento_dispatch_runs" as any)
+          .from("reengajamento_dispatch_runs")
           .update({
             status: "paused",
             finished_at: new Date().toISOString(),
@@ -396,7 +399,7 @@ export default function ReengajamentoTab() {
       await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
       if (activeRun?.id) {
         await supabase
-          .from("reengajamento_dispatch_runs" as any)
+          .from("reengajamento_dispatch_runs")
           .update({
             cancel_requested: true,
             status: "cancelled",
@@ -530,27 +533,8 @@ export default function ReengajamentoTab() {
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="animate-spin h-5 w-5" /></div>;
   if (!cfg) return <div className="text-sm text-muted-foreground">Sem configuração</div>;
 
-  const statusBadge = (s: string | null) => {
-    if (s === "respondeu_sim") return <Badge className="bg-green-100 text-green-800 text-[10px]">✅ SIM</Badge>;
-    if (s === "respondeu_nao") return <Badge className="bg-red-100 text-red-800 text-[10px]">❌ NÃO</Badge>;
-    if (s === "respondeu_outro") return <Badge className="bg-blue-100 text-blue-800 text-[10px]">💬 Outro</Badge>;
-    if (s === "telefone_invalido") return <Badge className="bg-gray-100 text-gray-800 text-[10px]">📵 Tel inválido</Badge>;
-    if (s === "enviado") return <Badge className="bg-amber-100 text-amber-800 text-[10px]">⏳ Aguardando</Badge>;
-    return <Badge variant="outline" className="text-[10px]">{s || "—"}</Badge>;
-  };
 
-  const runStatusBadge = (s: string) => {
-    const map: Record<string, { lbl: string; cls: string }> = {
-      running:   { lbl: "▶️ Em andamento", cls: "bg-blue-100 text-blue-800" },
-      completed: { lbl: "✅ Concluído",    cls: "bg-green-100 text-green-800" },
-      paused:    { lbl: "⏸️ Pausado",     cls: "bg-amber-100 text-amber-800" },
-      cancelled: { lbl: "⏹️ Parado",      cls: "bg-rose-100 text-rose-800" },
-      timeout:   { lbl: "⏱️ Tempo limite",cls: "bg-orange-100 text-orange-800" },
-      error:     { lbl: "❌ Erro",         cls: "bg-red-100 text-red-800" },
-    };
-    const m = map[s] || { lbl: s, cls: "bg-gray-100 text-gray-800" };
-    return <Badge className={`${m.cls} text-[10px]`}>{m.lbl}</Badge>;
-  };
+
 
   const waBadge =
     waStatus === "open"
@@ -561,7 +545,7 @@ export default function ReengajamentoTab() {
       ? { label: "Carregando…", cls: "bg-muted text-muted-foreground border-border animate-pulse" }
       : { label: "Desconectada", cls: "bg-muted text-muted-foreground border-border" };
 
-  const isPausing = !!(cfg as any)?.paused && !!activeRun;
+  const isPausing = !!cfg?.paused && !!activeRun;
   const isRunning = !!activeRun;
   const progressPct = activeRun?.total_alvo > 0
     ? Math.round(((activeRun.enviados || 0) + (activeRun.falhas || 0) + (activeRun.ignorados || 0)) / activeRun.total_alvo * 100)
@@ -1081,12 +1065,12 @@ export default function ReengajamentoTab() {
           </Tabs>
 
           <div className="flex gap-2 justify-end items-center pt-3 border-t">
-            {(cfg as any)?.paused_until_release && (
-              <Badge className="bg-red-100 text-red-800 mr-auto" title={(cfg as any)?.paused_reason || ""}>
+            {cfg?.paused_until_release && (
+              <Badge className="bg-red-100 text-red-800 mr-auto" title={cfg?.paused_reason || ""}>
                 🔒 Travado — liberação manual via SQL
               </Badge>
             )}
-            {!(cfg as any)?.paused_until_release && (cfg as any)?.paused && !isRunning && (
+            {!cfg?.paused_until_release && cfg?.paused && !isRunning && (
               <Badge className="bg-amber-100 text-amber-800 mr-auto">⏸️ Pausado</Badge>
             )}
             {isRunning ? (
@@ -1105,11 +1089,11 @@ export default function ReengajamentoTab() {
                 variant="outline"
                 size="sm"
                 onClick={dispararAgora}
-                disabled={starting || !!(cfg as any)?.paused_until_release}
-                title={(cfg as any)?.paused_until_release ? ((cfg as any)?.paused_reason || "Central travada — destravar via SQL admin") : undefined}
+                disabled={starting || !!cfg?.paused_until_release}
+                title={cfg?.paused_until_release ? (cfg?.paused_reason || "Central travada — destravar via SQL admin") : undefined}
               >
                 {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
-                {(cfg as any)?.paused ? "Retomar disparo" : "Disparar agora"}
+                {cfg?.paused ? "Retomar disparo" : "Disparar agora"}
               </Button>
             )}
             <Button size="sm" onClick={save} disabled={saving || !draft}>
@@ -1121,127 +1105,17 @@ export default function ReengajamentoTab() {
       </Card>
 
       {/* Histórico de execuções */}
-      <Card>
-        <CardHeader className="pb-3 flex-row items-center justify-between">
-          <CardTitle className="text-base">Histórico de disparos</CardTitle>
-          <Button size="icon" variant="ghost" className="h-7 w-7"
-            onClick={() => qc.invalidateQueries({ queryKey: ["reengajamento-runs"] })}>
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {runs.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-6">Nenhum disparo ainda</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-muted-foreground">
-                    <th className="text-left py-2 px-2 font-medium">Início</th>
-                    <th className="text-left py-2 px-2 font-medium">Status</th>
-                    <th className="text-center py-2 px-2 font-medium">Enviados</th>
-                    <th className="text-center py-2 px-2 font-medium">Falhas</th>
-                    <th className="text-center py-2 px-2 font-medium">Ignorados</th>
-                    <th className="text-left py-2 px-2 font-medium">Motivo da parada</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {runs.map((r: any) => (
-                    <tr key={r.id} className="border-b hover:bg-muted/30 align-top">
-                      <td className="py-2 px-2 whitespace-nowrap">{formatBRT(r.started_at, "dd/MM HH:mm:ss")}</td>
-                      <td className="py-2 px-2">{runStatusBadge(r.status)}</td>
-                      <td className="py-2 px-2 text-center font-semibold text-green-700">{r.enviados || 0}/{r.total_alvo || 0}</td>
-                      <td className="py-2 px-2 text-center text-red-600">{r.falhas || 0}</td>
-                      <td className="py-2 px-2 text-center text-amber-600">{r.ignorados || 0}</td>
-                      <td className="py-2 px-2 max-w-[320px]">
-                        <span className="text-[11px] text-muted-foreground line-clamp-2">{r.motivo_parada || "—"}</span>
-                        {Array.isArray(r.erros) && r.erros.length > 0 && (
-                          <details className="text-[10px] mt-1">
-                            <summary className="cursor-pointer text-red-600">Ver {r.erros.length} erro(s)</summary>
-                            <ul className="mt-1 space-y-0.5 max-h-32 overflow-auto">
-                              {r.erros.map((e: string, i: number) => (
-                                <li key={i} className="text-muted-foreground"><AlertCircle className="inline h-3 w-3 mr-1" />{e}</li>
-                              ))}
-                            </ul>
-                          </details>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ReengajamentoHistorico
+        runs={runs}
+        onRefresh={() => qc.invalidateQueries({ queryKey: ["reengajamento-runs"] })}
+      />
 
       {/* Tabela últimos envios */}
-      <Card>
-        <CardHeader className="pb-3 flex-row items-center justify-between">
-          <CardTitle className="text-base">Últimos leads contatados</CardTitle>
-          <Button size="icon" variant="ghost" className="h-7 w-7"
-            onClick={() => qc.invalidateQueries({ queryKey: ["reengajamento-ultimos"] })}>
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {ultimos.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-6">Nenhum envio ainda</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-muted-foreground">
-                    <th className="text-left py-2 px-2 font-medium">Lead</th>
-                    <th className="text-left py-2 px-2 font-medium">Telefone</th>
-                    <th className="text-left py-2 px-2 font-medium">Enviado</th>
-                    <th className="text-center py-2 px-2 font-medium">Status</th>
-                    <th className="text-left py-2 px-2 font-medium">Última resposta</th>
-                    <th className="text-center py-2 px-2 font-medium">Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ultimos.map((l: any) => {
-                    const podeReativar = !l.reativado_por_nutricao && (l.reengajamento_status === "respondeu_outro" || l.reengajamento_status === "respondeu_nao" || l.reengajamento_status === "enviado");
-                    return (
-                      <tr key={l.id} className="border-b hover:bg-muted/30 align-top">
-                        <td className="py-2 px-2 font-medium">
-                          {l.nome}
-                          {l.reativado_por_nutricao && (
-                            <Badge className="bg-orange-100 text-orange-800 text-[9px] ml-1">🔄 REATIVADO</Badge>
-                          )}
-                        </td>
-                        <td className="py-2 px-2 whitespace-nowrap">{l.telefone}</td>
-                        <td className="py-2 px-2 whitespace-nowrap">{l.reengajamento_enviado_at ? formatBRT(l.reengajamento_enviado_at, "dd/MM HH:mm") : "—"}</td>
-                        <td className="py-2 px-2 text-center">{statusBadge(l.reengajamento_status)}</td>
-                        <td className="py-2 px-2 max-w-[280px]">
-                          {l.ultimaResposta ? (
-                            <div className="text-[11px]">
-                              <div className="text-foreground line-clamp-2">"{l.ultimaResposta.body}"</div>
-                              <div className="text-[10px] text-muted-foreground mt-0.5">{formatBRT(l.ultimaResposta.timestamp, "dd/MM HH:mm")}</div>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">—</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-2 text-center">
-                          {podeReativar ? (
-                            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => reativarManual(l.id, l.nome)}>
-                              🔄 Reativar
-                            </Button>
-                          ) : l.reativado_por_nutricao ? (
-                            <span className="text-[10px] text-green-700"><CheckCircle2 className="inline h-3 w-3 mr-0.5" />Na roleta</span>
-                          ) : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ReengajamentoUltimos
+        ultimos={ultimos}
+        onRefresh={() => qc.invalidateQueries({ queryKey: ["reengajamento-ultimos"] })}
+        onReativar={reativarManual}
+      />
 
       {/* Modal QR Code */}
       <Dialog open={qrOpen} onOpenChange={(o) => {

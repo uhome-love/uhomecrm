@@ -230,7 +230,7 @@ export default function AuditoriaWebhookTab() {
   const { data: todayStats } = useQuery({
     queryKey: ["auditoria-meta-today"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("reengajamento_resumo_hoje" as any);
+      const { data, error } = await supabase.rpc("reengajamento_resumo_hoje");
       if (error) {
         // Fallback: agrega no cliente (last 2000 do dia)
         const sinceBRT = new Date();
@@ -257,7 +257,7 @@ export default function AuditoriaWebhookTab() {
         });
         return { total: list.length, sent, delivered, read, responded, failed, sim: simIds.size, nao: naoIds.size };
       }
-      return data as any;
+      return data as unknown as { total: number; sent: number; delivered: number; read: number; responded: number; failed: number; sim: number; nao: number };
     },
     refetchInterval: 15000,
   });
