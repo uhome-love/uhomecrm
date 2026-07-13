@@ -69,6 +69,7 @@ Deno.serve(async (req) => {
     const metaIds: string[] = Array.isArray(body?.meta_ids)
       ? body.meta_ids.map((v: unknown) => String(v)).filter(Boolean)
       : [];
+    const templateName: string = typeof body?.template_name === "string" ? body.template_name : "";
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -82,29 +83,16 @@ Deno.serve(async (req) => {
       .eq("status", "failed")
       .not("run_id", "is", null);
     if (metaIds.length > 0) sel = sel.in("id", metaIds);
+    if (templateName) sel = sel.eq("template_name", templateName);
 
-    const { data: fails, error: selErr } = await sel.limit(500);
+    const { data: fails, error: selErr } = await sel.limit(2000);
     if (selErr) return json({ error: selErr.message }, 500);
     if (!fails || fails.length === 0) {
       return json({ ok: true, reset: 0, runs: 0, reason: "no_failed_items" });
     }
 
-    // --- Bloqueio por qualidade: falhas de elegibilidade/cobrança/throttle não podem reenviar ---
-    const blockingCount = fails.filter((f) => isQualityBlockingError(f.error_text)).length;
-    if (blockingCount > 0 && blockingCount >= fails.length / 2) {
-      return json({
-        ok: false,
-        blocked: true,
-        reason: "quality_block",
-        message:
-          "Reenvio bloqueado: as falhas são de elegibilidade/cobrança da conta Meta ou de " +
-          "limite de qualidade (131049). Reenviar agora queima a reputação do número. " +
-          "Regularize a conta na Meta antes de tentar novamente.",
-        blocking: blockingCount,
-        total: fails.length,
-      });
-    }
-
+    // Gate ligado = sinal humano de conta saudável / pagamento regularizado.
+    // Reprocessa todas as falhas selecionadas (inclusive elegibilidade/cobrança antigas).
 
     // --- Reabre os itens de fila correspondentes (volta para "pending") ---
     const affectedRuns = new Set<string>();
@@ -112,10 +100,9 @@ Deno.serve(async (req) => {
     let reset = 0;
 
     for (const f of fails) {
-      // Nunca reprocessa falhas de qualidade/cobrança, mesmo em lote misto.
-      if (isQualityBlockingError(f.error_text)) continue;
       const runId = f.run_id as string;
       if (!runId) continue;
+
 
       // Localiza o item na fila por run + lead (fallback: últimos 8 dígitos do telefone).
       let match = supabase
