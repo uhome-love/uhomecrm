@@ -11453,6 +11453,30 @@ export type Database = {
         }
         Returns: Json
       }
+      get_relatorio_origem_performance: {
+        Args: { p_corretor_ids?: string[]; p_end: string; p_start: string }
+        Returns: {
+          anuncio: string
+          campanha: string
+          conjunto_anuncio: string
+          corretor_id: string
+          corretor_nome: string
+          created_at: string
+          empreendimento: string
+          lead_id: string
+          motivo_descarte: string
+          nome: string
+          origem: string
+          plataforma: string
+          primeiro_contato_em: string
+          stage_nome: string
+          tem_venda: boolean
+          tem_visita_realizada: boolean
+          tempo_ate_primeiro_contato_min: number
+          tipo_descarte: string
+          vgv: number
+        }[]
+      }
       get_relatorio_pipeline_leads: {
         Args: {
           p_end: string
