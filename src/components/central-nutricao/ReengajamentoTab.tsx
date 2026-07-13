@@ -346,9 +346,9 @@ export default function ReengajamentoTab() {
         body: { force: true, wave: 2, iniciado_por: "manual_wave2" },
       }).then(({ data, error }) => {
         if (error) toast.error("Erro no disparo wave 2: " + error.message);
-        else if ((data as any)?.reason === "no_leads") toast.info("Nenhum lead elegível para 2ª onda ainda");
-        else if (["meta_quality_cooldown", "locked_quality_pause"].includes(String((data as any)?.reason || ""))) {
-          toast.error("⛔ Meta pausou por qualidade: " + String((data as any)?.motivo || "aguarde a recuperação antes de retomar"));
+        else if ((data as DispatchInvokeResult | null)?.reason === "no_leads") toast.info("Nenhum lead elegível para 2ª onda ainda");
+        else if (["meta_quality_cooldown", "locked_quality_pause"].includes(String((data as DispatchInvokeResult | null)?.reason || ""))) {
+          toast.error("⛔ Meta pausou por qualidade: " + String((data as DispatchInvokeResult | null)?.motivo || "aguarde a recuperação antes de retomar"));
         }
         qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
         qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
