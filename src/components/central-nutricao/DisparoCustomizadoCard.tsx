@@ -690,19 +690,21 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         </div>{/* /grid 2 colunas */}
 
         {/* Preview + ação */}
-        <div className="border-t pt-3 space-y-2">
-
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={doPreview} disabled={previewing}>
-              {previewing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Search className="h-3.5 w-3.5 mr-1" />}
-              Calcular público
+        <div className="border-t pt-4 space-y-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="outline" onClick={doPreview} disabled={previewing}>
+              {previewing ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Search className="h-4 w-4 mr-1.5" />}
+              1. Calcular público
             </Button>
-            {preview && (
+            {preview ? (
               <span className="text-sm">
-                <strong className="text-indigo-700">{preview.count}</strong> leads elegíveis
+                <strong className="text-primary text-lg">{preview.count.toLocaleString("pt-BR")}</strong> leads elegíveis
               </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">Calcule o público antes de disparar.</span>
             )}
           </div>
+
 
           {preview?.funil && isCombined && (preview.funil as any).por_fonte && (
             <div className="text-[11px] border rounded p-2 bg-background space-y-1">
