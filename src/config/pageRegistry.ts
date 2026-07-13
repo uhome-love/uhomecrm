@@ -99,6 +99,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "campanhas-voz": lazyRetry(() => import("@/pages/CampanhasVoz")),
   "central-nutricao": lazyRetry(() => import("@/pages/CentralNutricao")),
   "relatorio-semanal": lazyRetry(() => import("@/pages/RelatorioSemanal")),
+  "relatorio-origem-performance": lazyRetry(() => import("@/pages/RelatorioOrigemPerformancePage")),
   backoffice: lazyRetry(() => import("@/pages/BackofficeDashboard")),
   pagadorias: lazyRetry(() => import("@/pages/PagadoriasPage")),
   "pagadoria-solicitacoes": lazyRetry(() => import("@/pages/PagadoriaSolicitacoes")),
