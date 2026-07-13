@@ -9,6 +9,7 @@ import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
 import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookTab";
 import RespostasRecebidasHoje from "@/components/central-nutricao/RespostasRecebidasHoje";
 import NutricaoTab from "@/components/central-nutricao/NutricaoTab";
+import FilaReenvioCard from "@/components/central-nutricao/FilaReenvioCard";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -84,6 +85,7 @@ export default function CentralNutricaoPage() {
         {/* Aba 3: Ao vivo + resultado */}
         <TabsContent value="aovivo" className="mt-0 space-y-4">
           <RespostasRecebidasHoje />
+          <FilaReenvioCard />
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Auditoria de webhooks — retorno dos disparos</CardTitle>
