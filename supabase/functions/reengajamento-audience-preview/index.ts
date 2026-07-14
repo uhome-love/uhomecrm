@@ -524,7 +524,7 @@ Deno.serve(async (req) => {
         funil: {
           total_bruto: count ?? beforeDedup,
           count_pre_dedup: count ?? beforeDedup,
-          duplicados_removidos: (beforeDedup - candidatos.length) + templateDedup.removidos,
+          duplicados_removidos: beforeDedup - candidatos.length,
           telefones_invalidos: phoneSplit.invalidos,
           removidos_pipeline_ativo: removidosPipeline,
           removidos_frequencia: removidosFrequencia,
