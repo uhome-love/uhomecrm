@@ -6,6 +6,12 @@
 
 @layer base {
   :root {
+    /* Safe-area insets (notch / barra do sistema) expostos como px para uso em JS */
+    --sat: env(safe-area-inset-top, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+
     /* ── UhomeSales Design System v2.0 ── */
 
     /* Brand */
