@@ -574,7 +574,7 @@ Deno.serve(async (req) => {
         }
         if (bodyAudience.periodo?.from) q = q.gte("stage_changed_at", String(bodyAudience.periodo.from));
         if (bodyAudience.periodo?.to) q = q.lte("stage_changed_at", String(bodyAudience.periodo.to));
-        if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
+        if (empList.length) q = q.in("empreendimento", empList);
         if (dedupMode === "exclude_sent") {
           q = q.is("reengajamento_enviado_at", null);
         } else if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
@@ -654,7 +654,7 @@ Deno.serve(async (req) => {
           .not("telefone", "is", null);
         if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
         if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
-        if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
+        if (empList.length) q = q.in("empreendimento", empList);
         const { data, error } = await q.order("created_at", { ascending: false }).limit(cap);
         if (error) throw error;
         const cand = (data || []).map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" as const }));
@@ -674,7 +674,7 @@ Deno.serve(async (req) => {
             .not("telefone", "is", null);
           if (bodyAudience.periodo?.from) q = q.gte("created_at", String(bodyAudience.periodo.from));
           if (bodyAudience.periodo?.to) q = q.lte("created_at", String(bodyAudience.periodo.to));
-          if (bodyAudience.empreendimento) q = q.eq("empreendimento", String(bodyAudience.empreendimento));
+          if (empList.length) q = q.in("empreendimento", empList);
           return q.order("created_at", { ascending: false });
         };
         // Paginação: PostgREST limita respostas a ~1000 linhas por padrão, então
