@@ -133,6 +133,24 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   const closeHomi = useCallback(() => setIsOpen(false), []);
   const toggleHomi = useCallback(() => setIsOpen(prev => !prev), []);
 
+  // Injeta um cartão de ação (composer) localmente, sem chamar a IA.
+  const openComposer = useCallback((
+    tipo: "criar_tarefa" | "criar_visita",
+    lead?: { lead_id: string; lead_nome: string; campos?: Record<string, any> },
+  ) => {
+    setIsOpen(true);
+    const action: HomiAction = {
+      tipo,
+      lead_id: lead?.lead_id,
+      lead_nome: lead?.lead_nome,
+      campos: lead?.campos || {},
+      needsLead: !lead?.lead_id,
+    };
+    const label = tipo === "criar_tarefa" ? "Nova tarefa" : "Marcar visita";
+    setMessages(prev => [...prev, { role: "assistant", content: "", actions: [action], _composerLabel: label } as Message]);
+  }, []);
+
+
   // Save conversation
   const saveConversation = useCallback(async (msgs: Message[], convId: string | null) => {
     if (!user || msgs.length < 2) return convId;
