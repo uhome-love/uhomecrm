@@ -776,6 +776,12 @@ Deno.serve(async (req) => {
 
     // ── Supressão automática (só Meta): remove números que já falharam por
     // bloqueio de qualidade / opt-out / indisponível, evitando queimar a reputação do número.
+    //
+    // MODO TESTE CAUTELOSO: quando bodyAudience.modo_teste = true, "fura" APENAS as
+    // supressões de motivo "Recebeu e/ou leu" / "cooldown_engajou" (que são cooldowns
+    // reversíveis, não bloqueios reais da Meta). Bloqueios 131049/131050/131026/respondeu_nao
+    // continuam intocáveis.
+    const modoTeste = !!(bodyAudience as any)?.modo_teste && canal === "meta";
     if (!bodyRunId && canal === "meta" && leads.length > 0) {
       const nowIso = new Date().toISOString();
       const supressSet = new Set<string>();
@@ -787,12 +793,17 @@ Deno.serve(async (req) => {
       while (true) {
         const { data: sup, error: supErr } = await supabase
           .from("meta_supressao")
-          .select("telefone_last8, suprimir_ate")
+          .select("telefone_last8, suprimir_ate, motivo")
           .or(`suprimir_ate.is.null,suprimir_ate.gt.${nowIso}`)
           .range(from, from + PAGE - 1);
         if (supErr) { console.error("meta_supressao fetch error:", supErr.message); break; }
         if (!sup || sup.length === 0) break;
-        for (const s of sup) supressSet.add(String(s.telefone_last8));
+        for (const s of sup) {
+          const motivo = String((s as any).motivo || "");
+          // No modo teste, ignora somente cooldowns de engajamento (Recebeu/leu).
+          if (modoTeste && /recebeu e\/ou leu|cooldown_engajou/i.test(motivo)) continue;
+          supressSet.add(String(s.telefone_last8));
+        }
         if (sup.length < PAGE) break;
         from += PAGE;
       }
@@ -804,9 +815,10 @@ Deno.serve(async (req) => {
         const before = leads.length;
         leads = leads.filter((l) => !supressSet.has(last8(l.telefone)));
         supressosRemovidos = before - leads.length;
-        console.log(`Supressão Meta: ${supressosRemovidos} removidos de ${before} (lista ativa: ${supressSet.size})`);
+        console.log(`Supressão Meta${modoTeste ? " (modo teste, ignora cooldown_engajou)" : ""}: ${supressosRemovidos} removidos de ${before} (lista ativa: ${supressSet.size})`);
       }
     }
+
 
     // ── GUARDA DE EXCLUSIVIDADE DO PIPELINE (crítico, todos os canais) ──
     // Nunca dispara para quem é lead ATIVO no pipeline (telefone OU e-mail).
