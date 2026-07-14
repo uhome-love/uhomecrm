@@ -207,6 +207,11 @@ export default function LiveDispatchBanner() {
             </>
           )}
         </p>
+        {activeRun.motivo_parada && (
+          <p className="text-[10px] text-amber-700 leading-relaxed">
+            {activeRun.motivo_parada}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
