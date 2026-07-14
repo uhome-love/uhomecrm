@@ -281,8 +281,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       const { data, error } = await supabase.functions.invoke("reengajamento-descartados-enqueue", { body });
       if (error) throw new Error(await getEdgeErrorMessage(error));
 
-      const resp = data as { reason?: string; motivo?: string; error?: string; run_id?: string; active_run_id?: string; sent?: number; failed?: number; skipped?: number; total?: number } | null;
+      const resp = data as { ok?: boolean; reason?: string; motivo?: string; message?: string; error?: string; recoverable?: boolean; run_id?: string; active_run_id?: string; sent?: number; failed?: number; skipped?: number; total?: number } | null;
       const reason = String(resp?.reason || "");
+      const backendMessage = resp?.message || resp?.motivo || resp?.error;
       if (reason === "no_leads") {
         toast.info("Nenhum lead elegível após os filtros de segurança");
         return;
@@ -295,9 +296,19 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         toast.error("⛔ Meta pausou por qualidade: " + String(resp?.motivo || "aguarde a recuperação antes de retomar"));
         return;
       }
-      if (resp?.error) throw new Error(resp.error);
-      if (reason === "error") {
-        toast.error(`Disparo encerrado sem envio: ${resp?.failed ?? 0} falhas, ${resp?.skipped ?? 0} ignorados. Veja o histórico para o motivo.`);
+      if (reason === "auto_paused_50_consecutive_failures") {
+        toast.error(`⛔ Campanha pausada por 50 falhas seguidas: ${String(resp?.motivo || backendMessage || "veja o histórico para o motivo")}`);
+        onFired?.();
+        return;
+      }
+      if (resp?.ok === false || (resp?.error && reason !== "no_send")) {
+        toast.error(`${resp?.recoverable ? "Disparo pausado/recuperável" : "Erro no disparo"}: ${backendMessage || "veja o histórico para o motivo"}`);
+        onFired?.();
+        return;
+      }
+      if (reason === "error" || reason === "no_send") {
+        toast.error(`Disparo encerrado sem envio real: ${resp?.failed ?? 0} falhas, ${resp?.skipped ?? 0} ignorados. Veja o histórico para o motivo.`);
+        onFired?.();
         return;
       }
       toast.success(`🚀 Disparo iniciado para ${preview.count} leads`);

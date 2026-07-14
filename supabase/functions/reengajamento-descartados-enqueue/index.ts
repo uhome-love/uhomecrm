@@ -27,6 +27,61 @@ const META_GUARD_HARD_FAIL_RATIO = 0.85;
 const META_QUEUE_BATCH_SIZE = 3;
 const EVOLUTION_QUEUE_BATCH_SIZE = 5;
 const QUEUE_STALE_MINUTES = 6;
+const CONSECUTIVE_FAILURE_PAUSE_LIMIT = 50;
+
+type FailureCategory =
+  | "meta_quality_pacing"
+  | "meta_payment_eligibility"
+  | "meta_user_experiment"
+  | "meta_undeliverable"
+  | "meta_optout"
+  | "meta_template_paused"
+  | "evolution_disconnected"
+  | "evolution_unavailable"
+  | "transient_external_api"
+  | "unknown";
+
+const FAILURE_CATEGORY_LABELS: Record<FailureCategory, string> = {
+  meta_quality_pacing: "Qualidade/limite da Meta",
+  meta_payment_eligibility: "Elegibilidade ou pagamento da Meta",
+  meta_user_experiment: "Restrição experimental da Meta para destinatários",
+  meta_undeliverable: "Mensagem não entregue",
+  meta_optout: "Destinatário optou por não receber marketing",
+  meta_template_paused: "Template pausado/reprovado pela Meta",
+  evolution_disconnected: "Instância WhatsApp desconectada",
+  evolution_unavailable: "Evolution indisponível",
+  transient_external_api: "Instabilidade temporária da API externa",
+  unknown: "Falha não classificada",
+};
+
+function classifyFailure(raw: string | null | undefined): FailureCategory {
+  const msg = (raw || "").toLowerCase();
+  if (!msg) return "unknown";
+  if (msg.includes("business eligibility") || msg.includes("payment issue") || msg.includes("billing")) return "meta_payment_eligibility";
+  if (msg.includes("healthy ecosystem") || msg.includes("ecosystem engagement") || msg.includes("131049") || msg.includes("131050") || msg.includes("quality rating")) return "meta_quality_pacing";
+  if (msg.includes("part of an experiment")) return "meta_user_experiment";
+  if (msg.includes("stop receiving marketing") || msg.includes("opt-out") || msg.includes("opt out")) return "meta_optout";
+  if (msg.includes("template is paused") || msg.includes("template paused") || msg.includes("template was paused") || msg.includes("132015") || msg.includes("132016")) return "meta_template_paused";
+  if (msg.includes("message undeliverable") || msg.includes("unable to deliver")) return "meta_undeliverable";
+  if (msg.includes("service temporarily unavailable") || msg.includes('"is_transient":true') || msg.includes("is_transient")) return "transient_external_api";
+  if (msg.includes("connection closed") || msg.includes("disconnected") || msg.includes("close")) return "evolution_disconnected";
+  if (msg.includes("cannot read properties of undefined") || msg.includes("evolution indisponível")) return "evolution_unavailable";
+  return "unknown";
+}
+
+function explainFailureCategory(category: FailureCategory, sample?: string | null): string {
+  const label = FAILURE_CATEGORY_LABELS[category] || FAILURE_CATEGORY_LABELS.unknown;
+  if (category === "meta_quality_pacing") return `${label}: a Meta está limitando/recusando entrega para preservar qualidade. Pausa recomendada antes de retomar.`;
+  if (category === "meta_payment_eligibility") return `${label}: revise cobrança/elegibilidade da conta antes de reenviar.`;
+  if (category === "meta_user_experiment") return `${label}: parte dos destinatários não pode receber este marketing agora.`;
+  if (category === "meta_undeliverable") return `${label}: os números/template não estão entregando com consistência.`;
+  if (category === "meta_optout") return `${label}: não reenvie para esses números.`;
+  if (category === "meta_template_paused") return `${label}: troque ou regularize o template antes de retomar.`;
+  if (category === "evolution_disconnected") return `${label}: reconecte a instância antes de retomar.`;
+  if (category === "evolution_unavailable") return `${label}: aguarde estabilidade da Evolution antes de retomar.`;
+  if (category === "transient_external_api") return `${label}: pode ser reprocessado depois com segurança.`;
+  return `${label}${sample ? `: ${sample.slice(0, 180)}` : "."}`;
+}
 
 async function interruptibleDelay(ms: number, shouldStop: () => Promise<boolean>): Promise<boolean> {
   const deadline = Date.now() + ms;
@@ -426,7 +481,10 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const canal: "meta" | "evolution" = (cfg.canal === "meta") ? "meta" : "evolution";
+    const requestedCanal = String(bodyAudience?.canal || "").toLowerCase();
+    const canal: "meta" | "evolution" = requestedCanal === "meta" || requestedCanal === "evolution"
+      ? requestedCanal
+      : ((cfg.canal === "meta") ? "meta" : "evolution");
 
     // Validações por canal
     let evoUrl = "", evoKey = "";
@@ -886,9 +944,9 @@ Deno.serve(async (req) => {
         const finalFailed = failedCount || 0;
         const finalSent = sentCount || 0;
         const finalSkipped = skippedCount || 0;
-        const finalStatus = finalFailed > 0 && finalSent === 0 ? "error" : "completed";
-        const finalReason = finalStatus === "error"
-          ? `Fila encerrada com falhas via ${canal} (${finalSent}/${totalAlvo} enviados, ${finalFailed} falhas)`
+        const finalStatus = finalSent === 0 && totalAlvo > 0 ? "no_send" : "completed";
+        const finalReason = finalStatus === "no_send"
+          ? `Fila encerrada sem envio real via ${canal}: ${finalFailed} falhas e ${finalSkipped} ignorados de ${totalAlvo}. Motivo predominante: ${finalFailed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.`
           : `Fila concluída via ${canal} (${finalSent}/${totalAlvo} enviados${finalFailed > 0 ? `, ${finalFailed} falhas` : ""})`;
         await updateRun({ status: finalStatus, finished_at: new Date().toISOString(), motivo_parada: finalReason, enviados: finalSent, falhas: finalFailed, ignorados: finalSkipped });
         return new Response(JSON.stringify({ run_id: runId, sent: finalSent, failed: finalFailed, skipped: finalSkipped, total: totalAlvo, reason: finalStatus, canal, queue_done: true }), {
@@ -941,8 +999,8 @@ Deno.serve(async (req) => {
           falhas: 0,
           ignorados: 0,
         });
-        return new Response(JSON.stringify({ run_id: runId, error: reason, reason: "instance_disconnected", canal }), {
-          status: 409,
+        return new Response(JSON.stringify({ ok: false, run_id: runId, error: reason, message: reason, reason: "instance_disconnected", recoverable: true, canal }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -957,6 +1015,18 @@ Deno.serve(async (req) => {
     let sent = initialSent, failed = initialFailed, skipped = initialSkipped;
     let stopReason: string | null = null;
     let consecutiveMetaQualityFails = 0;
+    const failureCategoryCounts: Record<string, number> = {};
+
+    const rememberFailureCategory = (raw: string | null | undefined): FailureCategory => {
+      const category = classifyFailure(raw);
+      failureCategoryCounts[category] = (failureCategoryCounts[category] || 0) + 1;
+      return category;
+    };
+
+    const predominantFailureCategory = (): FailureCategory => {
+      const entries = Object.entries(failureCategoryCounts).sort((a, b) => b[1] - a[1]);
+      return (entries[0]?.[0] as FailureCategory | undefined) || "unknown";
+    };
 
     const pauseMetaForQuality = async (reason: string) => {
       const reasonWithCooldown = `${reason} Retomada sugerida após ${META_GUARD_COOLDOWN_HOURS}h; a Meta recomenda aguardar pelo menos 24h para erro 131049.`;
@@ -1000,6 +1070,23 @@ Deno.serve(async (req) => {
     const checkDeliveryQuality = async (): Promise<string | null> => {
       if (canal !== "meta" || !metaTemplate) return null;
       const since = new Date(Date.now() - META_GUARD_RECENT_MINUTES * 60 * 1000).toISOString();
+      const { data: lastTemplateRows } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("status, error_text, created_at")
+        .eq("template_name", metaTemplate)
+        .order("created_at", { ascending: false })
+        .limit(CONSECUTIVE_FAILURE_PAUSE_LIMIT);
+      if (lastTemplateRows && lastTemplateRows.length >= CONSECUTIVE_FAILURE_PAUSE_LIMIT && lastTemplateRows.every((row: any) => row.status === "failed")) {
+        const counts: Record<string, number> = {};
+        let sample: string | null = null;
+        for (const row of lastTemplateRows as any[]) {
+          if (!sample && row.error_text) sample = String(row.error_text);
+          const c = classifyFailure(row.error_text);
+          counts[c] = (counts[c] || 0) + 1;
+        }
+        const category = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FailureCategory | undefined) || "unknown";
+        return `Auto-pausa por ${CONSECUTIVE_FAILURE_PAUSE_LIMIT} falhas seguidas no template "${metaTemplate}". ${explainFailureCategory(category, sample)}`;
+      }
       const [failedRes, deliveredRes, readRes, respRes, qualityFailRes] = await Promise.all([
         supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "failed"),
         supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "delivered"),
@@ -1046,16 +1133,6 @@ Deno.serve(async (req) => {
     if (canal === "meta") {
       const preflightQualityReason = (await checkMetaCooldown()) || (await checkDeliveryQuality());
       if (preflightQualityReason) {
-        if (usingPersistentQueue) {
-          await updateRun({
-            status: "running",
-            finished_at: null,
-            motivo_parada: `Modo lento por qualidade Meta: ${preflightQualityReason}`.slice(0, 500),
-            enviados: sent,
-            falhas: failed,
-            ignorados: skipped,
-          } as any);
-        } else {
         const reason = await pauseMetaForQuality(preflightQualityReason);
         await updateRun({
           status: "paused",
@@ -1066,10 +1143,16 @@ Deno.serve(async (req) => {
           ignorados: skipped,
           erros: errs.slice(-20),
         });
+        if (runId) {
+          await supabase
+            .from("reengajamento_dispatch_queue")
+            .update({ status: "pending", locked_at: null } as any)
+            .eq("run_id", runId)
+            .eq("status", "processing");
+        }
         return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_cooldown", motivo: reason, canal }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
-        }
       }
     }
 
@@ -1124,6 +1207,83 @@ Deno.serve(async (req) => {
         .update({ status: "pending", locked_at: null } as any)
         .eq("run_id", runId)
         .eq("status", "processing");
+    };
+
+    const getConsecutiveQueueFailureStreak = async (): Promise<{ streak: number; sample: string | null; category: FailureCategory } | null> => {
+      if (!runId) return null;
+      const { data } = await supabase
+        .from("reengajamento_dispatch_queue")
+        .select("status, error_text, processed_at")
+        .eq("run_id", runId)
+        .not("processed_at", "is", null)
+        .order("processed_at", { ascending: false })
+        .limit(CONSECUTIVE_FAILURE_PAUSE_LIMIT);
+      if (!data || data.length < CONSECUTIVE_FAILURE_PAUSE_LIMIT) return null;
+      const allFailed = data.every((row: any) => row.status === "failed");
+      if (!allFailed) return null;
+      const counts: Record<string, number> = {};
+      let sample: string | null = null;
+      for (const row of data as any[]) {
+        if (!sample && row.error_text) sample = String(row.error_text);
+        const c = classifyFailure(row.error_text);
+        counts[c] = (counts[c] || 0) + 1;
+      }
+      const category = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FailureCategory | undefined) || predominantFailureCategory();
+      return { streak: data.length, sample, category };
+    };
+
+    const getConsecutiveMetaFailureStreak = async (): Promise<{ streak: number; sample: string | null; category: FailureCategory } | null> => {
+      if (!runId || canal !== "meta") return null;
+      const { data } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("status, error_text, created_at")
+        .eq("run_id", runId)
+        .order("created_at", { ascending: false })
+        .limit(CONSECUTIVE_FAILURE_PAUSE_LIMIT);
+      if (!data || data.length < CONSECUTIVE_FAILURE_PAUSE_LIMIT) return null;
+      const allFailed = data.every((row: any) => row.status === "failed");
+      if (!allFailed) return null;
+      const counts: Record<string, number> = {};
+      let sample: string | null = null;
+      for (const row of data as any[]) {
+        if (!sample && row.error_text) sample = String(row.error_text);
+        const c = classifyFailure(row.error_text);
+        counts[c] = (counts[c] || 0) + 1;
+      }
+      const category = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FailureCategory | undefined) || predominantFailureCategory();
+      return { streak: data.length, sample, category };
+    };
+
+    const pauseAfterConsecutiveFailures = async (lead: { id: string; nome: string }, latestError: string) => {
+      const streak = (await getConsecutiveQueueFailureStreak()) || (await getConsecutiveMetaFailureStreak());
+      if (!streak || streak.streak < CONSECUTIVE_FAILURE_PAUSE_LIMIT) return null;
+      const reason = `Campanha pausada automaticamente após ${streak.streak} falhas seguidas via ${canal}${metaTemplate ? ` no template "${metaTemplate}"` : ""}. Motivo predominante: ${explainFailureCategory(streak.category, streak.sample)} Último erro: ${(latestError || streak.sample || "sem detalhe").slice(0, 220)}`;
+      stopReason = reason;
+      await supabase.from("reengajamento_config").update({
+        paused: true,
+        paused_reason: reason.slice(0, 500),
+        paused_at_brt: nowBRT().toISOString().replace("Z", ""),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", cfg.id);
+      await insertEvento({
+        lead_id: lead.id,
+        run_id: runId,
+        tipo: "auto_pausa_50_falhas",
+        detalhe: reason.slice(0, 500),
+      });
+      await updateRun({
+        status: "paused",
+        finished_at: new Date().toISOString(),
+        motivo_parada: reason.slice(0, 500),
+        enviados: sent,
+        falhas: failed,
+        ignorados: skipped,
+        erros: errs.slice(-20),
+        ultimo_lead_id: lead.id,
+        ultimo_lead_nome: lead.nome,
+      } as any);
+      await releaseProcessingQueue();
+      return { reason, category: streak.category, streak: streak.streak };
     };
 
     const scheduleQueueContinuation = async (motivo: string) => {
@@ -1253,6 +1413,7 @@ Deno.serve(async (req) => {
             failed++;
             const errMsg = `${lead.nome}: ${r.error}`;
             errs.push(errMsg);
+            rememberFailureCategory(r.error || errMsg);
             if (isMetaQualityBlockText(r.error || "")) {
               const last8 = phone.slice(-8);
               const code = (r.error || "").match(/13\d{4}/)?.[0] || null;
@@ -1298,11 +1459,16 @@ Deno.serve(async (req) => {
             });
             await updateQueueItem(lead, "failed", errMsg);
 
+            const fiftyPause = await pauseAfterConsecutiveFailures(lead, errMsg);
+            if (fiftyPause) {
+              return new Response(JSON.stringify({ ok: false, run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_50_consecutive_failures", paused: true, recoverable: true, canal, motivo: fiftyPause.reason, failure_category: fiftyPause.category }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+
             // 🛑 Auto-pause: só trava se falhar SEM PARAR (15+ falhas consecutivas com bloqueio Meta).
             // Enquanto estiver enviando mais do que falhando, segue (modo lento cuida do pacing).
             if (isMetaQualityBlockText(r.error || "")) {
               consecutiveMetaQualityFails++;
-              if (consecutiveMetaQualityFails >= 15) {
+              if (consecutiveMetaQualityFails >= CONSECUTIVE_FAILURE_PAUSE_LIMIT) {
                 stopReason = await pauseMetaForQuality(`Auto-pausa: template "${metaTemplate}" provavelmente pausado/limitado pela Meta (${consecutiveMetaQualityFails} falhas consecutivas: "${(r.error || "").slice(0, 120)}").`);
                 await insertEvento({
                   lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
@@ -1340,14 +1506,10 @@ Deno.serve(async (req) => {
             const qReason = await checkDeliveryQuality();
             if (qReason) {
               await insertEvento({ lead_id: lead.id, run_id: runId, tipo: usingPersistentQueue ? "modo_lento_meta" : "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
-              if (usingPersistentQueue) {
-                await updateRun({ status: "running", motivo_parada: `Modo lento por qualidade Meta: ${qReason}`.slice(0, 500), enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) } as any);
-              } else {
                 stopReason = await pauseMetaForQuality(qReason);
                 await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
                 await releaseProcessingQueue();
                 return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-              }
             }
           }
         } else {
@@ -1365,10 +1527,15 @@ Deno.serve(async (req) => {
               const reason = `Evolution indisponível durante o disparo: ${payloadText}`;
               failed++;
               errs.push(`${lead.nome}: ${payloadText}`);
+              rememberFailureCategory(payloadText);
               await insertEvento({
                 lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: `${lead.nome}: ${payloadText}`.slice(0, 500),
               });
               await updateQueueItem(lead, "failed", payloadText);
+              const fiftyPause = await pauseAfterConsecutiveFailures(lead, payloadText);
+              if (fiftyPause) {
+                return new Response(JSON.stringify({ ok: false, run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_50_consecutive_failures", paused: true, recoverable: true, canal, motivo: fiftyPause.reason, failure_category: fiftyPause.category }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              }
               await updateRun({
                 status: "error",
                 finished_at: new Date().toISOString(),
@@ -1389,10 +1556,15 @@ Deno.serve(async (req) => {
             failed++;
             const errMsg = `${lead.nome}: ${payloadText}`;
             errs.push(errMsg);
+            rememberFailureCategory(payloadText);
             await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
             await updateQueueItem(lead, "failed", errMsg);
+            const fiftyPause = await pauseAfterConsecutiveFailures(lead, errMsg);
+            if (fiftyPause) {
+              return new Response(JSON.stringify({ ok: false, run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_50_consecutive_failures", paused: true, recoverable: true, canal, motivo: fiftyPause.reason, failure_category: fiftyPause.category }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
             await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
             continue;
           }
@@ -1445,10 +1617,15 @@ Deno.serve(async (req) => {
         failed++;
         const errMsg = `${lead.nome}: ${e instanceof Error ? e.message : String(e)}`;
         errs.push(errMsg);
+        rememberFailureCategory(errMsg);
         await insertEvento({
           lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
         });
         await updateQueueItem(lead, "failed", errMsg);
+        const fiftyPause = await pauseAfterConsecutiveFailures(lead, errMsg);
+        if (fiftyPause) {
+          return new Response(JSON.stringify({ ok: false, run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_50_consecutive_failures", paused: true, recoverable: true, canal, motivo: fiftyPause.reason, failure_category: fiftyPause.category }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
       }
     }
@@ -1468,9 +1645,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    const finalStatus = failed > 0 && sent === 0 ? "error" : "completed";
-    const finalReason = finalStatus === "error"
-      ? `Disparo encerrado com falhas via ${canal} (${sent}/${totalAlvo} enviados, ${failed} falhas)`
+    const finalStatus = sent === 0 && totalAlvo > 0 ? "no_send" : "completed";
+    const finalReason = finalStatus === "no_send"
+      ? `Disparo encerrado sem envio real via ${canal}: ${failed} falhas e ${skipped} ignorados de ${totalAlvo}. Motivo predominante: ${failed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.`
       : `Disparo concluído via ${canal} (${sent}/${totalAlvo} enviados${failed > 0 ? `, ${failed} falhas` : ""})`;
 
     await updateRun({
@@ -1488,9 +1665,14 @@ Deno.serve(async (req) => {
     console.error("reengajamento-enqueue error:", msg);
     if (runId) {
       await updateRun({ status: "error", finished_at: new Date().toISOString(), motivo_parada: msg.slice(0, 500), erros: errs.slice(-20) });
+      await supabase
+        .from("reengajamento_dispatch_queue")
+        .update({ status: "pending", locked_at: null, error_text: `Erro da função: ${msg}`.slice(0, 500) } as any)
+        .eq("run_id", runId)
+        .eq("status", "processing");
     }
-    return new Response(JSON.stringify({ run_id: runId, error: msg }), {
-      status: 500,
+    return new Response(JSON.stringify({ ok: false, run_id: runId, error: msg, message: msg, reason: "edge_function_error", recoverable: true }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

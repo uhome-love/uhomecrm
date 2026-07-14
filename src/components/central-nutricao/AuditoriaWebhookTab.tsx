@@ -544,11 +544,13 @@ export default function AuditoriaWebhookTab({ from, to }: { from?: string; to?: 
                             paused: "bg-amber-50 text-amber-700",
                             cancelled: "bg-rose-50 text-rose-700",
                             timeout: "bg-orange-50 text-orange-700",
+                            no_send: "bg-orange-50 text-orange-700",
                             failed: "bg-red-50 text-red-700",
+                            error: "bg-red-50 text-red-700",
                           };
-                          const hasIssue = run.status !== "running" && (run.enviados ?? 0) === 0 && (run.falhas ?? 0) > 0;
+                          const hasIssue = run.status !== "running" && (run.enviados ?? 0) === 0 && ((run.falhas ?? 0) > 0 || (run.total_alvo ?? 0) > 0);
                           return (
-                            <TableRow key={run.id} className={hasIssue ? "bg-red-50/30" : ""}>
+                            <TableRow key={run.id} className={hasIssue ? "bg-orange-50/30" : ""}>
                               <TableCell className="text-xs whitespace-nowrap">{formatBRT(run.started_at, "dd/MM HH:mm")}</TableCell>
                               <TableCell>
                                 <Badge variant="outline" className={`text-[10px] ${statusColors[run.status] || "bg-neutral-100"}`}>

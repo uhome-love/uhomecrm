@@ -12,6 +12,7 @@ function runStatusBadge(s: string) {
     paused: { lbl: "⏸️ Pausado", cls: "bg-amber-100 text-amber-800" },
     cancelled: { lbl: "⏹️ Parado", cls: "bg-rose-100 text-rose-800" },
     timeout: { lbl: "⏱️ Tempo limite", cls: "bg-orange-100 text-orange-800" },
+    no_send: { lbl: "⚠️ Sem envio", cls: "bg-orange-100 text-orange-800" },
     error: { lbl: "❌ Erro", cls: "bg-red-100 text-red-800" },
   };
   const m = map[s] || { lbl: s, cls: "bg-gray-100 text-gray-800" };
@@ -50,8 +51,10 @@ export default function ReengajamentoHistorico({
                 </tr>
               </thead>
               <tbody>
-                {runs.map((r) => (
-                  <tr key={r.id} className="border-b hover:bg-muted/30 align-top">
+                {runs.map((r) => {
+                  const noRealSend = (r.enviados || 0) === 0 && (r.total_alvo || 0) > 0;
+                  return (
+                  <tr key={r.id} className={`border-b hover:bg-muted/30 align-top ${noRealSend ? "bg-orange-50/40" : ""}`}>
                     <td className="py-2 px-2 whitespace-nowrap">{formatBRT(r.started_at, "dd/MM HH:mm:ss")}</td>
                     <td className="py-2 px-2">{runStatusBadge(r.status)}</td>
                     <td className="py-2 px-2 text-center font-semibold text-green-700">{r.enviados || 0}/{r.total_alvo || 0}</td>
@@ -71,7 +74,8 @@ export default function ReengajamentoHistorico({
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

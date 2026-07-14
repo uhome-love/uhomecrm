@@ -1,58 +1,88 @@
-## Diagnóstico da auditoria
+## Diagnóstico inicial
 
-- O template novo `lakebaikal_novidade3` existe no fluxo e não está bloqueado na blacklist.
-- Houve um disparo recente com esse template: 32 itens na fila, 5 enviados, 27 ignorados por telefone inválido.
-- Dos 5 enviados, a Meta já retornou: 2 lidos, 1 ainda enviado, 2 falhas externas da Meta (`Message undeliverable` / `User's number is part of an experiment`).
-- Não apareceu erro 500 nos logs de edge function nas últimas consultas; o erro visto pelo usuário provavelmente vem do frontend exibindo genericamente `Edge Function returned a non-2xx status` ou de uma continuação/preview sem mensagem clara.
-- A configuração geral está com `enabled=false`, mas disparos manuais passam por `force=true`; isso é coerente com a regra atual de disparo manual.
+A auditoria apontou 4 causas prováveis para a instabilidade percebida:
 
-## Plano de correção
+1. **O canal do disparo ignora a escolha da tela**
+   - A tela envia `audience.canal`, mas a função usa `reengajamento_config.canal`.
+   - Resultado: o usuário escolhe Meta/Evolution, mas o backend pode executar outro canal.
 
-1. **Melhorar o erro real no frontend**
-   - Ajustar o card de disparo para extrair o corpo real das falhas de edge function, em vez de mostrar só “Edge Function returned a non-2xx status”.
-   - Mostrar mensagens claras: template ausente, imagem/header incompatível, bloqueio Meta, sem público elegível, fila travada ou credencial/configuração.
+2. **Finalização enganosa quando todos são ignorados**
+   - Exemplo recente: run com `0 enviados / 24 ignorados` terminou como `completed` e mensagem “Fila concluída”, mesmo sem enviar nada.
+   - Isso parece “não enviou” sem explicação clara.
 
-2. **Auditoria pré-disparo para Lake Baikal**
-   - Adicionar uma validação antes de disparar:
-     - template selecionado aprovado/listado pela Meta;
-     - não está em `blocked_templates`;
-     - existe imagem de header mapeada, quando o template exigir imagem;
-     - preview e disparo usam a mesma regra de elegibilidade.
-   - Se o template for `lakebaikal_novidade3`, manter o header atual mapeado e validar fallback sem travar o disparo se a Meta rejeitar header inexistente.
+3. **Falhas pós-envio da Meta não param a campanha do jeito solicitado**
+   - Há muitas falhas recentes de qualidade/entrega: `healthy ecosystem engagement`, `Message undeliverable`, `Business eligibility payment issue`, `experiment`.
+   - O código já tem guarda de qualidade, mas mistura falhas de webhook com envios “sent/read/delivered” e não aplica exatamente a regra pedida de **50 falhas seguidas** com pausa explicada.
 
-3. **Corrigir divergência entre preview e disparo**
-   - Auditar e alinhar `reengajamento-audience-preview` com `reengajamento-descartados-enqueue`, especialmente em Oferta Ativa/listas:
-     - paginação acima de 1000 leads;
-     - filtro de frequência;
-     - telefones inválidos;
-     - dedup por template/telefone.
-   - O preview deve explicar quantos saem por telefone inválido para evitar “preview mostra X, disparo envia muito menos”.
+4. **Erros de edge function ainda retornam 500 em alguns caminhos**
+   - Em erro inesperado, a função devolve HTTP 500; no frontend isso vira “Edge Function error” genérico.
+   - O correto é transformar isso em resposta estruturada, gravar o motivo no run e manter a fila recuperável.
 
-4. **Blindar a fila para não interromper o disparo**
-   - Garantir que falhas individuais da Meta não derrubem a função inteira: cada item deve virar `failed` ou `suppressed`, e a fila continua.
-   - Garantir que itens em `processing` sejam liberados quando a função bater timeout/retomar.
-   - Revisar a continuação automática por micro-lotes para sempre carregar `iniciado_por` manual e não cair no gate automático.
+## Plano de execução
 
-5. **Adicionar ação de retomada limpa**
-   - Se houver run travado/running com fila pendente, a UI deve oferecer “Retomar disparo” e chamar a mesma função com `run_id`.
-   - Se não houver pendentes, marcar como concluído/erro de forma limpa.
+### 1. Corrigir o contrato tela → motor
+- Fazer `reengajamento-descartados-enqueue` respeitar o canal selecionado no disparo (`audience.canal`).
+- Manter fallback para `reengajamento_config.canal` quando não vier canal explícito.
+- Persistir no run o payload real usado para permitir retomada/retry fiel.
 
-6. **Validação final**
-   - Testar `meta-templates-list` autenticado.
-   - Testar preview do Lake Baikal sem disparar.
-   - Testar chamada de disparo com limite pequeno e confirmar que:
-     - cria run;
-     - preenche fila;
-     - envia ou ignora item a item;
-     - não retorna erro genérico;
-     - registra `reengajamento_meta_disparos` e status da fila.
+### 2. Endurecer a fila persistente para não “morrer” no meio
+- Garantir que itens presos em `processing` voltem para `pending` com segurança.
+- Quando a continuação automática falhar, deixar `motivo_parada` claro e a run retomável, em vez de parecer encerrada.
+- Ajustar o status final:
+  - `completed` só quando houve envio real ou finalização saudável.
+  - `no_send`/`error` quando não houve nenhum envio e houve apenas ignorados/falhas, com motivo detalhado.
 
-## Arquivos previstos
+### 3. Implementar a regra operacional de 50 falhas seguidas
+- Criar contador por run para falhas consecutivas reais.
+- Ao atingir **50 falhas seguidas**, pausar a campanha automaticamente.
+- Gravar no run:
+  - template/canal usado;
+  - quantidade de falhas seguidas;
+  - motivo predominante;
+  - recomendação objetiva: template pausado, problema de pagamento/elegibilidade, qualidade Meta, número/opt-out, instância Evolution desconectada etc.
+- Liberar itens ainda pendentes para retomada posterior, sem perder fila.
 
-- `src/components/central-nutricao/DisparoCustomizadoCard.tsx`
-- `supabase/functions/reengajamento-audience-preview/index.ts`
+### 4. Classificar falhas da Meta e Evolution
+- Normalizar motivos em categorias:
+  - `meta_quality_pacing` para `healthy ecosystem engagement` / 131049;
+  - `meta_payment_eligibility` para cobrança/elegibilidade;
+  - `meta_user_experiment`;
+  - `meta_undeliverable`;
+  - `meta_optout`;
+  - `evolution_disconnected` / `evolution_unavailable`;
+  - `transient_external_api`.
+- Usar essa classificação no `motivo_parada`, histórico e fila de reenvio.
+
+### 5. Melhorar respostas da edge function para o frontend
+- Trocar retornos 500 genéricos por JSON estruturado sempre que possível:
+  - `ok: false`, `reason`, `message`, `run_id`, `recoverable`.
+- No frontend, trocar toast genérico “Edge Function error” por mensagem do backend e link visual para o histórico/run.
+
+### 6. Corrigir a experiência da página de reengajamento
+- Mostrar no banner de disparo em andamento o motivo atual (`motivo_parada`) quando existir.
+- No histórico, destacar runs com:
+  - “sem envio real”;
+  - “pausado por 50 falhas seguidas”;
+  - “pausado por qualidade Meta”;
+  - “retomável”.
+- Ajustar textos para diferenciar:
+  - falha de envio;
+  - lead ignorado por telefone inválido/supressão/frequência;
+  - pausa protetiva.
+
+### 7. Validação pós-correção
+- Rodar leitura dos últimos runs e filas para confirmar que não há `processing` travado.
+- Testar edge function com payload seguro/limitado para validar resposta estruturada.
+- Validar que uma campanha sem elegíveis não aparece como sucesso enganoso.
+- Conferir logs da função depois do teste.
+
+## Arquivos prováveis
+
 - `supabase/functions/reengajamento-descartados-enqueue/index.ts`
+- `src/components/central-nutricao/DisparoCustomizadoCard.tsx`
+- `src/components/central-nutricao/LiveDispatchBanner.tsx`
+- Possivelmente componentes de histórico/runs da Central de Reengajamento, se a listagem principal estiver em outro arquivo.
 
-## Observação operacional
+## Observação importante
 
-Antes de disparar em volume, o Lake Baikal deve rodar em lote pequeno para validar entrega real da Meta. A auditoria indica que o sistema disparou 5 mensagens com o template novo, então o problema principal é robustez/clareza do fluxo e elegibilidade da base, não aprovação do template.
+A base já mostra alto volume de falhas Meta recentes. Então o objetivo não é “forçar envio a qualquer custo”, porque isso piora reputação e entrega; é fazer o motor enviar quando pode, pausar quando deve, explicar exatamente o motivo e permitir retomada/reenvio controlado sem quebrar a ferramenta.
