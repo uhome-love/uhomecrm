@@ -35,14 +35,13 @@ export const HOMI_TOOLS = [
     function: {
       name: "buscar_imovel",
       description:
-        "Busca imóveis no catálogo da Uhome por critérios. Use quando o corretor pedir para encontrar/buscar um imóvel, apartamento, unidade etc.",
+        "Busca imóveis no catálogo da Uhome. Use quando o corretor pedir para encontrar/buscar um imóvel. Receba o texto livre do corretor em `termo` (ex: '2 dorms no Petrópolis até 600 mil') e EXTRAIA você mesmo dormitórios e valor máximo para os campos, deixando em `termo` só bairro/empreendimento/tipo.",
       parameters: {
         type: "object",
         properties: {
-          termo: { type: "string", description: "Texto livre: bairro, empreendimento ou tipo." },
-          dormitorios: { type: "number", description: "Número mínimo de dormitórios." },
-          valor_max: { type: "number", description: "Valor de venda máximo em reais." },
-          bairro: { type: "string", description: "Bairro desejado." },
+          termo: { type: "string", description: "Bairro, empreendimento ou tipo (texto livre, sem número de dorms nem valor)." },
+          dormitorios: { type: "number", description: "Número mínimo de dormitórios extraído do texto." },
+          valor_max: { type: "number", description: "Valor de venda máximo em reais extraído do texto." },
         },
       },
     },
@@ -126,6 +125,70 @@ export const HOMI_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "contexto_lead",
+      description:
+        "Lê o histórico completo do lead (etapa, substatus, timeline de atividades e anotações do corretor) para você ENTENDER o momento do lead SEM PERGUNTAR. CHAME SEMPRE esta ferramenta ANTES de escrever uma mensagem de WhatsApp, follow-up ou script para um lead citado pelo nome. Depois, faça um mini-resumo curto (1 linha) do que entendeu e já escreva a mensagem pronta.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_nome: { type: "string", description: "Nome (ou parte) do lead." },
+        },
+        required: ["lead_nome"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "registrar_resultado",
+      description:
+        "Prepara o registro do resultado de um contato com o lead (o corretor confirma na tela). Use quando o corretor relatar o que aconteceu: 'liguei e não atendeu', 'falei com a Marilá, quer visitar sábado', 'não tem interesse'. Classifique o resultado.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_nome: { type: "string", description: "Nome (ou parte) do lead." },
+          resultado: {
+            type: "string",
+            enum: ["nao_atendeu", "atendeu_sem_interesse", "atendeu_interessado", "pediu_retorno", "agendou_visita"],
+            description: "Classificação do resultado do contato.",
+          },
+          detalhe: { type: "string", description: "Detalhe do que aconteceu (texto livre). Opcional." },
+        },
+        required: ["lead_nome", "resultado"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "leads_esfriando",
+      description:
+        "Lista os leads do corretor que estão esfriando (sem atividade há vários dias), ordenados pelo tempo parado. Use quando o corretor perguntar quais leads estão parados, esfriando, precisando de atenção ou reengajamento.",
+      parameters: {
+        type: "object",
+        properties: {
+          dias: { type: "number", description: "Nº mínimo de dias sem atividade. Padrão: 5." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "preparar_visita",
+      description:
+        "Monta um briefing pré-visita: quem é o lead, histórico resumido, imóvel de interesse e argumentos de venda. Use quando o corretor pedir para preparar/se preparar para uma visita, seja de um lead nomeado ou das visitas de hoje/amanhã.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_nome: { type: "string", description: "Nome do lead (opcional). Se vazio, usa as visitas de hoje/amanhã." },
+        },
+      },
+    },
+  },
 ];
 
 
@@ -154,6 +217,42 @@ async function resolveLead(userClient: any, uid: string, nome: string) {
   const exact = rows.filter((r: any) => (r.nome || "").toLowerCase() === term.toLowerCase());
   if (exact.length === 1) return { lead: exact[0] };
   return { candidates: rows };
+}
+
+// Reads a lead's history (stage, substatus, timeline, notes) — read-only, RLS-scoped.
+async function readLeadHistory(userClient: any, lead: any) {
+  let stageNome = "";
+  let flagStatus = "";
+  const { data: leadFull } = await userClient
+    .from("pipeline_leads")
+    .select("flag_status, empreendimento, stage_id")
+    .eq("id", lead.id)
+    .maybeSingle();
+  const rawFlag = leadFull?.flag_status;
+  flagStatus = rawFlag && typeof rawFlag === "object"
+    ? Object.entries(rawFlag).map(([k, v]) => `${k}: ${v}`).join(", ")
+    : (rawFlag || "");
+  const empreendimento = leadFull?.empreendimento || lead.empreendimento || "";
+  const stageId = leadFull?.stage_id || lead.stage_id;
+  if (stageId) {
+    const { data: st } = await userClient.from("pipeline_stages").select("nome").eq("id", stageId).maybeSingle();
+    stageNome = st?.nome || "";
+  }
+  const { data: atividades } = await userClient
+    .from("pipeline_atividades")
+    .select("titulo, descricao, tipo, data, created_at")
+    .eq("pipeline_lead_id", lead.id)
+    .order("created_at", { ascending: false })
+    .limit(8);
+  const { data: anotacoes } = await userClient
+    .from("pipeline_anotacoes")
+    .select("conteudo, autor_nome, created_at")
+    .eq("pipeline_lead_id", lead.id)
+    .order("created_at", { ascending: false })
+    .limit(5);
+  const acts = atividades || [];
+  const ultima = acts[0] ? `${acts[0].titulo || acts[0].tipo || "atividade"}${acts[0].data ? " · " + acts[0].data : ""}` : null;
+  return { stageNome, flagStatus, empreendimento, atividades: acts, anotacoes: anotacoes || [], ultima };
 }
 
 export interface ToolOutcome {
@@ -421,6 +520,153 @@ export async function executeHomiTool(
       return {
         action: { tipo: "anotar_lead", lead_id: lead.id, lead_nome: lead.nome, texto: args.texto || "" },
         modelResult: `Anotação preparada para ${lead.nome}. Peça ao corretor para revisar e confirmar.`,
+      };
+    }
+
+    if (name === "contexto_lead") {
+      const r = await resolveLead(userClient, uid, args.lead_nome);
+      if ((r as any).none) return { modelResult: `Não achei nenhum lead com "${args.lead_nome}". Peça ao corretor para conferir o nome.` };
+      if ((r as any).candidates) {
+        return {
+          result: { tipo: "escolher_lead", intent: "contexto_lead", candidates: (r as any).candidates, args },
+          modelResult: `Achei vários leads com "${args.lead_nome}". A lista de escolha já apareceu. Peça para o corretor selecionar qual.`,
+        };
+      }
+      const lead = (r as any).lead;
+      const hist = await readLeadHistory(userClient, lead);
+
+      const out = {
+        tipo: "contexto_lead",
+        lead: { id: lead.id, nome: lead.nome, telefone: lead.telefone, empreendimento: lead.empreendimento, stage_nome: hist.stageNome, flag_status: hist.flagStatus },
+        ultima_interacao: hist.ultima,
+        n_anotacoes: hist.anotacoes.length,
+      };
+
+      const semHistorico = hist.atividades.length === 0 && hist.anotacoes.length === 0 && !hist.stageNome;
+      const contextoTxt = [
+        `Etapa: ${hist.stageNome || "—"}${hist.flagStatus ? " (" + hist.flagStatus + ")" : ""}`,
+        hist.empreendimento ? `Empreendimento: ${hist.empreendimento}` : "",
+        hist.atividades.length ? `Timeline (mais recente primeiro):\n${hist.atividades.map((a: any) => `- ${a.data || ""} ${a.titulo || a.tipo || ""}${a.descricao ? ": " + a.descricao : ""}`).join("\n")}` : "Sem atividades registradas.",
+        hist.anotacoes.length ? `Anotações do corretor:\n${hist.anotacoes.map((n: any) => `- ${n.conteudo}`).join("\n")}` : "",
+      ].filter(Boolean).join("\n");
+
+      return {
+        result: out,
+        modelResult: semHistorico
+          ? `O lead ${lead.nome} não tem histórico. Faça 1 pergunta rápida para entender o momento antes de escrever.`
+          : `HISTÓRICO DE ${lead.nome}:\n${contextoTxt}\n\nCom base nisso: (1) faça um mini-resumo de 1 linha do momento do lead; (2) JÁ escreva a mensagem de WhatsApp pronta (máx 3 linhas, natural, termina com pergunta). NÃO pergunte o momento do funil — você já tem o contexto.`,
+      };
+    }
+
+    if (name === "registrar_resultado") {
+      const r = await resolveLead(userClient, uid, args.lead_nome);
+      if ((r as any).none) return { modelResult: `Não achei nenhum lead com "${args.lead_nome}".` };
+      if ((r as any).candidates) {
+        return {
+          result: { tipo: "escolher_lead", intent: "registrar_resultado", candidates: (r as any).candidates, args },
+          modelResult: `Achei vários leads com "${args.lead_nome}". Peça para o corretor selecionar qual.`,
+        };
+      }
+      const lead = (r as any).lead;
+      const RES: Record<string, { label: string; tarefa: string; tipoTarefa: string }> = {
+        nao_atendeu: { label: "☎️ Não atendeu", tarefa: "Tentar ligar de novo", tipoTarefa: "ligar" },
+        atendeu_sem_interesse: { label: "🙅 Sem interesse", tarefa: "Follow-up de reengajamento", tipoTarefa: "follow_up" },
+        atendeu_interessado: { label: "🔥 Interessado", tarefa: "Marcar visita", tipoTarefa: "marcar_visita" },
+        pediu_retorno: { label: "🔁 Pediu retorno", tarefa: "Retornar contato", tipoTarefa: "ligar" },
+        agendou_visita: { label: "🏠 Agendou visita", tarefa: "Confirmar visita", tipoTarefa: "marcar_visita" },
+      };
+      const meta = RES[args.resultado] || RES.pediu_retorno;
+      const action = {
+        tipo: "registrar_resultado",
+        lead_id: lead.id,
+        lead_nome: lead.nome,
+        resultado: args.resultado,
+        resultado_label: meta.label,
+        detalhe: args.detalhe || "",
+        proxima_tarefa: { tipo: meta.tipoTarefa, titulo: meta.tarefa },
+      };
+      return {
+        action,
+        modelResult: `Resultado preparado para ${lead.nome} (${meta.label}). O cartão de confirmação apareceu com a próxima tarefa sugerida. Diga 1 frase para o corretor confirmar.`,
+      };
+    }
+
+    if (name === "leads_esfriando") {
+      const dias = typeof args.dias === "number" && args.dias > 0 ? args.dias : 5;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - dias);
+      const cutoffISO = cutoff.toISOString();
+      const { data } = await userClient
+        .from("pipeline_leads")
+        .select("id, nome, telefone, empreendimento, ultima_acao_at, stage_id")
+        .eq("corretor_id", uid)
+        .eq("arquivado", false)
+        .or(`ultima_acao_at.lt.${cutoffISO},ultima_acao_at.is.null`)
+        .order("ultima_acao_at", { ascending: true, nullsFirst: true })
+        .limit(15);
+      const rows = (data || []).map((l: any) => {
+        const dt = l.ultima_acao_at ? new Date(l.ultima_acao_at) : null;
+        const diasParado = dt ? Math.floor((Date.now() - dt.getTime()) / 86400000) : null;
+        return { id: l.id, nome: l.nome, empreendimento: l.empreendimento, dias_parado: diasParado };
+      });
+      return {
+        result: { tipo: "leads_esfriando", dias, leads: rows },
+        modelResult: rows.length
+          ? `${rows.length} leads esfriando (sem contato há ${dias}+ dias) já exibidos com ações de reengajar. Comente em 1 frase por onde começar.`
+          : `Nenhum lead esfriando há mais de ${dias} dias. Parabenize o corretor pela cadência em 1 frase.`,
+      };
+    }
+
+    if (name === "preparar_visita") {
+      const today = todayBRT();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+
+      let lead: any = null;
+      let visitaInfo = "";
+      if (args.lead_nome) {
+        const r = await resolveLead(userClient, uid, args.lead_nome);
+        if ((r as any).lead) lead = (r as any).lead;
+        else if ((r as any).candidates) {
+          return {
+            result: { tipo: "escolher_lead", intent: "preparar_visita", candidates: (r as any).candidates, args },
+            modelResult: `Achei vários leads com "${args.lead_nome}". Peça para o corretor selecionar qual.`,
+          };
+        } else return { modelResult: `Não achei nenhum lead com "${args.lead_nome}".` };
+      } else {
+        const { data: visitas } = await userClient
+          .from("visitas")
+          .select("nome_cliente, empreendimento, data_visita, hora_visita, local_visita, pipeline_lead_id")
+          .eq("corretor_id", uid)
+          .in("data_visita", [today, tomorrowStr])
+          .order("data_visita", { ascending: true })
+          .limit(1);
+        const v = visitas?.[0];
+        if (!v) return { modelResult: "Não há visitas agendadas para hoje ou amanhã. Peça ao corretor o nome do lead para preparar." };
+        visitaInfo = `Visita: ${v.data_visita}${v.hora_visita ? " " + v.hora_visita.slice(0, 5) : ""}${v.empreendimento ? " · " + v.empreendimento : ""}${v.local_visita ? " · " + v.local_visita : ""}`;
+        if (v.pipeline_lead_id) {
+          const { data: ld } = await userClient.from("pipeline_leads").select("id, nome, telefone, empreendimento, stage_id").eq("id", v.pipeline_lead_id).maybeSingle();
+          lead = ld;
+        } else {
+          lead = { nome: v.nome_cliente, empreendimento: v.empreendimento };
+        }
+      }
+
+      let contextoTxt = "";
+      if (lead?.id) {
+        const hist = await readLeadHistory(userClient, lead);
+        contextoTxt = [
+          `Etapa: ${hist.stageNome || "—"}`,
+          hist.empreendimento ? `Empreendimento: ${hist.empreendimento}` : "",
+          hist.atividades.length ? `Últimas interações:\n${hist.atividades.slice(0, 5).map((a: any) => `- ${a.data || ""} ${a.titulo || a.tipo || ""}`).join("\n")}` : "",
+          hist.anotacoes.length ? `Anotações:\n${hist.anotacoes.map((n: any) => `- ${n.conteudo}`).join("\n")}` : "",
+        ].filter(Boolean).join("\n");
+      }
+
+      return {
+        result: { tipo: "preparar_visita", lead: { id: lead?.id, nome: lead?.nome, empreendimento: lead?.empreendimento } },
+        modelResult: `BRIEFING PRÉ-VISITA de ${lead?.nome || "cliente"}.\n${visitaInfo}\n${contextoTxt}\n\nMonte um briefing curto e prático: (1) quem é o lead e momento; (2) imóvel/empreendimento de interesse; (3) 2-3 argumentos de venda fortes desse empreendimento (use o conhecimento da base). Formato objetivo em tópicos.`,
       };
     }
 

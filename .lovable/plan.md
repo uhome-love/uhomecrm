@@ -1,44 +1,78 @@
-# HOMI Copiloto — Fase 2: mais simples e usual
+# HOMI Copiloto — Fase 3: Contexto do lead + busca de imóvel simplificada
 
-Objetivo: deixar o Homi leve de abrir, com busca de imóvel que realmente encontra e já entrega mensagem pronta com link, e todos os fluxos com o mínimo de digitação.
+## Problema
+Quando o corretor pede "escreve um follow-up pra Marilá", o Homi pergunta "qual o momento dela no funil?" em vez de olhar o histórico. Hoje a geração de mensagem não puxa nada do lead, e o `resumo_lead` só lê etapa + última atividade + próximas tarefas — nunca a timeline completa nem as anotações. Além disso, a busca de imóvel ainda tem muitos campos/chips e fica trabalhosa.
 
-## 1. Abrir só com saudação (sem briefing automático)
-- Remover o efeito de briefing automático em `HomiContext` (hoje ele dispara `ver_pendencias` sozinho ao abrir).
-- A tela inicial passa a mostrar apenas a saudação ("Fala, Adriana! Como posso ajudar?") + botões de atalho já existentes.
-- Manter o atalho "⏰ Atrasados" na barra rápida para quem quiser o resumo do dia sob demanda (1 toque), mas nunca automático.
+## Como vai funcionar (decisões aprovadas)
+- Ao pedir mensagem/follow-up para um lead **pelo nome**, o Homi **lê o histórico sozinho** (timeline + anotações), mostra um **mini-resumo do que entendeu** e **em seguida já gera a mensagem** — sem ficar perguntando.
+- Fontes: `pipeline_atividades` (timeline) + `pipeline_anotacoes` (observações do corretor), além de etapa/substatus já disponíveis.
 
-## 2. Busca de imóvel facilitada (conhecer o catálogo e acertar)
-Problema atual: "3 dorms passo d'areia" não retorna nada porque a busca exige tudo junto e não tolera variações.
-- Botão "🔎 Imóvel" passa a abrir um **formulário de busca** (composer), igual aos de Tarefa/Visita, com campos simples: bairro/empreendimento (texto), dormitórios (chips 1/2/3/4+) e valor máximo. Digitar em linguagem natural continua funcionando.
-- Melhorar a ferramenta `buscar_imovel` na edge:
-  - Quebrar o termo em palavras e buscar cada token em `bairro`, `empreendimento`, `titulo` (tolerante a "passo dareia" / "passo d'areia").
-  - Se a busca estrita não achar nada, fazer uma segunda passada mais ampla (só o token mais forte) e marcar como "resultados aproximados" em vez de "nenhum imóvel".
-  - Incluir `slug` no retorno para montar links.
-- No prompt do copiloto: ao pedir imóvel, chamar `buscar_imovel` direto (sem ficar perguntando bairro/dorms/valor campo a campo).
+---
 
-## 3. Link pronto + mensagem pronta pra enviar
-- No cartão de cada imóvel (`ImoveisCard`), adicionar ações:
-  - **Copiar mensagem**: monta texto pronto (título, bairro, preço, link) e copia.
-  - **WhatsApp**: abre `wa.me` com a mensagem já preenchida pra escolher o contato.
-- O link usa o padrão oficial personalizado do corretor: `https://uhome.com.br/c/{slug_do_corretor}/imovel/{slug}` (via `useBrokerSlug` + `gerarSlugUhome`), o mesmo da página do imóvel.
-- Opção "Enviar pro lead" quando a busca partiu de um lead: gera a mensagem já com o nome do lead.
+## Parte 1 — Homi analisa o lead em vez de perguntar
 
-## 4. Facilitar todos os fluxos (menos digitação)
-- WhatsApp de follow-up: o botão "💬 Whats" nas pendências/lead já rascunha a mensagem; garantir que o resultado venha com botões **Copiar** e **Abrir no WhatsApp** (não só texto).
-- Tarefa/Visita: manter composers abrindo na hora (1 toque), com lead pré-selecionado quando vier de uma pendência.
-- Revisar rótulos e tamanhos no mobile (safe-area, toque ≥ 40px).
+**Nova ferramenta `contexto_lead`** (edge `homi-tools.ts`), read-only, escopada por RLS:
+- Resolve o lead pelo nome (reusa `resolveLead`).
+- Lê etapa (`pipeline_stages`) + substatus (`flag_status`), últimas ~8 entradas de `pipeline_atividades`, últimas ~5 `pipeline_anotacoes`, próximas tarefas e imóveis vinculados.
+- Retorna resumo estruturado + textos crus para o modelo redigir com base real.
 
-## 5. Validar função por função (ponta a ponta, como corretor)
-Testar logado como corretora e conferir persistência/uX:
-- Abertura: só saudação, sem briefing automático.
-- Atrasados/pendências: lista + ações (Concluir, Nova tarefa, Whats, Abrir lead).
-- Buscar imóvel: por bairro, por dorms, por valor, e caso "sem match exato" (retorno aproximado). Copiar mensagem e abrir WhatsApp com link válido.
-- Criar tarefa e criar visita: confirmação → grava em `pipeline_tarefas` / `visitas` + timeline `pipeline_atividades`.
-- Resumo de lead e anotação: exibe cartão / grava com confirmação.
+**Prompt do copiloto** (`homi-chat/index.ts`):
+- Quando o pedido for **mensagem / follow-up / script para um lead nomeado**, **primeiro chamar `contexto_lead`** e **nunca perguntar "qual o momento no funil"** — deduzir do histórico.
+- Fluxo "ler, mas confirmar antes": responde com **mini-resumo curto** ("Marilá está em Aquecimento, última ação foi visita marcada dia X, sem resposta desde então") **seguido da mensagem pronta** no mesmo turno.
+- Só pergunta se não houver histórico nenhum (lead novo).
 
-## Detalhes técnicos
-- Arquivos: `src/contexts/HomiContext.tsx` (remover briefing auto), `src/components/homi/HomiPanel.tsx` (botão Imóvel abre composer), `src/components/homi/HomiActionCard.tsx` (composer de busca + ações Copiar/WhatsApp no `ImoveisCard`, link via `useBrokerSlug`/`gerarSlugUhome`), `supabase/functions/homi-chat/homi-tools.ts` (busca tolerante + `slug`), `supabase/functions/homi-chat/index.ts` (ajuste do prompt).
-- Sem migração de banco. Busca client/edge respeita RLS do corretor.
-- Deploy da edge `homi-chat` após as mudanças.
+**UI** (`HomiActionCard.tsx`): cartão leve de contexto (etapa, última interação, nº de anotações) acima da mensagem gerada.
 
-Uma dúvida rápida: a mensagem pronta deve **abrir o WhatsApp** (você escolhe o contato) ou **copiar para a área de transferência**? Posso deixar os dois botões — confirme se prefere assim.
+---
+
+## Parte 2 — Busca de imóvel em campo único
+
+- Substituir o `ImovelSearchCard` atual (bairro + chips de dorms + valor) por **um único campo de texto** ("Ex.: 2 dorms no Petrópolis até 600 mil").
+- A ferramenta `buscar_imovel` já tokeniza texto livre; o formulário passa a enviar só `termo`. Dormitórios/valor continuam sendo **extraídos do texto** pelo modelo/tokenizer, sem chips na tela.
+- **Resultados inalterados**: cada imóvel segue com **link personalizado** (`uhome.com.br/c/{slug}/imovel/{slug}`) e botões **Copiar mensagem** e **WhatsApp** com texto pronto.
+
+---
+
+## Parte 3 — Registrar resultado de contato
+
+Nova ferramenta `registrar_resultado` (proposta com confirmação):
+- "Liguei na Marilá e não atendeu" / "falei com o João, quer visitar sábado".
+- Homi classifica (`nao_atendeu`, `atendeu_sem_interesse`, `atendeu_interessado`, `pediu_retorno`, `agendou_visita`) e monta cartão de confirmação.
+- Ao confirmar (`useHomiActions`): grava em `pipeline_atividades` e **sugere a próxima tarefa** coerente (não atendeu → tentar amanhã; interessado → marcar visita), abrindo o composer pré-preenchido.
+
+---
+
+## Parte 4 — Detecção de leads esfriando
+
+Nova ferramenta `leads_esfriando` (read-only):
+- Lista leads sem atividade há X dias (padrão 5), ativos no pipeline, ordenados pelo tempo parado.
+- Cada item com ações em 1 toque: **💬 Reengajar** (mensagem com contexto via `contexto_lead`), **📋 Tarefa**, **👤 Abrir lead**.
+- Botão rápido novo no `HomiPanel` ("❄️ Esfriando") + linguagem natural.
+
+---
+
+## Parte 5 — Preparação de visita
+
+Nova ferramenta `preparar_visita` (read-only):
+- Para visitas de hoje/amanhã (ou lead nomeado), gera **briefing pré-visita**: quem é o lead, histórico resumido, imóvel de interesse e 2-3 argumentos de venda usando o conhecimento do empreendimento.
+- Acessível pelo cartão "Visitas de hoje" (botão **📋 Preparar**) e por texto.
+
+---
+
+## Arquivos afetados
+- `supabase/functions/homi-chat/homi-tools.ts` — `contexto_lead`, `registrar_resultado`, `leads_esfriando`, `preparar_visita`; leitura de histórico ampliada; `buscar_imovel` só com termo.
+- `supabase/functions/homi-chat/index.ts` — registrar ferramentas + regras de prompt.
+- `src/components/homi/HomiActionCard.tsx` — cartão de contexto, busca de imóvel campo único, resultado de contato, lista esfriando, briefing de visita.
+- `src/contexts/HomiContext.tsx` — roteamento dos novos composers/resultados.
+- `src/components/homi/HomiPanel.tsx` — botões rápidos "❄️ Esfriando" e "📋 Preparar".
+- `src/hooks/useHomiActions.ts` — `confirmarResultado`.
+
+Sem migração de banco. Toda escrita continua exigindo confirmação do corretor.
+
+## Validação ponta a ponta (como corretora Adriana)
+1. Follow-up de lead com histórico → mini-resumo + mensagem, **sem perguntar** o momento.
+2. Lead sem histórico → pede o mínimo.
+3. Busca "2 dorms Petrópolis até 600 mil" em campo único → resultados com link + mensagem pronta.
+4. "Liguei e não atendeu" → cartão de resultado → confirma → atividade + próxima tarefa.
+5. "Quais leads estão esfriando?" → lista com ações.
+6. "Prepara a visita da Marilá" → briefing com imóvel + argumentos.

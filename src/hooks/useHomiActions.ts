@@ -222,5 +222,27 @@ export function useHomiActions() {
     }
   }, [user, createVisita]);
 
-  return { confirmarTarefa, confirmarVisita, searchLeads, concluirTarefa, anotarLead, saving };
+  // Registra o resultado de um contato na timeline do lead (com confirmação na UI).
+  const confirmarResultado = useCallback(async (
+    leadId: string,
+    leadNome: string,
+    resultadoLabel: string,
+    detalhe?: string,
+  ): Promise<boolean> => {
+    if (!user) { toast.error("Sessão expirada."); return false; }
+    setSaving(true);
+    try {
+      await logAtividade(
+        leadId, user.id, "outro",
+        `${resultadoLabel} (via Homi)`,
+        detalhe?.trim() || null,
+      );
+      toast.success("Resultado registrado ✅");
+      return true;
+    } finally {
+      setSaving(false);
+    }
+  }, [user]);
+
+  return { confirmarTarefa, confirmarVisita, confirmarResultado, searchLeads, concluirTarefa, anotarLead, saving };
 }

@@ -523,7 +523,16 @@ function ImoveisCard({ result }: { result: HomiResult }) {
 // ─────────────────────────────────────────────── Read: escolher lead
 function EscolherLeadCard({ result, onPick }: { result: HomiResult; onPick: (text: string) => void }) {
   const candidates = (result.candidates as any[]) || [];
-  const intentLabel = result.intent === "criar_visita" ? "marcar visita" : "criar tarefa";
+  const INTENTS: Record<string, string> = {
+    criar_visita: "marcar visita para",
+    criar_tarefa: "criar tarefa para",
+    resumo_lead: "me fala do lead",
+    anotar_lead: "anotar no lead",
+    contexto_lead: "escreve uma mensagem de WhatsApp para",
+    registrar_resultado: "registrar resultado do contato com",
+    preparar_visita: "preparar a visita de",
+  };
+  const intentLabel = INTENTS[result.intent as string] || "me fala do lead";
   return (
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
       <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><Search className="h-3.5 w-3.5 text-amber-600" /> Qual lead?</p>
@@ -543,50 +552,149 @@ function EscolherLeadCard({ result, onPick }: { result: HomiResult; onPick: (tex
   );
 }
 
-// ─────────────────────────────────────────────── Composer: buscar imóvel
-const DORM_CHIPS = [1, 2, 3, 4];
+// ─────────────────────────────────────────────── Composer: buscar imóvel (campo único)
 function ImovelSearchCard({ action }: { action: HomiAction }) {
   const { sendMessage, isLoading } = useHomi();
-  const [bairro, setBairro] = useState("");
-  const [dorms, setDorms] = useState<number | null>(null);
-  const [valorMax, setValorMax] = useState("");
+  const [termo, setTermo] = useState("");
   const [sent, setSent] = useState(false);
 
   if (sent) return <DoneBadge label="Buscando imóveis…" />;
 
   const buscar = () => {
-    const partes: string[] = [];
-    if (bairro.trim()) partes.push(`no bairro ou empreendimento "${bairro.trim()}"`);
-    if (dorms) partes.push(`com ${dorms}${dorms >= 4 ? "+" : ""} dormitórios`);
-    const valorNum = Number(valorMax.replace(/\D/g, ""));
-    if (valorNum > 0) partes.push(`com valor até R$ ${valorNum.toLocaleString("pt-BR")}`);
-    const criterio = partes.length ? partes.join(", ") : "os mais recentes";
+    const t = termo.trim();
+    if (!t) return;
     setSent(true);
-    sendMessage(`Buscar imóveis ${criterio}.`);
+    sendMessage(`Buscar imóvel: ${t}`);
   };
 
   return (
     <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2.5">
       <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><Search className="h-3.5 w-3.5 text-primary" /> Buscar imóvel</p>
-      <Input value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Bairro ou empreendimento (opcional)" className="h-9 text-xs" />
-      <div>
-        <p className="text-[10px] text-muted-foreground mb-1">Dormitórios</p>
-        <div className="flex gap-1.5">
-          {DORM_CHIPS.map((d) => (
-            <button key={d} onClick={() => setDorms(dorms === d ? null : d)}
-              className={`flex-1 h-8 rounded-lg border text-xs font-medium transition-all ${dorms === d ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary/40"}`}>
-              {d === 4 ? "4+" : d}
-            </button>
-          ))}
-        </div>
-      </div>
-      <Input value={valorMax} onChange={(e) => setValorMax(e.target.value)} inputMode="numeric" placeholder="Valor máximo (opcional)" className="h-9 text-xs" />
-      <Button onClick={buscar} disabled={isLoading} size="sm" className="w-full h-9 text-xs gap-1.5">
+      <Input
+        autoFocus
+        value={termo}
+        onChange={(e) => setTermo(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") buscar(); }}
+        placeholder="Ex.: 2 dorms no Petrópolis até 600 mil"
+        className="h-9 text-xs"
+      />
+      <Button onClick={buscar} disabled={isLoading || !termo.trim()} size="sm" className="w-full h-9 text-xs gap-1.5">
         <Search className="h-3.5 w-3.5" /> Buscar
       </Button>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────── Read: contexto do lead (mini-resumo)
+function ContextoLeadCard({ result }: { result: HomiResult }) {
+  const openLead = useOpenLead();
+  const lead = (result.lead as any) || {};
+  return (
+    <div className="rounded-xl border border-indigo-500/25 bg-indigo-500/5 p-2.5 space-y-1">
+      <div className="flex items-center gap-2">
+        <div className="h-7 w-7 rounded-full bg-indigo-500/15 flex items-center justify-center shrink-0">
+          <User className="h-3.5 w-3.5 text-indigo-600" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold text-foreground truncate">{lead.nome}</p>
+          <p className="text-[10px] text-muted-foreground truncate">
+            {lead.stage_nome || "—"}
+          </p>
+        </div>
+        <button onClick={() => openLead(lead.id)} className="text-[10px] text-indigo-600 underline underline-offset-2 shrink-0">abrir</button>
+      </div>
+      {result.ultima_interacao && <p className="text-[10px] text-muted-foreground">🕑 {result.ultima_interacao as string}</p>}
+      {typeof result.n_anotacoes === "number" && (result.n_anotacoes as number) > 0 && (
+        <p className="text-[10px] text-muted-foreground">📝 {result.n_anotacoes as number} anotação(ões) considerada(s)</p>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────── Read: preparar visita (cabeçalho)
+function PrepararVisitaCard({ result }: { result: HomiResult }) {
+  const openLead = useOpenLead();
+  const lead = (result.lead as any) || {};
+  return (
+    <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-2.5 flex items-center gap-2">
+      <div className="h-7 w-7 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+        <Home className="h-3.5 w-3.5 text-emerald-600" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-bold text-foreground truncate">Briefing · {lead.nome}</p>
+        {lead.empreendimento && <p className="text-[10px] text-muted-foreground truncate">{lead.empreendimento}</p>}
+      </div>
+      {lead.id && <button onClick={() => openLead(lead.id)} className="text-[10px] text-emerald-700 underline underline-offset-2 shrink-0">abrir</button>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────── Read: leads esfriando
+function LeadsEsfriandoCard({ result, onPick }: { result: HomiResult; onPick: (text: string) => void }) {
+  const { openComposer } = useHomi();
+  const openLead = useOpenLead();
+  const leads = (result.leads as any[]) || [];
+  if (!leads.length) return <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">🎉 Nenhum lead esfriando. Cadência em dia!</div>;
+  return (
+    <div className="rounded-xl border border-sky-500/25 bg-sky-500/5 p-2.5 space-y-1.5">
+      <p className="text-xs font-bold text-foreground flex items-center gap-1.5">❄️ Leads esfriando ({leads.length})</p>
+      {leads.map((l) => (
+        <div key={l.id} className="rounded-lg border border-border/70 bg-card/60 p-2 space-y-1.5">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-foreground truncate">{l.nome}</p>
+            <p className="text-[10px] text-muted-foreground truncate">
+              {l.dias_parado != null ? `${l.dias_parado} dias sem contato` : "sem atividade"}{l.empreendimento ? " · " + l.empreendimento : ""}
+            </p>
+          </div>
+          <div className="flex gap-1">
+            <RowAction icon={<MessageCircle className="h-3.5 w-3.5" />} label="Reengajar" onClick={() => onPick(`Escreve uma mensagem de WhatsApp para reengajar o lead ${l.nome}.`)} />
+            <RowAction icon={<Plus className="h-3.5 w-3.5" />} label="Tarefa" onClick={() => openComposer("criar_tarefa", { lead_id: l.id, lead_nome: l.nome })} />
+            <RowAction icon={<User className="h-3.5 w-3.5" />} label="Lead" onClick={() => openLead(l.id)} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────── Action: registrar resultado do contato
+function ResultadoCard({ action }: { action: HomiAction }) {
+  const { confirmarResultado, saving } = useHomiActions();
+  const { openComposer } = useHomi();
+  const [detalhe, setDetalhe] = useState<string>(action.detalhe || "");
+  const [done, setDone] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+  const prox = (action.proxima_tarefa as any) || {};
+
+  if (cancelled) return null;
+  if (done) return <DoneBadge label={`Resultado registrado em ${action.lead_nome}`} />;
+
+  return (
+    <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-2.5">
+      <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+        <CheckCheck className="h-4 w-4 text-primary" /> {action.resultado_label || "Resultado"} · <span className="text-primary">{action.lead_nome}</span>
+      </div>
+      <Textarea value={detalhe} onChange={(e) => setDetalhe(e.target.value)} placeholder="Detalhe do contato (opcional)" className="text-xs min-h-[48px]" />
+      {prox.titulo && (
+        <p className="text-[11px] text-muted-foreground">Próxima ação sugerida: <strong className="text-foreground">{prox.titulo}</strong></p>
+      )}
+      <div className="flex gap-2 pt-0.5">
+        <Button size="sm" className="flex-1 h-8 text-xs gap-1" disabled={saving}
+          onClick={async () => {
+            const ok = await confirmarResultado(action.lead_id!, action.lead_nome!, action.resultado_label || "Resultado do contato", detalhe);
+            if (ok) {
+              setDone(true);
+              if (prox.tipo) openComposer("criar_tarefa", { lead_id: action.lead_id!, lead_nome: action.lead_nome!, campos: { tipo: prox.tipo } });
+            }
+          }}>
+          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Registrar
+        </Button>
+        <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setCancelled(true)}>Cancelar</Button>
+      </div>
+    </div>
+  );
+}
+
 
 // ─────────────────────────────────────────────── Public renderers
 export function HomiActionsRenderer({ actions }: { actions?: HomiAction[] }) {
@@ -597,6 +705,7 @@ export function HomiActionsRenderer({ actions }: { actions?: HomiAction[] }) {
         if (a.tipo === "criar_tarefa") return <TarefaCard key={i} action={a} />;
         if (a.tipo === "criar_visita") return <VisitaCard key={i} action={a} />;
         if (a.tipo === "anotar_lead") return <AnotacaoCard key={i} action={a} />;
+        if (a.tipo === "registrar_resultado") return <ResultadoCard key={i} action={a} />;
         if (a.tipo === "buscar_imovel") return <ImovelSearchCard key={i} action={a} />;
         return null;
       })}
@@ -614,6 +723,9 @@ export function HomiResultsRenderer({ results, onPick }: { results?: HomiResult[
         if (r.tipo === "imoveis") return <ImoveisCard key={i} result={r} />;
         if (r.tipo === "escolher_lead") return <EscolherLeadCard key={i} result={r} onPick={onPick} />;
         if (r.tipo === "resumo_lead") return <ResumoLeadCard key={i} result={r} onPick={onPick} />;
+        if (r.tipo === "contexto_lead") return <ContextoLeadCard key={i} result={r} />;
+        if (r.tipo === "leads_esfriando") return <LeadsEsfriandoCard key={i} result={r} onPick={onPick} />;
+        if (r.tipo === "preparar_visita") return <PrepararVisitaCard key={i} result={r} />;
         return null;
       })}
     </div>

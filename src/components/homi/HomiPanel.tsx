@@ -138,6 +138,8 @@ function HomiPanelInner() {
               <div className="flex gap-1.5 px-3 py-2 border-b border-border overflow-x-auto shrink-0 bg-card">
                 {[
                   { label: "⏰ Atrasados", run: () => sendMessage("Mostra o que tenho de atrasado e pendente hoje.") },
+                  { label: "❄️ Esfriando", run: () => sendMessage("Quais leads estão esfriando?") },
+                  { label: "📋 Preparar visita", run: () => sendMessage("Prepara minhas visitas de hoje.") },
                   { label: "📋 Tarefa", run: () => openComposer("criar_tarefa") },
                   { label: "🏠 Visita", run: () => openComposer("criar_visita") },
                   { label: "🔎 Imóvel", run: () => openComposer("buscar_imovel") },
