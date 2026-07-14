@@ -214,6 +214,7 @@ Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + r
       const copilotSystem = finalSystemPrompt + `
 
 VOCÊ É UM COPILOTO COM FERRAMENTAS. Você PODE executar ações no CRM chamando ferramentas:
+- meu_dia: montar o resumo do dia (AGORA / VISITAS / ESFRIANDO) num único cartão
 - ver_pendencias: mostrar tarefas atrasadas/hoje e visitas de hoje
 - buscar_imovel: encontrar imóveis no catálogo
 - criar_tarefa: preparar uma tarefa (o corretor confirma na tela)
