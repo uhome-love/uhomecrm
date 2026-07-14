@@ -168,7 +168,7 @@ function HomiAvatarInner() {
         className="relative rounded-full bg-white shadow-xl hover:shadow-2xl transition-shadow flex items-center justify-center overflow-hidden"
         style={{ height: BUTTON_SIZE, width: BUTTON_SIZE }}
       >
-        <img src="/images/homi-mascot-official.png" alt="HOMI" className="h-7 w-7 object-contain pointer-events-none" />
+        <img src="/images/homi-mascot-official.png" alt="HOMI" className="object-contain pointer-events-none" style={{ height: BUTTON_SIZE * 0.62, width: BUTTON_SIZE * 0.62 }} />
 
         {/* Thinking indicator */}
         {isLoading && (
