@@ -1,0 +1,2 @@
+DELETE FROM public.pipeline_atividades WHERE titulo = '📋 Tarefa criada via Homi: Ligar' AND descricao LIKE '%HOMI_TEST_E2E_MARKER%';
+DELETE FROM public.pipeline_tarefas WHERE descricao = 'HOMI_TEST_E2E_MARKER';

@@ -10,7 +10,7 @@ export type HomiRole = "corretor" | "gestor" | "ceo";
 export type HomiAction = { tipo: string; lead_id?: string; lead_nome?: string; campos?: Record<string, any> } & Record<string, any>;
 export type HomiResult = { tipo: string } & Record<string, any>;
 
-export type Message = { role: "user" | "assistant"; content: string; actions?: HomiAction[]; results?: HomiResult[] };
+export type Message = { role: "user" | "assistant"; content: string; actions?: HomiAction[]; results?: HomiResult[]; _composerLabel?: string };
 
 export type KnowledgeSourceInfo = {
   source: "db" | "fallback" | "partial";
@@ -43,6 +43,9 @@ interface HomiContextType {
   sendMessage: (text: string) => Promise<void>;
   clearMessages: () => void;
   isLoading: boolean;
+
+  // Inject a local action card (composer) without calling the AI
+  openComposer: (tipo: "criar_tarefa" | "criar_visita", lead?: { lead_id: string; lead_nome: string; campos?: Record<string, any> }) => void;
 
   // Proactive alerts
   alerts: ProactiveAlert[];
@@ -129,6 +132,24 @@ export function HomiProvider({ children }: { children: ReactNode }) {
 
   const closeHomi = useCallback(() => setIsOpen(false), []);
   const toggleHomi = useCallback(() => setIsOpen(prev => !prev), []);
+
+  // Injeta um cartão de ação (composer) localmente, sem chamar a IA.
+  const openComposer = useCallback((
+    tipo: "criar_tarefa" | "criar_visita",
+    lead?: { lead_id: string; lead_nome: string; campos?: Record<string, any> },
+  ) => {
+    setIsOpen(true);
+    const action: HomiAction = {
+      tipo,
+      lead_id: lead?.lead_id,
+      lead_nome: lead?.lead_nome,
+      campos: lead?.campos || {},
+      needsLead: !lead?.lead_id,
+    };
+    const label = tipo === "criar_tarefa" ? "Nova tarefa" : "Marcar visita";
+    setMessages(prev => [...prev, { role: "assistant", content: "", actions: [action], _composerLabel: label } as Message]);
+  }, []);
+
 
   // Save conversation
   const saveConversation = useCallback(async (msgs: Message[], convId: string | null) => {
@@ -294,6 +315,16 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     }
   }, [isOpen, isLoading, sendMessage]);
 
+  // Briefing automático ao abrir (1x por sessão) — só para corretor
+  const briefedRef = useRef(false);
+  useEffect(() => {
+    if (isOpen && homiRole === "corretor" && messages.length === 0 && !briefedRef.current && !isLoading && !pendingMessageRef.current) {
+      briefedRef.current = true;
+      sendMessage("Me dá o briefing do meu dia: o que tenho de atrasado e pendente hoje.");
+    }
+  }, [isOpen, homiRole, messages.length, isLoading, sendMessage]);
+
+
   const clearMessages = useCallback(() => {
     setMessages([]);
     setConversationId(null);
@@ -322,7 +353,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   return (
     <HomiContext.Provider value={{
       isOpen, openHomi, closeHomi, toggleHomi,
-      messages, sendMessage, clearMessages, isLoading,
+      messages, sendMessage, clearMessages, isLoading, openComposer,
       alerts, addProactiveAlert, dismissAlert, unseenCount,
       currentPage, homiRole, userName,
       knowledgeSource,
@@ -343,6 +374,7 @@ const NOOP_CONTEXT: HomiContextType = {
   messages: [],
   sendMessage: async () => {},
   clearMessages: () => {},
+  openComposer: () => {},
   isLoading: false,
   alerts: [],
   addProactiveAlert: () => {},

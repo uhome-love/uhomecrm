@@ -1,10 +1,11 @@
 /**
  * HomiActionCard — Renderiza os cartões do Homi Copiloto:
- *  - Propostas de ação (criar tarefa / criar visita) com confirmação
- *  - Resultados de leitura (pendências, imóveis, escolher lead)
+ *  - Propostas de ação (criar tarefa / criar visita) com confirmação e busca de lead embutida
+ *  - Resultados de leitura (pendências acionáveis, imóveis, escolher lead, resumo do lead)
  * Layout compacto e amigável. Nada é gravado sem o corretor confirmar.
  */
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,9 +13,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  CheckCircle2, X, Clock, CalendarPlus, Home, MapPin, AlertTriangle, Search, Loader2, ChevronRight,
+  CheckCircle2, Clock, CalendarPlus, Home, MapPin, AlertTriangle, Search, Loader2,
+  ChevronRight, User, MessageCircle, CheckCheck, Plus, Sparkles, Phone,
 } from "lucide-react";
-import { useHomiActions } from "@/hooks/useHomiActions";
+import { useHomiActions, type LeadOption } from "@/hooks/useHomiActions";
+import { useHomi } from "@/contexts/HomiContext";
 import type { HomiAction, HomiResult } from "@/contexts/HomiContext";
 
 const TIPO_BUTTONS = [
@@ -54,10 +57,77 @@ function fmtMoney(v?: number | null) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 }
 
+// ─────────────────────────────────────────────── Navegar para o lead no pipeline
+function useOpenLead() {
+  const navigate = useNavigate();
+  const { closeHomi } = useHomi();
+  return useCallback((leadId?: string | null) => {
+    if (!leadId) return;
+    closeHomi();
+    navigate(`/pipeline-leads?lead=${leadId}`);
+  }, [navigate, closeHomi]);
+}
+
+// ─────────────────────────────────────────────── Busca de lead embutida
+function LeadSearch({ onSelect }: { onSelect: (lead: LeadOption) => void }) {
+  const { searchLeads } = useHomiActions();
+  const [term, setTerm] = useState("");
+  const [results, setResults] = useState<LeadOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const debounce = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (debounce.current) clearTimeout(debounce.current);
+    if (term.trim().length < 2) { setResults([]); setLoading(false); return; }
+    setLoading(true);
+    debounce.current = setTimeout(async () => {
+      const r = await searchLeads(term);
+      setResults(r);
+      setLoading(false);
+    }, 300);
+    return () => { if (debounce.current) clearTimeout(debounce.current); };
+  }, [term, searchLeads]);
+
+  return (
+    <div className="space-y-1.5">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          autoFocus
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder="Buscar lead pelo nome…"
+          className="h-9 text-xs pl-8"
+        />
+        {loading && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+      </div>
+      {term.trim().length >= 2 && !loading && results.length === 0 && (
+        <p className="text-[11px] text-muted-foreground px-1">Nenhum lead encontrado.</p>
+      )}
+      {results.length > 0 && (
+        <div className="max-h-44 overflow-y-auto space-y-1">
+          {results.map((l) => (
+            <button key={l.id} onClick={() => onSelect(l)}
+              className="w-full flex items-center justify-between gap-2 text-left px-2.5 py-1.5 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-all">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">{l.nome}</p>
+                {(l.empreendimento || l.telefone) && <p className="text-[10px] text-muted-foreground truncate">{l.empreendimento || l.telefone}</p>}
+              </div>
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────── Task proposal card
 function TarefaCard({ action }: { action: HomiAction }) {
   const { confirmarTarefa, saving } = useHomiActions();
   const c = action.campos || {};
+  const [leadId, setLeadId] = useState<string | undefined>(action.lead_id);
+  const [leadNome, setLeadNome] = useState<string | undefined>(action.lead_nome);
   const [tipo, setTipo] = useState<string>(c.tipo || "follow_up");
   const [tipoCustom, setTipoCustom] = useState<string>(c.tipo_personalizado || "");
   const [data, setData] = useState<string>(c.vence_em || todayBRT());
@@ -67,44 +137,59 @@ function TarefaCard({ action }: { action: HomiAction }) {
   const [cancelled, setCancelled] = useState(false);
 
   if (cancelled) return null;
-  if (done) return <DoneBadge label={`Tarefa criada para ${action.lead_nome}`} />;
+  if (done) return <DoneBadge label={`Tarefa criada para ${leadNome}`} />;
 
   return (
     <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-2.5">
       <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-        <CalendarPlus className="h-4 w-4 text-primary" /> Nova tarefa · <span className="text-primary">{action.lead_nome}</span>
+        <CalendarPlus className="h-4 w-4 text-primary" /> Nova tarefa
+        {leadNome && <>· <span className="text-primary">{leadNome}</span></>}
       </div>
-      <div className="flex flex-wrap gap-1">
-        {TIPO_BUTTONS.map((t) => (
-          <button key={t.value} onClick={() => setTipo(t.value)}
-            className={`text-[11px] px-2 py-1 rounded-lg border transition-all ${tipo === t.value ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary/40"}`}>
-            {t.emoji} {t.label}
-          </button>
-        ))}
-      </div>
-      {tipo === "outro" && (
-        <Input value={tipoCustom} onChange={(e) => setTipoCustom(e.target.value)} placeholder="Descreva o tipo" className="h-8 text-xs" />
+
+      {!leadId ? (
+        <LeadSearch onSelect={(l) => { setLeadId(l.id); setLeadNome(l.nome); }} />
+      ) : (
+        <button onClick={() => { setLeadId(undefined); setLeadNome(undefined); }}
+          className="text-[10px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+          trocar lead
+        </button>
       )}
-      <div className="flex gap-1.5 items-center">
-        <button onClick={() => setData(todayBRT())} className={`text-[11px] px-2 py-1 rounded-lg border ${data === todayBRT() ? "bg-primary/15 border-primary/40" : "border-border"}`}>Hoje</button>
-        <button onClick={() => setData(tomorrowBRT())} className={`text-[11px] px-2 py-1 rounded-lg border ${data === tomorrowBRT() ? "bg-primary/15 border-primary/40" : "border-border"}`}>Amanhã</button>
-        <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="h-8 text-xs flex-1" />
-        <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="h-8 text-xs w-24" />
-      </div>
-      <Textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observação (opcional)" className="text-xs min-h-[52px]" />
-      <div className="flex gap-2 pt-0.5">
-        <Button size="sm" className="flex-1 h-8 text-xs gap-1" disabled={saving}
-          onClick={async () => {
-            const ok = await confirmarTarefa({
-              lead_id: action.lead_id!, lead_nome: action.lead_nome!, tipo,
-              tipo_personalizado: tipoCustom, vence_em: data, hora_vencimento: hora, descricao: obs,
-            });
-            if (ok) setDone(true);
-          }}>
-          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Confirmar
-        </Button>
-        <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setCancelled(true)}>Cancelar</Button>
-      </div>
+
+      {leadId && (
+        <>
+          <div className="flex flex-wrap gap-1">
+            {TIPO_BUTTONS.map((t) => (
+              <button key={t.value} onClick={() => setTipo(t.value)}
+                className={`text-[11px] px-2 py-1 rounded-lg border transition-all ${tipo === t.value ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary/40"}`}>
+                {t.emoji} {t.label}
+              </button>
+            ))}
+          </div>
+          {tipo === "outro" && (
+            <Input value={tipoCustom} onChange={(e) => setTipoCustom(e.target.value)} placeholder="Descreva o tipo" className="h-8 text-xs" />
+          )}
+          <div className="flex gap-1.5 items-center">
+            <button onClick={() => setData(todayBRT())} className={`text-[11px] px-2 py-1 rounded-lg border ${data === todayBRT() ? "bg-primary/15 border-primary/40" : "border-border"}`}>Hoje</button>
+            <button onClick={() => setData(tomorrowBRT())} className={`text-[11px] px-2 py-1 rounded-lg border ${data === tomorrowBRT() ? "bg-primary/15 border-primary/40" : "border-border"}`}>Amanhã</button>
+            <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="h-8 text-xs flex-1" />
+            <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="h-8 text-xs w-24" />
+          </div>
+          <Textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observação (opcional)" className="text-xs min-h-[52px]" />
+          <div className="flex gap-2 pt-0.5">
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" disabled={saving}
+              onClick={async () => {
+                const ok = await confirmarTarefa({
+                  lead_id: leadId, lead_nome: leadNome!, tipo,
+                  tipo_personalizado: tipoCustom, vence_em: data, hora_vencimento: hora, descricao: obs,
+                });
+                if (ok) setDone(true);
+              }}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Confirmar
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setCancelled(true)}>Cancelar</Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -113,6 +198,9 @@ function TarefaCard({ action }: { action: HomiAction }) {
 function VisitaCard({ action }: { action: HomiAction }) {
   const { confirmarVisita, saving } = useHomiActions();
   const c = action.campos || {};
+  const [leadId, setLeadId] = useState<string | undefined>(action.lead_id);
+  const [leadNome, setLeadNome] = useState<string | undefined>(action.lead_nome);
+  const [telefone, setTelefone] = useState<string>(c.telefone || "");
   const [data, setData] = useState<string>(c.data_visita || todayBRT());
   const [hora, setHora] = useState<string>(c.hora_visita || "");
   const [local, setLocal] = useState<string>(c.local_visita || "");
@@ -123,42 +211,87 @@ function VisitaCard({ action }: { action: HomiAction }) {
   const [cancelled, setCancelled] = useState(false);
 
   if (cancelled) return null;
-  if (done) return <DoneBadge label={`Visita agendada para ${action.lead_nome}`} />;
+  if (done) return <DoneBadge label={`Visita agendada para ${leadNome}`} />;
 
   return (
     <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2.5">
       <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-        <Home className="h-4 w-4 text-emerald-600" /> Marcar visita · <span className="text-emerald-700">{action.lead_nome}</span>
+        <Home className="h-4 w-4 text-emerald-600" /> Marcar visita
+        {leadNome && <>· <span className="text-emerald-700">{leadNome}</span></>}
       </div>
-      <Input value={emp} onChange={(e) => setEmp(e.target.value)} placeholder="Empreendimento" className="h-8 text-xs" />
-      <div className="flex gap-1.5 items-center">
-        <button onClick={() => setData(todayBRT())} className={`text-[11px] px-2 py-1 rounded-lg border ${data === todayBRT() ? "bg-emerald-500/15 border-emerald-500/40" : "border-border"}`}>Hoje</button>
-        <button onClick={() => setData(tomorrowBRT())} className={`text-[11px] px-2 py-1 rounded-lg border ${data === tomorrowBRT() ? "bg-emerald-500/15 border-emerald-500/40" : "border-border"}`}>Amanhã</button>
-        <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="h-8 text-xs flex-1" />
-        <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="h-8 text-xs w-24" />
+
+      {!leadId ? (
+        <LeadSearch onSelect={(l) => { setLeadId(l.id); setLeadNome(l.nome); setTelefone(l.telefone || ""); setEmp(l.empreendimento || ""); }} />
+      ) : (
+        <button onClick={() => { setLeadId(undefined); setLeadNome(undefined); }}
+          className="text-[10px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+          trocar lead
+        </button>
+      )}
+
+      {leadId && (
+        <>
+          <Input value={emp} onChange={(e) => setEmp(e.target.value)} placeholder="Empreendimento" className="h-8 text-xs" />
+          <div className="flex gap-1.5 items-center">
+            <button onClick={() => setData(todayBRT())} className={`text-[11px] px-2 py-1 rounded-lg border ${data === todayBRT() ? "bg-emerald-500/15 border-emerald-500/40" : "border-border"}`}>Hoje</button>
+            <button onClick={() => setData(tomorrowBRT())} className={`text-[11px] px-2 py-1 rounded-lg border ${data === tomorrowBRT() ? "bg-emerald-500/15 border-emerald-500/40" : "border-border"}`}>Amanhã</button>
+            <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="h-8 text-xs flex-1" />
+            <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="h-8 text-xs w-24" />
+          </div>
+          <div className="flex gap-1.5">
+            <Select value={local} onValueChange={setLocal}>
+              <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Local" /></SelectTrigger>
+              <SelectContent>{LOCAL_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={resp} onValueChange={setResp}>
+              <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Responsável" /></SelectTrigger>
+              <SelectContent>{RESPONSAVEL_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <Textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observações (opcional)" className="text-xs min-h-[52px]" />
+          <div className="flex gap-2 pt-0.5">
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white" disabled={saving}
+              onClick={async () => {
+                const ok = await confirmarVisita({
+                  lead_id: leadId, lead_nome: leadNome!, nome_cliente: leadNome!,
+                  telefone, empreendimento: emp, data_visita: data, hora_visita: hora,
+                  local_visita: local, responsavel_visita: resp, observacoes: obs,
+                });
+                if (ok) setDone(true);
+              }}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Confirmar
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setCancelled(true)}>Cancelar</Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────── Anotação rápida
+function AnotacaoCard({ action }: { action: HomiAction }) {
+  const { anotarLead, saving } = useHomiActions();
+  const [texto, setTexto] = useState<string>(action.texto || "");
+  const [done, setDone] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+
+  if (cancelled) return null;
+  if (done) return <DoneBadge label={`Anotação salva em ${action.lead_nome}`} />;
+
+  return (
+    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2.5">
+      <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+        <Sparkles className="h-4 w-4 text-amber-600" /> Anotação · <span className="text-amber-700">{action.lead_nome}</span>
       </div>
-      <div className="flex gap-1.5">
-        <Select value={local} onValueChange={setLocal}>
-          <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Local" /></SelectTrigger>
-          <SelectContent>{LOCAL_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={resp} onValueChange={setResp}>
-          <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Responsável" /></SelectTrigger>
-          <SelectContent>{RESPONSAVEL_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}</SelectContent>
-        </Select>
-      </div>
-      <Textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observações (opcional)" className="text-xs min-h-[52px]" />
+      <Textarea value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="O que registrar?" className="text-xs min-h-[60px]" />
       <div className="flex gap-2 pt-0.5">
-        <Button size="sm" className="flex-1 h-8 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white" disabled={saving}
+        <Button size="sm" className="flex-1 h-8 text-xs gap-1" disabled={saving || !texto.trim()}
           onClick={async () => {
-            const ok = await confirmarVisita({
-              lead_id: action.lead_id!, lead_nome: action.lead_nome!, nome_cliente: c.nome_cliente || action.lead_nome!,
-              telefone: c.telefone, empreendimento: emp, data_visita: data, hora_visita: hora,
-              local_visita: local, responsavel_visita: resp, observacoes: obs,
-            });
+            const ok = await anotarLead(action.lead_id!, action.lead_nome!, texto);
             if (ok) setDone(true);
           }}>
-          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Confirmar
+          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Salvar anotação
         </Button>
         <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setCancelled(true)}>Cancelar</Button>
       </div>
@@ -174,31 +307,82 @@ function DoneBadge({ label }: { label: string }) {
   );
 }
 
-// ─────────────────────────────────────────────── Read: pendências
-function PendenciasCard({ result }: { result: HomiResult }) {
-  const atrasadas = (result.atrasadas as any[]) || [];
-  const hoje = (result.hoje as any[]) || [];
+// ─────────────────────────────────────────────── Read: pendências (acionável)
+function PendenciasCard({ result, onPick }: { result: HomiResult; onPick: (text: string) => void }) {
+  const { concluirTarefa } = useHomiActions();
+  const { openComposer } = useHomi();
+  const openLead = useOpenLead();
+  const [concluded, setConcluded] = useState<Set<string>>(new Set());
+
+  const atrasadas = ((result.atrasadas as any[]) || []).filter((t) => !concluded.has(t.id));
+  const hoje = ((result.hoje as any[]) || []).filter((t) => !concluded.has(t.id));
   const visitas = (result.visitas_hoje as any[]) || [];
   const empty = !atrasadas.length && !hoje.length && !visitas.length;
   if (empty) return <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">🎉 Nada atrasado ou pendente por agora.</div>;
+
+  const handleConcluir = async (t: any) => {
+    const ok = await concluirTarefa(t.id, t.pipeline_lead_id, t.lead_nome, t.titulo || t.tipo);
+    if (ok) setConcluded((prev) => new Set(prev).add(t.id));
+  };
+  const draftWhats = (nome: string) => onPick(`Escreve uma mensagem de WhatsApp curta e natural de follow-up para o lead ${nome}.`);
+
+  const TaskRow = ({ t, tone }: { t: any; tone?: "danger" }) => (
+    <div className="rounded-lg border border-border/70 bg-card/60 p-2 space-y-1.5">
+      <div className="min-w-0">
+        <p className={`text-xs font-medium truncate ${tone === "danger" ? "text-destructive" : "text-foreground"}`}>{t.lead_nome}</p>
+        <p className="text-[10px] text-muted-foreground truncate">{t.titulo || t.tipo}{t.hora_vencimento ? " · " + t.hora_vencimento.slice(0, 5) : ""}{tone === "danger" && t.vence_em ? " · " + t.vence_em : ""}</p>
+      </div>
+      <div className="flex gap-1">
+        <RowAction icon={<CheckCheck className="h-3.5 w-3.5" />} label="Concluir" onClick={() => handleConcluir(t)} tone="success" />
+        <RowAction icon={<Plus className="h-3.5 w-3.5" />} label="Tarefa" onClick={() => openComposer("criar_tarefa", { lead_id: t.pipeline_lead_id, lead_nome: t.lead_nome })} />
+        <RowAction icon={<MessageCircle className="h-3.5 w-3.5" />} label="Whats" onClick={() => draftWhats(t.lead_nome)} />
+        <RowAction icon={<User className="h-3.5 w-3.5" />} label="Lead" onClick={() => openLead(t.pipeline_lead_id)} />
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-2">
       {atrasadas.length > 0 && (
         <Section title={`Atrasadas (${atrasadas.length})`} icon={<AlertTriangle className="h-3.5 w-3.5 text-destructive" />}>
-          {atrasadas.map((t) => <Row key={t.id} main={t.lead_nome} sub={`${t.titulo || t.tipo} · ${t.vence_em}${t.hora_vencimento ? " " + t.hora_vencimento.slice(0,5) : ""}`} tone="danger" />)}
+          {atrasadas.map((t) => <TaskRow key={t.id} t={t} tone="danger" />)}
         </Section>
       )}
       {hoje.length > 0 && (
         <Section title={`Tarefas de hoje (${hoje.length})`} icon={<Clock className="h-3.5 w-3.5 text-primary" />}>
-          {hoje.map((t) => <Row key={t.id} main={t.lead_nome} sub={`${t.titulo || t.tipo}${t.hora_vencimento ? " · " + t.hora_vencimento.slice(0,5) : ""}`} />)}
+          {hoje.map((t) => <TaskRow key={t.id} t={t} />)}
         </Section>
       )}
       {visitas.length > 0 && (
         <Section title={`Visitas de hoje (${visitas.length})`} icon={<Home className="h-3.5 w-3.5 text-emerald-600" />}>
-          {visitas.map((v) => <Row key={v.id} main={v.nome_cliente} sub={`${v.hora_visita ? v.hora_visita.slice(0,5) + " · " : ""}${v.empreendimento || v.local_visita || ""}`} tone="success" />)}
+          {visitas.map((v) => (
+            <div key={v.id} className="rounded-lg border border-border/70 bg-card/60 p-2 space-y-1.5">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-emerald-700 truncate">{v.nome_cliente}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{v.hora_visita ? v.hora_visita.slice(0, 5) + " · " : ""}{v.empreendimento || v.local_visita || ""}</p>
+              </div>
+              <div className="flex gap-1">
+                <RowAction icon={<MessageCircle className="h-3.5 w-3.5" />} label="Whats" onClick={() => draftWhats(v.nome_cliente)} />
+                {v.pipeline_lead_id && <RowAction icon={<User className="h-3.5 w-3.5" />} label="Lead" onClick={() => openLead(v.pipeline_lead_id)} />}
+              </div>
+            </div>
+          ))}
         </Section>
       )}
     </div>
+  );
+}
+
+function RowAction({ icon, label, onClick, tone }: { icon: React.ReactNode; label: string; onClick: () => void; tone?: "success" }) {
+  return (
+    <button onClick={onClick} title={label} aria-label={label}
+      className={`flex-1 flex items-center justify-center gap-1 text-[10px] font-medium px-1 py-1 rounded-md border transition-all ${
+        tone === "success"
+          ? "border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10"
+          : "border-border text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+      }`}>
+      {icon}<span>{label}</span>
+    </button>
   );
 }
 
@@ -206,16 +390,55 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
   return (
     <div className="rounded-xl border border-border bg-card/60 p-2.5">
       <div className="flex items-center gap-1.5 text-[11px] font-bold text-foreground mb-1.5">{icon}{title}</div>
-      <div className="space-y-1">{children}</div>
+      <div className="space-y-1.5">{children}</div>
     </div>
   );
 }
-function Row({ main, sub, tone }: { main: string; sub?: string; tone?: "danger" | "success" }) {
+
+// ─────────────────────────────────────────────── Read: resumo do lead
+function ResumoLeadCard({ result, onPick }: { result: HomiResult; onPick: (text: string) => void }) {
+  const { openComposer } = useHomi();
+  const openLead = useOpenLead();
+  const lead = (result.lead as any) || {};
+  const proximas = (result.proximas_tarefas as any[]) || [];
+  const sugestao = result.sugestao_proxima_acao as string | undefined;
+
   return (
-    <div className="flex items-center justify-between gap-2 py-1 px-1.5 rounded-lg hover:bg-accent/40">
-      <div className="min-w-0">
-        <p className={`text-xs font-medium truncate ${tone === "danger" ? "text-destructive" : tone === "success" ? "text-emerald-700" : "text-foreground"}`}>{main}</p>
-        {sub && <p className="text-[10px] text-muted-foreground truncate">{sub}</p>}
+    <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+          <User className="h-4 w-4 text-primary" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-foreground truncate">{lead.nome}</p>
+          <p className="text-[10px] text-muted-foreground truncate">{lead.stage_nome || "—"}{lead.empreendimento ? " · " + lead.empreendimento : ""}</p>
+        </div>
+      </div>
+      {lead.telefone && <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> {lead.telefone}</p>}
+      {result.ultima_interacao && <p className="text-[11px] text-muted-foreground">🕑 Última interação: {result.ultima_interacao as string}</p>}
+      {proximas.length > 0 && (
+        <div className="space-y-0.5">
+          <p className="text-[10px] font-semibold text-foreground">Próximas tarefas:</p>
+          {proximas.map((t: any, i: number) => (
+            <p key={i} className="text-[11px] text-muted-foreground truncate">• {t.titulo || t.tipo} — {t.vence_em}{t.hora_vencimento ? " " + t.hora_vencimento.slice(0, 5) : ""}</p>
+          ))}
+        </div>
+      )}
+      {sugestao && (
+        <div className="rounded-lg bg-primary/10 border border-primary/20 p-2 text-[11px] text-foreground">
+          💡 {sugestao}
+        </div>
+      )}
+      <div className="flex gap-1.5 pt-0.5">
+        <Button size="sm" variant="outline" className="flex-1 h-7 text-[11px] gap-1" onClick={() => openComposer("criar_tarefa", { lead_id: lead.id, lead_nome: lead.nome })}>
+          <Plus className="h-3 w-3" /> Tarefa
+        </Button>
+        <Button size="sm" variant="outline" className="flex-1 h-7 text-[11px] gap-1" onClick={() => onPick(`Escreve uma mensagem de WhatsApp curta para o lead ${lead.nome}.`)}>
+          <MessageCircle className="h-3 w-3" /> Whats
+        </Button>
+        <Button size="sm" variant="outline" className="flex-1 h-7 text-[11px] gap-1" onClick={() => openLead(lead.id)}>
+          <User className="h-3 w-3" /> Abrir
+        </Button>
       </div>
     </div>
   );
@@ -272,6 +495,7 @@ export function HomiActionsRenderer({ actions }: { actions?: HomiAction[] }) {
       {actions.map((a, i) => {
         if (a.tipo === "criar_tarefa") return <TarefaCard key={i} action={a} />;
         if (a.tipo === "criar_visita") return <VisitaCard key={i} action={a} />;
+        if (a.tipo === "anotar_lead") return <AnotacaoCard key={i} action={a} />;
         return null;
       })}
     </div>
@@ -283,9 +507,10 @@ export function HomiResultsRenderer({ results, onPick }: { results?: HomiResult[
   return (
     <div className="space-y-2 mt-1">
       {results.map((r, i) => {
-        if (r.tipo === "pendencias") return <PendenciasCard key={i} result={r} />;
+        if (r.tipo === "pendencias") return <PendenciasCard key={i} result={r} onPick={onPick} />;
         if (r.tipo === "imoveis") return <ImoveisCard key={i} result={r} />;
         if (r.tipo === "escolher_lead") return <EscolherLeadCard key={i} result={r} onPick={onPick} />;
+        if (r.tipo === "resumo_lead") return <ResumoLeadCard key={i} result={r} onPick={onPick} />;
         return null;
       })}
     </div>

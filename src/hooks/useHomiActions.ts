@@ -66,11 +66,89 @@ export interface VisitaConfirm {
   observacoes?: string;
 }
 
+export interface LeadOption {
+  id: string;
+  nome: string;
+  telefone: string | null;
+  empreendimento: string | null;
+}
+
 export function useHomiActions() {
   const { user } = useAuth();
   const { createVisita } = useVisitas();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+
+  // Busca leads do corretor logado por nome (RLS já escopa ao corretor).
+  const searchLeads = useCallback(async (term: string): Promise<LeadOption[]> => {
+    const q = (term || "").trim();
+    if (q.length < 2) return [];
+    const { data, error } = await supabase
+      .from("pipeline_leads")
+      .select("id, nome, telefone, empreendimento")
+      .eq("arquivado", false)
+      .ilike("nome", `%${q}%`)
+      .order("updated_at", { ascending: false })
+      .limit(8);
+    if (error) { console.error("[searchLeads]", error); return []; }
+    return (data || []) as LeadOption[];
+  }, []);
+
+  // Conclui uma tarefa (mesmo efeito da Central de Tarefas) + histórico no lead.
+  const concluirTarefa = useCallback(async (
+    tarefaId: string,
+    leadId?: string | null,
+    leadNome?: string | null,
+    titulo?: string | null,
+  ): Promise<boolean> => {
+    if (!user) { toast.error("Sessão expirada."); return false; }
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("pipeline_tarefas")
+        .update({ status: "concluida", concluida_em: new Date().toISOString() } as any)
+        .eq("id", tarefaId);
+      if (error) { toast.error("Erro ao concluir: " + error.message); return false; }
+      if (leadId) {
+        await logAtividade(
+          leadId, user.id, "outro",
+          `✅ Tarefa concluída via Homi${titulo ? `: ${titulo}` : ""}`,
+          null,
+        );
+      }
+      invalidateTaskQueries(queryClient, leadId || undefined);
+      toast.success("Tarefa concluída ✅");
+      return true;
+    } finally {
+      setSaving(false);
+    }
+  }, [user, queryClient]);
+
+  // Registra uma anotação rápida na timeline do lead (com confirmação na UI).
+  const anotarLead = useCallback(async (
+    leadId: string,
+    leadNome: string,
+    texto: string,
+  ): Promise<boolean> => {
+    if (!user) { toast.error("Sessão expirada."); return false; }
+    if (!texto.trim()) { toast.error("Escreva a anotação."); return false; }
+    setSaving(true);
+    try {
+      const nomeAutor = (await supabase.from("profiles").select("nome").eq("user_id", user.id).maybeSingle()).data?.nome || "Corretor";
+      const { error } = await supabase.from("pipeline_anotacoes").insert({
+        pipeline_lead_id: leadId,
+        conteudo: texto.trim(),
+        autor_id: user.id,
+        autor_nome: nomeAutor,
+      } as any);
+      if (error) { toast.error("Erro ao anotar: " + error.message); return false; }
+      await logAtividade(leadId, user.id, "outro", `📝 Anotação via Homi`, texto.trim());
+      toast.success("Anotação salva 📝");
+      return true;
+    } finally {
+      setSaving(false);
+    }
+  }, [user]);
 
   const confirmarTarefa = useCallback(async (t: TarefaConfirm): Promise<boolean> => {
     if (!user) { toast.error("Sessão expirada."); return false; }
@@ -144,5 +222,5 @@ export function useHomiActions() {
     }
   }, [user, createVisita]);
 
-  return { confirmarTarefa, confirmarVisita, saving };
+  return { confirmarTarefa, confirmarVisita, searchLeads, concluirTarefa, anotarLead, saving };
 }

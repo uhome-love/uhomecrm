@@ -95,7 +95,39 @@ export const HOMI_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "resumo_lead",
+      description:
+        "Mostra um resumo do lead (etapa, última interação, próximas tarefas, imóveis de interesse) e sugere a próxima ação. Use quando o corretor pedir 'me fala do lead X', 'como está o lead X', 'resumo do X'.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_nome: { type: "string", description: "Nome (ou parte) do lead." },
+        },
+        required: ["lead_nome"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "anotar_lead",
+      description:
+        "Prepara uma anotação na timeline do lead (o corretor confirma na tela). Use quando o corretor disser 'anota no lead X que...', 'registra que...'.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_nome: { type: "string", description: "Nome (ou parte) do lead." },
+          texto: { type: "string", description: "Conteúdo da anotação." },
+        },
+        required: ["lead_nome", "texto"],
+      },
+    },
+  },
 ];
+
 
 function todayBRT(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
@@ -279,6 +311,77 @@ export async function executeHomiTool(
       return {
         action,
         modelResult: `Visita preparada para ${lead.nome}. O cartão de confirmação já apareceu na tela. Diga em 1 frase para o corretor revisar e confirmar.`,
+      };
+    }
+
+    if (name === "resumo_lead") {
+      const r = await resolveLead(userClient, uid, args.lead_nome);
+      if ((r as any).none) return { modelResult: `Não achei nenhum lead com "${args.lead_nome}".` };
+      if ((r as any).candidates) {
+        return {
+          result: { tipo: "escolher_lead", intent: "resumo_lead", candidates: (r as any).candidates, args },
+          modelResult: `Achei vários leads com "${args.lead_nome}". Peça para o corretor selecionar qual.`,
+        };
+      }
+      const lead = (r as any).lead;
+      const today = todayBRT();
+
+      // Etapa
+      let stageNome = "";
+      if (lead.stage_id) {
+        const { data: st } = await userClient.from("pipeline_stages").select("nome").eq("id", lead.stage_id).maybeSingle();
+        stageNome = st?.nome || "";
+      }
+      // Próximas tarefas
+      const { data: tarefas } = await userClient
+        .from("pipeline_tarefas")
+        .select("id, titulo, tipo, vence_em, hora_vencimento, status")
+        .eq("pipeline_lead_id", lead.id)
+        .eq("status", "pendente")
+        .order("vence_em", { ascending: true })
+        .limit(3);
+      // Última atividade
+      const { data: atividades } = await userClient
+        .from("pipeline_atividades")
+        .select("titulo, data, created_at")
+        .eq("pipeline_lead_id", lead.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const ultima = atividades?.[0];
+
+      const proximas = tarefas || [];
+      const temAtrasada = proximas.some((t: any) => t.vence_em && t.vence_em < today);
+      let sugestao = "";
+      if (temAtrasada) sugestao = "Há tarefa atrasada — priorize o contato hoje.";
+      else if (proximas.length === 0) sugestao = "Sem próxima tarefa agendada. Crie um follow-up para manter a cadência.";
+      else sugestao = "Siga a próxima tarefa agendada e conduza para uma visita.";
+
+      const out = {
+        tipo: "resumo_lead",
+        lead: { id: lead.id, nome: lead.nome, telefone: lead.telefone, empreendimento: lead.empreendimento, stage_nome: stageNome },
+        proximas_tarefas: proximas,
+        ultima_interacao: ultima ? `${ultima.titulo || "atividade"}${ultima.data ? " · " + ultima.data : ""}` : null,
+        sugestao_proxima_acao: sugestao,
+      };
+      return {
+        result: out,
+        modelResult: `Resumo de ${lead.nome} exibido no cartão. Comente em 1 frase a próxima ação recomendada.`,
+      };
+    }
+
+    if (name === "anotar_lead") {
+      const r = await resolveLead(userClient, uid, args.lead_nome);
+      if ((r as any).none) return { modelResult: `Não achei nenhum lead com "${args.lead_nome}".` };
+      if ((r as any).candidates) {
+        return {
+          result: { tipo: "escolher_lead", intent: "anotar_lead", candidates: (r as any).candidates, args },
+          modelResult: `Achei vários leads com "${args.lead_nome}". Peça para o corretor selecionar qual.`,
+        };
+      }
+      const lead = (r as any).lead;
+      return {
+        action: { tipo: "anotar_lead", lead_id: lead.id, lead_nome: lead.nome, texto: args.texto || "" },
+        modelResult: `Anotação preparada para ${lead.nome}. Peça ao corretor para revisar e confirmar.`,
       };
     }
 
