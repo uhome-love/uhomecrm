@@ -1693,10 +1693,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    const finalAudit = buildAudienceAudit(totalAlvo);
+    const finalAuditTail = isCustomAudience
+      ? ` Funil: ${finalAudit.total_bruto} brutos → ${finalAudit.enfileirados} enfileirados (${finalAudit.telefones_invalidos} inválidos, ${finalAudit.removidos_frequencia} frequência, ${finalAudit.removidos_pipeline_ativo} pipeline ativo, ${finalAudit.removidos_template_recente} template recente).`
+      : "";
     const finalStatus = sent === 0 && totalAlvo > 0 ? "no_send" : "completed";
     const finalReason = finalStatus === "no_send"
-      ? `Disparo encerrado sem envio real via ${canal}: ${failed} falhas e ${skipped} ignorados de ${totalAlvo}. Motivo predominante: ${failed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.`
-      : `Disparo concluído via ${canal} (${sent}/${totalAlvo} enviados${failed > 0 ? `, ${failed} falhas` : ""})`;
+      ? `Disparo encerrado sem envio real via ${canal}: ${failed} falhas e ${skipped} ignorados de ${totalAlvo}. Motivo predominante: ${failed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.${finalAuditTail}`
+      : `Disparo concluído via ${canal} (${sent}/${totalAlvo} enviados${failed > 0 ? `, ${failed} falhas` : ""}).${finalAuditTail}`;
 
     await updateRun({
       status: finalStatus,
@@ -1705,7 +1709,7 @@ Deno.serve(async (req) => {
       enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20),
     });
 
-    return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: finalStatus, canal }), {
+    return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, queued: totalAlvo, audit: finalAudit, reason: finalStatus, canal }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
