@@ -237,12 +237,14 @@ Deno.serve(async (req) => {
         }
       }
       // Guarda de pipeline ativo + frequência (estimativa fiel ao disparo real)
-      const templateDedup = await applyMetaTemplateDedup(
-        supabase,
-        merged,
-        isMeta ? audience.template_name : undefined,
-        new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString(),
-      );
+      const templateDedup = dedupMode === "include_all"
+        ? { candidatos: merged, removidos: 0 }
+        : await applyMetaTemplateDedup(
+          supabase,
+          merged,
+          isMeta ? audience.template_name : undefined,
+          new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString(),
+        );
       const phoneSplit = splitValidPhones(templateDedup.candidatos);
       const { phoneSet, emailSet, recentSet } = await loadGuardSets(supabase, freqCooldownDias);
       let removidosPipeline = 0, removidosFrequencia = 0;
@@ -489,12 +491,14 @@ Deno.serve(async (req) => {
         else if (dedupMode === "only_sent_before") candidatos = candidatos.filter((c) => enviadosSet.has(c.id));
       }
 
-      const templateDedup = await applyMetaTemplateDedup(
-        supabase,
-        candidatos,
-        isMeta ? audience.template_name : undefined,
-        new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString(),
-      );
+      const templateDedup = dedupMode === "include_all"
+        ? { candidatos, removidos: 0 }
+        : await applyMetaTemplateDedup(
+          supabase,
+          candidatos,
+          isMeta ? audience.template_name : undefined,
+          new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString(),
+        );
       candidatos = templateDedup.candidatos as typeof candidatos;
 
       const phoneSplit = splitValidPhones(candidatos);
