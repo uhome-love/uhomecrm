@@ -315,6 +315,16 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     }
   }, [isOpen, isLoading, sendMessage]);
 
+  // Briefing automático ao abrir (1x por sessão) — só para corretor
+  const briefedRef = useRef(false);
+  useEffect(() => {
+    if (isOpen && homiRole === "corretor" && messages.length === 0 && !briefedRef.current && !isLoading && !pendingMessageRef.current) {
+      briefedRef.current = true;
+      sendMessage("Me dá o briefing do meu dia: o que tenho de atrasado e pendente hoje.");
+    }
+  }, [isOpen, homiRole, messages.length, isLoading, sendMessage]);
+
+
   const clearMessages = useCallback(() => {
     setMessages([]);
     setConversationId(null);
