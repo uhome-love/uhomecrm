@@ -9,15 +9,26 @@ const BUTTON_SIZE = typeof window !== "undefined" && window.innerWidth < 640 ? 5
 // Lê as safe-area insets (notch / barra inferior) do dispositivo
 function getSafeInsets() {
   if (typeof window === "undefined") return { top: 0, right: 0, bottom: 0, left: 0 };
-  const s = getComputedStyle(document.documentElement);
+  // env() em custom properties não é resolvido por getComputedStyle; usa um probe
+  // com padding vinculado às safe-area insets e mede o valor computado real.
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:fixed;visibility:hidden;pointer-events:none;top:0;left:0;" +
+    "padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) " +
+    "env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);";
+  document.body.appendChild(probe);
+  const s = getComputedStyle(probe);
   const px = (v: string) => parseInt(v || "0", 10) || 0;
-  return {
-    top: px(s.getPropertyValue("--sat")),
-    right: px(s.getPropertyValue("--sar")),
-    bottom: px(s.getPropertyValue("--sab")),
-    left: px(s.getPropertyValue("--sal")),
+  const insets = {
+    top: px(s.paddingTop),
+    right: px(s.paddingRight),
+    bottom: px(s.paddingBottom),
+    left: px(s.paddingLeft),
   };
+  document.body.removeChild(probe);
+  return insets;
 }
+
 
 function getSnapPosition(x: number, y: number) {
   const w = window.innerWidth;
