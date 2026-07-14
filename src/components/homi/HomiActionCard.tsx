@@ -543,45 +543,33 @@ function EscolherLeadCard({ result, onPick }: { result: HomiResult; onPick: (tex
   );
 }
 
-// ─────────────────────────────────────────────── Composer: buscar imóvel
-const DORM_CHIPS = [1, 2, 3, 4];
+// ─────────────────────────────────────────────── Composer: buscar imóvel (campo único)
 function ImovelSearchCard({ action }: { action: HomiAction }) {
   const { sendMessage, isLoading } = useHomi();
-  const [bairro, setBairro] = useState("");
-  const [dorms, setDorms] = useState<number | null>(null);
-  const [valorMax, setValorMax] = useState("");
+  const [termo, setTermo] = useState("");
   const [sent, setSent] = useState(false);
 
   if (sent) return <DoneBadge label="Buscando imóveis…" />;
 
   const buscar = () => {
-    const partes: string[] = [];
-    if (bairro.trim()) partes.push(`no bairro ou empreendimento "${bairro.trim()}"`);
-    if (dorms) partes.push(`com ${dorms}${dorms >= 4 ? "+" : ""} dormitórios`);
-    const valorNum = Number(valorMax.replace(/\D/g, ""));
-    if (valorNum > 0) partes.push(`com valor até R$ ${valorNum.toLocaleString("pt-BR")}`);
-    const criterio = partes.length ? partes.join(", ") : "os mais recentes";
+    const t = termo.trim();
+    if (!t) return;
     setSent(true);
-    sendMessage(`Buscar imóveis ${criterio}.`);
+    sendMessage(`Buscar imóvel: ${t}`);
   };
 
   return (
     <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2.5">
       <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><Search className="h-3.5 w-3.5 text-primary" /> Buscar imóvel</p>
-      <Input value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Bairro ou empreendimento (opcional)" className="h-9 text-xs" />
-      <div>
-        <p className="text-[10px] text-muted-foreground mb-1">Dormitórios</p>
-        <div className="flex gap-1.5">
-          {DORM_CHIPS.map((d) => (
-            <button key={d} onClick={() => setDorms(dorms === d ? null : d)}
-              className={`flex-1 h-8 rounded-lg border text-xs font-medium transition-all ${dorms === d ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary/40"}`}>
-              {d === 4 ? "4+" : d}
-            </button>
-          ))}
-        </div>
-      </div>
-      <Input value={valorMax} onChange={(e) => setValorMax(e.target.value)} inputMode="numeric" placeholder="Valor máximo (opcional)" className="h-9 text-xs" />
-      <Button onClick={buscar} disabled={isLoading} size="sm" className="w-full h-9 text-xs gap-1.5">
+      <Input
+        autoFocus
+        value={termo}
+        onChange={(e) => setTermo(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") buscar(); }}
+        placeholder="Ex.: 2 dorms no Petrópolis até 600 mil"
+        className="h-9 text-xs"
+      />
+      <Button onClick={buscar} disabled={isLoading || !termo.trim()} size="sm" className="w-full h-9 text-xs gap-1.5">
         <Search className="h-3.5 w-3.5" /> Buscar
       </Button>
     </div>
