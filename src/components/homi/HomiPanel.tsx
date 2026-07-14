@@ -34,7 +34,7 @@ const QUICK_ACTIONS: Record<string, { label: string; prompt: string }[]> = {
 
 function HomiPanelInner() {
   const {
-    isOpen, closeHomi, messages, sendMessage, clearMessages, isLoading, homiRole, userName, knowledgeSource,
+    isOpen, closeHomi, messages, sendMessage, clearMessages, isLoading, homiRole, userName, knowledgeSource, openComposer,
   } = useHomi();
   const { isAdmin } = useUserRole();
 
