@@ -44,6 +44,9 @@ interface HomiContextType {
   clearMessages: () => void;
   isLoading: boolean;
 
+  // Inject a local action card (composer) without calling the AI
+  openComposer: (tipo: "criar_tarefa" | "criar_visita", lead?: { lead_id: string; lead_nome: string; campos?: Record<string, any> }) => void;
+
   // Proactive alerts
   alerts: ProactiveAlert[];
   addProactiveAlert: (alert: Omit<ProactiveAlert, "id" | "createdAt">) => void;
