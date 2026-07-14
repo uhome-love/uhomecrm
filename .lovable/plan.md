@@ -1,68 +1,69 @@
-# Homi Copiloto — Assistente inteligente do corretor (Fase 1)
+# HOMI Copiloto da Corretora — Assistente inteligente, direto e acionável
 
-## Visão
-Um Homi no nível de um Claude/GPT que **conhece o CRM do corretor** e resolve as demandas do dia a dia por conversa natural **e** por **botões de acesso rápido**. Respostas curtas e bonitas (nada de textão), e toda ação real feita por **cartões visuais** com os mesmos campos das telas oficiais, validação completa e **histórico registrado no lead**.
+Objetivo: um HOMI que a Adriana (e os corretores) **gostem de usar** — resolve as tarefas do dia em poucos toques, com IA que entende linguagem natural E botões diretos. Validação ponta a ponta no acesso de corretor (sem visão CEO).
 
-## Princípios de UX (layout bonito e leve)
-- Nada de respostas gigantes. O Homi responde curto e, quando a intenção é uma ação, mostra um **cartão** limpo (não um texto).
-- **Barra de acesso rápido** fixa no topo do painel com as rotinas: `📋 Nova tarefa`, `🏠 Marcar visita`, `⏰ Meus atrasados`, `🔎 Buscar imóvel`, `💬 Mensagem WhatsApp`. Um toque já abre o cartão certo.
-- Balões do assistente sem fundo pesado, tipografia clara, ícones por domínio, espaçamento generoso.
-- Estados visuais: "pensando…" (shimmer), cartão de ação, cartão de resultado, sucesso com link.
+---
 
-## Botão flutuante — opções (você escolhe depois)
-Hoje o launcher fixo às vezes atrapalha. Proponho, e recomendo combinar A+B:
-- **A. Botão arrastável + reposicionável** — o corretor arrasta pra qualquer canto; a posição fica salva.
-- **B. Modo recolhido / X** — um "×" recolhe o Homi num mini-ícone discreto (ou some por 1h); atalho `/` sempre reabre.
-- **C. Só por atalho/menu** — remove o botão flutuante e deixa só a tecla `/` + um item no menu lateral.
-- **D. Auto-ocultar** — o botão some quando um drawer/modal está aberto (já existe `launcherHidden`) e some ao rolar, reaparecendo ao parar.
-Recomendação: **A + B + D**. Confirmo a escolha no início da Fase 1.
+## 1. Criar tarefa e visita — botão abre form + digitar também funciona
 
-## O que o Homi entende e faz (Fase 1)
+**Botões rápidos abrem o cartão na hora** (sem round-trip com a IA), e **digitar em linguagem natural também funciona** ("cria uma ligação pro Felipe amanhã 10h").
 
-### 1. Ver o que está atrasado/pendente (leitura, direto)
-Tarefas atrasadas, tarefas de hoje, visitas do dia, leads sem contato — em lista clicável (abre o lead/tarefa). Escopado ao corretor logado.
+Novo cartão-composer com **busca de lead embutida**:
+- Campo de busca no topo com autocomplete em `pipeline_leads` do corretor (`corretor_id = user.id` + `ilike nome`, com debounce). Mostra nome + empreendimento/telefone; ao escolher, fixa o lead (botão "trocar").
+- **Tipo de tarefa** = tipos reais do sistema (Ligar, WhatsApp, Email/material, Follow-up, Proposta, Marcar visita, Outro→personalizado).
+- **Data** (Hoje/Amanhã/date picker) + **Hora** opcional.
+- **Observações** (textarea).
+- **Visita**: mesmo padrão + empreendimento, local, responsável (campos idênticos à agenda).
+- Confirmar usa `useHomiActions.confirmarTarefa/confirmarVisita` (mesmos campos/validações da Central de Tarefas e da agenda + grava histórico em `pipeline_atividades`).
 
-### 2. Criar tarefa (cartão com os MESMOS campos da Central de Tarefas)
-Campos idênticos ao formulário atual (`LeadTarefasTab`): **lead** (busca por nome), **tipo** (Ligar/WhatsApp/Email/Follow-up/Proposta/Visita/Outro→tipo personalizado), **data** (com atalhos Hoje/Amanhã), **hora**, **observação**, **responsável**.
-- Validação completa (client + server): data obrigatória, tipo personalizado obrigatório quando "Outro", limite de data futura (`isTaskDateTooFar`), lead válido.
-- Grava em `pipeline_tarefas` com os mesmos campos (`pipeline_lead_id`, `tipo`, `titulo`, `descricao`, `vence_em`, `hora_vencimento`, `responsavel_id`, `created_by`).
+Quando a pessoa digita e a IA já sabe o lead, o cartão vem preenchido; se não achar, o corretor resolve na própria busca do cartão — sem nova pergunta.
 
-### 3. Marcar visita (cartão com os MESMOS campos da agenda)
-Campos idênticos ao `VisitaForm`: **cliente/lead**, **telefone**, **empreendimento**, **data**, **hora** (atalhos), **local** (stand/escritório/videochamada/decorado/imóvel/outro), **responsável pela visita**, **observações**.
-- Validação completa (mesmo `FormErrors` do form oficial).
-- Grava em `visitas` pelo mesmo caminho do agendamento inline (mantém a sincronização de status do pipeline).
+## 2. Pendências / Atrasados acionáveis
+Cada linha de tarefa/visita ganha ações rápidas:
+- **✓ Concluir tarefa** — marca como concluída pelo mesmo caminho do sistema (`taskCompletion`/invalidação de queries), some da lista.
+- **📋 Criar nova tarefa** — abre o composer já com o lead preenchido.
+- **💬 Rascunhar WhatsApp** — a IA gera a mensagem pronta pra copiar (não envia).
+- **👤 Abrir o lead** — navega para o lead no pipeline.
+Cabeçalho com resumo curto e ordenação por urgência.
 
-### 4. Buscar imóvel (leitura, direto)
-Busca no catálogo por critérios em linguagem natural ("2 dorm até 500k no Centro") e retorna cartões com dados principais + link.
+## 3. IA mais inteligente (todos os superpoderes escolhidos)
+- **Briefing ao abrir**: ao abrir o HOMI (tela inicial), saudação com o resumo real do dia ("Bom dia, Adriana — 3 atrasadas, 18 tarefas hoje, 4 visitas. Começa por…") com botões diretos.
+- **Resumo do lead sob demanda**: "me fala do Felipe Rigon" → nova ferramenta `resumo_lead` (etapa, última interação, próximas tarefas, imóveis de interesse) em cartão limpo + ação sugerida.
+- **Sugestão de próxima ação por lead**: em cada lead parado/atrasado, o HOMI sugere o próximo passo ideal (com botão que abre a tarefa/rascunho correspondente).
+- **Anotação rápida no lead**: "anota no Felipe que ele prefere sábado" → nova ferramenta `anotar_lead` grava em `pipeline_anotacoes`/`pipeline_atividades` (com confirmação).
 
-### 5. Apoio no WhatsApp (só rascunho)
-Homi gera a mensagem ideal usando o contexto do lead (etapa, empreendimento, histórico). Corretor copia. Não envia.
+## 4. Confirmação sempre obrigatória
+Nenhuma tarefa, visita ou anotação é gravada sem o corretor revisar e clicar em **Confirmar** (cada cartão tem Confirmar/Cancelar).
 
-## Histórico no lead (obrigatório em toda criação)
-Sempre que uma tarefa ou visita for confirmada, o Homi registra em `pipeline_atividades` (o que aparece na timeline do modal do lead), ex.: "📋 Tarefa criada via Homi: Ligar — amanhã 10h" / "🏠 Visita agendada via Homi: 15h no stand". Assim o modal do lead reflete tudo, igual às ações feitas pelas telas normais.
+## 5. Buscar imóvel + WhatsApp
+- Buscar imóvel por linguagem natural retorna cartões (já existe) — melhorar com botão "💬 Enviar pro lead" que rascunha a mensagem com o imóvel.
+- Rascunho de WhatsApp usa contexto do lead (etapa, empreendimento, histórico). Sempre só rascunho.
 
-## Detalhes técnicos
+## 6. Habilitar Copiloto no acesso de corretor + teste ponta a ponta
+O modo Copiloto (ferramentas) já roda em "Modo Corretor" — sem mexer no CEO. Vou testar tudo **logado como corretor**:
+- Buscar/selecionar lead → criar tarefa → conferir em `pipeline_tarefas` + timeline do lead (`pipeline_atividades`).
+- Criar visita → conferir em `visitas` + timeline + avanço de etapa.
+- Pendências: concluir tarefa (some da lista), abrir lead, rascunhar WhatsApp, criar nova tarefa.
+- Resumo de lead, sugestão de próxima ação, anotação rápida.
+- Buscar imóvel.
+- Validações: data obrigatória, "Outro" exige descrição, limite de data futura, lead inexistente, sessão expirada.
+- Rodar em **viewport mobile** (caso da Adriana) conferindo layout dos cartões e da busca.
 
-### Backend — `homi-chat` (edge)
-- Adicionar **function-calling** ao Lovable AI Gateway (`tools` + `tool_choice:auto`), mantendo system prompt, RAG e conhecimento de empreendimentos atuais.
-- Tools: `ver_pendencias`, `buscar_imovel` (leitura — executam no edge com JWT do corretor, respeitam RLS) e `criar_tarefa`, `criar_visita` (retornam **proposta de ação** já normalizada em BRT; **não** gravam no edge).
-- **Resolução de lead** por nome dentro do escopo do corretor; se ambíguo, devolve lista pra escolher (não adivinha).
-- Reforçar o system prompt: respostas curtas, orientar sempre para a próxima ação, conhecer as capacidades do CRM.
-- Datas/horas normalizadas em **BRT**.
+---
 
-### Frontend
-- Novo `HomiActionCard.tsx`: renderiza os cartões de **tarefa** e **visita** (reaproveitando os mesmos inputs/validação dos forms oficiais) e as listas de **pendências** e **imóveis**.
-- `HomiPanel.tsx`: nova **barra de acesso rápido** no topo, parsing dos blocos de ação no stream, layout compacto/bonito, e o comportamento do launcher (arrastar + recolher + auto-ocultar).
-- **Confirmar** executa via os caminhos existentes → grava tarefa/visita → grava `pipeline_atividades` → invalida as queries da Central de Tarefas, agenda e modal do lead → toast com link. **Cancelar** descarta.
-- Validação com zod nos cartões (mesmos limites dos forms) + validação server-side na criação.
+## Melhorias extras que recomendo (posso incluir — me diz se quer)
+- **Atalho de conclusão com resultado**: ao concluir tarefa pelo HOMI, abrir o mini-fluxo de "resultado + próxima tarefa" (igual ao pós-conclusão do sistema) para não quebrar a cadência.
+- **"Bom dia" proativo 1x/dia**: badge no launcher quando há atrasados, abrindo direto no briefing.
+- **Follow-ups em lote**: "gera follow-up pra todos os leads sem contato há 3 dias" → lista de rascunhos.
+- **Registro de ligação rápida**: "liguei pro Felipe, não atendeu" → grava tentativa + sugere reagendar.
 
-### Segurança/regras
-- Nada é criado sem confirmação (sua decisão).
-- JWT validado no edge; leitura/escrita escopadas ao corretor logado; sem migrations novas (reusa `pipeline_tarefas`, `visitas`, `pipeline_atividades`, `imoveis_catalog/properties`, `pipeline_leads`).
+## Seção técnica
+- **Frontend**: `HomiActionCard.tsx` (composers com busca de lead + linhas acionáveis + cartões de resumo/imóvel), `HomiPanel.tsx` (botões abrem cartão local + briefing na tela inicial), `HomiContext.tsx` (helper para injetar cartão de ação sem chamar a IA; carregar briefing ao abrir), `useHomiActions.ts` (adicionar `concluirTarefa` e `anotarLead`).
+- **Busca de lead no cartão**: consulta client-side a `pipeline_leads` (RLS do corretor), com debounce; sem migração.
+- **Edge `homi-chat`**: novas tools `resumo_lead` e `anotar_lead`; ajustar prompt do copiloto para preencher o que já sabe e abrir o cartão em vez de perguntar campo a campo.
+- **Conclusão de tarefa**: reutiliza `taskCompletion`/`invalidateTaskQueries` — sem duplicar lógica.
+- **Sem mudanças de schema**; tudo em frontend + edge. Nada grava sem confirmação.
 
-## Fase 2 (depois)
-- Criar lista personalizada na Oferta Ativa por linguagem natural.
-- Enviar WhatsApp com 1 clique (janela 24h/templates).
-
-## Validação final
-No preview: pedir atrasados; criar tarefa (confirmar → aparece na Central e na timeline do lead); marcar visita (confirmar → aparece na agenda e na timeline); buscar imóvel; pedir mensagem de WhatsApp. Conferir campos idênticos aos forms oficiais, validações barrando entradas inválidas, histórico gravado, BRT correto e console sem erros.
+## Fora de escopo (fase seguinte)
+- Envio automático de WhatsApp (mantém só rascunho).
+- Criar lista personalizada na Oferta Ativa.
