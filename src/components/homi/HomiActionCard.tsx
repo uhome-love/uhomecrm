@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useHomiActions, type LeadOption } from "@/hooks/useHomiActions";
 import { useHomi } from "@/contexts/HomiContext";
+import { useBrokerSlug } from "@/hooks/useBrokerSlug";
+import { gerarSlugUhome } from "@/utils/imoveisFormat";
 import type { HomiAction, HomiResult } from "@/contexts/HomiContext";
 
 const TIPO_BUTTONS = [
