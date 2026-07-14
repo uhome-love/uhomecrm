@@ -1143,6 +1143,7 @@ Deno.serve(async (req) => {
           ignorados: skipped,
           erros: errs.slice(-20),
         });
+        await releaseProcessingQueue();
         return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_cooldown", motivo: reason, canal }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -1638,9 +1639,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    const finalStatus = failed > 0 && sent === 0 ? "error" : "completed";
-    const finalReason = finalStatus === "error"
-      ? `Disparo encerrado com falhas via ${canal} (${sent}/${totalAlvo} enviados, ${failed} falhas)`
+    const finalStatus = sent === 0 && totalAlvo > 0 ? "no_send" : "completed";
+    const finalReason = finalStatus === "no_send"
+      ? `Disparo encerrado sem envio real via ${canal}: ${failed} falhas e ${skipped} ignorados de ${totalAlvo}. Motivo predominante: ${failed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.`
       : `Disparo concluído via ${canal} (${sent}/${totalAlvo} enviados${failed > 0 ? `, ${failed} falhas` : ""})`;
 
     await updateRun({
@@ -1658,9 +1659,14 @@ Deno.serve(async (req) => {
     console.error("reengajamento-enqueue error:", msg);
     if (runId) {
       await updateRun({ status: "error", finished_at: new Date().toISOString(), motivo_parada: msg.slice(0, 500), erros: errs.slice(-20) });
+      await supabase
+        .from("reengajamento_dispatch_queue")
+        .update({ status: "pending", locked_at: null, error_text: `Erro da função: ${msg}`.slice(0, 500) } as any)
+        .eq("run_id", runId)
+        .eq("status", "processing");
     }
-    return new Response(JSON.stringify({ run_id: runId, error: msg }), {
-      status: 500,
+    return new Response(JSON.stringify({ ok: false, run_id: runId, error: msg, message: msg, reason: "edge_function_error", recoverable: true }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
