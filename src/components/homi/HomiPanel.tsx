@@ -137,6 +137,7 @@ function HomiPanelInner() {
             {homiRole === "corretor" && (
               <div className="flex gap-1.5 px-3 py-2 border-b border-border overflow-x-auto shrink-0 bg-card">
                 {[
+                  { label: "☀️ Meu dia", run: () => sendMessage("Meu dia: por onde começo?") },
                   { label: "⏰ Atrasados", run: () => sendMessage("Mostra o que tenho de atrasado e pendente hoje.") },
                   { label: "❄️ Esfriando", run: () => sendMessage("Quais leads estão esfriando?") },
                   { label: "📋 Preparar visita", run: () => sendMessage("Prepara minhas visitas de hoje.") },
