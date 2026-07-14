@@ -122,7 +122,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [firing, setFiring] = useState(false);
+  const [modoTeste, setModoTeste] = useState<boolean>(false);
   const [tab, setTab] = useState<"publico" | "filtros" | "mensagem">("publico");
+
 
   const { data: stages = [] } = useQuery({
     queryKey: ["pipeline_stages_all"],
