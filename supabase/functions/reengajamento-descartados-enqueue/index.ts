@@ -888,6 +888,29 @@ Deno.serve(async (req) => {
 
     totalAlvo = leads.length;
 
+    // ── MODO TESTE CAUTELOSO: amostra aleatória do público elegível ──
+    // Alvo: 5% dos elegíveis, com mín 50 e máx 300. Se o público for menor que o mínimo,
+    // usa o que houver. Sorteio embaralhado para não viesar por ordem de criação.
+    let modoTesteInfo: null | { pct: number; min: number; max: number; original: number; sampled: number } = null;
+    if (modoTeste && leads.length > 0 && !bodyRunId) {
+      const MIN = 50, MAX = 300, PCT = 0.05;
+      const target = Math.min(MAX, Math.max(MIN, Math.ceil(leads.length * PCT)));
+      const finalSize = Math.min(target, leads.length);
+      // shuffle Fisher-Yates
+      for (let i = leads.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [leads[i], leads[j]] = [leads[j], leads[i]];
+      }
+      const original = leads.length;
+      leads = leads.slice(0, finalSize);
+      modoTesteInfo = { pct: PCT, min: MIN, max: MAX, original, sampled: leads.length };
+      console.log(`Modo teste cauteloso: amostra de ${leads.length} sorteada de ${original} elegíveis`);
+      totalAlvo = leads.length;
+      // marca no bodyAudience para persistir no audience_payload da run
+      bodyAudience = { ...(bodyAudience || {}), modo_teste: true, modo_teste_info: modoTesteInfo };
+    }
+
+
     const buildAudienceAudit = (queueTotal?: number) => {
       const existingAudit = bodyAudience?.__audit && typeof bodyAudience.__audit === "object" ? bodyAudience.__audit : null;
       if (existingAudit) return { ...existingAudit, enfileirados: queueTotal ?? existingAudit.enfileirados ?? totalAlvo };
