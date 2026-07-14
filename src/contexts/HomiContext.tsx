@@ -343,7 +343,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   return (
     <HomiContext.Provider value={{
       isOpen, openHomi, closeHomi, toggleHomi,
-      messages, sendMessage, clearMessages, isLoading,
+      messages, sendMessage, clearMessages, isLoading, openComposer,
       alerts, addProactiveAlert, dismissAlert, unseenCount,
       currentPage, homiRole, userName,
       knowledgeSource,
