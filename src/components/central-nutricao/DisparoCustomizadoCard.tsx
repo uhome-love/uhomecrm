@@ -289,7 +289,12 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       toast.error("⛔ Central travada: " + (cfgLock?.paused_reason || "liberação manual necessária"));
       return;
     }
-    if (!confirm(`Disparar para ${preview.count.toLocaleString("pt-BR")} leads via ${canal === "meta" ? "Meta" : "Evolution"}?`)) return;
+    const sampleEst = modoTeste ? Math.min(300, Math.max(50, Math.ceil(preview.count * 0.05))) : preview.count;
+    const confirmMsg = modoTeste
+      ? `Modo teste cauteloso: enviar apenas ~${Math.min(sampleEst, preview.count).toLocaleString("pt-BR")} de ${preview.count.toLocaleString("pt-BR")} elegíveis (amostra aleatória, 5% com mín 50 e máx 300). Auto-pausa se falhar >15% na janela de 20 ou atingir 20 falhas totais. Continuar?`
+      : `Disparar para ${preview.count.toLocaleString("pt-BR")} leads via ${canal === "meta" ? "Meta" : "Evolution"}?`;
+    if (!confirm(confirmMsg)) return;
+
 
     setFiring(true);
     try {
