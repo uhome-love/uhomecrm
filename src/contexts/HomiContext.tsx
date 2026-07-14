@@ -364,6 +364,7 @@ const NOOP_CONTEXT: HomiContextType = {
   messages: [],
   sendMessage: async () => {},
   clearMessages: () => {},
+  openComposer: () => {},
   isLoading: false,
   alerts: [],
   addProactiveAlert: () => {},
