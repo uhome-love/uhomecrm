@@ -52,8 +52,20 @@ export default function PushPromptBanner() {
   // Check dismissal state
   useEffect(() => {
     if (!user) return;
+    // "Já tenho o app" — nunca mais mostrar o convite de instalação
+    if (localStorage.getItem(`${INSTALL_NEVER_KEY}_${user.id}`)) {
+      setInstallDismissed(true);
+    } else {
+      const installDism = localStorage.getItem(`${INSTALL_DISMISS_KEY}_${user.id}`);
+      if (installDism) {
+        const ts = parseInt(installDism, 10);
+        setInstallDismissed(Date.now() - ts < 7 * 24 * 60 * 60 * 1000);
+      } else {
+        setInstallDismissed(false);
+      }
+    }
+
     const pushDismissed = localStorage.getItem(`${DISMISS_KEY}_${user.id}`);
-    const installDism = localStorage.getItem(`${INSTALL_DISMISS_KEY}_${user.id}`);
     // Show again after 7 days
     if (pushDismissed) {
       const ts = parseInt(pushDismissed, 10);
@@ -61,21 +73,32 @@ export default function PushPromptBanner() {
     } else {
       setDismissed(false);
     }
-    if (installDism) {
-      const ts = parseInt(installDism, 10);
-      setInstallDismissed(Date.now() - ts < 7 * 24 * 60 * 60 * 1000);
-    } else {
-      setInstallDismissed(false);
+
+    // Detecção automática (Android): se o app já está instalado, não mostrar o convite
+    const nav = navigator as any;
+    if (typeof nav.getInstalledRelatedApps === "function") {
+      nav.getInstalledRelatedApps().then((apps: any[]) => {
+        if (apps && apps.length > 0) {
+          localStorage.setItem(`${INSTALL_NEVER_KEY}_${user.id}`, "1");
+          setInstallDismissed(true);
+        }
+      }).catch(() => { /* ignore */ });
     }
   }, [user]);
 
-  const handleDismiss = (type: "push" | "install") => {
+  const handleDismiss = (type: "push" | "install" | "install-never") => {
     if (!user) return;
+    if (type === "install-never") {
+      localStorage.setItem(`${INSTALL_NEVER_KEY}_${user.id}`, "1");
+      setInstallDismissed(true);
+      return;
+    }
     const key = type === "push" ? DISMISS_KEY : INSTALL_DISMISS_KEY;
     localStorage.setItem(`${key}_${user.id}`, Date.now().toString());
     if (type === "push") setDismissed(true);
     else setInstallDismissed(true);
   };
+
 
   const handleInstall = async () => {
     if (deferredPrompt) {
