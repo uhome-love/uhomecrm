@@ -1143,7 +1143,13 @@ Deno.serve(async (req) => {
           ignorados: skipped,
           erros: errs.slice(-20),
         });
-        await releaseProcessingQueue();
+        if (runId) {
+          await supabase
+            .from("reengajamento_dispatch_queue")
+            .update({ status: "pending", locked_at: null } as any)
+            .eq("run_id", runId)
+            .eq("status", "processing");
+        }
         return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_cooldown", motivo: reason, canal }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
