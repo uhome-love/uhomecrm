@@ -189,6 +189,18 @@ export const HOMI_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "meu_dia",
+      description:
+        "Monta o resumo do dia do corretor em 3 frentes: (1) AGORA — tarefas atrasadas e de hoje; (2) VISITAS de hoje; (3) leads ESFRIANDO (sem contato há 5+ dias). Use quando o corretor perguntar 'meu dia', 'por onde começo', 'o que faço agora', 'resumo do dia', 'me organiza' ou clicar no botão Meu dia.",
+      parameters: {
+        type: "object",
+        properties: {},
+      },
+    },
+  },
 ];
 
 
@@ -271,6 +283,65 @@ export async function executeHomiTool(
   uid: string,
 ): Promise<ToolOutcome> {
   try {
+    if (name === "meu_dia") {
+      const today = todayBRT();
+
+      // AGORA: tarefas pendentes (atrasadas + hoje)
+      const { data: tarefas } = await userClient
+        .from("pipeline_tarefas")
+        .select("id, titulo, tipo, vence_em, hora_vencimento, pipeline_lead_id, status")
+        .eq("responsavel_id", uid)
+        .eq("status", "pendente")
+        .lte("vence_em", today)
+        .order("vence_em", { ascending: true })
+        .limit(40);
+      const tRows = tarefas || [];
+      const tLeadIds = [...new Set(tRows.map((r: any) => r.pipeline_lead_id).filter(Boolean))];
+      let tNameMap = new Map<string, string>();
+      if (tLeadIds.length) {
+        const { data: leads } = await userClient.from("pipeline_leads").select("id, nome").in("id", tLeadIds);
+        tNameMap = new Map((leads || []).map((l: any) => [l.id, l.nome]));
+      }
+      const tWithNames = tRows.map((r: any) => ({ ...r, lead_nome: tNameMap.get(r.pipeline_lead_id) || "Lead" }));
+      const atrasadas = tWithNames.filter((r: any) => r.vence_em && r.vence_em < today);
+      const hoje = tWithNames.filter((r: any) => r.vence_em === today);
+
+      // VISITAS de hoje
+      const { data: visitas } = await userClient
+        .from("visitas")
+        .select("id, nome_cliente, empreendimento, data_visita, hora_visita, local_visita, status, pipeline_lead_id")
+        .eq("corretor_id", uid)
+        .eq("data_visita", today)
+        .order("hora_visita", { ascending: true })
+        .limit(20);
+      const visitasHoje = visitas || [];
+
+      // ESFRIANDO: sem atividade há 5+ dias
+      const dias = 5;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - dias);
+      const cutoffISO = cutoff.toISOString();
+      const { data: coldData } = await userClient
+        .from("pipeline_leads")
+        .select("id, nome, empreendimento, ultima_acao_at")
+        .eq("corretor_id", uid)
+        .eq("arquivado", false)
+        .or(`ultima_acao_at.lt.${cutoffISO},ultima_acao_at.is.null`)
+        .order("ultima_acao_at", { ascending: true, nullsFirst: true })
+        .limit(8);
+      const esfriando = (coldData || []).map((l: any) => {
+        const dt = l.ultima_acao_at ? new Date(l.ultima_acao_at) : null;
+        const diasParado = dt ? Math.floor((Date.now() - dt.getTime()) / 86400000) : null;
+        return { id: l.id, nome: l.nome, empreendimento: l.empreendimento, dias_parado: diasParado };
+      });
+
+      const nAgora = atrasadas.length + hoje.length;
+      return {
+        result: { tipo: "meu_dia", today, atrasadas, hoje, visitas_hoje: visitasHoje, esfriando, dias },
+        modelResult: `Meu dia montado: ${nAgora} pendências agora (${atrasadas.length} atrasadas), ${visitasHoje.length} visitas hoje, ${esfriando.length} leads esfriando. As seções já apareceram na tela com botões de ação. Responda em NO MÁXIMO 1 frase dizendo por onde começar (ex: foco na pendência mais antiga e na visita mais próxima). Não repita a lista.`,
+      };
+    }
+
     if (name === "ver_pendencias") {
       const escopo = args.escopo || "tudo";
       const today = todayBRT();

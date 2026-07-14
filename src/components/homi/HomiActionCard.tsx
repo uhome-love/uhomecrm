@@ -695,8 +695,89 @@ function ResultadoCard({ action }: { action: HomiAction }) {
   );
 }
 
+// ─────────────────────────────────────────────── Read: meu dia (agregado)
+function MeuDiaCard({ result, onPick }: { result: HomiResult; onPick: (text: string) => void }) {
+  const { concluirTarefa } = useHomiActions();
+  const { openComposer, sendMessage } = useHomi();
+  const openLead = useOpenLead();
+  const [concluded, setConcluded] = useState<Set<string>>(new Set());
+
+  const atrasadas = ((result.atrasadas as any[]) || []).filter((t) => !concluded.has(t.id));
+  const hoje = ((result.hoje as any[]) || []).filter((t) => !concluded.has(t.id));
+  const visitas = (result.visitas_hoje as any[]) || [];
+  const esfriando = (result.esfriando as any[]) || [];
+  const agora = [...atrasadas, ...hoje];
+
+  const empty = !agora.length && !visitas.length && !esfriando.length;
+  if (empty) return <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">🎉 Dia limpo! Sem pendências, visitas ou leads parados. Bora prospectar?</div>;
+
+  const handleConcluir = async (t: any) => {
+    const ok = await concluirTarefa(t.id, t.pipeline_lead_id, t.lead_nome, t.titulo || t.tipo);
+    if (ok) setConcluded((prev) => new Set(prev).add(t.id));
+  };
+  const draftWhats = (nome: string) => onPick(`Escreve uma mensagem de WhatsApp curta e natural de follow-up para o lead ${nome}.`);
+
+  return (
+    <div className="space-y-2">
+      {agora.length > 0 && (
+        <Section title={`🔴 Agora (${agora.length})`} icon={<AlertTriangle className="h-3.5 w-3.5 text-destructive" />}>
+          {agora.map((t) => {
+            const isLate = t.vence_em && t.vence_em < (result.today as string);
+            return (
+              <div key={t.id} className="rounded-lg border border-border/70 bg-card/60 p-2 space-y-1.5">
+                <div className="min-w-0">
+                  <p className={`text-xs font-medium truncate ${isLate ? "text-destructive" : "text-foreground"}`}>{t.lead_nome}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{t.titulo || t.tipo}{t.hora_vencimento ? " · " + t.hora_vencimento.slice(0, 5) : ""}{isLate && t.vence_em ? " · atrasada" : ""}</p>
+                </div>
+                <div className="flex gap-1">
+                  <RowAction icon={<CheckCheck className="h-3.5 w-3.5" />} label="Concluir" onClick={() => handleConcluir(t)} tone="success" />
+                  <RowAction icon={<MessageCircle className="h-3.5 w-3.5" />} label="Msg" onClick={() => draftWhats(t.lead_nome)} />
+                  <RowAction icon={<User className="h-3.5 w-3.5" />} label="Lead" onClick={() => openLead(t.pipeline_lead_id)} />
+                </div>
+              </div>
+            );
+          })}
+        </Section>
+      )}
+      {visitas.length > 0 && (
+        <Section title={`🏠 Visitas de hoje (${visitas.length})`} icon={<Home className="h-3.5 w-3.5 text-emerald-600" />}>
+          {visitas.map((v) => (
+            <div key={v.id} className="rounded-lg border border-border/70 bg-card/60 p-2 space-y-1.5">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-emerald-700 truncate">{v.nome_cliente}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{v.hora_visita ? v.hora_visita.slice(0, 5) + " · " : ""}{v.empreendimento || v.local_visita || ""}</p>
+              </div>
+              <div className="flex gap-1">
+                <RowAction icon={<Sparkles className="h-3.5 w-3.5" />} label="Briefing" onClick={() => sendMessage(`Prepara a visita da ${v.nome_cliente}.`)} />
+                {v.pipeline_lead_id && <RowAction icon={<User className="h-3.5 w-3.5" />} label="Lead" onClick={() => openLead(v.pipeline_lead_id)} />}
+              </div>
+            </div>
+          ))}
+        </Section>
+      )}
+      {esfriando.length > 0 && (
+        <Section title={`❄️ Esfriando (${esfriando.length})`} icon={<AlertTriangle className="h-3.5 w-3.5 text-sky-500" />}>
+          {esfriando.map((l) => (
+            <div key={l.id} className="rounded-lg border border-border/70 bg-card/60 p-2 space-y-1.5">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">{l.nome}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{l.dias_parado != null ? `${l.dias_parado} dias sem contato` : "sem atividade"}{l.empreendimento ? " · " + l.empreendimento : ""}</p>
+              </div>
+              <div className="flex gap-1">
+                <RowAction icon={<MessageCircle className="h-3.5 w-3.5" />} label="Reengajar" onClick={() => onPick(`Escreve uma mensagem de WhatsApp para reengajar o lead ${l.nome}.`)} />
+                <RowAction icon={<User className="h-3.5 w-3.5" />} label="Lead" onClick={() => openLead(l.id)} />
+              </div>
+            </div>
+          ))}
+        </Section>
+      )}
+    </div>
+  );
+}
+
 
 // ─────────────────────────────────────────────── Public renderers
+
 export function HomiActionsRenderer({ actions }: { actions?: HomiAction[] }) {
   if (!actions?.length) return null;
   return (
@@ -719,6 +800,7 @@ export function HomiResultsRenderer({ results, onPick }: { results?: HomiResult[
   return (
     <div className="space-y-2 mt-1">
       {results.map((r, i) => {
+        if (r.tipo === "meu_dia") return <MeuDiaCard key={i} result={r} onPick={onPick} />;
         if (r.tipo === "pendencias") return <PendenciasCard key={i} result={r} onPick={onPick} />;
         if (r.tipo === "imoveis") return <ImoveisCard key={i} result={r} />;
         if (r.tipo === "escolher_lead") return <EscolherLeadCard key={i} result={r} onPick={onPick} />;
