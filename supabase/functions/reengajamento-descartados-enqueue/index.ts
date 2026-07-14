@@ -1429,6 +1429,18 @@ Deno.serve(async (req) => {
         const cancelled = stopReason === "Parado pelo usuário";
         return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      // Modo teste cauteloso: verifica auto-pausa antes de cada envio
+      {
+        const modoTesteReason = shouldPauseModoTeste();
+        if (modoTesteReason) {
+          stopReason = modoTesteReason;
+          await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_modo_teste", detalhe: stopReason.slice(0, 500) });
+          await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+          await releaseProcessingQueue();
+          return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_modo_teste", paused: true, canal, motivo: stopReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      }
+
       if (Date.now() - startedAt > MAX_RUN_MS) {
         if (usingPersistentQueue) {
           await releaseProcessingQueue();
