@@ -4,21 +4,52 @@ import { useHomi } from "@/contexts/HomiContext";
 import { useLocation } from "react-router-dom";
 
 const SNAP_MARGIN = 16;
-const BUTTON_SIZE = 44;
+const BUTTON_SIZE = typeof window !== "undefined" && window.innerWidth < 640 ? 52 : 44;
+
+// Lê as safe-area insets (notch / barra inferior) do dispositivo
+function getSafeInsets() {
+  if (typeof window === "undefined") return { top: 0, right: 0, bottom: 0, left: 0 };
+  // env() em custom properties não é resolvido por getComputedStyle; usa um probe
+  // com padding vinculado às safe-area insets e mede o valor computado real.
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:fixed;visibility:hidden;pointer-events:none;top:0;left:0;" +
+    "padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) " +
+    "env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);";
+  document.body.appendChild(probe);
+  const s = getComputedStyle(probe);
+  const px = (v: string) => parseInt(v || "0", 10) || 0;
+  const insets = {
+    top: px(s.paddingTop),
+    right: px(s.paddingRight),
+    bottom: px(s.paddingBottom),
+    left: px(s.paddingLeft),
+  };
+  document.body.removeChild(probe);
+  return insets;
+}
+
 
 function getSnapPosition(x: number, y: number) {
   const w = window.innerWidth;
   const h = window.innerHeight;
+  const safe = getSafeInsets();
   const cx = x + BUTTON_SIZE / 2;
   const cy = y + BUTTON_SIZE / 2;
   const midX = w / 2;
   const midY = h / 2;
 
+  const minY = SNAP_MARGIN + safe.top;
+  const maxY = h - BUTTON_SIZE - SNAP_MARGIN - safe.bottom;
+  const leftX = SNAP_MARGIN + safe.left;
+  const rightX = w - BUTTON_SIZE - SNAP_MARGIN - safe.right;
+
   return {
-    x: cx < midX ? SNAP_MARGIN : w - BUTTON_SIZE - SNAP_MARGIN,
-    y: cy < midY ? Math.max(SNAP_MARGIN, y) : h - BUTTON_SIZE - SNAP_MARGIN,
+    x: cx < midX ? leftX : rightX,
+    y: cy < midY ? Math.max(minY, y) : maxY,
   };
 }
+
 
 function loadSavedPosition() {
   try {
@@ -31,7 +62,13 @@ function loadSavedPosition() {
 function HomiAvatarInner() {
   const { isOpen, toggleHomi, unseenCount, isLoading, launcherHidden } = useHomi();
   const { pathname } = useLocation();
-  const defaultPos = { x: window.innerWidth - BUTTON_SIZE - SNAP_MARGIN, y: window.innerHeight - BUTTON_SIZE - SNAP_MARGIN };
+  const defaultPos = (() => {
+    const safe = getSafeInsets();
+    return {
+      x: window.innerWidth - BUTTON_SIZE - SNAP_MARGIN - safe.right,
+      y: window.innerHeight - BUTTON_SIZE - SNAP_MARGIN - safe.bottom,
+    };
+  })();
   const [position, setPosition] = useState(() => loadSavedPosition() || defaultPos);
   const [hidden, setHidden] = useState(() => localStorage.getItem("homi-avatar-hidden") === "1");
   const isDragging = useRef(false);
@@ -57,11 +94,12 @@ function HomiAvatarInner() {
   useEffect(() => {
     const onResize = () => {
       setPosition(prev => {
-        const maxX = window.innerWidth - BUTTON_SIZE - SNAP_MARGIN;
-        const maxY = window.innerHeight - BUTTON_SIZE - SNAP_MARGIN;
+        const safe = getSafeInsets();
+        const maxX = window.innerWidth - BUTTON_SIZE - SNAP_MARGIN - safe.right;
+        const maxY = window.innerHeight - BUTTON_SIZE - SNAP_MARGIN - safe.bottom;
         return {
-          x: Math.min(prev.x, maxX),
-          y: Math.min(prev.y, maxY),
+          x: Math.max(SNAP_MARGIN + safe.left, Math.min(prev.x, maxX)),
+          y: Math.max(SNAP_MARGIN + safe.top, Math.min(prev.y, maxY)),
         };
       });
     };
@@ -141,7 +179,7 @@ function HomiAvatarInner() {
         className="relative rounded-full bg-white shadow-xl hover:shadow-2xl transition-shadow flex items-center justify-center overflow-hidden"
         style={{ height: BUTTON_SIZE, width: BUTTON_SIZE }}
       >
-        <img src="/images/homi-mascot-official.png" alt="HOMI" className="h-7 w-7 object-contain pointer-events-none" />
+        <img src="/images/homi-mascot-official.png" alt="HOMI" className="object-contain pointer-events-none" style={{ height: BUTTON_SIZE * 0.62, width: BUTTON_SIZE * 0.62 }} />
 
         {/* Thinking indicator */}
         {isLoading && (

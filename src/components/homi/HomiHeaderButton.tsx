@@ -11,7 +11,7 @@ function HomiHeaderButtonInner() {
     <button
       onClick={() => toggleHomi()}
       className={cn(
-        "relative flex items-center justify-center h-9 w-9 rounded-xl transition-colors shrink-0",
+        "relative flex items-center justify-center h-11 w-11 sm:h-9 sm:w-9 rounded-xl transition-colors shrink-0 touch-manipulation",
         theme === "dark" ? "hover:bg-white/5" : "hover:bg-[#f0f0f5]"
       )}
       title="Fale com o HOMI (tecle /)"
