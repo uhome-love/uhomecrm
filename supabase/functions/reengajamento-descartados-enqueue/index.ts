@@ -27,6 +27,61 @@ const META_GUARD_HARD_FAIL_RATIO = 0.85;
 const META_QUEUE_BATCH_SIZE = 3;
 const EVOLUTION_QUEUE_BATCH_SIZE = 5;
 const QUEUE_STALE_MINUTES = 6;
+const CONSECUTIVE_FAILURE_PAUSE_LIMIT = 50;
+
+type FailureCategory =
+  | "meta_quality_pacing"
+  | "meta_payment_eligibility"
+  | "meta_user_experiment"
+  | "meta_undeliverable"
+  | "meta_optout"
+  | "meta_template_paused"
+  | "evolution_disconnected"
+  | "evolution_unavailable"
+  | "transient_external_api"
+  | "unknown";
+
+const FAILURE_CATEGORY_LABELS: Record<FailureCategory, string> = {
+  meta_quality_pacing: "Qualidade/limite da Meta",
+  meta_payment_eligibility: "Elegibilidade ou pagamento da Meta",
+  meta_user_experiment: "Restrição experimental da Meta para destinatários",
+  meta_undeliverable: "Mensagem não entregue",
+  meta_optout: "Destinatário optou por não receber marketing",
+  meta_template_paused: "Template pausado/reprovado pela Meta",
+  evolution_disconnected: "Instância WhatsApp desconectada",
+  evolution_unavailable: "Evolution indisponível",
+  transient_external_api: "Instabilidade temporária da API externa",
+  unknown: "Falha não classificada",
+};
+
+function classifyFailure(raw: string | null | undefined): FailureCategory {
+  const msg = (raw || "").toLowerCase();
+  if (!msg) return "unknown";
+  if (msg.includes("business eligibility") || msg.includes("payment issue") || msg.includes("billing")) return "meta_payment_eligibility";
+  if (msg.includes("healthy ecosystem") || msg.includes("ecosystem engagement") || msg.includes("131049") || msg.includes("131050") || msg.includes("quality rating")) return "meta_quality_pacing";
+  if (msg.includes("part of an experiment")) return "meta_user_experiment";
+  if (msg.includes("stop receiving marketing") || msg.includes("opt-out") || msg.includes("opt out")) return "meta_optout";
+  if (msg.includes("template is paused") || msg.includes("template paused") || msg.includes("template was paused") || msg.includes("132015") || msg.includes("132016")) return "meta_template_paused";
+  if (msg.includes("message undeliverable") || msg.includes("unable to deliver")) return "meta_undeliverable";
+  if (msg.includes("service temporarily unavailable") || msg.includes('"is_transient":true') || msg.includes("is_transient")) return "transient_external_api";
+  if (msg.includes("connection closed") || msg.includes("disconnected") || msg.includes("close")) return "evolution_disconnected";
+  if (msg.includes("cannot read properties of undefined") || msg.includes("evolution indisponível")) return "evolution_unavailable";
+  return "unknown";
+}
+
+function explainFailureCategory(category: FailureCategory, sample?: string | null): string {
+  const label = FAILURE_CATEGORY_LABELS[category] || FAILURE_CATEGORY_LABELS.unknown;
+  if (category === "meta_quality_pacing") return `${label}: a Meta está limitando/recusando entrega para preservar qualidade. Pausa recomendada antes de retomar.`;
+  if (category === "meta_payment_eligibility") return `${label}: revise cobrança/elegibilidade da conta antes de reenviar.`;
+  if (category === "meta_user_experiment") return `${label}: parte dos destinatários não pode receber este marketing agora.`;
+  if (category === "meta_undeliverable") return `${label}: os números/template não estão entregando com consistência.`;
+  if (category === "meta_optout") return `${label}: não reenvie para esses números.`;
+  if (category === "meta_template_paused") return `${label}: troque ou regularize o template antes de retomar.`;
+  if (category === "evolution_disconnected") return `${label}: reconecte a instância antes de retomar.`;
+  if (category === "evolution_unavailable") return `${label}: aguarde estabilidade da Evolution antes de retomar.`;
+  if (category === "transient_external_api") return `${label}: pode ser reprocessado depois com segurança.`;
+  return `${label}${sample ? `: ${sample.slice(0, 180)}` : "."}`;
+}
 
 async function interruptibleDelay(ms: number, shouldStop: () => Promise<boolean>): Promise<boolean> {
   const deadline = Date.now() + ms;
