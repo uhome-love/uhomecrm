@@ -222,5 +222,5 @@ export function useHomiActions() {
     }
   }, [user, createVisita]);
 
-  return { confirmarTarefa, confirmarVisita, saving };
+  return { confirmarTarefa, confirmarVisita, searchLeads, concluirTarefa, anotarLead, saving };
 }
