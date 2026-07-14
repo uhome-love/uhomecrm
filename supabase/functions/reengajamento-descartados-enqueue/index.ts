@@ -552,6 +552,10 @@ Deno.serve(async (req) => {
         const d = (raw || "").replace(/\D/g, "");
         return d.length >= 8 ? d.slice(-8) : d;
       };
+      const empList: string[] = (Array.isArray((bodyAudience as any).empreendimentos) && (bodyAudience as any).empreendimentos.length)
+        ? ((bodyAudience as any).empreendimentos as unknown[]).filter((s): s is string => typeof s === "string" && s.length > 0)
+        : (bodyAudience.empreendimento ? [String(bodyAudience.empreendimento)] : []);
+
 
       const fetchDescartados = async (cap: number): Promise<Lead[]> => {
         const includeArchivedCustom = bodyAudience.include_archived === true;
