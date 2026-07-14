@@ -1,92 +1,152 @@
-## Problema confirmado
+# Eu Auditoria da tela de disparo (`DisparoCustomizadoCard`) + Redesign
 
-Existem 2 leads com o mesmo número (51) 99687-5848 no pipeline:
+## Problemas hoje
 
-| Lead | Corretor | Origem | Telefone normalizado | Criado |
-|---|---|---|---|---|
-| Eduardo Russo (Casa Tua) | William Ferreira | Oferta Ativa | `5551996875848` (13 díg.) | 20/05/2026 |
-| Eduardo (Cobertura P. Alegre) | Eliézer Clós | site_uhome | `51996875848` (11 díg.) | 14/07/2026 |
+Fiz uma leitura da tela ponto a ponto e olhei o volume real da base para saber onde a UI está cega:
 
-**Causa raiz:** a função `normalize_telefone` do banco só remove não-dígitos, **não retira o DDI 55**. Quando a Oferta Ativa gravou `+5551996875848`, ficou com 13 dígitos; o site normaliza com `slice(-11)` e ficou com 11. O dedup do `crm-webhook` faz `.eq('telefone_normalizado', '51996875848')` — comparação exata — então não encontra o registro de 13 dígitos e cria um lead novo.
+1. **"Descartados" é uma caixa preta.** Você escolhe a fonte e não sabe se são 3.900 ou 30.000, quantos são de julho, quantos são de fevereiro, quantos são Casa Tua. Hoje só existe volume total do banco: **jul/2026 = 2.202, jun = 1.488, mai = 376**. O usuário não tem esse mapa dentro da tela.
+2. **Empreendimento é campo de texto livre.** Você digita "Casa Tua", mas há variações ("Casa Tua - Junho 2026", "Alto Lindóia" vs "Alto Lindoia"), e sem contador ao vivo. Existem **≥20 empreendimentos** com descartados; escolher às cegas gera erro de digitação silencioso.
+3. **Não dá para disparar por múltiplos empreendimentos.** É um único input texto — ou 1 empreendimento, ou geral.
+4. **Não existe "recência".** Sem controle "últimos 7d / 30d / 90d / 6m / +6m". Só um range de datas manual que ninguém preenche.
+5. **Filtros empilhados verticalmente**, um embaixo do outro, sem hierarquia. Canal → Público → Tipo descarte → Arquivados → Etapas → Listas → Período → Empreendimento → Dedup → Cooldown → Template → Imagem → Preview → Disparar. É uma escada de 13 degraus.
+6. **Preview é manual.** Você mexe em algo, esquece de clicar "Prévia", dispara com o número velho. Deveria recalcular sozinho.
+7. **Funil já retorna do backend** (`total_bruto`, `duplicados_removidos`, `suprimidos_meta`, `em_cooldown`, `elegiveis`…) mas está enterrado em texto pequeno. Deveria ser o item mais visível da tela.
+8. **Sem breakdown de saída.** Você não vê "dos 1.200 elegíveis, 830 são Casa Tua, 220 Open Bosque". Isso importa pra escolher o template certo.
+9. **Sem "quem já recebeu esse template".** Você não sabe se acabou de disparar `casatua_junho25k` pros mesmos números ontem.
+10. **Sem estimativa de custo/tempo.** 1.200 números × 3–6s = 60–120 min. Nunca mostrado.
 
-A auditoria do banco mostra que isso não é caso isolado:
-- 4.886 leads com 11 dígitos
-- 2.511 leads com 13 dígitos (DDI colado)
-- 599 com 10, além de outros comprimentos residuais
+## Redesign proposto: "Segment Builder" em 3 abas + funil ao vivo persistente
 
-Qualquer lead cadastrado por uma fonte "13 díg." vira duplicado quando reentra por uma fonte "11 díg." (e vice-versa). Foi o que aconteceu com o Eduardo.
+### Layout novo (uma linha, duas colunas fixas)
 
-## Correção proposta
-
-### 1. Padronizar `telefone_normalizado` para 11 dígitos (BR)
-
-Migration:
-- Reescrever `public.normalize_telefone(raw text)` para: remover não-dígitos → se começar com `55` e tiver 12 ou 13 dígitos, retirar o `55` → retornar como veio (10 ou 11 díg.).
-- Backfill: `UPDATE pipeline_leads SET telefone_normalizado = normalize_telefone(telefone)` (o trigger `trg_normalize_phone` recalcula em novos writes).
-- Aplicar a mesma normalização em `oferta_ativa_leads`, `leads`, `leads_backup` (colunas equivalentes) para manter consistência entre módulos que também deduplicam por telefone.
-- Criar índice `CREATE INDEX IF NOT EXISTS idx_pipeline_leads_tel_norm ON pipeline_leads (telefone_normalizado)` (se ainda não existir) para acelerar dedup.
-
-### 2. Deduplicar de forma resiliente no `crm-webhook`
-
-Em `supabase/functions/crm-webhook/index.ts`:
-- Trocar o dedup exato por uma comparação por sufixo: buscar leads onde `telefone_normalizado` termina com os últimos 10-11 dígitos do telefone recebido (`.ilike('%<sufixo>')` ou RPC dedicado). Isso resolve o problema mesmo se sobrar algum resíduo com DDI.
-- Se houver mais de um match, pegar o **mais recente ativo** (não arquivado) e logar `requer_revisao_dedup=true` para revisão manual.
-- Se o lead existente já tem corretor, **NÃO mover para "Novo Lead"** nem trocar corretor. Apenas:
-  - Registrar o novo interesse em `lead_imoveis_indicados` (imóvel novo) e/ou apender uma linha em `observacoes` com data/imóvel/página.
-  - Manter `stage_id`, `corretor_id` e `aceite_status` atuais.
-  - Disparar notificação para o corretor atual: "Novo interesse do lead X: <imóvel> — via site".
-- Manter o fluxo atual de criação/roleta apenas quando não houver match.
-
-### 3. Aplicar a mesma dedup em outras entradas
-
-Auditar e alinhar `receive-landing-lead`, `receive-rdstation-lead`, `receive-imovelweb-lead`, `receive-tiktok-lead`, `receive-meta-lead` para todos usarem a mesma função utilitária de dedup por sufixo, evitando repetir o bug em outros canais.
-
-### 4. Merge dos dois leads existentes do Eduardo
-
-Ação pontual (SQL manual, com aprovação):
-- Manter o registro do William (`1cbb0408…`) como canônico.
-- Copiar o interesse do lead do Eliézer (`180b6fde…`) para `lead_imoveis_indicados` do lead canônico e apender em `observacoes` a linha "[Site uhome.com.br] Interesse novo: Cobertura Residencial 3Q Porto Alegre (14/07/2026)".
-- Inativar/arquivar o lead do Eliézer com `motivo_descarte='duplicado_merge'` para sair do board dele.
-- Disparar notificação para o William avisando do novo interesse.
-
-### 5. Validação
-
-- Recontar `SELECT length(telefone_normalizado), count(*) …` após backfill — deve zerar as faixas 12/13/14+.
-- Simular payload do site com o telefone `+5551996875848` e confirmar que o webhook retorna `is_existing=true` e não cria novo lead.
-- Conferir no /pipeline do William que aparece o novo interesse; conferir no /pipeline do Eliézer que o lead sumiu; conferir notificação recebida.
-- Rodar linter e checar que nenhum outro receive-* mantém dedup exato.
-
-## Detalhes técnicos
-
-Assinatura final da função:
-
-```sql
-CREATE OR REPLACE FUNCTION public.normalize_telefone(raw text)
-RETURNS text LANGUAGE sql IMMUTABLE AS $$
-  WITH d AS (SELECT regexp_replace(coalesce(raw,''), '\D', '', 'g') AS x)
-  SELECT CASE
-    WHEN x = '' THEN NULL
-    WHEN length(x) IN (12,13) AND left(x,2)='55' THEN substr(x,3)
-    ELSE x
-  END FROM d;
-$$;
+```text
+┌─────────────────────────────────────────────┬───────────────────┐
+│  [1. Público] [2. Filtros] [3. Mensagem]    │  📊 FUNIL AO VIVO │
+│  ────────────────────────                    │  Total bruto: 4.812│
+│  (conteúdo da aba selecionada)              │  − Duplicados: 210 │
+│                                              │  − Pipeline ativo:180│
+│                                              │  − Suprimidos Meta:410│
+│                                              │  − Anti-fadiga: 90 │
+│                                              │  ─────────────    │
+│                                              │  = Elegíveis: 3.922│
+│                                              │                   │
+│                                              │  Por empreend.:   │
+│                                              │  • Casa Tua  1.204│
+│                                              │  • Open Bosque 487│
+│                                              │  • Orygem      214│
+│                                              │  …               │
+│                                              │  ⏱ ~2h 40min      │
+│                                              │  🎯 Meta / casatua│
+│                                              │  [🚀 Disparar]   │
+└─────────────────────────────────────────────┴───────────────────┘
 ```
 
-Helper para dedup (Deno):
-```ts
-const suf = norm.slice(-10); // 10 díg cobre 10 e 11
-const { data } = await supabase
-  .from('pipeline_leads')
-  .select('id, corretor_id, stage_id, aceite_status, arquivado')
-  .ilike('telefone_normalizado', `%${suf}`)
-  .eq('arquivado', false)
-  .order('created_at', { ascending: false })
-  .limit(1)
-  .maybeSingle();
+Coluna direita **fica sempre visível** e **atualiza sozinha** (debounce 400ms) enquanto o usuário mexe nos filtros.
+
+### Aba 1 — PÚBLICO
+
+Três cards grandes, clicáveis, com **contador ao vivo** dentro do card:
+
+```text
+┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+│ 🗂  Descartados│ │ 🎯 Oferta Ativa│ │ ⚙️ Pipeline    │
+│ 4.066 leads   │ │ 12 listas ativas│ │ 7 etapas       │
+│ ✅ selecionado │ │                │ │                │
+└───────────────┘ └───────────────┘ └───────────────┘
 ```
 
-## Fora do escopo
+Múltiplo permitido (combina + dedup), badge "combinado" continua.
 
-- Não vou reescrever a UI do pipeline nem os módulos de Oferta Ativa/Nutrição.
-- Não vou alterar regras de roleta/segmentação.
-- Não vou mexer em fluxos de reengajamento.
+### Aba 2 — FILTROS (adaptativos à fonte escolhida)
+
+**Se DESCARTADOS:**
+
+- **Recência** (pills com contador ao vivo — o que hoje não existe):
+  ```
+  [Últimos 7d · 412] [30d · 2.202] [90d · 3.690] [3-6m · 376] [+6m · 0] [Todos]
+  ```
+  Badge **🔥 NOVO** nos 7d.
+- **Empreendimento** (multi-select combobox — hoje é texto livre):
+  ```
+  [Buscar empreendimento…]
+  ☑ Casa Tua              1.331
+  ☑ Open Bosque             487
+  ☐ Orygem                  214
+  ☐ Lake Eyre               189
+  ☐ Casa Tua - Junho 2026    54
+  … busca digitando ("Casa" filtra todos que contêm)
+  ```
+  Contador ao vivo baseado no que já foi filtrado por recência.
+- **Tipo de descarte** (mantém): reengajável / definitivo / todos.
+- **Motivo do descarte** (novo, opcional): chips com contador para "sem interesse", "sem retorno", "financeiro", etc. — puxando de `motivo_descarte` real.
+- **Incluir arquivados** (mantém, mas vira toggle discreto).
+
+**Se OFERTA ATIVA:**
+
+- Filtro por empreendimento **em cima** da lista de listas (hoje é combobox único, difícil de escanear).
+- Ordenação padrão: mais recente primeiro, badge "🔥 nova" nas <7d.
+- Contador de leads por lista, com estado "já disparei ontem" quando aplicável.
+
+**Se PIPELINE ATIVO:**
+
+- Cada etapa com contador ao vivo `Qualificação · 342`.
+- Filtro adicional por dias parados na etapa.
+
+**Regras (colapsável, resumo em 1 linha):**
+
+```
+🛡  Excluir quem já recebeu nos últimos 7 dias · Excluir suprimidos Meta   [Ajustar]
+```
+
+Popover abre o dedup atual (cooldown / exclude_sent / only_sent_before).
+
+### Aba 3 — MENSAGEM
+
+Continua o que já existe: seletor de template Meta (ou Evolution free-text), preview da imagem de header, botão "Atualizar templates aprovados". Só reagrupado.
+
+### Coluna direita — Funil ao vivo
+
+- Todos os campos do funil que o backend **já retorna** viram uma pilha visual em cascata, com o **Elegíveis grande** no fim.
+- **Breakdown por empreendimento** (top 5) dos elegíveis. Ao clicar em uma linha, filtra a seleção só para aquele empreendimento — atalho poderoso.
+- **Estimativa de tempo** = elegíveis × 4,5s média.
+- Botão **Disparar** aqui embaixo, sempre visível, sem precisar rolar.
+
+## Ajustes backend necessários
+
+- `reengajamento-audience-preview` já devolve `funil`; adicionar:
+  - `breakdown_por_empreendimento`: `[{empreendimento, total}]`
+  - `breakdown_por_recencia`: `{ '7d': n, '30d': n, '90d': n, '180d': n, 'mais': n }`
+  - `breakdown_por_motivo_descarte`: `[{motivo, total}]`
+  - `ultimo_disparo_template`: `{ template, quantos, quando }` (pra alertar se acabou de disparar ontem)
+- Ativar recálculo automático da preview no frontend via `useQuery` com key `(sources, filters)` e `debounce`.
+
+## Arquivos que serão tocados (só na fase de implementação)
+
+- `src/components/central-nutricao/DisparoCustomizadoCard.tsx` — refatorar em 3 abas + funil lateral. Como o arquivo já está com **921 linhas** (acima da diretriz de 500), vai ser quebrado em:
+  - `DisparoCustomizadoCard.tsx` (shell + estado)
+  - `disparo/TabPublico.tsx`
+  - `disparo/TabFiltros.tsx` (com `RecenciaPills`, `EmpreendimentoMultiSelect`, `MotivoDescartesPills`)
+  - `disparo/TabMensagem.tsx`
+  - `disparo/FunilLateral.tsx`
+  - `disparo/useAudienceState.ts` (hook com estado + preview automático)
+- `supabase/functions/reengajamento-audience-preview/index.ts` — adicionar breakdowns.
+
+Nenhuma mudança na lógica de dedup, disparo, throttle ou nas edges de execução (`reengajamento-descartados-enqueue`, `whatsapp-campaign-dispatch`). Só na experiência de **selecionar** o público e **visualizar** o funil.
+
+## O que não muda
+
+- Regras de segurança (blacklist, pause travada, cooldown).
+- Multi-fonte com dedup por telefone.
+- Templates Meta e imagem de header por template.
+- Fluxo de "Preview → Confirma → Fila cria → Micro-lotes".
+
+## Ordem sugerida de implementação
+
+1. Backend: enriquecer o preview com os 3 breakdowns.
+2. Frontend: quebrar o arquivo grande em subcomponentes (sem mudar UI).
+3. Frontend: introduzir as 3 abas + funil lateral, migrando os campos existentes.
+4. Frontend: adicionar recência pills + empreendimento multi-select + motivo do descarte.
+5. Frontend: recálculo automático da preview (debounce).
+6. Frontend: alerta "você acabou de disparar esse template ontem".
+
+Cada passo é entregável isolado e testável.
