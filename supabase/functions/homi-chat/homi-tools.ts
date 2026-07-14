@@ -125,6 +125,70 @@ export const HOMI_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "contexto_lead",
+      description:
+        "Lê o histórico completo do lead (etapa, substatus, timeline de atividades e anotações do corretor) para você ENTENDER o momento do lead SEM PERGUNTAR. CHAME SEMPRE esta ferramenta ANTES de escrever uma mensagem de WhatsApp, follow-up ou script para um lead citado pelo nome. Depois, faça um mini-resumo curto (1 linha) do que entendeu e já escreva a mensagem pronta.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_nome: { type: "string", description: "Nome (ou parte) do lead." },
+        },
+        required: ["lead_nome"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "registrar_resultado",
+      description:
+        "Prepara o registro do resultado de um contato com o lead (o corretor confirma na tela). Use quando o corretor relatar o que aconteceu: 'liguei e não atendeu', 'falei com a Marilá, quer visitar sábado', 'não tem interesse'. Classifique o resultado.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_nome: { type: "string", description: "Nome (ou parte) do lead." },
+          resultado: {
+            type: "string",
+            enum: ["nao_atendeu", "atendeu_sem_interesse", "atendeu_interessado", "pediu_retorno", "agendou_visita"],
+            description: "Classificação do resultado do contato.",
+          },
+          detalhe: { type: "string", description: "Detalhe do que aconteceu (texto livre). Opcional." },
+        },
+        required: ["lead_nome", "resultado"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "leads_esfriando",
+      description:
+        "Lista os leads do corretor que estão esfriando (sem atividade há vários dias), ordenados pelo tempo parado. Use quando o corretor perguntar quais leads estão parados, esfriando, precisando de atenção ou reengajamento.",
+      parameters: {
+        type: "object",
+        properties: {
+          dias: { type: "number", description: "Nº mínimo de dias sem atividade. Padrão: 5." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "preparar_visita",
+      description:
+        "Monta um briefing pré-visita: quem é o lead, histórico resumido, imóvel de interesse e argumentos de venda. Use quando o corretor pedir para preparar/se preparar para uma visita, seja de um lead nomeado ou das visitas de hoje/amanhã.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_nome: { type: "string", description: "Nome do lead (opcional). Se vazio, usa as visitas de hoje/amanhã." },
+        },
+      },
+    },
+  },
 ];
 
 
