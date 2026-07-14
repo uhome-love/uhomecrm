@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,15 +12,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
-import { Loader2, Send, Search, Target, Shield, Zap, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Target, Shield, Zap, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw, Users, Filter, MessageSquare, Flame, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import FunilLateral from "./disparo/FunilLateral";
+import EmpreendimentoMultiSelect from "./disparo/EmpreendimentoMultiSelect";
 
 type Source = "descartados" | "pipeline_ativo" | "oferta_ativa_lista";
 type Canal = "meta" | "evolution";
 type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
+type Recencia = "7d" | "30d" | "90d" | "180d" | "mais" | "todos";
 
-interface PreviewFunil {
+interface FunilData {
   por_fonte?: Record<string, number>;
   duplicados_removidos?: number;
   removidos_pipeline_ativo?: number;
@@ -37,6 +41,15 @@ interface PreviewFunil {
   cooldown_dias?: number;
   elegiveis?: number;
 }
+interface PreviewResult {
+  count: number;
+  sample: Array<{ id: string; nome: string; telefone: string | null }>;
+  funil?: FunilData;
+  breakdown_por_empreendimento?: Array<{ empreendimento: string; total: number }>;
+  breakdown_por_recencia?: Record<Recencia, number>;
+  breakdown_por_motivo_descarte?: Array<{ motivo: string; total: number }>;
+  ultimo_disparo_template?: { template: string; quantos: number; quando: string } | null;
+}
 
 async function getEdgeErrorMessage(error: unknown): Promise<string> {
   if (error instanceof FunctionsHttpError) {
@@ -45,21 +58,12 @@ async function getEdgeErrorMessage(error: unknown): Promise<string> {
       try {
         const parsed = JSON.parse(text) as { error?: string; message?: string; motivo?: string; reason?: string };
         return parsed.error || parsed.message || parsed.motivo || parsed.reason || text;
-      } catch {
-        return text;
-      }
+      } catch { return text; }
     }
   }
   return error instanceof Error ? error.message : String(error);
 }
-interface PreviewResult {
-  count: number;
-  sample: unknown[];
-  funil?: PreviewFunil;
-}
 
-// Imagem fixa de header por template Meta (templates com cabeçalho de imagem).
-// Para um novo template, basta adicionar o nome → URL pública aqui (ou colar a URL no campo do card).
 const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
   casatua_junho25k: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-junho25k.png",
   casatua_eventosabado: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/casatua-eventosabado.png",
@@ -72,37 +76,53 @@ const TEMPLATE_HEADER_IMAGES: Record<string, string> = {
   flow_novidade2: "https://api.uhomesales.com/storage/v1/object/public/campaign-images/reengajamento/flow-novidade2.jpg",
 };
 
+const RECENCIA_LABELS: Record<Recencia, string> = {
+  "7d": "Últimos 7 dias",
+  "30d": "Últimos 30 dias",
+  "90d": "Últimos 90 dias",
+  "180d": "3–6 meses",
+  "mais": "Mais de 6 meses",
+  "todos": "Todos",
+};
 
+function recenciaToPeriodo(r: Recencia): { from?: string; to?: string } | undefined {
+  if (r === "todos") return undefined;
+  const now = new Date();
+  const days = r === "7d" ? 7 : r === "30d" ? 30 : r === "90d" ? 90 : r === "180d" ? 180 : 365 * 5;
+  const from = new Date(now.getTime() - days * 24 * 3600 * 1000);
+  if (r === "mais") {
+    return { to: new Date(now.getTime() - 180 * 24 * 3600 * 1000).toISOString() };
+  }
+  return { from: from.toISOString(), to: now.toISOString() };
+}
 
 export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => void }) {
   const [canal, setCanal] = useState<Canal>("meta");
-  // Multi-fonte: combina públicos (descartados + oferta ativa + pipeline) com dedup por telefone.
   const [sources, setSources] = useState<Source[]>(["descartados"]);
-  const source = sources[0] ?? "descartados";
   const has = (s: Source) => sources.includes(s);
   const isCombined = sources.length > 1;
+  const source = sources[0] ?? "descartados";
+
   const [tipoDescarte, setTipoDescarte] = useState<"reengajavel" | "definitivo" | "todos">("reengajavel");
   const [stageIds, setStageIds] = useState<string[]>([]);
   const [listaIds, setListaIds] = useState<string[]>([]);
-
-  const [from, setFrom] = useState<string>("");
-  const [to, setTo] = useState<string>("");
-  const [empreendimento, setEmpreendimento] = useState<string>("");
+  const [recencia, setRecencia] = useState<Recencia>("todos");
+  const [empreendimentos, setEmpreendimentos] = useState<string[]>([]);
   const [dedupMode, setDedupMode] = useState<DedupMode>("cooldown");
   const [dedupCutoff, setDedupCutoff] = useState<string>("");
   const [cooldownDias, setCooldownDias] = useState<number>(7);
   const [includeArchived, setIncludeArchived] = useState<boolean>(true);
-  const [limit, setLimit] = useState<number>(100);
+  const [limit, setLimit] = useState<number>(1000);
   const [templateName, setTemplateName] = useState<string>("");
   const [templateLanguage, setTemplateLanguage] = useState<string>("pt_BR");
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [templateManualMode, setTemplateManualMode] = useState(false);
-  // Imagem fixa do header por template (Meta). Cada novo template pode ter sua imagem aqui.
   const [headerImageUrl, setHeaderImageUrl] = useState<string>("");
   const [mensagem, setMensagem] = useState<string>("");
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [firing, setFiring] = useState(false);
+  const [tab, setTab] = useState<"publico" | "filtros" | "mensagem">("publico");
 
   const { data: stages = [] } = useQuery({
     queryKey: ["pipeline_stages_all"],
@@ -124,7 +144,6 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     },
   });
 
-  // Templates Meta aprovados (Graph API)
   const { data: metaTemplatesResp, isLoading: loadingTemplates, refetch: refetchTemplates, isFetching: fetchingTemplates } = useQuery({
     queryKey: ["meta-templates-list"],
     queryFn: async () => {
@@ -137,21 +156,18 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   });
   const metaTemplates = metaTemplatesResp?.templates || [];
 
-  // Default template/language vindo da config (descartados)
   const { data: cfgDefaults } = useQuery({
     queryKey: ["reengajamento-config-defaults"],
     queryFn: async () => {
       const { data: reng } = await supabase
         .from("reengajamento_config")
         .select("meta_template_name, meta_template_name_2, meta_template_language")
-        .limit(1)
-        .maybeSingle();
+        .limit(1).maybeSingle();
       return { reng };
     },
     staleTime: 5 * 60 * 1000,
   });
 
-  // Pré-preenche o template quando muda canal/source
   useEffect(() => {
     if (canal !== "meta" || !cfgDefaults || templateName) return;
     if (source === "descartados" && cfgDefaults.reng?.meta_template_name) {
@@ -160,8 +176,6 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     }
   }, [canal, source, cfgDefaults, templateName]);
 
-
-  // Auto-preenche a imagem fixa do header conforme o template selecionado
   useEffect(() => {
     if (canal !== "meta" || !templateName) return;
     const mapped = TEMPLATE_HEADER_IMAGES[templateName];
@@ -173,22 +187,15 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     setTemplateLanguage(language);
     setTemplatePickerOpen(false);
     setHeaderImageUrl(TEMPLATE_HEADER_IMAGES[name] || "");
-    setPreview(null);
   }
 
   const currentTemplateMeta = metaTemplates.find((t) => t.name === templateName && t.language === templateLanguage);
 
-  function buildAudience() {
-    const periodo = (from || to) ? {
-      from: from ? new Date(from + "T00:00:00-03:00").toISOString() : undefined,
-      to: to ? new Date(to + "T23:59:59-03:00").toISOString() : undefined,
-    } : undefined;
+  const audience = useMemo(() => {
+    const periodo = recenciaToPeriodo(recencia);
     const base: Record<string, unknown> = {
-      source,
-      sources,
-      canal,
-      periodo,
-      empreendimento: empreendimento || undefined,
+      source, sources, canal, periodo,
+      empreendimentos: empreendimentos.length ? empreendimentos : undefined,
       dedup_mode: dedupMode,
       cooldown_dias: dedupMode === "cooldown" ? cooldownDias : undefined,
       include_archived: includeArchived,
@@ -200,7 +207,6 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (has("descartados")) base.tipo_descarte = tipoDescarte;
     if (has("pipeline_ativo")) base.stage_ids = stageIds;
     if (has("oferta_ativa_lista")) base.lista_ids = listaIds;
-    
     if (canal === "meta" && templateName) {
       base.template_name = templateName;
       base.template_language = templateLanguage;
@@ -208,113 +214,106 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     }
     if (canal === "evolution" && mensagem) base.mensagem = mensagem;
     return base;
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), templateName, templateLanguage, headerImageUrl, mensagem]);
 
-  async function doPreview() {
-    if (has("pipeline_ativo") && stageIds.length === 0) {
-      toast.error("Selecione ao menos uma etapa do pipeline");
-      return;
-    }
-    if (has("oferta_ativa_lista") && listaIds.length === 0) {
-      toast.error("Selecione ao menos uma lista da Oferta Ativa");
-      return;
-    }
+  // ── Auto-preview com debounce ──
+  const previewSeq = useRef(0);
+  const runPreview = useCallback(async () => {
+    if (has("pipeline_ativo") && stageIds.length === 0) return;
+    if (has("oferta_ativa_lista") && listaIds.length === 0) return;
+    const seq = ++previewSeq.current;
     setPreviewing(true);
-    setPreview(null);
     try {
       const { data, error } = await supabase.functions.invoke("reengajamento-audience-preview", {
-        body: { audience: buildAudience() },
+        body: { audience },
       });
+      if (seq !== previewSeq.current) return; // corrida: descarta resultado velho
       if (error) throw new Error(await getEdgeErrorMessage(error));
-      const d = data as { error?: string; count?: number; sample?: unknown[]; funil?: PreviewFunil };
+      const d = data as { error?: string } & PreviewResult;
       if (d?.error) throw new Error(d.error);
-      setPreview({ count: d.count || 0, sample: d.sample || [], funil: d.funil });
+      setPreview({
+        count: d.count || 0,
+        sample: d.sample || [],
+        funil: d.funil,
+        breakdown_por_empreendimento: d.breakdown_por_empreendimento,
+        breakdown_por_recencia: d.breakdown_por_recencia,
+        breakdown_por_motivo_descarte: d.breakdown_por_motivo_descarte,
+        ultimo_disparo_template: d.ultimo_disparo_template,
+      });
     } catch (e) {
-      toast.error("Erro no preview: " + (e instanceof Error ? e.message : String(e)));
+      if (seq === previewSeq.current) toast.error("Erro no preview: " + (e instanceof Error ? e.message : String(e)));
     } finally {
-      setPreviewing(false);
+      if (seq === previewSeq.current) setPreviewing(false);
     }
-  }
+  }, [audience, stageIds.length, listaIds.length, sources]);
+
+  useEffect(() => {
+    const t = setTimeout(() => { runPreview(); }, 450);
+    return () => clearTimeout(t);
+  }, [runPreview]);
 
   async function disparar() {
     if (!preview || preview.count === 0) {
-      toast.error("Faça o preview primeiro e confirme que há leads elegíveis");
+      toast.error("Nenhum lead elegível para disparar");
       return;
     }
     if (canal === "meta" && !templateName) {
-      toast.error("Selecione o template Meta que será usado neste disparo");
-      return;
+      toast.error("Selecione o template Meta"); setTab("mensagem"); return;
     }
     if (canal === "meta" && metaTemplates.length > 0 && !currentTemplateMeta) {
-      toast.error(`Template "${templateName}" não apareceu na lista de aprovados da Meta. Clique em Atualizar ou selecione outro template aprovado.`);
-      return;
+      toast.error(`Template "${templateName}" não está na lista de aprovados. Clique em Atualizar ou escolha outro.`);
+      setTab("mensagem"); return;
     }
     if (canal === "evolution" && !mensagem && !has("descartados")) {
-      toast.error("Escreva a mensagem que será enviada");
-      return;
+      toast.error("Escreva a mensagem"); setTab("mensagem"); return;
     }
-    // FIX B: bloquear templates em blacklist
     if (canal === "meta" && templateName) {
       const { data: blocked } = await supabase
-        .from("blocked_templates")
-        .select("template_name, reason")
-        .eq("template_name", templateName)
-        .maybeSingle();
+        .from("blocked_templates").select("template_name, reason")
+        .eq("template_name", templateName).maybeSingle();
       if (blocked) {
-        toast.error(`⛔ Template "${templateName}" está bloqueado: ${blocked.reason}. Verifique no Business Manager antes de remover da blacklist.`);
+        toast.error(`⛔ Template "${templateName}" bloqueado: ${blocked.reason}`);
         return;
       }
     }
-    // FIX A: respeitar pausa travada
     const { data: cfgLock } = await supabase
       .from("reengajamento_config")
       .select("paused_until_release, paused_reason")
-      .limit(1)
-      .maybeSingle();
+      .limit(1).maybeSingle();
     if (cfgLock?.paused_until_release) {
-      toast.error("⛔ Central travada: " + (cfgLock?.paused_reason || "liberação manual via SQL admin necessária"));
+      toast.error("⛔ Central travada: " + (cfgLock?.paused_reason || "liberação manual necessária"));
       return;
     }
-    if (!confirm(`Disparar para ${preview.count} leads via ${canal === "meta" ? "Meta" : "Evolution"}? Esta ação envia mensagens reais.`)) return;
+    if (!confirm(`Disparar para ${preview.count.toLocaleString("pt-BR")} leads via ${canal === "meta" ? "Meta" : "Evolution"}?`)) return;
+
     setFiring(true);
     try {
-      const body = { force: true, iniciado_por: "manual_custom", audience: buildAudience() };
+      const body = { force: true, iniciado_por: "manual_custom", audience };
       const { data, error } = await supabase.functions.invoke("reengajamento-descartados-enqueue", { body });
       if (error) throw new Error(await getEdgeErrorMessage(error));
-
-      const resp = data as { ok?: boolean; reason?: string; motivo?: string; message?: string; error?: string; recoverable?: boolean; run_id?: string; active_run_id?: string; sent?: number; failed?: number; skipped?: number; total?: number; queued?: number; pending?: number; audit?: { total_bruto?: number; enfileirados?: number } } | null;
+      const resp = data as any;
       const reason = String(resp?.reason || "");
       const backendMessage = resp?.message || resp?.motivo || resp?.error;
-      if (reason === "no_leads") {
-        toast.info("Nenhum lead elegível após os filtros de segurança");
-        return;
-      }
+      if (reason === "no_leads") { toast.info("Nenhum lead elegível após filtros"); return; }
       if (reason === "active_run_in_progress") {
-        toast.info(`Já existe um disparo em andamento. Acompanhe/retome pela faixa de execução ativa${resp?.active_run_id ? ` (${resp.active_run_id.slice(0, 8)})` : ""}.`);
+        toast.info(`Já há disparo em andamento${resp?.active_run_id ? ` (${String(resp.active_run_id).slice(0, 8)})` : ""}`);
         return;
       }
       if (["meta_quality_cooldown", "locked_quality_pause", "auto_paused_meta_quality", "auto_paused_delivery_quality"].includes(reason)) {
-        toast.error("⛔ Meta pausou por qualidade: " + String(resp?.motivo || "aguarde a recuperação antes de retomar"));
+        toast.error("⛔ Meta pausou por qualidade: " + String(resp?.motivo || "aguarde recuperação"));
         return;
       }
       if (reason === "auto_paused_50_consecutive_failures") {
-        toast.error(`⛔ Campanha pausada por 50 falhas seguidas: ${String(resp?.motivo || backendMessage || "veja o histórico para o motivo")}`);
-        onFired?.();
-        return;
+        toast.error(`⛔ Pausado por 50 falhas seguidas: ${String(resp?.motivo || backendMessage || "veja histórico")}`);
+        onFired?.(); return;
       }
       if (resp?.ok === false || (resp?.error && reason !== "no_send")) {
-        toast.error(`${resp?.recoverable ? "Disparo pausado/recuperável" : "Erro no disparo"}: ${backendMessage || "veja o histórico para o motivo"}`);
-        onFired?.();
-        return;
-      }
-      if (reason === "error" || reason === "no_send") {
-        toast.error(`Disparo encerrado sem envio real: ${resp?.failed ?? 0} falhas, ${resp?.skipped ?? 0} ignorados. Veja o histórico para o motivo.`);
-        onFired?.();
-        return;
+        toast.error(`Erro no disparo: ${backendMessage || "veja histórico"}`);
+        onFired?.(); return;
       }
       const queued = resp?.queued ?? resp?.total ?? resp?.audit?.enfileirados ?? preview.count;
-      const bruto = resp?.audit?.total_bruto;
-      toast.success(`🚀 Fila criada com ${Number(queued || 0).toLocaleString("pt-BR")} número(s)${bruto ? ` de ${Number(bruto).toLocaleString("pt-BR")} registros brutos` : ""}. O disparo continuará em micro-lotes.`);
+      toast.success(`🚀 Fila criada com ${Number(queued || 0).toLocaleString("pt-BR")} números`);
       setPreview(null);
       onFired?.();
     } catch (e) {
@@ -324,33 +323,12 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     }
   }
 
-  function toggleStage(id: string) {
-    setStageIds((prev) => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
-  }
-
+  function toggleStage(id: string) { setStageIds((p) => p.includes(id) ? p.filter((s) => s !== id) : [...p, id]); }
   function toggleSource(s: Source) {
-    setPreview(null);
     setSources((prev) => {
       const next = prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s];
       return next.length ? next : ["descartados"];
     });
-  }
-
-
-  function setPeriodoQuick(kind: "hoje" | "semana" | "mes" | "30d") {
-    const now = new Date();
-    const fmt = (d: Date) => d.toISOString().slice(0, 10);
-    if (kind === "hoje") { setFrom(fmt(now)); setTo(fmt(now)); }
-    else if (kind === "semana") {
-      const d = new Date(now); d.setDate(d.getDate() - d.getDay());
-      setFrom(fmt(d)); setTo(fmt(now));
-    } else if (kind === "mes") {
-      const d = new Date(now.getFullYear(), now.getMonth(), 1);
-      setFrom(fmt(d)); setTo(fmt(now));
-    } else {
-      const d = new Date(now); d.setDate(d.getDate() - 30);
-      setFrom(fmt(d)); setTo(fmt(now));
-    }
   }
 
   return (
@@ -361,559 +339,387 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           <Badge variant="outline" className="text-[10px] ml-auto">Central unificada</Badge>
         </CardTitle>
         <p className="text-[11px] text-muted-foreground">
-          Escolha canal, público, filtre e dispare. Tudo passa pelas regras de horário, throttle e dedup configurados abaixo.
+          Monte o público, ajuste filtros e escolha a mensagem. Preview atualiza sozinho conforme você mexe.
         </p>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid lg:grid-cols-2 gap-x-5 gap-y-3 items-start">
-        {/* COLUNA ESQUERDA: público e filtros */}
-        <div className="space-y-3">
-        {/* CANAL */}
-
-        <div>
-          <Label className="text-xs">Canal</Label>
-          <div className="grid grid-cols-2 gap-2 mt-1">
-            <Button
-              type="button"
-              variant={canal === "meta" ? "default" : "outline"}
-              onClick={() => setCanal("meta")}
-              className="h-9 justify-start gap-2"
-              size="sm"
-            >
-              <Shield className="h-3.5 w-3.5" /> Meta (template oficial)
-            </Button>
-            <Button
-              type="button"
-              variant={canal === "evolution" ? "default" : "outline"}
-              onClick={() => setCanal("evolution")}
-              className="h-9 justify-start gap-2"
-              size="sm"
-            >
-              <Zap className="h-3.5 w-3.5" /> Evolution (free text)
-            </Button>
-          </div>
-        </div>
-
-        {/* PÚBLICO (multi-fonte) */}
-        <div>
-          <Label className="text-xs">Público {isCombined && <Badge variant="outline" className="text-[9px] ml-1">combinado · dedup por telefone</Badge>}</Label>
-          <div className="grid grid-cols-2 gap-1.5 mt-1">
-            {([
-              { v: "descartados", label: "Descartados" },
-              { v: "oferta_ativa_lista", label: "Oferta Ativa (listas)" },
-              { v: "pipeline_ativo", label: "Pipeline ativo (etapas)" },
-            ] as { v: Source; label: string }[]).map(({ v, label }) => (
-              <Button
-                key={v}
-                type="button"
-                size="sm"
-                variant={has(v) ? "default" : "outline"}
-                onClick={() => toggleSource(v)}
-                className="h-8 justify-start text-[11px]"
-              >
-                <Check className={cn("h-3 w-3 mr-1", has(v) ? "opacity-100" : "opacity-0")} />
-                {label}
-              </Button>
-            ))}
-          </div>
-          {isCombined && (
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Os públicos serão unidos em um único disparo. Cada lead recebe só 1 mensagem (dedup pelos últimos 8 dígitos do telefone; prioridade: descartados &gt; oferta ativa &gt; pipeline).
-            </p>
-          )}
-        </div>
-
-
-
-        {/* Filtros dinâmicos */}
-        {has("descartados") && (
-          <div className="space-y-2">
-            <div>
-              <Label className="text-xs">Tipo de descarte</Label>
-              <Select value={tipoDescarte} onValueChange={(v) => setTipoDescarte(v as "reengajavel" | "definitivo" | "todos")}>
-                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="reengajavel">Reengajáveis (exclui inativados)</SelectItem>
-                  <SelectItem value="definitivo">Apenas inativados definitivos</SelectItem>
-                  <SelectItem value="todos">Todos (inclui inativados)</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                "Reengajáveis" remove automaticamente quem respondeu NÃO, foi bloqueado ou está com tipo definitivo.
-              </p>
-            </div>
-            <label className="flex items-start gap-2 text-xs cursor-pointer">
-              <Checkbox
-                checked={includeArchived}
-                onCheckedChange={(v) => { setIncludeArchived(v === true); setPreview(null); }}
-                className="mt-0.5"
-              />
-              <span>Incluir leads arquivados (recomendado — descartados antigos ficam arquivados após 24h)</span>
-            </label>
-
-          </div>
-        )}
-
-        {has("pipeline_ativo") && (
+      <CardContent>
+        <div className="grid lg:grid-cols-[1fr_320px] gap-4 items-start">
+          {/* ─── COLUNA PRINCIPAL — ABAS ─── */}
           <div>
-            <Label className="text-xs">Etapas ({stageIds.length} selecionada{stageIds.length !== 1 ? "s" : ""})</Label>
-            <div className="flex flex-wrap gap-1 mt-1 p-2 border rounded-md max-h-40 overflow-y-auto bg-background">
-              {stages
-                .filter((s: { nome: string }) => !["Descarte", "Negócio Criado", "Venda"].includes(s.nome))
-                .map((s: { id: string; nome: string }) => (
-                  <Badge
-                    key={s.id}
-                    variant={stageIds.includes(s.id) ? "default" : "outline"}
-                    className="cursor-pointer text-[10px]"
-                    onClick={() => toggleStage(s.id)}
-                  >
-                    {s.nome}
-                  </Badge>
-                ))}
-            </div>
-          </div>
-        )}
+            <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+              <TabsList className="w-full grid grid-cols-3 h-9">
+                <TabsTrigger value="publico" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> 1. Público</TabsTrigger>
+                <TabsTrigger value="filtros" className="gap-1.5 text-xs"><Filter className="h-3.5 w-3.5" /> 2. Filtros</TabsTrigger>
+                <TabsTrigger value="mensagem" className="gap-1.5 text-xs"><MessageSquare className="h-3.5 w-3.5" /> 3. Mensagem</TabsTrigger>
+              </TabsList>
 
-        {has("oferta_ativa_lista") && (
-          <div>
-            <Label className="text-xs">
-              Listas {listaIds.length > 0 && `(${listaIds.length} selecionada${listaIds.length !== 1 ? "s" : ""})`}
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" className="w-full justify-between h-9 font-normal">
-                  <span className="truncate text-left">
-                    {listaIds.length === 0
-                      ? "Selecione uma ou mais listas…"
-                      : listaIds.length === 1
-                        ? (listas.find((l: any) => l.id === listaIds[0])?.nome || "1 lista")
-                        : `${listaIds.length} listas selecionadas`}
-                  </span>
-                  <ChevronsUpDown className="h-3.5 w-3.5 opacity-50 ml-2 shrink-0" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Buscar lista…" />
-                  <CommandList>
-                    <CommandEmpty>Nenhuma lista encontrada.</CommandEmpty>
-                    <CommandGroup>
-                      {listaIds.length > 0 && (
-                        <>
-                          <CommandItem onSelect={() => { setListaIds([]); setPreview(null); }}>
-                            <span className="text-xs text-muted-foreground">Limpar seleção</span>
-                          </CommandItem>
-                          <CommandSeparator />
-                        </>
-                      )}
-                      {listas.map((l: { id: string; nome: string; empreendimento: string | null; total_leads: number | null }) => {
-                        const checked = listaIds.includes(l.id);
+              {/* ─── PÚBLICO ─── */}
+              <TabsContent value="publico" className="space-y-3 pt-3">
+                <div>
+                  <Label className="text-xs">Canal de envio</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <Button type="button" variant={canal === "meta" ? "default" : "outline"} onClick={() => setCanal("meta")} className="h-9 justify-start gap-2" size="sm">
+                      <Shield className="h-3.5 w-3.5" /> Meta (template oficial)
+                    </Button>
+                    <Button type="button" variant={canal === "evolution" ? "default" : "outline"} onClick={() => setCanal("evolution")} className="h-9 justify-start gap-2" size="sm">
+                      <Zap className="h-3.5 w-3.5" /> Evolution (free text)
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Fonte de leads
+                    {isCombined && <Badge variant="outline" className="text-[9px]">combinado · dedup telefone</Badge>}
+                  </Label>
+                  <div className="grid sm:grid-cols-3 gap-2 mt-1">
+                    {([
+                      { v: "descartados" as Source, label: "Descartados", desc: "Reengajar quem já esteve no funil" },
+                      { v: "oferta_ativa_lista" as Source, label: "Oferta Ativa", desc: "Disparar para listas específicas" },
+                      { v: "pipeline_ativo" as Source, label: "Pipeline ativo", desc: "Etapas selecionadas" },
+                    ]).map(({ v, label, desc }) => {
+                      const active = has(v);
+                      return (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => toggleSource(v)}
+                          className={cn(
+                            "border rounded-lg p-3 text-left transition-colors",
+                            active
+                              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 ring-1 ring-indigo-500"
+                              : "border-border hover:border-indigo-300 hover:bg-muted/50"
+                          )}
+                        >
+                          <div className="flex items-center gap-1.5 text-sm font-medium">
+                            <Check className={cn("h-3.5 w-3.5 transition-opacity", active ? "opacity-100 text-indigo-600" : "opacity-0")} />
+                            {label}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">{desc}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="border-t pt-3 flex justify-end">
+                  <Button size="sm" onClick={() => setTab("filtros")}>
+                    Próximo: Filtros <Filter className="h-3.5 w-3.5 ml-1.5" />
+                  </Button>
+                </div>
+              </TabsContent>
+
+              {/* ─── FILTROS ─── */}
+              <TabsContent value="filtros" className="space-y-3 pt-3">
+                {/* Recência */}
+                {(has("descartados") || has("oferta_ativa_lista") || has("pipeline_ativo")) && (
+                  <div>
+                    <Label className="text-xs flex items-center gap-1.5">
+                      <Flame className="h-3.5 w-3.5" /> Recência
+                    </Label>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {(["7d", "30d", "90d", "180d", "mais", "todos"] as Recencia[]).map((r) => {
+                        const active = recencia === r;
+                        const brk = preview?.breakdown_por_recencia;
+                        const n = r === "todos"
+                          ? (brk ? Object.values(brk).reduce((s, v) => s + (v as number), 0) : null)
+                          : (brk ? (brk[r] ?? 0) : null);
                         return (
-                          <CommandItem
-                            key={l.id}
-                            value={`${l.nome} ${l.empreendimento || ""}`}
-                            onSelect={() => {
-                              setListaIds((prev) => prev.includes(l.id) ? prev.filter((x) => x !== l.id) : [...prev, l.id]);
-                              setPreview(null);
-                            }}
+                          <Button
+                            key={r}
+                            type="button"
+                            size="sm"
+                            variant={active ? "default" : "outline"}
+                            onClick={() => setRecencia(r)}
+                            className="h-7 text-[10px] gap-1"
                           >
-                            <Check className={cn("mr-2 h-4 w-4", checked ? "opacity-100" : "opacity-0")} />
-                            <span className="truncate">{l.nome} — {l.empreendimento} ({l.total_leads || 0})</span>
-                          </CommandItem>
+                            {r === "7d" && <Flame className="h-3 w-3" />}
+                            {RECENCIA_LABELS[r]}
+                            {n !== null && (
+                              <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 tabular-nums">
+                                {n.toLocaleString("pt-BR")}
+                              </Badge>
+                            )}
+                          </Button>
                         );
                       })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            {listaIds.length > 1 && (
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Leads das {listaIds.length} listas serão combinados em um único disparo.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Período */}
-        <div>
-          <Label className="text-xs">Período (opcional)</Label>
-          <div className="flex gap-2 items-end">
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 flex-1" />
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 flex-1" />
-          </div>
-          <div className="flex gap-1 mt-1">
-            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("hoje")}>Hoje</Button>
-            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("semana")}>Semana</Button>
-            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("mes")}>Mês</Button>
-            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setPeriodoQuick("30d")}>30d</Button>
-            <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => { setFrom(""); setTo(""); }}>Limpar</Button>
-          </div>
-        </div>
-
-
-        {/* Empreendimento */}
-        <div>
-          <Label className="text-xs">Empreendimento (opcional)</Label>
-          <Input placeholder="ex.: Casa Tua" value={empreendimento} onChange={(e) => setEmpreendimento(e.target.value)} className="h-9" />
-        </div>
-        </div>{/* /coluna esquerda */}
-
-        {/* COLUNA DIREITA: envio (dedup, limite, template, mensagem) */}
-        <div className="space-y-3">
-        {/* Dedup */}
-
-        <div>
-          <Label className="text-xs">Quem já recebeu disparo</Label>
-          <Select value={dedupMode} onValueChange={(v) => { setDedupMode(v as DedupMode); setPreview(null); }}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cooldown">Reenviar quem não respondeu (com cooldown)</SelectItem>
-              <SelectItem value="exclude_sent">Excluir todo mundo que já recebeu</SelectItem>
-              <SelectItem value="include_all">Incluir todos (sem cooldown)</SelectItem>
-              <SelectItem value="only_sent_before">Só quem recebeu antes de…</SelectItem>
-            </SelectContent>
-          </Select>
-          {dedupMode === "cooldown" && (
-            <div className="mt-2 flex items-center gap-2">
-              <Label className="text-[11px] text-muted-foreground whitespace-nowrap">Cooldown (dias)</Label>
-              <Input
-                type="number"
-                min={1}
-                max={60}
-                value={cooldownDias}
-                onChange={(e) => { setCooldownDias(Math.max(1, Number(e.target.value) || 7)); setPreview(null); }}
-                className="h-8 w-20"
-              />
-              <p className="text-[10px] text-muted-foreground">
-                Quem não respondeu volta a ficar elegível após {cooldownDias} dias do último envio. Quem clicou em "Não quero mais" fica excluído permanentemente.
-              </p>
-            </div>
-          )}
-          {dedupMode === "only_sent_before" && (
-            <Input type="date" value={dedupCutoff} onChange={(e) => setDedupCutoff(e.target.value)} className="h-9 mt-2" />
-          )}
-        </div>
-
-        {/* Limite */}
-        <div>
-          <Label className="text-xs">Limite máximo de envios</Label>
-              <Input type="number" value={limit} min={1} max={10000} onChange={(e) => setLimit(Number(e.target.value))} className="h-9" />
-              <p className="text-[10px] text-muted-foreground mt-1">Máx 10.000 por disparo. Paginação automática acima de 1.000.</p>
-        </div>
-
-        {/* Template Meta — sempre disponível quando canal=meta */}
-        {canal === "meta" && (
-          <div>
-            <div className="flex items-center justify-between gap-2">
-              <Label className="text-xs">Template Meta aprovado</Label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTemplateManualMode((v) => !v)}
-                  className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-                >
-                  <Pencil className="h-3 w-3" />
-                  {templateManualMode ? "Voltar à lista" : "Digitar manualmente"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => refetchTemplates()}
-                  disabled={fetchingTemplates}
-                  className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-                >
-                  <RefreshCw className={cn("h-3 w-3", fetchingTemplates && "animate-spin")} />
-                  Atualizar
-                </button>
-              </div>
-            </div>
-
-            {templateManualMode ? (
-              <div className="grid grid-cols-[1fr_120px] gap-2 mt-1">
-                <Input
-                  placeholder="ex.: reativacao_opcoes_perfil_v2"
-                  value={templateName}
-                  onChange={(e) => { setTemplateName(e.target.value); setPreview(null); }}
-                  className="h-9"
-                />
-                <Input
-                  placeholder="pt_BR"
-                  value={templateLanguage}
-                  onChange={(e) => setTemplateLanguage(e.target.value)}
-                  className="h-9"
-                />
-              </div>
-            ) : (
-              <Popover open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="h-9 w-full justify-between mt-1 font-normal"
-                  >
-                    {templateName ? (
-                      <span className="flex items-center gap-2 min-w-0">
-                        <span className="truncate">{templateName}</span>
-                        <Badge variant="outline" className="text-[9px] shrink-0">{templateLanguage}</Badge>
-                        {currentTemplateMeta?.has_buttons && (
-                          <MousePointerClick className="h-3 w-3 text-indigo-500 shrink-0" />
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">
-                        {loadingTemplates ? "Carregando templates da Meta..." : "Selecione um template aprovado..."}
-                      </span>
-                    )}
-                    <ChevronsUpDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[420px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Buscar template..." />
-                    <CommandList>
-                      <CommandEmpty>
-                        {loadingTemplates ? "Carregando..." : "Nenhum template aprovado encontrado."}
-                      </CommandEmpty>
-                      <CommandGroup heading={`${metaTemplates.length} templates aprovados`}>
-                        {metaTemplates.map((t) => {
-                          const selected = t.name === templateName && t.language === templateLanguage;
-                          return (
-                            <CommandItem
-                              key={`${t.name}-${t.language}`}
-                              value={`${t.name} ${t.language} ${t.category || ""}`}
-                              onSelect={() => selectTemplate(t.name, t.language)}
-                              className="flex items-center gap-2"
-                            >
-                              <Check className={cn("h-3.5 w-3.5", selected ? "opacity-100" : "opacity-0")} />
-                              <span className="flex-1 truncate">{t.name}</span>
-                              {t.has_buttons && (
-                                <Badge variant="outline" className="text-[9px] bg-indigo-50 text-indigo-700 border-indigo-200">
-                                  <MousePointerClick className="h-2.5 w-2.5 mr-0.5" /> botões
-                                </Badge>
-                              )}
-                              <Badge variant="outline" className="text-[9px]">{t.language}</Badge>
-                            </CommandItem>
-                          );
-                        })}
-                      </CommandGroup>
-                      <CommandSeparator />
-                      <CommandGroup>
-                        <CommandItem onSelect={() => { setTemplateManualMode(true); setTemplatePickerOpen(false); }}>
-                          <Pencil className="h-3.5 w-3.5 mr-2" /> Digitar nome manualmente (avançado)
-                        </CommandItem>
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            )}
-
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Lista vinda direto do Meta Business — apenas templates aprovados. Disparos com botões SIM/NÃO classificam respostas automaticamente.
-            </p>
-
-            {/* Imagem fixa do header (templates com cabeçalho de imagem) */}
-            <div className="mt-2">
-              <Label className="text-xs">Imagem do header (templates com cabeçalho de imagem)</Label>
-              <Input
-                placeholder="https://… URL pública da imagem do template"
-                value={headerImageUrl}
-                onChange={(e) => { setHeaderImageUrl(e.target.value); setPreview(null); }}
-                className="h-9 mt-1"
-              />
-              {headerImageUrl.trim() ? (
-                <div className="flex items-center gap-2 mt-1.5">
-                  <img src={headerImageUrl} alt="Header do template" className="h-12 w-12 rounded object-cover border" />
-                  <p className="text-[10px] text-muted-foreground">
-                    {TEMPLATE_HEADER_IMAGES[templateName] === headerImageUrl
-                      ? "✓ Imagem mapeada automaticamente para este template."
-                      : "Imagem personalizada. Deixe em branco se o template não tiver cabeçalho de imagem."}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Deixe em branco se o template não tiver cabeçalho de imagem. Templates só de texto ignoram este campo.
-                </p>
-              )}
-            </div>
-          </div>
-
-        )}
-        {canal === "evolution" && !has("descartados") && (
-          <div>
-            <Label className="text-xs">Mensagem (Evolution)</Label>
-            <Textarea
-              rows={3}
-              placeholder="Oi {{nome}}, tudo bem? ..."
-              value={mensagem}
-              onChange={(e) => setMensagem(e.target.value)}
-            />
-            <p className="text-[10px] text-muted-foreground mt-1">Use {"{{nome}}"} como variável. Para descartados, a configuração padrão é usada.</p>
-          </div>
-        )}
-        </div>{/* /coluna direita */}
-        </div>{/* /grid 2 colunas */}
-
-        {/* Preview + ação */}
-        <div className="border-t pt-4 space-y-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="outline" onClick={doPreview} disabled={previewing}>
-              {previewing ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Search className="h-4 w-4 mr-1.5" />}
-              1. Calcular público
-            </Button>
-            {preview ? (
-              <span className="text-sm">
-                <strong className="text-primary text-lg">{preview.count.toLocaleString("pt-BR")}</strong> leads elegíveis
-              </span>
-            ) : (
-              <span className="text-xs text-muted-foreground">Calcule o público antes de disparar.</span>
-            )}
-          </div>
-
-
-          {preview?.funil && isCombined && preview.funil.por_fonte && (
-            <div className="text-[11px] border rounded p-2 bg-background space-y-1">
-              <div className="font-medium text-indigo-700 mb-1">Conferência — Público combinado</div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-                {Object.entries(preview.funil.por_fonte as Record<string, number>).map(([fonte, qtd]) => (
-                  <div key={fonte} className="contents">
-                    <span className="text-muted-foreground capitalize">{fonte.replace(/_/g, " ")}</span>
-                    <span className="text-right font-mono">{qtd}</span>
+                    </div>
                   </div>
-                ))}
-                {typeof preview.funil.duplicados_removidos === "number" && (
-                  <>
-                    <span className="text-muted-foreground">— Duplicados removidos (mesmo telefone)</span>
-                    <span className="text-right font-mono text-amber-600">−{preview.funil.duplicados_removidos}</span>
-                  </>
                 )}
-                {typeof preview.funil.telefones_invalidos === "number" && preview.funil.telefones_invalidos > 0 && (
-                  <>
-                    <span className="text-muted-foreground">— Telefones inválidos</span>
-                    <span className="text-right font-mono text-rose-600">−{preview.funil.telefones_invalidos}</span>
-                  </>
-                )}
-                {typeof preview.funil.suprimidos_meta === "number" && preview.funil.suprimidos_meta > 0 && (
-                  <>
-                    <span className="text-muted-foreground">— Supressão Meta ativa</span>
-                    <span className="text-right font-mono text-amber-600">−{preview.funil.suprimidos_meta}</span>
-                  </>
-                )}
-                {typeof preview.funil.removidos_pipeline_ativo === "number" && preview.funil.removidos_pipeline_ativo > 0 && (
-                  <>
-                    <span className="text-muted-foreground">— Já ativos no pipeline</span>
-                    <span className="text-right font-mono text-amber-600">−{preview.funil.removidos_pipeline_ativo}</span>
-                  </>
-                )}
-                {typeof preview.funil.removidos_frequencia === "number" && preview.funil.removidos_frequencia > 0 && (
-                  <>
-                    <span className="text-muted-foreground">— Receberam marketing recente</span>
-                    <span className="text-right font-mono text-amber-600">−{preview.funil.removidos_frequencia}</span>
-                  </>
-                )}
-                <span className="font-medium pt-1 border-t mt-1">= Elegíveis (1 msg por telefone)</span>
-                <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.count}</span>
-              </div>
-            </div>
-          )}
 
-          {preview?.funil && has("descartados") && (
-            <div className="text-[11px] border rounded p-2 bg-background space-y-1">
-              <div className="font-medium text-indigo-700 mb-1">Conferência — Funil de descartados</div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-                <span className="text-muted-foreground">Total em Descarte</span>
-                <span className="text-right font-mono">{preview.funil.total_em_descarte}</span>
-                <span className="text-muted-foreground">— Inativados (respondeu "não" / definitivo / bloqueado)</span>
-                <span className="text-right font-mono text-rose-600">−{preview.funil.inativados_definitivos}</span>
-                <span className="text-muted-foreground">— Sem telefone</span>
-                <span className="text-right font-mono text-rose-600">−{preview.funil.sem_telefone}</span>
-                <span className="text-muted-foreground">— Arquivados {includeArchived ? "(incluídos)" : "(excluídos)"}</span>
-                <span className={`text-right font-mono ${includeArchived ? "text-muted-foreground" : "text-rose-600"}`}>
-                  {includeArchived ? preview.funil.arquivados : `−${preview.funil.arquivados}`}
-                </span>
-                {typeof preview.funil.em_cooldown === "number" && preview.funil.em_cooldown > 0 && (
-                  <>
-                    <span className="text-muted-foreground">— Em cooldown (já receberam disparo nos últimos {preview.funil.cooldown_dias}d)</span>
-                    <span className="text-right font-mono text-amber-600">−{preview.funil.em_cooldown}</span>
-                  </>
+                {/* Empreendimento multi-select */}
+                {(has("descartados") || has("oferta_ativa_lista") || has("pipeline_ativo")) && (
+                  <EmpreendimentoMultiSelect
+                    options={preview?.breakdown_por_empreendimento || []}
+                    selected={empreendimentos}
+                    onChange={setEmpreendimentos}
+                  />
                 )}
-                <span className="font-medium pt-1 border-t mt-1">= Elegíveis para disparo</span>
-                <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.funil.elegiveis}</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
-                💡 Regra: SIM → volta para o pipeline · NÃO → inativa permanentemente · sem resposta → continua elegível no próximo ciclo (respeitando cooldown). Novos descartados entram automaticamente.
-              </p>
-              {!includeArchived && (preview.funil.arquivados ?? 0) > (preview.funil.elegiveis ?? 0) && (
-                <p className="text-[10px] text-amber-600 mt-1">
-                  ⚠️ {preview.funil.arquivados} leads arquivados estão sendo excluídos. Marque "Incluir arquivados" para alcançar a base completa.
-                </p>
-              )}
-            </div>
-          )}
 
-          {preview?.funil && has("oferta_ativa_lista") && !isCombined && (
-            <div className="text-[11px] border rounded p-2 bg-background space-y-1">
-              <div className="font-medium text-indigo-700 mb-1">Conferência — Oferta Ativa</div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-                <span className="text-muted-foreground">Leads encontrados nas listas</span>
-                <span className="text-right font-mono">{preview.funil.total_bruto ?? preview.funil.count_pre_dedup ?? preview.count}</span>
-                {typeof preview.funil.duplicados_removidos === "number" && preview.funil.duplicados_removidos > 0 && (
-                  <>
-                    <span className="text-muted-foreground">— Duplicados/removidos por envio anterior</span>
-                    <span className="text-right font-mono text-amber-600">−{preview.funil.duplicados_removidos}</span>
-                  </>
+                {/* Descartados: tipo + arquivados */}
+                {has("descartados") && (
+                  <div className="space-y-2 border-t pt-2">
+                    <div>
+                      <Label className="text-xs">Tipo de descarte</Label>
+                      <Select value={tipoDescarte} onValueChange={(v) => setTipoDescarte(v as typeof tipoDescarte)}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="reengajavel">Reengajáveis (exclui inativados)</SelectItem>
+                          <SelectItem value="definitivo">Apenas inativados definitivos</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs cursor-pointer">
+                      <Checkbox checked={includeArchived} onCheckedChange={(v) => setIncludeArchived(v === true)} />
+                      <span>Incluir leads arquivados (recomendado)</span>
+                    </label>
+                    {preview?.breakdown_por_motivo_descarte && preview.breakdown_por_motivo_descarte.length > 0 && (
+                      <div className="mt-1">
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Motivos de descarte (informativo)</Label>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {preview.breakdown_por_motivo_descarte.slice(0, 8).map((m) => (
+                            <Badge key={m.motivo} variant="outline" className="text-[10px] font-normal">
+                              {m.motivo} <span className="ml-1 text-muted-foreground tabular-nums">{m.total}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
-                {typeof preview.funil.telefones_invalidos === "number" && preview.funil.telefones_invalidos > 0 && (
-                  <>
-                    <span className="text-muted-foreground">— Telefones inválidos</span>
-                    <span className="text-right font-mono text-rose-600">−{preview.funil.telefones_invalidos}</span>
-                  </>
-                )}
-                {typeof preview.funil.suprimidos_meta === "number" && preview.funil.suprimidos_meta > 0 && (
-                  <>
-                    <span className="text-muted-foreground">— Supressão Meta ativa</span>
-                    <span className="text-right font-mono text-amber-600">−{preview.funil.suprimidos_meta}</span>
-                  </>
-                )}
-                {typeof preview.funil.removidos_pipeline_ativo === "number" && preview.funil.removidos_pipeline_ativo > 0 && (
-                  <>
-                    <span className="text-muted-foreground">— Já ativos no pipeline</span>
-                    <span className="text-right font-mono text-amber-600">−{preview.funil.removidos_pipeline_ativo}</span>
-                  </>
-                )}
-                {typeof preview.funil.removidos_frequencia === "number" && preview.funil.removidos_frequencia > 0 && (
-                  <>
-                    <span className="text-muted-foreground">— Receberam marketing recente</span>
-                    <span className="text-right font-mono text-amber-600">−{preview.funil.removidos_frequencia}</span>
-                  </>
-                )}
-                <span className="font-medium pt-1 border-t mt-1">= Elegíveis para disparo</span>
-                <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.count}</span>
-              </div>
-            </div>
-          )}
 
-          {preview && preview.sample.length > 0 && (
-            <div className="text-[11px] text-muted-foreground border rounded p-2 bg-background max-h-32 overflow-y-auto">
-              <div className="font-medium mb-1">Amostra (primeiros {preview.sample.length}):</div>
-              <ul className="space-y-0.5">
-                {preview.sample.map((l: { id: string; nome: string; telefone: string | null }) => (
-                  <li key={l.id}>• {l.nome} — {l.telefone || "(sem telefone)"}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+                {/* Pipeline ativo */}
+                {has("pipeline_ativo") && (
+                  <div className="border-t pt-2">
+                    <Label className="text-xs">Etapas ({stageIds.length} selecionada{stageIds.length !== 1 ? "s" : ""})</Label>
+                    <div className="flex flex-wrap gap-1 mt-1 p-2 border rounded-md bg-background max-h-40 overflow-y-auto">
+                      {stages
+                        .filter((s: any) => !["Descarte", "Negócio Criado", "Venda"].includes(s.nome))
+                        .map((s: any) => (
+                          <Badge
+                            key={s.id}
+                            variant={stageIds.includes(s.id) ? "default" : "outline"}
+                            className="cursor-pointer text-[10px]"
+                            onClick={() => toggleStage(s.id)}
+                          >
+                            {s.nome}
+                          </Badge>
+                        ))}
+                    </div>
+                  </div>
+                )}
 
-          <Button
-            className="w-full h-11 text-base"
-            size="lg"
-            onClick={disparar}
-            disabled={firing || !preview || preview.count === 0}
-          >
-            {firing ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Send className="h-4 w-4 mr-1.5" />}
-            {preview ? `2. Disparar para ${preview.count.toLocaleString("pt-BR")} leads` : "2. Disparar (calcule o público primeiro)"}
-          </Button>
+                {/* Oferta ativa listas */}
+                {has("oferta_ativa_lista") && (
+                  <div className="border-t pt-2">
+                    <Label className="text-xs">Listas ({listaIds.length} selecionada{listaIds.length !== 1 ? "s" : ""})</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" className="w-full justify-between h-9 font-normal">
+                          <span className="truncate text-left">
+                            {listaIds.length === 0 ? "Selecione uma ou mais listas…"
+                              : listaIds.length === 1 ? (listas.find((l: any) => l.id === listaIds[0])?.nome || "1 lista")
+                              : `${listaIds.length} listas selecionadas`}
+                          </span>
+                          <ChevronsUpDown className="h-3.5 w-3.5 opacity-50 ml-2 shrink-0" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Buscar lista…" />
+                          <CommandList>
+                            <CommandEmpty>Nenhuma lista encontrada.</CommandEmpty>
+                            {listaIds.length > 0 && (
+                              <>
+                                <CommandGroup>
+                                  <CommandItem onSelect={() => setListaIds([])}>
+                                    <span className="text-xs text-muted-foreground">Limpar seleção</span>
+                                  </CommandItem>
+                                </CommandGroup>
+                                <CommandSeparator />
+                              </>
+                            )}
+                            <CommandGroup>
+                              {listas.map((l: any) => {
+                                const checked = listaIds.includes(l.id);
+                                const isNew = l.created_at && (Date.now() - new Date(l.created_at).getTime()) < 7 * 24 * 3600 * 1000;
+                                return (
+                                  <CommandItem
+                                    key={l.id}
+                                    value={`${l.nome} ${l.empreendimento || ""}`}
+                                    onSelect={() => setListaIds((p) => p.includes(l.id) ? p.filter((x) => x !== l.id) : [...p, l.id])}
+                                  >
+                                    <Check className={cn("mr-2 h-4 w-4", checked ? "opacity-100" : "opacity-0")} />
+                                    <span className="truncate flex-1">{l.nome} — {l.empreendimento} ({l.total_leads || 0})</span>
+                                    {isNew && <Badge variant="secondary" className="text-[9px]">🔥 nova</Badge>}
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
 
+                {/* Regras (colapsável) */}
+                <details className="border rounded-md bg-background/60">
+                  <summary className="cursor-pointer p-2 text-xs flex items-center gap-1.5">
+                    <Settings2 className="h-3.5 w-3.5" /> Regras de dedup
+                    <span className="ml-auto text-[10px] text-muted-foreground">
+                      {dedupMode === "cooldown" && `Cooldown ${cooldownDias}d`}
+                      {dedupMode === "exclude_sent" && "Excluir quem já recebeu"}
+                      {dedupMode === "include_all" && "Sem dedup"}
+                      {dedupMode === "only_sent_before" && `Antes de ${dedupCutoff || "…"}`}
+                    </span>
+                  </summary>
+                  <div className="p-3 pt-0 space-y-2">
+                    <Select value={dedupMode} onValueChange={(v) => setDedupMode(v as DedupMode)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cooldown">Reenviar quem não respondeu (com cooldown)</SelectItem>
+                        <SelectItem value="exclude_sent">Excluir todo mundo que já recebeu</SelectItem>
+                        <SelectItem value="include_all">Incluir todos (sem cooldown)</SelectItem>
+                        <SelectItem value="only_sent_before">Só quem recebeu antes de…</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {dedupMode === "cooldown" && (
+                      <div className="flex items-center gap-2">
+                        <Label className="text-[11px] text-muted-foreground whitespace-nowrap">Cooldown (dias)</Label>
+                        <Input type="number" min={1} max={60} value={cooldownDias} onChange={(e) => setCooldownDias(Math.max(1, Number(e.target.value) || 7))} className="h-8 w-20" />
+                      </div>
+                    )}
+                    {dedupMode === "only_sent_before" && (
+                      <Input type="date" value={dedupCutoff} onChange={(e) => setDedupCutoff(e.target.value)} className="h-9" />
+                    )}
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">Limite máximo de envios</Label>
+                      <Input type="number" value={limit} min={1} max={10000} onChange={(e) => setLimit(Number(e.target.value))} className="h-9" />
+                    </div>
+                  </div>
+                </details>
+
+                <div className="border-t pt-3 flex justify-between">
+                  <Button size="sm" variant="ghost" onClick={() => setTab("publico")}>← Público</Button>
+                  <Button size="sm" onClick={() => setTab("mensagem")}>
+                    Próximo: Mensagem <MessageSquare className="h-3.5 w-3.5 ml-1.5" />
+                  </Button>
+                </div>
+              </TabsContent>
+
+              {/* ─── MENSAGEM ─── */}
+              <TabsContent value="mensagem" className="space-y-3 pt-3">
+                {canal === "meta" ? (
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <Label className="text-xs">Template Meta aprovado</Label>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => setTemplateManualMode((v) => !v)} className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                          <Pencil className="h-3 w-3" /> {templateManualMode ? "Voltar à lista" : "Manual"}
+                        </button>
+                        <button type="button" onClick={() => refetchTemplates()} disabled={fetchingTemplates} className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                          <RefreshCw className={cn("h-3 w-3", fetchingTemplates && "animate-spin")} /> Atualizar
+                        </button>
+                      </div>
+                    </div>
+                    {templateManualMode ? (
+                      <div className="grid grid-cols-[1fr_120px] gap-2">
+                        <Input placeholder="ex.: reativacao_v2" value={templateName} onChange={(e) => setTemplateName(e.target.value)} className="h-9" />
+                        <Input placeholder="pt_BR" value={templateLanguage} onChange={(e) => setTemplateLanguage(e.target.value)} className="h-9" />
+                      </div>
+                    ) : (
+                      <Popover open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" role="combobox" className="h-9 w-full justify-between font-normal">
+                            {templateName ? (
+                              <span className="flex items-center gap-2 min-w-0">
+                                <span className="truncate">{templateName}</span>
+                                <Badge variant="outline" className="text-[9px] shrink-0">{templateLanguage}</Badge>
+                                {currentTemplateMeta?.has_buttons && <MousePointerClick className="h-3 w-3 text-indigo-500 shrink-0" />}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">{loadingTemplates ? "Carregando..." : "Selecione um template..."}</span>
+                            )}
+                            <ChevronsUpDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[420px] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Buscar template..." />
+                            <CommandList>
+                              <CommandEmpty>{loadingTemplates ? "Carregando..." : "Nenhum template aprovado."}</CommandEmpty>
+                              <CommandGroup heading={`${metaTemplates.length} templates aprovados`}>
+                                {metaTemplates.map((t) => {
+                                  const selected = t.name === templateName && t.language === templateLanguage;
+                                  return (
+                                    <CommandItem key={`${t.name}-${t.language}`} value={`${t.name} ${t.language}`} onSelect={() => selectTemplate(t.name, t.language)} className="flex items-center gap-2">
+                                      <Check className={cn("h-3.5 w-3.5", selected ? "opacity-100" : "opacity-0")} />
+                                      <span className="flex-1 truncate">{t.name}</span>
+                                      {t.has_buttons && <Badge variant="outline" className="text-[9px]"><MousePointerClick className="h-2.5 w-2.5 mr-0.5" />botões</Badge>}
+                                      <Badge variant="outline" className="text-[9px]">{t.language}</Badge>
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    )}
+
+                    <div className="mt-3">
+                      <Label className="text-xs">Imagem do header (opcional)</Label>
+                      <Input placeholder="https://…" value={headerImageUrl} onChange={(e) => setHeaderImageUrl(e.target.value)} className="h-9 mt-1" />
+                      {headerImageUrl.trim() && (
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <img src={headerImageUrl} alt="" className="h-12 w-12 rounded object-cover border" />
+                          <p className="text-[10px] text-muted-foreground">
+                            {TEMPLATE_HEADER_IMAGES[templateName] === headerImageUrl ? "✓ Imagem mapeada automaticamente" : "Imagem personalizada"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <Label className="text-xs">Mensagem (Evolution)</Label>
+                    <Textarea rows={4} placeholder="Oi {{nome}}, tudo bem? ..." value={mensagem} onChange={(e) => setMensagem(e.target.value)} />
+                    <p className="text-[10px] text-muted-foreground mt-1">Use {"{{nome}}"} como variável.</p>
+                  </div>
+                )}
+
+                <div className="border-t pt-3 flex justify-between">
+                  <Button size="sm" variant="ghost" onClick={() => setTab("filtros")}>← Filtros</Button>
+                  {preview && preview.sample.length > 0 && (
+                    <details className="text-[10px] text-muted-foreground">
+                      <summary className="cursor-pointer">Ver amostra ({preview.sample.length})</summary>
+                      <ul className="mt-1 max-h-32 overflow-y-auto border rounded p-2 bg-background w-64">
+                        {preview.sample.slice(0, 20).map((l) => (
+                          <li key={l.id}>• {l.nome} — {l.telefone || "(sem tel.)"}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* ─── FUNIL LATERAL ─── */}
+          <FunilLateral
+            loading={previewing}
+            count={preview?.count ?? null}
+            funil={preview?.funil}
+            breakdownEmpreendimento={preview?.breakdown_por_empreendimento}
+            ultimoDisparoTemplate={preview?.ultimo_disparo_template}
+            canal={canal}
+            templateName={templateName}
+            firing={firing}
+            onDisparar={disparar}
+            onFocusEmpreendimento={(nome) => setEmpreendimentos([nome])}
+          />
         </div>
       </CardContent>
     </Card>
