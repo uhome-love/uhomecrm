@@ -4,21 +4,41 @@ import { useHomi } from "@/contexts/HomiContext";
 import { useLocation } from "react-router-dom";
 
 const SNAP_MARGIN = 16;
-const BUTTON_SIZE = 44;
+const BUTTON_SIZE = typeof window !== "undefined" && window.innerWidth < 640 ? 52 : 44;
+
+// Lê as safe-area insets (notch / barra inferior) do dispositivo
+function getSafeInsets() {
+  if (typeof window === "undefined") return { top: 0, right: 0, bottom: 0, left: 0 };
+  const s = getComputedStyle(document.documentElement);
+  const px = (v: string) => parseInt(v || "0", 10) || 0;
+  return {
+    top: px(s.getPropertyValue("--sat")),
+    right: px(s.getPropertyValue("--sar")),
+    bottom: px(s.getPropertyValue("--sab")),
+    left: px(s.getPropertyValue("--sal")),
+  };
+}
 
 function getSnapPosition(x: number, y: number) {
   const w = window.innerWidth;
   const h = window.innerHeight;
+  const safe = getSafeInsets();
   const cx = x + BUTTON_SIZE / 2;
   const cy = y + BUTTON_SIZE / 2;
   const midX = w / 2;
   const midY = h / 2;
 
+  const minY = SNAP_MARGIN + safe.top;
+  const maxY = h - BUTTON_SIZE - SNAP_MARGIN - safe.bottom;
+  const leftX = SNAP_MARGIN + safe.left;
+  const rightX = w - BUTTON_SIZE - SNAP_MARGIN - safe.right;
+
   return {
-    x: cx < midX ? SNAP_MARGIN : w - BUTTON_SIZE - SNAP_MARGIN,
-    y: cy < midY ? Math.max(SNAP_MARGIN, y) : h - BUTTON_SIZE - SNAP_MARGIN,
+    x: cx < midX ? leftX : rightX,
+    y: cy < midY ? Math.max(minY, y) : maxY,
   };
 }
+
 
 function loadSavedPosition() {
   try {
