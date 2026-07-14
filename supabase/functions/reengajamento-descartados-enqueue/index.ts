@@ -481,7 +481,10 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const canal: "meta" | "evolution" = (cfg.canal === "meta") ? "meta" : "evolution";
+    const requestedCanal = String(bodyAudience?.canal || "").toLowerCase();
+    const canal: "meta" | "evolution" = requestedCanal === "meta" || requestedCanal === "evolution"
+      ? requestedCanal
+      : ((cfg.canal === "meta") ? "meta" : "evolution");
 
     // Validações por canal
     let evoUrl = "", evoKey = "";
@@ -996,8 +999,8 @@ Deno.serve(async (req) => {
           falhas: 0,
           ignorados: 0,
         });
-        return new Response(JSON.stringify({ run_id: runId, error: reason, reason: "instance_disconnected", canal }), {
-          status: 409,
+        return new Response(JSON.stringify({ ok: false, run_id: runId, error: reason, message: reason, reason: "instance_disconnected", recoverable: true, canal }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -1012,6 +1015,18 @@ Deno.serve(async (req) => {
     let sent = initialSent, failed = initialFailed, skipped = initialSkipped;
     let stopReason: string | null = null;
     let consecutiveMetaQualityFails = 0;
+    const failureCategoryCounts: Record<string, number> = {};
+
+    const rememberFailureCategory = (raw: string | null | undefined): FailureCategory => {
+      const category = classifyFailure(raw);
+      failureCategoryCounts[category] = (failureCategoryCounts[category] || 0) + 1;
+      return category;
+    };
+
+    const predominantFailureCategory = (): FailureCategory => {
+      const entries = Object.entries(failureCategoryCounts).sort((a, b) => b[1] - a[1]);
+      return (entries[0]?.[0] as FailureCategory | undefined) || "unknown";
+    };
 
     const pauseMetaForQuality = async (reason: string) => {
       const reasonWithCooldown = `${reason} Retomada sugerida após ${META_GUARD_COOLDOWN_HOURS}h; a Meta recomenda aguardar pelo menos 24h para erro 131049.`;
@@ -1179,6 +1194,83 @@ Deno.serve(async (req) => {
         .update({ status: "pending", locked_at: null } as any)
         .eq("run_id", runId)
         .eq("status", "processing");
+    };
+
+    const getConsecutiveQueueFailureStreak = async (): Promise<{ streak: number; sample: string | null; category: FailureCategory } | null> => {
+      if (!runId) return null;
+      const { data } = await supabase
+        .from("reengajamento_dispatch_queue")
+        .select("status, error_text, processed_at")
+        .eq("run_id", runId)
+        .not("processed_at", "is", null)
+        .order("processed_at", { ascending: false })
+        .limit(CONSECUTIVE_FAILURE_PAUSE_LIMIT);
+      if (!data || data.length < CONSECUTIVE_FAILURE_PAUSE_LIMIT) return null;
+      const allFailed = data.every((row: any) => row.status === "failed");
+      if (!allFailed) return null;
+      const counts: Record<string, number> = {};
+      let sample: string | null = null;
+      for (const row of data as any[]) {
+        if (!sample && row.error_text) sample = String(row.error_text);
+        const c = classifyFailure(row.error_text);
+        counts[c] = (counts[c] || 0) + 1;
+      }
+      const category = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FailureCategory | undefined) || predominantFailureCategory();
+      return { streak: data.length, sample, category };
+    };
+
+    const getConsecutiveMetaFailureStreak = async (): Promise<{ streak: number; sample: string | null; category: FailureCategory } | null> => {
+      if (!runId || canal !== "meta") return null;
+      const { data } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("status, error_text, created_at")
+        .eq("run_id", runId)
+        .order("created_at", { ascending: false })
+        .limit(CONSECUTIVE_FAILURE_PAUSE_LIMIT);
+      if (!data || data.length < CONSECUTIVE_FAILURE_PAUSE_LIMIT) return null;
+      const allFailed = data.every((row: any) => row.status === "failed");
+      if (!allFailed) return null;
+      const counts: Record<string, number> = {};
+      let sample: string | null = null;
+      for (const row of data as any[]) {
+        if (!sample && row.error_text) sample = String(row.error_text);
+        const c = classifyFailure(row.error_text);
+        counts[c] = (counts[c] || 0) + 1;
+      }
+      const category = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FailureCategory | undefined) || predominantFailureCategory();
+      return { streak: data.length, sample, category };
+    };
+
+    const pauseAfterConsecutiveFailures = async (lead: { id: string; nome: string }, latestError: string) => {
+      const streak = (await getConsecutiveQueueFailureStreak()) || (await getConsecutiveMetaFailureStreak());
+      if (!streak || streak.streak < CONSECUTIVE_FAILURE_PAUSE_LIMIT) return null;
+      const reason = `Campanha pausada automaticamente após ${streak.streak} falhas seguidas via ${canal}${metaTemplate ? ` no template "${metaTemplate}"` : ""}. Motivo predominante: ${explainFailureCategory(streak.category, streak.sample)} Último erro: ${(latestError || streak.sample || "sem detalhe").slice(0, 220)}`;
+      stopReason = reason;
+      await supabase.from("reengajamento_config").update({
+        paused: true,
+        paused_reason: reason.slice(0, 500),
+        paused_at_brt: nowBRT().toISOString().replace("Z", ""),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", cfg.id);
+      await insertEvento({
+        lead_id: lead.id,
+        run_id: runId,
+        tipo: "auto_pausa_50_falhas",
+        detalhe: reason.slice(0, 500),
+      });
+      await updateRun({
+        status: "paused",
+        finished_at: new Date().toISOString(),
+        motivo_parada: reason.slice(0, 500),
+        enviados: sent,
+        falhas: failed,
+        ignorados: skipped,
+        erros: errs.slice(-20),
+        ultimo_lead_id: lead.id,
+        ultimo_lead_nome: lead.nome,
+      } as any);
+      await releaseProcessingQueue();
+      return { reason, category: streak.category, streak: streak.streak };
     };
 
     const scheduleQueueContinuation = async (motivo: string) => {
