@@ -938,12 +938,19 @@ Deno.serve(async (req) => {
             };
           })
           .filter(Boolean);
+        duplicadosFilaRemovidos = Math.max(0, totalAlvo - queueRows.length);
         for (let i = 0; i < queueRows.length; i += 500) {
           const { error: queueErr } = await supabase
             .from("reengajamento_dispatch_queue")
             .insert(queueRows.slice(i, i + 500) as any);
           if (queueErr) throw queueErr;
         }
+        totalAlvo = queueRows.length;
+        await updateRun({
+          total_alvo: totalAlvo,
+          audience_payload: isCustomAudience ? { ...bodyAudience, __audit: buildAudienceAudit(queueRows.length) } : bodyAudience,
+          motivo_parada: `Fila criada: ${queueRows.length} números enfileirados de ${buildAudienceAudit(queueRows.length).total_bruto} registros brutos.`,
+        } as any);
       }
     }
 
