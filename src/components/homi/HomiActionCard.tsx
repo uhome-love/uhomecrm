@@ -447,21 +447,74 @@ function ResumoLeadCard({ result, onPick }: { result: HomiResult; onPick: (text:
 }
 
 // ─────────────────────────────────────────────── Read: imóveis
+function buildShare(im: any, slugRef: string | null) {
+  const shareSlug = gerarSlugUhome({
+    tipo: im.tipo || "imovel",
+    quartos: im.dormitorios ?? 0,
+    bairro: im.bairro || "",
+    codigo: im.codigo,
+    slug: im.slug,
+  });
+  const shareUrl = slugRef
+    ? `https://uhome.com.br/c/${slugRef}/imovel/${shareSlug}`
+    : `https://uhome.com.br/imovel/${shareSlug}`;
+  const linhas = [
+    `🏠 ${im.empreendimento || im.titulo || "Imóvel"}`,
+    im.bairro ? `📍 ${im.bairro}` : "",
+    [im.dormitorios ? `${im.dormitorios} dorm` : "", im.vagas ? `${im.vagas} vaga(s)` : "", im.area ? `${im.area}m²` : ""].filter(Boolean).join(" · "),
+    im.valor_venda != null ? `💰 ${fmtMoney(im.valor_venda)}` : "",
+    "",
+    `👉 ${shareUrl}`,
+  ].filter((l) => l !== undefined);
+  return { shareUrl, message: linhas.join("\n") };
+}
+
+function ImovelRow({ im }: { im: any }) {
+  const slugRef = useBrokerSlug();
+  const [copied, setCopied] = useState(false);
+  const { shareUrl, message } = buildShare(im, slugRef);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card/60 p-2 space-y-2">
+      <div className="flex gap-2">
+        {im.thumb ? <img src={im.thumb} alt="" className="h-12 w-12 rounded-lg object-cover shrink-0" /> : <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0"><Home className="h-5 w-5 text-muted-foreground" /></div>}
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-foreground truncate">{im.empreendimento || im.titulo || im.codigo}</p>
+          <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1"><MapPin className="h-2.5 w-2.5" />{im.bairro || "—"} · {im.dormitorios ? `${im.dormitorios} dorm` : ""} {im.area ? `· ${im.area}m²` : ""}</p>
+          {im.valor_venda != null && <p className="text-[11px] font-bold text-primary">{fmtMoney(im.valor_venda)}</p>}
+        </div>
+      </div>
+      <div className="flex gap-1.5">
+        <Button size="sm" variant="outline" className="flex-1 h-8 text-[11px] gap-1" onClick={copy}>
+          {copied ? <><CheckCheck className="h-3.5 w-3.5 text-green-600" /> Copiado</> : <><MessageCircle className="h-3.5 w-3.5" /> Copiar mensagem</>}
+        </Button>
+        <Button asChild size="sm" className="flex-1 h-8 text-[11px] gap-1 bg-[#25D366] hover:bg-[#1fb457] text-white">
+          <a href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">
+            <Send className="h-3.5 w-3.5" /> WhatsApp
+          </a>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ImoveisCard({ result }: { result: HomiResult }) {
   const imoveis = (result.imoveis as any[]) || [];
   if (!imoveis.length) return <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">Nenhum imóvel encontrado com esses critérios.</div>;
   return (
     <div className="space-y-1.5">
-      {imoveis.map((im) => (
-        <div key={im.codigo} className="flex gap-2 rounded-xl border border-border bg-card/60 p-2">
-          {im.thumb ? <img src={im.thumb} alt="" className="h-12 w-12 rounded-lg object-cover shrink-0" /> : <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0"><Home className="h-5 w-5 text-muted-foreground" /></div>}
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-foreground truncate">{im.empreendimento || im.titulo || im.codigo}</p>
-            <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1"><MapPin className="h-2.5 w-2.5" />{im.bairro || "—"} · {im.dormitorios ? `${im.dormitorios} dorm` : ""} {im.area ? `· ${im.area}m²` : ""}</p>
-            {im.valor_venda != null && <p className="text-[11px] font-bold text-primary">{fmtMoney(im.valor_venda)}</p>}
-          </div>
-        </div>
-      ))}
+      {result.aproximado && (
+        <p className="text-[10px] text-amber-600 dark:text-amber-400 px-1">Sem correspondência exata — mostrando opções próximas:</p>
+      )}
+      {imoveis.map((im) => <ImovelRow key={im.codigo} im={im} />)}
     </div>
   );
 }
