@@ -598,7 +598,7 @@ function ContextoLeadCard({ result }: { result: HomiResult }) {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold text-foreground truncate">{lead.nome}</p>
           <p className="text-[10px] text-muted-foreground truncate">
-            {lead.stage_nome || "—"}{lead.flag_status ? " · " + lead.flag_status : ""}
+            {lead.stage_nome || "—"}
           </p>
         </div>
         <button onClick={() => openLead(lead.id)} className="text-[10px] text-indigo-600 underline underline-offset-2 shrink-0">abrir</button>
