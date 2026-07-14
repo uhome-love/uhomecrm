@@ -519,12 +519,14 @@ Deno.serve(async (req) => {
       const phoneSplit = splitValidPhones(candidatos);
       let validos = phoneSplit.validos;
 
-      const { phoneSet, emailSet, recentSet } = await loadGuardSets(supabase, freqCooldownDias);
+      const { supressSet, phoneSet, emailSet, recentSet } = await loadGuardSets(supabase, freqCooldownDias);
+      let removidosSupressao = 0;
       let removidosPipeline = 0;
       let removidosFrequencia = 0;
       validos = validos.filter((l) => {
         const ph = last8Of(l.telefone);
         const em = String((l as any).email || "").trim().toLowerCase();
+        if (isMeta && ph && supressSet.has(ph)) { removidosSupressao++; return false; }
         if ((ph && phoneSet.has(ph)) || (em && emailSet.has(em))) { removidosPipeline++; return false; }
         if (isMeta && ph && recentSet.has(ph)) { removidosFrequencia++; return false; }
         return true;
@@ -541,6 +543,7 @@ Deno.serve(async (req) => {
           count_pre_dedup: count ?? beforeDedup,
           duplicados_removidos: beforeDedup - candidatos.length,
           telefones_invalidos: phoneSplit.invalidos,
+          suprimidos_meta: removidosSupressao,
           removidos_pipeline_ativo: removidosPipeline,
           removidos_frequencia: removidosFrequencia,
           elegiveis: validos.length,
