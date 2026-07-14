@@ -24,10 +24,12 @@ interface Audience {
   data_visita?: string;
   periodo?: { from?: string; to?: string };
   empreendimento?: string;
+  empreendimentos?: string[];
+  motivos_descarte?: string[];
   dedup_mode?: DedupMode;
   dedup_cutoff?: string;
   dedup_lookback_days?: number;
-  cooldown_dias?: number; // NOVO: cooldown entre disparos para o mesmo lead (default 7)
+  cooldown_dias?: number;
   include_archived?: boolean;
   limit?: number;
   template_name?: string;
@@ -173,6 +175,9 @@ Deno.serve(async (req) => {
     if (!audience.source) audience.source = sourcesArr[0];
 
     const limit = Math.min(Math.max(Number(audience.limit || 500), 1), 10000);
+    const empList: string[] = (Array.isArray(audience.empreendimentos) && audience.empreendimentos.length)
+      ? audience.empreendimentos.filter((s): s is string => typeof s === "string" && s.length > 0)
+      : (audience.empreendimento ? [audience.empreendimento] : []);
     const dedupMode: DedupMode = audience.dedup_mode || "exclude_sent";
     const dedupLookbackDays = Math.max(1, Number(audience.dedup_lookback_days || 30));
     const includeArchived = audience.include_archived === true;
@@ -212,7 +217,7 @@ Deno.serve(async (req) => {
         if (!includeArchived) q = q.eq("arquivado", false);
         if (audience.periodo?.from) q = q.gte("stage_changed_at", audience.periodo.from);
         if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
-        if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+        if (empList.length) q = q.in("empreendimento", empList);
         if (dedupMode === "exclude_sent") q = q.is("reengajamento_enviado_at", null);
         else if (cooldownDias > 0) q = q.or(`reengajamento_enviado_at.is.null,reengajamento_enviado_at.lt.${cooldownCutoff}`);
         const { data, error } = await q.order("stage_changed_at", { ascending: false }).limit(limit * 2);
@@ -228,7 +233,7 @@ Deno.serve(async (req) => {
         let q = supabase.from("oferta_ativa_leads").select("id, nome, telefone, email").in("lista_id", listaIds).not("telefone", "is", null);
         if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
         if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);
-        if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+        if (empList.length) q = q.in("empreendimento", empList);
         const { data, error } = await q.order("created_at", { ascending: false }).limit(limit * 2);
         if (error) throw error;
         return (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead", fonte: "oferta_ativa_lista" }));
@@ -362,7 +367,7 @@ Deno.serve(async (req) => {
 
       if (audience.periodo?.from) q = q.gte("stage_changed_at", audience.periodo.from);
       if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
-      if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+      if (empList.length) q = q.in("empreendimento", empList);
 
       // Dedup novo: cooldown (default). Mantém modos antigos como override.
       if (dedupMode === "exclude_sent") {
@@ -381,6 +386,91 @@ Deno.serve(async (req) => {
       if (error) throw error;
       leads = (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "pipeline_lead" }));
 
+      // ── Breakdowns (empreendimento / recência / motivo) sobre a MESMA base filtrada ──
+      // Reaplicamos a mesma cláusula em queries agregadas leves para dar mapa ao operador.
+      const buildBase = () => {
+        let b = supabase
+          .from("pipeline_leads")
+          .select("empreendimento, stage_changed_at, motivo_descarte", { count: "exact" })
+          .eq("stage_id", STAGE_DESCARTE_ID)
+          .not("telefone", "is", null);
+        if (tipo === "reengajavel") {
+          b = b.or("tipo_descarte.is.null,tipo_descarte.neq.definitivo")
+               .or(`reengajamento_status.is.null,reengajamento_status.not.in.(${RESPONDEU_NAO_STATUSES.join(",")})`);
+        } else if (tipo === "definitivo") {
+          b = b.eq("tipo_descarte", "definitivo");
+        }
+        if (!includeArchived) b = b.eq("arquivado", false);
+        if (audience.periodo?.from) b = b.gte("stage_changed_at", audience.periodo.from);
+        if (audience.periodo?.to) b = b.lte("stage_changed_at", audience.periodo.to);
+        if (empList.length) b = b.in("empreendimento", empList);
+        if (dedupMode === "exclude_sent") b = b.is("reengajamento_enviado_at", null);
+        else if (dedupMode === "only_sent_before" && audience.dedup_cutoff) {
+          b = b.not("reengajamento_enviado_at", "is", null).lte("reengajamento_enviado_at", audience.dedup_cutoff);
+        } else if (dedupMode !== "include_all" && cooldownDias > 0) {
+          b = b.or(`reengajamento_enviado_at.is.null,reengajamento_enviado_at.lt.${cooldownCutoff}`);
+        }
+        return b;
+      };
+
+      // Amostra grande (até 5000) só para agregar client-side — leve e evita RPC dedicado.
+      const { data: aggData } = await buildBase()
+        .order("stage_changed_at", { ascending: false })
+        .range(0, 4999);
+
+      const breakdown_por_empreendimento: Array<{ empreendimento: string; total: number }> = [];
+      const breakdown_por_motivo_descarte: Array<{ motivo: string; total: number }> = [];
+      const breakdown_por_recencia = { "7d": 0, "30d": 0, "90d": 0, "180d": 0, "mais": 0 };
+
+      if (Array.isArray(aggData)) {
+        const empMap = new Map<string, number>();
+        const motMap = new Map<string, number>();
+        const now = Date.now();
+        const D = (n: number) => n * 24 * 3600 * 1000;
+        for (const r of aggData as any[]) {
+          const emp = (r.empreendimento || "Sem empreendimento") as string;
+          empMap.set(emp, (empMap.get(emp) || 0) + 1);
+          const mot = (r.motivo_descarte || "Não informado") as string;
+          motMap.set(mot, (motMap.get(mot) || 0) + 1);
+          const t = r.stage_changed_at ? new Date(r.stage_changed_at).getTime() : 0;
+          const age = now - t;
+          if (age <= D(7)) breakdown_por_recencia["7d"]++;
+          else if (age <= D(30)) breakdown_por_recencia["30d"]++;
+          else if (age <= D(90)) breakdown_por_recencia["90d"]++;
+          else if (age <= D(180)) breakdown_por_recencia["180d"]++;
+          else breakdown_por_recencia["mais"]++;
+        }
+        breakdown_por_empreendimento.push(
+          ...Array.from(empMap.entries()).map(([empreendimento, total]) => ({ empreendimento, total }))
+            .sort((a, b) => b.total - a.total)
+        );
+        breakdown_por_motivo_descarte.push(
+          ...Array.from(motMap.entries()).map(([motivo, total]) => ({ motivo, total }))
+            .sort((a, b) => b.total - a.total)
+        );
+      }
+
+      // Alerta: último disparo do template selecionado
+      let ultimo_disparo_template: { template: string; quantos: number; quando: string } | null = null;
+      if (audience.template_name) {
+        const { data: ult } = await supabase
+          .from("reengajamento_meta_disparos")
+          .select("created_at")
+          .eq("template_name", audience.template_name)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (ult?.created_at) {
+          const since = new Date(new Date(ult.created_at).getTime() - 24 * 3600 * 1000).toISOString();
+          const { count: cQ } = await supabase
+            .from("reengajamento_meta_disparos")
+            .select("id", { count: "exact", head: true })
+            .eq("template_name", audience.template_name)
+            .gte("created_at", since);
+          ultimo_disparo_template = { template: audience.template_name, quantos: cQ ?? 0, quando: ult.created_at };
+        }
+      }
+
       return new Response(JSON.stringify({
         count: count ?? leads.length,
         sample_count: leads.length,
@@ -395,6 +485,10 @@ Deno.serve(async (req) => {
           cooldown_dias: cooldownDias,
           elegiveis: count ?? leads.length,
         },
+        breakdown_por_empreendimento,
+        breakdown_por_recencia,
+        breakdown_por_motivo_descarte,
+        ultimo_disparo_template,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -414,7 +508,7 @@ Deno.serve(async (req) => {
 
       if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
       if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);
-      if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+      if (empList.length) q = q.in("empreendimento", empList);
 
       const { data, error, count } = await q.order("created_at", { ascending: false }).limit(limit);
       if (error) throw error;
@@ -461,7 +555,7 @@ Deno.serve(async (req) => {
         q = q.in("lista_id", listaIds).not("telefone", "is", null);
         if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
         if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);
-        if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+        if (empList.length) q = q.in("empreendimento", empList);
         return q;
       };
 
@@ -583,7 +677,7 @@ Deno.serve(async (req) => {
         .in("stage_id", stageIds)
         .eq("arquivado", false)
         .not("telefone", "is", null);
-      if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+      if (empList.length) q = q.in("empreendimento", empList);
 
       const { data, error, count } = await q.order("created_at", { ascending: false }).limit(limit);
       if (error) throw error;
