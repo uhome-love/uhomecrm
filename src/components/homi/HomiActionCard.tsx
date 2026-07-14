@@ -523,7 +523,16 @@ function ImoveisCard({ result }: { result: HomiResult }) {
 // ─────────────────────────────────────────────── Read: escolher lead
 function EscolherLeadCard({ result, onPick }: { result: HomiResult; onPick: (text: string) => void }) {
   const candidates = (result.candidates as any[]) || [];
-  const intentLabel = result.intent === "criar_visita" ? "marcar visita" : "criar tarefa";
+  const INTENTS: Record<string, string> = {
+    criar_visita: "marcar visita para",
+    criar_tarefa: "criar tarefa para",
+    resumo_lead: "me fala do lead",
+    anotar_lead: "anotar no lead",
+    contexto_lead: "escreve uma mensagem de WhatsApp para",
+    registrar_resultado: "registrar resultado do contato com",
+    preparar_visita: "preparar a visita de",
+  };
+  const intentLabel = INTENTS[result.intent as string] || "me fala do lead";
   return (
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
       <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><Search className="h-3.5 w-3.5 text-amber-600" /> Qual lead?</p>
