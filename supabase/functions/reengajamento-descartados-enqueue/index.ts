@@ -872,18 +872,22 @@ Deno.serve(async (req) => {
 
     totalAlvo = leads.length;
 
-    const buildAudienceAudit = (queueTotal?: number) => ({
-      total_bruto: totalBrutoCapturado ?? (totalAlvo + supressosRemovidos + pipelineAtivosRemovidos + frequenciaRemovidos + telefonesInvalidosRemovidos + removidosPorTemplateRecente + removidosPorEventoRecente),
-      removidos_evento_recente: removidosPorEventoRecente,
-      removidos_template_recente: removidosPorTemplateRecente,
-      telefones_invalidos: telefonesInvalidosRemovidos,
-      removidos_pipeline_ativo: pipelineAtivosRemovidos,
-      removidos_frequencia: frequenciaRemovidos,
-      suprimidos: supressosRemovidos,
-      duplicados_fila: duplicadosFilaRemovidos,
-      elegiveis_calculados: totalAlvo,
-      enfileirados: queueTotal ?? totalAlvo,
-    });
+    const buildAudienceAudit = (queueTotal?: number) => {
+      const existingAudit = bodyAudience?.__audit && typeof bodyAudience.__audit === "object" ? bodyAudience.__audit : null;
+      if (existingAudit) return { ...existingAudit, enfileirados: queueTotal ?? existingAudit.enfileirados ?? totalAlvo };
+      return {
+        total_bruto: totalBrutoCapturado ?? (totalAlvo + supressosRemovidos + pipelineAtivosRemovidos + frequenciaRemovidos + telefonesInvalidosRemovidos + removidosPorTemplateRecente + removidosPorEventoRecente),
+        removidos_evento_recente: removidosPorEventoRecente,
+        removidos_template_recente: removidosPorTemplateRecente,
+        telefones_invalidos: telefonesInvalidosRemovidos,
+        removidos_pipeline_ativo: pipelineAtivosRemovidos,
+        removidos_frequencia: frequenciaRemovidos,
+        suprimidos: supressosRemovidos,
+        duplicados_fila: duplicadosFilaRemovidos,
+        elegiveis_calculados: totalAlvo,
+        enfileirados: queueTotal ?? totalAlvo,
+      };
+    };
 
     if (bodyRunId) {
       runId = bodyRunId;
