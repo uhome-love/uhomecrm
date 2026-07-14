@@ -24,10 +24,12 @@ interface Audience {
   data_visita?: string;
   periodo?: { from?: string; to?: string };
   empreendimento?: string;
+  empreendimentos?: string[];
+  motivos_descarte?: string[];
   dedup_mode?: DedupMode;
   dedup_cutoff?: string;
   dedup_lookback_days?: number;
-  cooldown_dias?: number; // NOVO: cooldown entre disparos para o mesmo lead (default 7)
+  cooldown_dias?: number;
   include_archived?: boolean;
   limit?: number;
   template_name?: string;
