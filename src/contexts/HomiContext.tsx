@@ -10,7 +10,7 @@ export type HomiRole = "corretor" | "gestor" | "ceo";
 export type HomiAction = { tipo: string; lead_id?: string; lead_nome?: string; campos?: Record<string, any> } & Record<string, any>;
 export type HomiResult = { tipo: string } & Record<string, any>;
 
-export type Message = { role: "user" | "assistant"; content: string; actions?: HomiAction[]; results?: HomiResult[] };
+export type Message = { role: "user" | "assistant"; content: string; actions?: HomiAction[]; results?: HomiResult[]; _composerLabel?: string };
 
 export type KnowledgeSourceInfo = {
   source: "db" | "fallback" | "partial";
