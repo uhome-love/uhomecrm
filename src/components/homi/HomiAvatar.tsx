@@ -83,11 +83,12 @@ function HomiAvatarInner() {
   useEffect(() => {
     const onResize = () => {
       setPosition(prev => {
-        const maxX = window.innerWidth - BUTTON_SIZE - SNAP_MARGIN;
-        const maxY = window.innerHeight - BUTTON_SIZE - SNAP_MARGIN;
+        const safe = getSafeInsets();
+        const maxX = window.innerWidth - BUTTON_SIZE - SNAP_MARGIN - safe.right;
+        const maxY = window.innerHeight - BUTTON_SIZE - SNAP_MARGIN - safe.bottom;
         return {
-          x: Math.min(prev.x, maxX),
-          y: Math.min(prev.y, maxY),
+          x: Math.max(SNAP_MARGIN + safe.left, Math.min(prev.x, maxX)),
+          y: Math.max(SNAP_MARGIN + safe.top, Math.min(prev.y, maxY)),
         };
       });
     };
