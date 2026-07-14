@@ -776,6 +776,12 @@ Deno.serve(async (req) => {
 
     // ── Supressão automática (só Meta): remove números que já falharam por
     // bloqueio de qualidade / opt-out / indisponível, evitando queimar a reputação do número.
+    //
+    // MODO TESTE CAUTELOSO: quando bodyAudience.modo_teste = true, "fura" APENAS as
+    // supressões de motivo "Recebeu e/ou leu" / "cooldown_engajou" (que são cooldowns
+    // reversíveis, não bloqueios reais da Meta). Bloqueios 131049/131050/131026/respondeu_nao
+    // continuam intocáveis.
+    const modoTeste = !!(bodyAudience as any)?.modo_teste && canal === "meta";
     if (!bodyRunId && canal === "meta" && leads.length > 0) {
       const nowIso = new Date().toISOString();
       const supressSet = new Set<string>();
@@ -787,12 +793,17 @@ Deno.serve(async (req) => {
       while (true) {
         const { data: sup, error: supErr } = await supabase
           .from("meta_supressao")
-          .select("telefone_last8, suprimir_ate")
+          .select("telefone_last8, suprimir_ate, motivo")
           .or(`suprimir_ate.is.null,suprimir_ate.gt.${nowIso}`)
           .range(from, from + PAGE - 1);
         if (supErr) { console.error("meta_supressao fetch error:", supErr.message); break; }
         if (!sup || sup.length === 0) break;
-        for (const s of sup) supressSet.add(String(s.telefone_last8));
+        for (const s of sup) {
+          const motivo = String((s as any).motivo || "");
+          // No modo teste, ignora somente cooldowns de engajamento (Recebeu/leu).
+          if (modoTeste && /recebeu e\/ou leu|cooldown_engajou/i.test(motivo)) continue;
+          supressSet.add(String(s.telefone_last8));
+        }
         if (sup.length < PAGE) break;
         from += PAGE;
       }
@@ -804,9 +815,10 @@ Deno.serve(async (req) => {
         const before = leads.length;
         leads = leads.filter((l) => !supressSet.has(last8(l.telefone)));
         supressosRemovidos = before - leads.length;
-        console.log(`Supressão Meta: ${supressosRemovidos} removidos de ${before} (lista ativa: ${supressSet.size})`);
+        console.log(`Supressão Meta${modoTeste ? " (modo teste, ignora cooldown_engajou)" : ""}: ${supressosRemovidos} removidos de ${before} (lista ativa: ${supressSet.size})`);
       }
     }
+
 
     // ── GUARDA DE EXCLUSIVIDADE DO PIPELINE (crítico, todos os canais) ──
     // Nunca dispara para quem é lead ATIVO no pipeline (telefone OU e-mail).
@@ -875,6 +887,29 @@ Deno.serve(async (req) => {
     }
 
     totalAlvo = leads.length;
+
+    // ── MODO TESTE CAUTELOSO: amostra aleatória do público elegível ──
+    // Alvo: 5% dos elegíveis, com mín 50 e máx 300. Se o público for menor que o mínimo,
+    // usa o que houver. Sorteio embaralhado para não viesar por ordem de criação.
+    let modoTesteInfo: null | { pct: number; min: number; max: number; original: number; sampled: number } = null;
+    if (modoTeste && leads.length > 0 && !bodyRunId) {
+      const MIN = 50, MAX = 300, PCT = 0.05;
+      const target = Math.min(MAX, Math.max(MIN, Math.ceil(leads.length * PCT)));
+      const finalSize = Math.min(target, leads.length);
+      // shuffle Fisher-Yates
+      for (let i = leads.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [leads[i], leads[j]] = [leads[j], leads[i]];
+      }
+      const original = leads.length;
+      leads = leads.slice(0, finalSize);
+      modoTesteInfo = { pct: PCT, min: MIN, max: MAX, original, sampled: leads.length };
+      console.log(`Modo teste cauteloso: amostra de ${leads.length} sorteada de ${original} elegíveis`);
+      totalAlvo = leads.length;
+      // marca no bodyAudience para persistir no audience_payload da run
+      bodyAudience = { ...(bodyAudience || {}), modo_teste: true, modo_teste_info: modoTesteInfo };
+    }
+
 
     const buildAudienceAudit = (queueTotal?: number) => {
       const existingAudit = bodyAudience?.__audit && typeof bodyAudience.__audit === "object" ? bodyAudience.__audit : null;
@@ -1067,6 +1102,36 @@ Deno.serve(async (req) => {
     let sent = initialSent, failed = initialFailed, skipped = initialSkipped;
     let stopReason: string | null = null;
     let consecutiveMetaQualityFails = 0;
+
+    // ── MODO TESTE CAUTELOSO: auto-pausa por janela deslizante ──
+    // Ativa quando a run foi criada como modo_teste (persistido em audience_payload).
+    // Regras: >15% falha nos últimos 20 envios OU total de falhas ≥ 20 → pausa e alerta.
+    const runIsModoTeste = !!((bodyAudience as any)?.modo_teste);
+    const MODO_TESTE_WINDOW = 20;
+    const MODO_TESTE_FAIL_RATE = 0.15;
+    const MODO_TESTE_MAX_FAILS = 20;
+    const modoTesteWindow: number[] = []; // 1 = failed, 0 = sent
+    const pushModoTesteOutcome = (isFail: boolean) => {
+      if (!runIsModoTeste) return;
+      modoTesteWindow.push(isFail ? 1 : 0);
+      if (modoTesteWindow.length > MODO_TESTE_WINDOW) modoTesteWindow.shift();
+    };
+    const shouldPauseModoTeste = (): string | null => {
+      if (!runIsModoTeste) return null;
+      if (failed >= MODO_TESTE_MAX_FAILS) {
+        return `Modo teste cauteloso: pausado ao atingir ${failed} falhas totais (limite ${MODO_TESTE_MAX_FAILS}). Revise a saúde do template/base antes de expandir.`;
+      }
+      if (modoTesteWindow.length >= MODO_TESTE_WINDOW) {
+        const failInWindow = modoTesteWindow.reduce((a, b) => a + b, 0);
+        const rate = failInWindow / modoTesteWindow.length;
+        if (rate > MODO_TESTE_FAIL_RATE) {
+          return `Modo teste cauteloso: pausado com ${failInWindow}/${modoTesteWindow.length} falhas nos últimos envios (${(rate * 100).toFixed(0)}% > ${(MODO_TESTE_FAIL_RATE * 100).toFixed(0)}%). Sinal de que a base/template está queimando reputação.`;
+        }
+      }
+      return null;
+    };
+
+
     const failureCategoryCounts: Record<string, number> = {};
 
     const rememberFailureCategory = (raw: string | null | undefined): FailureCategory => {
@@ -1364,6 +1429,18 @@ Deno.serve(async (req) => {
         const cancelled = stopReason === "Parado pelo usuário";
         return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      // Modo teste cauteloso: verifica auto-pausa antes de cada envio
+      {
+        const modoTesteReason = shouldPauseModoTeste();
+        if (modoTesteReason) {
+          stopReason = modoTesteReason;
+          await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_modo_teste", detalhe: stopReason.slice(0, 500) });
+          await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+          await releaseProcessingQueue();
+          return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_modo_teste", paused: true, canal, motivo: stopReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      }
+
       if (Date.now() - startedAt > MAX_RUN_MS) {
         if (usingPersistentQueue) {
           await releaseProcessingQueue();
@@ -1463,6 +1540,8 @@ Deno.serve(async (req) => {
           });
           if (!r.ok) {
             failed++;
+            pushModoTesteOutcome(true);
+
             const errMsg = `${lead.nome}: ${r.error}`;
             errs.push(errMsg);
             rememberFailureCategory(r.error || errMsg);
@@ -1552,6 +1631,8 @@ Deno.serve(async (req) => {
           });
           await updateQueueItem(lead, "sent", null);
           sent++;
+          pushModoTesteOutcome(false);
+
 
           // Guarda de qualidade por taxa de entrega — checa cedo e entre continuações
           if (sent % 5 === 0) {
@@ -1578,6 +1659,8 @@ Deno.serve(async (req) => {
             if (isEvolutionSystemicError(result)) {
               const reason = `Evolution indisponível durante o disparo: ${payloadText}`;
               failed++;
+              pushModoTesteOutcome(true);
+
               errs.push(`${lead.nome}: ${payloadText}`);
               rememberFailureCategory(payloadText);
               await insertEvento({
@@ -1606,6 +1689,8 @@ Deno.serve(async (req) => {
               });
             }
             failed++;
+            pushModoTesteOutcome(true);
+
             const errMsg = `${lead.nome}: ${payloadText}`;
             errs.push(errMsg);
             rememberFailureCategory(payloadText);
@@ -1636,6 +1721,8 @@ Deno.serve(async (req) => {
           });
           await updateQueueItem(lead, "sent", null);
           sent++;
+          pushModoTesteOutcome(false);
+
         }
 
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
@@ -1667,6 +1754,8 @@ Deno.serve(async (req) => {
         }
       } catch (e) {
         failed++;
+        pushModoTesteOutcome(true);
+
         const errMsg = `${lead.nome}: ${e instanceof Error ? e.message : String(e)}`;
         errs.push(errMsg);
         rememberFailureCategory(errMsg);
