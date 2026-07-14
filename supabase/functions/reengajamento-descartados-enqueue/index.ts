@@ -1070,6 +1070,23 @@ Deno.serve(async (req) => {
     const checkDeliveryQuality = async (): Promise<string | null> => {
       if (canal !== "meta" || !metaTemplate) return null;
       const since = new Date(Date.now() - META_GUARD_RECENT_MINUTES * 60 * 1000).toISOString();
+      const { data: lastTemplateRows } = await supabase
+        .from("reengajamento_meta_disparos")
+        .select("status, error_text, created_at")
+        .eq("template_name", metaTemplate)
+        .order("created_at", { ascending: false })
+        .limit(CONSECUTIVE_FAILURE_PAUSE_LIMIT);
+      if (lastTemplateRows && lastTemplateRows.length >= CONSECUTIVE_FAILURE_PAUSE_LIMIT && lastTemplateRows.every((row: any) => row.status === "failed")) {
+        const counts: Record<string, number> = {};
+        let sample: string | null = null;
+        for (const row of lastTemplateRows as any[]) {
+          if (!sample && row.error_text) sample = String(row.error_text);
+          const c = classifyFailure(row.error_text);
+          counts[c] = (counts[c] || 0) + 1;
+        }
+        const category = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FailureCategory | undefined) || "unknown";
+        return `Auto-pausa por ${CONSECUTIVE_FAILURE_PAUSE_LIMIT} falhas seguidas no template "${metaTemplate}". ${explainFailureCategory(category, sample)}`;
+      }
       const [failedRes, deliveredRes, readRes, respRes, qualityFailRes] = await Promise.all([
         supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "failed"),
         supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "delivered"),
@@ -1389,6 +1406,7 @@ Deno.serve(async (req) => {
             failed++;
             const errMsg = `${lead.nome}: ${r.error}`;
             errs.push(errMsg);
+            rememberFailureCategory(r.error || errMsg);
             if (isMetaQualityBlockText(r.error || "")) {
               const last8 = phone.slice(-8);
               const code = (r.error || "").match(/13\d{4}/)?.[0] || null;
@@ -1434,11 +1452,16 @@ Deno.serve(async (req) => {
             });
             await updateQueueItem(lead, "failed", errMsg);
 
+            const fiftyPause = await pauseAfterConsecutiveFailures(lead, errMsg);
+            if (fiftyPause) {
+              return new Response(JSON.stringify({ ok: false, run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_50_consecutive_failures", paused: true, recoverable: true, canal, motivo: fiftyPause.reason, failure_category: fiftyPause.category }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+
             // 🛑 Auto-pause: só trava se falhar SEM PARAR (15+ falhas consecutivas com bloqueio Meta).
             // Enquanto estiver enviando mais do que falhando, segue (modo lento cuida do pacing).
             if (isMetaQualityBlockText(r.error || "")) {
               consecutiveMetaQualityFails++;
-              if (consecutiveMetaQualityFails >= 15) {
+              if (consecutiveMetaQualityFails >= CONSECUTIVE_FAILURE_PAUSE_LIMIT) {
                 stopReason = await pauseMetaForQuality(`Auto-pausa: template "${metaTemplate}" provavelmente pausado/limitado pela Meta (${consecutiveMetaQualityFails} falhas consecutivas: "${(r.error || "").slice(0, 120)}").`);
                 await insertEvento({
                   lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
@@ -1476,14 +1499,10 @@ Deno.serve(async (req) => {
             const qReason = await checkDeliveryQuality();
             if (qReason) {
               await insertEvento({ lead_id: lead.id, run_id: runId, tipo: usingPersistentQueue ? "modo_lento_meta" : "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
-              if (usingPersistentQueue) {
-                await updateRun({ status: "running", motivo_parada: `Modo lento por qualidade Meta: ${qReason}`.slice(0, 500), enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) } as any);
-              } else {
                 stopReason = await pauseMetaForQuality(qReason);
                 await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
                 await releaseProcessingQueue();
                 return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-              }
             }
           }
         } else {
@@ -1501,10 +1520,15 @@ Deno.serve(async (req) => {
               const reason = `Evolution indisponível durante o disparo: ${payloadText}`;
               failed++;
               errs.push(`${lead.nome}: ${payloadText}`);
+              rememberFailureCategory(payloadText);
               await insertEvento({
                 lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: `${lead.nome}: ${payloadText}`.slice(0, 500),
               });
               await updateQueueItem(lead, "failed", payloadText);
+              const fiftyPause = await pauseAfterConsecutiveFailures(lead, payloadText);
+              if (fiftyPause) {
+                return new Response(JSON.stringify({ ok: false, run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_50_consecutive_failures", paused: true, recoverable: true, canal, motivo: fiftyPause.reason, failure_category: fiftyPause.category }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              }
               await updateRun({
                 status: "error",
                 finished_at: new Date().toISOString(),
@@ -1525,10 +1549,15 @@ Deno.serve(async (req) => {
             failed++;
             const errMsg = `${lead.nome}: ${payloadText}`;
             errs.push(errMsg);
+            rememberFailureCategory(payloadText);
             await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
             });
             await updateQueueItem(lead, "failed", errMsg);
+            const fiftyPause = await pauseAfterConsecutiveFailures(lead, errMsg);
+            if (fiftyPause) {
+              return new Response(JSON.stringify({ ok: false, run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_50_consecutive_failures", paused: true, recoverable: true, canal, motivo: fiftyPause.reason, failure_category: fiftyPause.category }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
             await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
             continue;
           }
@@ -1581,10 +1610,15 @@ Deno.serve(async (req) => {
         failed++;
         const errMsg = `${lead.nome}: ${e instanceof Error ? e.message : String(e)}`;
         errs.push(errMsg);
+        rememberFailureCategory(errMsg);
         await insertEvento({
           lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
         });
         await updateQueueItem(lead, "failed", errMsg);
+        const fiftyPause = await pauseAfterConsecutiveFailures(lead, errMsg);
+        if (fiftyPause) {
+          return new Response(JSON.stringify({ ok: false, run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_50_consecutive_failures", paused: true, recoverable: true, canal, motivo: fiftyPause.reason, failure_category: fiftyPause.category }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20), ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
       }
     }
