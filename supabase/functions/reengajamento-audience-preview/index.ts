@@ -178,8 +178,6 @@ Deno.serve(async (req) => {
     const empList: string[] = (Array.isArray(audience.empreendimentos) && audience.empreendimentos.length)
       ? audience.empreendimentos.filter((s): s is string => typeof s === "string" && s.length > 0)
       : (audience.empreendimento ? [audience.empreendimento] : []);
-    const motivosList: string[] = (Array.isArray(audience.motivos_descarte) ? audience.motivos_descarte : [])
-      .filter((s): s is string => typeof s === "string" && s.length > 0);
     const dedupMode: DedupMode = audience.dedup_mode || "exclude_sent";
     const dedupLookbackDays = Math.max(1, Number(audience.dedup_lookback_days || 30));
     const includeArchived = audience.include_archived === true;
