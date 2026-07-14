@@ -35,14 +35,13 @@ export const HOMI_TOOLS = [
     function: {
       name: "buscar_imovel",
       description:
-        "Busca imóveis no catálogo da Uhome por critérios. Use quando o corretor pedir para encontrar/buscar um imóvel, apartamento, unidade etc.",
+        "Busca imóveis no catálogo da Uhome. Use quando o corretor pedir para encontrar/buscar um imóvel. Receba o texto livre do corretor em `termo` (ex: '2 dorms no Petrópolis até 600 mil') e EXTRAIA você mesmo dormitórios e valor máximo para os campos, deixando em `termo` só bairro/empreendimento/tipo.",
       parameters: {
         type: "object",
         properties: {
-          termo: { type: "string", description: "Texto livre: bairro, empreendimento ou tipo." },
-          dormitorios: { type: "number", description: "Número mínimo de dormitórios." },
-          valor_max: { type: "number", description: "Valor de venda máximo em reais." },
-          bairro: { type: "string", description: "Bairro desejado." },
+          termo: { type: "string", description: "Bairro, empreendimento ou tipo (texto livre, sem número de dorms nem valor)." },
+          dormitorios: { type: "number", description: "Número mínimo de dormitórios extraído do texto." },
+          valor_max: { type: "number", description: "Valor de venda máximo em reais extraído do texto." },
         },
       },
     },
