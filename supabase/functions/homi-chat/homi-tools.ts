@@ -94,6 +94,7 @@ export const HOMI_TOOLS = [
         required: ["lead_nome", "data"],
       },
     },
+  },
   {
     type: "function",
     function: {
