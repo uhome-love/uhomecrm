@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
         if (!includeArchived) q = q.eq("arquivado", false);
         if (audience.periodo?.from) q = q.gte("stage_changed_at", audience.periodo.from);
         if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
-        if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+        if (empList.length) q = q.in("empreendimento", empList);
         if (dedupMode === "exclude_sent") q = q.is("reengajamento_enviado_at", null);
         else if (cooldownDias > 0) q = q.or(`reengajamento_enviado_at.is.null,reengajamento_enviado_at.lt.${cooldownCutoff}`);
         const { data, error } = await q.order("stage_changed_at", { ascending: false }).limit(limit * 2);
@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
         let q = supabase.from("oferta_ativa_leads").select("id, nome, telefone, email").in("lista_id", listaIds).not("telefone", "is", null);
         if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
         if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);
-        if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+        if (empList.length) q = q.in("empreendimento", empList);
         const { data, error } = await q.order("created_at", { ascending: false }).limit(limit * 2);
         if (error) throw error;
         return (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead", fonte: "oferta_ativa_lista" }));
@@ -364,7 +364,7 @@ Deno.serve(async (req) => {
 
       if (audience.periodo?.from) q = q.gte("stage_changed_at", audience.periodo.from);
       if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
-      if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+      if (empList.length) q = q.in("empreendimento", empList);
 
       // Dedup novo: cooldown (default). Mantém modos antigos como override.
       if (dedupMode === "exclude_sent") {
@@ -400,7 +400,7 @@ Deno.serve(async (req) => {
         if (!includeArchived) b = b.eq("arquivado", false);
         if (audience.periodo?.from) b = b.gte("stage_changed_at", audience.periodo.from);
         if (audience.periodo?.to) b = b.lte("stage_changed_at", audience.periodo.to);
-        if (audience.empreendimento) b = b.eq("empreendimento", audience.empreendimento);
+        if (empList.length) b = b.in("empreendimento", empList);
         if (dedupMode === "exclude_sent") b = b.is("reengajamento_enviado_at", null);
         else if (dedupMode === "only_sent_before" && audience.dedup_cutoff) {
           b = b.not("reengajamento_enviado_at", "is", null).lte("reengajamento_enviado_at", audience.dedup_cutoff);
@@ -505,7 +505,7 @@ Deno.serve(async (req) => {
 
       if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
       if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);
-      if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+      if (empList.length) q = q.in("empreendimento", empList);
 
       const { data, error, count } = await q.order("created_at", { ascending: false }).limit(limit);
       if (error) throw error;
@@ -552,7 +552,7 @@ Deno.serve(async (req) => {
         q = q.in("lista_id", listaIds).not("telefone", "is", null);
         if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
         if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);
-        if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+        if (empList.length) q = q.in("empreendimento", empList);
         return q;
       };
 
@@ -674,7 +674,7 @@ Deno.serve(async (req) => {
         .in("stage_id", stageIds)
         .eq("arquivado", false)
         .not("telefone", "is", null);
-      if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
+      if (empList.length) q = q.in("empreendimento", empList);
 
       const { data, error, count } = await q.order("created_at", { ascending: false }).limit(limit);
       if (error) throw error;
