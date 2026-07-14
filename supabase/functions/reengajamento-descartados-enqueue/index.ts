@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
 
   // GATE GLOBAL — bloqueia qualquer disparo automático. Só passa disparo manual
   // explícito acionado pelo usuário (iniciado_por manual*/auto_resume_ui).
-  const isManualDispatch = /^(manual|auto_resume_ui)/.test(iniciadoPor);
+  const isManualDispatch = /^(manual|auto_resume_ui)/.test(iniciadoPor) || (!!bodyRunId && bodyForce);
   if (!isManualDispatch) {
     const gate = await isCampaignDispatchEnabled();
     if (!gate.enabled) return pausedResponse("reengajamento-descartados-enqueue", gate, corsHeaders);
@@ -1135,7 +1135,7 @@ Deno.serve(async (req) => {
         const continuation = fetch(`${supabaseUrl}/functions/v1/reengajamento-descartados-enqueue`, {
           method: "POST",
           headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ force: true, run_id: runId }),
+          body: JSON.stringify({ force: true, run_id: runId, iniciado_por: `${normalizeInitiator(iniciadoPor)}_continuacao` }),
         }).catch((err) => console.error("Falha ao retomar fila persistente:", err));
         const edgeRuntime = (globalThis as any).EdgeRuntime;
         if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(continuation);
@@ -1283,6 +1283,18 @@ Deno.serve(async (req) => {
             }
             await insertEvento({
               lead_id: lead.id, run_id: runId, tipo: "falha_envio", detalhe: errMsg.slice(0, 500),
+            });
+            await supabase.from("reengajamento_meta_disparos").insert({
+              lead_id: lead.id,
+              run_id: runId,
+              wamid: null,
+              template_name: metaTemplate,
+              template_language: metaLang,
+              phone,
+              status: "failed",
+              error_text: errMsg.slice(0, 500),
+              sent_at: new Date().toISOString(),
+              audience_source: audienceSourceCanonical,
             });
             await updateQueueItem(lead, "failed", errMsg);
 

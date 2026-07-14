@@ -11,7 +11,7 @@ const corsHeaders = {
 const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 
 type AudienceSource = "descartados" | "pipeline_ativo" | "oferta_ativa_lista" | "visita_amanha";
-type DedupMode = "exclude_sent" | "include_all" | "only_sent_before";
+type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before";
 
 interface Audience {
   source?: AudienceSource;
@@ -30,6 +30,7 @@ interface Audience {
   cooldown_dias?: number; // NOVO: cooldown entre disparos para o mesmo lead (default 7)
   include_archived?: boolean;
   limit?: number;
+  template_name?: string;
 }
 
 function audienceKey(a: Audience): string {
@@ -49,6 +50,20 @@ const last8Of = (raw: string | null | undefined): string => {
   const d = (raw || "").replace(/\D/g, "");
   return d.length >= 8 ? d.slice(-8) : d;
 };
+
+function normalizePhone(raw: string | null | undefined): string | null {
+  let p = (raw || "").replace(/\D/g, "");
+  if (!p) return null;
+  if (p.startsWith("0")) p = p.substring(1);
+  if (!p.startsWith("55")) p = "55" + p;
+  if (p.length === 12) {
+    const ddd = p.substring(2, 4);
+    const rest = p.substring(4);
+    if (/^[6-9]/.test(rest)) p = `55${ddd}9${rest}`;
+  }
+  if (p.length < 12 || p.length > 13) return null;
+  return p;
+}
 
 // Carrega os conjuntos de exclusão (pipeline ativo + frequência recente) para estimativa fiel.
 async function loadGuardSets(supabase: any, freqCooldownDias: number) {
@@ -83,6 +98,38 @@ async function loadGuardSets(supabase: any, freqCooldownDias: number) {
   return { phoneSet, emailSet, recentSet };
 }
 
+async function applyMetaTemplateDedup(supabase: any, candidatos: Array<{ telefone: string | null }>, templateName?: string, since?: string) {
+  if (!templateName || candidatos.length === 0) return { candidatos, removidos: 0 };
+  const phonesSent = new Set<string>();
+  const PAGE = 1000;
+  let from = 0;
+  while (true) {
+    let q = supabase
+      .from("reengajamento_meta_disparos")
+      .select("phone")
+      .eq("template_name", templateName)
+      .not("phone", "is", null)
+      .range(from, from + PAGE - 1);
+    if (since) q = q.gte("created_at", since);
+    const { data, error } = await q;
+    if (error || !data || data.length === 0) break;
+    for (const row of data) {
+      const key = last8Of(String(row.phone || ""));
+      if (key) phonesSent.add(key);
+    }
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  if (phonesSent.size === 0) return { candidatos, removidos: 0 };
+  const filtered = candidatos.filter((lead) => !phonesSent.has(last8Of(lead.telefone)));
+  return { candidatos: filtered, removidos: candidatos.length - filtered.length };
+}
+
+function splitValidPhones<T extends { telefone: string | null }>(candidatos: T[]) {
+  const validos = candidatos.filter((lead) => !!normalizePhone(lead.telefone));
+  return { validos, invalidos: candidatos.length - validos.length };
+}
+
 async function exactCount(supabase: any, build: () => any): Promise<number> {
   const { count } = await build().select("id", { count: "exact", head: true });
   return count ?? 0;
@@ -115,6 +162,13 @@ Deno.serve(async (req) => {
     const dedupLookbackDays = Math.max(1, Number(audience.dedup_lookback_days || 30));
     const includeArchived = audience.include_archived === true;
     const audSource = audienceKey(audience);
+    const isMeta = (audience.canal || "meta") === "meta";
+    const { data: cfg } = await supabase
+      .from("reengajamento_config")
+      .select("freq_cooldown_dias")
+      .limit(1)
+      .maybeSingle();
+    const freqCooldownDias = isMeta ? Math.max(0, Number(cfg?.freq_cooldown_dias ?? 14)) : 0;
 
     // ─── Público COMBINADO (descartados + oferta ativa + pipeline) com dedup por telefone ───
     if (sourcesArr.length > 1) {
@@ -156,13 +210,13 @@ Deno.serve(async (req) => {
           ? audience.lista_ids
           : (audience.lista_id ? [audience.lista_id] : []);
         if (listaIds.length === 0) return [];
-        let q = supabase.from("oferta_ativa_leads").select("id, nome, telefone").in("lista_id", listaIds).not("telefone", "is", null);
+        let q = supabase.from("oferta_ativa_leads").select("id, nome, telefone, email").in("lista_id", listaIds).not("telefone", "is", null);
         if (audience.periodo?.from) q = q.gte("created_at", audience.periodo.from);
         if (audience.periodo?.to) q = q.lte("created_at", audience.periodo.to);
         if (audience.empreendimento) q = q.eq("empreendimento", audience.empreendimento);
         const { data, error } = await q.order("created_at", { ascending: false }).limit(limit * 2);
         if (error) throw error;
-        return (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "oferta_ativa_lead", fonte: "oferta_ativa_lista" }));
+        return (data || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead", fonte: "oferta_ativa_lista" }));
       };
 
       const priority: AudienceSource[] = ["descartados", "oferta_ativa_lista"];
@@ -183,10 +237,18 @@ Deno.serve(async (req) => {
         }
       }
       // Guarda de pipeline ativo + frequência (estimativa fiel ao disparo real)
-      const isMeta = (audience.canal || "meta") === "meta";
-      const { phoneSet, emailSet, recentSet } = await loadGuardSets(supabase, isMeta ? 14 : 0);
+      const templateDedup = dedupMode === "include_all"
+        ? { candidatos: merged, removidos: 0 }
+        : await applyMetaTemplateDedup(
+          supabase,
+          merged,
+          isMeta ? audience.template_name : undefined,
+          new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString(),
+        );
+      const phoneSplit = splitValidPhones(templateDedup.candidatos);
+      const { phoneSet, emailSet, recentSet } = await loadGuardSets(supabase, freqCooldownDias);
       let removidosPipeline = 0, removidosFrequencia = 0;
-      const guarded = merged.filter((l) => {
+      const guarded = phoneSplit.validos.filter((l) => {
         const ph = last8Of(l.telefone);
         if ((ph && phoneSet.has(ph)) || (emailSet.size && (l as any).email && emailSet.has(String((l as any).email).toLowerCase()))) { removidosPipeline++; return false; }
         if (isMeta && ph && recentSet.has(ph)) { removidosFrequencia++; return false; }
@@ -202,7 +264,8 @@ Deno.serve(async (req) => {
         funil: {
           por_fonte: porFonte,
           total_bruto: totalBruto,
-          duplicados_removidos: totalBruto - merged.length,
+          duplicados_removidos: (totalBruto - merged.length) + templateDedup.removidos,
+          telefones_invalidos: phoneSplit.invalidos,
           removidos_pipeline_ativo: removidosPipeline,
           removidos_frequencia: removidosFrequencia,
           elegiveis: finalLeads.length,
@@ -397,7 +460,7 @@ Deno.serve(async (req) => {
       for (let offset = 0; offset < limit; offset += PAGE) {
         const to = Math.min(offset + PAGE, limit) - 1;
         const { data: pageData, error: pageErr } = await applyFilters(
-          supabase.from("oferta_ativa_leads").select("id, nome, telefone, created_at, empreendimento")
+          supabase.from("oferta_ativa_leads").select("id, nome, telefone, email, created_at, empreendimento")
         )
           .order("created_at", { ascending: false })
           .range(offset, to);
@@ -407,7 +470,8 @@ Deno.serve(async (req) => {
         if (pageData.length < (to - offset + 1)) break;
       }
       const count = totalCount ?? collected.length;
-      let candidatos = collected.map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, ref: "oferta_ativa_lead" }));
+      let candidatos = collected.map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead" }));
+      const beforeDedup = candidatos.length;
 
       if (dedupMode !== "include_all" && candidatos.length > 0) {
         const ids = candidatos.map((c) => c.id);
@@ -427,12 +491,45 @@ Deno.serve(async (req) => {
         else if (dedupMode === "only_sent_before") candidatos = candidatos.filter((c) => enviadosSet.has(c.id));
       }
 
+      const templateDedup = dedupMode === "include_all"
+        ? { candidatos, removidos: 0 }
+        : await applyMetaTemplateDedup(
+          supabase,
+          candidatos,
+          isMeta ? audience.template_name : undefined,
+          new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString(),
+        );
+      candidatos = templateDedup.candidatos as typeof candidatos;
+
+      const phoneSplit = splitValidPhones(candidatos);
+      let validos = phoneSplit.validos;
+
+      const { phoneSet, emailSet, recentSet } = await loadGuardSets(supabase, freqCooldownDias);
+      let removidosPipeline = 0;
+      let removidosFrequencia = 0;
+      validos = validos.filter((l) => {
+        const ph = last8Of(l.telefone);
+        const em = String((l as any).email || "").trim().toLowerCase();
+        if ((ph && phoneSet.has(ph)) || (em && emailSet.has(em))) { removidosPipeline++; return false; }
+        if (isMeta && ph && recentSet.has(ph)) { removidosFrequencia++; return false; }
+        return true;
+      });
+
       return new Response(JSON.stringify({
-        count: candidatos.length,
+        count: validos.length,
         count_pre_dedup: count ?? null,
-        sample_count: candidatos.length,
-        sample: candidatos.slice(0, 20),
+        sample_count: validos.length,
+        sample: validos.slice(0, 20),
         audience_source: audSource,
+        funil: {
+          total_bruto: count ?? beforeDedup,
+          count_pre_dedup: count ?? beforeDedup,
+          duplicados_removidos: beforeDedup - candidatos.length,
+          telefones_invalidos: phoneSplit.invalidos,
+          removidos_pipeline_ativo: removidosPipeline,
+          removidos_frequencia: removidosFrequencia,
+          elegiveis: validos.length,
+        },
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

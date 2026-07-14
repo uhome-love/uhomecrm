@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,11 @@ type DedupMode = "cooldown" | "exclude_sent" | "include_all" | "only_sent_before
 interface PreviewFunil {
   por_fonte?: Record<string, number>;
   duplicados_removidos?: number;
+  removidos_pipeline_ativo?: number;
+  removidos_frequencia?: number;
+  telefones_invalidos?: number;
+  total_bruto?: number;
+  count_pre_dedup?: number;
   total_em_descarte?: number;
   inativados_definitivos?: number;
   sem_telefone?: number;
@@ -29,6 +35,21 @@ interface PreviewFunil {
   em_cooldown?: number;
   cooldown_dias?: number;
   elegiveis?: number;
+}
+
+async function getEdgeErrorMessage(error: unknown): Promise<string> {
+  if (error instanceof FunctionsHttpError) {
+    const text = await error.context.text().catch(() => "");
+    if (text) {
+      try {
+        const parsed = JSON.parse(text) as { error?: string; message?: string; motivo?: string; reason?: string };
+        return parsed.error || parsed.message || parsed.motivo || parsed.reason || text;
+      } catch {
+        return text;
+      }
+    }
+  }
+  return error instanceof Error ? error.message : String(error);
 }
 interface PreviewResult {
   count: number;
@@ -203,7 +224,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       const { data, error } = await supabase.functions.invoke("reengajamento-audience-preview", {
         body: { audience: buildAudience() },
       });
-      if (error) throw error;
+      if (error) throw new Error(await getEdgeErrorMessage(error));
       const d = data as { error?: string; count?: number; sample?: unknown[]; funil?: PreviewFunil };
       if (d?.error) throw new Error(d.error);
       setPreview({ count: d.count || 0, sample: d.sample || [], funil: d.funil });
@@ -221,6 +242,10 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     }
     if (canal === "meta" && !templateName) {
       toast.error("Selecione o template Meta que será usado neste disparo");
+      return;
+    }
+    if (canal === "meta" && metaTemplates.length > 0 && !currentTemplateMeta) {
+      toast.error(`Template "${templateName}" não apareceu na lista de aprovados da Meta. Clique em Atualizar ou selecione outro template aprovado.`);
       return;
     }
     if (canal === "evolution" && !mensagem && !has("descartados")) {
@@ -254,12 +279,16 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     try {
       const body = { force: true, iniciado_por: "manual_custom", audience: buildAudience() };
       const { data, error } = await supabase.functions.invoke("reengajamento-descartados-enqueue", { body });
-      if (error) throw error;
+      if (error) throw new Error(await getEdgeErrorMessage(error));
 
-      const resp = data as { reason?: string; motivo?: string; error?: string; run_id?: string } | null;
+      const resp = data as { reason?: string; motivo?: string; error?: string; run_id?: string; active_run_id?: string; sent?: number; failed?: number; skipped?: number; total?: number } | null;
       const reason = String(resp?.reason || "");
       if (reason === "no_leads") {
         toast.info("Nenhum lead elegível após os filtros de segurança");
+        return;
+      }
+      if (reason === "active_run_in_progress") {
+        toast.info(`Já existe um disparo em andamento. Acompanhe/retome pela faixa de execução ativa${resp?.active_run_id ? ` (${resp.active_run_id.slice(0, 8)})` : ""}.`);
         return;
       }
       if (["meta_quality_cooldown", "locked_quality_pause", "auto_paused_meta_quality", "auto_paused_delivery_quality"].includes(reason)) {
@@ -267,6 +296,10 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         return;
       }
       if (resp?.error) throw new Error(resp.error);
+      if (reason === "error") {
+        toast.error(`Disparo encerrado sem envio: ${resp?.failed ?? 0} falhas, ${resp?.skipped ?? 0} ignorados. Veja o histórico para o motivo.`);
+        return;
+      }
       toast.success(`🚀 Disparo iniciado para ${preview.count} leads`);
       setPreview(null);
       onFired?.();
@@ -740,6 +773,24 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                     <span className="text-right font-mono text-amber-600">−{preview.funil.duplicados_removidos}</span>
                   </>
                 )}
+                {typeof preview.funil.telefones_invalidos === "number" && preview.funil.telefones_invalidos > 0 && (
+                  <>
+                    <span className="text-muted-foreground">— Telefones inválidos</span>
+                    <span className="text-right font-mono text-rose-600">−{preview.funil.telefones_invalidos}</span>
+                  </>
+                )}
+                {typeof preview.funil.removidos_pipeline_ativo === "number" && preview.funil.removidos_pipeline_ativo > 0 && (
+                  <>
+                    <span className="text-muted-foreground">— Já ativos no pipeline</span>
+                    <span className="text-right font-mono text-amber-600">−{preview.funil.removidos_pipeline_ativo}</span>
+                  </>
+                )}
+                {typeof preview.funil.removidos_frequencia === "number" && preview.funil.removidos_frequencia > 0 && (
+                  <>
+                    <span className="text-muted-foreground">— Receberam marketing recente</span>
+                    <span className="text-right font-mono text-amber-600">−{preview.funil.removidos_frequencia}</span>
+                  </>
+                )}
                 <span className="font-medium pt-1 border-t mt-1">= Elegíveis (1 msg por telefone)</span>
                 <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.count}</span>
               </div>
@@ -777,6 +828,42 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                   ⚠️ {preview.funil.arquivados} leads arquivados estão sendo excluídos. Marque "Incluir arquivados" para alcançar a base completa.
                 </p>
               )}
+            </div>
+          )}
+
+          {preview?.funil && has("oferta_ativa_lista") && !isCombined && (
+            <div className="text-[11px] border rounded p-2 bg-background space-y-1">
+              <div className="font-medium text-indigo-700 mb-1">Conferência — Oferta Ativa</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                <span className="text-muted-foreground">Leads encontrados nas listas</span>
+                <span className="text-right font-mono">{preview.funil.total_bruto ?? preview.funil.count_pre_dedup ?? preview.count}</span>
+                {typeof preview.funil.duplicados_removidos === "number" && preview.funil.duplicados_removidos > 0 && (
+                  <>
+                    <span className="text-muted-foreground">— Duplicados/removidos por envio anterior</span>
+                    <span className="text-right font-mono text-amber-600">−{preview.funil.duplicados_removidos}</span>
+                  </>
+                )}
+                {typeof preview.funil.telefones_invalidos === "number" && preview.funil.telefones_invalidos > 0 && (
+                  <>
+                    <span className="text-muted-foreground">— Telefones inválidos</span>
+                    <span className="text-right font-mono text-rose-600">−{preview.funil.telefones_invalidos}</span>
+                  </>
+                )}
+                {typeof preview.funil.removidos_pipeline_ativo === "number" && preview.funil.removidos_pipeline_ativo > 0 && (
+                  <>
+                    <span className="text-muted-foreground">— Já ativos no pipeline</span>
+                    <span className="text-right font-mono text-amber-600">−{preview.funil.removidos_pipeline_ativo}</span>
+                  </>
+                )}
+                {typeof preview.funil.removidos_frequencia === "number" && preview.funil.removidos_frequencia > 0 && (
+                  <>
+                    <span className="text-muted-foreground">— Receberam marketing recente</span>
+                    <span className="text-right font-mono text-amber-600">−{preview.funil.removidos_frequencia}</span>
+                  </>
+                )}
+                <span className="font-medium pt-1 border-t mt-1">= Elegíveis para disparo</span>
+                <span className="text-right font-mono font-bold text-indigo-700 pt-1 border-t mt-1">{preview.count}</span>
+              </div>
             </div>
           )}
 
