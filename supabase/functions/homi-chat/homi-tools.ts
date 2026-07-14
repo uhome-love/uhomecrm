@@ -219,6 +219,39 @@ async function resolveLead(userClient: any, uid: string, nome: string) {
   return { candidates: rows };
 }
 
+// Reads a lead's history (stage, substatus, timeline, notes) — read-only, RLS-scoped.
+async function readLeadHistory(userClient: any, lead: any) {
+  let stageNome = "";
+  let flagStatus = "";
+  const { data: leadFull } = await userClient
+    .from("pipeline_leads")
+    .select("flag_status, empreendimento, stage_id")
+    .eq("id", lead.id)
+    .maybeSingle();
+  flagStatus = leadFull?.flag_status || "";
+  const empreendimento = leadFull?.empreendimento || lead.empreendimento || "";
+  const stageId = leadFull?.stage_id || lead.stage_id;
+  if (stageId) {
+    const { data: st } = await userClient.from("pipeline_stages").select("nome").eq("id", stageId).maybeSingle();
+    stageNome = st?.nome || "";
+  }
+  const { data: atividades } = await userClient
+    .from("pipeline_atividades")
+    .select("titulo, descricao, tipo, data, created_at")
+    .eq("pipeline_lead_id", lead.id)
+    .order("created_at", { ascending: false })
+    .limit(8);
+  const { data: anotacoes } = await userClient
+    .from("pipeline_anotacoes")
+    .select("conteudo, autor_nome, created_at")
+    .eq("pipeline_lead_id", lead.id)
+    .order("created_at", { ascending: false })
+    .limit(5);
+  const acts = atividades || [];
+  const ultima = acts[0] ? `${acts[0].titulo || acts[0].tipo || "atividade"}${acts[0].data ? " · " + acts[0].data : ""}` : null;
+  return { stageNome, flagStatus, empreendimento, atividades: acts, anotacoes: anotacoes || [], ultima };
+}
+
 export interface ToolOutcome {
   // What we feed back to the model as the tool result
   modelResult: string;
