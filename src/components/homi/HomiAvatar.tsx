@@ -51,7 +51,13 @@ function loadSavedPosition() {
 function HomiAvatarInner() {
   const { isOpen, toggleHomi, unseenCount, isLoading, launcherHidden } = useHomi();
   const { pathname } = useLocation();
-  const defaultPos = { x: window.innerWidth - BUTTON_SIZE - SNAP_MARGIN, y: window.innerHeight - BUTTON_SIZE - SNAP_MARGIN };
+  const defaultPos = (() => {
+    const safe = getSafeInsets();
+    return {
+      x: window.innerWidth - BUTTON_SIZE - SNAP_MARGIN - safe.right,
+      y: window.innerHeight - BUTTON_SIZE - SNAP_MARGIN - safe.bottom,
+    };
+  })();
   const [position, setPosition] = useState(() => loadSavedPosition() || defaultPos);
   const [hidden, setHidden] = useState(() => localStorage.getItem("homi-avatar-hidden") === "1");
   const isDragging = useRef(false);
