@@ -705,6 +705,7 @@ export function HomiActionsRenderer({ actions }: { actions?: HomiAction[] }) {
         if (a.tipo === "criar_tarefa") return <TarefaCard key={i} action={a} />;
         if (a.tipo === "criar_visita") return <VisitaCard key={i} action={a} />;
         if (a.tipo === "anotar_lead") return <AnotacaoCard key={i} action={a} />;
+        if (a.tipo === "registrar_resultado") return <ResultadoCard key={i} action={a} />;
         if (a.tipo === "buscar_imovel") return <ImovelSearchCard key={i} action={a} />;
         return null;
       })}
