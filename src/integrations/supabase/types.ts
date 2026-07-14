@@ -11456,23 +11456,33 @@ export type Database = {
       get_relatorio_origem_performance: {
         Args: { p_corretor_ids?: string[]; p_end: string; p_start: string }
         Returns: {
+          abandonado_na_cadencia: boolean
           anuncio: string
+          cadencia_total_passos: number
           campanha: string
+          chegou_ao_fim_cadencia: boolean
           conjunto_anuncio: string
+          contato_estabelecido: boolean
           corretor_id: string
           corretor_nome: string
           created_at: string
           empreendimento: string
+          entrou_na_cadencia: boolean
           lead_id: string
           motivo_descarte: string
           nome: string
+          num_tentativas: number
           origem: string
+          origem_primeiro_contato: string
           plataforma: string
           primeiro_contato_em: string
+          primeiro_contato_em_v1: string
+          saiu_da_cadencia_com_contato: boolean
           stage_nome: string
           tem_venda: boolean
           tem_visita_realizada: boolean
           tempo_ate_primeiro_contato_min: number
+          tempo_em_sem_contato_dias: number
           tipo_descarte: string
           vgv: number
         }[]
