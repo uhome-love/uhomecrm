@@ -22,6 +22,7 @@ function useIsInstalled() {
 
 const DISMISS_KEY = "uhome_push_prompt_dismissed";
 const INSTALL_DISMISS_KEY = "uhome_install_prompt_dismissed";
+const INSTALL_NEVER_KEY = "uhome_install_prompt_never"; // "já tenho o app" — permanente
 
 export default function PushPromptBanner() {
   const { user } = useAuth();
