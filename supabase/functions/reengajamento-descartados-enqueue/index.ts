@@ -991,7 +991,7 @@ Deno.serve(async (req) => {
         const finalStatus = finalSent === 0 && totalAlvo > 0 ? "no_send" : "completed";
         const audit = buildAudienceAudit(totalAlvo);
         const auditTail = isCustomAudience
-          ? ` Funil: ${audit.total_bruto} brutos → ${audit.enfileirados} enfileirados (${audit.telefones_invalidos} inválidos, ${audit.removidos_frequencia} frequência, ${audit.removidos_pipeline_ativo} pipeline ativo, ${audit.removidos_template_recente} template recente).`
+          ? ` Funil: ${audit.total_bruto} brutos → ${audit.enfileirados} enfileirados (${audit.telefones_invalidos} inválidos, ${audit.suprimidos} supressão Meta, ${audit.removidos_frequencia} frequência, ${audit.removidos_pipeline_ativo} pipeline ativo, ${audit.removidos_template_recente} template recente).`
           : "";
         const finalReason = finalStatus === "no_send"
           ? `Fila encerrada sem envio real via ${canal}: ${finalFailed} falhas e ${finalSkipped} ignorados de ${totalAlvo}. Motivo predominante: ${finalFailed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.${auditTail}`
@@ -1695,7 +1695,7 @@ Deno.serve(async (req) => {
 
     const finalAudit = buildAudienceAudit(totalAlvo);
     const finalAuditTail = isCustomAudience
-      ? ` Funil: ${finalAudit.total_bruto} brutos → ${finalAudit.enfileirados} enfileirados (${finalAudit.telefones_invalidos} inválidos, ${finalAudit.removidos_frequencia} frequência, ${finalAudit.removidos_pipeline_ativo} pipeline ativo, ${finalAudit.removidos_template_recente} template recente).`
+      ? ` Funil: ${finalAudit.total_bruto} brutos → ${finalAudit.enfileirados} enfileirados (${finalAudit.telefones_invalidos} inválidos, ${finalAudit.suprimidos} supressão Meta, ${finalAudit.removidos_frequencia} frequência, ${finalAudit.removidos_pipeline_ativo} pipeline ativo, ${finalAudit.removidos_template_recente} template recente).`
       : "";
     const finalStatus = sent === 0 && totalAlvo > 0 ? "no_send" : "completed";
     const finalReason = finalStatus === "no_send"
