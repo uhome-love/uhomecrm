@@ -261,10 +261,11 @@ Deno.serve(async (req) => {
           new Date(Date.now() - dedupLookbackDays * 24 * 3600 * 1000).toISOString(),
         );
       const phoneSplit = splitValidPhones(templateDedup.candidatos);
-      const { phoneSet, emailSet, recentSet } = await loadGuardSets(supabase, freqCooldownDias);
-      let removidosPipeline = 0, removidosFrequencia = 0;
+      const { supressSet, phoneSet, emailSet, recentSet } = await loadGuardSets(supabase, freqCooldownDias);
+      let removidosSupressao = 0, removidosPipeline = 0, removidosFrequencia = 0;
       const guarded = phoneSplit.validos.filter((l) => {
         const ph = last8Of(l.telefone);
+        if (isMeta && ph && supressSet.has(ph)) { removidosSupressao++; return false; }
         if ((ph && phoneSet.has(ph)) || (emailSet.size && (l as any).email && emailSet.has(String((l as any).email).toLowerCase()))) { removidosPipeline++; return false; }
         if (isMeta && ph && recentSet.has(ph)) { removidosFrequencia++; return false; }
         return true;
@@ -281,6 +282,7 @@ Deno.serve(async (req) => {
           total_bruto: totalBruto,
           duplicados_removidos: (totalBruto - merged.length) + templateDedup.removidos,
           telefones_invalidos: phoneSplit.invalidos,
+          suprimidos_meta: removidosSupressao,
           removidos_pipeline_ativo: removidosPipeline,
           removidos_frequencia: removidosFrequencia,
           elegiveis: finalLeads.length,
