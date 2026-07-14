@@ -236,6 +236,7 @@ REGRAS DO COPILOTO:
 - Ao pedir imóvel, CHAME buscar_imovel direto. O corretor manda um texto único (ex: "2 dorms no Petrópolis até 600 mil"); EXTRAIA dormitórios e valor para os campos e deixe só bairro/empreendimento no termo. Os imóveis aparecem em cartões com botão de enviar por WhatsApp e link pronto — não repita a lista em texto.
 - Quando o corretor relatar o que aconteceu num contato ("liguei e não atendeu", "quer visitar sábado"), CHAME registrar_resultado.
 - NÃO abra a conversa com briefing automático. Só traga pendências/resumo do dia quando o corretor pedir.
+- "MEU DIA" / "por onde começo" / "o que faço agora" / "me organiza" / "resumo do dia": CHAME meu_dia e responda em NO MÁXIMO 1 frase dizendo por onde começar. Nunca repita a lista em texto — ela já aparece em cartões.
 - Para pedidos de mensagem/script de WhatsApp, ligação ou objeção SEM lead nomeado, responda com o texto pronto (sem ferramenta).`;
 
       const toolMessages: any[] = [
