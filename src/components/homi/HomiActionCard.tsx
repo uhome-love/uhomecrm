@@ -800,6 +800,7 @@ export function HomiResultsRenderer({ results, onPick }: { results?: HomiResult[
   return (
     <div className="space-y-2 mt-1">
       {results.map((r, i) => {
+        if (r.tipo === "meu_dia") return <MeuDiaCard key={i} result={r} onPick={onPick} />;
         if (r.tipo === "pendencias") return <PendenciasCard key={i} result={r} onPick={onPick} />;
         if (r.tipo === "imoveis") return <ImoveisCard key={i} result={r} />;
         if (r.tipo === "escolher_lead") return <EscolherLeadCard key={i} result={r} onPick={onPick} />;
