@@ -761,6 +761,15 @@ Deno.serve(async (req) => {
       leads = (legacyLeads || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" }));
     }
 
+    if (!bodyRunId && isCustomAudience && leads.length > 0) {
+      const before = leads.length;
+      leads = leads.filter((l) => !!normalizePhone(l.telefone || ""));
+      telefonesInvalidosRemovidos = before - leads.length;
+      if (telefonesInvalidosRemovidos > 0) {
+        console.log(`Telefones inválidos removidos antes da fila: ${telefonesInvalidosRemovidos} de ${before}`);
+      }
+    }
+
     // ── Supressão automática (só Meta): remove números que já falharam por
     // bloqueio de qualidade / opt-out / indisponível, evitando queimar a reputação do número.
     if (!bodyRunId && canal === "meta" && leads.length > 0) {
@@ -862,6 +871,19 @@ Deno.serve(async (req) => {
     }
 
     totalAlvo = leads.length;
+
+    const buildAudienceAudit = (queueTotal?: number) => ({
+      total_bruto: totalBrutoCapturado ?? (totalAlvo + supressosRemovidos + pipelineAtivosRemovidos + frequenciaRemovidos + telefonesInvalidosRemovidos + removidosPorTemplateRecente + removidosPorEventoRecente),
+      removidos_evento_recente: removidosPorEventoRecente,
+      removidos_template_recente: removidosPorTemplateRecente,
+      telefones_invalidos: telefonesInvalidosRemovidos,
+      removidos_pipeline_ativo: pipelineAtivosRemovidos,
+      removidos_frequencia: frequenciaRemovidos,
+      suprimidos: supressosRemovidos,
+      duplicados_fila: duplicadosFilaRemovidos,
+      elegiveis_calculados: totalAlvo,
+      enfileirados: queueTotal ?? totalAlvo,
+    });
 
     if (bodyRunId) {
       runId = bodyRunId;
