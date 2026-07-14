@@ -167,7 +167,20 @@ function HomiPanelInner() {
                       <br />Como posso ajudar?
                     </p>
                   </div>
+                  {homiRole === "corretor" && (
+                    <button
+                      onClick={() => sendMessage("Meu dia: por onde começo?")}
+                      className="w-full flex items-center gap-3 text-left px-4 py-3 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all"
+                    >
+                      <span className="text-xl">☀️</span>
+                      <span className="flex flex-col">
+                        <span className="text-sm">Meu dia</span>
+                        <span className="text-[10px] font-normal opacity-80">Pendências, visitas e quem esfriou — já com a ação pronta</span>
+                      </span>
+                    </button>
+                  )}
                   <div className="space-y-1.5">
+
                     {actions.map((a) => (
                       <button
                         key={a.label}
