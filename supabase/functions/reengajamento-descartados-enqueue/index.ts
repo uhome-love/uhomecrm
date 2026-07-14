@@ -604,7 +604,11 @@ Deno.serve(async (req) => {
         }
         const { data: evs } = await evQ;
         const enviadosSet = new Set((evs || []).map((e: any) => e.lead_id));
-        if (dedupMode === "exclude_sent") return cand.filter((c) => !enviadosSet.has(c.id));
+        if (dedupMode === "exclude_sent") {
+          const filtered = cand.filter((c) => !enviadosSet.has(c.id));
+          removidosPorEventoRecente += cand.length - filtered.length;
+          return filtered;
+        }
         if (dedupMode === "only_sent_before") return cand.filter((c) => enviadosSet.has(c.id));
         return cand;
       };
@@ -634,6 +638,7 @@ Deno.serve(async (req) => {
         if (phonesSent.size === 0) return cand;
         const before = cand.length;
         const filtered = cand.filter((lead) => !phonesSent.has(last8(lead.telefone)));
+        removidosPorTemplateRecente += before - filtered.length;
         console.log(`Dedup Meta template ${metaTemplate}: ${before - filtered.length} oferta ativa removidos por tentativa recente`);
         return filtered;
       };
@@ -687,6 +692,7 @@ Deno.serve(async (req) => {
           off += PAGE;
         }
         const cand = rows.map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead" as const }));
+        totalBrutoCapturado = Math.max(totalBrutoCapturado || 0, rows.length);
 
         const byEventos = await dedupViaEventos(cand, `oferta_ativa:${listaIds.slice().sort().join(",")}`);
         return dedupOfertaViaMetaTemplate(byEventos);
