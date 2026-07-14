@@ -218,24 +218,8 @@ export async function executeHomiTool(
     }
 
     if (name === "buscar_imovel") {
-      let q = userClient
-        .from("properties")
-        .select("id, codigo, titulo, empreendimento, bairro, tipo, valor_venda, dormitorios, suites, vagas, area_privativa, fotos")
-        .eq("ativo", true)
-        .not("valor_venda", "is", null)
-        .limit(6);
-      const termo = (args.termo || "").trim();
-      if (termo) q = q.or(`bairro.ilike.%${termo}%,empreendimento.ilike.%${termo}%,titulo.ilike.%${termo}%`);
-      if (args.bairro) q = q.ilike("bairro", `%${args.bairro}%`);
-      if (typeof args.dormitorios === "number") q = q.gte("dormitorios", args.dormitorios);
-      if (typeof args.valor_max === "number") q = q.lte("valor_venda", args.valor_max);
-      q = q.order("valor_venda", { ascending: true });
-      const { data, error } = await q;
-      if (error) {
-        console.error("[buscar_imovel] error:", error);
-        return { modelResult: "Não consegui buscar imóveis agora." };
-      }
-      const imoveis = (data || []).map((r: any) => ({
+      const SELECT = "id, codigo, titulo, empreendimento, bairro, cidade, tipo, valor_venda, dormitorios, suites, vagas, area_privativa, fotos";
+      const mapRows = (data: any[]) => (data || []).map((r: any) => ({
         codigo: r.codigo,
         titulo: r.titulo,
         empreendimento: r.empreendimento,
@@ -248,11 +232,66 @@ export async function executeHomiTool(
         area: r.area_privativa,
         thumb: Array.isArray(r.fotos) ? r.fotos[0] : null,
       }));
+
+      // Normaliza o texto: separa em tokens úteis (ignora conectivos curtos)
+      const rawTermo = `${args.termo || ""} ${args.bairro || ""}`.trim();
+      const stop = new Set(["de", "da", "do", "com", "para", "em", "no", "na", "e", "dorms", "dorm", "dormitorios", "quartos"]);
+      const tokens = rawTermo
+        .toLowerCase()
+        .replace(/['"]/g, "")
+        .split(/\s+/)
+        .filter((t) => t.length >= 3 && !stop.has(t));
+
+      const baseFilters = (q0: any) => {
+        let q = q0.eq("ativo", true).not("valor_venda", "is", null);
+        if (typeof args.dormitorios === "number") q = q.gte("dormitorios", args.dormitorios);
+        if (typeof args.valor_max === "number") q = q.lte("valor_venda", args.valor_max);
+        return q;
+      };
+
+      // 1) Busca estrita: todos os tokens precisam bater em algum campo textual
+      let strict = baseFilters(userClient.from("properties").select(SELECT)).limit(6);
+      for (const tk of tokens) {
+        strict = strict.or(`bairro.ilike.%${tk}%,empreendimento.ilike.%${tk}%,titulo.ilike.%${tk}%,cidade.ilike.%${tk}%`);
+      }
+      strict = strict.order("valor_venda", { ascending: true });
+      const { data: strictData, error } = await strict;
+      if (error) {
+        console.error("[buscar_imovel] error:", error);
+        return { modelResult: "Não consegui buscar imóveis agora." };
+      }
+
+      let imoveis = mapRows(strictData || []);
+      let aproximado = false;
+
+      // 2) Fallback: se não achou, relaxa (só dorms/valor, ou o token mais forte)
+      if (imoveis.length === 0) {
+        let loose = baseFilters(userClient.from("properties").select(SELECT)).limit(6);
+        const strongest = [...tokens].sort((a, b) => b.length - a.length)[0];
+        if (strongest) {
+          loose = loose.or(`bairro.ilike.%${strongest}%,empreendimento.ilike.%${strongest}%,titulo.ilike.%${strongest}%,cidade.ilike.%${strongest}%`);
+        }
+        loose = loose.order("valor_venda", { ascending: true });
+        const { data: looseData } = await loose;
+        imoveis = mapRows(looseData || []);
+        aproximado = imoveis.length > 0;
+      }
+
+      if (imoveis.length === 0) {
+        return {
+          result: { tipo: "imoveis", imoveis: [] },
+          modelResult: "Nenhum imóvel encontrado nem em busca ampla. Sugira ao corretor ampliar os critérios (valor, bairro ou dormitórios).",
+        };
+      }
+
       return {
-        result: { tipo: "imoveis", imoveis },
-        modelResult: `Encontrei ${imoveis.length} imóveis. A lista já apareceu para o corretor. Comente em 1 frase o destaque.`,
+        result: { tipo: "imoveis", imoveis, aproximado },
+        modelResult: aproximado
+          ? `Não achei correspondência exata, mas trouxe ${imoveis.length} opções próximas (já exibidas com botão de enviar por WhatsApp). Comente em 1 frase.`
+          : `Encontrei ${imoveis.length} imóveis (já exibidos com botão de enviar por WhatsApp). Comente em 1 frase o destaque.`,
       };
     }
+
 
 
     if (name === "criar_tarefa") {

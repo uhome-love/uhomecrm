@@ -14,10 +14,13 @@ import {
 } from "@/components/ui/select";
 import {
   CheckCircle2, Clock, CalendarPlus, Home, MapPin, AlertTriangle, Search, Loader2,
-  ChevronRight, User, MessageCircle, CheckCheck, Plus, Sparkles, Phone,
+  ChevronRight, User, MessageCircle, CheckCheck, Plus, Sparkles, Phone, Send,
+
 } from "lucide-react";
 import { useHomiActions, type LeadOption } from "@/hooks/useHomiActions";
 import { useHomi } from "@/contexts/HomiContext";
+import { useBrokerSlug } from "@/hooks/useBrokerSlug";
+import { gerarSlugUhome } from "@/utils/imoveisFormat";
 import type { HomiAction, HomiResult } from "@/contexts/HomiContext";
 
 const TIPO_BUTTONS = [
@@ -445,21 +448,74 @@ function ResumoLeadCard({ result, onPick }: { result: HomiResult; onPick: (text:
 }
 
 // ─────────────────────────────────────────────── Read: imóveis
+function buildShare(im: any, slugRef: string | null) {
+  const shareSlug = gerarSlugUhome({
+    tipo: im.tipo || "imovel",
+    quartos: im.dormitorios ?? 0,
+    bairro: im.bairro || "",
+    codigo: im.codigo,
+    slug: im.slug,
+  });
+  const shareUrl = slugRef
+    ? `https://uhome.com.br/c/${slugRef}/imovel/${shareSlug}`
+    : `https://uhome.com.br/imovel/${shareSlug}`;
+  const linhas = [
+    `🏠 ${im.empreendimento || im.titulo || "Imóvel"}`,
+    im.bairro ? `📍 ${im.bairro}` : "",
+    [im.dormitorios ? `${im.dormitorios} dorm` : "", im.vagas ? `${im.vagas} vaga(s)` : "", im.area ? `${im.area}m²` : ""].filter(Boolean).join(" · "),
+    im.valor_venda != null ? `💰 ${fmtMoney(im.valor_venda)}` : "",
+    "",
+    `👉 ${shareUrl}`,
+  ].filter((l) => l !== undefined);
+  return { shareUrl, message: linhas.join("\n") };
+}
+
+function ImovelRow({ im }: { im: any }) {
+  const slugRef = useBrokerSlug();
+  const [copied, setCopied] = useState(false);
+  const { shareUrl, message } = buildShare(im, slugRef);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card/60 p-2 space-y-2">
+      <div className="flex gap-2">
+        {im.thumb ? <img src={im.thumb} alt="" className="h-12 w-12 rounded-lg object-cover shrink-0" /> : <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0"><Home className="h-5 w-5 text-muted-foreground" /></div>}
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-foreground truncate">{im.empreendimento || im.titulo || im.codigo}</p>
+          <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1"><MapPin className="h-2.5 w-2.5" />{im.bairro || "—"} · {im.dormitorios ? `${im.dormitorios} dorm` : ""} {im.area ? `· ${im.area}m²` : ""}</p>
+          {im.valor_venda != null && <p className="text-[11px] font-bold text-primary">{fmtMoney(im.valor_venda)}</p>}
+        </div>
+      </div>
+      <div className="flex gap-1.5">
+        <Button size="sm" variant="outline" className="flex-1 h-8 text-[11px] gap-1" onClick={copy}>
+          {copied ? <><CheckCheck className="h-3.5 w-3.5 text-green-600" /> Copiado</> : <><MessageCircle className="h-3.5 w-3.5" /> Copiar mensagem</>}
+        </Button>
+        <Button asChild size="sm" className="flex-1 h-8 text-[11px] gap-1 bg-[#25D366] hover:bg-[#1fb457] text-white">
+          <a href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">
+            <Send className="h-3.5 w-3.5" /> WhatsApp
+          </a>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ImoveisCard({ result }: { result: HomiResult }) {
   const imoveis = (result.imoveis as any[]) || [];
   if (!imoveis.length) return <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">Nenhum imóvel encontrado com esses critérios.</div>;
   return (
     <div className="space-y-1.5">
-      {imoveis.map((im) => (
-        <div key={im.codigo} className="flex gap-2 rounded-xl border border-border bg-card/60 p-2">
-          {im.thumb ? <img src={im.thumb} alt="" className="h-12 w-12 rounded-lg object-cover shrink-0" /> : <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0"><Home className="h-5 w-5 text-muted-foreground" /></div>}
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-foreground truncate">{im.empreendimento || im.titulo || im.codigo}</p>
-            <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1"><MapPin className="h-2.5 w-2.5" />{im.bairro || "—"} · {im.dormitorios ? `${im.dormitorios} dorm` : ""} {im.area ? `· ${im.area}m²` : ""}</p>
-            {im.valor_venda != null && <p className="text-[11px] font-bold text-primary">{fmtMoney(im.valor_venda)}</p>}
-          </div>
-        </div>
-      ))}
+      {result.aproximado && (
+        <p className="text-[10px] text-amber-600 dark:text-amber-400 px-1">Sem correspondência exata — mostrando opções próximas:</p>
+      )}
+      {imoveis.map((im) => <ImovelRow key={im.codigo} im={im} />)}
     </div>
   );
 }
@@ -487,6 +543,51 @@ function EscolherLeadCard({ result, onPick }: { result: HomiResult; onPick: (tex
   );
 }
 
+// ─────────────────────────────────────────────── Composer: buscar imóvel
+const DORM_CHIPS = [1, 2, 3, 4];
+function ImovelSearchCard({ action }: { action: HomiAction }) {
+  const { sendMessage, isLoading } = useHomi();
+  const [bairro, setBairro] = useState("");
+  const [dorms, setDorms] = useState<number | null>(null);
+  const [valorMax, setValorMax] = useState("");
+  const [sent, setSent] = useState(false);
+
+  if (sent) return <DoneBadge label="Buscando imóveis…" />;
+
+  const buscar = () => {
+    const partes: string[] = [];
+    if (bairro.trim()) partes.push(`no bairro ou empreendimento "${bairro.trim()}"`);
+    if (dorms) partes.push(`com ${dorms}${dorms >= 4 ? "+" : ""} dormitórios`);
+    const valorNum = Number(valorMax.replace(/\D/g, ""));
+    if (valorNum > 0) partes.push(`com valor até R$ ${valorNum.toLocaleString("pt-BR")}`);
+    const criterio = partes.length ? partes.join(", ") : "os mais recentes";
+    setSent(true);
+    sendMessage(`Buscar imóveis ${criterio}.`);
+  };
+
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2.5">
+      <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><Search className="h-3.5 w-3.5 text-primary" /> Buscar imóvel</p>
+      <Input value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Bairro ou empreendimento (opcional)" className="h-9 text-xs" />
+      <div>
+        <p className="text-[10px] text-muted-foreground mb-1">Dormitórios</p>
+        <div className="flex gap-1.5">
+          {DORM_CHIPS.map((d) => (
+            <button key={d} onClick={() => setDorms(dorms === d ? null : d)}
+              className={`flex-1 h-8 rounded-lg border text-xs font-medium transition-all ${dorms === d ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary/40"}`}>
+              {d === 4 ? "4+" : d}
+            </button>
+          ))}
+        </div>
+      </div>
+      <Input value={valorMax} onChange={(e) => setValorMax(e.target.value)} inputMode="numeric" placeholder="Valor máximo (opcional)" className="h-9 text-xs" />
+      <Button onClick={buscar} disabled={isLoading} size="sm" className="w-full h-9 text-xs gap-1.5">
+        <Search className="h-3.5 w-3.5" /> Buscar
+      </Button>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────── Public renderers
 export function HomiActionsRenderer({ actions }: { actions?: HomiAction[] }) {
   if (!actions?.length) return null;
@@ -496,11 +597,13 @@ export function HomiActionsRenderer({ actions }: { actions?: HomiAction[] }) {
         if (a.tipo === "criar_tarefa") return <TarefaCard key={i} action={a} />;
         if (a.tipo === "criar_visita") return <VisitaCard key={i} action={a} />;
         if (a.tipo === "anotar_lead") return <AnotacaoCard key={i} action={a} />;
+        if (a.tipo === "buscar_imovel") return <ImovelSearchCard key={i} action={a} />;
         return null;
       })}
     </div>
   );
 }
+
 
 export function HomiResultsRenderer({ results, onPick }: { results?: HomiResult[]; onPick: (text: string) => void }) {
   if (!results?.length) return null;

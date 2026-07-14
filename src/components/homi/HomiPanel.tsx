@@ -140,7 +140,7 @@ function HomiPanelInner() {
                   { label: "⏰ Atrasados", run: () => sendMessage("Mostra o que tenho de atrasado e pendente hoje.") },
                   { label: "📋 Tarefa", run: () => openComposer("criar_tarefa") },
                   { label: "🏠 Visita", run: () => openComposer("criar_visita") },
-                  { label: "🔎 Imóvel", run: () => sendMessage("Me ajuda a buscar um imóvel.") },
+                  { label: "🔎 Imóvel", run: () => openComposer("buscar_imovel") },
                   { label: "💬 WhatsApp", run: () => sendMessage("Gere uma mensagem de follow-up curta para WhatsApp.") },
                 ].map((q) => (
                   <button key={q.label} disabled={isLoading} onClick={q.run}

@@ -45,7 +45,7 @@ interface HomiContextType {
   isLoading: boolean;
 
   // Inject a local action card (composer) without calling the AI
-  openComposer: (tipo: "criar_tarefa" | "criar_visita", lead?: { lead_id: string; lead_nome: string; campos?: Record<string, any> }) => void;
+  openComposer: (tipo: "criar_tarefa" | "criar_visita" | "buscar_imovel", lead?: { lead_id: string; lead_nome: string; campos?: Record<string, any> }) => void;
 
   // Proactive alerts
   alerts: ProactiveAlert[];
@@ -135,7 +135,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
 
   // Injeta um cartão de ação (composer) localmente, sem chamar a IA.
   const openComposer = useCallback((
-    tipo: "criar_tarefa" | "criar_visita",
+    tipo: "criar_tarefa" | "criar_visita" | "buscar_imovel",
     lead?: { lead_id: string; lead_nome: string; campos?: Record<string, any> },
   ) => {
     setIsOpen(true);
@@ -144,9 +144,9 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       lead_id: lead?.lead_id,
       lead_nome: lead?.lead_nome,
       campos: lead?.campos || {},
-      needsLead: !lead?.lead_id,
+      needsLead: tipo !== "buscar_imovel" && !lead?.lead_id,
     };
-    const label = tipo === "criar_tarefa" ? "Nova tarefa" : "Marcar visita";
+    const label = tipo === "criar_tarefa" ? "Nova tarefa" : tipo === "criar_visita" ? "Marcar visita" : "Buscar imóvel";
     setMessages(prev => [...prev, { role: "assistant", content: "", actions: [action], _composerLabel: label } as Message]);
   }, []);
 
@@ -315,14 +315,8 @@ export function HomiProvider({ children }: { children: ReactNode }) {
     }
   }, [isOpen, isLoading, sendMessage]);
 
-  // Briefing automático ao abrir (1x por sessão) — só para corretor
-  const briefedRef = useRef(false);
-  useEffect(() => {
-    if (isOpen && homiRole === "corretor" && messages.length === 0 && !briefedRef.current && !isLoading && !pendingMessageRef.current) {
-      briefedRef.current = true;
-      sendMessage("Me dá o briefing do meu dia: o que tenho de atrasado e pendente hoje.");
-    }
-  }, [isOpen, homiRole, messages.length, isLoading, sendMessage]);
+  // Sem briefing automático: o Homi abre apenas com a saudação.
+  // O corretor pede o resumo do dia sob demanda (atalho "⏰ Atrasados").
 
 
   const clearMessages = useCallback(() => {
