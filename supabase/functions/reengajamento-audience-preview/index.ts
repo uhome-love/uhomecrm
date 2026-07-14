@@ -65,12 +65,27 @@ function normalizePhone(raw: string | null | undefined): string | null {
   return p;
 }
 
-// Carrega os conjuntos de exclusão (pipeline ativo + frequência recente) para estimativa fiel.
+// Carrega os conjuntos de exclusão (supressão Meta + pipeline ativo + frequência recente) para estimativa fiel.
 async function loadGuardSets(supabase: any, freqCooldownDias: number) {
+  const supressSet = new Set<string>();
   const phoneSet = new Set<string>();
   const emailSet = new Set<string>();
   const recentSet = new Set<string>();
   const PG = 1000;
+  const nowIso = new Date().toISOString();
+  let sf = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data, error } = await supabase
+      .from("meta_supressao")
+      .select("telefone_last8, suprimir_ate")
+      .or(`suprimir_ate.is.null,suprimir_ate.gt.${nowIso}`)
+      .range(sf, sf + PG - 1);
+    if (error || !data || data.length === 0) break;
+    for (const r of data) if (r.telefone_last8) supressSet.add(String(r.telefone_last8));
+    if (data.length < PG) break;
+    sf += PG;
+  }
   let pf = 0;
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -95,7 +110,7 @@ async function loadGuardSets(supabase: any, freqCooldownDias: number) {
       ff += PG;
     }
   }
-  return { phoneSet, emailSet, recentSet };
+  return { supressSet, phoneSet, emailSet, recentSet };
 }
 
 async function applyMetaTemplateDedup(supabase: any, candidatos: Array<{ telefone: string | null }>, templateName?: string, since?: string) {
