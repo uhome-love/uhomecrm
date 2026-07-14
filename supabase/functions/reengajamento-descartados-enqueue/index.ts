@@ -1102,6 +1102,36 @@ Deno.serve(async (req) => {
     let sent = initialSent, failed = initialFailed, skipped = initialSkipped;
     let stopReason: string | null = null;
     let consecutiveMetaQualityFails = 0;
+
+    // ── MODO TESTE CAUTELOSO: auto-pausa por janela deslizante ──
+    // Ativa quando a run foi criada como modo_teste (persistido em audience_payload).
+    // Regras: >15% falha nos últimos 20 envios OU total de falhas ≥ 20 → pausa e alerta.
+    const runIsModoTeste = !!((bodyAudience as any)?.modo_teste);
+    const MODO_TESTE_WINDOW = 20;
+    const MODO_TESTE_FAIL_RATE = 0.15;
+    const MODO_TESTE_MAX_FAILS = 20;
+    const modoTesteWindow: number[] = []; // 1 = failed, 0 = sent
+    const pushModoTesteOutcome = (isFail: boolean) => {
+      if (!runIsModoTeste) return;
+      modoTesteWindow.push(isFail ? 1 : 0);
+      if (modoTesteWindow.length > MODO_TESTE_WINDOW) modoTesteWindow.shift();
+    };
+    const shouldPauseModoTeste = (): string | null => {
+      if (!runIsModoTeste) return null;
+      if (failed >= MODO_TESTE_MAX_FAILS) {
+        return `Modo teste cauteloso: pausado ao atingir ${failed} falhas totais (limite ${MODO_TESTE_MAX_FAILS}). Revise a saúde do template/base antes de expandir.`;
+      }
+      if (modoTesteWindow.length >= MODO_TESTE_WINDOW) {
+        const failInWindow = modoTesteWindow.reduce((a, b) => a + b, 0);
+        const rate = failInWindow / modoTesteWindow.length;
+        if (rate > MODO_TESTE_FAIL_RATE) {
+          return `Modo teste cauteloso: pausado com ${failInWindow}/${modoTesteWindow.length} falhas nos últimos envios (${(rate * 100).toFixed(0)}% > ${(MODO_TESTE_FAIL_RATE * 100).toFixed(0)}%). Sinal de que a base/template está queimando reputação.`;
+        }
+      }
+      return null;
+    };
+
+
     const failureCategoryCounts: Record<string, number> = {};
 
     const rememberFailureCategory = (raw: string | null | undefined): FailureCategory => {
