@@ -228,7 +228,10 @@ async function readLeadHistory(userClient: any, lead: any) {
     .select("flag_status, empreendimento, stage_id")
     .eq("id", lead.id)
     .maybeSingle();
-  flagStatus = leadFull?.flag_status || "";
+  const rawFlag = leadFull?.flag_status;
+  flagStatus = rawFlag && typeof rawFlag === "object"
+    ? Object.entries(rawFlag).map(([k, v]) => `${k}: ${v}`).join(", ")
+    : (rawFlag || "");
   const empreendimento = leadFull?.empreendimento || lead.empreendimento || "";
   const stageId = leadFull?.stage_id || lead.stage_id;
   if (stageId) {
