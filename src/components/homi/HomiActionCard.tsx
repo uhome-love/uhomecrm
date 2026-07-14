@@ -375,13 +375,13 @@ function PendenciasCard({ result, onPick }: { result: HomiResult; onPick: (text:
 
 function RowAction({ icon, label, onClick, tone }: { icon: React.ReactNode; label: string; onClick: () => void; tone?: "success" }) {
   return (
-    <button onClick={onClick}
-      className={`flex-1 flex items-center justify-center gap-1 text-[10px] font-medium px-1.5 py-1 rounded-md border transition-all ${
+    <button onClick={onClick} title={label} aria-label={label}
+      className={`flex-1 flex items-center justify-center gap-1 text-[10px] font-medium px-1 py-1 rounded-md border transition-all ${
         tone === "success"
           ? "border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10"
           : "border-border text-muted-foreground hover:bg-accent/60 hover:text-foreground"
       }`}>
-      {icon}<span className="hidden xs:inline">{label}</span>
+      {icon}<span>{label}</span>
     </button>
   );
 }
