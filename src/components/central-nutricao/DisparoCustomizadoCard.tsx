@@ -620,7 +620,40 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
 
               {/* ─── MENSAGEM ─── */}
               <TabsContent value="mensagem" className="space-y-3 pt-3">
+                {canal === "meta" && (
+                  <div className={cn(
+                    "rounded-md border p-2.5 flex items-start gap-2.5 text-xs",
+                    modoTeste ? "bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-800" : "bg-muted/40 border-muted"
+                  )}>
+                    <input
+                      type="checkbox"
+                      id="modo-teste-toggle"
+                      checked={modoTeste}
+                      onChange={(e) => setModoTeste(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-input"
+                    />
+                    <label htmlFor="modo-teste-toggle" className="flex-1 cursor-pointer leading-relaxed">
+                      <span className="font-medium flex items-center gap-1.5">
+                        🧪 Modo teste cauteloso
+                        {modoTeste && <Badge variant="outline" className="text-[9px] bg-amber-100 border-amber-300">ativo</Badge>}
+                      </span>
+                      <span className="text-muted-foreground block mt-0.5">
+                        Dispara para uma amostra pequena (5%, mín 50 · máx 300) sorteada aleatoriamente e{" "}
+                        <strong>ignora apenas a supressão de "Recebeu e/ou leu"</strong> (30d cooldown) —
+                        bloqueios da Meta (131049/131050/131026) e respostas NÃO continuam intocáveis. Auto-pausa
+                        se &gt;15% falharem na janela de 20 envios ou totalizar 20 falhas.
+                      </span>
+                      {modoTeste && preview && preview.count > 0 && (
+                        <span className="block mt-1.5 text-amber-900 dark:text-amber-200 font-medium">
+                          → ~{Math.min(300, Math.max(50, Math.ceil(preview.count * 0.05))).toLocaleString("pt-BR")} números
+                          de {preview.count.toLocaleString("pt-BR")} elegíveis serão testados.
+                        </span>
+                      )}
+                    </label>
+                  </div>
+                )}
                 {canal === "meta" ? (
+
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <Label className="text-xs">Template Meta aprovado</Label>
