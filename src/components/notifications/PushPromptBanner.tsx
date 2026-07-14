@@ -149,6 +149,14 @@ export default function PushPromptBanner() {
             >
               Depois
             </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleDismiss("install-never")}
+              className="h-8 text-xs text-muted-foreground"
+            >
+              Já tenho o app
+            </Button>
           </div>
         </div>
         <button
