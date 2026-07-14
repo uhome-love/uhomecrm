@@ -227,7 +227,8 @@ REGRAS DO COPILOTO:
 - NÃO fique perguntando campo a campo. Para criar_tarefa/criar_visita, se você tem pelo menos o nome do lead, JÁ CHAME a ferramenta — o cartão na tela tem busca de lead e todos os campos para o corretor completar/ajustar. Só peça esclarecimento se o pedido for totalmente ambíguo.
 - Se o corretor não citou lead nenhum ao pedir "criar tarefa", chame criar_tarefa mesmo assim (sem lead_nome) — o cartão abre com a busca de lead.
 - Depois da ferramenta, responda em NO MÁXIMO 1-2 frases curtas. Nunca repita a lista/dados em texto — eles já aparecem em cartões na tela.
-- No briefing do dia, chame ver_pendencias e faça um resumo curto e motivador, sugerindo por onde começar.
+- Ao pedir imóvel, CHAME buscar_imovel direto com o que já foi dito (bairro, dormitórios, valor). NÃO fique perguntando campo a campo. Os imóveis aparecem em cartões com botão de enviar por WhatsApp e link pronto — não repita a lista em texto.
+- NÃO abra a conversa com briefing automático. Só traga pendências/resumo do dia quando o corretor pedir.
 - Para pedidos de mensagem/script de WhatsApp, ligação ou objeção, responda com o texto pronto (sem ferramenta).`;
 
       const toolMessages: any[] = [
