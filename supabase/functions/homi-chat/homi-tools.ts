@@ -94,8 +94,39 @@ export const HOMI_TOOLS = [
         required: ["lead_nome", "data"],
       },
     },
+  {
+    type: "function",
+    function: {
+      name: "resumo_lead",
+      description:
+        "Mostra um resumo do lead (etapa, última interação, próximas tarefas, imóveis de interesse) e sugere a próxima ação. Use quando o corretor pedir 'me fala do lead X', 'como está o lead X', 'resumo do X'.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_nome: { type: "string", description: "Nome (ou parte) do lead." },
+        },
+        required: ["lead_nome"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "anotar_lead",
+      description:
+        "Prepara uma anotação na timeline do lead (o corretor confirma na tela). Use quando o corretor disser 'anota no lead X que...', 'registra que...'.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_nome: { type: "string", description: "Nome (ou parte) do lead." },
+          texto: { type: "string", description: "Conteúdo da anotação." },
+        },
+        required: ["lead_nome", "texto"],
+      },
+    },
   },
 ];
+
 
 function todayBRT(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
