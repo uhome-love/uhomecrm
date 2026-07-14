@@ -533,6 +533,11 @@ Deno.serve(async (req) => {
     let supressosRemovidos = 0;
     let pipelineAtivosRemovidos = 0;
     let frequenciaRemovidos = 0;
+    let telefonesInvalidosRemovidos = 0;
+    let removidosPorTemplateRecente = 0;
+    let removidosPorEventoRecente = 0;
+    let duplicadosFilaRemovidos = 0;
+    let totalBrutoCapturado: number | null = null;
     let totalAlvo = 0;
     let initialSent = 0;
     let initialFailed = 0;
@@ -599,7 +604,11 @@ Deno.serve(async (req) => {
         }
         const { data: evs } = await evQ;
         const enviadosSet = new Set((evs || []).map((e: any) => e.lead_id));
-        if (dedupMode === "exclude_sent") return cand.filter((c) => !enviadosSet.has(c.id));
+        if (dedupMode === "exclude_sent") {
+          const filtered = cand.filter((c) => !enviadosSet.has(c.id));
+          removidosPorEventoRecente += cand.length - filtered.length;
+          return filtered;
+        }
         if (dedupMode === "only_sent_before") return cand.filter((c) => enviadosSet.has(c.id));
         return cand;
       };
@@ -629,6 +638,7 @@ Deno.serve(async (req) => {
         if (phonesSent.size === 0) return cand;
         const before = cand.length;
         const filtered = cand.filter((lead) => !phonesSent.has(last8(lead.telefone)));
+        removidosPorTemplateRecente += before - filtered.length;
         console.log(`Dedup Meta template ${metaTemplate}: ${before - filtered.length} oferta ativa removidos por tentativa recente`);
         return filtered;
       };
@@ -682,6 +692,7 @@ Deno.serve(async (req) => {
           off += PAGE;
         }
         const cand = rows.map((l: any) => ({ id: l.id as string, nome: l.nome, telefone: l.telefone, email: l.email, ref: "oferta_ativa_lead" as const }));
+        totalBrutoCapturado = Math.max(totalBrutoCapturado || 0, rows.length);
 
         const byEventos = await dedupViaEventos(cand, `oferta_ativa:${listaIds.slice().sort().join(",")}`);
         return dedupOfertaViaMetaTemplate(byEventos);
@@ -748,6 +759,15 @@ Deno.serve(async (req) => {
         .limit(effectiveLimit);
       if (leadsErr) throw leadsErr;
       leads = (legacyLeads || []).map((l: any) => ({ id: l.id, nome: l.nome, telefone: l.telefone, email: l.email, ref: "pipeline_lead" }));
+    }
+
+    if (!bodyRunId && isCustomAudience && leads.length > 0) {
+      const before = leads.length;
+      leads = leads.filter((l) => !!normalizePhone(l.telefone || ""));
+      telefonesInvalidosRemovidos = before - leads.length;
+      if (telefonesInvalidosRemovidos > 0) {
+        console.log(`Telefones inválidos removidos antes da fila: ${telefonesInvalidosRemovidos} de ${before}`);
+      }
     }
 
     // ── Supressão automática (só Meta): remove números que já falharam por
@@ -852,6 +872,23 @@ Deno.serve(async (req) => {
 
     totalAlvo = leads.length;
 
+    const buildAudienceAudit = (queueTotal?: number) => {
+      const existingAudit = bodyAudience?.__audit && typeof bodyAudience.__audit === "object" ? bodyAudience.__audit : null;
+      if (existingAudit) return { ...existingAudit, enfileirados: queueTotal ?? existingAudit.enfileirados ?? totalAlvo };
+      return {
+        total_bruto: totalBrutoCapturado ?? (totalAlvo + supressosRemovidos + pipelineAtivosRemovidos + frequenciaRemovidos + telefonesInvalidosRemovidos + removidosPorTemplateRecente + removidosPorEventoRecente),
+        removidos_evento_recente: removidosPorEventoRecente,
+        removidos_template_recente: removidosPorTemplateRecente,
+        telefones_invalidos: telefonesInvalidosRemovidos,
+        removidos_pipeline_ativo: pipelineAtivosRemovidos,
+        removidos_frequencia: frequenciaRemovidos,
+        suprimidos: supressosRemovidos,
+        duplicados_fila: duplicadosFilaRemovidos,
+        elegiveis_calculados: totalAlvo,
+        enfileirados: queueTotal ?? totalAlvo,
+      };
+    };
+
     if (bodyRunId) {
       runId = bodyRunId;
       // IMPORTANTE: não resetar cancel_requested aqui. Se o usuário clicou "Parar"
@@ -905,12 +942,19 @@ Deno.serve(async (req) => {
             };
           })
           .filter(Boolean);
+        duplicadosFilaRemovidos = Math.max(0, totalAlvo - queueRows.length);
         for (let i = 0; i < queueRows.length; i += 500) {
           const { error: queueErr } = await supabase
             .from("reengajamento_dispatch_queue")
             .insert(queueRows.slice(i, i + 500) as any);
           if (queueErr) throw queueErr;
         }
+        totalAlvo = queueRows.length;
+        await updateRun({
+          total_alvo: totalAlvo,
+          audience_payload: isCustomAudience ? { ...bodyAudience, __audit: buildAudienceAudit(queueRows.length) } : bodyAudience,
+          motivo_parada: `Fila criada: ${queueRows.length} números enfileirados de ${buildAudienceAudit(queueRows.length).total_bruto} registros brutos.`,
+        } as any);
       }
     }
 
@@ -945,11 +989,15 @@ Deno.serve(async (req) => {
         const finalSent = sentCount || 0;
         const finalSkipped = skippedCount || 0;
         const finalStatus = finalSent === 0 && totalAlvo > 0 ? "no_send" : "completed";
+        const audit = buildAudienceAudit(totalAlvo);
+        const auditTail = isCustomAudience
+          ? ` Funil: ${audit.total_bruto} brutos → ${audit.enfileirados} enfileirados (${audit.telefones_invalidos} inválidos, ${audit.suprimidos} supressão Meta, ${audit.removidos_frequencia} frequência, ${audit.removidos_pipeline_ativo} pipeline ativo, ${audit.removidos_template_recente} template recente).`
+          : "";
         const finalReason = finalStatus === "no_send"
-          ? `Fila encerrada sem envio real via ${canal}: ${finalFailed} falhas e ${finalSkipped} ignorados de ${totalAlvo}. Motivo predominante: ${finalFailed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.`
-          : `Fila concluída via ${canal} (${finalSent}/${totalAlvo} enviados${finalFailed > 0 ? `, ${finalFailed} falhas` : ""})`;
+          ? `Fila encerrada sem envio real via ${canal}: ${finalFailed} falhas e ${finalSkipped} ignorados de ${totalAlvo}. Motivo predominante: ${finalFailed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.${auditTail}`
+          : `Fila concluída via ${canal} (${finalSent}/${totalAlvo} enviados${finalFailed > 0 ? `, ${finalFailed} falhas` : ""}).${auditTail}`;
         await updateRun({ status: finalStatus, finished_at: new Date().toISOString(), motivo_parada: finalReason, enviados: finalSent, falhas: finalFailed, ignorados: finalSkipped });
-        return new Response(JSON.stringify({ run_id: runId, sent: finalSent, failed: finalFailed, skipped: finalSkipped, total: totalAlvo, reason: finalStatus, canal, queue_done: true }), {
+        return new Response(JSON.stringify({ run_id: runId, sent: finalSent, failed: finalFailed, skipped: finalSkipped, total: totalAlvo, queued: totalAlvo, audit, reason: finalStatus, canal, queue_done: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -1645,10 +1693,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    const finalAudit = buildAudienceAudit(totalAlvo);
+    const finalAuditTail = isCustomAudience
+      ? ` Funil: ${finalAudit.total_bruto} brutos → ${finalAudit.enfileirados} enfileirados (${finalAudit.telefones_invalidos} inválidos, ${finalAudit.suprimidos} supressão Meta, ${finalAudit.removidos_frequencia} frequência, ${finalAudit.removidos_pipeline_ativo} pipeline ativo, ${finalAudit.removidos_template_recente} template recente).`
+      : "";
     const finalStatus = sent === 0 && totalAlvo > 0 ? "no_send" : "completed";
     const finalReason = finalStatus === "no_send"
-      ? `Disparo encerrado sem envio real via ${canal}: ${failed} falhas e ${skipped} ignorados de ${totalAlvo}. Motivo predominante: ${failed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.`
-      : `Disparo concluído via ${canal} (${sent}/${totalAlvo} enviados${failed > 0 ? `, ${failed} falhas` : ""})`;
+      ? `Disparo encerrado sem envio real via ${canal}: ${failed} falhas e ${skipped} ignorados de ${totalAlvo}. Motivo predominante: ${failed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.${finalAuditTail}`
+      : `Disparo concluído via ${canal} (${sent}/${totalAlvo} enviados${failed > 0 ? `, ${failed} falhas` : ""}).${finalAuditTail}`;
 
     await updateRun({
       status: finalStatus,
@@ -1657,7 +1709,7 @@ Deno.serve(async (req) => {
       enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20),
     });
 
-    return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: finalStatus, canal }), {
+    return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, queued: totalAlvo, audit: finalAudit, reason: finalStatus, canal }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

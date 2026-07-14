@@ -32,6 +32,7 @@ interface PreviewFunil {
   inativados_definitivos?: number;
   sem_telefone?: number;
   arquivados?: number;
+  suprimidos_meta?: number;
   em_cooldown?: number;
   cooldown_dias?: number;
   elegiveis?: number;
@@ -281,7 +282,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       const { data, error } = await supabase.functions.invoke("reengajamento-descartados-enqueue", { body });
       if (error) throw new Error(await getEdgeErrorMessage(error));
 
-      const resp = data as { ok?: boolean; reason?: string; motivo?: string; message?: string; error?: string; recoverable?: boolean; run_id?: string; active_run_id?: string; sent?: number; failed?: number; skipped?: number; total?: number } | null;
+      const resp = data as { ok?: boolean; reason?: string; motivo?: string; message?: string; error?: string; recoverable?: boolean; run_id?: string; active_run_id?: string; sent?: number; failed?: number; skipped?: number; total?: number; queued?: number; pending?: number; audit?: { total_bruto?: number; enfileirados?: number } } | null;
       const reason = String(resp?.reason || "");
       const backendMessage = resp?.message || resp?.motivo || resp?.error;
       if (reason === "no_leads") {
@@ -311,7 +312,9 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         onFired?.();
         return;
       }
-      toast.success(`🚀 Disparo iniciado para ${preview.count} leads`);
+      const queued = resp?.queued ?? resp?.total ?? resp?.audit?.enfileirados ?? preview.count;
+      const bruto = resp?.audit?.total_bruto;
+      toast.success(`🚀 Fila criada com ${Number(queued || 0).toLocaleString("pt-BR")} número(s)${bruto ? ` de ${Number(bruto).toLocaleString("pt-BR")} registros brutos` : ""}. O disparo continuará em micro-lotes.`);
       setPreview(null);
       onFired?.();
     } catch (e) {
@@ -790,6 +793,12 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                     <span className="text-right font-mono text-rose-600">−{preview.funil.telefones_invalidos}</span>
                   </>
                 )}
+                {typeof preview.funil.suprimidos_meta === "number" && preview.funil.suprimidos_meta > 0 && (
+                  <>
+                    <span className="text-muted-foreground">— Supressão Meta ativa</span>
+                    <span className="text-right font-mono text-amber-600">−{preview.funil.suprimidos_meta}</span>
+                  </>
+                )}
                 {typeof preview.funil.removidos_pipeline_ativo === "number" && preview.funil.removidos_pipeline_ativo > 0 && (
                   <>
                     <span className="text-muted-foreground">— Já ativos no pipeline</span>
@@ -858,6 +867,12 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                   <>
                     <span className="text-muted-foreground">— Telefones inválidos</span>
                     <span className="text-right font-mono text-rose-600">−{preview.funil.telefones_invalidos}</span>
+                  </>
+                )}
+                {typeof preview.funil.suprimidos_meta === "number" && preview.funil.suprimidos_meta > 0 && (
+                  <>
+                    <span className="text-muted-foreground">— Supressão Meta ativa</span>
+                    <span className="text-right font-mono text-amber-600">−{preview.funil.suprimidos_meta}</span>
                   </>
                 )}
                 {typeof preview.funil.removidos_pipeline_ativo === "number" && preview.funil.removidos_pipeline_ativo > 0 && (
