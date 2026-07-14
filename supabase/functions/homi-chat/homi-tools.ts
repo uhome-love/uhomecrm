@@ -487,6 +487,153 @@ export async function executeHomiTool(
       };
     }
 
+    if (name === "contexto_lead") {
+      const r = await resolveLead(userClient, uid, args.lead_nome);
+      if ((r as any).none) return { modelResult: `Não achei nenhum lead com "${args.lead_nome}". Peça ao corretor para conferir o nome.` };
+      if ((r as any).candidates) {
+        return {
+          result: { tipo: "escolher_lead", intent: "contexto_lead", candidates: (r as any).candidates, args },
+          modelResult: `Achei vários leads com "${args.lead_nome}". A lista de escolha já apareceu. Peça para o corretor selecionar qual.`,
+        };
+      }
+      const lead = (r as any).lead;
+      const hist = await readLeadHistory(userClient, lead);
+
+      const out = {
+        tipo: "contexto_lead",
+        lead: { id: lead.id, nome: lead.nome, telefone: lead.telefone, empreendimento: lead.empreendimento, stage_nome: hist.stageNome, flag_status: hist.flagStatus },
+        ultima_interacao: hist.ultima,
+        n_anotacoes: hist.anotacoes.length,
+      };
+
+      const semHistorico = hist.atividades.length === 0 && hist.anotacoes.length === 0 && !hist.stageNome;
+      const contextoTxt = [
+        `Etapa: ${hist.stageNome || "—"}${hist.flagStatus ? " (" + hist.flagStatus + ")" : ""}`,
+        hist.empreendimento ? `Empreendimento: ${hist.empreendimento}` : "",
+        hist.atividades.length ? `Timeline (mais recente primeiro):\n${hist.atividades.map((a: any) => `- ${a.data || ""} ${a.titulo || a.tipo || ""}${a.descricao ? ": " + a.descricao : ""}`).join("\n")}` : "Sem atividades registradas.",
+        hist.anotacoes.length ? `Anotações do corretor:\n${hist.anotacoes.map((n: any) => `- ${n.conteudo}`).join("\n")}` : "",
+      ].filter(Boolean).join("\n");
+
+      return {
+        result: out,
+        modelResult: semHistorico
+          ? `O lead ${lead.nome} não tem histórico. Faça 1 pergunta rápida para entender o momento antes de escrever.`
+          : `HISTÓRICO DE ${lead.nome}:\n${contextoTxt}\n\nCom base nisso: (1) faça um mini-resumo de 1 linha do momento do lead; (2) JÁ escreva a mensagem de WhatsApp pronta (máx 3 linhas, natural, termina com pergunta). NÃO pergunte o momento do funil — você já tem o contexto.`,
+      };
+    }
+
+    if (name === "registrar_resultado") {
+      const r = await resolveLead(userClient, uid, args.lead_nome);
+      if ((r as any).none) return { modelResult: `Não achei nenhum lead com "${args.lead_nome}".` };
+      if ((r as any).candidates) {
+        return {
+          result: { tipo: "escolher_lead", intent: "registrar_resultado", candidates: (r as any).candidates, args },
+          modelResult: `Achei vários leads com "${args.lead_nome}". Peça para o corretor selecionar qual.`,
+        };
+      }
+      const lead = (r as any).lead;
+      const RES: Record<string, { label: string; tarefa: string; tipoTarefa: string }> = {
+        nao_atendeu: { label: "☎️ Não atendeu", tarefa: "Tentar ligar de novo", tipoTarefa: "ligar" },
+        atendeu_sem_interesse: { label: "🙅 Sem interesse", tarefa: "Follow-up de reengajamento", tipoTarefa: "follow_up" },
+        atendeu_interessado: { label: "🔥 Interessado", tarefa: "Marcar visita", tipoTarefa: "marcar_visita" },
+        pediu_retorno: { label: "🔁 Pediu retorno", tarefa: "Retornar contato", tipoTarefa: "ligar" },
+        agendou_visita: { label: "🏠 Agendou visita", tarefa: "Confirmar visita", tipoTarefa: "marcar_visita" },
+      };
+      const meta = RES[args.resultado] || RES.pediu_retorno;
+      const action = {
+        tipo: "registrar_resultado",
+        lead_id: lead.id,
+        lead_nome: lead.nome,
+        resultado: args.resultado,
+        resultado_label: meta.label,
+        detalhe: args.detalhe || "",
+        proxima_tarefa: { tipo: meta.tipoTarefa, titulo: meta.tarefa },
+      };
+      return {
+        action,
+        modelResult: `Resultado preparado para ${lead.nome} (${meta.label}). O cartão de confirmação apareceu com a próxima tarefa sugerida. Diga 1 frase para o corretor confirmar.`,
+      };
+    }
+
+    if (name === "leads_esfriando") {
+      const dias = typeof args.dias === "number" && args.dias > 0 ? args.dias : 5;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - dias);
+      const cutoffISO = cutoff.toISOString();
+      const { data } = await userClient
+        .from("pipeline_leads")
+        .select("id, nome, telefone, empreendimento, ultima_acao_at, stage_id")
+        .eq("corretor_id", uid)
+        .eq("arquivado", false)
+        .or(`ultima_acao_at.lt.${cutoffISO},ultima_acao_at.is.null`)
+        .order("ultima_acao_at", { ascending: true, nullsFirst: true })
+        .limit(15);
+      const rows = (data || []).map((l: any) => {
+        const dt = l.ultima_acao_at ? new Date(l.ultima_acao_at) : null;
+        const diasParado = dt ? Math.floor((Date.now() - dt.getTime()) / 86400000) : null;
+        return { id: l.id, nome: l.nome, empreendimento: l.empreendimento, dias_parado: diasParado };
+      });
+      return {
+        result: { tipo: "leads_esfriando", dias, leads: rows },
+        modelResult: rows.length
+          ? `${rows.length} leads esfriando (sem contato há ${dias}+ dias) já exibidos com ações de reengajar. Comente em 1 frase por onde começar.`
+          : `Nenhum lead esfriando há mais de ${dias} dias. Parabenize o corretor pela cadência em 1 frase.`,
+      };
+    }
+
+    if (name === "preparar_visita") {
+      const today = todayBRT();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+
+      let lead: any = null;
+      let visitaInfo = "";
+      if (args.lead_nome) {
+        const r = await resolveLead(userClient, uid, args.lead_nome);
+        if ((r as any).lead) lead = (r as any).lead;
+        else if ((r as any).candidates) {
+          return {
+            result: { tipo: "escolher_lead", intent: "preparar_visita", candidates: (r as any).candidates, args },
+            modelResult: `Achei vários leads com "${args.lead_nome}". Peça para o corretor selecionar qual.`,
+          };
+        } else return { modelResult: `Não achei nenhum lead com "${args.lead_nome}".` };
+      } else {
+        const { data: visitas } = await userClient
+          .from("visitas")
+          .select("nome_cliente, empreendimento, data_visita, hora_visita, local_visita, pipeline_lead_id")
+          .eq("corretor_id", uid)
+          .in("data_visita", [today, tomorrowStr])
+          .order("data_visita", { ascending: true })
+          .limit(1);
+        const v = visitas?.[0];
+        if (!v) return { modelResult: "Não há visitas agendadas para hoje ou amanhã. Peça ao corretor o nome do lead para preparar." };
+        visitaInfo = `Visita: ${v.data_visita}${v.hora_visita ? " " + v.hora_visita.slice(0, 5) : ""}${v.empreendimento ? " · " + v.empreendimento : ""}${v.local_visita ? " · " + v.local_visita : ""}`;
+        if (v.pipeline_lead_id) {
+          const { data: ld } = await userClient.from("pipeline_leads").select("id, nome, telefone, empreendimento, stage_id").eq("id", v.pipeline_lead_id).maybeSingle();
+          lead = ld;
+        } else {
+          lead = { nome: v.nome_cliente, empreendimento: v.empreendimento };
+        }
+      }
+
+      let contextoTxt = "";
+      if (lead?.id) {
+        const hist = await readLeadHistory(userClient, lead);
+        contextoTxt = [
+          `Etapa: ${hist.stageNome || "—"}`,
+          hist.empreendimento ? `Empreendimento: ${hist.empreendimento}` : "",
+          hist.atividades.length ? `Últimas interações:\n${hist.atividades.slice(0, 5).map((a: any) => `- ${a.data || ""} ${a.titulo || a.tipo || ""}`).join("\n")}` : "",
+          hist.anotacoes.length ? `Anotações:\n${hist.anotacoes.map((n: any) => `- ${n.conteudo}`).join("\n")}` : "",
+        ].filter(Boolean).join("\n");
+      }
+
+      return {
+        result: { tipo: "preparar_visita", lead: { id: lead?.id, nome: lead?.nome, empreendimento: lead?.empreendimento } },
+        modelResult: `BRIEFING PRÉ-VISITA de ${lead?.nome || "cliente"}.\n${visitaInfo}\n${contextoTxt}\n\nMonte um briefing curto e prático: (1) quem é o lead e momento; (2) imóvel/empreendimento de interesse; (3) 2-3 argumentos de venda fortes desse empreendimento (use o conhecimento da base). Formato objetivo em tópicos.`,
+      };
+    }
+
     return { modelResult: `Ferramenta desconhecida: ${name}` };
   } catch (e) {
     console.error("[executeHomiTool] error:", name, e);
