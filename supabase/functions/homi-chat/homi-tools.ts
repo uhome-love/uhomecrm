@@ -189,6 +189,18 @@ export const HOMI_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "meu_dia",
+      description:
+        "Monta o resumo do dia do corretor em 3 frentes: (1) AGORA — tarefas atrasadas e de hoje; (2) VISITAS de hoje; (3) leads ESFRIANDO (sem contato há 5+ dias). Use quando o corretor perguntar 'meu dia', 'por onde começo', 'o que faço agora', 'resumo do dia', 'me organiza' ou clicar no botão Meu dia.",
+      parameters: {
+        type: "object",
+        properties: {},
+      },
+    },
+  },
 ];
 
 
