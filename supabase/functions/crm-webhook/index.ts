@@ -341,7 +341,6 @@ Deno.serve(async (req) => {
         }
       } else {
         // ── NEW LEAD: insert WITHOUT corretor, let trigger handle roleta ──
-        const telefoneNorm = leadTelefone.replace(/\D/g, '').slice(-11)
         const obsParts = [`[Site uhome.com.br] ${tipo}${imovelTitulo ? ` - ${imovelTitulo}` : ''}`]
         if (imovelCodigo || imovelSlug) obsParts.push(`Cód/Slug: ${imovelCodigo || imovelSlug}`)
         if (imovelUrl) obsParts.push(`Link: ${imovelUrl}`)
