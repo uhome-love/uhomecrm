@@ -1,50 +1,92 @@
-## Diagnóstico confirmado
+## Problema confirmado
 
-Você está certo: a base selecionada tinha volume para continuar.
+Existem 2 leads com o mesmo número (51) 99687-5848 no pipeline:
 
-Na campanha mais recente:
-- As listas selecionadas tinham **2.149 linhas brutas**.
-- Depois de filtros legítimos de segurança, ainda sobrariam cerca de **745–763 números elegíveis**.
-- Porém o motor criou uma fila/run com apenas **73 alvos** e concluiu com **48 enviados + 25 ignorados por telefone inválido**.
+| Lead | Corretor | Origem | Telefone normalizado | Criado |
+|---|---|---|---|---|
+| Eduardo Russo (Casa Tua) | William Ferreira | Oferta Ativa | `5551996875848` (13 díg.) | 20/05/2026 |
+| Eduardo (Cobertura P. Alegre) | Eliézer Clós | site_uhome | `51996875848` (11 díg.) | 14/07/2026 |
 
-Ou seja: não foi simplesmente “acabou a fila”. Existe uma falha de contrato entre o cálculo/preview e o motor real de disparo. O preview e a função de envio não estão chegando no mesmo público final, e o motor encerra como se tivesse processado tudo.
+**Causa raiz:** a função `normalize_telefone` do banco só remove não-dígitos, **não retira o DDI 55**. Quando a Oferta Ativa gravou `+5551996875848`, ficou com 13 dígitos; o site normaliza com `slice(-11)` e ficou com 11. O dedup do `crm-webhook` faz `.eq('telefone_normalizado', '51996875848')` — comparação exata — então não encontra o registro de 13 dígitos e cria um lead novo.
+
+A auditoria do banco mostra que isso não é caso isolado:
+- 4.886 leads com 11 dígitos
+- 2.511 leads com 13 dígitos (DDI colado)
+- 599 com 10, além de outros comprimentos residuais
+
+Qualquer lead cadastrado por uma fonte "13 díg." vira duplicado quando reentra por uma fonte "11 díg." (e vice-versa). Foi o que aconteceu com o Eduardo.
 
 ## Correção proposta
 
-1. **Unificar o cálculo de público do preview e do disparo**
-   - Fazer a função de disparo usar a mesma lógica de paginação, deduplicação, telefone válido, frequência, pipeline ativo e template já enviado usada no preview.
-   - Eliminar divergência onde o preview mostra centenas, mas o envio cria fila pequena.
+### 1. Padronizar `telefone_normalizado` para 11 dígitos (BR)
 
-2. **Persistir auditoria completa do funil no run**
-   - Gravar no `audience_payload`/motivo do run:
-     - total bruto nas listas;
-     - removidos por duplicidade;
-     - removidos por telefone inválido;
-     - removidos por marketing recente;
-     - removidos por pipeline ativo;
-     - removidos por template já enviado;
-     - total real enfileirado.
-   - Assim, quando parar, a página mostra exatamente por quê.
+Migration:
+- Reescrever `public.normalize_telefone(raw text)` para: remover não-dígitos → se começar com `55` e tiver 12 ou 13 dígitos, retirar o `55` → retornar como veio (10 ou 11 díg.).
+- Backfill: `UPDATE pipeline_leads SET telefone_normalizado = normalize_telefone(telefone)` (o trigger `trg_normalize_phone` recalcula em novos writes).
+- Aplicar a mesma normalização em `oferta_ativa_leads`, `leads`, `leads_backup` (colunas equivalentes) para manter consistência entre módulos que também deduplicam por telefone.
+- Criar índice `CREATE INDEX IF NOT EXISTS idx_pipeline_leads_tel_norm ON pipeline_leads (telefone_normalizado)` (se ainda não existir) para acelerar dedup.
 
-3. **Corrigir o encerramento enganoso**
-   - Se a base esperada era maior e a fila criada ficou muito menor, não finalizar como “concluído” simples.
-   - Exibir: “Processou X de Y; Y foi reduzido por filtros A/B/C” ou “erro de construção de fila”.
+### 2. Deduplicar de forma resiliente no `crm-webhook`
 
-4. **Fortalecer a fila para bases grandes**
-   - Garantir paginação completa acima de 1.000 registros.
-   - Criar a fila inteira antes de iniciar o envio.
-   - Manter micro-lotes automáticos, mas com verificação: se ainda há `pending`, continuar; se a continuação falhar, o banner/retomada reativa o mesmo run.
+Em `supabase/functions/crm-webhook/index.ts`:
+- Trocar o dedup exato por uma comparação por sufixo: buscar leads onde `telefone_normalizado` termina com os últimos 10-11 dígitos do telefone recebido (`.ilike('%<sufixo>')` ou RPC dedicado). Isso resolve o problema mesmo se sobrar algum resíduo com DDI.
+- Se houver mais de um match, pegar o **mais recente ativo** (não arquivado) e logar `requer_revisao_dedup=true` para revisão manual.
+- Se o lead existente já tem corretor, **NÃO mover para "Novo Lead"** nem trocar corretor. Apenas:
+  - Registrar o novo interesse em `lead_imoveis_indicados` (imóvel novo) e/ou apender uma linha em `observacoes` com data/imóvel/página.
+  - Manter `stage_id`, `corretor_id` e `aceite_status` atuais.
+  - Disparar notificação para o corretor atual: "Novo interesse do lead X: <imóvel> — via site".
+- Manter o fluxo atual de criação/roleta apenas quando não houver match.
 
-5. **Corrigir retomada e status local**
-   - Tratar continuação de run manual como autorizada, mesmo com `reengajamento_config.enabled=false`, sem depender de estado ambíguo.
-   - Não permitir que um run com pendentes fique invisível ou pare sem motivo.
+### 3. Aplicar a mesma dedup em outras entradas
 
-6. **Ajustar a página de Reengajamento**
-   - Depois de iniciar, mostrar “fila criada com N números” em vez de só “disparo iniciado”.
-   - No histórico, mostrar o funil do disparo e o motivo real da parada.
-   - Se a base tiver 700 elegíveis e só 73 entrarem na fila, a UI deve acusar divergência imediatamente.
+Auditar e alinhar `receive-landing-lead`, `receive-rdstation-lead`, `receive-imovelweb-lead`, `receive-tiktok-lead`, `receive-meta-lead` para todos usarem a mesma função utilitária de dedup por sufixo, evitando repetir o bug em outros canais.
 
-7. **Validação**
-   - Testar com a mesma seleção de listas do run recente.
-   - Confirmar que a fila criada fica próxima dos ~745 elegíveis esperados, não 73.
-   - Confirmar que o disparo continua em micro-lotes até esgotar fila, pausar por qualidade Meta ou ser parado manualmente.
+### 4. Merge dos dois leads existentes do Eduardo
+
+Ação pontual (SQL manual, com aprovação):
+- Manter o registro do William (`1cbb0408…`) como canônico.
+- Copiar o interesse do lead do Eliézer (`180b6fde…`) para `lead_imoveis_indicados` do lead canônico e apender em `observacoes` a linha "[Site uhome.com.br] Interesse novo: Cobertura Residencial 3Q Porto Alegre (14/07/2026)".
+- Inativar/arquivar o lead do Eliézer com `motivo_descarte='duplicado_merge'` para sair do board dele.
+- Disparar notificação para o William avisando do novo interesse.
+
+### 5. Validação
+
+- Recontar `SELECT length(telefone_normalizado), count(*) …` após backfill — deve zerar as faixas 12/13/14+.
+- Simular payload do site com o telefone `+5551996875848` e confirmar que o webhook retorna `is_existing=true` e não cria novo lead.
+- Conferir no /pipeline do William que aparece o novo interesse; conferir no /pipeline do Eliézer que o lead sumiu; conferir notificação recebida.
+- Rodar linter e checar que nenhum outro receive-* mantém dedup exato.
+
+## Detalhes técnicos
+
+Assinatura final da função:
+
+```sql
+CREATE OR REPLACE FUNCTION public.normalize_telefone(raw text)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$
+  WITH d AS (SELECT regexp_replace(coalesce(raw,''), '\D', '', 'g') AS x)
+  SELECT CASE
+    WHEN x = '' THEN NULL
+    WHEN length(x) IN (12,13) AND left(x,2)='55' THEN substr(x,3)
+    ELSE x
+  END FROM d;
+$$;
+```
+
+Helper para dedup (Deno):
+```ts
+const suf = norm.slice(-10); // 10 díg cobre 10 e 11
+const { data } = await supabase
+  .from('pipeline_leads')
+  .select('id, corretor_id, stage_id, aceite_status, arquivado')
+  .ilike('telefone_normalizado', `%${suf}`)
+  .eq('arquivado', false)
+  .order('created_at', { ascending: false })
+  .limit(1)
+  .maybeSingle();
+```
+
+## Fora do escopo
+
+- Não vou reescrever a UI do pipeline nem os módulos de Oferta Ativa/Nutrição.
+- Não vou alterar regras de roleta/segmentação.
+- Não vou mexer em fluxos de reengajamento.

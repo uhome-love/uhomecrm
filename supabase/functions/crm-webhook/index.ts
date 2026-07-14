@@ -240,54 +240,107 @@ Deno.serve(async (req) => {
     let existingCorretorId: string | null = null
 
     if (tipo === 'lead' || tipo === 'agendamento' || tipo === 'captacao') {
-      // ── Dedup by phone ──
-      let existingLead = null
-      if (leadTelefone) {
-        const normalizado = leadTelefone.replace(/\D/g, '').slice(-11)
-        const { data } = await supabase
+      // ── Dedup by phone (suffix-based, tolerates DDI residues) ──
+      let existingLead: {
+        id: string
+        corretor_id: string | null
+        nome: string | null
+        stage_id: string | null
+        aceite_status: string | null
+        observacoes: string | null
+      } | null = null
+      const telefoneNorm = leadTelefone
+        ? (() => {
+            const digits = leadTelefone.replace(/\D/g, '')
+            if ((digits.length === 12 || digits.length === 13) && digits.startsWith('55')) {
+              return digits.slice(2)
+            }
+            return digits
+          })()
+        : ''
+      const dedupSuffix = telefoneNorm.slice(-10)
+      if (dedupSuffix.length >= 8) {
+        const { data: matches } = await supabase
           .from('pipeline_leads')
-          .select('id, corretor_id, nome')
-          .eq('telefone_normalizado', normalizado)
-          .limit(1)
-          .maybeSingle()
-        existingLead = data
+          .select('id, corretor_id, nome, stage_id, aceite_status, observacoes, arquivado, created_at')
+          .ilike('telefone_normalizado', `%${dedupSuffix}`)
+          .neq('aceite_status', 'descartado')
+          .order('created_at', { ascending: false })
+          .limit(5)
+        if (matches && matches.length > 0) {
+          // Prefer non-archived; then lead with corretor assigned; then newest
+          const sorted = [...matches].sort((a, b) => {
+            if (a.arquivado !== b.arquivado) return a.arquivado ? 1 : -1
+            const aHas = a.corretor_id ? 0 : 1
+            const bHas = b.corretor_id ? 0 : 1
+            if (aHas !== bHas) return aHas - bHas
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          })
+          existingLead = sorted[0]
+          if (matches.length > 1) {
+            console.warn(`[crm-webhook] Multiple dedup matches for suffix ${dedupSuffix}: ${matches.map((m) => m.id).join(', ')} — using ${existingLead.id}`)
+          }
+        }
       }
 
       if (existingLead) {
-        // ── EXISTING LEAD: update and notify current corretor ──
+        // ── EXISTING LEAD: preserve ownership, register new interest, notify current corretor ──
         pipelineLeadId = existingLead.id
         isExisting = true
         existingCorretorId = existingLead.corretor_id
 
-        const updateObsParts = [`[Site uhome.com.br] ${tipo} - ${imovelTitulo || 'sem imóvel'} (${new Date().toLocaleDateString('pt-BR')})`]
-        if (imovelCodigo || imovelSlug) updateObsParts.push(`Cód/Slug: ${imovelCodigo || imovelSlug}`)
-        if (imovelUrl) updateObsParts.push(`Link: ${imovelUrl}`)
-        if (paginaUrl) updateObsParts.push(`Página: ${paginaUrl}`)
+        const dateStr = new Date().toLocaleDateString('pt-BR')
+        const newObsLine = [
+          `[Site uhome.com.br] ${tipo} — ${imovelTitulo || 'sem imóvel'} (${dateStr})`,
+          (imovelCodigo || imovelSlug) ? `Cód/Slug: ${imovelCodigo || imovelSlug}` : null,
+          imovelUrl ? `Link: ${imovelUrl}` : null,
+          paginaUrl ? `Página: ${paginaUrl}` : null,
+        ].filter(Boolean).join(' | ')
+        const mergedObs = existingLead.observacoes
+          ? `${existingLead.observacoes}\n${newObsLine}`
+          : newObsLine
 
-        await supabase
-          .from('pipeline_leads')
-          .update({
-            arquivado: false,
-            stage_id: NOVO_LEAD_STAGE_ID,
-            stage_changed_at: new Date().toISOString(),
-            dados_site: record,
-            tipo_acao: tipo,
-            origem: 'site_uhome',
-            origem_detalhe: origemDetalheLabel || origemComponente || `site_${tipo}`,
-            origem_ref: origemRef,
-            imovel_codigo: imovelCodigo || undefined,
-            imovel_url: imovelUrl || undefined,
-            observacoes: updateObsParts.join(' | '),
-            updated_at: new Date().toISOString(),
-            // Fix: set aceite_status based on whether lead already has a corretor
-            aceite_status: existingCorretorId ? 'aceito' : 'pendente_distribuicao',
-          })
-          .eq('id', existingLead.id)
-
-        console.log(`[crm-webhook] Dedup: lead ${existingLead.id} updated, corretor=${existingCorretorId}`)
+        if (existingCorretorId) {
+          // Lead already has an owner — DO NOT reassign, DO NOT move stage.
+          // Append observation only; keep aceite_status, stage_id and corretor untouched.
+          await supabase
+            .from('pipeline_leads')
+            .update({
+              dados_site: record,
+              tipo_acao: tipo,
+              origem_detalhe: origemDetalheLabel || origemComponente || `site_${tipo}`,
+              origem_ref: origemRef,
+              imovel_codigo: imovelCodigo || undefined,
+              imovel_url: imovelUrl || undefined,
+              observacoes: mergedObs,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingLead.id)
+          console.log(`[crm-webhook] Dedup: lead ${existingLead.id} kept with corretor=${existingCorretorId}, new interest appended`)
+        } else {
+          // Lead exists but has no corretor — reactivate as Novo Lead so roleta can distribute
+          await supabase
+            .from('pipeline_leads')
+            .update({
+              arquivado: false,
+              stage_id: NOVO_LEAD_STAGE_ID,
+              stage_changed_at: new Date().toISOString(),
+              dados_site: record,
+              tipo_acao: tipo,
+              origem: 'site_uhome',
+              origem_detalhe: origemDetalheLabel || origemComponente || `site_${tipo}`,
+              origem_ref: origemRef,
+              imovel_codigo: imovelCodigo || undefined,
+              imovel_url: imovelUrl || undefined,
+              observacoes: mergedObs,
+              updated_at: new Date().toISOString(),
+              aceite_status: 'pendente_distribuicao',
+            })
+            .eq('id', existingLead.id)
+          console.log(`[crm-webhook] Dedup: lead ${existingLead.id} reactivated for roleta`)
+        }
       } else {
         // ── NEW LEAD: insert WITHOUT corretor, let trigger handle roleta ──
-        const telefoneNorm = leadTelefone.replace(/\D/g, '').slice(-11)
         const obsParts = [`[Site uhome.com.br] ${tipo}${imovelTitulo ? ` - ${imovelTitulo}` : ''}`]
         if (imovelCodigo || imovelSlug) obsParts.push(`Cód/Slug: ${imovelCodigo || imovelSlug}`)
         if (imovelUrl) obsParts.push(`Link: ${imovelUrl}`)
