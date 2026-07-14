@@ -1540,6 +1540,8 @@ Deno.serve(async (req) => {
           });
           if (!r.ok) {
             failed++;
+            pushModoTesteOutcome(true);
+
             const errMsg = `${lead.nome}: ${r.error}`;
             errs.push(errMsg);
             rememberFailureCategory(r.error || errMsg);
@@ -1629,6 +1631,8 @@ Deno.serve(async (req) => {
           });
           await updateQueueItem(lead, "sent", null);
           sent++;
+          pushModoTesteOutcome(false);
+
 
           // Guarda de qualidade por taxa de entrega — checa cedo e entre continuações
           if (sent % 5 === 0) {
@@ -1655,6 +1659,8 @@ Deno.serve(async (req) => {
             if (isEvolutionSystemicError(result)) {
               const reason = `Evolution indisponível durante o disparo: ${payloadText}`;
               failed++;
+              pushModoTesteOutcome(true);
+
               errs.push(`${lead.nome}: ${payloadText}`);
               rememberFailureCategory(payloadText);
               await insertEvento({
@@ -1683,6 +1689,8 @@ Deno.serve(async (req) => {
               });
             }
             failed++;
+            pushModoTesteOutcome(true);
+
             const errMsg = `${lead.nome}: ${payloadText}`;
             errs.push(errMsg);
             rememberFailureCategory(payloadText);
@@ -1713,6 +1721,8 @@ Deno.serve(async (req) => {
           });
           await updateQueueItem(lead, "sent", null);
           sent++;
+          pushModoTesteOutcome(false);
+
         }
 
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
@@ -1744,6 +1754,8 @@ Deno.serve(async (req) => {
         }
       } catch (e) {
         failed++;
+        pushModoTesteOutcome(true);
+
         const errMsg = `${lead.nome}: ${e instanceof Error ? e.message : String(e)}`;
         errs.push(errMsg);
         rememberFailureCategory(errMsg);
