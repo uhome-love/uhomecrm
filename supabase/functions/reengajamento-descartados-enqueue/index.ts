@@ -989,11 +989,15 @@ Deno.serve(async (req) => {
         const finalSent = sentCount || 0;
         const finalSkipped = skippedCount || 0;
         const finalStatus = finalSent === 0 && totalAlvo > 0 ? "no_send" : "completed";
+        const audit = buildAudienceAudit(totalAlvo);
+        const auditTail = isCustomAudience
+          ? ` Funil: ${audit.total_bruto} brutos → ${audit.enfileirados} enfileirados (${audit.telefones_invalidos} inválidos, ${audit.removidos_frequencia} frequência, ${audit.removidos_pipeline_ativo} pipeline ativo, ${audit.removidos_template_recente} template recente).`
+          : "";
         const finalReason = finalStatus === "no_send"
-          ? `Fila encerrada sem envio real via ${canal}: ${finalFailed} falhas e ${finalSkipped} ignorados de ${totalAlvo}. Motivo predominante: ${finalFailed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.`
-          : `Fila concluída via ${canal} (${finalSent}/${totalAlvo} enviados${finalFailed > 0 ? `, ${finalFailed} falhas` : ""})`;
+          ? `Fila encerrada sem envio real via ${canal}: ${finalFailed} falhas e ${finalSkipped} ignorados de ${totalAlvo}. Motivo predominante: ${finalFailed > 0 ? explainFailureCategory(predominantFailureCategory(), errs[errs.length - 1]) : "leads ignorados por telefone inválido, supressão ou guarda de segurança"}.${auditTail}`
+          : `Fila concluída via ${canal} (${finalSent}/${totalAlvo} enviados${finalFailed > 0 ? `, ${finalFailed} falhas` : ""}).${auditTail}`;
         await updateRun({ status: finalStatus, finished_at: new Date().toISOString(), motivo_parada: finalReason, enviados: finalSent, falhas: finalFailed, ignorados: finalSkipped });
-        return new Response(JSON.stringify({ run_id: runId, sent: finalSent, failed: finalFailed, skipped: finalSkipped, total: totalAlvo, reason: finalStatus, canal, queue_done: true }), {
+        return new Response(JSON.stringify({ run_id: runId, sent: finalSent, failed: finalFailed, skipped: finalSkipped, total: totalAlvo, queued: totalAlvo, audit, reason: finalStatus, canal, queue_done: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
