@@ -215,9 +215,11 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
       if (headerImageUrl.trim()) base.header_image_url = headerImageUrl.trim();
     }
     if (canal === "evolution" && mensagem) base.mensagem = mensagem;
+    if (modoTeste && canal === "meta") base.modo_teste = true;
     return base;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), templateName, templateLanguage, headerImageUrl, mensagem]);
+  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
+
 
   // ── Auto-preview com debounce ──
   const previewSeq = useRef(0);
