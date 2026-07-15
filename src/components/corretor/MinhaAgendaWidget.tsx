@@ -398,6 +398,7 @@ export default function MinhaAgendaWidget() {
         open={!!completing}
         onOpenChange={(v) => { if (!v) setCompleting(null); }}
         tarefaTitulo={completing?.titulo || ""}
+        tarefaOrigem={(completing as any)?.origem ?? null}
         leadNome={completing?.lead_nome || ""}
         leadId={completing?.pipeline_lead_id}
         onConfirm={handleCompletionConfirm}
