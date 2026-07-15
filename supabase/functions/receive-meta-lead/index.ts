@@ -564,7 +564,7 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await supabase
       .from("pipeline_leads")
-      .select("id, corretor_id, nome, empreendimento, aceite_status, stage_id, arquivado")
+      .select("id, corretor_id, nome, empreendimento, aceite_status, stage_id, arquivado, meta_lead_id")
       .eq("telefone", telefone)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -604,6 +604,23 @@ Deno.serve(async (req) => {
         updatePayload.stage_changed_at = new Date().toISOString();
         updatePayload.arquivado = false;
         updatePayload.motivo_descarte = null;
+      }
+
+      // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
+      if (externalLeadId && !existing.meta_lead_id) {
+        const { data: outroLead } = await supabase
+          .from("pipeline_leads")
+          .select("id")
+          .eq("meta_lead_id", externalLeadId)
+          .neq("id", existing.id)
+          .maybeSingle();
+        if (!outroLead) {
+          updatePayload.meta_lead_id = externalLeadId;
+        } else {
+          logOps("warn", "system", "meta_lead_id_ja_em_outro_lead", {
+            externalLeadId, este_lead: existing.id, outro_lead: outroLead.id, contexto: "reactivate_phone",
+          });
+        }
       }
 
       await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
@@ -781,6 +798,15 @@ Deno.serve(async (req) => {
       L.warn("Registry upsert warn", { dedupRegistryId }, registryError);
     }
 
+    // ── CAPI: log de payload Meta sem leadgen_id (visibilidade para Controle 4) ──
+    if (!externalLeadId && !isJetimobSite) {
+      logOps("warn", "business", "meta_lead_id_ausente_no_payload", {
+        campaign_id: campaignId || null,
+        form_name: formName || null,
+        source: platform || null,
+      });
+    }
+
     // ── Insert lead ──
     const { data: insertedLead, error: insertError } = await supabase
       .from("pipeline_leads")
@@ -805,6 +831,7 @@ Deno.serve(async (req) => {
         aceite_status: atribuicaoDiretaBruno ? "aceito" : "pendente_distribuicao",
         distribuido_em: atribuicaoDiretaBruno ? new Date().toISOString() : undefined,
         prioridade_lead: message && message.length > 10 ? "alta" : "media",
+        meta_lead_id: externalLeadId || null,
       })
       .select("id")
       .single();
@@ -819,11 +846,11 @@ Deno.serve(async (req) => {
         // existente — provavelmente casou por E-MAIL (telefone diferente, por isso
         // o check inicial por telefone não pegou). Se tiver corretor, reativa:
         // atualiza o lead, registra no histórico e notifica o corretor.
-        let dup: { id: string; corretor_id: string | null; nome: string | null; empreendimento: string | null; stage_id: string | null; arquivado: boolean | null } | null = null;
+        let dup: { id: string; corretor_id: string | null; nome: string | null; empreendimento: string | null; stage_id: string | null; arquivado: boolean | null; meta_lead_id: string | null } | null = null;
         if (email) {
           const { data } = await supabase
             .from("pipeline_leads")
-            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado")
+            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado, meta_lead_id")
             .eq("email", email)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -833,7 +860,7 @@ Deno.serve(async (req) => {
         if (!dup) {
           const { data } = await supabase
             .from("pipeline_leads")
-            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado")
+            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado, meta_lead_id")
             .eq("telefone", telefone)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -857,6 +884,23 @@ Deno.serve(async (req) => {
             updatePayload.stage_changed_at = new Date().toISOString();
             updatePayload.arquivado = false;
             updatePayload.motivo_descarte = null;
+          }
+
+          // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
+          if (externalLeadId && !dup.meta_lead_id) {
+            const { data: outroLead } = await supabase
+              .from("pipeline_leads")
+              .select("id")
+              .eq("meta_lead_id", externalLeadId)
+              .neq("id", dup.id)
+              .maybeSingle();
+            if (!outroLead) {
+              updatePayload.meta_lead_id = externalLeadId;
+            } else {
+              logOps("warn", "system", "meta_lead_id_ja_em_outro_lead", {
+                externalLeadId, este_lead: dup.id, outro_lead: outroLead.id, contexto: "reactivate_unique_violation",
+              });
+            }
           }
 
           await supabase.from("pipeline_leads").update(updatePayload).eq("id", dup.id);
