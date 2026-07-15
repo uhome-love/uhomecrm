@@ -248,6 +248,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         breakdown_por_empreendimento: d.breakdown_por_empreendimento,
         breakdown_por_recencia: d.breakdown_por_recencia,
         breakdown_por_motivo_descarte: d.breakdown_por_motivo_descarte,
+        breakdown_truncado: d.breakdown_truncado,
         ultimo_disparo_template: d.ultimo_disparo_template,
       });
     } catch (e) {
