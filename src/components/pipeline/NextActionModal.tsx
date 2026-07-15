@@ -231,7 +231,18 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
                   <Input type="time" value={tarefaHora} onChange={(e) => setTarefaHora(e.target.value)} className="h-9" />
                 </div>
               </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Observação (opcional)</label>
+                <Textarea
+                  value={obsTarefa}
+                  onChange={(e) => setObsTarefa(e.target.value)}
+                  placeholder="Ex.: Retornar sobre financiamento, ligar após 17h..."
+                  rows={2}
+                  className="resize-none"
+                />
+              </div>
             </>
+
           )}
 
           {selected === "avancar" && (
