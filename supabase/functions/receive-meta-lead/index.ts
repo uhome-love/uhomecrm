@@ -798,6 +798,15 @@ Deno.serve(async (req) => {
       L.warn("Registry upsert warn", { dedupRegistryId }, registryError);
     }
 
+    // ── CAPI: log de payload Meta sem leadgen_id (visibilidade para Controle 4) ──
+    if (!externalLeadId && !isJetimobSite) {
+      logOps("warn", "business", "meta_lead_id_ausente_no_payload", {
+        campaign_id: campaignId || null,
+        form_name: formName || null,
+        source: platform || null,
+      });
+    }
+
     // ── Insert lead ──
     const { data: insertedLead, error: insertError } = await supabase
       .from("pipeline_leads")
@@ -822,6 +831,7 @@ Deno.serve(async (req) => {
         aceite_status: atribuicaoDiretaBruno ? "aceito" : "pendente_distribuicao",
         distribuido_em: atribuicaoDiretaBruno ? new Date().toISOString() : undefined,
         prioridade_lead: message && message.length > 10 ? "alta" : "media",
+        meta_lead_id: externalLeadId || null,
       })
       .select("id")
       .single();
