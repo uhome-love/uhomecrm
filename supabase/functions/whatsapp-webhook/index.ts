@@ -445,6 +445,219 @@ Deno.serve(async (req) => {
             // não enviam context.id em button_reply, e o "from" do WhatsApp pode vir sem o "9" do celular.
             const isButtonReply = !!buttonId || !!buttonTitle;
             const isTextResponse = !!mensagemTexto && !isButtonReply;
+
+            // ─────────────────────────────────────────────────────────────
+            // ── Confirmação de Visita: 3º ramo (roda ANTES de Visita Amanhã)
+            // Casa resposta do lead ↔ visita futura pendente OU no-show <7d.
+            // Ordem de match: button_reply.id → button_reply.title → texto livre.
+            // ─────────────────────────────────────────────────────────────
+            try {
+              const last8cv = (from || "").replace(/\D/g, "").slice(-8);
+              if (last8cv.length === 8) {
+                // 1) Resolver pipeline_lead_id pelo telefone (últimos 8 dígitos)
+                const { data: leadMatch } = await supabase
+                  .from("pipeline_leads")
+                  .select("id, nome, corretor_id, gerente_id")
+                  .ilike("telefone", `%${last8cv}`)
+                  .order("updated_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+
+                if (leadMatch?.id) {
+                  // 2) Buscar visita elegível: futura/hoje pendente OU no-show últimos 7 dias
+                  const todayBRT = new Date(
+                    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
+                  );
+                  const todayStr = todayBRT.toISOString().slice(0, 10);
+                  const cutoff7d = new Date(todayBRT.getTime() - 7 * 24 * 60 * 60 * 1000)
+                    .toISOString()
+                    .slice(0, 10);
+
+                  const { data: candidatas } = await supabase
+                    .from("visitas")
+                    .select(
+                      "id, pipeline_lead_id, corretor_id, gerente_id, data_visita, hora_visita, empreendimento, status, confirmacao_status, confirmed_at, resposta_at, resposta_texto, nome_cliente"
+                    )
+                    .eq("pipeline_lead_id", leadMatch.id)
+                    .gte("data_visita", cutoff7d)
+                    .order("data_visita", { ascending: false })
+                    .limit(10);
+
+                  const visita = (candidatas || []).find((v: any) => {
+                    // Futura/hoje pendente
+                    if (
+                      v.data_visita >= todayStr &&
+                      ["marcada", "confirmada", "reagendada"].includes(v.status) &&
+                      v.confirmacao_status !== "confirmado"
+                    ) return true;
+                    // No-show últimos 7 dias
+                    if (
+                      v.status === "nao_compareceu" &&
+                      v.data_visita >= cutoff7d
+                    ) return true;
+                    return false;
+                  });
+
+                  if (visita) {
+                    // 3) Classificar intenção — id → title → texto livre
+                    const norm = (s: string) =>
+                      (s || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                    const bId = norm(buttonId || "");
+                    const bTitle = norm(buttonTitle || "");
+                    const txt = norm(mensagemTexto || "");
+
+                    const isConfirm =
+                      /confirm/.test(bId) ||
+                      /confirm/.test(bTitle) ||
+                      (isTextResponse &&
+                        txt.length <= 60 &&
+                        /^(sim|confirmo|confirmado|ok|👍|✅|🙏|s)\b/.test(txt));
+
+                    const isReagendar =
+                      /reagend|remarc/.test(bId) || /reagend|remarc/.test(bTitle);
+
+                    const isSemInteresse =
+                      /sem[_. ]?interess|nao[_. ]?tenho[_. ]?interess|desist/.test(bId) ||
+                      /sem[_. ]?interess|nao[_. ]?tenho[_. ]?interess|desist/.test(bTitle);
+
+                    const respostaTextoNovo = buttonTitle || buttonId || mensagemTexto || "";
+                    const jaRespondeu = !!visita.resposta_at;
+                    const resposta_texto_final = jaRespondeu
+                      ? `${visita.resposta_texto || ""}\n[${new Date().toISOString()}] ${respostaTextoNovo}`.slice(0, 2000)
+                      : respostaTextoNovo.slice(0, 2000);
+                    const resposta_at_patch = jaRespondeu
+                      ? {}
+                      : { resposta_at: new Date().toISOString() };
+
+                    if (isConfirm) {
+                      // Idempotente: só efetiva se ainda não estava confirmada
+                      if (visita.confirmacao_status !== "confirmado") {
+                        await supabase
+                          .from("visitas")
+                          .update({
+                            status: "confirmada",
+                            confirmacao_status: "confirmado",
+                            confirmed_at: new Date().toISOString(),
+                            resposta_texto: resposta_texto_final,
+                            ...resposta_at_patch,
+                          })
+                          .eq("id", visita.id);
+
+                        // Notifica SÓ o corretor (caminho feliz — gerente não recebe)
+                        if (visita.corretor_id) {
+                          await supabase.from("notifications").insert({
+                            user_id: visita.corretor_id,
+                            tipo: "visita_confirmada_pelo_lead",
+                            categoria: "visita",
+                            titulo: "Lead confirmou visita",
+                            mensagem: `${leadMatch.nome || visita.nome_cliente} confirmou a visita de ${visita.data_visita} ao ${visita.empreendimento || "empreendimento"}.`,
+                            dados: { visita_id: visita.id, pipeline_lead_id: leadMatch.id },
+                          });
+                        }
+                        console.log(`✅ Visita confirmada pelo lead: visita=${visita.id} lead=${leadMatch.id}`);
+                      } else {
+                        // Já confirmada: só append no histórico da resposta, sem re-notificar
+                        await supabase
+                          .from("visitas")
+                          .update({ resposta_texto: resposta_texto_final })
+                          .eq("id", visita.id);
+                      }
+                      continue;
+                    }
+
+                    if (isReagendar) {
+                      await supabase
+                        .from("visitas")
+                        .update({
+                          confirmacao_status: "pediu_remarcar",
+                          resposta_texto: resposta_texto_final,
+                          ...resposta_at_patch,
+                        })
+                        .eq("id", visita.id);
+
+                      // Tarefa para o corretor remarcar (vencimento hoje +2h)
+                      if (visita.corretor_id) {
+                        const dueAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+                        await supabase.from("pipeline_tarefas").insert({
+                          pipeline_lead_id: leadMatch.id,
+                          corretor_id: visita.corretor_id,
+                          tipo: "marcar_visita",
+                          titulo: "Remarcar visita: lead pediu novo horário",
+                          descricao: `Lead respondeu pedindo reagendamento da visita de ${visita.data_visita}${visita.hora_visita ? " " + visita.hora_visita : ""} ao ${visita.empreendimento || "empreendimento"}. Contate para alinhar novo horário.`,
+                          data_vencimento: dueAt,
+                          status: "pendente",
+                        });
+
+                        await supabase.from("notifications").insert({
+                          user_id: visita.corretor_id,
+                          tipo: "visita_pedido_remarcar",
+                          categoria: "visita",
+                          titulo: "Lead pediu para reagendar visita",
+                          mensagem: `${leadMatch.nome || visita.nome_cliente} pediu para remarcar a visita ao ${visita.empreendimento || "empreendimento"}.`,
+                          dados: { visita_id: visita.id, pipeline_lead_id: leadMatch.id },
+                        });
+                      }
+                      // Gerente RECEBE (é exceção)
+                      if (visita.gerente_id) {
+                        await supabase.from("notifications").insert({
+                          user_id: visita.gerente_id,
+                          tipo: "visita_pedido_remarcar",
+                          categoria: "visita",
+                          titulo: "Lead pediu para reagendar visita",
+                          mensagem: `${leadMatch.nome || visita.nome_cliente} pediu remarcação (visita ${visita.data_visita}, corretor será notificado).`,
+                          dados: { visita_id: visita.id, pipeline_lead_id: leadMatch.id },
+                        });
+                      }
+                      console.log(`🔄 Lead pediu remarcar: visita=${visita.id}`);
+                      continue;
+                    }
+
+                    if (isSemInteresse) {
+                      await supabase
+                        .from("visitas")
+                        .update({
+                          resposta_texto: resposta_texto_final,
+                          ...resposta_at_patch,
+                        })
+                        .eq("id", visita.id);
+                      // Histórico apenas — sem notificação, sem tarefa, sem movimentar lead
+                      await supabase.from("pipeline_historico").insert({
+                        pipeline_lead_id: leadMatch.id,
+                        tipo: "visita_sem_interesse_pos_no_show",
+                        descricao: `Lead respondeu "Não tenho interesse" ao template pós-visita (visita ${visita.data_visita}).`,
+                      }).then(() => {}, () => {});
+                      console.log(`🚫 Lead respondeu Sem Interesse: visita=${visita.id}`);
+                      continue;
+                    }
+
+                    // Texto livre não classificado — notifica corretor tratar manual
+                    await supabase
+                      .from("visitas")
+                      .update({
+                        resposta_texto: resposta_texto_final,
+                        ...resposta_at_patch,
+                      })
+                      .eq("id", visita.id);
+                    if (visita.corretor_id) {
+                      await supabase.from("notifications").insert({
+                        user_id: visita.corretor_id,
+                        tipo: "visita_resposta_manual",
+                        categoria: "visita",
+                        titulo: "Lead respondeu sobre a visita (tratar)",
+                        mensagem: `${leadMatch.nome || visita.nome_cliente}: "${(respostaTextoNovo || "").slice(0, 120)}"`,
+                        dados: { visita_id: visita.id, pipeline_lead_id: leadMatch.id },
+                      });
+                    }
+                    console.log(`✉️ Resposta manual sobre visita: visita=${visita.id}`);
+                    continue;
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Confirmação de Visita branch error", e);
+              // não interrompe — deixa os ramos seguintes tentarem
+            }
+
             let vaDispatch: { id: string; pipeline_lead_id: string; phone: string | null } | null = null;
 
             if (repliedToWamid) {
