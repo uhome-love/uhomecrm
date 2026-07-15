@@ -802,14 +802,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
                   pendingTasks={pendingTasks}
                   pendingTasksLoading={pendingTasksLoading}
                   timelineRefreshKey={timelineRefreshKey}
-                  onCompleteTask={(id, titulo) => setCompletingOverdue({ id, titulo })}
+                  onCompleteTask={(id, titulo) => {
+                    const t = currentLead.pending_tasks?.find((x: any) => x.id === id);
+                    setCompletingOverdue({ id, titulo, origem: t?.origem ?? null });
+                  }}
                   onCompleteNextTask={() => {
                     const t = currentLead.next_pending_task;
                     if (t) {
-                      setCompletingOverdue({ id: t.id, titulo: t.titulo });
+                      setCompletingOverdue({ id: t.id, titulo: t.titulo, origem: (t as any).origem ?? null });
                     } else {
-                      // Sem tarefa pendente — abre TaskCompletionDialog com ID sintético.
-                      // handleCompleteOverdueTask trata 'no-task' pulando o UPDATE de pipeline_tarefas.
                       setCompletingOverdue({ id: "no-task", titulo: "Registrar contato e agendar próximo passo" });
                     }
                   }}
