@@ -518,6 +518,7 @@ Deno.serve(async (req) => {
         breakdown_por_empreendimento,
         breakdown_por_recencia,
         breakdown_por_motivo_descarte,
+        breakdown_truncado,
         ultimo_disparo_template,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
