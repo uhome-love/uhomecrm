@@ -86,7 +86,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
     try {
       if (selected === "tarefa") {
         if (!tarefaData) { toast.error("Informe a data da tarefa"); setSaving(false); return; }
-        if (isTaskDateTooFar(tarefaData)) { toast.error(TASK_DATE_TOO_FAR_MSG); setSaving(false); return; }
+        if (isTaskDateTooFar(tarefaData, currentStageTipo)) { toast.error(taskDateTooFarMessage(currentStageTipo)); setSaving(false); return; }
         const { error: insertErr } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: leadId,
           titulo: TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa,
