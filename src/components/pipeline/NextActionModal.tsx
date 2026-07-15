@@ -77,10 +77,12 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
     setTipoTarefa("follow_up");
     setTarefaData("");
     setTarefaHora("");
+    setObsTarefa("");
     setNextStageId("");
     setMotivoDescarte("");
     setObsDescarte("");
   };
+
 
   const handleConfirm = async () => {
     if (!user) return;
