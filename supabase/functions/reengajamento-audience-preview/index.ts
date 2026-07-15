@@ -35,6 +35,11 @@ interface Audience {
   template_name?: string;
 }
 
+// Teto de segurança para agregação client-side dos breakdowns.
+// Suficiente para bases grandes sem estourar memória do worker.
+const BREAKDOWN_MAX_ROWS = 20000;
+const BREAKDOWN_PAGE = 1000;
+
 function audienceKey(a: Audience): string {
   if (a.source === "descartados") return `descartados:${a.tipo_descarte || "reengajavel"}`;
   if (a.source === "oferta_ativa_lista") {
