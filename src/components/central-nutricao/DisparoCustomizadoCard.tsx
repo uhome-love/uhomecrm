@@ -491,14 +491,49 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                     </label>
                     {preview?.breakdown_por_motivo_descarte && preview.breakdown_por_motivo_descarte.length > 0 && (
                       <div className="mt-1">
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Motivos de descarte (informativo)</Label>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {preview.breakdown_por_motivo_descarte.slice(0, 8).map((m) => (
-                            <Badge key={m.motivo} variant="outline" className="text-[10px] font-normal">
-                              {m.motivo} <span className="ml-1 text-muted-foreground tabular-nums">{m.total}</span>
-                            </Badge>
-                          ))}
+                        <div className="flex items-center justify-between gap-2">
+                          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Motivos de descarte {motivosDescarte.length > 0 && <span className="text-indigo-600 normal-case">· {motivosDescarte.length} filtrado{motivosDescarte.length > 1 ? "s" : ""}</span>}
+                          </Label>
+                          {motivosDescarte.length > 0 && (
+                            <button
+                              type="button"
+                              className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5"
+                              onClick={() => setMotivosDescarte([])}
+                            >
+                              <X className="h-3 w-3" /> Limpar
+                            </button>
+                          )}
                         </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Clique para filtrar por um ou mais motivos.</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {preview.breakdown_por_motivo_descarte.map((m) => {
+                            const active = motivosDescarte.includes(m.motivo);
+                            return (
+                              <button
+                                key={m.motivo}
+                                type="button"
+                                onClick={() => setMotivosDescarte((prev) => prev.includes(m.motivo) ? prev.filter((x) => x !== m.motivo) : [...prev, m.motivo])}
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition-colors",
+                                  active
+                                    ? "border-indigo-500 bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-200"
+                                    : "border-border bg-background hover:bg-muted"
+                                )}
+                              >
+                                {active && <Check className="h-2.5 w-2.5" />}
+                                <span className="truncate max-w-[220px]">{m.motivo}</span>
+                                <span className="text-muted-foreground tabular-nums">{m.total.toLocaleString("pt-BR")}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {preview.breakdown_truncado && (
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Contagens aproximadas (base &gt; 20.000). O total do disparo é o correto.
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
