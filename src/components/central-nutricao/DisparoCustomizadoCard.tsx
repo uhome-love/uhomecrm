@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Shield, Zap, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw, Users, Filter, MessageSquare, Flame, Settings2 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Target, Shield, Zap, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw, Users, Filter, MessageSquare, Flame, Settings2, TrendingUp, Send, Loader2, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import FunilLateral from "./disparo/FunilLateral";
