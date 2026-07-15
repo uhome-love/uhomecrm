@@ -606,6 +606,23 @@ Deno.serve(async (req) => {
         updatePayload.motivo_descarte = null;
       }
 
+      // CAPI: enriquece meta_lead_id retroativamente se ainda não gravado (nunca sobrescreve, 1↔1)
+      if (externalLeadId && !existing.meta_lead_id) {
+        const { data: outroLead } = await supabase
+          .from("pipeline_leads")
+          .select("id")
+          .eq("meta_lead_id", externalLeadId)
+          .neq("id", existing.id)
+          .maybeSingle();
+        if (!outroLead) {
+          updatePayload.meta_lead_id = externalLeadId;
+        } else {
+          logOps("warn", "system", "meta_lead_id_ja_em_outro_lead", {
+            externalLeadId, este_lead: existing.id, outro_lead: outroLead.id, contexto: "reactivate_phone",
+          });
+        }
+      }
+
       await supabase.from("pipeline_leads").update(updatePayload).eq("id", existing.id);
 
       await Promise.all([
