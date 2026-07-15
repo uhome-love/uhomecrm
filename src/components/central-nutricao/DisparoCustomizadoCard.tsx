@@ -357,7 +357,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           Monte o público, ajuste filtros e escolha a mensagem. Preview atualiza sozinho conforme você mexe.
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pb-24 lg:pb-6">
         <div className="grid lg:grid-cols-[1fr_320px] gap-4 items-start">
           {/* ─── COLUNA PRINCIPAL — ABAS ─── */}
           <div>
