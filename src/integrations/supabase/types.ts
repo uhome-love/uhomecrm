@@ -6667,6 +6667,7 @@ export type Database = {
           bairro_regiao: string | null
           campanha: string | null
           campanha_id: string | null
+          capi_enviado_at: string | null
           complexidade_score: number
           conjunto_anuncio: string | null
           conversation_window_until: string | null
@@ -6701,6 +6702,7 @@ export type Database = {
           lead_score: number | null
           lead_score_at: string | null
           lead_temperatura: string | null
+          meta_lead_id: string | null
           modo_conducao: string
           modulo_atual: string
           motivo_descarte: string | null
@@ -6761,6 +6763,7 @@ export type Database = {
           bairro_regiao?: string | null
           campanha?: string | null
           campanha_id?: string | null
+          capi_enviado_at?: string | null
           complexidade_score?: number
           conjunto_anuncio?: string | null
           conversation_window_until?: string | null
@@ -6795,6 +6798,7 @@ export type Database = {
           lead_score?: number | null
           lead_score_at?: string | null
           lead_temperatura?: string | null
+          meta_lead_id?: string | null
           modo_conducao?: string
           modulo_atual?: string
           motivo_descarte?: string | null
@@ -6855,6 +6859,7 @@ export type Database = {
           bairro_regiao?: string | null
           campanha?: string | null
           campanha_id?: string | null
+          capi_enviado_at?: string | null
           complexidade_score?: number
           conjunto_anuncio?: string | null
           conversation_window_until?: string | null
@@ -6889,6 +6894,7 @@ export type Database = {
           lead_score?: number | null
           lead_score_at?: string | null
           lead_temperatura?: string | null
+          meta_lead_id?: string | null
           modo_conducao?: string
           modulo_atual?: string
           motivo_descarte?: string | null
