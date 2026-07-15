@@ -790,21 +790,71 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             </Tabs>
           </div>
 
-          {/* ─── FUNIL LATERAL ─── */}
-          <FunilLateral
-            loading={previewing}
-            count={preview?.count ?? null}
-            funil={preview?.funil}
-            breakdownEmpreendimento={preview?.breakdown_por_empreendimento}
-            ultimoDisparoTemplate={preview?.ultimo_disparo_template}
-            canal={canal}
-            templateName={templateName}
-            firing={firing}
-            onDisparar={disparar}
-            onFocusEmpreendimento={(nome) => setEmpreendimentos([nome])}
-          />
+          {/* ─── FUNIL LATERAL (desktop) ─── */}
+          <div className="hidden lg:block">
+            <FunilLateral
+              loading={previewing}
+              count={preview?.count ?? null}
+              funil={preview?.funil}
+              breakdownEmpreendimento={preview?.breakdown_por_empreendimento}
+              ultimoDisparoTemplate={preview?.ultimo_disparo_template}
+              canal={canal}
+              templateName={templateName}
+              firing={firing}
+              onDisparar={disparar}
+              onFocusEmpreendimento={(nome) => setEmpreendimentos([nome])}
+            />
+          </div>
         </div>
       </CardContent>
+
+      {/* ─── BARRA STICKY MOBILE (funil + disparar) ─── */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur px-3 py-2 flex items-center gap-2 shadow-lg">
+        <Sheet open={mobileFunilOpen} onOpenChange={setMobileFunilOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              className="flex-1 flex items-center gap-2 rounded-md border bg-background px-2.5 py-1.5 text-left active:bg-muted"
+            >
+              <TrendingUp className="h-4 w-4 text-indigo-600 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">Elegíveis</div>
+                <div className="text-sm font-bold text-indigo-700 dark:text-indigo-300 tabular-nums leading-tight">
+                  {previewing && !preview ? "…" : (preview?.count ?? 0).toLocaleString("pt-BR")}
+                </div>
+              </div>
+              <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+            <SheetHeader className="text-left mb-3">
+              <SheetTitle className="text-base flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-indigo-600" /> Funil ao vivo
+              </SheetTitle>
+            </SheetHeader>
+            <FunilLateral
+              loading={previewing}
+              count={preview?.count ?? null}
+              funil={preview?.funil}
+              breakdownEmpreendimento={preview?.breakdown_por_empreendimento}
+              ultimoDisparoTemplate={preview?.ultimo_disparo_template}
+              canal={canal}
+              templateName={templateName}
+              firing={firing}
+              onDisparar={() => { setMobileFunilOpen(false); disparar(); }}
+              onFocusEmpreendimento={(nome) => { setEmpreendimentos([nome]); setMobileFunilOpen(false); }}
+            />
+          </SheetContent>
+        </Sheet>
+        <Button
+          className="h-11 px-4 font-semibold shrink-0"
+          onClick={disparar}
+          disabled={firing || previewing || !preview || preview.count === 0}
+        >
+          {firing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <span className="ml-1.5 text-sm">Disparar</span>
+        </Button>
+      </div>
     </Card>
   );
 }
