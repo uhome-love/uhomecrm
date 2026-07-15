@@ -112,6 +112,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [empreendimentos, setEmpreendimentos] = useState<string[]>([]);
   const [motivosDescarte, setMotivosDescarte] = useState<string[]>([]);
   const [mobileFunilOpen, setMobileFunilOpen] = useState(false);
+  const [dedupMode, setDedupMode] = useState<DedupMode>("cooldown");
   const [dedupCutoff, setDedupCutoff] = useState<string>("");
   const [cooldownDias, setCooldownDias] = useState<number>(7);
   const [includeArchived, setIncludeArchived] = useState<boolean>(true);
