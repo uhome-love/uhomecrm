@@ -45,7 +45,9 @@ export interface PipelineTarefa {
   concluida_em: string | null;
   created_by: string;
   created_at: string;
+  origem?: string | null;
 }
+
 
 export interface PipelineHistorico {
   id: string;

@@ -99,7 +99,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
 
 
   // Overdue task completion dialog
-  const [completingOverdue, setCompletingOverdue] = useState<{ id: string; titulo: string } | null>(null);
+  const [completingOverdue, setCompletingOverdue] = useState<{ id: string; titulo: string; origem?: string | null } | null>(null);
 
   // All pending tasks for current lead (overdue + future)
   const [pendingTasks, setPendingTasks] = useState<Array<{ id: string; titulo: string; tipo: string | null; vence_em: string | null; hora_vencimento: string | null }>>([]);
@@ -802,14 +802,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
                   pendingTasks={pendingTasks}
                   pendingTasksLoading={pendingTasksLoading}
                   timelineRefreshKey={timelineRefreshKey}
-                  onCompleteTask={(id, titulo) => setCompletingOverdue({ id, titulo })}
+                  onCompleteTask={(id, titulo) => {
+                    const t = (currentLead as any).pending_task_list?.find((x: any) => x.id === id);
+                    setCompletingOverdue({ id, titulo, origem: t?.origem ?? null });
+                  }}
                   onCompleteNextTask={() => {
                     const t = currentLead.next_pending_task;
                     if (t) {
-                      setCompletingOverdue({ id: t.id, titulo: t.titulo });
+                      setCompletingOverdue({ id: t.id, titulo: t.titulo, origem: (t as any).origem ?? null });
                     } else {
-                      // Sem tarefa pendente — abre TaskCompletionDialog com ID sintético.
-                      // handleCompleteOverdueTask trata 'no-task' pulando o UPDATE de pipeline_tarefas.
                       setCompletingOverdue({ id: "no-task", titulo: "Registrar contato e agendar próximo passo" });
                     }
                   }}
@@ -894,6 +895,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
           open={!!completingOverdue}
           onOpenChange={(v) => { if (!v) setCompletingOverdue(null); }}
           tarefaTitulo={completingOverdue.titulo}
+          tarefaOrigem={completingOverdue.origem ?? null}
           leadNome={currentLead?.name}
           leadId={currentLead?.id}
           currentStageId={currentLead?.stage_id ?? undefined}

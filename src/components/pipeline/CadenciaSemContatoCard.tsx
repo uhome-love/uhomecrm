@@ -150,31 +150,67 @@ export default function CadenciaSemContatoCard({ leadId, stageTipo, leadNome, le
           </p>
         </div>
       ) : passoAtual ? (
-        <div className="space-y-2">
-          <div className="flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/15 p-2.5">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              {canalIcon(passoAtual.canal)}
-            </div>
-            <div className="space-y-0.5">
-              <p className="text-[12.5px] font-semibold text-foreground leading-tight">
-                Agora: {acaoTxt}
-              </p>
-              <p className="text-[12px] text-muted-foreground leading-snug">
-                {passoTxt}
-              </p>
-            </div>
-          </div>
+        (() => {
+          // Cronômetro + selo de risco desde T1
+          const alvo = cadencia?.proxima_em ? new Date(cadencia.proxima_em).getTime() : null;
+          const diffMs = alvo != null ? alvo - nowBRT().getTime() : null;
+          const atrasada = diffMs != null && diffMs < 0;
+          const urgente = diffMs != null && diffMs >= 0 && diffMs < 6 * 3600 * 1000; // <6h
+          const cardCls = atrasada
+            ? "bg-destructive/10 border-destructive/25 text-destructive"
+            : urgente
+            ? "bg-amber-50 border-amber-200 text-amber-900"
+            : "bg-primary/5 border-primary/15 text-primary";
+          const iconCls = atrasada
+            ? "bg-destructive/15 text-destructive"
+            : urgente
+            ? "bg-amber-100 text-amber-700"
+            : "bg-primary/10 text-primary";
+          const statusLabel = atrasada
+            ? `⚠️ Atrasada há ${formatRelativo(cadencia!.proxima_em!).replace("atrasado há ", "")}`
+            : urgente
+            ? `🟡 Vence em breve — ${formatRelativo(cadencia!.proxima_em!)}`
+            : cadencia?.proxima_em
+            ? `🟢 ${formatRelativo(cadencia.proxima_em)}`
+            : null;
 
-          {prazoEstagnar ? (
-            <p className="text-[11px] text-destructive/90 px-0.5 font-medium">
-              ⏳ Tarefa atrasada — conclua para não estagnar. Prazo {formatRelativo(prazoEstagnar)}.
-            </p>
-          ) : (
-            <p className="text-[11px] text-muted-foreground px-0.5">
-              Conclua a tarefa desta tentativa para avançar para a próxima.
-            </p>
-          )}
-        </div>
+          return (
+            <div className="space-y-2">
+              <div className={`flex items-start gap-2 rounded-lg border p-2.5 ${cardCls}`}>
+                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${iconCls}`}>
+                  {canalIcon(passoAtual.canal)}
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-[12.5px] font-semibold text-foreground leading-tight">
+                    Agora: {acaoTxt}
+                  </p>
+                  <p className="text-[12px] text-muted-foreground leading-snug">
+                    {passoTxt}
+                  </p>
+                </div>
+              </div>
+
+              {statusLabel && (
+                <p className={`text-[11px] px-0.5 font-medium ${atrasada ? "text-destructive/90" : urgente ? "text-amber-800" : "text-muted-foreground"}`}>
+                  {statusLabel}
+                </p>
+              )}
+
+              {prazoEstagnar && atrasada && (
+                <p className="text-[11px] text-destructive/90 px-0.5 font-medium">
+                  Sem conclusão, o lead estagna. Prazo final {formatRelativo(prazoEstagnar)}.
+                </p>
+              )}
+
+              {atualNum === 1 && !atrasada && (
+                <p className="text-[11px] text-muted-foreground px-0.5 leading-snug">
+                  Essa etapa tem ritmo diário. Tarefas manuais aqui vencem em até 48h.
+                  A próxima tentativa é criada automaticamente pelo CRM ao concluir esta.
+                </p>
+              )}
+            </div>
+          );
+        })()
       ) : null}
     </div>
   );

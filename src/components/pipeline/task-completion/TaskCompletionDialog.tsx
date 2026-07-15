@@ -34,6 +34,8 @@ export interface TaskCompletionDialogProps {
   leadNome?: string;
   leadId?: string;
   currentStageId?: string;
+  /** Origem da tarefa. Se for 'cadencia_sem_contato', a próxima tarefa é criada pelo sistema. */
+  tarefaOrigem?: string | null;
   /** Default 'lead'. 'negocio' renderiza Step 2 sem o grupo "Encerrar lead". */
   context?: CompletionContext;
   onConfirm: (payload: CompletionPayload) => Promise<void> | void;
@@ -46,6 +48,7 @@ export default function TaskCompletionDialog({
   leadNome,
   leadId,
   currentStageId,
+  tarefaOrigem,
   context = "lead",
   onConfirm,
 }: TaskCompletionDialogProps) {
@@ -172,15 +175,19 @@ export default function TaskCompletionDialog({
       const tentativaConcluida = Math.min(7, tentativaAtual + 1);
       const finalAttempt = tentativaConcluida >= 7;
 
+      // Se a tarefa é da cadência, o sistema cria a próxima automaticamente.
+      // Não exigir tarefa manual — evita duplicação com o trigger.
+      const isCadenciaTask = tarefaOrigem === "cadencia_sem_contato";
+
       if (!cancelled) {
         setSemContatoInfo({
           enabled: true,
           tentativaAtual,
           tentativaConcluida,
-          requiresNextTask: !finalAttempt,
+          requiresNextTask: !finalAttempt && !isCadenciaTask,
           finalAttempt,
         });
-        setOutcome(finalAttempt ? "concluir" : "agendar");
+        setOutcome(finalAttempt || isCadenciaTask ? "concluir" : "agendar");
       }
     }
 
@@ -188,7 +195,7 @@ export default function TaskCompletionDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, leadId, currentStageId, context]);
+  }, [open, leadId, currentStageId, context, tarefaOrigem]);
 
   useEffect(() => {
     if (!semContatoInfo.enabled) return;
