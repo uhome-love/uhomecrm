@@ -223,6 +223,9 @@ Deno.serve(async (req) => {
         if (audience.periodo?.from) q = q.gte("stage_changed_at", audience.periodo.from);
         if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
         if (empList.length) q = q.in("empreendimento", empList);
+        if (Array.isArray(audience.motivos_descarte) && audience.motivos_descarte.length) {
+          q = q.in("motivo_descarte", audience.motivos_descarte);
+        }
         if (dedupMode === "exclude_sent") q = q.is("reengajamento_enviado_at", null);
         else if (cooldownDias > 0) q = q.or(`reengajamento_enviado_at.is.null,reengajamento_enviado_at.lt.${cooldownCutoff}`);
         const { data, error } = await q.order("stage_changed_at", { ascending: false }).limit(limit * 2);
