@@ -49,6 +49,7 @@ interface PreviewResult {
   breakdown_por_empreendimento?: Array<{ empreendimento: string; total: number }>;
   breakdown_por_recencia?: Record<Recencia, number>;
   breakdown_por_motivo_descarte?: Array<{ motivo: string; total: number }>;
+  breakdown_truncado?: boolean;
   ultimo_disparo_template?: { template: string; quantos: number; quando: string } | null;
 }
 
