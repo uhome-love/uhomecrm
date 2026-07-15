@@ -68,6 +68,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
 
   const availableStages = stages.filter(s => s.id !== currentStageId && s.tipo !== "descarte");
   const descarteStage = stages.find(s => s.tipo === "descarte");
+  const currentStageTipo = stages.find(s => s.id === currentStageId)?.tipo ?? null;
 
   const resetForm = () => {
     setSelected("tarefa");
