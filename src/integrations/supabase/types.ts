@@ -9617,12 +9617,18 @@ export type Database = {
           origem_detalhe: string | null
           pipeline_lead_id: string | null
           responsavel_visita: string | null
+          resposta_at: string | null
+          resposta_texto: string | null
           resultado_visita: string | null
+          risco_alertado_at: string | null
           status: string
           telefone: string | null
           tipo: string
           tipo_reuniao: string | null
           token_expires_at: string | null
+          toque_d0_at: string | null
+          toque_d1_at: string | null
+          toque_marcacao_at: string | null
           updated_at: string
         }
         Insert: {
@@ -9655,12 +9661,18 @@ export type Database = {
           origem_detalhe?: string | null
           pipeline_lead_id?: string | null
           responsavel_visita?: string | null
+          resposta_at?: string | null
+          resposta_texto?: string | null
           resultado_visita?: string | null
+          risco_alertado_at?: string | null
           status?: string
           telefone?: string | null
           tipo?: string
           tipo_reuniao?: string | null
           token_expires_at?: string | null
+          toque_d0_at?: string | null
+          toque_d1_at?: string | null
+          toque_marcacao_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -9693,12 +9705,18 @@ export type Database = {
           origem_detalhe?: string | null
           pipeline_lead_id?: string | null
           responsavel_visita?: string | null
+          resposta_at?: string | null
+          resposta_texto?: string | null
           resultado_visita?: string | null
+          risco_alertado_at?: string | null
           status?: string
           telefone?: string | null
           tipo?: string
           tipo_reuniao?: string | null
           token_expires_at?: string | null
+          toque_d0_at?: string | null
+          toque_d1_at?: string | null
+          toque_marcacao_at?: string | null
           updated_at?: string
         }
         Relationships: [
