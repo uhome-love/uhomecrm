@@ -13,7 +13,7 @@ import type { PipelineStage } from "@/hooks/usePipeline";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
-import { maxTaskDateBRT, isTaskDateTooFar, TASK_DATE_TOO_FAR_MSG } from "@/lib/taskScheduling";
+import { maxTaskDateBRT, isTaskDateTooFar, taskDateTooFarMessage } from "@/lib/taskScheduling";
 
 type OptionType = "tarefa" | "avancar" | "descartar";
 
