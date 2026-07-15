@@ -803,7 +803,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads", 
                   pendingTasksLoading={pendingTasksLoading}
                   timelineRefreshKey={timelineRefreshKey}
                   onCompleteTask={(id, titulo) => {
-                    const t = currentLead.pending_tasks?.find((x: any) => x.id === id);
+                    const t = (currentLead as any).pending_task_list?.find((x: any) => x.id === id);
                     setCompletingOverdue({ id, titulo, origem: t?.origem ?? null });
                   }}
                   onCompleteNextTask={() => {
