@@ -846,7 +846,7 @@ Deno.serve(async (req) => {
         // existente — provavelmente casou por E-MAIL (telefone diferente, por isso
         // o check inicial por telefone não pegou). Se tiver corretor, reativa:
         // atualiza o lead, registra no histórico e notifica o corretor.
-        let dup: { id: string; corretor_id: string | null; nome: string | null; empreendimento: string | null; stage_id: string | null; arquivado: boolean | null } | null = null;
+        let dup: { id: string; corretor_id: string | null; nome: string | null; empreendimento: string | null; stage_id: string | null; arquivado: boolean | null; meta_lead_id: string | null } | null = null;
         if (email) {
           const { data } = await supabase
             .from("pipeline_leads")
