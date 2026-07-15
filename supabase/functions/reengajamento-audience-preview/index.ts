@@ -35,6 +35,11 @@ interface Audience {
   template_name?: string;
 }
 
+// Teto de segurança para agregação client-side dos breakdowns.
+// Suficiente para bases grandes sem estourar memória do worker.
+const BREAKDOWN_MAX_ROWS = 20000;
+const BREAKDOWN_PAGE = 1000;
+
 function audienceKey(a: Audience): string {
   if (a.source === "descartados") return `descartados:${a.tipo_descarte || "reengajavel"}`;
   if (a.source === "oferta_ativa_lista") {
@@ -218,6 +223,9 @@ Deno.serve(async (req) => {
         if (audience.periodo?.from) q = q.gte("stage_changed_at", audience.periodo.from);
         if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
         if (empList.length) q = q.in("empreendimento", empList);
+        if (Array.isArray(audience.motivos_descarte) && audience.motivos_descarte.length) {
+          q = q.in("motivo_descarte", audience.motivos_descarte);
+        }
         if (dedupMode === "exclude_sent") q = q.is("reengajamento_enviado_at", null);
         else if (cooldownDias > 0) q = q.or(`reengajamento_enviado_at.is.null,reengajamento_enviado_at.lt.${cooldownCutoff}`);
         const { data, error } = await q.order("stage_changed_at", { ascending: false }).limit(limit * 2);
@@ -368,6 +376,9 @@ Deno.serve(async (req) => {
       if (audience.periodo?.from) q = q.gte("stage_changed_at", audience.periodo.from);
       if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
       if (empList.length) q = q.in("empreendimento", empList);
+      if (Array.isArray(audience.motivos_descarte) && audience.motivos_descarte.length) {
+        q = q.in("motivo_descarte", audience.motivos_descarte);
+      }
 
       // Dedup novo: cooldown (default). Mantém modos antigos como override.
       if (dedupMode === "exclude_sent") {
@@ -413,25 +424,44 @@ Deno.serve(async (req) => {
         return b;
       };
 
-      // Amostra grande (até 5000) só para agregar client-side — leve e evita RPC dedicado.
-      const { data: aggData } = await buildBase()
-        .order("stage_changed_at", { ascending: false })
-        .range(0, 4999);
+      // Agregação client-side dos breakdowns.
+      // Paginamos em chunks de BREAKDOWN_PAGE para evitar o teto default (1000) do PostgREST,
+      // com teto de segurança BREAKDOWN_MAX_ROWS para não estourar memória do worker.
+      // NOTE: intencionalmente NÃO aplicamos audience.motivos_descarte na agregação de motivos,
+      // para o operador ver e alternar múltiplos motivos sem perder contagem dos não-selecionados.
+      const aggData: any[] = [];
+      let breakdown_truncado = false;
+      for (let offset = 0; offset < BREAKDOWN_MAX_ROWS; offset += BREAKDOWN_PAGE) {
+        const to = Math.min(offset + BREAKDOWN_PAGE, BREAKDOWN_MAX_ROWS) - 1;
+        const { data: page } = await buildBase()
+          .order("stage_changed_at", { ascending: false })
+          .range(offset, to);
+        if (!Array.isArray(page) || page.length === 0) break;
+        aggData.push(...page);
+        if (page.length < (to - offset + 1)) break;
+        if (aggData.length >= BREAKDOWN_MAX_ROWS) {
+          breakdown_truncado = true;
+          break;
+        }
+      }
 
       const breakdown_por_empreendimento: Array<{ empreendimento: string; total: number }> = [];
       const breakdown_por_motivo_descarte: Array<{ motivo: string; total: number }> = [];
       const breakdown_por_recencia = { "7d": 0, "30d": 0, "90d": 0, "180d": 0, "mais": 0 };
 
-      if (Array.isArray(aggData)) {
+      if (aggData.length > 0) {
         const empMap = new Map<string, number>();
         const motMap = new Map<string, number>();
         const now = Date.now();
         const D = (n: number) => n * 24 * 3600 * 1000;
+        const motivosSel = Array.isArray(audience.motivos_descarte) ? audience.motivos_descarte : [];
         for (const r of aggData as any[]) {
           const emp = (r.empreendimento || "Sem empreendimento") as string;
-          empMap.set(emp, (empMap.get(emp) || 0) + 1);
           const mot = (r.motivo_descarte || "Não informado") as string;
           motMap.set(mot, (motMap.get(mot) || 0) + 1);
+          // Empreendimento e recência devem refletir o filtro de motivos, se houver
+          if (motivosSel.length && !motivosSel.includes(r.motivo_descarte)) continue;
+          empMap.set(emp, (empMap.get(emp) || 0) + 1);
           const t = r.stage_changed_at ? new Date(r.stage_changed_at).getTime() : 0;
           const age = now - t;
           if (age <= D(7)) breakdown_por_recencia["7d"]++;
@@ -488,6 +518,7 @@ Deno.serve(async (req) => {
         breakdown_por_empreendimento,
         breakdown_por_recencia,
         breakdown_por_motivo_descarte,
+        breakdown_truncado,
         ultimo_disparo_template,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }

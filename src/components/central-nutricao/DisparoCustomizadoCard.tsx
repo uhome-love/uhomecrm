@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Shield, Zap, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw, Users, Filter, MessageSquare, Flame, Settings2 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Target, Shield, Zap, Check, ChevronsUpDown, MousePointerClick, Pencil, RefreshCw, Users, Filter, MessageSquare, Flame, Settings2, TrendingUp, Send, Loader2, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import FunilLateral from "./disparo/FunilLateral";
@@ -48,6 +49,7 @@ interface PreviewResult {
   breakdown_por_empreendimento?: Array<{ empreendimento: string; total: number }>;
   breakdown_por_recencia?: Record<Recencia, number>;
   breakdown_por_motivo_descarte?: Array<{ motivo: string; total: number }>;
+  breakdown_truncado?: boolean;
   ultimo_disparo_template?: { template: string; quantos: number; quando: string } | null;
 }
 
@@ -108,6 +110,8 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
   const [listaIds, setListaIds] = useState<string[]>([]);
   const [recencia, setRecencia] = useState<Recencia>("todos");
   const [empreendimentos, setEmpreendimentos] = useState<string[]>([]);
+  const [motivosDescarte, setMotivosDescarte] = useState<string[]>([]);
+  const [mobileFunilOpen, setMobileFunilOpen] = useState(false);
   const [dedupMode, setDedupMode] = useState<DedupMode>("cooldown");
   const [dedupCutoff, setDedupCutoff] = useState<string>("");
   const [cooldownDias, setCooldownDias] = useState<number>(7);
@@ -198,6 +202,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     const base: Record<string, unknown> = {
       source, sources, canal, periodo,
       empreendimentos: empreendimentos.length ? empreendimentos : undefined,
+      motivos_descarte: motivosDescarte.length ? motivosDescarte : undefined,
       dedup_mode: dedupMode,
       cooldown_dias: dedupMode === "cooldown" ? cooldownDias : undefined,
       include_archived: includeArchived,
@@ -218,7 +223,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (modoTeste && canal === "meta") base.modo_teste = true;
     return base;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
+  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), motivosDescarte.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
 
 
   // ── Auto-preview com debounce ──
@@ -243,6 +248,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
         breakdown_por_empreendimento: d.breakdown_por_empreendimento,
         breakdown_por_recencia: d.breakdown_por_recencia,
         breakdown_por_motivo_descarte: d.breakdown_por_motivo_descarte,
+        breakdown_truncado: d.breakdown_truncado,
         ultimo_disparo_template: d.ultimo_disparo_template,
       });
     } catch (e) {
@@ -351,7 +357,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
           Monte o público, ajuste filtros e escolha a mensagem. Preview atualiza sozinho conforme você mexe.
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pb-24 lg:pb-6">
         <div className="grid lg:grid-cols-[1fr_320px] gap-4 items-start">
           {/* ─── COLUNA PRINCIPAL — ABAS ─── */}
           <div>
@@ -485,14 +491,49 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
                     </label>
                     {preview?.breakdown_por_motivo_descarte && preview.breakdown_por_motivo_descarte.length > 0 && (
                       <div className="mt-1">
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Motivos de descarte (informativo)</Label>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {preview.breakdown_por_motivo_descarte.slice(0, 8).map((m) => (
-                            <Badge key={m.motivo} variant="outline" className="text-[10px] font-normal">
-                              {m.motivo} <span className="ml-1 text-muted-foreground tabular-nums">{m.total}</span>
-                            </Badge>
-                          ))}
+                        <div className="flex items-center justify-between gap-2">
+                          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Motivos de descarte {motivosDescarte.length > 0 && <span className="text-indigo-600 normal-case">· {motivosDescarte.length} filtrado{motivosDescarte.length > 1 ? "s" : ""}</span>}
+                          </Label>
+                          {motivosDescarte.length > 0 && (
+                            <button
+                              type="button"
+                              className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5"
+                              onClick={() => setMotivosDescarte([])}
+                            >
+                              <X className="h-3 w-3" /> Limpar
+                            </button>
+                          )}
                         </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Clique para filtrar por um ou mais motivos.</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {preview.breakdown_por_motivo_descarte.map((m) => {
+                            const active = motivosDescarte.includes(m.motivo);
+                            return (
+                              <button
+                                key={m.motivo}
+                                type="button"
+                                onClick={() => setMotivosDescarte((prev) => prev.includes(m.motivo) ? prev.filter((x) => x !== m.motivo) : [...prev, m.motivo])}
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition-colors",
+                                  active
+                                    ? "border-indigo-500 bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-200"
+                                    : "border-border bg-background hover:bg-muted"
+                                )}
+                              >
+                                {active && <Check className="h-2.5 w-2.5" />}
+                                <span className="truncate max-w-[220px]">{m.motivo}</span>
+                                <span className="text-muted-foreground tabular-nums">{m.total.toLocaleString("pt-BR")}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {preview.breakdown_truncado && (
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Contagens aproximadas (base &gt; 20.000). O total do disparo é o correto.
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -749,21 +790,71 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
             </Tabs>
           </div>
 
-          {/* ─── FUNIL LATERAL ─── */}
-          <FunilLateral
-            loading={previewing}
-            count={preview?.count ?? null}
-            funil={preview?.funil}
-            breakdownEmpreendimento={preview?.breakdown_por_empreendimento}
-            ultimoDisparoTemplate={preview?.ultimo_disparo_template}
-            canal={canal}
-            templateName={templateName}
-            firing={firing}
-            onDisparar={disparar}
-            onFocusEmpreendimento={(nome) => setEmpreendimentos([nome])}
-          />
+          {/* ─── FUNIL LATERAL (desktop) ─── */}
+          <div className="hidden lg:block">
+            <FunilLateral
+              loading={previewing}
+              count={preview?.count ?? null}
+              funil={preview?.funil}
+              breakdownEmpreendimento={preview?.breakdown_por_empreendimento}
+              ultimoDisparoTemplate={preview?.ultimo_disparo_template}
+              canal={canal}
+              templateName={templateName}
+              firing={firing}
+              onDisparar={disparar}
+              onFocusEmpreendimento={(nome) => setEmpreendimentos([nome])}
+            />
+          </div>
         </div>
       </CardContent>
+
+      {/* ─── BARRA STICKY MOBILE (funil + disparar) ─── */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur px-3 py-2 flex items-center gap-2 shadow-lg">
+        <Sheet open={mobileFunilOpen} onOpenChange={setMobileFunilOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              className="flex-1 flex items-center gap-2 rounded-md border bg-background px-2.5 py-1.5 text-left active:bg-muted"
+            >
+              <TrendingUp className="h-4 w-4 text-indigo-600 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">Elegíveis</div>
+                <div className="text-sm font-bold text-indigo-700 dark:text-indigo-300 tabular-nums leading-tight">
+                  {previewing && !preview ? "…" : (preview?.count ?? 0).toLocaleString("pt-BR")}
+                </div>
+              </div>
+              <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+            <SheetHeader className="text-left mb-3">
+              <SheetTitle className="text-base flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-indigo-600" /> Funil ao vivo
+              </SheetTitle>
+            </SheetHeader>
+            <FunilLateral
+              loading={previewing}
+              count={preview?.count ?? null}
+              funil={preview?.funil}
+              breakdownEmpreendimento={preview?.breakdown_por_empreendimento}
+              ultimoDisparoTemplate={preview?.ultimo_disparo_template}
+              canal={canal}
+              templateName={templateName}
+              firing={firing}
+              onDisparar={() => { setMobileFunilOpen(false); disparar(); }}
+              onFocusEmpreendimento={(nome) => { setEmpreendimentos([nome]); setMobileFunilOpen(false); }}
+            />
+          </SheetContent>
+        </Sheet>
+        <Button
+          className="h-11 px-4 font-semibold shrink-0"
+          onClick={disparar}
+          disabled={firing || previewing || !preview || preview.count === 0}
+        >
+          {firing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <span className="ml-1.5 text-sm">Disparar</span>
+        </Button>
+      </div>
     </Card>
   );
 }

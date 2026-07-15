@@ -1,152 +1,63 @@
-# Eu Auditoria da tela de disparo (`DisparoCustomizadoCard`) + Redesign
+## Contexto — a dúvida do "1.000"
 
-## Problemas hoje
+Não, você **não tem exatamente 1.000 leads descartados**. O número real no banco é maior:
 
-Fiz uma leitura da tela ponto a ponto e olhei o volume real da base para saber onde a UI está cega:
+- **1.493** leads com `motivo_descarte` do tipo "Descartado:" (reengajáveis por definição do prefixo)
+- **969** com "Inativado:" (definitivos)
+- **4.035** já arquivados (o cron de 24h arquiva quase todos)
+- **4.055** têm telefone
 
-1. **"Descartados" é uma caixa preta.** Você escolhe a fonte e não sabe se são 3.900 ou 30.000, quantos são de julho, quantos são de fevereiro, quantos são Casa Tua. Hoje só existe volume total do banco: **jul/2026 = 2.202, jun = 1.488, mai = 376**. O usuário não tem esse mapa dentro da tela.
-2. **Empreendimento é campo de texto livre.** Você digita "Casa Tua", mas há variações ("Casa Tua - Junho 2026", "Alto Lindóia" vs "Alto Lindoia"), e sem contador ao vivo. Existem **≥20 empreendimentos** com descartados; escolher às cegas gera erro de digitação silencioso.
-3. **Não dá para disparar por múltiplos empreendimentos.** É um único input texto — ou 1 empreendimento, ou geral.
-4. **Não existe "recência".** Sem controle "últimos 7d / 30d / 90d / 6m / +6m". Só um range de datas manual que ninguém preenche.
-5. **Filtros empilhados verticalmente**, um embaixo do outro, sem hierarquia. Canal → Público → Tipo descarte → Arquivados → Etapas → Listas → Período → Empreendimento → Dedup → Cooldown → Template → Imagem → Preview → Disparar. É uma escada de 13 degraus.
-6. **Preview é manual.** Você mexe em algo, esquece de clicar "Prévia", dispara com o número velho. Deveria recalcular sozinho.
-7. **Funil já retorna do backend** (`total_bruto`, `duplicados_removidos`, `suprimidos_meta`, `em_cooldown`, `elegiveis`…) mas está enterrado em texto pequeno. Deveria ser o item mais visível da tela.
-8. **Sem breakdown de saída.** Você não vê "dos 1.200 elegíveis, 830 são Casa Tua, 220 Open Bosque". Isso importa pra escolher o template certo.
-9. **Sem "quem já recebeu esse template".** Você não sabe se acabou de disparar `casatua_junho25k` pros mesmos números ontem.
-10. **Sem estimativa de custo/tempo.** 1.200 números × 3–6s = 60–120 min. Nunca mostrado.
+O "**Todos 1.000**" que aparece nas pills de recência é um **bug de agregação**: o backend calcula os buckets de recência/motivo/empreendimento fazendo `range(0, 4999)` no PostgREST, mas o cliente Supabase por padrão **corta em 1.000 linhas por request**. Ou seja, todas as pills de recência, o multi-select de empreendimento e as badges de motivo estão sendo alimentadas por no máximo 1.000 leads amostrados — mesmo quando existem mais elegíveis. O card "Elegíveis" do funil lateral (que usa `count: exact`) mostra o número correto, mas os filtros mostram uma foto incompleta. Isso precisa ser corrigido antes de qualquer refinamento visual.
 
-## Redesign proposto: "Segment Builder" em 3 abas + funil ao vivo persistente
+## Auditoria completa — o que vou revisar e corrigir
 
-### Layout novo (uma linha, duas colunas fixas)
+### 1. Correção crítica — tampão de 1.000 nos breakdowns
+Arquivo: `supabase/functions/reengajamento-audience-preview/index.ts`
 
-```text
-┌─────────────────────────────────────────────┬───────────────────┐
-│  [1. Público] [2. Filtros] [3. Mensagem]    │  📊 FUNIL AO VIVO │
-│  ────────────────────────                    │  Total bruto: 4.812│
-│  (conteúdo da aba selecionada)              │  − Duplicados: 210 │
-│                                              │  − Pipeline ativo:180│
-│                                              │  − Suprimidos Meta:410│
-│                                              │  − Anti-fadiga: 90 │
-│                                              │  ─────────────    │
-│                                              │  = Elegíveis: 3.922│
-│                                              │                   │
-│                                              │  Por empreend.:   │
-│                                              │  • Casa Tua  1.204│
-│                                              │  • Open Bosque 487│
-│                                              │  • Orygem      214│
-│                                              │  …               │
-│                                              │  ⏱ ~2h 40min      │
-│                                              │  🎯 Meta / casatua│
-│                                              │  [🚀 Disparar]   │
-└─────────────────────────────────────────────┴───────────────────┘
-```
+- Paginar `aggData` em chunks de 1.000 até esgotar (ou até um teto seguro tipo 20 mil) em vez de um único `range(0, 4999)`.
+- Aplicar o mesmo tratamento aos breakdowns do fluxo combinado (`sourcesArr.length > 1`) e do `oferta_ativa_lista`.
+- Retornar um campo `breakdown_truncado: boolean` para o front alertar se o teto foi atingido.
 
-Coluna direita **fica sempre visível** e **atualiza sozinha** (debounce 400ms) enquanto o usuário mexe nos filtros.
+### 2. Dados — coerência dos números exibidos
+- **Descartados/reengajáveis**: garantir que `elegiveis` (usado no botão "Disparar N") e a soma das pills de recência batam. Hoje divergem quando há >1.000 elegíveis.
+- **Empreendimento multi-select**: hoje as opções vêm do breakdown paginado; após correção, cada opção mostrará o total real.
+- **Motivos de descarte (informativo)**: idem — número por motivo hoje é limitado a 1.000.
+- **Alerta "Template já disparado nas últimas 24h"**: validar que a janela usa o `created_at` do último disparo −24h (parece correto, mas conferir com dado real).
 
-### Aba 1 — PÚBLICO
+### 3. Opções — o que existe hoje e o que ajustar
+- Aba **Público**: Canal (Meta/Evolution), Fonte multi-select (Descartados/Oferta Ativa/Pipeline ativo) — ok.
+- Aba **Filtros**: Recência (7d/30d/90d/3–6m/+6m/Todos), Empreendimento multi-select, Tipo de descarte, Incluir arquivados, Etapas (pipeline), Listas (oferta ativa), Regras de dedup colapsáveis — ok, mas:
+  - Adicionar **filtro por motivo de descarte** (clicar numa badge de motivo deveria filtrar, hoje é só informativo).
+  - "Incluir arquivados" está marcado por padrão como recomendado — validar contra o comportamento do backend (`include_archived`).
+- Aba **Mensagem**: Template Meta + Modo teste cauteloso — ok.
 
-Três cards grandes, clicáveis, com **contador ao vivo** dentro do card:
+### 4. Seleções e cliques
+- Pills de recência: clique já troca `recencia` — ok. Adicionar estado "hover" com contagem mesmo quando inativo (já mostra a badge, ok).
+- `EmpreendimentoMultiSelect`: seleção, limpar, remover pill individual — funciona. Adicionar suporte a **selecionar por checkbox no funil lateral** (hoje o click no funil lateral chama `onFocusEmpreendimento` mas o handler não está passado; conferir wiring em `DisparoCustomizadoCard`).
+- Badges de motivo: hoje inertes. Tornar clicáveis para adicionar/remover ao filtro `motivos_descarte`.
+- Botão "Disparar": disabled correto quando `elegiveis===0` — ok.
 
-```text
-┌───────────────┐ ┌───────────────┐ ┌───────────────┐
-│ 🗂  Descartados│ │ 🎯 Oferta Ativa│ │ ⚙️ Pipeline    │
-│ 4.066 leads   │ │ 12 listas ativas│ │ 7 etapas       │
-│ ✅ selecionado │ │                │ │                │
-└───────────────┘ └───────────────┘ └───────────────┘
-```
+### 5. Formatos
+- Números com `toLocaleString("pt-BR")` em todos os lugares — auditoria rápida para pegar qualquer `n.toString()` remanescente (badges de motivo em l.492 usam `{m.total}` sem locale — corrigir).
+- Datas relativas ("há 3d") — já centralizado em `FunilLateral`. Ok.
 
-Múltiplo permitido (combina + dedup), badge "combinado" continua.
+### 6. Responsividade mobile (viewport 440×799 do print)
+Problemas visíveis no screenshot que você mandou:
+- **Funil lateral some no mobile** — `grid lg:grid-cols-[1fr_320px]` faz ele virar bloco abaixo do conteúdo. Solução: transformar num **sheet/drawer fixo no rodapé** com CTA "Ver funil (1.234 elegíveis)" ou num sticky bar inferior no mobile, mantendo o botão Disparar sempre visível.
+- **TabsList "3 abas" + subtabs internos**: os TabsList da página (Disparo/Nutrição/Ao vivo/Histórico/Config) já quebram em 2 linhas no mobile, o que empurra o card para baixo. Aceitável, mas dá para reduzir `h-11` no mobile.
+- **Pills de recência** quebram em 3 linhas — ok, mas apertar o gap (`gap-1` no mobile).
+- **Empreendimento select**: o `PopoverContent` com `w-[--radix-popover-trigger-width]` funciona; conferir que a busca não quebra em telas <380px.
+- **Badges de motivo**: no mobile viram scroll horizontal implícito. Trocar por `flex-wrap` (já está) e limitar a 6 no mobile com "ver mais".
 
-### Aba 2 — FILTROS (adaptativos à fonte escolhida)
+### 7. Fora do card — coerência da página
+- `LiveDispatchBanner`, `RespostasRecebidasHoje`, `AuditoriaWebhookTab`: rápida checagem de que consomem `elegiveis`/`count` corretos.
+- Aba **Histórico** (`FilaReenvioCard`) e aba **Config** (`ReengajamentoTab`): checagem visual e responsividade, sem mudança funcional.
 
-**Se DESCARTADOS:**
+## Entregáveis desta rodada
 
-- **Recência** (pills com contador ao vivo — o que hoje não existe):
-  ```
-  [Últimos 7d · 412] [30d · 2.202] [90d · 3.690] [3-6m · 376] [+6m · 0] [Todos]
-  ```
-  Badge **🔥 NOVO** nos 7d.
-- **Empreendimento** (multi-select combobox — hoje é texto livre):
-  ```
-  [Buscar empreendimento…]
-  ☑ Casa Tua              1.331
-  ☑ Open Bosque             487
-  ☐ Orygem                  214
-  ☐ Lake Eyre               189
-  ☐ Casa Tua - Junho 2026    54
-  … busca digitando ("Casa" filtra todos que contêm)
-  ```
-  Contador ao vivo baseado no que já foi filtrado por recência.
-- **Tipo de descarte** (mantém): reengajável / definitivo / todos.
-- **Motivo do descarte** (novo, opcional): chips com contador para "sem interesse", "sem retorno", "financeiro", etc. — puxando de `motivo_descarte` real.
-- **Incluir arquivados** (mantém, mas vira toggle discreto).
+1. **Fix backend**: paginação real dos breakdowns (elimina o teto artificial de 1.000).
+2. **Fix frontend**: badges de motivo clicáveis viram filtro; wiring do `onFocusEmpreendimento`; formatação `pt-BR` universal.
+3. **Mobile**: funil lateral vira drawer inferior com CTA de disparo sempre acessível; ajustes finos de spacing nas pills.
+4. **Aviso de truncamento**: se algum breakdown ainda estourar o teto de segurança, mostrar "aproximado" com tooltip.
 
-**Se OFERTA ATIVA:**
-
-- Filtro por empreendimento **em cima** da lista de listas (hoje é combobox único, difícil de escanear).
-- Ordenação padrão: mais recente primeiro, badge "🔥 nova" nas <7d.
-- Contador de leads por lista, com estado "já disparei ontem" quando aplicável.
-
-**Se PIPELINE ATIVO:**
-
-- Cada etapa com contador ao vivo `Qualificação · 342`.
-- Filtro adicional por dias parados na etapa.
-
-**Regras (colapsável, resumo em 1 linha):**
-
-```
-🛡  Excluir quem já recebeu nos últimos 7 dias · Excluir suprimidos Meta   [Ajustar]
-```
-
-Popover abre o dedup atual (cooldown / exclude_sent / only_sent_before).
-
-### Aba 3 — MENSAGEM
-
-Continua o que já existe: seletor de template Meta (ou Evolution free-text), preview da imagem de header, botão "Atualizar templates aprovados". Só reagrupado.
-
-### Coluna direita — Funil ao vivo
-
-- Todos os campos do funil que o backend **já retorna** viram uma pilha visual em cascata, com o **Elegíveis grande** no fim.
-- **Breakdown por empreendimento** (top 5) dos elegíveis. Ao clicar em uma linha, filtra a seleção só para aquele empreendimento — atalho poderoso.
-- **Estimativa de tempo** = elegíveis × 4,5s média.
-- Botão **Disparar** aqui embaixo, sempre visível, sem precisar rolar.
-
-## Ajustes backend necessários
-
-- `reengajamento-audience-preview` já devolve `funil`; adicionar:
-  - `breakdown_por_empreendimento`: `[{empreendimento, total}]`
-  - `breakdown_por_recencia`: `{ '7d': n, '30d': n, '90d': n, '180d': n, 'mais': n }`
-  - `breakdown_por_motivo_descarte`: `[{motivo, total}]`
-  - `ultimo_disparo_template`: `{ template, quantos, quando }` (pra alertar se acabou de disparar ontem)
-- Ativar recálculo automático da preview no frontend via `useQuery` com key `(sources, filters)` e `debounce`.
-
-## Arquivos que serão tocados (só na fase de implementação)
-
-- `src/components/central-nutricao/DisparoCustomizadoCard.tsx` — refatorar em 3 abas + funil lateral. Como o arquivo já está com **921 linhas** (acima da diretriz de 500), vai ser quebrado em:
-  - `DisparoCustomizadoCard.tsx` (shell + estado)
-  - `disparo/TabPublico.tsx`
-  - `disparo/TabFiltros.tsx` (com `RecenciaPills`, `EmpreendimentoMultiSelect`, `MotivoDescartesPills`)
-  - `disparo/TabMensagem.tsx`
-  - `disparo/FunilLateral.tsx`
-  - `disparo/useAudienceState.ts` (hook com estado + preview automático)
-- `supabase/functions/reengajamento-audience-preview/index.ts` — adicionar breakdowns.
-
-Nenhuma mudança na lógica de dedup, disparo, throttle ou nas edges de execução (`reengajamento-descartados-enqueue`, `whatsapp-campaign-dispatch`). Só na experiência de **selecionar** o público e **visualizar** o funil.
-
-## O que não muda
-
-- Regras de segurança (blacklist, pause travada, cooldown).
-- Multi-fonte com dedup por telefone.
-- Templates Meta e imagem de header por template.
-- Fluxo de "Preview → Confirma → Fila cria → Micro-lotes".
-
-## Ordem sugerida de implementação
-
-1. Backend: enriquecer o preview com os 3 breakdowns.
-2. Frontend: quebrar o arquivo grande em subcomponentes (sem mudar UI).
-3. Frontend: introduzir as 3 abas + funil lateral, migrando os campos existentes.
-4. Frontend: adicionar recência pills + empreendimento multi-select + motivo do descarte.
-5. Frontend: recálculo automático da preview (debounce).
-6. Frontend: alerta "você acabou de disparar esse template ontem".
-
-Cada passo é entregável isolado e testável.
+Sem tocar em lógica de disparo, supressão Meta, modo teste cauteloso ou fluxo de auto-pausa — tudo isso permanece como está.
