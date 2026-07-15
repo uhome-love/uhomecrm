@@ -376,6 +376,9 @@ Deno.serve(async (req) => {
       if (audience.periodo?.from) q = q.gte("stage_changed_at", audience.periodo.from);
       if (audience.periodo?.to) q = q.lte("stage_changed_at", audience.periodo.to);
       if (empList.length) q = q.in("empreendimento", empList);
+      if (Array.isArray(audience.motivos_descarte) && audience.motivos_descarte.length) {
+        q = q.in("motivo_descarte", audience.motivos_descarte);
+      }
 
       // Dedup novo: cooldown (default). Mantém modos antigos como override.
       if (dedupMode === "exclude_sent") {
