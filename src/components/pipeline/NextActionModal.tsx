@@ -205,7 +205,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">Data *</label>
-                  <Input type="date" value={tarefaData} max={maxTaskDateBRT()} onChange={(e) => setTarefaData(e.target.value)} className="h-9" />
+                  <Input type="date" value={tarefaData} max={maxTaskDateBRT(currentStageTipo)} onChange={(e) => setTarefaData(e.target.value)} className="h-9" />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">Hora (opcional)</label>
