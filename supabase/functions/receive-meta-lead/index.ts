@@ -850,7 +850,7 @@ Deno.serve(async (req) => {
         if (email) {
           const { data } = await supabase
             .from("pipeline_leads")
-            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado")
+            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado, meta_lead_id")
             .eq("email", email)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -860,7 +860,7 @@ Deno.serve(async (req) => {
         if (!dup) {
           const { data } = await supabase
             .from("pipeline_leads")
-            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado")
+            .select("id, corretor_id, nome, empreendimento, stage_id, arquivado, meta_lead_id")
             .eq("telefone", telefone)
             .order("created_at", { ascending: false })
             .limit(1)
