@@ -91,9 +91,12 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
       if (selected === "tarefa") {
         if (!tarefaData) { toast.error("Informe a data da tarefa"); setSaving(false); return; }
         if (isTaskDateTooFar(tarefaData, currentStageTipo)) { toast.error(taskDateTooFarMessage(currentStageTipo)); setSaving(false); return; }
+        const tituloLabel = TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa;
+        const obsClean = obsTarefa.trim();
         const { error: insertErr } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: leadId,
-          titulo: TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa,
+          titulo: tituloLabel,
+          descricao: obsClean || null,
           tipo: tipoTarefa,
           prioridade: "media",
           status: "pendente",
@@ -107,12 +110,24 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
           setSaving(false);
           return;
         }
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: leadId,
+          tipo: "tarefa",
+          titulo: obsClean
+            ? `Tarefa criada: ${tituloLabel} — ${obsClean}`
+            : `Tarefa criada: ${tituloLabel}`,
+          data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+          prioridade: "media",
+          status: "pendente",
+          created_by: user.id,
+        } as any);
         await supabase.from("pipeline_leads").update({
-          proxima_acao: TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa,
+          proxima_acao: tituloLabel,
           data_proxima_acao: tarefaData,
           ultima_acao_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         } as any).eq("id", leadId);
+
         toast.success("Tarefa agendada ✅");
       } else if (selected === "avancar") {
         if (!nextStageId) { toast.error("Selecione a etapa"); setSaving(false); return; }
