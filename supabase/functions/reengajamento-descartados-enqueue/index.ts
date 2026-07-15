@@ -579,6 +579,10 @@ Deno.serve(async (req) => {
         if (bodyAudience.periodo?.from) q = q.gte("stage_changed_at", String(bodyAudience.periodo.from));
         if (bodyAudience.periodo?.to) q = q.lte("stage_changed_at", String(bodyAudience.periodo.to));
         if (empList.length) q = q.in("empreendimento", empList);
+        const motivosSel = Array.isArray((bodyAudience as any).motivos_descarte)
+          ? ((bodyAudience as any).motivos_descarte as unknown[]).filter((s): s is string => typeof s === "string" && s.length > 0)
+          : [];
+        if (motivosSel.length) q = q.in("motivo_descarte", motivosSel);
         if (dedupMode === "exclude_sent") {
           q = q.is("reengajamento_enviado_at", null);
         } else if (dedupMode === "only_sent_before" && bodyAudience.dedup_cutoff) {
