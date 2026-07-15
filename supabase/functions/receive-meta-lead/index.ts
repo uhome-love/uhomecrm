@@ -564,7 +564,7 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await supabase
       .from("pipeline_leads")
-      .select("id, corretor_id, nome, empreendimento, aceite_status, stage_id, arquivado")
+      .select("id, corretor_id, nome, empreendimento, aceite_status, stage_id, arquivado, meta_lead_id")
       .eq("telefone", telefone)
       .order("created_at", { ascending: false })
       .limit(1)
