@@ -202,6 +202,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     const base: Record<string, unknown> = {
       source, sources, canal, periodo,
       empreendimentos: empreendimentos.length ? empreendimentos : undefined,
+      motivos_descarte: motivosDescarte.length ? motivosDescarte : undefined,
       dedup_mode: dedupMode,
       cooldown_dias: dedupMode === "cooldown" ? cooldownDias : undefined,
       include_archived: includeArchived,
@@ -222,7 +223,7 @@ export default function DisparoCustomizadoCard({ onFired }: { onFired?: () => vo
     if (modoTeste && canal === "meta") base.modo_teste = true;
     return base;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
+  }, [source, sources.join(","), canal, recencia, empreendimentos.join(","), motivosDescarte.join(","), dedupMode, cooldownDias, includeArchived, limit, dedupCutoff, tipoDescarte, stageIds.join(","), listaIds.join(","), templateName, templateLanguage, headerImageUrl, mensagem, modoTeste]);
 
 
   // ── Auto-preview com debounce ──
