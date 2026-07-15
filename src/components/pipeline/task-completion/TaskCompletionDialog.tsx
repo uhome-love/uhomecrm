@@ -34,6 +34,8 @@ export interface TaskCompletionDialogProps {
   leadNome?: string;
   leadId?: string;
   currentStageId?: string;
+  /** Origem da tarefa. Se for 'cadencia_sem_contato', a próxima tarefa é criada pelo sistema. */
+  tarefaOrigem?: string | null;
   /** Default 'lead'. 'negocio' renderiza Step 2 sem o grupo "Encerrar lead". */
   context?: CompletionContext;
   onConfirm: (payload: CompletionPayload) => Promise<void> | void;
@@ -46,6 +48,7 @@ export default function TaskCompletionDialog({
   leadNome,
   leadId,
   currentStageId,
+  tarefaOrigem,
   context = "lead",
   onConfirm,
 }: TaskCompletionDialogProps) {
