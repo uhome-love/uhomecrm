@@ -269,6 +269,17 @@ function ScheduleNextFields({
           </span>
         </div>
       )}
+      {semContato?.enabled && !semContato.requiresNextTask && !semContato.finalAttempt && (
+        <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md p-3 flex items-start gap-2">
+          <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span>
+            Ao concluir esta tarefa da cadência (Tentativa {semContato.tentativaConcluida}),
+            a <strong>próxima (T{semContato.tentativaConcluida + 1})</strong> é criada automaticamente pelo CRM.
+            Você não precisa agendar.
+          </span>
+        </div>
+      )}
+
 
       <div>
         <label className="text-[11px] uppercase tracking-wide font-semibold text-primary mb-2 flex items-center gap-1.5">
