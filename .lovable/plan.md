@@ -1,62 +1,35 @@
-## Passo 2 — Persistir `meta_lead_id` em todo lead Meta novo
+## Problema
 
-Plano aprovado. Reemitindo idêntico para acionar o modo build.
+No drawer do lead (Pipeline de Leads) → aba **Tarefas** → botão **"Nova tarefa"**, abre o `NextActionModal` na aba "Agendar nova tarefa". O formulário atual tem apenas: **Tipo**, **Data** e **Hora** — sem campo de observação. Corretores não conseguem registrar o contexto da tarefa (ex.: "retornar sobre financiamento", "ligar após 17h").
 
-### 2.1 Escopo confirmado
+Curiosamente, o mesmo modal já tem Textarea de observação na opção "Descartar lead", e o `CardQuickTaskPopover` (tarefa rápida do card) já usa observação obrigatória. A ausência aqui é um gap de UI.
 
-**Única function que cria lead com `origem = "Meta Ads"` é `receive-meta-lead`.** Grep em todas as edge functions confirma. `meta-leads-backfill` reencaminha para ela (linha 489), então herda a mudança de graça — nada a alterar lá.
+## Solução
 
-**Furo conhecido:** o caminho Meta → Jetimob → `crm-webhook` cria leads com `origem = "jetimob"`/`"site_uhome"` e sem `leadgen_id` (Jetimob não repassa). Não corrigível sem projeto Jetimob-API. O Controle 5 mede a materialidade.
+Adicionar campo **Observação** na opção "Agendar nova tarefa" do `NextActionModal.tsx`, salvando em `pipeline_tarefas.descricao` (coluna já existe — a aba de edição da tarefa já lê/edita esse campo).
 
-### 2.2 Três mudanças cirúrgicas em `receive-meta-lead/index.ts`
+### Alterações (arquivo único)
 
-**A. INSERT (linha 787).** Adicionar `meta_lead_id: externalLeadId || null` no payload.
+`src/components/pipeline/NextActionModal.tsx`:
 
-**B. Reativação por telefone (bloco linha 565–609).** Estender `.select(...)` com `meta_lead_id`; se `existing.meta_lead_id IS NULL` E `externalLeadId` presente E nenhum outro `pipeline_lead` já usa esse `externalLeadId` → gravar. Nunca sobrescrever.
+1. Novo state `const [obsTarefa, setObsTarefa] = useState("")`.
+2. Reset em `resetForm()`.
+3. No JSX de `selected === "tarefa"`, após a linha de Data/Hora, adicionar:
+   - Label **"Observação"** + `<Textarea rows={2}>` com placeholder tipo *"Ex.: Retornar sobre financiamento, ligar após 17h..."*.
+   - Opcional (sem obrigatoriedade) — alinhado com o comportamento do `CardQuickTaskPopover` onde é obrigatório; aqui deixaremos opcional para não travar quem só quer agendar rápido. Se preferir obrigatório, basta trocar 1 linha.
+4. No `insert` em `pipeline_tarefas`, incluir `descricao: obsTarefa.trim() || null`.
+5. Registrar `pipeline_atividades` com o título incluindo a observação (padrão que o `CardQuickTaskPopover` já usa), para aparecer na timeline.
 
-**C. Reativação por 23505 unique violation (bloco linha 815–920).** Mesma regra do (B) nos dois `.select` (por email e por telefone).
+### Alinhamento de consistência (pequeno bônus)
 
-**Check anti-ambiguidade 1↔1** em (B) e (C):
-```typescript
-if (externalLeadId && !dup.meta_lead_id) {
-  const { data: outroLead } = await supabase
-    .from("pipeline_leads")
-    .select("id")
-    .eq("meta_lead_id", externalLeadId)
-    .neq("id", dup.id)
-    .maybeSingle();
-  if (!outroLead) updatePayload.meta_lead_id = externalLeadId;
-  else logOps("warn", "system", "meta_lead_id_ja_em_outro_lead",
-    { externalLeadId, este_lead: dup.id, outro_lead: outroLead.id });
-}
-```
+Ao criar a tarefa, também atualizar `pipeline_leads.proxima_acao` já inclui o label — manter como está. Só adicionamos `descricao` no insert de `pipeline_tarefas` e o registro na `pipeline_atividades`.
 
-**Log de payload sem ID** (antes do insert, quando `origem = "Meta Ads"`):
-```typescript
-if (!externalLeadId && !isJetimobSite) {
-  logOps("warn", "business", "meta_lead_id_ausente_no_payload",
-    { campaign_id: campaignId, form_name: formName, source: platform });
-}
-```
+## Validação
 
-### 2.3 Cinco controles com portões
+- Abrir drawer de um lead → aba Tarefas → **Nova tarefa** → escolher tipo/data/hora → digitar observação → Confirmar.
+- Conferir que a tarefa aparece na aba com o texto da observação (o `TaskCard` no `DrawerTasksTab` já renderiza `t.descricao`, linha 288 e 394).
+- Conferir que aparece na Timeline via `pipeline_atividades`.
 
-1. **Cobertura 24h** — `≥95%` de `meta_lead_id NOT NULL` entre leads novos com origem Meta.
-2. **Determinismo** — zero `meta_lead_id` duplicado entre pipeline_leads.
-3. **Idempotência** — nenhum valor de backfill sobrescrito.
-4. **Payloads sem ID** — visibilidade de campanha/formulário problemático via `ops_events`.
-5. **Furo Jetimob** — `origem = 'jetimob'` deve ser `≤5%` do total Meta+Jetimob nos últimos 7 dias.
+## Observação importante
 
-**Portões para avançar ao Passo 3:** Controle 1 ≥95%, Controle 2 = 0, Controle 5 ≤5%. Qualquer falha, paro e trago números.
-
-### 2.4 Ordem de execução
-
-1. Aplico as mudanças em `receive-meta-lead/index.ts` (~25 linhas).
-2. Deploy automático.
-3. Aciono `meta-leads-backfill` em modo recente para enriquecer leads recentes que caem no bloco (B).
-4. Reporto **imediatamente**: quantos leads enriquecidos + resultado do **Controle 5** (Jetimob material sim/não).
-5. Se Controle 5 > 5%: paro, discutimos se atacamos o caminho Jetimob antes de seguir.
-6. Se Controle 5 ≤ 5%: registro timestamp do deploy e aguardo 24h.
-7. Rodo Controles 1-4 e envio quadro completo antes do Passo 3.
-
-Clique em **Implement plan** para eu executar.
+Não mexo em nenhuma lógica de negócio (SLA, roleta, régua de saúde, etc.) — só UI + persistência de um campo já existente na tabela.

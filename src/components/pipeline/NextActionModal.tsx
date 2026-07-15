@@ -58,6 +58,8 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
   const [tipoTarefa, setTipoTarefa] = useState("follow_up");
   const [tarefaData, setTarefaData] = useState("");
   const [tarefaHora, setTarefaHora] = useState("");
+  const [obsTarefa, setObsTarefa] = useState("");
+
 
   // Avançar state
   const [nextStageId, setNextStageId] = useState("");
