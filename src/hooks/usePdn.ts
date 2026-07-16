@@ -467,9 +467,14 @@ export function usePdn(mes: string) {
       const equipe = (d.corretorAuthId && equipeByAuthId[d.corretorAuthId]) || ov?.equipe || "—";
       const proximaAcao = ov?.proxima_acao || "";
       const proximaAcaoData = ov?.proxima_acao_data || "";
+      const observacoesRow = (ov?.observacoes ?? d.observacoesNegocio ?? "").toString().trim();
       const dias = diffDays(d.stageChangedAt);
       const riscoManual = !!ov?.risco_manual;
-      const emRisco = !caiu && (riscoManual || (grupoBase !== "ganho" && !proximaAcao && dias > 7));
+      // Sinais de "foi tocado recentemente": próxima ação, observações preenchidas,
+      // ou edição manual no override do PDN nos últimos 7 dias. Qualquer um zera o risco automático.
+      const foiEditadoRecente = !!ov?.updated_at && diffDays(ov.updated_at) <= 7;
+      const temSinalDeAtualizacao = !!proximaAcao || !!observacoesRow || foiEditadoRecente;
+      const emRisco = !caiu && (riscoManual || (grupoBase !== "ganho" && !temSinalDeAtualizacao && dias > 7));
       out.push({
         id: `deal-${d.id}`,
         negocioId: d.negocioId,
