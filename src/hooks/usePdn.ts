@@ -122,6 +122,7 @@ type PdnEntry = {
   grupo_override: string | null;
   corretor_avisado_em: string | null;
   corretor_avisado_etapa: string | null;
+  updated_at: string | null;
 };
 
 const MS_DAY = 86400000;
