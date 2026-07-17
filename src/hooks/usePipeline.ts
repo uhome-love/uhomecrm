@@ -795,12 +795,13 @@ export function usePipeline(
             created_by: user.id,
           } as any).then(() => {}, () => {});
 
-          // Venda fechada → cria entrada de pós-venda (guardado contra duplicidade)
+          // Venda fechada → cria pipeline_lead em pós-vendas (guardado contra duplicidade)
           if (dealFase === "vendido") {
             const { data: existingPv } = await supabase
-              .from("pos_vendas")
+              .from("pipeline_leads")
               .select("id")
               .eq("negocio_id", negocioId)
+              .eq("modulo_atual", "pos_vendas")
               .limit(1)
               .maybeSingle();
             if (!existingPv) {
