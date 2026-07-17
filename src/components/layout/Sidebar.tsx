@@ -94,7 +94,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Operações",
       items: [
-        { label: "Escala diária",      path: "/escala-diaria",     icon: <Clock        size={15} strokeWidth={1.5} /> },
+        
         { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
         { label: "Usuários",           path: "/central-usuarios",  icon: <UsersRound   size={15} strokeWidth={1.5} /> },
       ],
