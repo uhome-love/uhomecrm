@@ -59,36 +59,37 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    // === RATE LIMITING (anti-spam Meta policy) ===
-    // Daily cap WhatsApp: 250 envios/dia (somando campanhas + nutrição)
-    const DAILY_WA_CAP = 250;
-    const todayStart = new Date();
-    todayStart.setUTCHours(3, 0, 0, 0); // 00:00 BRT
-    const { count: waSentToday } = await admin
-      .from("whatsapp_campaign_sends")
-      .select("id", { count: "exact", head: true })
-      .eq("status_envio", "sent")
-      .gte("sent_at", todayStart.toISOString());
-    const { count: nurtWaToday } = await admin
+    // === Canal WhatsApp descontinuado neste cron ===
+    // O envio WhatsApp de reengajamento é feito diretamente por
+    // reengajamento-descartados-enqueue / whatsapp-campaign-dispatch (Meta Graph API).
+    // Aqui só processamos EMAIL. Sequências antigas com canal='whatsapp' presas em
+    // 'pendente' são marcadas como 'skipped' para limpar a fila e ficar auditável.
+    const { data: waLegacy, error: waLegacyErr } = await admin
       .from("lead_nurturing_sequences")
-      .select("id", { count: "exact", head: true })
+      .update({
+        status: "skipped",
+        error_message: "canal_whatsapp_descontinuado",
+        sent_at: new Date().toISOString(),
+      })
+      .eq("status", "pendente")
       .eq("canal", "whatsapp")
-      .eq("status", "enviado")
-      .gte("sent_at", todayStart.toISOString());
-    const totalWaToday = (waSentToday || 0) + (nurtWaToday || 0);
-    const waCapReached = totalWaToday >= DAILY_WA_CAP;
-    if (waCapReached) {
-      console.log(`Daily WhatsApp cap (${DAILY_WA_CAP}) reached: ${totalWaToday}. Pulando envios WhatsApp da nutrição.`);
+      .select("id");
+    if (waLegacyErr) {
+      console.error("Skip WA legacy sequences error:", waLegacyErr);
+    } else if (waLegacy && waLegacy.length > 0) {
+      console.log(`Skipped ${waLegacy.length} WhatsApp legacy sequences (canal_whatsapp_descontinuado)`);
     }
 
-    // Conservador: 20 por execução
+    // Conservador: 20 por execução (agora só email)
     const { data: pendentes, error: fetchErr } = await admin
       .from("lead_nurturing_sequences")
       .select("*, pipeline_leads!inner(nome, telefone, email, corretor_id)")
       .eq("status", "pendente")
+      .eq("canal", "email")
       .lte("scheduled_at", new Date().toISOString())
       .order("scheduled_at", { ascending: true })
       .limit(20);
+
 
     if (fetchErr) {
       console.error("Fetch error:", fetchErr);
@@ -120,58 +121,35 @@ Deno.serve(async (req) => {
       }
 
       try {
-        if (seq.canal === "whatsapp") {
-          if (!lead.telefone) {
-            await admin.from("lead_nurturing_sequences")
-              .update({ status: "erro", error_message: "Lead sem telefone" })
-              .eq("id", seq.id);
-            erros++;
-            continue;
-          }
-          // Cap diário WhatsApp atingido — adia para próxima execução
-          if (waCapReached) {
-            console.log(`Pulando seq ${seq.id} — daily WA cap reached`);
-            continue;
-          }
-
-          const { error: waErr } = await admin.functions.invoke("whatsapp-send", {
-            body: {
-              telefone: lead.telefone,
-              nome: lead.nome,
-              template: {
-                name: seq.template_name,
-                language: "pt_BR",
-                parameters: {
-                  nome: lead.nome || "Cliente",
-                },
-              },
-            },
-          });
-
-          if (waErr) throw waErr;
-
-        } else if (seq.canal === "email") {
-          if (!lead.email) {
-            await admin.from("lead_nurturing_sequences")
-              .update({ status: "erro", error_message: "Lead sem email" })
-              .eq("id", seq.id);
-            erros++;
-            continue;
-          }
-
-          const { error: mailErr } = await admin.functions.invoke("mailgun-send", {
-            body: {
-              mode: "single",
-              to: lead.email,
-              to_name: lead.nome,
-              subject: `${lead.nome || "Olá"}, temos novidades para você`,
-              html: `<p>Olá ${lead.nome || ""},</p><p>${seq.mensagem || "Temos novidades para você!"}</p>`,
-              lead_id: seq.pipeline_lead_id,
-            },
-          });
-
-          if (mailErr) throw mailErr;
+        if (seq.canal !== "email") {
+          // Defesa em profundidade: se algum canal não-email escapar do filtro, marca skipped.
+          await admin.from("lead_nurturing_sequences")
+            .update({ status: "skipped", error_message: `canal_${seq.canal}_descontinuado`, sent_at: new Date().toISOString() })
+            .eq("id", seq.id);
+          continue;
         }
+
+        if (!lead.email) {
+          await admin.from("lead_nurturing_sequences")
+            .update({ status: "erro", error_message: "Lead sem email" })
+            .eq("id", seq.id);
+          erros++;
+          continue;
+        }
+
+        const { error: mailErr } = await admin.functions.invoke("mailgun-send", {
+          body: {
+            mode: "single",
+            to: lead.email,
+            to_name: lead.nome,
+            subject: `${lead.nome || "Olá"}, temos novidades para você`,
+            html: `<p>Olá ${lead.nome || ""},</p><p>${seq.mensagem || "Temos novidades para você!"}</p>`,
+            lead_id: seq.pipeline_lead_id,
+          },
+        });
+
+        if (mailErr) throw mailErr;
+
 
         // Mark as sent
         await admin.from("lead_nurturing_sequences")
@@ -230,10 +208,9 @@ Deno.serve(async (req) => {
         erros++;
       }
 
-      // Delay 3-6s aleatório para WhatsApp; 500ms para email
-      const isWa = seq.canal === "whatsapp";
-      const delayMs = isWa ? 3000 + Math.floor(Math.random() * 3000) : 500;
-      await new Promise(r => setTimeout(r, delayMs));
+      // Delay curto entre emails
+      await new Promise(r => setTimeout(r, 500));
+
     }
 
     console.log(`Nurturing sequencer done: ${enviados} enviados, ${erros} erros`);
