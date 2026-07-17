@@ -59,7 +59,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   roleta: lazyRetry(() => import("@/pages/RoletaLeads")),
   marketplace: lazyRetry(() => import("@/pages/MarketplaceScripts")),
   pipeline: lazyRetry(() => import("@/pages/PipelineKanban")),
-  "escala-diaria": lazyRetry(() => import("@/pages/EscalaDiaria")),
+  
   disponibilidade: lazyRetry(() => import("@/pages/DisponibilidadePage")),
   
   templates: lazyRetry(() => import("@/pages/TemplatesComunicacao")),
