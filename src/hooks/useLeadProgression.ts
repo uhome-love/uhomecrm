@@ -153,17 +153,8 @@ export function useLeadProgression() {
     if (!user) return;
 
     const dataAss = params.dataAssinatura || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    void dataAss;
 
-    // Create pos_vendas entry
-    await supabase.from("pos_vendas").insert({
-      negocio_id: params.negocioId,
-      lead_id: params.pipelineLeadId || null,
-      corretor_id: params.corretorId,
-      nome_cliente: params.nomeCliente,
-      empreendimento: params.empreendimento || null,
-      data_assinatura: dataAss,
-      vgv_final: params.vgvFinal || null,
-    } as any);
 
     // Create pipeline_lead in pos_vendas Boas-vindas stage
     const BOAS_VINDAS_STAGE_ID = "6634d176-d596-461b-b854-ad43182f4696";
