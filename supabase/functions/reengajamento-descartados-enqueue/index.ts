@@ -1279,9 +1279,10 @@ Deno.serve(async (req) => {
         if (runId) {
           await supabase
             .from("reengajamento_dispatch_queue")
-            .update({ status: "pending", locked_at: null } as any)
+            .update({ status: "pending", locked_at: null, locked_by: null } as any)
             .eq("run_id", runId)
-            .eq("status", "processing");
+            .eq("status", "processing")
+            .eq("locked_by", workerId);
         }
         return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_critical", motivo: reason, canal }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1793,15 +1794,29 @@ Deno.serve(async (req) => {
     }
 
     if (usingPersistentQueue) {
-      const { count: pendingAfter } = await supabase
-        .from("reengajamento_dispatch_queue")
-        .select("id", { count: "exact", head: true })
-        .eq("run_id", runId)
-        .eq("status", "pending");
+      const [{ count: pendingAfter }, { count: processingAfter }] = await Promise.all([
+        supabase
+          .from("reengajamento_dispatch_queue")
+          .select("id", { count: "exact", head: true })
+          .eq("run_id", runId)
+          .eq("status", "pending"),
+        supabase
+          .from("reengajamento_dispatch_queue")
+          .select("id", { count: "exact", head: true })
+          .eq("run_id", runId)
+          .eq("status", "processing"),
+      ]);
       if ((pendingAfter || 0) > 0) {
         const motivo = `Micro-lote concluído (${sent}/${totalAlvo}). Retomando automaticamente ${pendingAfter} pendentes da fila.`;
         await scheduleQueueContinuation(motivo);
         return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "queue_batch_continued", canal, continuation: true, pending: pendingAfter }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if ((processingAfter || 0) > 0) {
+        const motivo = `Aguardando ${(processingAfter || 0)} item(ns) já reservados por outro worker.`;
+        await updateRun({ status: "running", finished_at: null, motivo_parada: motivo, enviados: sent, falhas: failed, ignorados: skipped });
+        return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "queue_workers_active", canal, processing: processingAfter }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
