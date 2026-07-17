@@ -6100,7 +6100,7 @@ export type Database = {
           observacao: string | null
           pipeline_lead_id: string
           stage_anterior_id: string | null
-          stage_novo_id: string
+          stage_novo_id: string | null
         }
         Insert: {
           created_at?: string
@@ -6109,7 +6109,7 @@ export type Database = {
           observacao?: string | null
           pipeline_lead_id: string
           stage_anterior_id?: string | null
-          stage_novo_id: string
+          stage_novo_id?: string | null
         }
         Update: {
           created_at?: string
@@ -6118,7 +6118,7 @@ export type Database = {
           observacao?: string | null
           pipeline_lead_id?: string
           stage_anterior_id?: string | null
-          stage_novo_id?: string
+          stage_novo_id?: string | null
         }
         Relationships: [
           {
