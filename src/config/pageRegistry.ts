@@ -61,7 +61,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   pipeline: lazyRetry(() => import("@/pages/PipelineKanban")),
   "escala-diaria": lazyRetry(() => import("@/pages/EscalaDiaria")),
   disponibilidade: lazyRetry(() => import("@/pages/DisponibilidadePage")),
-  automacoes: lazyRetry(() => import("@/pages/AutomacoesPage")),
+  
   templates: lazyRetry(() => import("@/pages/TemplatesComunicacao")),
   aceite: lazyRetry(() => import("@/pages/AceiteLeads")),
   "minhas-tarefas": lazyRetry(() => import("@/pages/MinhasTarefas")),
@@ -147,7 +147,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/pipeline-leads":        { key: "pipeline",             label: "Pipeline",            icon: "AlignLeft",     noPadding: true },
   "/escala-diaria":         { key: "escala-diaria",        label: "Escala Diária",       icon: "Clock",         roles: ["admin"] },
   "/disponibilidade":       { key: "disponibilidade",      label: "Disponibilidade",     icon: "Clock",         roles: ["gestor", "admin", "diretor"] },
-  "/automacoes":            { key: "automacoes",           label: "Automações",          icon: "GitBranch",     roles: ["admin"] },
+  
   "/templates-comunicacao": { key: "templates",            label: "Templates",           icon: "ClipboardList", roles: ["gestor", "admin", "diretor"] },
   "/aceite":                { key: "aceite",               label: "Aceite de Leads",     icon: "UserCheck" },
   "/minhas-tarefas":        { key: "minhas-tarefas",       label: "Tarefas",             icon: "ListTodo" },
