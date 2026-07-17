@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Send, Activity, Settings, Sprout, History, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
 import DisparoCustomizadoCard from "@/components/central-nutricao/DisparoCustomizadoCard";
 import ReengajamentoTab from "@/components/central-nutricao/ReengajamentoTab";
 import AuditoriaWebhookTab from "@/components/central-nutricao/AuditoriaWebhookTab";
@@ -14,6 +13,7 @@ import FilaReenvioCard from "@/components/central-nutricao/FilaReenvioCard";
 import LiveDispatchBanner from "@/components/central-nutricao/LiveDispatchBanner";
 import PeriodFilter, { buildRange, type PeriodRange } from "@/components/central-nutricao/PeriodFilter";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useReengajamentoDispatch } from "@/hooks/useReengajamentoDispatch";
 
 
 export default function CentralNutricaoPage() {
@@ -30,20 +30,7 @@ export default function CentralNutricaoPage() {
   }, [searchParams]);
 
   // Existe algum disparo rodando agora? Governa o estado "limpo" da aba Ao vivo.
-  const { data: activeRun } = useQuery({
-    queryKey: ["reengajamento-active-run"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("reengajamento_dispatch_runs")
-        .select("id, status")
-        .eq("status", "running")
-        .order("started_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-    refetchInterval: (query) => (query.state.data ? 3000 : 15000),
-  });
+  const { run: activeRun } = useReengajamentoDispatch();
 
   const handleTabChange = (v: string) => {
     setTab(v);
