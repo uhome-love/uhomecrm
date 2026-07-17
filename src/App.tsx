@@ -54,7 +54,7 @@ const VisitaConfirmacao = lazyRetry(() => import("./pages/VisitaConfirmacao"));
 const ReferralPage = lazyRetry(() => import("./pages/ReferralPage"));
 const VitrinePage = lazyRetry(() => import("./pages/VitrinePage"));
 const ImovelPage = lazyRetry(() => import("./pages/ImovelPage"));
-const WhatsAppLanding = lazyRetry(() => import("./pages/WhatsAppLanding"));
+
 const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
