@@ -8,55 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Send, RefreshCw, MessageCircle, XCircle, Wifi, WifiOff, QrCode, Play, Pause, Square, AlertCircle, CheckCircle2, Shield, Zap, Plus, Trash2 } from "lucide-react";
+import { Loader2, Send, RefreshCw, MessageCircle, XCircle, Wifi, WifiOff, QrCode, Play, AlertCircle, CheckCircle2, Shield, Zap, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { formatBRT } from "@/lib/brtTime";
 import CentralInteligenciaPanel from "./CentralInteligenciaPanel";
 import ReengajamentoHistorico from "./ReengajamentoHistorico";
 import ReengajamentoUltimos from "./ReengajamentoUltimos";
-import type { DispatchRun, BlockedTemplate, DispatchInvokeResult } from "./types";
-
-const STALE_RUNNING_MS = 15 * 60 * 1000;
-
-async function recoverOrTimeoutStaleRun(data: DispatchRun, qc: ReturnType<typeof useQueryClient>) {
-  const { count } = await supabase
-    .from("reengajamento_dispatch_queue")
-    .select("id", { count: "exact", head: true })
-    .eq("run_id", data.id)
-    .in("status", ["pending", "processing"]);
-
-  if ((count || 0) > 0) {
-    await supabase
-      .from("reengajamento_dispatch_runs")
-      .update({
-        started_at: new Date().toISOString(),
-        finished_at: null,
-        status: "running",
-        motivo_parada: `Fila persistente ativa: ${(count || 0)} pendentes. Retomada automática acionada.`,
-      })
-      .eq("id", data.id);
-
-    supabase.functions.invoke("reengajamento-descartados-enqueue", {
-      body: { force: true, run_id: data.id, iniciado_por: "auto_resume_ui" },
-    });
-
-    return data;
-  }
-
-  await supabase
-    .from("reengajamento_dispatch_runs")
-    .update({
-      status: "timeout",
-      finished_at: new Date().toISOString(),
-      motivo_parada: "Encerrado automaticamente: execução antiga ficou travada sem fila pendente",
-    })
-    .eq("id", data.id);
-  qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
-  return null;
-}
+import type { BlockedTemplate, DispatchInvokeResult } from "./types";
+import { useReengajamentoDispatch } from "@/hooks/useReengajamentoDispatch";
 
 export default function ReengajamentoTab() {
   const qc = useQueryClient();
@@ -76,25 +36,7 @@ export default function ReengajamentoTab() {
   const [draft, setDraft] = useState<any>(null);
   const local = draft ?? cfg ?? {};
 
-  // Execução ativa (running) — polling rápido só quando há disparo em andamento,
-  // lento (15s) quando ocioso para detectar o início de um novo disparo.
-  const { data: activeRun } = useQuery({
-    queryKey: ["reengajamento-active-run"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("reengajamento_dispatch_runs")
-        .select("*")
-        .eq("status", "running")
-        .order("started_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (data?.started_at && Date.now() - new Date(data.started_at).getTime() > STALE_RUNNING_MS) {
-        return recoverOrTimeoutStaleRun(data, qc);
-      }
-      return data;
-    },
-    refetchInterval: (query) => (query.state.data ? 3000 : 15000),
-  });
+  const { run: activeRun } = useReengajamentoDispatch();
   const dispatchActive = !!activeRun;
 
   // Blacklist de templates (FIX B)
