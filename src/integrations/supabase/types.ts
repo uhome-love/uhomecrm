@@ -8062,6 +8062,8 @@ export type Database = {
           paused_until_release: boolean
           retry_131049_dias: number
           retry_max_tentativas: number
+          throttle_level: number
+          throttle_updated_at: string | null
           updated_at: string
           validar_numero: boolean
           warmup_incremento_pct: number
@@ -8100,6 +8102,8 @@ export type Database = {
           paused_until_release?: boolean
           retry_131049_dias?: number
           retry_max_tentativas?: number
+          throttle_level?: number
+          throttle_updated_at?: string | null
           updated_at?: string
           validar_numero?: boolean
           warmup_incremento_pct?: number
@@ -8138,6 +8142,8 @@ export type Database = {
           paused_until_release?: boolean
           retry_131049_dias?: number
           retry_max_tentativas?: number
+          throttle_level?: number
+          throttle_updated_at?: string | null
           updated_at?: string
           validar_numero?: boolean
           warmup_incremento_pct?: number
@@ -8157,6 +8163,7 @@ export type Database = {
           lead_id: string | null
           lead_ref: string
           locked_at: string | null
+          locked_by: string | null
           nome: string | null
           phone_last8: string
           phone_normalized: string | null
@@ -8179,6 +8186,7 @@ export type Database = {
           lead_id?: string | null
           lead_ref: string
           locked_at?: string | null
+          locked_by?: string | null
           nome?: string | null
           phone_last8: string
           phone_normalized?: string | null
@@ -8201,6 +8209,7 @@ export type Database = {
           lead_id?: string | null
           lead_ref?: string
           locked_at?: string | null
+          locked_by?: string | null
           nome?: string | null
           phone_last8?: string
           phone_normalized?: string | null
@@ -10959,6 +10968,38 @@ export type Database = {
           status: string
           variaveis: Json
         }[]
+      }
+      claim_reengajamento_dispatch_queue: {
+        Args: { p_batch_size: number; p_run_id: string; p_worker_id: string }
+        Returns: {
+          attempts: number
+          audience_source: string | null
+          created_at: string
+          email: string | null
+          error_text: string | null
+          id: string
+          lead_id: string | null
+          lead_ref: string
+          locked_at: string | null
+          locked_by: string | null
+          nome: string | null
+          phone_last8: string
+          phone_normalized: string | null
+          processed_at: string | null
+          run_id: string
+          status: string
+          telefone: string | null
+          template_language: string | null
+          template_name: string | null
+          updated_at: string
+          wamid: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "reengajamento_dispatch_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       cleanup_audit_log: { Args: never; Returns: undefined }
       cleanup_coaching_sessions: { Args: never; Returns: undefined }
