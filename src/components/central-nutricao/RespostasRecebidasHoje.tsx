@@ -93,10 +93,47 @@ export default function RespostasRecebidasHoje({
         (leads ?? []).forEach((l: any) => (leadsMap[l.id] = l));
       }
 
+      // IDs sem match em pipeline_leads → provavelmente vieram de oferta_ativa_leads
+      const idsSemPipeline = leadIds.filter((id) => !leadsMap[id]);
+      const oaMap: Record<string, { nome: string | null; status: string | null; telefone_normalizado: string | null }> = {};
+      if (idsSemPipeline.length) {
+        const { data: oaRows } = await supabase
+          .from("oferta_ativa_leads")
+          .select("id, nome, status, telefone_normalizado")
+          .in("id", idsSemPipeline);
+        (oaRows ?? []).forEach((o: any) => (oaMap[o.id] = o));
+      }
+
+      // Fallback por telefone: pipeline_leads criados/reativados recentemente com o mesmo telefone
+      const phonesFallback = Array.from(new Set(
+        (disparos ?? [])
+          .filter((d: any) => d.lead_id && !leadsMap[d.lead_id])
+          .map((d: any) => (d.phone || "").replace(/\D/g, ""))
+          .filter(Boolean)
+      ));
+      const phoneReativMap: Record<string, boolean> = {};
+      if (phonesFallback.length) {
+        const { data: reativRows } = await supabase
+          .from("pipeline_leads")
+          .select("telefone_normalizado, reativado_por_nutricao, reativado_em")
+          .in("telefone_normalizado", phonesFallback)
+          .eq("reativado_por_nutricao", true)
+          .gte("reativado_em", sinceIso);
+        (reativRows ?? []).forEach((r: any) => {
+          if (r.telefone_normalizado) phoneReativMap[r.telefone_normalizado] = true;
+        });
+      }
+
       const respostas: Resposta[] = [];
 
       (disparos ?? []).forEach((d: any) => {
         const lead = d.lead_id ? leadsMap[d.lead_id] : null;
+        const oa = d.lead_id ? oaMap[d.lead_id] : null;
+        const phoneNorm = (d.phone || "").replace(/\D/g, "");
+        const reativadoViaOA = !!oa && oa.status === "reativado";
+        const reativadoViaFone = !!phoneNorm && !!phoneReativMap[phoneNorm];
+        const reativado = !!lead?.reativado_por_nutricao || reativadoViaOA || reativadoViaFone;
+
         const viaBotao = !!d.button_response;
         const classificacao: "sim" | "nao" | "outro" = viaBotao
           ? (d.button_response === "sim" ? "sim" : d.button_response === "nao" ? "nao" : "outro")
@@ -106,8 +143,14 @@ export default function RespostasRecebidasHoje({
         let acao = "—";
         let alerta: string | null = null;
         if (classificacao === "sim") {
-          acao = lead?.reativado_por_nutricao ? "✅ Reativado e enviado à roleta" : "⚠️ SIM detectado mas lead não foi reativado";
-          if (!lead?.reativado_por_nutricao) alerta = "Lead com resposta positiva não foi reativado";
+          if (reativado) {
+            acao = reativadoViaOA || reativadoViaFone
+              ? "✅ Reativado via Oferta Ativa → Fila do CEO"
+              : "✅ Reativado e enviado à roleta";
+          } else {
+            acao = "⚠️ SIM detectado mas lead não foi reativado";
+            alerta = "Lead com resposta positiva não foi reativado";
+          }
         } else if (classificacao === "nao") {
           if (lead?.reengajamento_status?.startsWith("respondeu_nao")) acao = "✅ Marcado como descartado definitivo";
           else if (lead?.reengajamento_status === "enviado") { acao = "⚠️ Botão NÃO recebido mas status preso em 'enviado'"; alerta = "Status não atualizou"; }
@@ -120,7 +163,7 @@ export default function RespostasRecebidasHoje({
           origem: viaBotao ? "botao_meta" : "texto_meta",
           quando: d.responded_at,
           lead_id: d.lead_id,
-          nome: lead?.nome || null,
+          nome: lead?.nome || oa?.nome || null,
           phone: d.phone,
           texto: viaBotao ? `[botão] ${d.response_text || d.button_response}` : (d.response_text || "—"),
           classificacao,
@@ -128,6 +171,7 @@ export default function RespostasRecebidasHoje({
           alerta,
         });
       });
+
 
       (novosReativados ?? []).forEach((l: any) => {
         // Extrai a frase respondida da observação
