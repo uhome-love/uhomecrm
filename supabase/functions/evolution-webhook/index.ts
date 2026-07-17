@@ -249,6 +249,45 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ── Auth log-only (Fase 2 — enforcement virá em fase separada) ──
+  // Evolution API envia header `apikey` com AUTHENTICATION_API_KEY global.
+  // Também aceitamos ?apikey= na query e x-api-key por compat.
+  {
+    const expectedKey = Deno.env.get("EVOLUTION_API_KEY");
+    const headerKey = req.headers.get("apikey") || req.headers.get("x-api-key");
+    const queryKey = new URL(req.url).searchParams.get("apikey");
+    const providedKey = headerKey || queryKey;
+    const authOk = !!expectedKey && !!providedKey && providedKey === expectedKey;
+
+    if (!authOk) {
+      console.warn(
+        "[evolution-webhook][auth-log-only] missing/invalid apikey. " +
+        `has_header=${!!headerKey} has_query=${!!queryKey} expected_configured=${!!expectedKey}`
+      );
+      try {
+        const supa = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        await supa.from("ops_events").insert({
+          fn: "evolution-webhook",
+          level: "warn",
+          category: "security",
+          message: "evolution_webhook_auth_missing",
+          ctx: {
+            has_apikey_header: !!headerKey,
+            has_apikey_query: !!queryKey,
+            expected_configured: !!expectedKey,
+            user_agent: req.headers.get("user-agent") || null,
+          },
+        });
+      } catch (_e) {
+        // best-effort — nunca derruba o webhook por causa de log
+      }
+    }
+  }
+  // ── fim do bloco log-only ──
+
   try {
     const payload = await req.json();
     const event = payload.event;
