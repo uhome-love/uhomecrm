@@ -121,58 +121,35 @@ Deno.serve(async (req) => {
       }
 
       try {
-        if (seq.canal === "whatsapp") {
-          if (!lead.telefone) {
-            await admin.from("lead_nurturing_sequences")
-              .update({ status: "erro", error_message: "Lead sem telefone" })
-              .eq("id", seq.id);
-            erros++;
-            continue;
-          }
-          // Cap diário WhatsApp atingido — adia para próxima execução
-          if (waCapReached) {
-            console.log(`Pulando seq ${seq.id} — daily WA cap reached`);
-            continue;
-          }
-
-          const { error: waErr } = await admin.functions.invoke("whatsapp-send", {
-            body: {
-              telefone: lead.telefone,
-              nome: lead.nome,
-              template: {
-                name: seq.template_name,
-                language: "pt_BR",
-                parameters: {
-                  nome: lead.nome || "Cliente",
-                },
-              },
-            },
-          });
-
-          if (waErr) throw waErr;
-
-        } else if (seq.canal === "email") {
-          if (!lead.email) {
-            await admin.from("lead_nurturing_sequences")
-              .update({ status: "erro", error_message: "Lead sem email" })
-              .eq("id", seq.id);
-            erros++;
-            continue;
-          }
-
-          const { error: mailErr } = await admin.functions.invoke("mailgun-send", {
-            body: {
-              mode: "single",
-              to: lead.email,
-              to_name: lead.nome,
-              subject: `${lead.nome || "Olá"}, temos novidades para você`,
-              html: `<p>Olá ${lead.nome || ""},</p><p>${seq.mensagem || "Temos novidades para você!"}</p>`,
-              lead_id: seq.pipeline_lead_id,
-            },
-          });
-
-          if (mailErr) throw mailErr;
+        if (seq.canal !== "email") {
+          // Defesa em profundidade: se algum canal não-email escapar do filtro, marca skipped.
+          await admin.from("lead_nurturing_sequences")
+            .update({ status: "skipped", error_message: `canal_${seq.canal}_descontinuado`, sent_at: new Date().toISOString() })
+            .eq("id", seq.id);
+          continue;
         }
+
+        if (!lead.email) {
+          await admin.from("lead_nurturing_sequences")
+            .update({ status: "erro", error_message: "Lead sem email" })
+            .eq("id", seq.id);
+          erros++;
+          continue;
+        }
+
+        const { error: mailErr } = await admin.functions.invoke("mailgun-send", {
+          body: {
+            mode: "single",
+            to: lead.email,
+            to_name: lead.nome,
+            subject: `${lead.nome || "Olá"}, temos novidades para você`,
+            html: `<p>Olá ${lead.nome || ""},</p><p>${seq.mensagem || "Temos novidades para você!"}</p>`,
+            lead_id: seq.pipeline_lead_id,
+          },
+        });
+
+        if (mailErr) throw mailErr;
+
 
         // Mark as sent
         await admin.from("lead_nurturing_sequences")
