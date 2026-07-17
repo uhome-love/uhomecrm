@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import CentralInteligenciaPanel from "./CentralInteligenciaPanel";
 import ReengajamentoHistorico from "./ReengajamentoHistorico";
 import ReengajamentoUltimos from "./ReengajamentoUltimos";
-import type { BlockedTemplate, DispatchInvokeResult } from "./types";
+import type { DispatchRun, BlockedTemplate, DispatchInvokeResult } from "./types";
 import { useReengajamentoDispatch } from "@/hooks/useReengajamentoDispatch";
 
 export default function ReengajamentoTab() {
@@ -308,61 +308,6 @@ export default function ReengajamentoTab() {
     }
   }
 
-  async function pausarDisparo() {
-    if (!cfg?.id) return;
-    try {
-      await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
-      if (activeRun?.id) {
-        await supabase
-          .from("reengajamento_dispatch_runs")
-          .update({
-            status: "paused",
-            finished_at: new Date().toISOString(),
-            motivo_parada: "Pausado pelo usuário",
-            enviados: activeRun.enviados || 0,
-            falhas: activeRun.falhas || 0,
-            ignorados: activeRun.ignorados || 0,
-          })
-          .eq("id", activeRun.id);
-      }
-      toast.info("⏸️ Pausa solicitada — para após a mensagem atual");
-      qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
-      qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
-      qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
-    } catch (e: any) {
-      toast.error("Erro ao pausar: " + e.message);
-    }
-  }
-
-  async function pararDisparo() {
-    if (!cfg?.id) return;
-    if (!confirm("Parar definitivamente o disparo em andamento? Ele encerra após a mensagem atual e não retoma automaticamente.")) return;
-    try {
-      await supabase.from("reengajamento_config").update({ paused: true }).eq("id", cfg.id);
-      if (activeRun?.id) {
-        await supabase
-          .from("reengajamento_dispatch_runs")
-          .update({
-            cancel_requested: true,
-            status: "cancelled",
-            finished_at: new Date().toISOString(),
-            motivo_parada: "Parado pelo usuário",
-            enviados: activeRun.enviados || 0,
-            falhas: activeRun.falhas || 0,
-            ignorados: activeRun.ignorados || 0,
-          })
-          .eq("id", activeRun.id);
-      }
-      toast.info("⏹️ Parada solicitada — encerra após a mensagem atual");
-      qc.invalidateQueries({ queryKey: ["reengajamento-config"] });
-      qc.invalidateQueries({ queryKey: ["reengajamento-active-run"] });
-      qc.invalidateQueries({ queryKey: ["reengajamento-runs"] });
-    } catch (e: any) {
-      toast.error("Erro ao parar: " + e.message);
-    }
-  }
-
-
   // ===== Conexão da instância de nutrição =====
   const instanceName = (draft?.evolution_instance ?? cfg?.evolution_instance) || "uhome-nutricao";
   const [waStatus, setWaStatus] = useState<"open" | "close" | "connecting" | "loading">("loading");
@@ -487,11 +432,7 @@ export default function ReengajamentoTab() {
       ? { label: "Carregando…", cls: "bg-muted text-muted-foreground border-border animate-pulse" }
       : { label: "Desconectada", cls: "bg-muted text-muted-foreground border-border" };
 
-  const isPausing = !!cfg?.paused && !!activeRun;
   const isRunning = !!activeRun;
-  const progressPct = activeRun?.total_alvo > 0
-    ? Math.round(((activeRun.enviados || 0) + (activeRun.falhas || 0) + (activeRun.ignorados || 0)) / activeRun.total_alvo * 100)
-    : 0;
 
   return (
     <div className="space-y-4">
@@ -564,51 +505,6 @@ export default function ReengajamentoTab() {
           </Button>
         </CardContent>
       </Card>
-
-      {/* PAINEL AO VIVO — execução em andamento */}
-      {isRunning && (
-        <Card className="border-blue-300 bg-blue-50/40 dark:bg-blue-950/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                Disparo em andamento
-                {isPausing && <Badge className="bg-amber-200 text-amber-900">Pausando…</Badge>}
-              </span>
-              <span className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={pausarDisparo} disabled={isPausing}>
-                  <Pause className="h-3.5 w-3.5 mr-1" />
-                  {isPausing ? "Pausando…" : "Pausar"}
-                </Button>
-                <Button size="sm" variant="destructive" onClick={pararDisparo}>
-                  <Square className="h-3.5 w-3.5 mr-1" />
-                  Parar
-                </Button>
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span>
-                <strong>{(activeRun.enviados || 0) + (activeRun.falhas || 0) + (activeRun.ignorados || 0)}</strong>
-                {" / "}{activeRun.total_alvo || 0} processados
-              </span>
-              <span className="text-muted-foreground">
-                ✉️ {activeRun.enviados || 0} enviados · ⚠️ {activeRun.falhas || 0} falhas · ⏭️ {activeRun.ignorados || 0} ignorados
-              </span>
-            </div>
-            <Progress value={progressPct} className="h-2" />
-            {activeRun.ultimo_lead_nome && (
-              <p className="text-[11px] text-muted-foreground">
-                Último: <strong>{activeRun.ultimo_lead_nome}</strong>
-              </p>
-            )}
-            <p className="text-[10px] text-muted-foreground">
-              Iniciado {formatBRT(activeRun.started_at, "HH:mm:ss")} · pode levar alguns minutos
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1015,18 +911,7 @@ export default function ReengajamentoTab() {
             {!cfg?.paused_until_release && cfg?.paused && !isRunning && (
               <Badge className="bg-amber-100 text-amber-800 mr-auto">⏸️ Pausado</Badge>
             )}
-            {isRunning ? (
-              <>
-                <Button variant="outline" size="sm" onClick={pausarDisparo} disabled={isPausing}>
-                  <Pause className="h-3.5 w-3.5 mr-1" />
-                  {isPausing ? "Pausando…" : "Pausar"}
-                </Button>
-                <Button variant="destructive" size="sm" onClick={pararDisparo}>
-                  <Square className="h-3.5 w-3.5 mr-1" />
-                  Parar
-                </Button>
-              </>
-            ) : (
+            {!isRunning && (
               <Button
                 variant="outline"
                 size="sm"
