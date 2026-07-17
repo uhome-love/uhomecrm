@@ -16,14 +16,13 @@ const STAGE_DESCARTE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
 const MAX_RUN_MS = 110_000;
 const STALE_RUNNING_MINUTES = 4;
 // Meta marketing em base fria: priorizar reputação/entrega, não velocidade.
-const META_DELAY_MIN_MS = 12_000;
-const META_DELAY_MAX_MS = 30_000;
+const META_DELAY_MIN_MS = 8_000;
+const META_DELAY_MAX_MS = 15_000;
 const META_GUARD_RECENT_MINUTES = 15;
-const META_GUARD_COOLDOWN_HOURS = 24;
 const META_GUARD_MIN_RESOLVED = 30;
-const META_GUARD_QUALITY_FAILS = 20;
-const META_GUARD_FAIL_RATIO = 0.70;
-const META_GUARD_HARD_FAIL_RATIO = 0.85;
+const META_THROTTLE_RATIO = 0.15;
+const META_STRONG_THROTTLE_RATIO = 0.25;
+const META_CRITICAL_FAIL_RATIO = 0.40;
 const META_QUEUE_BATCH_SIZE = 3;
 const EVOLUTION_QUEUE_BATCH_SIZE = 5;
 const QUEUE_STALE_MINUTES = 6;
@@ -40,6 +39,28 @@ type FailureCategory =
   | "evolution_unavailable"
   | "transient_external_api"
   | "unknown";
+
+type MetaThrottleLevel = 0 | 1 | 2;
+
+type MetaQualityDecision = {
+  level: MetaThrottleLevel;
+  ratio: number;
+  resolved: number;
+  qualityFailures: number;
+  reason: string | null;
+  critical: boolean;
+};
+
+export function metaThrottleForRatio(ratio: number, resolved: number): MetaThrottleLevel {
+  if (resolved < META_GUARD_MIN_RESOLVED || ratio < META_THROTTLE_RATIO) return 0;
+  return ratio >= META_STRONG_THROTTLE_RATIO ? 2 : 1;
+}
+
+export function metaDelayRange(level: MetaThrottleLevel): [number, number] {
+  if (level === 2) return [45_000, 75_000];
+  if (level === 1) return [20_000, 35_000];
+  return [META_DELAY_MIN_MS, META_DELAY_MAX_MS];
+}
 
 const FAILURE_CATEGORY_LABELS: Record<FailureCategory, string> = {
   meta_quality_pacing: "Qualidade/limite da Meta",
@@ -364,6 +385,7 @@ Deno.serve(async (req) => {
   const waveParam = bodyWave ?? Number(url.searchParams.get("wave") || "1");
   const wave: 1 | 2 = waveParam === 2 ? 2 : 1;
   const startedAt = Date.now();
+  const workerId = crypto.randomUUID();
   let runId: string | null = null;
   const errs: string[] = [];
 
@@ -1046,22 +1068,11 @@ Deno.serve(async (req) => {
       }
 
       const batchSize = canal === "meta" ? META_QUEUE_BATCH_SIZE : EVOLUTION_QUEUE_BATCH_SIZE;
-      const { data: queueBatch, error: queueBatchErr } = await supabase
-        .from("reengajamento_dispatch_queue")
-        .select("id, lead_id, lead_ref, nome, telefone, email, phone_normalized, phone_last8")
-        .eq("run_id", runId)
-        .eq("status", "pending")
-        .order("created_at", { ascending: true })
-        .limit(batchSize);
+      const { data: queueBatch, error: queueBatchErr } = await supabase.rpc(
+        "claim_reengajamento_dispatch_queue",
+        { p_run_id: runId, p_batch_size: batchSize, p_worker_id: workerId },
+      );
       if (queueBatchErr) throw queueBatchErr;
-      const queueIds = (queueBatch || []).map((q: any) => q.id);
-      if (queueIds.length > 0) {
-        await supabase
-          .from("reengajamento_dispatch_queue")
-          .update({ status: "processing", locked_at: new Date().toISOString(), attempts: 1 } as any)
-          .in("id", queueIds)
-          .eq("status", "pending");
-      }
       leads = (queueBatch || []).map((q: any) => ({
         id: q.lead_id,
         queue_id: q.id,
@@ -1106,6 +1117,7 @@ Deno.serve(async (req) => {
     let sent = initialSent, failed = initialFailed, skipped = initialSkipped;
     let stopReason: string | null = null;
     let consecutiveMetaQualityFails = 0;
+    let metaThrottleLevel = Math.min(2, Math.max(0, Number((cfg as any).throttle_level || 0))) as MetaThrottleLevel;
 
     // ── MODO TESTE CAUTELOSO: auto-pausa por janela deslizante ──
     // Ativa quando a run foi criada como modo_teste (persistido em audience_payload).
@@ -1150,15 +1162,35 @@ Deno.serve(async (req) => {
     };
 
     const pauseMetaForQuality = async (reason: string) => {
-      const reasonWithCooldown = `${reason} Retomada sugerida após ${META_GUARD_COOLDOWN_HOURS}h; a Meta recomenda aguardar pelo menos 24h para erro 131049.`;
       await supabase.from("reengajamento_config").update({
         paused: true,
         paused_until_release: true,
-        paused_reason: reasonWithCooldown.slice(0, 500),
+        paused_reason: reason.slice(0, 500),
         paused_at_brt: nowBRT().toISOString().replace("Z", ""),
         updated_at: new Date().toISOString(),
       } as any).eq("id", cfg.id);
-      return reasonWithCooldown;
+      return reason;
+    };
+
+    const persistThrottle = async (decision: MetaQualityDecision) => {
+      if (decision.level === metaThrottleLevel) return;
+      metaThrottleLevel = decision.level;
+      const statusText = decision.level === 0
+        ? "Ritmo normal restabelecido"
+        : `Ritmo ${decision.level === 2 ? "fortemente reduzido" : "reduzido"}: ${(decision.ratio * 100).toFixed(0)}% de bloqueios recentes`;
+      await supabase.from("reengajamento_config").update({
+        throttle_level: decision.level,
+        throttle_updated_at: new Date().toISOString(),
+        paused_reason: decision.level > 0 ? statusText : null,
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", cfg.id);
+      await updateRun({ motivo_parada: statusText });
+      await supabase.from("reengajamento_eventos").insert({
+        run_id: runId,
+        tipo: decision.level > 0 ? "ritmo_reduzido_meta" : "ritmo_normal_meta",
+        detalhe: statusText,
+        audience_source: isCustomAudience ? audSource : null,
+      } as any);
     };
 
     const shouldStopNow = async () => {
@@ -1188,8 +1220,9 @@ Deno.serve(async (req) => {
     // O erro 131049 ("healthy ecosystem engagement") chega DEPOIS do envio (status sent ok),
     // então só dá pra detectá-lo olhando delivered/read x failed reportados pelo webhook.
     // Se o bloco começar, pausa cedo para não transformar 30 falhas em 300+ falhas.
-    const checkDeliveryQuality = async (): Promise<string | null> => {
-      if (canal !== "meta" || !metaTemplate) return null;
+    const checkDeliveryQuality = async (): Promise<MetaQualityDecision> => {
+      const normal: MetaQualityDecision = { level: 0, ratio: 0, resolved: 0, qualityFailures: 0, reason: null, critical: false };
+      if (canal !== "meta" || !metaTemplate) return normal;
       const since = new Date(Date.now() - META_GUARD_RECENT_MINUTES * 60 * 1000).toISOString();
       const { data: lastTemplateRows } = await supabase
         .from("reengajamento_meta_disparos")
@@ -1206,7 +1239,7 @@ Deno.serve(async (req) => {
           counts[c] = (counts[c] || 0) + 1;
         }
         const category = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FailureCategory | undefined) || "unknown";
-        return `Auto-pausa por ${CONSECUTIVE_FAILURE_PAUSE_LIMIT} falhas seguidas no template "${metaTemplate}". ${explainFailureCategory(category, sample)}`;
+        return { level: 2, ratio: 1, resolved: lastTemplateRows.length, qualityFailures: lastTemplateRows.length, reason: `Pausa crítica por ${CONSECUTIVE_FAILURE_PAUSE_LIMIT} falhas seguidas no template "${metaTemplate}". ${explainFailureCategory(category, sample)}`, critical: true };
       }
       const [failedRes, deliveredRes, readRes, respRes, qualityFailRes] = await Promise.all([
         supabase.from("reengajamento_meta_disparos").select("id", { count: "exact", head: true }).eq("template_name", metaTemplate).gte("created_at", since).eq("status", "failed"),
@@ -1219,42 +1252,21 @@ Deno.serve(async (req) => {
       const qualityFailN = qualityFailRes.count || 0;
       const okN = (deliveredRes.count || 0) + (readRes.count || 0) + (respRes.count || 0);
       const resolved = failedN + okN;
-      if (resolved < META_GUARD_MIN_RESOLVED) return null;
-      const ratio = failedN / resolved;
-      if ((qualityFailN >= META_GUARD_QUALITY_FAILS && ratio >= META_GUARD_FAIL_RATIO) || ratio >= META_GUARD_HARD_FAIL_RATIO) {
-        return `Auto-pausa por qualidade: ${(ratio * 100).toFixed(0)}% de falha recente (${failedN} falhas / ${resolved} resolvidas, ${qualityFailN} bloqueios Meta) no template "${metaTemplate}" nos últimos ${META_GUARD_RECENT_MINUTES}min. A Meta iniciou pacing/limite 131049; continuar agora queimaria a reputação do número.`;
-      }
-      return null;
-    };
-
-    const checkMetaCooldown = async (): Promise<string | null> => {
-      if (canal !== "meta" || !metaTemplate) return null;
-      // Janela base de 24h, mas nunca antes de uma "liberação consciente" feita por um gestor.
-      // Ao liberar manualmente (guard_reset_at), o histórico anterior — ex.: bloqueios de uma
-      // base fria/super-contatada — deixa de barrar o disparo do mesmo template para listas novas.
-      // O guard AO VIVO (15min, checkDeliveryQuality) continua ativo e pausa se os envios
-      // frescos começarem a falhar de verdade.
-      const baseSince = Date.now() - META_GUARD_COOLDOWN_HOURS * 3600 * 1000;
-      const resetAtRaw = (cfg as any).guard_reset_at;
-      const resetMs = resetAtRaw ? new Date(resetAtRaw).getTime() : 0;
-      const since = new Date(Math.max(baseSince, resetMs || 0)).toISOString();
-      const { count: qualityFails } = await supabase
-        .from("reengajamento_meta_disparos")
-        .select("id", { count: "exact", head: true })
-        .eq("template_name", metaTemplate)
-        .gte("created_at", since)
-        .eq("status", "failed")
-        .or("error_text.ilike.%131049%,error_text.ilike.%healthy ecosystem%");
-      if ((qualityFails || 0) >= META_GUARD_QUALITY_FAILS) {
-        return `Auto-pausa preventiva: o template "${metaTemplate}" teve ${qualityFails} bloqueios 131049 nas últimas ${META_GUARD_COOLDOWN_HOURS}h. A Meta recomenda aguardar pelo menos 24h antes de tentar novamente; continuar agora tende a falhar e piorar a reputação do número.`;
-      }
-      return null;
+      if (resolved < META_GUARD_MIN_RESOLVED) return { ...normal, resolved, qualityFailures: qualityFailN };
+      const ratio = qualityFailN / resolved;
+      const level = metaThrottleForRatio(ratio, resolved);
+      const critical = ratio > META_CRITICAL_FAIL_RATIO;
+      const reason = level > 0
+        ? `${critical ? "Pausa crítica" : "Redução automática de ritmo"}: ${(ratio * 100).toFixed(0)}% de bloqueios Meta recentes (${qualityFailN}/${resolved}) no template "${metaTemplate}" nos últimos ${META_GUARD_RECENT_MINUTES}min.`
+        : null;
+      return { level, ratio, resolved, qualityFailures: qualityFailN, reason, critical };
     };
 
     if (canal === "meta") {
-      const preflightQualityReason = (await checkMetaCooldown()) || (await checkDeliveryQuality());
-      if (preflightQualityReason) {
-        const reason = await pauseMetaForQuality(preflightQualityReason);
+      const preflightQuality = await checkDeliveryQuality();
+      await persistThrottle(preflightQuality);
+      if (preflightQuality.critical && preflightQuality.reason) {
+        const reason = await pauseMetaForQuality(preflightQuality.reason);
         await updateRun({
           status: "paused",
           finished_at: new Date().toISOString(),
@@ -1271,7 +1283,7 @@ Deno.serve(async (req) => {
             .eq("run_id", runId)
             .eq("status", "processing");
         }
-        return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_cooldown", motivo: reason, canal }), {
+        return new Response(JSON.stringify({ skipped: true, paused: true, reason: "meta_quality_critical", motivo: reason, canal }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -1317,17 +1329,20 @@ Deno.serve(async (req) => {
           error_text: errorText ? String(errorText).slice(0, 500) : null,
           processed_at: new Date().toISOString(),
           locked_at: null,
+          locked_by: null,
         } as any)
-        .eq("id", lead.queue_id);
+        .eq("id", lead.queue_id)
+        .eq("locked_by", workerId);
     };
 
     const releaseProcessingQueue = async () => {
       if (!runId) return;
       await supabase
         .from("reengajamento_dispatch_queue")
-        .update({ status: "pending", locked_at: null } as any)
+        .update({ status: "pending", locked_at: null, locked_by: null } as any)
         .eq("run_id", runId)
-        .eq("status", "processing");
+        .eq("status", "processing")
+        .eq("locked_by", workerId);
     };
 
     const getConsecutiveQueueFailureStreak = async (): Promise<{ streak: number; sample: string | null; category: FailureCategory } | null> => {
@@ -1640,13 +1655,14 @@ Deno.serve(async (req) => {
 
           // Guarda de qualidade por taxa de entrega — checa cedo e entre continuações
           if (sent % 5 === 0) {
-            const qReason = await checkDeliveryQuality();
-            if (qReason) {
-              await insertEvento({ lead_id: lead.id, run_id: runId, tipo: usingPersistentQueue ? "modo_lento_meta" : "auto_pausa_meta", detalhe: qReason.slice(0, 500) });
-                stopReason = await pauseMetaForQuality(qReason);
+            const quality = await checkDeliveryQuality();
+            await persistThrottle(quality);
+            if (quality.critical && quality.reason) {
+              await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: quality.reason.slice(0, 500) });
+                stopReason = await pauseMetaForQuality(quality.reason);
                 await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
                 await releaseProcessingQueue();
-                return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: qReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: quality.reason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }
           }
         } else {
@@ -1732,10 +1748,11 @@ Deno.serve(async (req) => {
         await updateRun({ enviados: sent, falhas: failed, ignorados: skipped, ultimo_lead_id: lead.id, ultimo_lead_nome: lead.nome });
 
         // Delays:
-        // - Meta: cadência conservadora (12-30s) para base fria e proteção anti-131049
+        // - Meta: 8-15s no ritmo normal, com redução adaptativa diante de bloqueios 131049
         // - Evolution: 60-180s + pausa longa a cada N envios
         if (canal === "meta") {
-          if (await interruptibleDelay(META_DELAY_MIN_MS + Math.random() * (META_DELAY_MAX_MS - META_DELAY_MIN_MS), shouldStopNow)) {
+          const [metaDelayMin, metaDelayMax] = metaDelayRange(metaThrottleLevel);
+          if (await interruptibleDelay(metaDelayMin + Math.random() * (metaDelayMax - metaDelayMin), shouldStopNow)) {
             await releaseProcessingQueue();
             const cancelled = stopReason === "Parado pelo usuário";
             return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: cancelled ? "cancelled" : "paused", cancelled, paused: !cancelled, canal }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -1816,9 +1833,10 @@ Deno.serve(async (req) => {
       await updateRun({ status: "error", finished_at: new Date().toISOString(), motivo_parada: msg.slice(0, 500), erros: errs.slice(-20) });
       await supabase
         .from("reengajamento_dispatch_queue")
-        .update({ status: "pending", locked_at: null, error_text: `Erro da função: ${msg}`.slice(0, 500) } as any)
+        .update({ status: "pending", locked_at: null, locked_by: null, error_text: `Erro da função: ${msg}`.slice(0, 500) } as any)
         .eq("run_id", runId)
-        .eq("status", "processing");
+        .eq("status", "processing")
+        .eq("locked_by", workerId);
     }
     return new Response(JSON.stringify({ ok: false, run_id: runId, error: msg, message: msg, reason: "edge_function_error", recoverable: true }), {
       status: 200,
