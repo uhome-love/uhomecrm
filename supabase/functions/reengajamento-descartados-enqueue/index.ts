@@ -1029,7 +1029,7 @@ Deno.serve(async (req) => {
     if (usingPersistentQueue) {
       await supabase
         .from("reengajamento_dispatch_queue")
-        .update({ status: "pending", locked_at: null } as any)
+        .update({ status: "pending", locked_at: null, locked_by: null } as any)
         .eq("run_id", runId)
         .eq("status", "processing")
         .lt("locked_at", new Date(Date.now() - QUEUE_STALE_MINUTES * 60 * 1000).toISOString());
