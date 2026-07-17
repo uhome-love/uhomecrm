@@ -1,69 +1,80 @@
+# Central de Reengajamento — correção e consolidação ponta a ponta
 
 ## Objetivo
+Deixar `/central-nutricao` funcional e previsível do início ao fim: selecionar público, criar uma única fila, enviar continuamente no backend, reduzir o ritmo diante de sinais da Meta, pausar/parar com confirmação real e apresentar um único estado confiável na tela.
 
-Gerar **um único documento Markdown** — `uhome-sales-crm-documentation.md` — em `/mnt/documents/`, estruturado nos 18 tópicos solicitados, detalhado o bastante para que outra IA atue como consultora de gestão comercial e desenhe novos fluxos sem precisar ler o código.
+Não haverá validação intermediária limitada a 100 contatos.
 
-Nenhum arquivo do projeto será alterado. É puro trabalho de leitura + escrita de artefato.
+## Estado confirmado
+- A página dispara pelo motor `reengajamento-descartados-enqueue`; `whatsapp-campaign-dispatch` pertence a outro fluxo e não será incorporado indevidamente.
+- O motor atual já possui fila persistente e continuação server-side, mas a reserva do lote não é atômica.
+- A execução `ad355118...` ficou pausada com 632 itens ainda pendentes; a configuração global permanece bloqueada pelo guard antigo de 20 ocorrências do erro Meta 131049.
+- A lógica de recuperação de execução antiga aparece tanto em `LiveDispatchBanner.tsx` quanto em `ReengajamentoTab.tsx`.
+- O backend também faz recuperação de runs antigas e já respeita `cancel_requested` e pausa entre micro-lotes.
 
-## Como vou montar
+## Implementação
 
-### Fase 1 — Coleta (read-only, em paralelo)
+### 1. Tornar a fila concorrente e idempotente
+- Criar uma função transacional no banco para reservar o próximo lote com `FOR UPDATE SKIP LOCKED`.
+- A reserva mudará os itens de `pending` para `processing` e devolverá somente as linhas efetivamente adquiridas pela execução atual.
+- Adicionar identidade do lock e expiração segura para recuperar apenas locks abandonados.
+- Reforçar a unicidade por run + telefone normalizado + template, eliminando deduplicação apenas em memória.
+- Manter tentativas e resultados persistidos, impedindo envio duplo por duas abas ou duas continuações simultâneas.
 
-1. **Memórias do projeto** (`mem://index.md` já em contexto): abrir as memórias mais densas para regra de negócio — pipeline, roleta, WhatsApp, negocios, oferta-ativa, nurturing, reengajamento, gerente, CEO, id-mapping, RLS, PDN, simulador.
-2. **Banco de dados**: rodar `supabase--read_query` para extrair `information_schema` — colunas, tipos, FKs e políticas RLS das ~180 tabelas listadas. Agrupar por domínio (pipeline, roleta, negocios, whatsapp, oferta ativa, academia, etc.).
-3. **Estrutura de código**:
-   - `src/pages/` → lista completa de telas + rotas em `src/App.tsx`.
-   - `src/components/` por domínio → componentes principais.
-   - `src/hooks/` → hooks canônicos e o que cada um resolve.
-   - `src/lib/` → serviços (metricsService, leadHelpers, taskScheduling, financiamento, etc.).
-   - `supabase/functions/` → edge functions (integrações, crons, disparos).
-4. **Fluxos-chave** — leituras direcionadas: `Auth.tsx`, `AppLayout.tsx`, `ProtectedRoute`, `RoleProtectedRoute`, `useUserRole`, `PdnKanban`, `PipelineLeads`, `RoletaLeads`, `OfertaAtiva`, dashboards V3/V4, `taskGenerator`, `nurturing`, `reengajamento`.
+### 2. Consolidar o motor único da página
+- Manter `reengajamento-descartados-enqueue` como único motor da Central de Reengajamento.
+- Organizar internamente o fluxo em etapas claras: validar chamada → montar audiência → criar/retomar run → reservar lote → enviar → persistir resultado → decidir ritmo → continuar/finalizar.
+- Remover caminhos legados internos que não são mais alcançados pela página, sem apagar o motor separado de outras ferramentas.
+- Garantir que toda continuação carregue o mesmo `run_id`, audiência e parâmetros originais.
+- Se o agendamento da continuação falhar, deixar a run recuperável e registrar o motivo, sem marcar conclusão falsa.
 
-### Fase 2 — Redação do Markdown
+### 3. Trocar a auto-pausa precoce por velocidade adaptativa
+- Ritmo normal balanceado: intervalo aleatório de 8 a 15 segundos.
+- Ao detectar aumento de bloqueios 131049, persistir o nível de throttle e aumentar progressivamente o intervalo entre mensagens.
+- Acima de 15% de bloqueios na janela recente, reduzir a velocidade em vez de interromper o disparo.
+- Manter pausa de proteção somente para cenário crítico, acima de 40%, falhas consecutivas graves ou erro permanente de configuração/autorização.
+- Separar falhas de destinatário, bloqueio de qualidade, erro temporário e erro permanente; cada categoria terá retry/skip/pause adequado.
+- Substituir a trava global antiga de 20 ocorrências por esse estado adaptativo, com motivo e previsão visíveis.
 
-Estrutura final do documento (espelha os 18 tópicos do pedido):
+### 4. Sincronizar Pausar, Retomar e Parar
+- Centralizar os comandos em operações do backend.
+- `Pausar`: grava a solicitação, o worker termina com segurança o item corrente, devolve locks restantes e confirma o estado.
+- `Retomar`: limpa somente pausa operacional autorizada e reinicia a mesma fila pendente, sem reconstruir audiência.
+- `Parar definitivamente`: grava `cancel_requested`, cancela os pendentes sem afetar enviados e exige confirmação no modal do produto.
+- A interface só atualizará o status após confirmação do backend; nenhum estado otimista que contradiga o processamento real.
 
-```text
-1.  Visão Geral (objetivo, stack, arquitetura, camadas canônicas)
-2.  Fluxo do Corretor (login → roleta/atribuição → pipeline → visita → negócio → contrato)
-3.  Fluxo do Gerente (dashboards V3/V4, PDN, 1:1, aprovações, metas, time)
-4.  Fluxo do Admin/Diretor (usuários, roles, integrações, feature flags, radar OA)
-5.  Banco de Dados (por domínio: pipeline, roleta, negocios, whatsapp, academia, marketing, RH, etc. — colunas essenciais, FKs, RLS, ID convention)
-6.  Estrutura de Leads (7 etapas ativas + substatus flag_status + Ganho/Descarte/Inativar; ciclo de vida, dedup, reativação)
-7.  Tarefas (geração automática por etapa, playbooks, sequências, SLA/atraso, Central de Tarefas)
-8.  Agenda (visitas, integração Google Calendar, sala de reunião RH, agenda marketing)
-9.  Dashboards (Corretor, Gerente V3/V4, CEO, Backoffice, Marketing, RH) — cada KPI com fórmula e view
-10. Ranking (pesos 20/30/40/10 — prospecção, gestão, vendas, eficiência; fórmulas)
-11. Oferta Ativa (listas, dedup vs pipeline, arena, templates, ranking, radar, anti-fadiga)
-12. Busca de Imóveis (Vitrine × Radar, Typesense, siteImoveisRemote, filtros canônicos)
-13. Permissões (admin, diretor, gestor, corretor, backoffice, rh — matriz por rota/ação)
-14. APIs / Integrações (Meta Ads, Meta Leads backfill, WhatsApp Meta + Evolution, RD Station, ImovelWeb, Jetimob, Mailgun, ElevenLabs, Typesense, Google Calendar, Site Uhome, Cloudflare)
-15. Front-end (mapa de rotas, componentes principais por domínio, design system)
-16. Regras de Negócio (todas as regras memorizadas: BRT, id-mapping, exclusividade OA, VGV assinado=fase vendido, 48h/72h reciclagem, roleta janelas, anti-fadiga 21d, etc.)
-17. Automações (crons, triggers, sequencers, nurturing, reengajamento, auto-archive descarte 24h, roleta shift cleanup, edge health, meta backfill 1h)
-18. Pontos de Melhoria (análise crítica: dívida técnica, riscos WABA, id-mapping duplo, cache pipeline, cobertura de testes, observabilidade, oportunidades de IA)
-```
+### 5. Eliminar duplicidades de UI e estados conflitantes
+- Manter uma única fonte para consulta, recuperação de stale run e comandos de dispatch.
+- Remover a recuperação duplicada entre `LiveDispatchBanner` e `ReengajamentoTab`; o banner ficará apenas como apresentação/controle.
+- Consolidar polling/subscription e cálculo de progresso em um hook/serviço da feature.
+- Exibir estados coerentes: preparando fila, enviando, ritmo reduzido, pausando, pausado, cancelando, concluído e erro recuperável.
+- Mostrar contadores derivados da fila real: pendentes, processando, enviados, ignorados, falhas e total.
 
-Cada tópico terá:
-- **O que é** (definição funcional)
-- **Onde vive** (tabelas/arquivos-chave)
-- **Como funciona** (fluxo passo a passo)
-- **Regras/edge cases** (BRT, RLS, dedup, SLAs)
+### 6. Limpeza segura de código morto
+- Mapear referências antes de remover cada trecho, componente, handler ou função legada.
+- Remover somente código sem chamadas no fluxo da Central e duplicações comprovadas.
+- Preservar integrações compartilhadas, roteamento de respostas e outros disparadores que usam contratos próprios.
+- Dividir os arquivos excessivamente grandes tocados nesta refatoração em módulos focados, sem alterar regras alheias ao reengajamento.
 
-Tamanho estimado: 40–80 KB de Markdown (grande, mas legível por IA).
+### 7. Testes e validação ponta a ponta
+- Testes unitários para classificação de falhas, janela BRT, kill-switch, throttle adaptativo e decisão de retry/pause.
+- Testes de integração para reserva concorrente, deduplicação entre execuções, recuperação de lock, continuação server-side e pausa/cancelamento.
+- Validar na interface: criar disparo, acompanhar progresso sem manter a aba ativa, pausar, retomar e parar.
+- Confirmar por banco/logs que não houve duplicidade, que a fila continua avançando e que os contadores da tela coincidem com os registros reais.
+- Validar responsividade e ausência de erros de console/rede na página.
 
-### Fase 3 — Entrega
+## Tratamento da fila atualmente presa
+Após a correção e os testes técnicos:
+- remover a trava global antiga com registro de auditoria;
+- preservar os 632 itens pendentes da run existente;
+- retomar essa mesma fila com o novo throttle, sem recriar audiência e sem reenviar os 63 já processados;
+- acompanhar os primeiros ciclos pelos logs e pela fila real, sem impor limite artificial de 100 contatos.
 
-- Escrever em `/mnt/documents/uhome-sales-crm-documentation.md`.
-- Emitir `<presentation-artifact>` para download.
-- Resposta curta ao usuário confirmando a entrega.
-
-## O que **NÃO** vou fazer
-
-- Não altero código, migrations, memórias, nem configs.
-- Não incluo secrets, IDs do Supabase, nem chaves.
-- Não invento comportamentos — se algo não estiver claro no código/memória, marco como *"a confirmar"* no documento em vez de chutar.
-
-## Confirmação necessária
-
-Só preciso que você aprove o plano. Depois disso, executo a coleta + redação e devolvo o `.md` como artefato para você baixar.
+## Critérios de conclusão
+- O envio continua no backend mesmo com a aba fechada ou inativa.
+- Duas abas/workers não enviam o mesmo item.
+- Bloqueios moderados reduzem a velocidade; não encerram silenciosamente a campanha.
+- Pausar, retomar e parar refletem exatamente o estado do backend.
+- A tela e o banco apresentam os mesmos totais.
+- Não há recuperação duplicada, handlers sem uso ou dois motores competindo dentro da Central de Reengajamento.
+- A fila presa é retomada sem duplicar os destinatários já processados.
