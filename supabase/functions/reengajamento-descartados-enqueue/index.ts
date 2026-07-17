@@ -462,7 +462,7 @@ Deno.serve(async (req) => {
           } as any).eq("id", bodyRunId);
           // Libera itens presos em "processing" para não travar a fila.
           await supabase.from("reengajamento_dispatch_queue")
-            .update({ status: "pending", locked_at: null } as any)
+            .update({ status: "pending", locked_at: null, locked_by: null } as any)
             .eq("run_id", bodyRunId).eq("status", "processing");
         }
         return new Response(JSON.stringify({

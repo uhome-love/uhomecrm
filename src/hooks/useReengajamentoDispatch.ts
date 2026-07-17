@@ -88,6 +88,13 @@ export function useReengajamentoDispatch() {
         .update({ cancel_requested: true, motivo_parada: "Parada solicitada pelo usuário" })
         .eq("id", run.id);
       if (error) throw error;
+      const { data, error: invokeError } = await supabase.functions.invoke("reengajamento-descartados-enqueue", {
+        body: { force: true, run_id: run.id, iniciado_por: "manual_stop_ui" },
+      });
+      if (invokeError) throw invokeError;
+      if (data?.reason !== "cancelled" && data?.cancelled !== true) {
+        throw new Error(data?.message || "O motor ainda não confirmou a parada");
+      }
     },
     onSettled: refresh,
   });
