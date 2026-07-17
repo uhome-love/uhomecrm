@@ -145,7 +145,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/marketplace":           { key: "marketplace",          label: "Marketplace",         icon: "Lightbulb" },
   "/pipeline":              { key: "pipeline",             label: "Pipeline",            icon: "AlignLeft",     noPadding: true },
   "/pipeline-leads":        { key: "pipeline",             label: "Pipeline",            icon: "AlignLeft",     noPadding: true },
-  "/escala-diaria":         { key: "escala-diaria",        label: "Escala Diária",       icon: "Clock",         roles: ["admin"] },
+  
   "/disponibilidade":       { key: "disponibilidade",      label: "Disponibilidade",     icon: "Clock",         roles: ["gestor", "admin", "diretor"] },
   
   "/templates-comunicacao": { key: "templates",            label: "Templates",           icon: "ClipboardList", roles: ["gestor", "admin", "diretor"] },
