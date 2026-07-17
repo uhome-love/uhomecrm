@@ -151,7 +151,7 @@ function getNotificationRoute(n: Notification): string | null {
   if (categoria === "corretor_parado" || categoria === "corretor_inativo") return "/central-do-gerente";
   if (categoria === "lead_sem_atendimento") return "/pipeline-leads";
   if (categoria === "meta_abaixo") return "/gerente/dashboard";
-  if (categoria === "escala_solicitada" || categoria === "escala_aprovado" || categoria === "escala_rejeitado") return "/escala-diaria";
+  
   if (categoria === "problema_atendimento") return "/pipeline-leads";
   if (categoria === "volume_leads") return "/pipeline-leads";
   if (categoria === "alerta_previsao") return "/ceo";

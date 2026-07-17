@@ -1833,53 +1833,6 @@ export type Database = {
         }
         Relationships: []
       }
-      distribuicao_escala: {
-        Row: {
-          aprovacao_status: string
-          aprovado_em: string | null
-          aprovado_por: string | null
-          ativo: boolean
-          corretor_id: string
-          created_at: string
-          criado_por: string
-          data: string
-          id: string
-          segmento_id: string
-        }
-        Insert: {
-          aprovacao_status?: string
-          aprovado_em?: string | null
-          aprovado_por?: string | null
-          ativo?: boolean
-          corretor_id: string
-          created_at?: string
-          criado_por: string
-          data?: string
-          id?: string
-          segmento_id: string
-        }
-        Update: {
-          aprovacao_status?: string
-          aprovado_em?: string | null
-          aprovado_por?: string | null
-          ativo?: boolean
-          corretor_id?: string
-          created_at?: string
-          criado_por?: string
-          data?: string
-          id?: string
-          segmento_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "distribuicao_escala_segmento_id_fkey"
-            columns: ["segmento_id"]
-            isOneToOne: false
-            referencedRelation: "pipeline_segmentos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       distribuicao_historico: {
         Row: {
           acao: string
