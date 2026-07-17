@@ -9,8 +9,6 @@ export const PUBLIC_ROUTES: string[] = [
   "/privacidade",
   "/casatua",
   "/oauth/google/callback",
-  "/wa",
-  "/wa/*",
   "/placar-do-dia",
   "/diagnostico-rede",
   "/visita/:token",
