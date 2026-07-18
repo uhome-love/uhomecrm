@@ -458,7 +458,7 @@ Deno.serve(async (req) => {
         if (bodyRunId) {
           await supabase.from("reengajamento_dispatch_runs").update({
             status: cancelRequested ? "cancelled" : "paused",
-            finished_at: new Date().toISOString(),
+            finished_at: cancelRequested ? new Date().toISOString() : null,
             motivo_parada: cancelRequested ? "Parado pelo usuário" : "Pausado pelo usuário",
           } as any).eq("id", bodyRunId);
           // Libera itens presos em "processing" para não travar a fila.
@@ -1097,7 +1097,7 @@ Deno.serve(async (req) => {
         const reason = `WhatsApp da nutrição desconectado (${state}). Reconecte a instância antes de disparar.`;
         await updateRun({
           status: "error",
-            finished_at: cancelRequested ? new Date().toISOString() : null,
+          finished_at: new Date().toISOString(),
           motivo_parada: reason,
           enviados: 0,
           falhas: 0,
