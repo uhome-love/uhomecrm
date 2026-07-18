@@ -408,6 +408,7 @@ Deno.serve(async (req) => {
 
     const { data: cfg } = await supabase.from("reengajamento_config").select("*").limit(1).maybeSingle();
     if (!cfg) return new Response(JSON.stringify({ error: "no config" }), { status: 500, headers: corsHeaders });
+    let qualityWindowResetAt = (cfg as any).guard_reset_at as string | null;
 
     if (!cfg.enabled && !force) {
       return new Response(JSON.stringify({ skipped: true, reason: "disabled" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -457,7 +458,7 @@ Deno.serve(async (req) => {
         if (bodyRunId) {
           await supabase.from("reengajamento_dispatch_runs").update({
             status: cancelRequested ? "cancelled" : "paused",
-            finished_at: new Date().toISOString(),
+            finished_at: cancelRequested ? new Date().toISOString() : null,
             motivo_parada: cancelRequested ? "Parado pelo usuário" : "Pausado pelo usuário",
           } as any).eq("id", bodyRunId);
           // Libera itens presos em "processing" para não travar a fila.
@@ -476,11 +477,12 @@ Deno.serve(async (req) => {
 
     // Só limpa a pausa em um início manual (force sem ser continuação).
     if (force && !isContinuation) {
+      qualityWindowResetAt = new Date().toISOString();
       await supabase.from("reengajamento_config").update({
         paused: false,
         paused_until_release: false,
         paused_reason: null,
-        guard_reset_at: new Date().toISOString(),
+        guard_reset_at: qualityWindowResetAt,
         updated_at: new Date().toISOString(),
       } as any).eq("id", cfg.id);
     }
@@ -1205,12 +1207,12 @@ Deno.serve(async (req) => {
       }
       if (liveCfg?.paused) {
         stopReason = "Pausado pelo usuário";
-        await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+        await updateRun({ status: "paused", finished_at: null, motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
         return true;
       }
       if (!liveCfg?.enabled && !force) {
         stopReason = "Disparo desativado";
-        await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
+        await updateRun({ status: "paused", finished_at: null, motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped });
         return true;
       }
       return false;
@@ -1223,11 +1225,14 @@ Deno.serve(async (req) => {
     const checkDeliveryQuality = async (): Promise<MetaQualityDecision> => {
       const normal: MetaQualityDecision = { level: 0, ratio: 0, resolved: 0, qualityFailures: 0, reason: null, critical: false };
       if (canal !== "meta" || !metaTemplate) return normal;
-      const since = new Date(Date.now() - META_GUARD_RECENT_MINUTES * 60 * 1000).toISOString();
+      const rollingWindowStart = Date.now() - META_GUARD_RECENT_MINUTES * 60 * 1000;
+      const resetAtMs = qualityWindowResetAt ? new Date(qualityWindowResetAt).getTime() : 0;
+      const since = new Date(Math.max(rollingWindowStart, Number.isFinite(resetAtMs) ? resetAtMs : 0)).toISOString();
       const { data: lastTemplateRows } = await supabase
         .from("reengajamento_meta_disparos")
         .select("status, error_text, created_at")
         .eq("template_name", metaTemplate)
+        .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(CONSECUTIVE_FAILURE_PAUSE_LIMIT);
       if (lastTemplateRows && lastTemplateRows.length >= CONSECUTIVE_FAILURE_PAUSE_LIMIT && lastTemplateRows.every((row: any) => row.status === "failed")) {
@@ -1269,7 +1274,7 @@ Deno.serve(async (req) => {
         const reason = await pauseMetaForQuality(preflightQuality.reason);
         await updateRun({
           status: "paused",
-          finished_at: new Date().toISOString(),
+          finished_at: null,
           motivo_parada: reason,
           enviados: sent,
           falhas: failed,
@@ -1410,7 +1415,7 @@ Deno.serve(async (req) => {
       });
       await updateRun({
         status: "paused",
-        finished_at: new Date().toISOString(),
+        finished_at: null,
         motivo_parada: reason.slice(0, 500),
         enviados: sent,
         falhas: failed,
@@ -1455,7 +1460,7 @@ Deno.serve(async (req) => {
         if (modoTesteReason) {
           stopReason = modoTesteReason;
           await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_modo_teste", detalhe: stopReason.slice(0, 500) });
-          await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+          await updateRun({ status: "paused", finished_at: null, motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
           await releaseProcessingQueue();
           return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_modo_teste", paused: true, canal, motivo: stopReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
@@ -1624,7 +1629,7 @@ Deno.serve(async (req) => {
                 await insertEvento({
                   lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: stopReason.slice(0, 500),
                 });
-                await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+                await updateRun({ status: "paused", finished_at: null, motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
                 await releaseProcessingQueue();
                 return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_meta_quality", paused: true, canal, motivo: stopReason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
               }
@@ -1661,7 +1666,7 @@ Deno.serve(async (req) => {
             if (quality.critical && quality.reason) {
               await insertEvento({ lead_id: lead.id, run_id: runId, tipo: "auto_pausa_meta", detalhe: quality.reason.slice(0, 500) });
                 stopReason = await pauseMetaForQuality(quality.reason);
-                await updateRun({ status: "paused", finished_at: new Date().toISOString(), motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
+                await updateRun({ status: "paused", finished_at: null, motivo_parada: stopReason, enviados: sent, falhas: failed, ignorados: skipped, erros: errs.slice(-20) });
                 await releaseProcessingQueue();
                 return new Response(JSON.stringify({ run_id: runId, sent, failed, skipped, total: totalAlvo, reason: "auto_paused_delivery_quality", paused: true, canal, motivo: quality.reason }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }

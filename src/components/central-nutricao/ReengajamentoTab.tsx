@@ -36,7 +36,7 @@ export default function ReengajamentoTab() {
   const [draft, setDraft] = useState<any>(null);
   const local = draft ?? cfg ?? {};
 
-  const { run: activeRun } = useReengajamentoDispatch();
+  const { run: activeRun, resume } = useReengajamentoDispatch();
   const dispatchActive = !!activeRun;
 
   // Blacklist de templates (FIX B)
@@ -904,8 +904,8 @@ export default function ReengajamentoTab() {
 
           <div className="flex gap-2 justify-end items-center pt-3 border-t">
             {cfg?.paused_until_release && (
-              <Badge className="bg-red-100 text-red-800 mr-auto" title={cfg?.paused_reason || ""}>
-                🔒 Travado — liberação manual via SQL
+              <Badge className="bg-amber-100 text-amber-800 mr-auto" title={cfg?.paused_reason || ""}>
+                Pausado — aguardando retomada
               </Badge>
             )}
             {!cfg?.paused_until_release && cfg?.paused && !isRunning && (
@@ -915,12 +915,12 @@ export default function ReengajamentoTab() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={dispararAgora}
-                disabled={starting || !!cfg?.paused_until_release}
-                title={cfg?.paused_until_release ? (cfg?.paused_reason || "Central travada — destravar via SQL admin") : undefined}
+                onClick={() => activeRun?.status === "paused" ? resume.mutate() : dispararAgora()}
+                disabled={starting || resume.isPending}
+                title={cfg?.paused_until_release ? (cfg?.paused_reason || "Disparo pausado") : undefined}
               >
                 {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
-                {cfg?.paused ? "Retomar disparo" : "Disparar agora"}
+                {activeRun?.status === "paused" ? "Retomar disparo" : "Disparar agora"}
               </Button>
             )}
             <Button size="sm" onClick={save} disabled={saving || !draft}>

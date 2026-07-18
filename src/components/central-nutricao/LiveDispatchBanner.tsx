@@ -45,8 +45,12 @@ export default function LiveDispatchBanner() {
 
   async function retomarDisparo() {
     try {
-      await resume.mutateAsync();
-      toast.success("Fila retomada do ponto onde parou");
+      const result = await resume.mutateAsync();
+      if (result.paused) {
+        toast.warning(result.motivo || "O disparo foi pausado novamente pela proteção de qualidade");
+      } else {
+        toast.success(`Disparo retomado — ${result.pendingCount} pendentes`);
+      }
     } catch (error) {
       toast.error("Erro ao retomar: " + (error instanceof Error ? error.message : String(error)));
     }
