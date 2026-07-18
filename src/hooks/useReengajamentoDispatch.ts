@@ -123,8 +123,12 @@ export function useReengajamentoDispatch() {
         body: { force: true, run_id: run.id, iniciado_por: "manual_resume_ui" },
       });
       if (error) throw error;
-      if (data?.ok === false) throw new Error(data.message || data.error || "Falha ao retomar");
-      return data;
+      if (data?.ok === false && !data?.paused) throw new Error(data.message || data.error || "Falha ao retomar");
+      return {
+        paused: data?.paused === true,
+        motivo: data?.motivo as string | undefined,
+        pendingCount: run.pending_count,
+      };
     },
     onSettled: refresh,
   });
