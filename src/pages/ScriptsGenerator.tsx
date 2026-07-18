@@ -1,28 +1,31 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Users, Sparkles } from "lucide-react";
+import { BookOpen, Users, Sparkles, Store } from "lucide-react";
 import ScriptLibrary from "@/components/scripts/ScriptLibrary";
 import TeamScriptAssignment from "@/components/scripts/TeamScriptAssignment";
 import CorretorScriptsView from "@/components/scripts/CorretorScriptsView";
+import MarketplaceScriptsContent from "@/components/scripts/MarketplaceScriptsContent";
 import { useUserRole } from "@/hooks/useUserRole";
 const homiMascot = "/images/homi-mascot-official.png";
 
 export default function ScriptsGenerator() {
   const { isGestor, isAdmin } = useUserRole();
   const isManager = isGestor || isAdmin;
-  const [activeTab, setActiveTab] = useState(isManager ? "time" : "time-scripts");
+  const [activeTab, setActiveTab] = useState(isManager ? "time" : "meus");
+
+  const triggerCls =
+    "gap-1.5 py-2.5 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:bg-gray-100 font-semibold";
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div>
         <h1 className="font-black text-gray-900" style={{ fontSize: 28 }}>
           📋 Scripts & Follow Ups
         </h1>
         <p className="text-gray-500 mt-1" style={{ fontSize: 14 }}>
           {isManager
-            ? "Gerencie os scripts do seu time e acesse a biblioteca de scripts salvos"
-            : "Scripts do seu time e biblioteca pessoal"}
+            ? "Gerencie os scripts do time, sua biblioteca pessoal e o marketplace do time"
+            : "Scripts do time, sua biblioteca pessoal e o marketplace"}
         </p>
       </div>
 
@@ -47,49 +50,45 @@ export default function ScriptsGenerator() {
         </div>
       )}
 
-      {isManager ? (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="h-auto max-w-md bg-transparent p-0 gap-2">
-            <TabsTrigger
-              value="time"
-              className="gap-1.5 py-2.5 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:bg-gray-100 font-semibold"
-              style={{ borderRadius: 8, fontSize: 14 }}
-            >
-              <Users className="h-4 w-4" /> Scripts do Time
-            </TabsTrigger>
-            <TabsTrigger
-              value="biblioteca"
-              className="gap-1.5 py-2.5 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:bg-gray-100 font-semibold"
-              style={{ borderRadius: 8, fontSize: 14 }}
-            >
-              <BookOpen className="h-4 w-4" /> Biblioteca
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="time" className="mt-5"><TeamScriptAssignment /></TabsContent>
-          <TabsContent value="biblioteca" className="mt-5"><ScriptLibrary /></TabsContent>
-        </Tabs>
-      ) : (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="h-auto max-w-md bg-transparent p-0 gap-2">
-            <TabsTrigger
-              value="time-scripts"
-              className="gap-1.5 py-2.5 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:bg-gray-100 font-semibold"
-              style={{ borderRadius: 8, fontSize: 14 }}
-            >
-              <Users className="h-4 w-4" /> Scripts do Time
-            </TabsTrigger>
-            <TabsTrigger
-              value="biblioteca"
-              className="gap-1.5 py-2.5 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:bg-gray-100 font-semibold"
-              style={{ borderRadius: 8, fontSize: 14 }}
-            >
-              <BookOpen className="h-4 w-4" /> Minha Biblioteca
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="time-scripts" className="mt-5"><CorretorScriptsView /></TabsContent>
-          <TabsContent value="biblioteca" className="mt-5"><ScriptLibrary /></TabsContent>
-        </Tabs>
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="h-auto bg-transparent p-0 gap-2 flex-wrap">
+          {isManager ? (
+            <>
+              <TabsTrigger value="time" className={triggerCls} style={{ borderRadius: 8, fontSize: 14 }}>
+                <Users className="h-4 w-4" /> Do Time
+              </TabsTrigger>
+              <TabsTrigger value="meus" className={triggerCls} style={{ borderRadius: 8, fontSize: 14 }}>
+                <BookOpen className="h-4 w-4" /> Meus Scripts
+              </TabsTrigger>
+              <TabsTrigger value="marketplace" className={triggerCls} style={{ borderRadius: 8, fontSize: 14 }}>
+                <Store className="h-4 w-4" /> Marketplace
+              </TabsTrigger>
+            </>
+          ) : (
+            <>
+              <TabsTrigger value="meus" className={triggerCls} style={{ borderRadius: 8, fontSize: 14 }}>
+                <BookOpen className="h-4 w-4" /> Meus Scripts
+              </TabsTrigger>
+              <TabsTrigger value="time" className={triggerCls} style={{ borderRadius: 8, fontSize: 14 }}>
+                <Users className="h-4 w-4" /> Do Time
+              </TabsTrigger>
+              <TabsTrigger value="marketplace" className={triggerCls} style={{ borderRadius: 8, fontSize: 14 }}>
+                <Store className="h-4 w-4" /> Marketplace
+              </TabsTrigger>
+            </>
+          )}
+        </TabsList>
+
+        <TabsContent value="time" className="mt-5">
+          {isManager ? <TeamScriptAssignment /> : <CorretorScriptsView />}
+        </TabsContent>
+        <TabsContent value="meus" className="mt-5">
+          <ScriptLibrary />
+        </TabsContent>
+        <TabsContent value="marketplace" className="mt-5">
+          <MarketplaceScriptsContent />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

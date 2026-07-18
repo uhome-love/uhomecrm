@@ -274,7 +274,7 @@ function SeedBanner({ onSeed, seeding }: { onSeed: () => void; seeding: boolean 
   );
 }
 
-export default function MarketplacePage() {
+export default function MarketplacePage({ showHeader = true }: { showHeader?: boolean } = {}) {
   const { isGestor, isAdmin } = useUserRole();
   const [category, setCategory] = useState<MarketplaceCategory | "">("");
   const [sortBy, setSortBy] = useState<MarketplaceSortBy>("mais_usados");
@@ -293,22 +293,29 @@ export default function MarketplacePage() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <img src={homiMascot} alt="Homi" className="h-12 w-12 object-contain" />
-          <div className="absolute -bottom-0.5 -right-0.5 bg-primary rounded-full p-0.5">
-            <BookOpen className="h-3 w-3 text-primary-foreground" />
+      {showHeader && (
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <img src={homiMascot} alt="Homi" className="h-12 w-12 object-contain" />
+            <div className="absolute -bottom-0.5 -right-0.5 bg-primary rounded-full p-0.5">
+              <BookOpen className="h-3 w-3 text-primary-foreground" />
+            </div>
           </div>
+          <div className="flex-1">
+            <h1 className="font-black" style={{ fontSize: 28 }}>
+              Marketplace <span style={{ background: "linear-gradient(135deg, #3350E6, #4969FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>de Scripts</span>
+            </h1>
+            <p className="text-gray-400" style={{ fontSize: 14 }}>Base de conhecimento coletiva — os melhores scripts e argumentos do time</p>
+          </div>
+          <SubmitDialog onSubmit={data => submitItem.mutate(data)} submitting={submitItem.isPending} />
         </div>
-        <div className="flex-1">
-          <h1 className="font-black" style={{ fontSize: 28 }}>
-            Marketplace <span style={{ background: "linear-gradient(135deg, #3350E6, #4969FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>de Scripts</span>
-          </h1>
-          <p className="text-gray-400" style={{ fontSize: 14 }}>Base de conhecimento coletiva — os melhores scripts e argumentos do time</p>
+      )}
+      {!showHeader && (
+        <div className="flex justify-end">
+          <SubmitDialog onSubmit={data => submitItem.mutate(data)} submitting={submitItem.isPending} />
         </div>
-        <SubmitDialog onSubmit={data => submitItem.mutate(data)} submitting={submitItem.isPending} />
-      </div>
+      )}
+
 
       {/* Quick stats bar */}
       {items.length > 0 && (
