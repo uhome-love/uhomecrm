@@ -1,90 +1,43 @@
-# Autenticação log-only no `evolution-webhook` (Fase 2)
+## Diagnóstico confirmado
 
-## Fase 1 — Investigação (concluída)
+O disparo não foi concluído no banco: está `paused`, com **147 itens pendentes** e `cancel_requested = false`. Porém, a função grava `finished_at` até nos caminhos de pausa. Isso faz a UX tratar visualmente a execução como finalizada e esconder o fluxo correto de retomada.
 
-### 1. Auth de webhook na Evolution API
-A Evolution API self-hosted que rodamos (mesma versão usada em `whatsapp-campaign-dispatch` e `reengajamento-descartados-enqueue` — `POST /message/sendTemplate/{instance}` com header `apikey`) envia webhooks de saída com o header **`apikey`** contendo o valor da `AUTHENTICATION_API_KEY` global — a mesma chave usada para chamar a API. Não há HMAC nativo nem secret separado por instância. Algumas versões também aceitam `?apikey=` na query string; vamos aceitar as duas formas.
+Há ainda duas inconsistências:
+- A configuração mostra “Travado — liberação manual via SQL” e desabilita a ação quando `paused_until_release = true`, embora a retomada já exista no hook e deva ser feita pelo botão.
+- Ao retomar, a proteção de qualidade considera novamente falhas anteriores ao clique, podendo pausar imediatamente porque não respeita `guard_reset_at`.
 
-### 2. Padrão dos outros webhooks
-- **`whatsapp-webhook`** (Meta): valida `hub.verify_token` no GET (`WHATSAPP_WEBHOOK_VERIFY_TOKEN`), mas **não valida HMAC** do POST — débito conhecido, fora do escopo.
-- **`mailgun-webhook`**: hoje **não valida assinatura** — débito conhecido, fora do escopo.
-- **`receive-meta-lead`** / **`receive-rdstation-lead`**: validam por secret próprio.
+## Implementação
 
-Não existe helper compartilhado; cada webhook faz inline. Manter esse estilo aqui — sem helper novo, sem mexer nos outros webhooks.
+1. **Separar pausa de término no motor**
+   - Em todos os caminhos recuperáveis de pausa por qualidade, excesso de falhas, pausa manual ou motor desativado: manter `status = 'paused'`, limpar `finished_at` e preservar os itens restantes como `pending`.
+   - Somente `completed`, `cancelled`, `timeout`, `no_send` e erro terminal poderão preencher `finished_at`.
+   - Garantir que pausa automática nunca marque `cancel_requested`.
 
-### 3. Secret reaproveitável
-✅ `EVOLUTION_API_KEY` já está nos secrets e é exatamente o valor que a Evolution envia no header `apikey` em webhooks de saída. Reaproveitar direto — nenhum secret novo.
+2. **Fazer a retomada começar uma nova janela de qualidade**
+   - A proteção de 15 minutos passará a usar o maior valor entre o início da janela e `guard_reset_at`.
+   - Ao clicar em Retomar, falhas anteriores ao clique deixam de bloquear imediatamente; novas falhas continuam podendo pausar novamente.
 
-## Fase 2 — Implementação log-only
+3. **Exibir sempre o botão Retomar para run pausada com pendências**
+   - O banner continuará encontrando runs `paused` que tenham `pending`/`processing`, independentemente de um `finished_at` legado.
+   - Mostrar progresso, quantidade pendente, motivo da pausa e botão **Retomar**.
+   - O botão libera `paused`, `paused_until_release` e chama o motor com o mesmo `run_id`, retomando do ponto exato.
 
-### Mudança única em `supabase/functions/evolution-webhook/index.ts`
-Inserir bloco de validação no início do `Deno.serve`, logo após os checks de `OPTIONS`/`POST` e antes do `try { const payload = await req.json() ... }`:
+4. **Remover o bloqueio incorreto da configuração**
+   - Trocar “liberação manual via SQL” por uma pausa operacional retomável.
+   - Não desabilitar a retomada por `paused_until_release`; essa flag passa a significar “aguardando decisão humana”, e o botão é justamente essa decisão.
 
-```ts
-// ── Auth log-only (Fase 2 — enforcement virá em fase separada) ──
-const expectedKey = Deno.env.get("EVOLUTION_API_KEY");
-const providedKey =
-  req.headers.get("apikey") ||
-  req.headers.get("x-api-key") ||
-  new URL(req.url).searchParams.get("apikey");
+5. **Corrigir feedback da UX**
+   - Se a retomada funcionar: “Disparo retomado — 147 pendentes”.
+   - Se a Meta voltar a exceder o limite depois da retomada: manter o botão disponível e informar que pausou novamente, sem apresentar como finalizado.
+   - No histórico, status pausado permanecerá “Pausado”, nunca “Concluído/Finalizado”.
 
-const authOk = !!expectedKey && !!providedKey && providedKey === expectedKey;
+## Compatibilidade do run atual
 
-if (!authOk) {
-  // NÃO rejeita ainda — só registra p/ observar tráfego legítimo por alguns dias.
-  console.warn(
-    "[evolution-webhook][auth-log-only] missing/invalid apikey. " +
-    `has_header=${!!req.headers.get("apikey")} ` +
-    `has_query=${!!new URL(req.url).searchParams.get("apikey")} ` +
-    `expected_configured=${!!expectedKey}`
-  );
-  try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-    await supabase.from("ops_events").insert({
-      event_type: "evolution_webhook_auth_missing",
-      severity: "warn",
-      source: "evolution-webhook",
-      details: {
-        has_apikey_header: !!req.headers.get("apikey"),
-        has_apikey_query: !!new URL(req.url).searchParams.get("apikey"),
-        expected_configured: !!expectedKey,
-        user_agent: req.headers.get("user-agent") || null,
-      },
-    });
-  } catch (_e) {
-    // best-effort — nunca derruba o webhook por causa de log
-  }
-}
-// ── fim do bloco log-only ──
-```
+A correção contemplará o run `985e0a03-0543-490e-83d7-37964f2ca7e0` sem apagar nem recriar sua audiência: os **147 pendentes atuais** continuarão disponíveis para retomada pelo botão.
 
-**Nenhuma outra alteração.** O processamento segue idêntico — nada é bloqueado. Antes do insert vou confirmar via `supabase--read_query` que as colunas de `ops_events` (`event_type`, `severity`, `source`, `details`) batem; se algum nome for diferente, ajusto só nesse insert.
+## Validação
 
-### Como validar depois de rodar alguns dias
-
-```sql
-SELECT count(*),
-       details->>'has_apikey_header' AS header,
-       details->>'has_apikey_query'  AS query
-FROM ops_events
-WHERE event_type = 'evolution_webhook_auth_missing'
-  AND created_at > now() - interval '48 hours'
-GROUP BY header, query;
-```
-
-Ou via `supabase--edge_function_logs('evolution-webhook', 'auth-log-only')`.
-
-- **Sinal verde para Fase 3**: 0 (ou perto de 0) eventos em 48-72h → tráfego legítimo passa o `apikey` corretamente.
-- **Sinal vermelho**: eventos "missing" batendo com o volume real → reconfigurar o webhook no painel da Evolution antes do enforcement.
-
-## Fase 3 (documentada — NÃO executar agora)
-
-Após confirmação de log limpo por 48-72h:
-1. Trocar o `if (!authOk) { console.warn(...) }` por `return new Response(JSON.stringify({error:"unauthorized"}), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }})`.
-2. Monitorar 24h que nada quebrou no reengajamento.
-
-## Fora de escopo
-Não toco em: `whatsapp-webhook`, `mailgun-webhook`, `whatsapp-campaign-dispatch`, `reengajamento-descartados-enqueue`, RLS, migrations, novos secrets, helpers compartilhados.
+- Confirmar no banco que pausa deixa `status='paused'`, `finished_at=null` e mantém pendências.
+- Validar no preview que o banner aparece com **Retomar**.
+- Acionar Retomar e confirmar que o mesmo run volta para `running` e consome a fila existente.
+- Confirmar que uma nova auto-pausa continua recuperável e nunca aparece como finalização.
