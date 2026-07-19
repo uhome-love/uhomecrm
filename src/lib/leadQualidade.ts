@@ -99,7 +99,19 @@ function matchAny(motivo: string, kws: string[]): boolean {
 export interface QualidadeInput {
   motivo_descarte?: string | null;
   tipo_descarte?: string | null;
+  /**
+   * @deprecated Coluna `pipeline_leads.primeiro_contato_em` (v1) está morta (0% preenchida).
+   * Passe `teve_contato` computado via v3 (stage.ordem>=1 OR whatsapp_out OR atividade de contato).
+   * Mantido só para compat de callers antigos.
+   */
   primeiro_contato_em?: string | null;
+  /** Fonte canônica v3 — quando fornecida, prevalece sobre primeiro_contato_em. */
+  teve_contato?: boolean | null;
+}
+
+function resolveTeveContato(lead: QualidadeInput): boolean {
+  if (typeof lead.teve_contato === "boolean") return lead.teve_contato;
+  return !!lead.primeiro_contato_em;
 }
 
 export function classificarQualidade(lead: QualidadeInput): QualidadeGrupo {
@@ -115,14 +127,15 @@ export function classificarQualidade(lead: QualidadeInput): QualidadeGrupo {
     return "neutro";
   }
 
-  // Sem descarte: qualificado se teve triagem (primeiro contato), senão pendente.
-  return lead.primeiro_contato_em ? "qualificado" : "pendente";
+  // Sem descarte: qualificado se teve triagem (v3), senão pendente.
+  return resolveTeveContato(lead) ? "qualificado" : "pendente";
 }
 
-/** true quando não há primeiro contato registrado (nunca entra no tempo médio). */
+/** true quando não há sinal de contato v3 (nunca entra no tempo médio). */
 export function semRegistroContato(lead: QualidadeInput): boolean {
-  return !lead.primeiro_contato_em;
+  return !resolveTeveContato(lead);
 }
+
 
 /** taxa de qualificação = qualif / (qualif + desqualif); null se denominador 0. */
 export function taxaQualificacao(qualificados: number, desqualificados: number): number | null {
