@@ -339,22 +339,79 @@ export default function CeoDashboardNovoDesign() {
 
   if (loading && !profile) return <CeoDashboardSkeleton />;
 
+  // ── Novo Design: saudação + citação com palavra em serifado ──
+  const nomeCEO = profile?.nome?.split(" ")[0] || user?.email?.split("@")[0] || "CEO";
+  const horaND = new Date().getHours();
+  const saudacaoND = horaND < 12 ? "Bom dia" : horaND < 18 ? "Boa tarde" : "Boa noite";
+  const HIGHLIGHT_KEYWORDS = ["resultado","propósito","pessoas","disciplina","ação","história","transforma"];
+  const fraseWords = frase.replace(/[.,]$/,"").split(" ");
+  const hlIdx = (() => {
+    for (let i = 0; i < fraseWords.length; i++) {
+      const w = fraseWords[i].toLowerCase().replace(/[.,]/g,"");
+      if (HIGHLIGHT_KEYWORDS.some(k => w.includes(k))) return i;
+    }
+    return fraseWords.length - 1;
+  })();
+
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-4 -m-4 sm:p-6 sm:-m-6 min-h-full space-y-5">
-      {/* ═══ GREETING ═══ */}
-      <GreetingBar
-        name={profile?.nome || user?.email?.split("@")[0] || "CEO"}
-        avatarUrl={profile?.avatar_gamificado_url || profile?.avatar_url}
-        subtitle={`"${frase}"`}
-        filter={period === "hoje" ? "hoje" : period === "ontem" ? "ontem" : period === "semana" ? "semana" : period === "mes" || period === "ultimos_30d" ? "mes" : "personalizado"}
-        dateRange={{ from: range.start, to: range.end }}
-        onFilterChange={(f, r) => {
-          const periodMap: Record<string, string> = { hoje: "hoje", ontem: "ontem", semana: "semana", mes: "mes" };
-          window.dispatchEvent(new CustomEvent("date-filter-change", { detail: { period: periodMap[f] || "personalizado", range: r } }));
-        }}
-        onRefresh={reload}
-        refreshTime={format(lastUpdate, "HH:mm")}
-      />
+    <div
+      className="ceo-nd bg-[#f0f0f5] dark:bg-[#0e1525] p-4 -m-4 sm:p-6 sm:-m-6 min-h-full space-y-5"
+      style={{ fontFamily: '"Plus Jakarta Sans", system-ui, -apple-system, sans-serif' }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
+        .ceo-nd, .ceo-nd * { font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+        .ceo-nd .nd-serif { font-family: "Instrument Serif", "Playfair Display", Georgia, serif; font-style: italic; font-weight: 400; }
+      `}</style>
+
+      {/* ═══ GREETING BANNER (gradiente azul Uhome) ═══ */}
+      <div
+        className="relative overflow-hidden rounded-3xl px-6 sm:px-8 py-6 sm:py-7 text-white shadow-[0_12px_40px_rgba(73,105,255,0.28)]"
+        style={{ background: "linear-gradient(135deg, #2B3BA6 0%, #4969FF 55%, #6B84FF 100%)" }}
+      >
+        <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+        <div className="absolute -left-16 -bottom-24 h-56 w-56 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+        <div className="relative flex items-start sm:items-center gap-4 sm:gap-5">
+          <Avatar className="h-14 w-14 sm:h-16 sm:w-16 ring-2 ring-white/40 shadow-lg">
+            {(profile?.avatar_gamificado_url || profile?.avatar_url) && (
+              <AvatarImage src={profile?.avatar_gamificado_url || profile?.avatar_url} />
+            )}
+            <AvatarFallback className="bg-white/15 text-white font-bold text-lg">
+              {nomeCEO.substring(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight leading-tight">
+              {saudacaoND}, {nomeCEO}
+            </h1>
+            <p className="mt-1.5 text-[13px] sm:text-[14px] text-white/90 leading-relaxed">
+              <span className="text-white/70">“</span>
+              {fraseWords.map((w, i) => (
+                <span key={i}>
+                  {i === hlIdx ? (
+                    <span className="nd-serif text-white text-[17px] sm:text-[19px] mx-0.5">{w}</span>
+                  ) : (
+                    w
+                  )}
+                  {i < fraseWords.length - 1 ? " " : ""}
+                </span>
+              ))}
+              <span className="text-white/70">”</span>
+            </p>
+          </div>
+          <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
+            <Badge className="bg-white/15 hover:bg-white/25 text-white border-0 text-[10px] tracking-wider uppercase">
+              Beta · Novo Design
+            </Badge>
+            <button
+              onClick={reload}
+              className="text-[11px] text-white/80 hover:text-white transition-colors underline-offset-4 hover:underline"
+            >
+              Atualizado {format(lastUpdate, "HH:mm")}
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* ═══ DATE FILTER + ACTION BUTTONS ═══ */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
