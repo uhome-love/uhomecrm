@@ -128,12 +128,21 @@ export interface AuditoriaDiff {
 }
 
 export function enrich(rows: LeadRow[]): LeadRowX[] {
-  return rows.map((r) => ({
-    ...r,
-    grupo: classificarQualidade(r),
-    semRegistro: semRegistroContato(r),
-  }));
+  return rows.map((r) => {
+    // v3 canônico: RPC já entrega teve_contato_v3. Fallback p/ v2 se RPC antigo.
+    const teveContato =
+      typeof r.teve_contato_v3 === "boolean"
+        ? r.teve_contato_v3
+        : !!r.primeiro_contato_em;
+    const qualiInput = { ...r, teve_contato: teveContato };
+    return {
+      ...r,
+      grupo: classificarQualidade(qualiInput),
+      semRegistro: semRegistroContato(qualiInput),
+    };
+  });
 }
+
 
 function mediana(vals: number[]): number | null {
   if (vals.length === 0) return null;
