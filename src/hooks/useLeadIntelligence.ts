@@ -15,6 +15,7 @@ export interface LeadIntelData {
   segmento_id: string | null;
   corretor_id: string | null;
   stage_id: string;
+  /** @deprecated coluna morta v1 — mantida só para tipagem; use stage.ordem>=1. */
   primeiro_contato_em: string | null;
   created_at: string;
 }
@@ -23,7 +24,11 @@ interface StageInfo {
   id: string;
   nome: string;
   tipo: string;
+  ordem: number;
 }
+
+
+
 
 interface SegmentoInfo {
   id: string;
@@ -98,7 +103,7 @@ export function useLeadIntelligence(periodo: string) {
           .lte("created_at", dateRange.end)
           .order("created_at", { ascending: false })
           .limit(5000),
-        supabase.from("pipeline_stages").select("id, nome, tipo").order("ordem"),
+        supabase.from("pipeline_stages").select("id, nome, tipo, ordem").order("ordem"),
         supabase.from("pipeline_segmentos").select("id, nome"),
       ]);
 
@@ -131,8 +136,14 @@ export function useLeadIntelligence(periodo: string) {
   const stageMap = useMemo(() => new Map(stages.map(s => [s.id, s])), [stages]);
   const segMap = useMemo(() => new Map(segmentos.map(s => [s.id, s.nome])), [segmentos]);
 
-  // Helpers
-  const hasContato = (l: LeadIntelData) => !!l.primeiro_contato_em;
+  // Helpers — v3: teve_contato = etapa >= "Sem Contato" (ordem 1) e não é "Caiu"/"Descarte"/"Ganho" absoluto
+  // Coluna primeiro_contato_em está morta (v1); usar stage.ordem como proxy canônico.
+  const hasContato = (l: LeadIntelData) => {
+    const s = stageMap.get(l.stage_id);
+    if (!s) return false;
+    return s.ordem >= 1 && s.ordem <= 7;
+  };
+
   const isVisita = (l: LeadIntelData) => {
     const s = stageMap.get(l.stage_id);
     return s && ["visita", "pos_visita", "visita_marcada", "visita_realizada"].includes(s.tipo);

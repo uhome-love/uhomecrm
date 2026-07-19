@@ -25,6 +25,7 @@ export interface LeadRow {
   corretor_id: string | null;
   corretor_nome: string | null;
   stage_nome: string | null;
+  stage_ordem: number | null;
   motivo_descarte: string | null;
   tipo_descarte: string | null;
   primeiro_contato_em: string | null;
@@ -34,6 +35,8 @@ export interface LeadRow {
   tem_visita_realizada: boolean;
   tem_venda: boolean;
   vgv: number | null;
+  /** v3: teve_contato canônico (stage>=1 OR whatsapp OR atividade). Vem do RPC. */
+  teve_contato_v3: boolean | null;
   num_tentativas: number;
   cadencia_total_passos: number;
   entrou_na_cadencia: boolean;
@@ -43,6 +46,7 @@ export interface LeadRow {
   abandonado_na_cadencia: boolean;
   tempo_em_sem_contato_dias: number | null;
 }
+
 
 export interface LeadRowX extends LeadRow {
   grupo: QualidadeGrupo;
@@ -124,12 +128,21 @@ export interface AuditoriaDiff {
 }
 
 export function enrich(rows: LeadRow[]): LeadRowX[] {
-  return rows.map((r) => ({
-    ...r,
-    grupo: classificarQualidade(r),
-    semRegistro: semRegistroContato(r),
-  }));
+  return rows.map((r) => {
+    // v3 canônico: RPC já entrega teve_contato_v3. Fallback p/ v2 se RPC antigo.
+    const teveContato =
+      typeof r.teve_contato_v3 === "boolean"
+        ? r.teve_contato_v3
+        : !!r.primeiro_contato_em;
+    const qualiInput = { ...r, teve_contato: teveContato };
+    return {
+      ...r,
+      grupo: classificarQualidade(qualiInput),
+      semRegistro: semRegistroContato(qualiInput),
+    };
+  });
 }
+
 
 function mediana(vals: number[]): number | null {
   if (vals.length === 0) return null;
