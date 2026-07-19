@@ -41,7 +41,7 @@ Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
       .limit(20),
     supabase
       .from("pipeline_leads")
-      .select("nome, empreendimento, valor_estimado, stage_id, pipeline_stages(nome), origem, origem_detalhe, objetivo_cliente, bairro_regiao, forma_pagamento, imovel_troca, nivel_interesse, temperatura, observacoes, primeiro_contato_em, created_at, telefone, email, motivo_descarte, proxima_acao, data_proxima_acao, prioridade_lead, corretor_id, radar_quartos, radar_valor_max, radar_tipologia, modulo_atual, segmento_id")
+      .select("nome, empreendimento, valor_estimado, stage_id, pipeline_stages(nome, ordem), origem, origem_detalhe, objetivo_cliente, bairro_regiao, forma_pagamento, imovel_troca, nivel_interesse, temperatura, observacoes, created_at, telefone, email, motivo_descarte, proxima_acao, data_proxima_acao, prioridade_lead, corretor_id, radar_quartos, radar_valor_max, radar_tipologia, modulo_atual, segmento_id")
       .eq("id", lead_id)
       .single(),
     sbAdmin
