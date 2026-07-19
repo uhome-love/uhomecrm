@@ -446,10 +446,10 @@ export default function CeoDashboardNovoDesign() {
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
       {localPendentes.length > 0 && (
-        <Card className="border-primary/40 bg-[#f7f7fb] dark:bg-[#141e30]">
+        <Card className="bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
+              <CardTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
                 Aprovações Pendentes
                 <Badge className="bg-primary text-white text-[10px]">{localPendentes.length}</Badge>
               </CardTitle>
