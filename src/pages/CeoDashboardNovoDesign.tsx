@@ -60,7 +60,7 @@ function SectionLabel({ children, icon: Icon }: { children: string; icon: any })
       <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
         <Icon className="h-3.5 w-3.5 text-primary" />
       </div>
-      <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-primary">{children}</span>
+      <span className="text-[12px] font-bold tracking-[0.14em] uppercase text-primary/80">{children}</span>
     </div>
   );
 }
@@ -354,7 +354,7 @@ export default function CeoDashboardNovoDesign() {
 
   return (
     <div
-      className="ceo-nd bg-[#f0f0f5] dark:bg-[#0e1525] p-4 -m-4 sm:p-6 sm:-m-6 min-h-full space-y-5"
+      className="ceo-nd bg-[#f5f6fa] dark:bg-[#0e1525] p-4 -m-4 sm:p-6 sm:-m-6 min-h-full space-y-6"
       style={{ fontFamily: '"Plus Jakarta Sans", system-ui, -apple-system, sans-serif' }}
     >
       <style>{`
@@ -500,7 +500,7 @@ export default function CeoDashboardNovoDesign() {
       {/* ═══════════════════════════════════════════════════════════ */}
       <section>
         <SectionLabel icon={Target}>Roleta de Leads</SectionLabel>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-5 mb-6">
           <MiniKpi label="Leads Gerados (Mkt)" value={totalLeadsPeriodo} variant="highlight"
             sub="Meta, TikTok, LP, ImovelWeb..."
             onClick={() => setKpiDetail({ type: "total_leads", label: "Leads Gerados" })} />
@@ -513,12 +513,12 @@ export default function CeoDashboardNovoDesign() {
           <MiniKpi label="Corretores na Roleta" value={presentesHoje} sub={`${presentesHoje} presentes hoje`} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Leads por Campanha/Empreendimento */}
           <Card className="bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xs font-semibold flex items-center gap-2">
+                <CardTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
                   <Building2 className="h-3.5 w-3.5 text-primary" /> Leads por Empreendimento
                 </CardTitle>
                 {campanhas.some(c => c.empreendimento === "Sem empreendimento") && (
@@ -549,7 +549,7 @@ export default function CeoDashboardNovoDesign() {
           {/* Leads por Origem */}
           <Card className="bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+              <CardTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
                 <Megaphone className="h-3.5 w-3.5 text-primary" /> Leads por Origem
               </CardTitle>
             </CardHeader>
@@ -568,7 +568,7 @@ export default function CeoDashboardNovoDesign() {
           {/* Leads por Corretor */}
           <Card className="bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+              <CardTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
                 <Users className="h-3.5 w-3.5 text-primary" /> Leads por Corretor
               </CardTitle>
             </CardHeader>
@@ -604,12 +604,12 @@ export default function CeoDashboardNovoDesign() {
       {/* ═══════════════════════════════════════════════════════════ */}
       <section>
         <SectionLabel icon={BarChart3}>Gestão de Leads</SectionLabel>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Funil do Pipeline - 2/3 */}
           <Card className="lg:col-span-2 bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle className="text-xs font-semibold">Funil do Pipeline</CardTitle>
+                <CardTitle className="text-[13px] font-semibold tracking-tight">Funil do Pipeline</CardTitle>
                 <div className="flex items-center gap-2">
                   <Select value={funnelFilter} onValueChange={setFunnelFilter}>
                     <SelectTrigger className="h-7 text-[10px] w-32 bg-white dark:bg-white/[0.05]">
@@ -647,7 +647,7 @@ export default function CeoDashboardNovoDesign() {
           {/* Agenda de Visitas - 1/3 */}
           <Card className="bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+              <CardTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
                 <CalendarCheck className="h-3.5 w-3.5 text-primary" /> Agenda de Visitas
               </CardTitle>
             </CardHeader>
@@ -691,7 +691,7 @@ export default function CeoDashboardNovoDesign() {
       {/* ═══════════════════════════════════════════════════════════ */}
       <section>
         <SectionLabel icon={DollarSign}>Gestão de Negócios</SectionLabel>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
           <MiniKpi label="Total de Negócios" value={totalNeg} variant="highlight" />
           <MiniKpi label="VGV em Contrato Gerado" value={formatBRLCompact(vgvContrato)} sub={`${countContrato} negócio${countContrato !== 1 ? "s" : ""} em contrato`} />
           <MiniKpi label="VGV Assinado" value={formatBRLCompact(kpis.vgvAssinado)} variant="success"
@@ -704,7 +704,7 @@ export default function CeoDashboardNovoDesign() {
 
         <Card className="bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
+            <CardTitle className="text-[13px] font-semibold tracking-tight">Funil de Negócios</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
@@ -752,7 +752,7 @@ export default function CeoDashboardNovoDesign() {
       {/* ═══════════════════════════════════════════════════════════ */}
       <section>
         <SectionLabel icon={Phone}>Oferta Ativa</SectionLabel>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
           <MiniKpi label="Total Ligações" value={kpis.ligacoes.toLocaleString("pt-BR")} variant="highlight"
             sub={ceoMetas.meta_ligacoes > 0 ? `${Math.round((kpis.ligacoes / ceoMetas.meta_ligacoes) * 100)}% da meta` : undefined}
             onClick={() => setKpiDetail({ type: "tentativas", label: "Ligações" })} />
@@ -767,7 +767,7 @@ export default function CeoDashboardNovoDesign() {
 
         <Card className="bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold">Performance por Equipe</CardTitle>
+            <CardTitle className="text-[13px] font-semibold tracking-tight">Performance por Equipe</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -819,7 +819,7 @@ export default function CeoDashboardNovoDesign() {
         {corretoresRank.length > 0 && (
           <Card className="mt-3 bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold">Top Corretores — Oferta Ativa</CardTitle>
+              <CardTitle className="text-[13px] font-semibold tracking-tight">Top Corretores — Oferta Ativa</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -858,11 +858,11 @@ export default function CeoDashboardNovoDesign() {
       {/* ═══════════════════════════════════════════════════════════ */}
       <section>
         <SectionLabel icon={Activity}>Dados Gerais</SectionLabel>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Marketing */}
           <Card className="bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+              <CardTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
                 <Megaphone className="h-3.5 w-3.5 text-primary" /> Marketing
               </CardTitle>
             </CardHeader>
@@ -890,7 +890,7 @@ export default function CeoDashboardNovoDesign() {
           {/* RH */}
           <Card className="bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+              <CardTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
                 <UserCheck className="h-3.5 w-3.5 text-primary" /> RH & Equipe
               </CardTitle>
             </CardHeader>
@@ -918,7 +918,7 @@ export default function CeoDashboardNovoDesign() {
           {/* Alertas & Info */}
           <Card className="bg-white dark:bg-[#141e30] border-0 rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,0.06)] hover:shadow-[0_10px_30px_rgba(73,105,255,0.12)] transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+              <CardTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
                 <Eye className="h-3.5 w-3.5 text-primary" /> Alertas & Atenção
               </CardTitle>
             </CardHeader>
