@@ -133,7 +133,15 @@ Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
     lead.radar_tipologia ? `Tipologia: ${lead.radar_tipologia}` : null,
     lead.observacoes ? `Obs: ${lead.observacoes}` : null,
     lead.proxima_acao ? `Próxima ação agendada: ${lead.proxima_acao}${lead.data_proxima_acao ? ` em ${new Date(lead.data_proxima_acao).toLocaleDateString("pt-BR")}` : ""}` : null,
-    lead.primeiro_contato_em ? `Primeiro contato: ${new Date(lead.primeiro_contato_em).toLocaleDateString("pt-BR")}` : null,
+    (() => {
+      // v3 teve_contato: WhatsApp OUT || atividade de contato || etapa >= Sem Contato (ordem 1)
+      const stageOrdem = (lead as any).pipeline_stages?.ordem ?? 0;
+      const teveWa = mensagens.some((m: any) => m.direction === "sent" || m.direction === "out");
+      const teveAtiv = atividades.some((a: any) => ["whatsapp","ligacao","call","email","contato","tarefa","mensagem","visita","reuniao","proposta","nao_atendeu"].includes(a.tipo));
+      const teveContato = teveWa || teveAtiv || (stageOrdem >= 1 && stageOrdem <= 7);
+      return `Teve contato (v3): ${teveContato ? "Sim" : "Não — lead ainda sem toque registrado"}`;
+    })(),
+
     lead.created_at ? `Lead criado: ${new Date(lead.created_at).toLocaleDateString("pt-BR")}` : null,
   ].filter(Boolean).join("\n");
 
