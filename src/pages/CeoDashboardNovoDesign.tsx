@@ -361,6 +361,20 @@ export default function CeoDashboardNovoDesign() {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
         .ceo-nd, .ceo-nd * { font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
         .ceo-nd .nd-serif { font-family: "Instrument Serif", "Playfair Display", Georgia, serif; font-style: italic; font-weight: 400; }
+        /* Safety-net: qualquer <Card> shadcn dentro do escopo herda o look premium mesmo sem classes explícitas */
+        .ceo-nd [class*="rounded-xl"][class*="border"][class*="bg-card"] {
+          border-radius: 1rem !important;
+          border: 0 !important;
+          background-color: #ffffff !important;
+          box-shadow: 0 2px 14px rgba(15,23,42,0.06) !important;
+          transition: box-shadow .25s ease;
+        }
+        .ceo-nd [class*="rounded-xl"][class*="border"][class*="bg-card"]:hover {
+          box-shadow: 0 10px 30px rgba(73,105,255,0.12) !important;
+        }
+        .dark .ceo-nd [class*="rounded-xl"][class*="border"][class*="bg-card"] {
+          background-color: #141e30 !important;
+        }
       `}</style>
 
       {/* ═══ GREETING BANNER (gradiente azul Uhome) ═══ */}
