@@ -109,7 +109,13 @@ Deno.serve(async (req) => {
 
     let enviados = 0;
     let erros = 0;
+    let skipped = 0;
 
+    // Mailgun foi cancelado (19/07/2026) — não há mais canal de envio
+    // disponível para esta cadência (que, por sinal, já não era usada de
+    // fato em produção — só "Sem Contato" é uma cadência viva de verdade,
+    // ver auditoria uhomecrm-expert). Marca toda pendência como skipped,
+    // sem tentar nenhum envio.
     for (const seq of pendentes) {
       const lead = seq.pipeline_leads;
       if (!lead) {
@@ -120,103 +126,16 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      try {
-        if (seq.canal !== "email") {
-          // Defesa em profundidade: se algum canal não-email escapar do filtro, marca skipped.
-          await admin.from("lead_nurturing_sequences")
-            .update({ status: "skipped", error_message: `canal_${seq.canal}_descontinuado`, sent_at: new Date().toISOString() })
-            .eq("id", seq.id);
-          continue;
-        }
-
-        if (!lead.email) {
-          await admin.from("lead_nurturing_sequences")
-            .update({ status: "erro", error_message: "Lead sem email" })
-            .eq("id", seq.id);
-          erros++;
-          continue;
-        }
-
-        const { error: mailErr } = await admin.functions.invoke("mailgun-send", {
-          body: {
-            mode: "single",
-            to: lead.email,
-            to_name: lead.nome,
-            subject: `${lead.nome || "Olá"}, temos novidades para você`,
-            html: `<p>Olá ${lead.nome || ""},</p><p>${seq.mensagem || "Temos novidades para você!"}</p>`,
-            lead_id: seq.pipeline_lead_id,
-          },
-        });
-
-        if (mailErr) throw mailErr;
-
-
-        // Mark as sent
-        await admin.from("lead_nurturing_sequences")
-          .update({ status: "enviado", sent_at: new Date().toISOString() })
-          .eq("id", seq.id);
-        enviados++;
-
-        // Update lead_nurturing_state step
-        const stepNum = parseInt(seq.step_key?.replace(/.*step/, "") || "0");
-        if (stepNum > 0) {
-          // Check if this is the last step
-          const { data: maxStepData } = await admin
-            .from("nurturing_cadencias")
-            .select("step_number")
-            .eq("stage_tipo", seq.stage_tipo)
-            .eq("is_active", true)
-            .order("step_number", { ascending: false })
-            .limit(1)
-            .single();
-
-          const isLastStep = maxStepData && stepNum >= maxStepData.step_number;
-
-          if (isLastStep) {
-            await admin.from("lead_nurturing_state")
-              .update({ status: "encerrado", step_atual: stepNum, updated_at: new Date().toISOString() })
-              .eq("pipeline_lead_id", seq.pipeline_lead_id);
-          } else {
-            // Get next step scheduled_at
-            const { data: nextSeq } = await admin
-              .from("lead_nurturing_sequences")
-              .select("scheduled_at")
-              .eq("pipeline_lead_id", seq.pipeline_lead_id)
-              .eq("status", "pendente")
-              .order("scheduled_at", { ascending: true })
-              .limit(1)
-              .single();
-
-            await admin.from("lead_nurturing_state")
-              .update({
-                step_atual: stepNum,
-                canal_ultimo: seq.canal,
-                ultimo_evento: "envio_" + seq.canal,
-                ultimo_evento_at: new Date().toISOString(),
-                proximo_step_at: nextSeq?.scheduled_at || null,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("pipeline_lead_id", seq.pipeline_lead_id);
-          }
-        }
-
-      } catch (sendErr: any) {
-        console.error(`Error sending ${seq.canal} to lead ${seq.pipeline_lead_id}:`, sendErr);
-        await admin.from("lead_nurturing_sequences")
-          .update({ status: "erro", error_message: sendErr?.message || "Erro no envio" })
-          .eq("id", seq.id);
-        erros++;
-      }
-
-      // Delay curto entre emails
-      await new Promise(r => setTimeout(r, 500));
-
+      await admin.from("lead_nurturing_sequences")
+        .update({ status: "skipped", error_message: `canal_${seq.canal}_descontinuado`, sent_at: new Date().toISOString() })
+        .eq("id", seq.id);
+      skipped++;
     }
 
-    console.log(`Nurturing sequencer done: ${enviados} enviados, ${erros} erros`);
+    console.log(`Nurturing sequencer done: ${skipped} skipped (mailgun descontinuado), ${erros} erros`);
 
     return new Response(
-      JSON.stringify({ processed: pendentes.length, enviados, erros }),
+      JSON.stringify({ processed: pendentes.length, enviados, erros, skipped }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e: any) {

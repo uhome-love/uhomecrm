@@ -6,13 +6,14 @@
     "SITE_SUPABASE_URL": "Idem.",
     "TIKTOK_WEBHOOK_SECRET": "Ingestão TikTok não está configurada no projeto. Quando ativar, adicionar.",
     "WHATSAPP_PHONE_ID": "Nome legacy — canônico é WHATSAPP_PHONE_NUMBER_ID.",
-    "WHATSAPP_TOKEN": "Nome legacy — canônico é WHATSAPP_ACCESS_TOKEN."
+    "WHATSAPP_TOKEN": "Nome legacy — canônico é WHATSAPP_ACCESS_TOKEN.",
+    "ELEVENLABS_AGENT_ID": "ElevenLabs cancelado em 19/07/2026 — código removido.",
+    "ELEVENLABS_API_KEY": "Idem.",
+    "ELEVENLABS_CONVAI_KEY": "Idem.",
+    "ELEVENLABS_PHONE_NUMBER_ID": "Idem.",
+    "MAILGUN_API_KEY": "Mailgun cancelado em 19/07/2026 — código removido."
   },
   "secrets": [
-    "ELEVENLABS_AGENT_ID",
-    "ELEVENLABS_API_KEY",
-    "ELEVENLABS_CONVAI_KEY",
-    "ELEVENLABS_PHONE_NUMBER_ID",
     "EVOLUTION_API_KEY",
     "GOOGLE_OAUTH_CLIENT_ID",
     "GOOGLE_OAUTH_CLIENT_SECRET",
@@ -21,7 +22,6 @@
     "JETIMOB_LEADS_URL_KEY",
     "LANDING_WEBHOOK_SECRET",
     "LOVABLE_API_KEY",
-    "MAILGUN_API_KEY",
     "META_WEBHOOK_SECRET",
     "OPENAI_API_KEY",
     "RDSTATION_PRIVATE_TOKEN",

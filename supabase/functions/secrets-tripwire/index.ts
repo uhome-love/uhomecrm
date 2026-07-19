@@ -27,12 +27,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 //   - SITE_SUPABASE_ANON_KEY / SITE_SUPABASE_URL (legacy — código usa UHOMESITE_*)
 //   - WHATSAPP_PHONE_ID / WHATSAPP_TOKEN (legacy — canônicos WHATSAPP_PHONE_NUMBER_ID/_ACCESS_TOKEN)
 //   - TIKTOK_WEBHOOK_SECRET (ingestão TikTok não configurada)
+//   - ELEVENLABS_* / MAILGUN_API_KEY (provedores cancelados em 19/07/2026;
+//     código removido — ver auditoria de custo/segurança)
 // Atualizar quando edge function nova introduzir secret novo. Ver também expected.json (doc).
 const EXPECTED_SECRETS: string[] = [
-  "ELEVENLABS_AGENT_ID",
-  "ELEVENLABS_API_KEY",
-  "ELEVENLABS_CONVAI_KEY",
-  "ELEVENLABS_PHONE_NUMBER_ID",
   "EVOLUTION_API_KEY",
   "GOOGLE_OAUTH_CLIENT_ID",
   "GOOGLE_OAUTH_CLIENT_SECRET",
@@ -41,7 +39,6 @@ const EXPECTED_SECRETS: string[] = [
   "JETIMOB_LEADS_URL_KEY",
   "LANDING_WEBHOOK_SECRET",
   "LOVABLE_API_KEY",
-  "MAILGUN_API_KEY",
   "META_WEBHOOK_SECRET",
   "OPENAI_API_KEY",
   "RDSTATION_PRIVATE_TOKEN",

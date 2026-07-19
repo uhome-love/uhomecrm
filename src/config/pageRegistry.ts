@@ -94,7 +94,6 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   
   "diagnostico-site": lazyRetry(() => import("@/pages/DiagnosticoSite")),
   "disparador-whatsapp": lazyRetry(() => import("@/pages/WhatsAppCampaignDispatcher")),
-  "email-marketing": lazyRetry(() => import("@/pages/EmailMarketingPage")),
   "central-nutricao": lazyRetry(() => import("@/pages/CentralNutricao")),
   "relatorio-semanal": lazyRetry(() => import("@/pages/RelatorioSemanal")),
   "relatorio-origem-performance": lazyRetry(() => import("@/pages/RelatorioOrigemPerformancePage")),
@@ -178,7 +177,6 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   
   "/admin/diagnostico-site":{ key: "diagnostico-site",     label: "Diagnóstico",         icon: "Database",      roles: ["admin"] },
   "/disparador-whatsapp":   { key: "disparador-whatsapp",  label: "Disparador WA",       icon: "MessageSquare", roles: ["admin"] },
-  "/email-marketing":       { key: "email-marketing",      label: "Email Marketing",     icon: "Mail",          roles: ["admin"] },
   "/central-nutricao":      { key: "central-nutricao",     label: "Reengajamento",       icon: "RefreshCw",     roles: ["admin"] },
   "/relatorio-semanal":     { key: "relatorio-semanal",    label: "Relatório Semanal",   icon: "FileText",      roles: ["admin", "gestor", "corretor", "diretor"] },
   "/backoffice/pagadorias":           { key: "pagadorias",             label: "Pagadorias",          icon: "Wallet",        roles: ["backoffice", "admin"] },
