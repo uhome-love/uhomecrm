@@ -103,7 +103,7 @@ export function useLeadIntelligence(periodo: string) {
           .lte("created_at", dateRange.end)
           .order("created_at", { ascending: false })
           .limit(5000),
-        supabase.from("pipeline_stages").select("id, nome, tipo").order("ordem"),
+        supabase.from("pipeline_stages").select("id, nome, tipo, ordem").order("ordem"),
         supabase.from("pipeline_segmentos").select("id, nome"),
       ]);
 
