@@ -15,9 +15,18 @@ export interface LeadIntelData {
   segmento_id: string | null;
   corretor_id: string | null;
   stage_id: string;
+  /** @deprecated coluna morta v1 — mantida só para tipagem; use stage.ordem>=1. */
   primeiro_contato_em: string | null;
   created_at: string;
 }
+
+interface StageInfo {
+  id: string;
+  nome: string;
+  tipo: string;
+  ordem: number;
+}
+
 
 interface StageInfo {
   id: string;
