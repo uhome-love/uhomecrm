@@ -47,6 +47,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   home: lazyRetry(() => import("@/pages/HomeDashboard")),
   corretor: lazyRetry(() => import("@/pages/CorretorDashboard")),
   ceo: lazyRetry(() => import("@/pages/CeoDashboard")),
+  "ceo-novo-design": lazyRetry(() => import("@/pages/CeoDashboardNovoDesign")),
   "ceo-religacao-negocios": lazyRetry(() => import("@/pages/CeoReligacaoNegocios")),
   "gerente-dashboard": lazyRetry(() => import("@/pages/GerenteDashboard")),
   checkpoint: lazyRetry(() => import("@/pages/CheckpointGerente")),
