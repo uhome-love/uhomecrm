@@ -128,6 +128,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/":                      { key: "home",                 label: "Home",                icon: "LayoutGrid",    closable: false },
   "/corretor":              { key: "corretor",             label: "Minha Rotina",        icon: "LayoutGrid",    closable: false },
   "/ceo":                   { key: "ceo",                  label: "Dashboard CEO",       icon: "LayoutGrid",    closable: false, roles: ["admin", "diretor"] },
+  "/ceo/novo-design":       { key: "ceo-novo-design",      label: "🎨 Novo Design (Beta)", icon: "Sparkles",    roles: ["admin"] },
   "/ceo/religacao-negocios":{ key: "ceo-religacao-negocios", label: "Religação Negócios", icon: "Link2",         roles: ["admin", "diretor"] },
   "/gerente/dashboard":     { key: "gerente-dashboard",    label: "Dashboard",           icon: "LayoutGrid",    closable: false, roles: ["gestor", "admin"] },
   "/backoffice":            { key: "backoffice",           label: "Dashboard BO",        icon: "LayoutGrid",    closable: false, roles: ["backoffice", "admin"] },
