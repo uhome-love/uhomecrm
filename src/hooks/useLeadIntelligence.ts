@@ -28,11 +28,7 @@ interface StageInfo {
 }
 
 
-interface StageInfo {
-  id: string;
-  nome: string;
-  tipo: string;
-}
+
 
 interface SegmentoInfo {
   id: string;
