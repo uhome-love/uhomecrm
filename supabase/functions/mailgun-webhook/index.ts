@@ -1,9 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { updateCampaignProgress } from "../_shared/mailgun-campaigns.ts";
+import { hmacSha256Hex, timingSafeEqual, logAuthMissing } from "../_shared/webhook-signature.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// Mailgun assina webhooks com HMAC-SHA256(timestamp + token), usando a
+// signing key do domínio (por padrão, a própria API key na maioria das
+// contas). Reaproveitamos o secret já configurado para envio.
+const MAILGUN_WEBHOOK_KEY = Deno.env.get("MAILGUN_WEBHOOK_SIGNING_KEY") || Deno.env.get("MAILGUN_API_KEY");
 
 // Mailgun event types we track
 const TRACKED_EVENTS = [
@@ -36,6 +41,35 @@ Deno.serve(async (req) => {
     // Mailgun sends events in "event-data" wrapper or flat
     const ed = eventData["event-data"] || eventData;
     const eventType = (ed.event || eventData.event || "").toLowerCase();
+
+    // ── Auth log-only (auditoria de segurança, 19/07/2026) ──
+    // Mailgun envia um objeto `signature` (timestamp/token/signature) no
+    // próprio payload. Validamos HMAC-SHA256(timestamp+token) com a
+    // signing key, mas por enquanto só registramos quando ausente/inválida,
+    // sem bloquear — mesma estratégia do evolution-webhook. Enforcement
+    // real fica para depois de um período de observação.
+    {
+      const sigObj = eventData.signature || ed.signature || {};
+      const timestamp = sigObj.timestamp;
+      const token = sigObj.token;
+      const providedSig = sigObj.signature;
+      let authOk = false;
+      if (MAILGUN_WEBHOOK_KEY && timestamp && token && providedSig) {
+        const expected = await hmacSha256Hex(MAILGUN_WEBHOOK_KEY, `${timestamp}${token}`);
+        authOk = expected.length === String(providedSig).length && timingSafeEqual(expected, String(providedSig));
+      }
+      if (!authOk) {
+        console.warn(
+          "[mailgun-webhook][auth-log-only] assinatura ausente/inválida. " +
+          `has_signature=${!!providedSig} key_configured=${!!MAILGUN_WEBHOOK_KEY}`
+        );
+        await logAuthMissing(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, "mailgun-webhook", "mailgun_webhook_signature_missing", {
+          has_signature_object: !!(sigObj && sigObj.signature),
+          key_configured: !!MAILGUN_WEBHOOK_KEY,
+          user_agent: req.headers.get("user-agent") || null,
+        });
+      }
+    }
 
     if (!eventType || !TRACKED_EVENTS.includes(eventType)) {
       return jsonResponse({ ok: true, skipped: true, event: eventType });

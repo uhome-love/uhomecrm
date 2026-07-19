@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { hmacSha256Hex, timingSafeEqual, logAuthMissing } from "../_shared/webhook-signature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -158,9 +159,38 @@ Deno.serve(async (req) => {
   // ---------- POST: Status updates & messages from Meta ----------
   if (req.method === "POST") {
     try {
-      const body = await req.json();
+      const rawBody = await req.text();
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+      // ── Auth log-only (auditoria de segurança, 19/07/2026) ──
+      // Meta assina o payload com HMAC-SHA256 (App Secret) no header
+      // X-Hub-Signature-256, no formato "sha256=<hex>". Por enquanto só
+      // registramos quando ausente/inválida, sem bloquear — mesma
+      // estratégia já usada no evolution-webhook. Enforcement (401) fica
+      // para uma fase separada, após observação.
+      {
+        const appSecret = Deno.env.get("META_WEBHOOK_SECRET");
+        const sigHeader = req.headers.get("x-hub-signature-256");
+        let authOk = false;
+        if (appSecret && sigHeader) {
+          const expected = "sha256=" + (await hmacSha256Hex(appSecret, rawBody));
+          authOk = timingSafeEqual(expected, sigHeader);
+        }
+        if (!authOk) {
+          console.warn(
+            "[whatsapp-webhook][auth-log-only] assinatura ausente/inválida. " +
+            `has_header=${!!sigHeader} secret_configured=${!!appSecret}`
+          );
+          await logAuthMissing(supabaseUrl, serviceKey, "whatsapp-webhook", "whatsapp_webhook_signature_missing", {
+            has_signature_header: !!sigHeader,
+            secret_configured: !!appSecret,
+            user_agent: req.headers.get("user-agent") || null,
+          });
+        }
+      }
+
+      const body = JSON.parse(rawBody);
       const supabase = createClient(supabaseUrl, serviceKey);
 
       const entries = body?.entry || [];
