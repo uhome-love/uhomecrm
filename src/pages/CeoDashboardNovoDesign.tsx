@@ -501,7 +501,7 @@ export default function CeoDashboardNovoDesign() {
               <div className="space-y-2.5">
                 {origens.slice(0, 8).map((o, idx) => {
                   const max = Math.max(...origens.map(x => x.count), 1);
-                  const color = ORIGIN_COLORS[o.origem] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+                  const color = FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
                   return <HBar key={o.origem} label={o.origem} value={o.count} max={max} color={color} />;
                 })}
                 {origens.length === 0 && <p className="text-xs text-[#a1a1aa] text-center py-4">Sem dados</p>}
