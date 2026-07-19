@@ -10,8 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import AvatarUpload from "@/components/AvatarUpload";
-import AvatarGeneratorModal from "@/components/AvatarGeneratorModal";
-import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Sparkles, Upload, CreditCard, BadgeCheck } from "lucide-react";
+import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Upload, CreditCard, BadgeCheck } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
 import RoletaCampanhasPanel from "@/components/settings/RoletaCampanhasPanel";
@@ -26,7 +25,6 @@ export default function Configuracoes() {
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [uploadingGlb, setUploadingGlb] = useState(false);
-  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
   const pngInputRef = useRef<HTMLInputElement>(null);
 
@@ -229,17 +227,6 @@ export default function Configuracoes() {
                 <p className="text-xs text-muted-foreground">Clique na foto para alterar ou use as opções abaixo</p>
 
                 <div className="flex flex-wrap gap-2">
-                  {/* AI generate button */}
-                  <Button
-                    type="button"
-                    onClick={() => setAvatarModalOpen(true)}
-                    className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
-                    size="sm"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    🎨 Gerar avatar com IA
-                  </Button>
-
                   {/* Manual upload button */}
                   <Button
                     type="button"
@@ -270,17 +257,6 @@ export default function Configuracoes() {
             </div>
 
             <Separator />
-
-            {/* Avatar Generator Modal */}
-            <AvatarGeneratorModal
-              open={avatarModalOpen}
-              onOpenChange={setAvatarModalOpen}
-              onGenerated={(url) => {
-                setAvatarUrl(url);
-                setAvatarPreviewUrl(url);
-                emitProfileUpdated();
-              }}
-            />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">

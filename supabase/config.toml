@@ -87,9 +87,6 @@ verify_jwt = false
 [functions.referral-public]
 verify_jwt = false
 
-[functions.generate-avatar]
-verify_jwt = false
-
 [functions.whatsapp-notificacao]
 verify_jwt = false
 
@@ -135,15 +132,6 @@ verify_jwt = false
 [functions.whatsapp-webhook]
 verify_jwt = false
 
-[functions.twilio-ai-call]
-verify_jwt = false
-
-[functions.twilio-ai-twiml]
-verify_jwt = false
-
-[functions.twilio-ai-status]
-verify_jwt = false
-
 [functions.elevenlabs-webhook]
 verify_jwt = false
 
@@ -178,9 +166,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.nurturing-orchestrator]
-verify_jwt = false
-
-[functions.voice-campaign-launcher]
 verify_jwt = false
 
 [functions.reactivate-cold-leads]
