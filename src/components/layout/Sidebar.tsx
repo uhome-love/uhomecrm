@@ -106,6 +106,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Base HOMI",          path: "/homi/base-conhecimento", icon: <BookOpen     size={15} strokeWidth={1.5} /> },
         { label: "Integrações",        path: "/integracoes",       icon: <Plug         size={15} strokeWidth={1.5} /> },
+        { label: "🎨 Novo Design (Beta)", path: "/ceo/novo-design", icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
       ],
     },
   ],
