@@ -61,7 +61,7 @@ function mapTarefaTipoToContato(tipo?: string | null): TipoContato {
   }
 }
 
-export type StageStatusKind = "qualificacao" | "aquecimento";
+export type StageStatusKind = "qualificacao" | "aquecimento" | "negociacao";
 
 export interface StageStatusOption {
   value: string;
@@ -77,6 +77,12 @@ export const AQUECIMENTO_PRAZOS: StageStatusOption[] = [
 const QUALIFICACAO_OPTIONS: StageStatusOption[] = Object.entries(
   QUALIFICACAO_STATUS_ATEND,
 ).map(([value, label]) => ({ value, label }));
+
+const NEGOCIACAO_OPTIONS: StageStatusOption[] = NEGOCIACAO_SUBSTATUS.map((o) => ({
+  value: o.value,
+  label: o.label,
+}));
+
 
 export default function TaskCompletionDialog({
   open,
@@ -194,8 +200,12 @@ export default function TaskCompletionDialog({
         .maybeSingle();
       const stageTipo = (stage as { tipo?: string } | null)?.tipo;
 
-      // Stage status (qualificação/aquecimento) — obrigatório escolher pill
-      if (stageTipo === "qualificacao" || stageTipo === "aquecimento") {
+      // Stage status obrigatório: qualificacao / aquecimento / negociacao
+      if (
+        stageTipo === "qualificacao" ||
+        stageTipo === "aquecimento" ||
+        stageTipo === "negociacao"
+      ) {
         const { data: leadData } = await supabase
           .from("pipeline_leads")
           .select("flag_status")
@@ -205,9 +215,15 @@ export default function TaskCompletionDialog({
         const currentValue =
           stageTipo === "qualificacao"
             ? String(fs.status_atendimento || "")
-            : String(fs.prazo || "");
+            : stageTipo === "aquecimento"
+              ? String(fs.prazo || "")
+              : String(fs.status_negociacao || "");
         const options =
-          stageTipo === "qualificacao" ? QUALIFICACAO_OPTIONS : AQUECIMENTO_PRAZOS;
+          stageTipo === "qualificacao"
+            ? QUALIFICACAO_OPTIONS
+            : stageTipo === "aquecimento"
+              ? AQUECIMENTO_PRAZOS
+              : NEGOCIACAO_OPTIONS;
         if (!cancelled) {
           setStageStatus({ kind: stageTipo as StageStatusKind, currentValue, options });
           setStageStatusPick(currentValue);
@@ -216,7 +232,7 @@ export default function TaskCompletionDialog({
         setStageStatus({ kind: null, currentValue: "", options: [] });
       }
 
-      // Sem contato: cadência
+      // Sem contato: cadência (bloqueia SEMPRE, independe de tarefaOrigem)
       if (stageTipo !== "sem_contato") return;
 
       const { data: cadencia } = await supabase
@@ -231,20 +247,23 @@ export default function TaskCompletionDialog({
       );
       const tentativaConcluida = Math.min(7, tentativaAtual + 1);
       const finalAttempt = tentativaConcluida >= 7;
-      const isCadenciaTask = tarefaOrigem === "cadencia_sem_contato";
+      // Regra 2026-07-20: TODA tarefa em stage sem_contato é tratada como cadência travada.
+      // A próxima tentativa é criada pelo trigger de banco — nunca por UI manual.
+      const isCadenciaTask = true;
 
       if (!cancelled) {
         setSemContatoInfo({
           enabled: true,
           tentativaAtual,
           tentativaConcluida,
-          requiresNextTask: !finalAttempt && !isCadenciaTask,
+          requiresNextTask: false,
           finalAttempt,
           isCadenciaTask,
         });
-        setOutcome(finalAttempt || isCadenciaTask ? "concluir" : "agendar");
+        setOutcome("concluir");
       }
     }
+
 
     if (!open) return;
     loadContext().finally(() => {
@@ -303,16 +322,19 @@ export default function TaskCompletionDialog({
           reasonCode === "outro" ? reasonCustomText.trim() : (found?.label ?? reasonCode);
       }
 
+      const statusEtapaKey =
+        stageStatus.kind === "qualificacao"
+          ? ("status_atendimento" as const)
+          : stageStatus.kind === "aquecimento"
+            ? ("prazo" as const)
+            : stageStatus.kind === "negociacao"
+              ? ("status_negociacao" as const)
+              : null;
       const statusEtapa =
-        stageStatus.kind && stageStatusPick
-          ? {
-              key:
-                stageStatus.kind === "qualificacao"
-                  ? ("status_atendimento" as const)
-                  : ("prazo" as const),
-              value: stageStatusPick,
-            }
+        statusEtapaKey && stageStatusPick
+          ? { key: statusEtapaKey, value: stageStatusPick }
           : undefined;
+
 
       const payload: CompletionPayload = {
         tipo_contato: tipoContato,
