@@ -1,53 +1,42 @@
-## O que muda
 
-Duas mudanças pequenas e coerentes:
+## Contexto do que descobri
 
-**A) Deletar usuários fantasmas de vez** (`hugo teste`, `TIAGO MOLITOR`) — hoje só estão desativados (`ativo=false`), continuam ocupando espaço em consultas e podem voltar a aparecer se algum filtro esquecer o `ativo`. Deletar via migration com limpeza de refs.
+Auditei o banco antes de propor:
 
-**B) Fluxo "Presente / Saiu" com horário manual** na página `/roleta/presenca` (e no card compacto do dashboard). Gerente registra o horário real de chegada/saída em vez de o sistema carimbar `now()`. Não veio até o fim do turno = falta automática (já existe, mantém).
+- **Trigger de auto-presença já existe** (`trg_presenca_auto_credenciamento` em `roleta_credenciamentos`, dispara em INSERT com `status='aprovado'` e em UPDATE para `aprovado`). A função `registrar_presenca_auto_credenciamento` insere linha `roleta_presencas` com `status='na_empresa'`, `origem='auto_credenciamento'`, mapeando `janela` → `turno` (manhã, tarde, dia_todo → manhã+tarde).
+- **Só que hoje ele não populou nada.** Existem 32 credenciamentos `aprovado` hoje (Manhã + Tarde) e apenas **1 linha em `roleta_presencas`** — e essa 1 é `origem='manual_gestor'`. Nenhuma `auto_credenciamento`. O trigger, portanto, não está entregando na prática hoje (motivo a investigar: ou foi criado após os primeiros approvals, ou está silenciosamente falhando).
+- Billy John hoje: 2 credenciamentos aprovados (manhã e tarde), zero linha em `roleta_presencas`. Exatamente o caso que o Lucas relatou.
 
-## Como valido a ideia
+O comportamento que o Lucas pediu é justamente o que o trigger deveria fazer. Então o plano é (1) fazer o trigger realmente funcionar + backfill do dia, (2) refletir isso na UI: quem credenciou vira Presente automaticamente e só mostra o botão "Saiu"; quem não credenciou é que o gerente marca.
 
-A ideia é sólida, com 3 pontos de atenção:
+## O que vou fazer (em fases pequenas)
 
-1. **Registro manual bate com o objetivo.** Hoje `chegou_em`/`saiu_em` viram `now()` no clique. Gestor que valida presença 14:30 de um cara que chegou 10:30 registra errado. Popup com hora resolve.
-2. **Falta = "não preencheu até o fim do turno"** — já implementado pelo cron 01:00 BRT que fecha o dia. Reforço: adicionar um **aviso persistente no dashboard do gestor** enquanto o turno ativo tem corretores sem status marcado ("N corretores sem presença marcada — Manhã").
-3. **Validação de horário**: hora de chegada tem que cair dentro do dia atual (BRT) e antes do momento presente; hora de saída tem que ser ≥ chegada. Se não preencher, aceita `now()` como fallback (default no input).
+### Fase 1 — Backfill do dia e diagnóstico do trigger (migração)
+1. Rodar backfill idempotente: para cada `roleta_credenciamentos` com `status='aprovado'` hoje, inserir a(s) linha(s) em `roleta_presencas` (`na_empresa`, `origem='auto_credenciamento'`, `chegou_em = c.created_at`) com `ON CONFLICT (corretor_id, data, turno) DO NOTHING`.
+2. Recriar/normalizar `registrar_presenca_auto_credenciamento` (idempotente) para garantir que o gatilho funcione daqui pra frente. Confirmar que a unique key `(corretor_id, data, turno)` existe em `roleta_presencas`.
+3. Reportar quantas linhas foram criadas no backfill e quantos corretores foram cobertos.
 
-## Passos
+### Fase 2 — UI: distinguir "credenciado" de "não credenciado" (`PresencaRoletaPanel.tsx`)
+Regra visual por turno em cada corretor:
 
-### 1. Deletar usuários fantasmas (migration)
-- Reatribuir/nullificar refs em tabelas onde `hugo teste` e `TIAGO MOLITOR` possam ter FKs (pipeline_leads.corretor_id, negocios, tarefas, presenças). Fazer `SELECT` pré-migration para dimensionar impacto.
-- `DELETE FROM public.profiles WHERE id IN (...)` — trigger em cascata cuida do resto onde configurado; caso contrário, `SET NULL` explícito.
-- `DELETE FROM auth.users` **não é seguro fazer diretamente** (schema gerenciado). Alternativa: manter em auth mas remover do `profiles` (some do app inteiro).
+- **Credenciado no turno + sem `saiu_em`** → chip verde `PRESENTE (via roleta)` + botão único **"Saiu"** (abre `RegistrarHorarioDialog` para carimbar horário). Sem botão "Presente" (já está).
+- **Credenciado no turno + com `saiu_em`** → chip `SAIU HH:MM`. Sem botões (turno encerrado para ele).
+- **Não credenciado no turno + sem presença registrada** → mostra os dois botões atuais **"Presente"** (registra horário chegada) e **"Faltou"** (opcional, para o gerente marcar explicitamente). Estes são os que o gerente precisa validar.
+- **Não credenciado + `Presente` já marcado manual** → chip `NA EMPRESA (manual)` + botão "Saiu".
+- **Faltou (auto do cron 01:00 BRT)** → chip vermelho `FALTOU`, sem ação (dia fechado).
 
-### 2. RPC aceitar horário manual
-Estender `public.roleta_marcar_presenca` adicionando `p_chegou_em timestamptz DEFAULT NULL` e `p_saiu_em timestamptz DEFAULT NULL`. Se vier `NULL`, mantém comportamento atual (`now()`). Validações no plpgsql:
-- `p_chegou_em`: entre início do dia BRT e `now()`.
-- `p_saiu_em`: ≥ `chegou_em` existente e ≤ `now()`.
+### Fase 3 — Banner de pendências
+Recalcular o texto do banner: **"N corretores sem presença marcada em [Turno]"** deve contar apenas **não credenciados sem `roleta_presencas`**, porque o resto já entra automático. Isso vai derrubar drasticamente o "27 pendentes" de agora.
 
-### 3. Frontend — Popup de horário
-- `useRoletaPresencas.marcar` ganha params `chegou_em?` / `saiu_em?`.
-- Em `PresencaRoletaPanel.tsx`:
-  - Botão **"Chegou"** → **"Presente"** (label + ícone Check mantido).
-  - Clicar em "Presente" abre `Dialog` com `input type="time"` pré-preenchido com hora atual BRT + botão "Registrar". Ao confirmar, dispara `marcar({ status: 'na_empresa', chegou_em })`.
-  - Clicar em "Saiu" abre mesmo Dialog para hora de saída (default = agora), dispara `marcar({ status: 'saiu', saiu_em })`.
-- Novo componente enxuto: `RegistrarHorarioDialog.tsx` (~60 linhas, reutilizado nos dois casos).
+### Fase 4 — Validação ao vivo
+- Abrir `/roleta/presenca` no preview.
+- Confirmar que Billy John, Andressa, Eliézer, etc. (todos credenciados) aparecem como **Presente** automaticamente nos turnos que credenciaram, com só o botão **Saiu** disponível.
+- Confirmar que corretores não credenciados aparecem com **Presente / Faltou** (para o gerente validar).
+- Confirmar contagens do header e do banner.
 
-### 4. Aviso no dashboard do gestor
-No card compacto de presença (`PresencaSummaryCard` no `GerenteDashboard`), quando `turno_ativo_atual` estiver rolando e houver corretores do time sem `roleta_presencas` do turno → banner amarelo: **"⚠️ 3 corretores sem presença marcada na Manhã — quem não for marcado até 12h vira falta"**. Link direto pra `/roleta/presenca`.
+## Fora de escopo desta rodada
+- Mexer em cron de "Faltou" (01:00 BRT) — segue como está.
+- Mexer no fluxo de credenciamento em si.
+- Mexer nas regras de elegibilidade Noturna/Domingo.
 
-### 5. Backfill / dados existentes
-Nenhum. Regra só passa a valer daqui pra frente.
-
-## Detalhes técnicos
-
-- Migration nova (RPC replace) + migration nova (delete profiles) — 2 migrations hoje, dentro do limite.
-- Sem quebra: RPC continua compatível (params default NULL).
-- Sem mudança no cron de falta automática — já roda 01:00 BRT e marca `falta` em quem não tem linha.
-- ESTADO_LABEL mantém "Na empresa" internamente; só o **botão** vira "Presente" (mais direto pro gestor).
-
-## Fora do escopo
-
-- Editar horário de uma presença já registrada (pode virar Fase 2 na aba Auditoria).
-- Mudar cor/tema.
+Se aprovado, começo pela Fase 1 (migração de backfill + recriação do trigger) e trago o número de linhas criadas antes de partir para a UI.
