@@ -355,7 +355,7 @@ const CardMinimal = memo(function CardMinimal({
                 📲 {cadenciaBadge.label}{cadenciaBadge.when ? ` · ${cadenciaBadge.when}` : ""}
               </span>
             )}
-            {substatus && (
+            {substatus && !hasSpecificTitle && (
               <span className={`shrink-0 ${substatus.className}`}>
                 {substatus.label}
               </span>
