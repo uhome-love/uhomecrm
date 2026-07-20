@@ -62,9 +62,9 @@ export default function PresencaRoleta() {
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Central de Presença</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Presença</h1>
         <p className="text-sm text-muted-foreground">
-          Validação de presença por turno, histórico e auditoria da roleta.
+          Validação por turno, histórico e auditoria.
           {scope === "ceo" ? " Empresa inteira." : " Seu time."}
         </p>
       </div>
@@ -172,7 +172,7 @@ function HistoricoTab({
                 <th className="text-left font-semibold py-2">Corretor</th>
                 {scope === "ceo" && (
                   <th className="text-left font-semibold py-2 hidden md:table-cell">
-                    Gestor
+                    Equipe
                   </th>
                 )}
                 <th className="text-center font-semibold py-2">Manhã</th>

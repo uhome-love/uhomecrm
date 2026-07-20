@@ -23,6 +23,8 @@ export interface CorretorPresenca {
   nome: string | null;
   avatar_url: string | null;
   credenciamentos: string[]; // ex: ['manha','tarde'] ou ['dia_todo']
+  gerente_id: string | null;   // profiles.id do gestor (ou null)
+  gerente_nome: string | null; // nome do gestor (ou null)
 }
 
 export interface PresencaCorretoresDia {
@@ -110,14 +112,74 @@ export function usePresencaCorretoresDia(
         }
       }
 
+      // 3. Gestor de cada corretor (team_members.user_id = auth.users.id;
+      //    resolvemos para profiles.id do corretor e do gestor).
+      const gerenteByCorretor = new Map<
+        string,
+        { id: string | null; nome: string | null }
+      >();
+      if (corretorProfileIds.length > 0) {
+        // profiles.id → user_id (auth) do corretor
+        const { data: corretorProfs } = await supabase
+          .from("profiles")
+          .select("id, user_id")
+          .in("id", corretorProfileIds);
+        const userIdByProfileId = new Map<string, string>();
+        const corretorUserIds: string[] = [];
+        for (const p of corretorProfs ?? []) {
+          const uid = (p as any).user_id as string | null;
+          if (uid) {
+            userIdByProfileId.set((p as any).id, uid);
+            corretorUserIds.push(uid);
+          }
+        }
+        if (corretorUserIds.length > 0) {
+          const { data: tm } = await supabase
+            .from("team_members")
+            .select("user_id, gerente_id")
+            .in("user_id", corretorUserIds)
+            .eq("status", "ativo");
+          const gerenteByCorretorUserId = new Map<string, string>();
+          const gerenteProfileIds = new Set<string>();
+          for (const r of tm ?? []) {
+            const uid = (r as any).user_id;
+            const gid = (r as any).gerente_id;
+            if (uid && gid) {
+              gerenteByCorretorUserId.set(uid, gid);
+              gerenteProfileIds.add(gid);
+            }
+          }
+          const gerenteNomeById = new Map<string, string>();
+          if (gerenteProfileIds.size > 0) {
+            const { data: gps } = await supabase
+              .from("profiles")
+              .select("id, nome")
+              .in("id", Array.from(gerenteProfileIds));
+            for (const g of gps ?? []) {
+              gerenteNomeById.set((g as any).id, (g as any).nome ?? "—");
+            }
+          }
+          for (const [profileId, uid] of userIdByProfileId.entries()) {
+            const gid = gerenteByCorretorUserId.get(uid) ?? null;
+            gerenteByCorretor.set(profileId, {
+              id: gid,
+              nome: gid ? gerenteNomeById.get(gid) ?? null : null,
+            });
+          }
+        }
+      }
+
       const corretores: CorretorPresenca[] = corretorProfileIds
         .map((id) => {
           const prof = profilesById.get(id)!;
+          const ger = gerenteByCorretor.get(id);
           return {
             corretor_id: id,
             nome: prof.nome,
             avatar_url: prof.avatar_url,
             credenciamentos: credByCorretor.get(id) ?? [],
+            gerente_id: ger?.id ?? null,
+            gerente_nome: ger?.nome ?? null,
           };
         })
         .sort((a, b) =>

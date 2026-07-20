@@ -57,7 +57,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Leads",
       items: [
         { label: "Roleta",             path: "/roleta",            icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Presença Roleta",    path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
+        { label: "Presença",    path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
@@ -133,7 +133,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
-        { label: "Presença Roleta",    path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
+        { label: "Presença",    path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -196,7 +196,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
-        { label: "Presença Roleta",    path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
+        { label: "Presença",    path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
       ],
     },
     {
