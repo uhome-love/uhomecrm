@@ -79,6 +79,9 @@ export default function TaskCompletionDialog({
   });
 
   const [saving, setSaving] = useState(false);
+  // Bloqueia primeira renderização do formulário até que loadSemContatoInfo termine —
+  // evita flash do layout genérico virando o certo (Sem Contato/Qualificação).
+  const [contextLoaded, setContextLoaded] = useState(false);
 
   /* Qualificação mode: quando lead está em stage tipo='qualificacao' com status_atendimento setado,
      a seção "próxima tarefa" do card Agendar vira as 6 pills de QUALIFICACAO_STATUS_ATEND. */
