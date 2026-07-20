@@ -323,49 +323,9 @@ export default function RoletaStatusBar() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const updateStatus = async (newStatus: StatusOnline) => {
-    if (!user) return;
-    setStatus(newStatus);
-    setStatusOpen(false);
-    const { error } = await supabase.from("profiles").update({ status_online: newStatus, status_updated_at: new Date().toISOString() }).eq("user_id", user.id);
-    if (error) { toast.error("Erro ao atualizar status"); return; }
-    const opt = STATUS_OPTIONS.find(o => o.value === newStatus)!;
-    toast.success(`Status atualizado: ${opt.label} ${opt.icon}`);
+  // Status auto-declarado removido. A presença é registrada pelo gestor
+  // (ver PresencaDoCorretorPill) e a saída é feita pelo botão "Sair" no pill.
 
-    // If going offline, remove from roleta (deactivate credenciamentos + fila)
-    if (newStatus === "offline" && profileId) {
-      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-      // Mark credenciamentos as "saiu"
-      const { error: credErr } = await supabase.from("roleta_credenciamentos")
-        .update({ status: "saiu", saiu_em: new Date().toISOString() })
-        .eq("corretor_id", profileId)
-        .eq("data", today)
-        .in("status", ["pendente", "aprovado"]);
-      // Deactivate from fila
-      const { error: filaErr } = await supabase.from("roleta_fila")
-        .update({ ativo: false })
-        .eq("corretor_id", profileId)
-        .eq("data", today)
-        .eq("ativo", true);
-      
-      // Sync corretor_disponibilidade.na_roleta = false
-      await supabase.from("corretor_disponibilidade")
-        .update({ na_roleta: false, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id);
-      
-      if (credErr) console.error("Erro ao sair da roleta (cred):", credErr);
-      if (filaErr) console.error("Erro ao sair da fila:", filaErr);
-      
-      // Reset local state immediately
-      setCredenciamentosPorJanela({});
-      setMySegmentoIds([]);
-      setSelectedIds([]);
-      setCredStatus("");
-      toast.info("Você saiu da roleta automaticamente.");
-      // Refetch to ensure consistency
-      setTimeout(() => fetchData(), 500);
-    }
-  };
 
   const toggleSegmento = (id: string) => {
     setSelectedIds(prev => {
