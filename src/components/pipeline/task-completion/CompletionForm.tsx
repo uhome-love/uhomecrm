@@ -1091,40 +1091,32 @@ function StageStatusBlock({ block }: { block: StageStatusPropsBlock }) {
         : "Registre em que ponto da negociação o lead está agora.";
 
   return (
-    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
-      <div className="flex items-center justify-between">
+    <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-semibold text-foreground">
           {title} <span className="text-destructive">*</span>
         </span>
         {block.currentValue && (
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-[10px] text-muted-foreground truncate">
             atual:{" "}
             {block.options.find((o) => o.value === block.currentValue)?.label ??
               block.currentValue}
           </span>
         )}
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {block.options.map((o) => {
-          const active = block.pick === o.value;
-          return (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => block.onPick(o.value)}
-              className={[
-                "px-2.5 py-1 rounded-full text-[11px] border transition",
-                active
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background text-foreground border-border hover:bg-muted",
-              ].join(" ")}
-            >
+      <Select value={block.pick || undefined} onValueChange={block.onPick}>
+        <SelectTrigger className="h-8 text-xs bg-background">
+          <SelectValue placeholder="Selecione..." />
+        </SelectTrigger>
+        <SelectContent>
+          {block.options.map((o) => (
+            <SelectItem key={o.value} value={o.value} className="text-xs">
               {o.label}
-            </button>
-          );
-        })}
-      </div>
-      <p className="text-[10px] text-muted-foreground">{helper}</p>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-[10px] text-muted-foreground leading-tight">{helper}</p>
     </div>
   );
 }
