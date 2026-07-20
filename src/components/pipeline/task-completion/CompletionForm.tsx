@@ -105,6 +105,9 @@ export interface CompletionFormProps {
   leadNome?: string;
   leadId?: string;
   currentStageId?: string;
+  /** Tipo canônico do stage atual do lead. Usado para calcular o teto de
+   *  agendamento manual (aquecimento=90d, demais=30d). */
+  stageTipo?: string | null;
   semContato: {
     enabled: boolean;
     tentativaAtual: number;
