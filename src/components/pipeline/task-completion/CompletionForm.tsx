@@ -62,6 +62,9 @@ import {
   type TipoProximaTarefa,
 } from "./types";
 import { useStageOptions } from "./useStageOptions";
+import { QUALIFICACAO_STATUS_ATEND } from "@/components/pipeline/PipelineStageTransitionPopup";
+import { VisitaDatePicker } from "@/components/pipeline/QualificacaoChecklistCard";
+import type { DataOverride } from "@/lib/qualificacaoTaskEngine";
 
 const KEEP_STAGE = "__keep__";
 
