@@ -68,12 +68,14 @@ export default function TaskCompletionDialog({
     tentativaConcluida: number;
     requiresNextTask: boolean;
     finalAttempt: boolean;
+    isCadenciaTask: boolean;
   }>({
     enabled: false,
     tentativaAtual: 0,
     tentativaConcluida: 1,
     requiresNextTask: false,
     finalAttempt: false,
+    isCadenciaTask: false,
   });
 
   const [saving, setSaving] = useState(false);
