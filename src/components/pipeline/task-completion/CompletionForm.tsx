@@ -201,6 +201,15 @@ export function CompletionForm(props: CompletionFormProps) {
   }>(null);
   const [suggestionDismissed, setSuggestionDismissed] = useState(false);
   const fetchedFor = useRef<string | null>(null);
+  const descricaoRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow inicial e ao receber valor externo (sugestão do Homi, reset, etc.)
+  useEffect(() => {
+    const el = descricaoRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+  }, [descricao]);
 
   useEffect(() => {
     const texto = descricao.trim();
@@ -416,12 +425,18 @@ export function CompletionForm(props: CompletionFormProps) {
             Observação <span className="text-destructive">*</span>
           </label>
           <Textarea
+            ref={descricaoRef}
             placeholder="Ex: Cliente pediu para ligar amanhã às 14h, interessado no apto 301..."
             value={descricao}
-            onChange={(e) => onChangeDescricao(e.target.value)}
-            rows={2}
+            onChange={(e) => {
+              onChangeDescricao(e.target.value);
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+            }}
+            rows={1}
             className={cn(
-              "resize-none text-xs bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/20",
+              "resize-none text-xs bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/20 min-h-[32px] overflow-hidden",
               descricao.length > 0 &&
                 !descricaoValida &&
                 "border-destructive focus-visible:ring-destructive/20",
@@ -771,29 +786,26 @@ function AgendarCard({
             <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1 block">
               Tipo
             </label>
-            <div className="grid grid-cols-3 gap-1">
-              {PROXIMA_TAREFA_OPTIONS.map(({ value, label, Icon }) => {
-                const active = novaTarefa.tipo === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() =>
-                      onChangeNovaTarefa({ tipo: value as TipoProximaTarefa })
-                    }
-                    className={cn(
-                      "px-1.5 py-1.5 rounded-md text-[11px] font-medium transition-all flex items-center justify-center gap-1 border",
-                      active
-                        ? "bg-primary/15 border-primary text-primary"
-                        : "bg-background border-border text-foreground hover:bg-muted",
-                    )}
-                  >
-                    <Icon className="w-3 h-3" />
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+            <Select
+              value={novaTarefa.tipo}
+              onValueChange={(v) =>
+                onChangeNovaTarefa({ tipo: v as TipoProximaTarefa })
+              }
+            >
+              <SelectTrigger className="h-8 text-[11px] bg-background border-border text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PROXIMA_TAREFA_OPTIONS.map(({ value, label, Icon }) => (
+                  <SelectItem key={value} value={value}>
+                    <span className="flex items-center gap-1.5">
+                      <Icon className="w-3 h-3" />
+                      {label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Quando */}
