@@ -234,7 +234,7 @@ export default function DrawerTasksTab({
                     bucket={g.key}
                     onToggle={() => setCompletingTarefa(t)}
                     onDelete={() => onDeleteTarefa(t.id)}
-                    onAdiar={() => setAdiarTarefa(t)}
+                    
                     onEdit={() => setEditTarefa(t)}
                   />
                 ))}
