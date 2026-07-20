@@ -61,25 +61,31 @@ export default function PresencaRoleta() {
   }
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto">
+    <div className="space-y-4 max-w-7xl mx-auto px-3 sm:px-0">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Presença</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Presença</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Validação por turno, histórico e auditoria.
           {scope === "ceo" ? " Empresa inteira." : " Seu time."}
         </p>
       </div>
 
+      {/* KPIs do dia (migrados do Dashboard CEO) */}
+      <PresencaHeaderStats scope={scope} gestorId={gestorId} />
+
       <Tabs defaultValue="hoje" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="hoje" className="gap-1.5">
-            <CalendarClock className="h-3.5 w-3.5" /> Hoje
+        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex">
+          <TabsTrigger value="hoje" className="gap-1.5 text-xs sm:text-sm">
+            <CalendarClock className="h-3.5 w-3.5" />
+            <span className="hidden xs:inline sm:inline">Hoje</span>
           </TabsTrigger>
-          <TabsTrigger value="historico" className="gap-1.5">
-            <BarChart3 className="h-3.5 w-3.5" /> Histórico
+          <TabsTrigger value="historico" className="gap-1.5 text-xs sm:text-sm">
+            <BarChart3 className="h-3.5 w-3.5" />
+            <span>Histórico</span>
           </TabsTrigger>
-          <TabsTrigger value="auditoria" className="gap-1.5">
-            <ScrollText className="h-3.5 w-3.5" /> Auditoria
+          <TabsTrigger value="auditoria" className="gap-1.5 text-xs sm:text-sm">
+            <ScrollText className="h-3.5 w-3.5" />
+            <span>Auditoria</span>
           </TabsTrigger>
         </TabsList>
 
