@@ -235,15 +235,19 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     return match ? `${match[1]}-UH` : jid;
   }, [(lead as any).jetimob_lead_id]);
 
+  const pendingTasks = useMemo(
+    () => leadData.tarefas.filter(t => t.status === "pendente"),
+    [leadData.tarefas],
+  );
   const nextTask = useMemo(() => {
-    const pending = leadData.tarefas.filter(t => t.status === "pendente");
+    const pending = [...pendingTasks];
     pending.sort((a, b) => {
       const aTime = parseDateBRTSafe(a.vence_em)?.getTime() ?? Number.POSITIVE_INFINITY;
       const bTime = parseDateBRTSafe(b.vence_em)?.getTime() ?? Number.POSITIVE_INFINITY;
       return aTime - bTime;
     });
     return pending[0] || null;
-  }, [leadData.tarefas]);
+  }, [pendingTasks]);
 
   const handleSaveCommercial = async () => {
     setSaving(true);
