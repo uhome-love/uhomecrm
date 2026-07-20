@@ -257,52 +257,100 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
           </>
         );
 
-      case "vendido":
+      case "vendido": {
+        const vgvNum = rawToNumber(assVgv);
+        const canConfirmVendido =
+          !!assDataAssinatura &&
+          vgvNum > 0 &&
+          !!assEmpreendimento.trim() &&
+          !!assUnidade.trim();
         return (
-          <>
+          <div className="max-w-lg mx-auto w-full">
             <DialogHeader>
-              <DialogTitle className="text-base flex items-center gap-2">✅ Confirmação de Assinatura</DialogTitle>
+              <DialogTitle className="text-base flex items-center gap-2">🏆 Confirmar Ganho — Assinatura</DialogTitle>
             </DialogHeader>
-            <p className="text-xs text-muted-foreground">Negócio: <strong>{negocio.nome_cliente}</strong></p>
-            <div className="space-y-4">
-              <div>
-                <Label className="text-xs mb-2 block">Tipo de Assinatura</Label>
-                <RadioGroup value={assDigital} onValueChange={setAssDigital} className="flex gap-4">
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="digital" id="ass-digital" />
-                    <Label htmlFor="ass-digital" className="text-xs cursor-pointer">🖊️ Digital</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="fisico" id="ass-fisico" />
-                    <Label htmlFor="ass-fisico" className="text-xs cursor-pointer">📝 Físico</Label>
-                  </div>
-                </RadioGroup>
+            <p className="text-xs text-muted-foreground mt-1">Negócio: <strong>{negocio.nome_cliente}</strong></p>
+            <p className="text-[10px] text-muted-foreground">Registre a venda fechada — os dados alimentam PDN, Vendas Realizadas e ranking.</p>
+
+            <div className="space-y-3 mt-3">
+              {/* 1. Venda fechada */}
+              <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-3">
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                  <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-primary/10 text-primary text-[10px] mr-1.5">1</span>
+                  Venda fechada
+                </div>
+                <CurrencyInput label="VGV assinado (R$) *" value={assVgv} onChange={setAssVgv} placeholder="R$ 850.000" />
+                <div>
+                  <Label className="text-xs">Empreendimento *</Label>
+                  <Input value={assEmpreendimento} onChange={e => setAssEmpreendimento(e.target.value)} placeholder="Ex: Melnick Home" className="h-8 text-xs bg-background" />
+                </div>
+                <div>
+                  <Label className="text-xs">Unidade vendida *</Label>
+                  <Input value={assUnidade} onChange={e => setAssUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className="h-8 text-xs bg-background" />
+                </div>
+                <div>
+                  <Label className="text-xs">📅 Data real da assinatura *</Label>
+                  <Input type="date" value={assDataAssinatura} onChange={e => setAssDataAssinatura(e.target.value)} className="h-8 text-xs bg-background" />
+                  <p className="text-[10px] text-muted-foreground mt-1">Informe a data em que a venda foi realmente fechada.</p>
+                </div>
               </div>
-              <div>
-                <Label className="text-xs mb-2 block">Ato pago?</Label>
-                <RadioGroup value={assAtoPago} onValueChange={setAssAtoPago} className="flex gap-4">
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="sim" id="ato-sim" />
-                    <Label htmlFor="ato-sim" className="text-xs cursor-pointer">✅ Sim</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="nao" id="ato-nao" />
-                    <Label htmlFor="ato-nao" className="text-xs cursor-pointer">❌ Não</Label>
-                  </div>
-                </RadioGroup>
+
+              {/* 2. Assinatura */}
+              <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-3">
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                  <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-primary/10 text-primary text-[10px] mr-1.5">2</span>
+                  Assinatura
+                </div>
+                <div>
+                  <Label className="text-xs mb-2 block">Tipo de assinatura</Label>
+                  <RadioGroup value={assDigital} onValueChange={setAssDigital} className="flex gap-4">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="digital" id="ass-digital" />
+                      <Label htmlFor="ass-digital" className="text-xs cursor-pointer">🖊️ Digital</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="fisico" id="ass-fisico" />
+                      <Label htmlFor="ass-fisico" className="text-xs cursor-pointer">📝 Físico</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                <div>
+                  <Label className="text-xs mb-2 block">Ato pago?</Label>
+                  <RadioGroup value={assAtoPago} onValueChange={setAssAtoPago} className="flex gap-4">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="sim" id="ato-sim" />
+                      <Label htmlFor="ato-sim" className="text-xs cursor-pointer">✅ Sim</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="nao" id="ato-nao" />
+                      <Label htmlFor="ato-nao" className="text-xs cursor-pointer">❌ Não</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
               </div>
-              <div>
-                <Label className="text-xs">📅 Data real da assinatura</Label>
-                <Input type="date" value={assDataAssinatura} onChange={e => setAssDataAssinatura(e.target.value)} className="h-8 text-xs" />
-                <p className="text-[10px] text-muted-foreground mt-1">Informe a data em que a venda foi realmente fechada</p>
+
+              {/* 3. Observações */}
+              <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                  <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-primary/10 text-primary text-[10px] mr-1.5">3</span>
+                  Observações
+                </div>
+                <Textarea value={assObs} onChange={e => setAssObs(e.target.value)} className="text-xs h-20 bg-background" placeholder="Observações importantes sobre a assinatura..." />
               </div>
-              <div><Label className="text-xs">Observações</Label><Textarea value={assObs} onChange={e => setAssObs(e.target.value)} className="text-xs h-20" placeholder="Observações importantes sobre a assinatura..." /></div>
             </div>
-            <DialogFooter>
-              <Button size="sm" onClick={handleConfirm} className="text-xs gap-1 bg-emerald-600 hover:bg-emerald-700" disabled={!assDataAssinatura}>✅ Confirmar Assinatura 🎉</Button>
-              {!assDataAssinatura && <p className="text-[10px] text-destructive">Data de assinatura obrigatória</p>}
+
+            <DialogFooter className="mt-3 flex-col gap-1 sm:flex-col sm:items-stretch">
+              <Button size="sm" onClick={handleConfirm} className="text-xs gap-1 bg-emerald-600 hover:bg-emerald-700" disabled={!canConfirmVendido}>
+                🏆 Confirmar Ganho 🎉
+              </Button>
+              {!canConfirmVendido && (
+                <p className="text-[10px] text-destructive text-center">
+                  Preencha VGV, empreendimento, unidade e data de assinatura.
+                </p>
+              )}
             </DialogFooter>
-          </>
+          </div>
+
         );
 
       case "perdido":
