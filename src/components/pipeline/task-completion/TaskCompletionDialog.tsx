@@ -1,20 +1,17 @@
 /**
- * Sprint 1 R3-V2 + Refactor Nível 2 (2026-05-22) — TaskCompletionDialog
+ * TaskCompletionDialog — Redesign single-screen (2026-07-20)
  *
- * 2 telas obrigatórias:
- *   1. "O que aconteceu?" — tipo_contato + resultado (+ resumo opcional)
- *   2. "Como prosseguir?" — outcome (agendar | concluir | descartar | inativar)
+ * Uma única tela scrollável (sem wizard 1/2), com CTA sticky no rodapé.
+ * Em ≤420px vira bottom sheet (desliza de baixo, botões empilhados).
  *
- * Prop `context`:
- *   - 'lead' (default) → Step 2 mostra 4 outcomes
- *   - 'negocio'        → Step 2 oculta seletor; apenas Agendar é permitido
+ * A interface pública (props + `CompletionPayload`) permanece idêntica —
+ * consumidores como `MinhasTarefas`, `TarefaHojeItem`, `TarefasHojeLateral`,
+ * `DrawerTasksTab` e `CardMinimal` não precisam mudar nada.
  */
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { CompletionProgress } from "./CompletionProgress";
-import { CompletionStep1 } from "./CompletionStep1";
-import { CompletionStep2 } from "./CompletionStep2";
+import { CompletionForm } from "./CompletionForm";
 import {
   DESCARTE_REASONS,
   INATIVAR_REASONS,
@@ -36,7 +33,7 @@ export interface TaskCompletionDialogProps {
   currentStageId?: string;
   /** Origem da tarefa. Se for 'cadencia_sem_contato', a próxima tarefa é criada pelo sistema. */
   tarefaOrigem?: string | null;
-  /** Default 'lead'. 'negocio' renderiza Step 2 sem o grupo "Encerrar lead". */
+  /** Default 'lead'. 'negocio' oculta o grupo "Encerrar lead". */
   context?: CompletionContext;
   onConfirm: (payload: CompletionPayload) => Promise<void> | void;
 }
@@ -52,12 +49,10 @@ export default function TaskCompletionDialog({
   context = "lead",
   onConfirm,
 }: TaskCompletionDialogProps) {
-  const [step, setStep] = useState<1 | 2>(1);
   const [tipoContato, setTipoContato] = useState<TipoContato | undefined>();
   const [resultado, setResultado] = useState<Resultado | undefined>();
   const [descricao, setDescricao] = useState("");
 
-  // Step 2 state
   const [outcome, setOutcome] = useState<OutcomeChoice>("agendar");
   const [novaTarefa, setNovaTarefa] = useState<NovaTarefaPayload>(
     defaultNovaTarefa(),
@@ -83,7 +78,6 @@ export default function TaskCompletionDialog({
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
-    setStep(1);
     setTipoContato(undefined);
     setResultado(undefined);
     setDescricao("");
@@ -103,12 +97,11 @@ export default function TaskCompletionDialog({
     setSaving(false);
   };
 
-  // Reset on close
   useEffect(() => {
     if (!open) reset();
   }, [open]);
 
-  // Quando muda outcome, limpa estados de outras vertentes pra não vazar
+  // Quando muda outcome, limpa estados de outras vertentes
   useEffect(() => {
     setReasonCode(undefined);
     setReasonCustomText("");
@@ -174,9 +167,6 @@ export default function TaskCompletionDialog({
       );
       const tentativaConcluida = Math.min(7, tentativaAtual + 1);
       const finalAttempt = tentativaConcluida >= 7;
-
-      // Se a tarefa é da cadência, o sistema cria a próxima automaticamente.
-      // Não exigir tarefa manual — evita duplicação com o trigger.
       const isCadenciaTask = tarefaOrigem === "cadencia_sem_contato";
 
       if (!cancelled) {
@@ -209,10 +199,8 @@ export default function TaskCompletionDialog({
 
   const handleConfirm = async () => {
     if (!tipoContato || !resultado) return;
-    if (descricao.trim().length < 3) {
-      setStep(1);
-      return;
-    }
+    if (descricao.trim().length < 3) return;
+
     setSaving(true);
     try {
       const effectiveOutcome: OutcomeChoice =
@@ -226,7 +214,6 @@ export default function TaskCompletionDialog({
         setOutcome("agendar");
         return;
       }
-
       if (
         semContatoInfo.enabled &&
         semContatoInfo.finalAttempt &&
@@ -237,14 +224,9 @@ export default function TaskCompletionDialog({
       }
 
       let reasonLabel: string | undefined;
-      if (
-        effectiveOutcome === "descartar" ||
-        effectiveOutcome === "inativar"
-      ) {
+      if (effectiveOutcome === "descartar" || effectiveOutcome === "inativar") {
         const list =
-          effectiveOutcome === "descartar"
-            ? DESCARTE_REASONS
-            : INATIVAR_REASONS;
+          effectiveOutcome === "descartar" ? DESCARTE_REASONS : INATIVAR_REASONS;
         const found = list.find((r) => r.code === reasonCode);
         reasonLabel =
           reasonCode === "outro"
@@ -286,14 +268,6 @@ export default function TaskCompletionDialog({
     }
   };
 
-  const subtitle = `${tarefaTitulo}${leadNome ? ` · ${leadNome}` : ""}`;
-  const stepTitle =
-    step === 1
-      ? "O que aconteceu?"
-      : context === "lead"
-        ? "Como prosseguir com este lead?"
-        : "Quando voltar a falar?";
-
   return (
     <Dialog
       open={open}
@@ -302,46 +276,48 @@ export default function TaskCompletionDialog({
         onOpenChange(v);
       }}
     >
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] max-h-[90vh] overflow-y-auto p-0 gap-0 bg-card border-border text-foreground">
-        <CompletionProgress step={step} title={stepTitle} subtitle={subtitle} />
-
-        {step === 1 ? (
-          <CompletionStep1
-            tipoContato={tipoContato}
-            resultado={resultado}
-            descricao={descricao}
-            onChangeTipo={setTipoContato}
-            onChangeResultado={setResultado}
-            onChangeDescricao={setDescricao}
-            onCancel={() => onOpenChange(false)}
-            onNext={() => setStep(2)}
-          />
-        ) : (
-          <CompletionStep2
-            context={context}
-            outcome={outcome}
-            novaTarefa={novaTarefa}
-            novoStageId={novoStageId}
-            reasonCode={reasonCode}
-            reasonCustomText={reasonCustomText}
-            observacaoCurta={observacaoCurta}
-            leadId={leadId}
-            currentStageId={currentStageId}
-            step1Descricao={descricao}
-            semContato={semContatoInfo}
-            onChangeOutcome={setOutcome}
-            onChangeNovaTarefa={(patch) =>
-              setNovaTarefa((prev) => ({ ...prev, ...patch }))
-            }
-            onChangeNovoStage={setNovoStageId}
-            onChangeReasonCode={setReasonCode}
-            onChangeReasonCustomText={setReasonCustomText}
-            onChangeObservacaoCurta={setObservacaoCurta}
-            onBack={() => setStep(1)}
-            onConfirm={handleConfirm}
-            saving={saving}
-          />
-        )}
+      <DialogContent
+        className={[
+          // Desktop: compacto, centralizado, largura ~400
+          "p-0 gap-0 bg-card border-border text-foreground overflow-hidden",
+          "w-[min(400px,calc(100vw-2rem))] max-w-[400px]",
+          "sm:rounded-lg",
+          // Mobile ≤420: bottom sheet
+          "max-[420px]:top-auto max-[420px]:bottom-0 max-[420px]:left-0 max-[420px]:translate-x-0 max-[420px]:translate-y-0",
+          "max-[420px]:w-full max-[420px]:max-w-full max-[420px]:rounded-t-2xl max-[420px]:rounded-b-none max-[420px]:border-b-0",
+        ].join(" ")}
+      >
+        <CompletionForm
+          context={context}
+          tarefaTitulo={tarefaTitulo}
+          leadNome={leadNome}
+          leadId={leadId}
+          currentStageId={currentStageId}
+          semContato={semContatoInfo}
+          tipoContato={tipoContato}
+          resultado={resultado}
+          descricao={descricao}
+          outcome={outcome}
+          novaTarefa={novaTarefa}
+          novoStageId={novoStageId}
+          reasonCode={reasonCode}
+          reasonCustomText={reasonCustomText}
+          observacaoCurta={observacaoCurta}
+          saving={saving}
+          onChangeTipo={setTipoContato}
+          onChangeResultado={setResultado}
+          onChangeDescricao={setDescricao}
+          onChangeOutcome={setOutcome}
+          onChangeNovaTarefa={(patch) =>
+            setNovaTarefa((prev) => ({ ...prev, ...patch }))
+          }
+          onChangeNovoStage={setNovoStageId}
+          onChangeReasonCode={setReasonCode}
+          onChangeReasonCustomText={setReasonCustomText}
+          onChangeObservacaoCurta={setObservacaoCurta}
+          onCancel={() => onOpenChange(false)}
+          onConfirm={handleConfirm}
+        />
       </DialogContent>
     </Dialog>
   );
