@@ -1,22 +1,20 @@
 /**
- * CompletionForm — Redesign single-screen (2026-07-20)
+ * CompletionForm — Single-screen simplificado (2026-07-20)
  *
- * Fusão dos antigos CompletionStep1 + CompletionStep2 num único formulário
- * scrollável com CTA fixo (sticky) no rodapé. Não navega mais entre telas
- * "1/2" e não expõe botão "Próximo" no meio.
+ * Mudanças desta revisão:
+ * - REMOVIDO o campo "Canal" (tipo_contato herdado do tipo da tarefa).
+ * - REMOVIDO o bloco QualificacaoPillsBlock/VisitaDatePicker (nenhum motor
+ *   automático aqui). O status da etapa (Qualificação/Aquecimento) vira uma
+ *   seção obrigatória de pills, puro registro em flag_status.
+ * - Criação da próxima tarefa continua 100% MANUAL (AgendarCard).
  *
- * Hierarquia visual:
- *   1. Canal de contato + Resultado (compactos, lado a lado quando cabe)
- *   2. Observação (textarea obrigatória)
- *   3. Card principal "Agendar" (default, destacado) com sugestão do Homi
- *      pré-aplicada quando confiança alta + link "Ajustar manualmente"
- *   4. Link discreto "Só concluir, sem agendar próxima"
- *   5. Dois botões secundários menores "Descartar" / "Inativar"
- *      (context='lead' apenas)
+ * Hierarquia:
+ *   1. Resultado (largura total)
+ *   2. Observação obrigatória
+ *   3. Status da etapa (Qualificação/Aquecimento) — obrigatório quando aplicável
+ *   4. Card "Agendar próxima tarefa" (default) + link "Só concluir"
+ *   5. Botões secundários "Descartar" / "Inativar" (context='lead')
  *   6. CTA sticky no rodapé
- *
- * Compatibilidade: a interface pública de TaskCompletionDialog (props +
- * CompletionPayload) NÃO muda. Este arquivo é interno.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,19 +50,23 @@ import {
   PROXIMA_TAREFA_OPTIONS,
   quickDates,
   RESULTADO_OPTIONS,
-  TIPO_CONTATO_OPTIONS,
   type CompletionContext,
   type NovaTarefaPayload,
   type OutcomeChoice,
   type OutcomeReason,
   type Resultado,
-  type TipoContato,
   type TipoProximaTarefa,
 } from "./types";
 import { useStageOptions } from "./useStageOptions";
-import { QUALIFICACAO_STATUS_ATEND } from "@/components/pipeline/PipelineStageTransitionPopup";
-import { VisitaDatePicker } from "@/components/pipeline/QualificacaoChecklistCard";
-import type { DataOverride } from "@/lib/qualificacaoTaskEngine";
+
+export interface StageStatusPropsBlock {
+  kind: "qualificacao" | "aquecimento";
+  options: Array<{ value: string; label: string }>;
+  currentValue: string;
+  pick: string;
+  onPick: (v: string) => void;
+}
+
 
 const KEEP_STAGE = "__keep__";
 
