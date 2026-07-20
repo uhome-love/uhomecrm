@@ -19,6 +19,8 @@ import {
   Target,
   ChevronDown,
   AlertTriangle,
+  X,
+  Info,
 } from "lucide-react";
 import { RegistrarHorarioDialog } from "./RegistrarHorarioDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,10 +39,13 @@ import {
   ESTADO_LABEL,
   ESTADO_CLASSES,
   TURNO_LABEL,
+  getRegimeDoDia,
   type EstadoCorretor,
   type PresencaTurno,
   type PresencaRow,
 } from "@/lib/roletaPresenca";
+
+type MarkStatus = "na_empresa" | "saiu" | "falta";
 
 interface Props {
   scope: PresencaScope;
