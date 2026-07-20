@@ -23,6 +23,8 @@ export interface CorretorPresenca {
   nome: string | null;
   avatar_url: string | null;
   credenciamentos: string[]; // ex: ['manha','tarde'] ou ['dia_todo']
+  gerente_id: string | null;   // profiles.id do gestor (ou null)
+  gerente_nome: string | null; // nome do gestor (ou null)
 }
 
 export interface PresencaCorretoresDia {
