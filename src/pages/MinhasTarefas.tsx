@@ -151,11 +151,6 @@ export default function MinhasTarefas() {
       if (t === "desatualizados") setCategoria("leads");
     }
   }, [searchParams]);
-  const [adiarId, setAdiarId] = useState<string | null>(null);
-  const [adiarCount, setAdiarCount] = useState<number>(0);
-  const [adiarLeadId, setAdiarLeadId] = useState<string | null>(null);
-  const [adiarData, setAdiarData] = useState("");
-  const [adiarHora, setAdiarHora] = useState("");
   const [showNovaTarefa, setShowNovaTarefa] = useState(false);
   const [showTipoSelector, setShowTipoSelector] = useState(false);
   const [showNovaTarefaNegocio, setShowNovaTarefaNegocio] = useState(false);
