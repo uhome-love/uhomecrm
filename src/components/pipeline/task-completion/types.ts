@@ -106,7 +106,7 @@ export const RESULTADO_OPTIONS: ReadonlyArray<{
   tone: "positive" | "neutral" | "warning" | "negative";
 }> = [
   { value: "respondeu", label: "Respondeu", Icon: CheckCircle2, tone: "positive" },
-  { value: "nao_respondeu", label: "Não respondeu", Icon: XCircle, tone: "neutral" },
+  { value: "nao_respondeu", label: "Não respondeu", Icon: XCircle, tone: "warning" },
   { value: "outro", label: "Outro", Icon: HelpCircle, tone: "neutral" },
 ];
 
