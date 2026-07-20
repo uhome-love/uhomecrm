@@ -33,7 +33,8 @@ import {
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
 import CadenciaSemContatoCard from "./CadenciaSemContatoCard";
 import EstagnacaoStatusCard from "./EstagnacaoStatusCard";
-import QualificacaoChecklistCard from "./QualificacaoChecklistCard";
+import { QualificacaoEtapaCard, PerfilLeadCard } from "./QualificacaoChecklistCard";
+import { getOrigemLabel } from "./LeadHistoricoTab";
 import DrawerLeadHeader from "./drawer/DrawerLeadHeader";
 import DrawerTimeline from "./drawer/DrawerTimeline";
 import DrawerActionGrid from "./drawer/DrawerActionGrid";
