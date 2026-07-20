@@ -1159,6 +1159,7 @@ function QualificacaoPillsBlock({
   onPickData: (dt: DataOverride | undefined, hora: string) => void;
 }) {
   const isConfirmarVisita = currentStatus === "alinhando_visita";
+  const [showEtapaFallback, setShowEtapaFallback] = useState(false);
 
   // Modo enxuto: tarefa "Confirmar visita" → pula pills, pergunta direto "A visita é pra quando?"
   // Auto-fixa pillStatus como 'alinhando_visita' pra o motor reagendar corretamente.
@@ -1169,7 +1170,7 @@ function QualificacaoPillsBlock({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConfirmarVisita]);
 
-  if (isConfirmarVisita) {
+  if (isConfirmarVisita && !showEtapaFallback) {
     return (
       <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-2">
         <VisitaDatePicker
@@ -1181,9 +1182,18 @@ function QualificacaoPillsBlock({
             ✓ {dataOverride === "hoje" ? "Hoje" : dataOverride === "amanha" ? "Amanhã" : dataOverride}
           </div>
         )}
+        <button
+          type="button"
+          onClick={() => setShowEtapaFallback(true)}
+          className="text-[10.5px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+        >
+          A conversa mudou de rumo? Trocar etapa
+        </button>
       </div>
     );
   }
+
+
 
   const showDatePicker = pillStatus === "alinhando_visita";
   return (
