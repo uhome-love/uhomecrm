@@ -486,7 +486,10 @@ export function CompletionForm(props: CompletionFormProps) {
                 manualOpen={shouldShowManual}
                 onToggleManual={() => setManualOpen((v) => !v)}
                 semContato={semContato}
+                maxVenceEm={maxVenceEm}
+                maxDaysAhead={maxDaysAhead}
                 onChangeNovaTarefa={onChangeNovaTarefa}
+                onChangeVenceEm={handleChangeVenceEm}
                 onChangeNovoStage={onChangeNovoStage}
                 onApplyQuick={applyQuick}
               />
