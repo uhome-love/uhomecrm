@@ -352,6 +352,9 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
           </div>
 
         );
+      }
+
+
 
       case "perdido":
         return (
