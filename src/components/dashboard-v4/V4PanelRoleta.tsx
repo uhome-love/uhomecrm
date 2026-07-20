@@ -275,8 +275,8 @@ function MarcarPresencaAvulsaDialog({
 
 // -----------------------------------------------------------------------------
 export function V4PanelRoleta({ gestorId }: Props) {
-  const { isAdmin, isManager } = useUserRole();
-  const canManage = isAdmin || isManager;
+  const { isAdmin, isGestor } = useUserRole();
+  const canManage = isAdmin || isGestor;
   const { data, isLoading } = useDashboardGerenteV4Dia(gestorId, "hoje");
   const { getPresenca, marcar, marcarAsync, isMutating } = useRoletaPresencas();
 
