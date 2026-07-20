@@ -56,6 +56,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
   const [saving, setSaving] = useState(false);
 
   // Tarefa state
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [tipoTarefa, setTipoTarefa] = useState("follow_up");
   const [tarefaData, setTarefaData] = useState("");
   const [tarefaHora, setTarefaHora] = useState("");
