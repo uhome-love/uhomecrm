@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { PresencaRoletaPanel } from "@/components/roleta/PresencaRoletaPanel";
+import { PresencaHeaderStats } from "@/components/roleta/PresencaHeaderStats";
 import { usePresencaAgregada } from "@/hooks/usePresencaAgregada";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -60,25 +61,31 @@ export default function PresencaRoleta() {
   }
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto">
+    <div className="space-y-4 max-w-7xl mx-auto px-3 sm:px-0">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Presença</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Presença</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Validação por turno, histórico e auditoria.
           {scope === "ceo" ? " Empresa inteira." : " Seu time."}
         </p>
       </div>
 
+      {/* KPIs do dia (migrados do Dashboard CEO) */}
+      <PresencaHeaderStats scope={scope} gestorId={gestorId} />
+
       <Tabs defaultValue="hoje" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="hoje" className="gap-1.5">
-            <CalendarClock className="h-3.5 w-3.5" /> Hoje
+        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex">
+          <TabsTrigger value="hoje" className="gap-1.5 text-xs sm:text-sm">
+            <CalendarClock className="h-3.5 w-3.5" />
+            <span className="hidden xs:inline sm:inline">Hoje</span>
           </TabsTrigger>
-          <TabsTrigger value="historico" className="gap-1.5">
-            <BarChart3 className="h-3.5 w-3.5" /> Histórico
+          <TabsTrigger value="historico" className="gap-1.5 text-xs sm:text-sm">
+            <BarChart3 className="h-3.5 w-3.5" />
+            <span>Histórico</span>
           </TabsTrigger>
-          <TabsTrigger value="auditoria" className="gap-1.5">
-            <ScrollText className="h-3.5 w-3.5" /> Auditoria
+          <TabsTrigger value="auditoria" className="gap-1.5 text-xs sm:text-sm">
+            <ScrollText className="h-3.5 w-3.5" />
+            <span>Auditoria</span>
           </TabsTrigger>
         </TabsList>
 
@@ -125,7 +132,7 @@ function HistoricoTab({
   );
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-3 sm:p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
           <h3 className="text-sm font-semibold">Presenças acumuladas</h3>
@@ -165,8 +172,8 @@ function HistoricoTab({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="-mx-3 sm:mx-0 overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px] px-3 sm:px-0">
             <thead>
               <tr className="text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border">
                 <th className="text-left font-semibold py-2">Corretor</th>
@@ -281,7 +288,7 @@ function AuditoriaTab({
   });
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-3 sm:p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
           <h3 className="text-sm font-semibold">Últimas alterações</h3>
@@ -322,31 +329,36 @@ function AuditoriaTab({
           {(data ?? []).map((r: any) => (
             <div
               key={r.id}
-              className="flex items-center gap-2 text-xs rounded-md px-2 py-1.5 bg-muted/20 border border-transparent hover:border-border"
+              className="text-xs rounded-md px-2 py-1.5 bg-muted/20 border border-transparent hover:border-border"
             >
-              <span className="w-32 shrink-0 font-medium truncate">{r.nome}</span>
-              <span className="text-[10px] text-muted-foreground w-16 shrink-0">
-                {TURNO_LABEL[r.turno] ?? r.turno}
-              </span>
-              <span
-                className={cn(
-                  "text-[9px] font-semibold uppercase tracking-wide px-1.5 py-[1px] rounded-full",
-                  r.status === "na_empresa"
-                    ? "bg-success-500/15 text-success-700"
-                    : r.status === "saiu"
-                      ? "bg-yellow-500/15 text-yellow-700"
-                      : "bg-destructive/10 text-destructive",
-                )}
-              >
-                {r.status}
-              </span>
-              <span className="text-[10px] text-muted-foreground">{r.data}</span>
-              <span className="text-[10px] text-muted-foreground ml-auto">
-                {r.origem ?? "—"}
-              </span>
-              <span className="text-[10px] text-muted-foreground w-20 text-right shrink-0">
-                {r.criado_em ? formatBRT(r.criado_em, "dd/MM HH:mm") : ""}
-              </span>
+              {/* Linha 1: nome + status + data */}
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-medium truncate flex-1 min-w-0">{r.nome}</span>
+                <span
+                  className={cn(
+                    "text-[9px] font-semibold uppercase tracking-wide px-1.5 py-[1px] rounded-full shrink-0",
+                    r.status === "na_empresa"
+                      ? "bg-success-500/15 text-success-700"
+                      : r.status === "saiu"
+                        ? "bg-yellow-500/15 text-yellow-700"
+                        : "bg-destructive/10 text-destructive",
+                  )}
+                >
+                  {r.status}
+                </span>
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {r.data}
+                </span>
+              </div>
+              {/* Linha 2: turno · origem · timestamp */}
+              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                <span>{TURNO_LABEL[r.turno] ?? r.turno}</span>
+                <span>·</span>
+                <span className="truncate">{r.origem ?? "—"}</span>
+                <span className="ml-auto shrink-0">
+                  {r.criado_em ? formatBRT(r.criado_em, "dd/MM HH:mm") : ""}
+                </span>
+              </div>
             </div>
           ))}
         </div>

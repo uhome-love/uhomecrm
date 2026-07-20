@@ -1,60 +1,87 @@
-## Trocar o status auto-declarado pelo status real de presença
+## Objetivo
 
-### Situação hoje
-Na barra de status do corretor há um dropdown com 4 estados auto-declarados: Na Empresa / Em Plantão / Em Pausa / Offline. Grava em `profiles.status_online`. Confirmado:
-- Ninguém consome isso pra decidir distribuição de leads.
-- A distribuição real depende de credenciamento + presença marcada pelo gerente + fila da roleta.
-- O único outro lugar que lê `status_online` é o `CheckpointCards` do gerente, apenas pra ordenar a lista, e já tem fallback para `isOnline` (última atividade). Ou seja, dá pra desligar sem quebrar nada.
+1) Tirar o card "Presença da Roleta" do Dashboard CEO (só CEO — o do gestor fica como está por enquanto).
+2) Trazer esses mesmos KPIs (Corretores / Na empresa / Pendentes / Saíram) pra topo da página **Presença** (`/roleta/presenca`).
+3) Auditar a página Presença em mobile e ajustar o que estiver quebrado.
 
-### Novo fluxo
-A pill da esquerda deixa de ser um dropdown auto-declarado e passa a refletir **o que o gerente marcou hoje** + um botão único de ação: **Sair**.
+---
 
-**Como monta o rótulo (regime já implementado):**
+## Escopo 1 — Remover do Dashboard CEO
 
-Seg–sex, dentro do horário:
-- Turno atual = Manhã (até 12h) ou Tarde (12h–18h): mostra o status daquele turno do corretor
-  - Sem marcação → `Aguardando presença` (cinza)
-  - Presente → `Presente · Manhã 09:12` (verde) — hora vinda de `chegou_em`
-  - Faltou → `Faltou · Manhã` (vermelho)
-  - Saiu → `Saiu · 11:30` (âmbar)
-- Fora do horário útil (antes de 7h ou depois de 18h em dia útil): mostra o consolidado do dia (`Presente hoje` / `Faltou hoje` / `Sem registro`).
+Arquivo: `src/pages/CeoDashboard.tsx`
+- Remover a linha 444 (`<PresencaSummaryCard scope="ceo" />`) e o import da linha 34.
+- Não mexo em `V4PanelRoleta` (dashboard do gestor) — o usuário pediu explicitamente "do dashboard ceo".
 
-Noturna (18h–23h30, seg–sex):
-- Se credenciado noturno aprovado → `Presente (noturna, benefício)` — automático, sem botão de sair (benefício remoto).
-- Se não credenciado → esconde.
+---
 
-Sábado:
-- Credenciamento aprovado → `Presente (sábado)`; não credenciado após 23:59 → `Faltou (sábado)`.
+## Escopo 2 — Trazer os KPIs pra página Presença
 
-Domingo:
-- Credenciado + elegível → `Presente (domingo, benefício)`.
-- Credenciado mas não elegível → `Não elegível (domingo)` com tooltip explicando o critério (≥4 presenças + ≥2 visitas na semana anterior).
+Arquivo: `src/pages/PresencaRoleta.tsx`
 
-**Botão "Sair" (substitui o dropdown de status):**
-- Só aparece se o corretor está ativo em algum turno presencial do dia (Manhã ou Tarde, seg–sex) e ainda não foi marcado como Saiu/Faltou.
-- Ao clicar: confirma "Sair da roleta agora? Você não recebe mais leads hoje."
-- Ao confirmar, chama a RPC `roleta_marcar_presenca` com `status='saiu'` + `saiu_em=now()` para o turno atual, e a rotina que já existe: desativa credenciamentos do dia (`status='saiu'`) e a fila (`ativo=false`).
-- Não aparece nos turnos automáticos (Noturna/Sábado/Domingo) — não faz sentido "sair" de benefício remoto.
+Adicionar um **header de KPIs fixo** logo abaixo do título (fora das abas, pra ficar visível em Hoje/Histórico/Auditoria). 4 mini-cards no mesmo padrão visual do `PresencaSummaryCard`:
 
-### O que sai do código
-- Dropdown `STATUS_OPTIONS` (Na Empresa/Em Plantão/Em Pausa/Offline) e função `updateStatus` — removidos de `RoletaStatusBar.tsx`.
-- Estado local `status`, leitura e escrita em `profiles.status_online` — removidos deste componente.
-- `CheckpointCards` continua funcionando (usa fallback `isOnline`).
+```text
+Corretores  |  Na empresa  |  Pendentes  |  Saíram
+    27      |      17      |      0      |     3
+```
 
-### O que entra
-- Componente novo `PresencaDoCorretorPill.tsx` em `src/components/corretor/`:
-  - Recebe `profileId`; usa `useRoletaPresencas()` (já existe, com realtime); usa `getRegimeDoDia()` e `useElegibilidadeDomingo` (já existem).
-  - Renderiza a pill de estado + botão "Sair" quando aplicável.
-- `RoletaStatusBar.tsx` substitui a pill esquerda por esse componente. "Ativo na Roleta" e o botão de segmentos continuam intactos.
+Detalhes:
+- Reaproveitar o hook `usePresencaCorretoresDia(scope, gestorId)` e `useRoletaPresencas()` — mesma lógica de contagem por turno ativo que o `PresencaSummaryCard` já usa.
+- Subtítulo: "Turno {label} em andamento" ou "Fora do turno ativo".
+- Não colocar link "Ver central de presença" (já estamos nela).
+- Extrair o cálculo (contagens `naEmpresa`/`saiu`/`pendente`) pra um pequeno componente `PresencaHeaderStats` novo em `src/components/roleta/PresencaHeaderStats.tsx` — mantém a página enxuta e permite reuso.
+- Manter `PresencaSummaryCard.tsx` intacto (ainda é usado por `V4PanelRoleta` no dashboard do gestor).
 
-### Fora do escopo
-- Não mexer na página Presença do gerente/CEO.
-- Não mexer na tabela `profiles.status_online` no banco (deixa a coluna quieta; podemos deprecar num sweep futuro).
-- Nada de agregado semanal no dashboard do corretor.
-- Widget zerado do plano anterior segue removido.
+Layout (grid responsivo):
+- Mobile (`<640px`): `grid-cols-2` (2×2).
+- `sm+`: `grid-cols-4`.
 
-### Detalhes técnicos
-- Turno atual em BRT: reaproveitar helper de `getRegimeDoDia`/`roletaPresenca`.
-- RLS: confirmar que o corretor lê os próprios registros em `roleta_presencas` (se falhar, adicionar policy `corretor_read_own`). RPC `roleta_marcar_presenca` já valida quem pode marcar `saiu` — permitir o próprio corretor marcar `saiu` no próprio registro caso não permita hoje.
-- Ordenação em `CheckpointCards`: aceitável ficar só com `isOnline` (última atividade) enquanto ninguém mais grava `status_online`.
-- Feriados: se `isHolidayBRT()` true, tratar como domingo (benefício).
+---
+
+## Escopo 3 — Auditoria e ajustes de mobile na página Presença
+
+Vou revisar 3 partes em viewport mobile (375–420px) e corrigir o que estiver quebrado:
+
+**a) Cabeçalho da página** (`PresencaRoleta.tsx`)
+- Título + subtítulo já ok.
+- Header de KPIs novo já responsivo (2 colunas em mobile).
+
+**b) Tabs "Hoje / Histórico / Auditoria"**
+- `TabsList` do shadcn já quebra bem, mas confirmar que os ícones+labels cabem em 375px. Se apertar, encolher gap e padding.
+
+**c) Painel Hoje — `PresencaRoletaPanel.tsx`** (o principal alvo)
+
+Ponto crítico já identificado no código atual:
+- Linha 222: `grid gap-2 lg:grid-cols-[minmax(180px,220px)_1fr]` — em mobile fica uma coluna única (nome do corretor em cima, turnos embaixo). OK.
+- Linha 244: chips de turno usam `grid-cols-1 md:grid-cols-2 xl:grid-cols-3`. Em mobile fica 1 chip por linha, o que é bom pra evitar overlap dos botões "Presente/Faltou".
+
+Ajustes que planejo aplicar quando encontrar:
+- Header do grupo por equipe (nome do gestor + contagem): garantir `flex-wrap` e truncate no nome.
+- Botões de ação dentro do chip (`Presente / Faltou / Sair`): em mobile forçar largura total (`w-full`) OU ícone+label curto pra não vazar.
+- Aba **Histórico**: a tabela precisa de `overflow-x-auto` num wrapper e mínimos de coluna. Vou verificar linhas 200–260 e envolver em scroll horizontal se necessário.
+- Aba **Auditoria**: mesma coisa — timeline/lista precisa quebrar bem em telas estreitas.
+- Avatares e nomes: `truncate` + `min-w-0` onde faltar.
+- `max-w-7xl mx-auto` da página + `p-6` do layout: verificar padding em mobile (talvez reduzir com `px-3 sm:px-6`).
+
+Validação prática após o build:
+- Abrir `/roleta/presenca` em 375px e 768px.
+- Rolar as 3 abas.
+- Testar clicar em "Presente" e abrir o dialog de horário sem overflow.
+- Screenshot antes/depois de cada aba (via Playwright) — anexo no fim.
+
+---
+
+## O que NÃO vou mexer
+
+- `PresencaSummaryCard.tsx` (ainda é usado pelo gestor).
+- `V4PanelRoleta` (dashboard do gestor).
+- Lógica de dados, RPCs, RLS — só UI/UX.
+- Rotas.
+
+---
+
+## Entrega
+
+- Diff das 2 mudanças (CEO dashboard, página Presença).
+- Novo componente `PresencaHeaderStats.tsx`.
+- Screenshots mobile das 3 abas antes/depois pra você validar.
