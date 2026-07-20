@@ -473,6 +473,20 @@ export default function TaskCompletionDialog({
             onChangeObservacaoCurta={setObservacaoCurta}
             onCancel={() => onOpenChange(false)}
             onConfirm={handleConfirm}
+            visitaFlow={
+              visitaFlowCtx
+                ? {
+                    subtipo: visitaFlowCtx.subtipo,
+                    tarefaId: visitaFlowCtx.tarefaId,
+                    corretorId: visitaFlowCtx.corretorId,
+                    onSavingChange: setSaving,
+                    onConfirmPayload: async (payload) => {
+                      await onConfirm(payload);
+                      onOpenChange(false);
+                    },
+                  }
+                : undefined
+            }
           />
         )}
       </DialogContent>
