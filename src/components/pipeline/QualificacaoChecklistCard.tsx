@@ -16,7 +16,11 @@ import {
   QUALIFICACAO_PRAZOS,
   QUALIFICACAO_BAIRROS_UHOME,
 } from "./PipelineStageTransitionPopup";
-import { advanceQualificacaoStatus, type DataOverride } from "@/lib/qualificacaoTaskEngine";
+import {
+  advanceQualificacaoStatus,
+  willClampVisitaDate,
+  type DataOverride,
+} from "@/lib/qualificacaoTaskEngine";
 
 interface Props {
   lead: PipelineLead;
