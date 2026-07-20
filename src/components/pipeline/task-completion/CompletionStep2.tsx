@@ -9,7 +9,9 @@
  * Para context='negocio' o seletor é OCULTADO — apenas o caminho 'agendar'
  * permanece visível, preservando comportamento legado de negocios_tarefas.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -258,8 +260,111 @@ function ScheduleNextFields({
     onChangeNovaTarefa({ vence_em: dateToBRT(d), hora_vencimento: h });
   };
 
+  /* ─── Sugestão de IA (Fase 2 item 4) ─── */
+  const [suggestion, setSuggestion] = useState<null | {
+    tipo: TipoProximaTarefa;
+    vence_em: string;
+    hora_vencimento: string;
+  }>(null);
+  const [dismissed, setDismissed] = useState(false);
+  const fetchedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    const texto = (step1Descricao ?? "").trim();
+    if (texto.length < 10) return;
+    if (fetchedFor.current === texto) return;
+    fetchedFor.current = texto;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    (async () => {
+      try {
+        const dataReferencia = dateToBRT(new Date());
+        const { data, error } = await supabase.functions.invoke(
+          "homi-next-task-suggestion",
+          { body: { texto, dataReferencia } },
+        );
+        if (error) return;
+        if (data?.confianca === "alta" && data?.vence_em && data?.hora_vencimento) {
+          setSuggestion({
+            tipo: data.tipo,
+            vence_em: data.vence_em,
+            hora_vencimento: data.hora_vencimento,
+          });
+        }
+      } catch {
+        /* silencioso — cai no fluxo manual */
+      } finally {
+        clearTimeout(timeout);
+      }
+    })();
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [step1Descricao]);
+
+  const suggestionLabel = useMemo(() => {
+    if (!suggestion) return null;
+    const tipoLabel =
+      PROXIMA_TAREFA_OPTIONS.find((o) => o.value === suggestion.tipo)?.label ??
+      suggestion.tipo;
+    // vence_em está em YYYY-MM-DD BRT — formatar por extenso
+    const [y, m, d] = suggestion.vence_em.split("-").map(Number);
+    const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
+    const diaSemana = dt.toLocaleDateString("pt-BR", { weekday: "long" });
+    const diaMes = dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    return `${tipoLabel} — ${diaSemana}, ${diaMes} às ${suggestion.hora_vencimento}`;
+  }, [suggestion]);
+
+  const applySuggestion = () => {
+    if (!suggestion) return;
+    onChangeNovaTarefa({
+      tipo: suggestion.tipo,
+      vence_em: suggestion.vence_em,
+      hora_vencimento: suggestion.hora_vencimento,
+    });
+    setDismissed(true);
+  };
+
   return (
     <div className="space-y-3">
+      {suggestion && !dismissed && (
+        <div className="text-xs bg-primary/5 border border-primary/30 rounded-md p-3 flex items-start gap-2">
+          <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-primary mb-0.5">💡 Sugestão do Homi</div>
+            <div className="text-foreground mb-2">{suggestionLabel}</div>
+            <div className="flex gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={applySuggestion}
+                className="text-[11px] px-2.5 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+              >
+                Usar sugestão
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissed(true)}
+                className="text-[11px] px-2.5 py-1 rounded-md border border-border text-muted-foreground hover:bg-muted"
+              >
+                Ajustar manualmente
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="text-muted-foreground hover:text-foreground shrink-0"
+            aria-label="Dispensar sugestão"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {semContato?.enabled && semContato.requiresNextTask && (
         <div className="text-xs text-primary bg-primary/5 border border-primary/25 rounded-md p-3 flex items-start gap-2">
           <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" />
