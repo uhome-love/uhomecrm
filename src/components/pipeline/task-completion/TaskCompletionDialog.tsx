@@ -379,12 +379,15 @@ export default function TaskCompletionDialog({
       <DialogContent
         className={[
           "p-0 gap-0 bg-card border-border text-foreground overflow-hidden",
-          "w-[min(400px,calc(100vw-2rem))] max-w-[400px]",
+          "w-[min(460px,calc(100vw-2rem))] max-w-[460px]",
           "sm:rounded-lg",
           "max-[420px]:top-auto max-[420px]:bottom-0 max-[420px]:left-0 max-[420px]:translate-x-0 max-[420px]:translate-y-0",
           "max-[420px]:w-full max-[420px]:max-w-full max-[420px]:rounded-t-2xl max-[420px]:rounded-b-none max-[420px]:border-b-0",
         ].join(" ")}
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onFocusCapture={(e) => e.stopPropagation()}
       >
         {!contextLoaded ? (
           <div className="p-6 space-y-3 animate-pulse">
