@@ -137,7 +137,7 @@ export default function DrawerTasksTab({
   );
 
   const [editTarefa, setEditTarefa] = useState<PipelineTarefa | null>(null);
-  const [adiarTarefa, setAdiarTarefa] = useState<PipelineTarefa | null>(null);
+  
   const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
   const [showConcluidas, setShowConcluidas] = useState(false);
 
