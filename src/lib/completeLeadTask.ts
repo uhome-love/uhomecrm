@@ -26,6 +26,11 @@ export async function completeLeadTask({
   userId,
   payload,
 }: CompleteLeadTaskInput): Promise<{ toast: string }> {
+  // Fluxo custom (ex.: VisitaCompletionFlow) já executou tudo — só reporta sucesso.
+  if (payload.already_handled) {
+    return { toast: "Tarefa concluída ✅" };
+  }
+
   const {
     tipo_contato, resultado, descricao,
     outcome, nova_tarefa, novo_stage_id,

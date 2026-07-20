@@ -64,6 +64,11 @@ export async function runTaskCompletion(
   ctx: TaskCompletionContext,
   payload: CompletionPayload,
 ): Promise<TaskCompletionResult> {
+  // Fluxo custom (VisitaCompletionFlow) já rodou — só sucesso.
+  if (payload.already_handled) {
+    return { toastMessage: "Tarefa concluída ✅", level: "success" };
+  }
+
   const {
     tipo_contato,
     resultado,

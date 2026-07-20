@@ -65,6 +65,8 @@ import {
   type Resultado,
   type TipoProximaTarefa,
 } from "./types";
+import type { CompletionPayload } from "./types";
+import VisitaCompletionFlow, { type VisitaSubtipo } from "./VisitaCompletionFlow";
 import { useStageOptions } from "./useStageOptions";
 
 export interface StageStatusPropsBlock {
@@ -155,6 +157,15 @@ export interface CompletionFormProps {
 
   onCancel: () => void;
   onConfirm: () => void;
+
+  /** Fluxo fixo da etapa Visita — quando presente, substitui o corpo padrão. */
+  visitaFlow?: {
+    subtipo: VisitaSubtipo;
+    tarefaId: string;
+    corretorId?: string | null;
+    onConfirmPayload: (payload: CompletionPayload) => Promise<void> | void;
+    onSavingChange: (v: boolean) => void;
+  };
 }
 
 export function CompletionForm(props: CompletionFormProps) {
@@ -192,8 +203,24 @@ export function CompletionForm(props: CompletionFormProps) {
   const stageStatusReady = !stageStatus || !!stageStatus.pick;
   const step1Ready = !!resultado && descricaoValida && stageStatusReady;
 
+  /* ───── Fluxo Visita: substitui o corpo padrão ───── */
+  if (props.visitaFlow) {
+    return (
+      <VisitaCompletionFlow
+        subtipo={props.visitaFlow.subtipo}
+        tarefaId={props.visitaFlow.tarefaId}
+        leadId={leadId || ""}
+        leadNome={leadNome}
+        corretorId={props.visitaFlow.corretorId}
+        saving={saving}
+        onSaving={props.visitaFlow.onSavingChange}
+        onCancel={onCancel}
+        onConfirm={props.visitaFlow.onConfirmPayload}
+      />
+    );
+  }
 
-  /* ─── Sugestão do Homi (persiste enquanto o dialog está aberto) ─── */
+
   const [suggestion, setSuggestion] = useState<null | {
     tipo: TipoProximaTarefa;
     vence_em: string;
