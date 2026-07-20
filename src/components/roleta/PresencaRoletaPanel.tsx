@@ -90,12 +90,18 @@ function TurnoChip({
   presenca: PresencaRow | undefined;
   credenciado: boolean;
   canManage: boolean;
-  onMark: (turno: PresencaTurno, status: "na_empresa" | "saiu") => void;
+  onMark: (turno: PresencaTurno, status: MarkStatus) => void;
   isMutating: boolean;
 }) {
   const estado: EstadoCorretor = derivarEstadoTurno(presenca, credenciado);
-  const showChegou = canManage && estado !== "na_empresa" && estado !== "saiu";
+  // Botões:
+  //  - Credenciado + presente → só "Saiu"
+  //  - Não credenciado sem marcar → "Presente" + "Faltou"
+  //  - Marcado "Faltou" ou "Saiu" → "Presente" pra corrigir
+  const showPresente = canManage && estado !== "na_empresa";
   const showSaiu = canManage && estado === "na_empresa";
+  const showFaltou =
+    canManage && !credenciado && estado === "sem_marcar";
 
   return (
     <div
@@ -126,7 +132,7 @@ function TurnoChip({
         </span>
       )}
       <div className="ml-auto flex gap-1">
-        {showChegou && (
+        {showPresente && (
           <Button
             size="sm"
             variant="outline"
@@ -137,6 +143,19 @@ function TurnoChip({
           >
             <Check className="h-3 w-3" />
             <span className="hidden lg:inline">Presente</span>
+          </Button>
+        )}
+        {showFaltou && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[10px] gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+            disabled={isMutating}
+            onClick={() => onMark(turno, "falta")}
+            title="Marcar falta — corretor não compareceu"
+          >
+            <X className="h-3 w-3" />
+            <span className="hidden lg:inline">Faltou</span>
           </Button>
         )}
         {showSaiu && (
