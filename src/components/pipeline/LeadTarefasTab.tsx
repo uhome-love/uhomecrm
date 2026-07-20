@@ -380,9 +380,6 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
               }} style={{ padding: '4px 8px', fontSize: 11, color: 'var(--muted-foreground)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 <Pencil className="h-3 w-3" /> Editar
               </button>
-              <button onClick={() => { setAdiarId(tarefa.id); setAdiarData(""); setAdiarHora(""); }} style={{ padding: '4px 8px', fontSize: 11, color: 'var(--muted-foreground)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Calendar className="h-3 w-3" /> Adiar
-              </button>
               <button onClick={() => onDeleteTarefa(tarefa.id)} style={{ padding: '4px 4px', fontSize: 11, color: 'var(--muted-foreground)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
                 <Trash2 className="h-3 w-3" />
               </button>
