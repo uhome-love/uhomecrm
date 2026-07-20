@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -411,7 +411,65 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
     return () => { cancel = true; };
   }, [atividades, tarefas, historico, lead]);
 
-  const timeline = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes, nomesPorId);
+  // ── Injeção de visita_eventos (histórico automático de visitas) ──
+  const [visitaEventos, setVisitaEventos] = useState<Array<any>>([]);
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      const { data } = await supabase
+        .from("visita_eventos" as any)
+        .select("id, tipo, status_anterior, status_novo, data_anterior, data_nova, ator_id, created_at")
+        .eq("pipeline_lead_id", leadId)
+        .order("created_at", { ascending: false });
+      if (!cancel) setVisitaEventos((data as any[]) ?? []);
+    })();
+    return () => { cancel = true; };
+  }, [leadId]);
+
+  const VISITA_EVENT_META: Record<string, { title: string; icon: any; color: string; tone?: "success" | "danger" | "neutral" | "warning" }> = {
+    criada: { title: "Visita agendada", icon: MapPin, color: "text-primary", tone: "neutral" },
+    status_alterado: { title: "Visita — status alterado", icon: Repeat, color: "text-primary" },
+    resultado_registrado: { title: "Resultado da visita registrado", icon: CheckCircle2, color: "text-success-600" },
+    data_alterada: { title: "Visita — data alterada", icon: Clock, color: "text-warning-600", tone: "warning" },
+  };
+  const STATUS_LABEL: Record<string, string> = {
+    marcada: "Marcada", confirmada: "Confirmada", reagendada: "Reagendada",
+    realizada: "Realizada", no_show: "Não compareceu", cancelada: "Cancelada",
+  };
+
+  const timelineBase = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes, nomesPorId);
+  const timeline = useMemo<TimelineItem[]>(() => {
+    const extras: TimelineItem[] = visitaEventos.map((ev) => {
+      const meta = VISITA_EVENT_META[ev.tipo] || { title: `Visita — ${ev.tipo}`, icon: MapPin, color: "text-primary" };
+      let description = "";
+      if (ev.tipo === "status_alterado") {
+        description = `${STATUS_LABEL[ev.status_anterior] || ev.status_anterior || "?"} → ${STATUS_LABEL[ev.status_novo] || ev.status_novo || "?"}`;
+      } else if (ev.tipo === "criada") {
+        description = ev.data_nova ? `Agendada para ${new Date(ev.data_nova).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}` : "";
+      } else if (ev.tipo === "resultado_registrado") {
+        description = `Resultado: ${ev.status_novo || ""}`;
+      } else if (ev.tipo === "data_alterada") {
+        const de = ev.data_anterior ? new Date(ev.data_anterior).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }) : "?";
+        const para = ev.data_nova ? new Date(ev.data_nova).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }) : "?";
+        description = `${de} → ${para}`;
+      }
+      return {
+        title: meta.title,
+        description,
+        date: ev.created_at,
+        icon: meta.icon,
+        color: meta.color,
+        autor: ev.ator_id ? nomesPorId[ev.ator_id] : undefined,
+        badge: meta.tone ? { label: "visita", tone: meta.tone } : undefined,
+        sourceType: "system",
+        sourceId: ev.id,
+      };
+    });
+    const merged = [...timelineBase, ...extras];
+    merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return merged;
+  }, [timelineBase, visitaEventos, nomesPorId]);
+
 
   const totalEventos = timeline.length;
   const totalNotas = anotacoes?.length ?? 0;

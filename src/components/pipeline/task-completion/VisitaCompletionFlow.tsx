@@ -18,6 +18,7 @@ import {
   Calendar,
   CalendarPlus,
   CheckCircle2,
+  Clock,
   Handshake,
   ThumbsDown,
   ThumbsUp,
@@ -44,7 +45,9 @@ export type VisitaSubtipo =
   | "agendar_visita"
   | "reagendar_visita"
   | "registrar_resultado"
-  | "pegar_feedback";
+  | "pegar_feedback"
+  | "atualizar_visita"
+  | "decidir_descarte_visita";
 
 export interface VisitaCompletionFlowProps {
   subtipo: VisitaSubtipo;
@@ -86,6 +89,14 @@ const SUBTIPO_HEADER: Record<VisitaSubtipo, { titulo: string; sub: string }> = {
   pegar_feedback: {
     titulo: "Pegar feedback",
     sub: "Qual foi o feedback do cliente sobre a visita?",
+  },
+  atualizar_visita: {
+    titulo: "Atualizar visita",
+    sub: "Esse lead está na etapa Visita sem visita marcada. Agende agora ou volte o lead.",
+  },
+  decidir_descarte_visita: {
+    titulo: "Decidir descarte (2º no-show)",
+    sub: "O cliente faltou 2 vezes seguidas. Reagendar mesmo assim ou descartar?",
   },
 };
 
@@ -308,6 +319,93 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
     }
   }
 
+  async function handleDesistiu() {
+    if (!obsValida) return;
+    const descarteId = stages["descarte"];
+    if (!descarteId) {
+      toast.error("Etapa Descarte não encontrada.");
+      return;
+    }
+    onSaving(true);
+    try {
+      const now = new Date().toISOString();
+      const userId = (await supabase.auth.getUser()).data?.user?.id || "";
+      await markTaskDone("Cliente desistiu após visita. " + obs.trim());
+      const motivo = "reengajavel: desistiu após visita — " + obs.trim();
+      const { error } = await supabase
+        .from("pipeline_leads")
+        .update({
+          stage_id: descarteId,
+          stage_changed_at: now,
+          updated_at: now,
+          motivo_descarte: motivo,
+          tipo_descarte: "reengajavel",
+        } as never)
+        .eq("id", leadId);
+      if (error) throw error;
+      await supabase.from("pipeline_historico").insert({
+        pipeline_lead_id: leadId,
+        stage_novo_id: descarteId,
+        movido_por: userId,
+        observacao: motivo,
+      } as never);
+      await finish("Lead descartado ✅");
+    } catch (err) {
+      console.error("[VisitaFlow.desistiu]", err);
+      toast.error("Erro ao descartar");
+    } finally {
+      onSaving(false);
+    }
+  }
+
+  async function handleAindaDecidindo() {
+    if (!obsValida) return;
+    onSaving(true);
+    try {
+      const userId = (await supabase.auth.getUser()).data?.user?.id || "";
+      // Conta quantas definir_sequencia já foram concluídas/canceladas neste lead pra limitar em 2
+      const { count } = await supabase
+        .from("pipeline_tarefas")
+        .select("id", { count: "exact", head: true })
+        .eq("pipeline_lead_id", leadId)
+        .eq("origem", "visita_auto")
+        .eq("subtipo", "definir_sequencia")
+        .in("status", ["concluida", "cancelada"]);
+      if ((count ?? 0) >= 2) {
+        // 3ª vez → força decisão via descarte
+        await handleDesistiu();
+        toast.info("Limite de 2 retomadas atingido — lead movido pra descarte.");
+        return;
+      }
+      await markTaskDone("Cliente ainda decidindo. " + obs.trim());
+      const vence = new Date();
+      vence.setDate(vence.getDate() + 5);
+      const vDate = vence.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      await supabase.from("pipeline_tarefas").insert({
+        pipeline_lead_id: leadId,
+        tipo: "follow_up",
+        subtipo: "definir_sequencia",
+        titulo: `Definir sequência — ${leadNome || "Lead"}`,
+        descricao: obs.trim() || null,
+        prioridade: "media",
+        status: "pendente",
+        responsavel_id: corretorId || userId,
+        vence_em: vDate,
+        hora_vencimento: "10:00",
+        origem: "visita_auto",
+        retries_count: (count ?? 0) + 1,
+        created_by: userId,
+      } as never);
+      await finish("Follow-up de decisão agendado (+5 dias) ⏳");
+    } catch (err) {
+      console.error("[VisitaFlow.aindaDecidindo]", err);
+      toast.error("Erro ao agendar follow-up");
+    } finally {
+      onSaving(false);
+    }
+  }
+
+
   async function handleRegressao() {
     if (!obsValida) return;
     if (!regressStageTipo) {
@@ -504,7 +602,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
           </Button>
         )}
 
-        {(subtipo === "agendar_visita" || subtipo === "reagendar_visita") && !regressOpen && (
+        {(subtipo === "agendar_visita" || subtipo === "reagendar_visita" || subtipo === "atualizar_visita") && !regressOpen && (
           <div className="space-y-2">
             <Button
               onClick={handleAgendouOk}
@@ -513,7 +611,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
               size="sm"
             >
               <CalendarPlus className="w-3.5 h-3.5" />
-              ✅ {subtipo === "agendar_visita" ? "Consegui agendar" : "Consegui remarcar"}
+              ✅ {subtipo === "atualizar_visita" ? "Agendar visita agora" : subtipo === "agendar_visita" ? "Consegui agendar" : "Consegui remarcar"}
             </Button>
             <Button
               onClick={() => setRegressOpen(true)}
@@ -528,7 +626,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
           </div>
         )}
 
-        {(subtipo === "agendar_visita" || subtipo === "reagendar_visita") && regressOpen && (
+        {(subtipo === "agendar_visita" || subtipo === "reagendar_visita" || subtipo === "atualizar_visita") && regressOpen && (
           <>
             {regressBlock}
             <button
@@ -539,6 +637,33 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
               ← voltar
             </button>
           </>
+        )}
+
+        {subtipo === "decidir_descarte_visita" && !regressOpen && (
+          <div className="space-y-2">
+            <div className="text-[11px] text-warning-700 dark:text-warning-500 bg-warning-500/10 border border-warning-500/30 rounded-md p-2">
+              ⚠ Este lead teve 2 no-shows consecutivos. Confirme com ele antes de reagendar.
+            </div>
+            <Button
+              onClick={handleAgendouOk}
+              disabled={!obsValida || saving}
+              className="w-full gap-1.5 bg-success-500 hover:bg-success-600 text-white"
+              size="sm"
+            >
+              <CalendarPlus className="w-3.5 h-3.5" />
+              ✅ Reagendar mesmo assim
+            </Button>
+            <Button
+              onClick={handleDesistiu}
+              disabled={!obsValida || saving}
+              variant="outline"
+              className="w-full gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5"
+              size="sm"
+            >
+              <X className="w-3.5 h-3.5" />
+              🗑 Descartar lead
+            </Button>
+          </div>
         )}
 
         {subtipo === "registrar_resultado" && (
@@ -579,18 +704,45 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
               size="sm"
             >
               <Handshake className="w-3.5 h-3.5" />
-              ✅ Positivo — avançar p/ Em Negociação
+              ✅ Vai evoluir — avançar p/ Em Negociação
             </Button>
             <Button
-              onClick={() => setRegressOpen(true)}
-              disabled={saving}
+              onClick={handleAgendouOk}
+              disabled={!obsValida || saving}
+              variant="outline"
+              className="w-full gap-1.5 border-success-500/40 text-success-600 hover:bg-success-500/5"
+              size="sm"
+            >
+              <CalendarPlus className="w-3.5 h-3.5" />
+              🏠 Quer ver mais imóveis — agendar nova visita
+            </Button>
+            <Button
+              onClick={handleAindaDecidindo}
+              disabled={!obsValida || saving}
               variant="outline"
               className="w-full gap-1.5"
               size="sm"
             >
-              <ThumbsDown className="w-3.5 h-3.5" />
-              ❌ Negativo — voltar lead
+              <Clock className="w-3.5 h-3.5" />
+              ⏳ Ainda decidindo — retomar em 5 dias
             </Button>
+            <Button
+              onClick={handleDesistiu}
+              disabled={!obsValida || saving}
+              variant="outline"
+              className="w-full gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5"
+              size="sm"
+            >
+              <ThumbsDown className="w-3.5 h-3.5" />
+              🗑 Desistiu — descartar
+            </Button>
+            <button
+              type="button"
+              onClick={() => setRegressOpen(true)}
+              className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1"
+            >
+              ↩ Prefiro voltar o lead pra Qualificação/Aquecimento
+            </button>
           </div>
         )}
 
