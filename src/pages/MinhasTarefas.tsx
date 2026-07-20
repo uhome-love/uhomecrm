@@ -41,6 +41,7 @@ interface TarefaComLead {
   concluida_em: string | null;
   pipeline_lead_id: string;
   created_at: string;
+  adiamentos_count?: number | null;
   lead_nome?: string;
   lead_telefone?: string;
   lead_empreendimento?: string;
@@ -151,6 +152,8 @@ export default function MinhasTarefas() {
     }
   }, [searchParams]);
   const [adiarId, setAdiarId] = useState<string | null>(null);
+  const [adiarCount, setAdiarCount] = useState<number>(0);
+  const [adiarLeadId, setAdiarLeadId] = useState<string | null>(null);
   const [adiarData, setAdiarData] = useState("");
   const [adiarHora, setAdiarHora] = useState("");
   const [showNovaTarefa, setShowNovaTarefa] = useState(false);
@@ -768,22 +771,74 @@ export default function MinhasTarefas() {
     }
   };
 
-  const handleAdiarRapido = async (id: string, horas: number) => {
+  const applyAdiado2xFlag = async (leadId: string) => {
+    try {
+      const { data: lead } = await supabase
+        .from("pipeline_leads")
+        .select("flag_status")
+        .eq("id", leadId)
+        .maybeSingle();
+      const currentFlag = ((lead as any)?.flag_status as Record<string, any>) || {};
+      if (currentFlag.adiado_2x_sem_solucao === true) return;
+      await supabase
+        .from("pipeline_leads")
+        .update({ flag_status: { ...currentFlag, adiado_2x_sem_solucao: true } } as any)
+        .eq("id", leadId);
+    } catch (err) {
+      console.error("[applyAdiado2xFlag]", err);
+    }
+  };
+
+  const handleAdiarRapido = async (id: string, horas: number, currentCount: number, leadId: string | null) => {
+    if (currentCount >= 2) {
+      toast.error("Limite de adiamentos atingido. Use Concluir para resolver o lead.");
+      return;
+    }
     const novaData = addHours(new Date(), horas);
-    const { error } = await supabase.from("pipeline_tarefas").update({ vence_em: dateToBRT(novaData), hora_vencimento: format(novaData, "HH:mm") } as any).eq("id", id);
+    const nextCount = currentCount + 1;
+    const { error } = await supabase
+      .from("pipeline_tarefas")
+      .update({
+        vence_em: dateToBRT(novaData),
+        hora_vencimento: format(novaData, "HH:mm"),
+        adiamentos_count: nextCount,
+      } as any)
+      .eq("id", id);
     if (error) { toast.error("Não foi possível adiar: " + error.message); return; }
-    toast.success("Tarefa adiada ✅");
+    if (nextCount >= 2 && leadId) await applyAdiado2xFlag(leadId);
+    toast.success(nextCount >= 2 ? "Adiado (2/2) — próxima vez, é resolver ⚠️" : "Tarefa adiada ✅");
     invalidateTaskQueries(queryClient, null);
   };
 
   const handleAdiarCustom = async () => {
     if (!adiarId || !adiarData) return;
+    if (adiarCount >= 2) {
+      toast.error("Limite de adiamentos atingido. Use Concluir para resolver o lead.");
+      return;
+    }
     if (isTaskDateTooFar(adiarData)) { toast.error(TASK_DATE_TOO_FAR_MSG); return; }
-    const { error } = await supabase.from("pipeline_tarefas").update({ vence_em: adiarData, hora_vencimento: adiarHora || null } as any).eq("id", adiarId);
+    const nextCount = adiarCount + 1;
+    const { error } = await supabase
+      .from("pipeline_tarefas")
+      .update({
+        vence_em: adiarData,
+        hora_vencimento: adiarHora || null,
+        adiamentos_count: nextCount,
+      } as any)
+      .eq("id", adiarId);
     if (error) { toast.error("Não foi possível reagendar: " + error.message); return; }
-    toast.success("Tarefa reagendada ✅");
+    if (nextCount >= 2 && adiarLeadId) await applyAdiado2xFlag(adiarLeadId);
+    toast.success(nextCount >= 2 ? "Reagendado (2/2) — próxima vez, é resolver ⚠️" : "Tarefa reagendada ✅");
     setAdiarId(null);
     invalidateTaskQueries(queryClient, null);
+  };
+
+  const openAdiar = (tarefa: TarefaComLead) => {
+    setAdiarId(tarefa.id);
+    setAdiarCount(tarefa.adiamentos_count ?? 0);
+    setAdiarLeadId(tarefa.pipeline_lead_id);
+    setAdiarData("");
+    setAdiarHora("");
   };
 
   const handleCriarTarefa = async () => {
@@ -1083,6 +1138,21 @@ export default function MinhasTarefas() {
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-success-700 hover:text-success-700 hover:bg-success-500/10" onClick={() => handleConcluir(tarefa)}>
                         <CheckCircle2 className="h-3.5 w-3.5" /> Concluir
                       </Button>
+                      {(tarefa.adiamentos_count ?? 0) >= 2 ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="destructive" className="text-[10px] gap-1 cursor-help">
+                              <Clock className="h-3 w-3" /> Adiado 2x — resolver
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>Esta tarefa já foi adiada 2 vezes. Use Concluir para resolver (concluir, descartar ou inativar).</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground" onClick={() => openAdiar(tarefa)} title={(tarefa.adiamentos_count ?? 0) === 1 ? "Último adiamento disponível" : "Adiar tarefa"}>
+                          <Clock className="h-3.5 w-3.5" />
+                          Adiar{(tarefa.adiamentos_count ?? 0) === 1 ? " (último)" : ""}
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Editar" onClick={() => openEditTarefa(tarefa)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -1111,12 +1181,17 @@ export default function MinhasTarefas() {
       {/* Adiar dialog */}
       <Dialog open={!!adiarId} onOpenChange={() => setAdiarId(null)}>
         <DialogContent className="sm:max-w-xs">
-          <DialogHeader><DialogTitle>Adiar tarefa</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Adiar tarefa {adiarCount > 0 ? `(${adiarCount}/2)` : ""}</DialogTitle></DialogHeader>
           <div className="space-y-2">
+            {adiarCount === 1 && (
+              <div className="text-xs bg-warning-500/10 border border-warning-500/30 text-warning-700 rounded-md p-2 leading-snug">
+                ⚠️ Essa é a última vez que dá pra adiar sem resolver. Na próxima, você vai precisar concluir, descartar ou repassar esse lead.
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 1); setAdiarId(null); }}>Daqui 1h</Button>
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 2); setAdiarId(null); }}>Daqui 2h</Button>
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 24); setAdiarId(null); }}>Amanhã</Button>
+              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 1, adiarCount, adiarLeadId); setAdiarId(null); }}>Daqui 1h</Button>
+              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 2, adiarCount, adiarLeadId); setAdiarId(null); }}>Daqui 2h</Button>
+              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 24, adiarCount, adiarLeadId); setAdiarId(null); }}>Amanhã</Button>
             </div>
             <p className="text-xs text-muted-foreground text-center">ou escolha data/hora:</p>
             <Input type="date" value={adiarData} max={maxTaskDateBRT()} onChange={e => setAdiarData(e.target.value)} />
