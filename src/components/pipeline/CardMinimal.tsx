@@ -483,8 +483,13 @@ const CardMinimal = memo(function CardMinimal({
                     isAtrasada ? "text-red-600" : "text-foreground"
                   }`}
                 >
-                  {proximaTarefa?.titulo}
+                  {specificTitleText}
                 </strong>
+                {visitaAutoTxt && actionWhen ? (
+                  <span className={`ml-1 ${isAtrasada ? "text-red-600" : "text-muted-foreground"}`}>
+                    · {actionWhen}
+                  </span>
+                ) : null}
               </span>
             ) : (
               <span
