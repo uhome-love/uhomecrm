@@ -455,25 +455,35 @@ export function CompletionForm(props: CompletionFormProps) {
 
         {/* 3. Cartão principal — Agendar (default destacado) */}
         {outcome === "agendar" && !(semContato.enabled && semContato.finalAttempt) && (
-          <AgendarCard
-            novaTarefa={novaTarefa}
-            novoStageId={novoStageId}
-            leadId={leadId}
-            currentStageId={currentStageId}
-            currentStageNome={currentStageNome}
-            stages={stages}
-            stagesLoading={stagesLoading}
-            suggestion={suggestion}
-            suggestionLabel={suggestionLabel}
-            suggestionDismissed={suggestionDismissed}
-            onDismissSuggestion={() => setSuggestionDismissed(true)}
-            manualOpen={shouldShowManual}
-            onToggleManual={() => setManualOpen((v) => !v)}
-            semContato={semContato}
-            onChangeNovaTarefa={onChangeNovaTarefa}
-            onChangeNovoStage={onChangeNovoStage}
-            onApplyQuick={applyQuick}
-          />
+          qualificacao ? (
+            <QualificacaoPillsBlock
+              pillStatus={qualificacao.pillStatus}
+              currentStatus={qualificacao.currentStatus}
+              dataOverride={qualificacao.dataOverride}
+              onPickPill={qualificacao.onPickPill}
+              onPickData={qualificacao.onPickData}
+            />
+          ) : (
+            <AgendarCard
+              novaTarefa={novaTarefa}
+              novoStageId={novoStageId}
+              leadId={leadId}
+              currentStageId={currentStageId}
+              currentStageNome={currentStageNome}
+              stages={stages}
+              stagesLoading={stagesLoading}
+              suggestion={suggestion}
+              suggestionLabel={suggestionLabel}
+              suggestionDismissed={suggestionDismissed}
+              onDismissSuggestion={() => setSuggestionDismissed(true)}
+              manualOpen={shouldShowManual}
+              onToggleManual={() => setManualOpen((v) => !v)}
+              semContato={semContato}
+              onChangeNovaTarefa={onChangeNovaTarefa}
+              onChangeNovoStage={onChangeNovoStage}
+              onApplyQuick={applyQuick}
+            />
+          )
         )}
 
         {/* Only-Complete */}
