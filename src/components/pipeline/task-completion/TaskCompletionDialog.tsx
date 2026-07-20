@@ -449,6 +449,7 @@ export default function TaskCompletionDialog({
           onCancel={() => onOpenChange(false)}
           onConfirm={handleConfirm}
         />
+        )}
       </DialogContent>
     </Dialog>
   );
