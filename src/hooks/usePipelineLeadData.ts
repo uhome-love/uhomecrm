@@ -46,6 +46,7 @@ export interface PipelineTarefa {
   created_by: string;
   created_at: string;
   origem?: string | null;
+  subtipo?: string | null;
 }
 
 
