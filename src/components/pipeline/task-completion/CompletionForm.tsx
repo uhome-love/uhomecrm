@@ -60,12 +60,13 @@ import {
 import { useStageOptions } from "./useStageOptions";
 
 export interface StageStatusPropsBlock {
-  kind: "qualificacao" | "aquecimento";
+  kind: "qualificacao" | "aquecimento" | "negociacao";
   options: Array<{ value: string; label: string }>;
   currentValue: string;
   pick: string;
   onPick: (v: string) => void;
 }
+
 
 
 const KEEP_STAGE = "__keep__";
@@ -269,8 +270,8 @@ export function CompletionForm(props: CompletionFormProps) {
   const canConfirm = useMemo(() => {
     if (!step1Ready) return false;
     if (semContato.enabled) {
-      if (semContato.requiresNextTask && outcome === "concluir") return false;
-      if (semContato.finalAttempt && outcome === "agendar") return false;
+      // Sem Contato: só concluir. Nada de agendar manual.
+      return outcome === "concluir";
     }
     switch (outcome) {
       case "agendar":
@@ -300,20 +301,21 @@ export function CompletionForm(props: CompletionFormProps) {
 
 
   const ctaConfig = useMemo(() => {
+    if (semContato.enabled) {
+      return {
+        label: semContato.finalAttempt ? "Concluir T7" : "Concluir tentativa",
+        variant: "neutral" as const,
+      };
+    }
     switch (outcome) {
       case "agendar":
         return {
-          label: semContato.enabled
-            ? "Concluir tentativa e criar próxima"
-            : "Concluir e criar próxima",
+          label: "Concluir e criar próxima",
           variant: "gradient" as const,
         };
       case "concluir":
         return {
-          label:
-            semContato.enabled && semContato.finalAttempt
-              ? "Concluir T7"
-              : "Apenas concluir",
+          label: "Apenas concluir",
           variant: "neutral" as const,
         };
       case "descartar":
@@ -322,6 +324,7 @@ export function CompletionForm(props: CompletionFormProps) {
         return { label: "Inativar definitivo", variant: "destructive" as const };
     }
   }, [outcome, semContato]);
+
 
   const applyQuick = (d: Date, h: string) => {
     onChangeNovaTarefa({ vence_em: dateToBRT(d), hora_vencimento: h });
@@ -404,124 +407,139 @@ export function CompletionForm(props: CompletionFormProps) {
           <StageStatusBlock block={stageStatus} />
         )}
 
-        {/* Divisor: "Como prosseguir?" */}
-        <div className="flex items-center gap-2 pt-1">
-          <div className="flex-1 h-px bg-border/60" />
-          <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-            {context === "lead" ? "Como prosseguir?" : "Quando voltar?"}
-          </span>
-          <div className="flex-1 h-px bg-border/60" />
-        </div>
-
-        {/* 4. Cartão principal — Agendar (default destacado) */}
-        {outcome === "agendar" && !(semContato.enabled && semContato.finalAttempt) && (
-          <AgendarCard
-              novaTarefa={novaTarefa}
-              novoStageId={novoStageId}
-              leadId={leadId}
-              currentStageId={currentStageId}
-              currentStageNome={currentStageNome}
-              stages={stages}
-              stagesLoading={stagesLoading}
-              suggestion={suggestion}
-              suggestionLabel={suggestionLabel}
-              suggestionDismissed={suggestionDismissed}
-              onDismissSuggestion={() => setSuggestionDismissed(true)}
-
-              manualOpen={shouldShowManual}
-              onToggleManual={() => setManualOpen((v) => !v)}
-              semContato={semContato}
-              onChangeNovaTarefa={onChangeNovaTarefa}
-              onChangeNovoStage={onChangeNovoStage}
-              onApplyQuick={applyQuick}
-            />
-        )}
-
-
-        {/* Only-Complete */}
-        {outcome === "concluir" && (
-          <OnlyCompleteBlock
-            novoStageId={novoStageId}
-            leadId={leadId}
-            currentStageId={currentStageId}
-            currentStageNome={currentStageNome}
-            stages={stages}
-            stagesLoading={stagesLoading}
-            observacaoCurta={observacaoCurta}
-            semContato={semContato}
-            onChangeNovoStage={onChangeNovoStage}
-            onChangeObservacaoCurta={onChangeObservacaoCurta}
-            onBackToAgendar={
-              // Trava "← Agendar" quando é tarefa da cadência Sem Contato (sistema cria a próxima)
-              // ou tentativa final — evita criar tarefa manual concorrente.
-              (semContato.enabled && (semContato.isCadenciaTask || semContato.finalAttempt))
-                ? undefined
-                : () => onChangeOutcome("agendar")
-            }
-          />
-        )}
-
-        {(outcome === "descartar" || outcome === "inativar") && (
-          <ReasonBlock
-            outcome={outcome}
-            reasons={
-              outcome === "descartar" ? DESCARTE_REASONS : INATIVAR_REASONS
-            }
-            reasonCode={reasonCode}
-            reasonCustomText={reasonCustomText}
-            observacaoCurta={observacaoCurta}
-            warningMessage={
-              outcome === "inativar"
-                ? "Este lead não poderá receber mais contatos automáticos (Oferta Ativa, Reengajamento, etc)."
-                : undefined
-            }
-            onChangeReasonCode={onChangeReasonCode}
-            onChangeReasonCustomText={onChangeReasonCustomText}
-            onChangeObservacaoCurta={onChangeObservacaoCurta}
-            onBackToAgendar={() => onChangeOutcome("agendar")}
-          />
-        )}
-
-        {/* 4. Link discreto: "Só concluir sem agendar próxima" */}
-        {outcome === "agendar" &&
-          !(semContato.enabled && semContato.requiresNextTask) && (
-            <button
-              type="button"
-              onClick={() => onChangeOutcome("concluir")}
-              className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-            >
-              Só concluir, sem agendar próxima
-            </button>
-          )}
-
-        {/* 5. Botões secundários — Encerrar lead (só context=lead) */}
-        {context === "lead" &&
-          outcome !== "descartar" &&
-          outcome !== "inativar" && (
-            <div className="pt-2 border-t border-border/40">
-              <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">
-                Encerrar lead
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => onChangeOutcome("descartar")}
-                  className="px-2 py-1.5 rounded-md text-[11px] font-medium border border-warning-500/30 bg-warning-500/5 text-warning-700 dark:text-warning-500 hover:bg-warning-500/10 hover:border-warning-500/60 transition-colors flex items-center justify-center gap-1"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  Descartar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onChangeOutcome("inativar")}
-                  className="px-2 py-1.5 rounded-md text-[11px] font-medium border border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10 hover:border-destructive/60 transition-colors flex items-center justify-center gap-1"
-                >
-                  <Archive className="w-3 h-3" />
-                  Inativar
-                </button>
-              </div>
+        {/* SEM CONTATO — bloqueio total: só banner + botão Concluir tentativa. */}
+        {semContato.enabled ? (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+            <div className="text-[11px] text-foreground leading-snug">
+              {semContato.finalAttempt ? (
+                <>
+                  <strong>T7</strong> — última tentativa. Ao concluir, o lead
+                  entra no prazo final de 48h. Nenhuma nova tarefa será criada.
+                </>
+              ) : (
+                <>
+                  <strong>Tentativa {semContato.tentativaConcluida} registrada</strong>{" "}
+                  — a próxima (T{semContato.tentativaConcluida + 1}) é criada
+                  automaticamente pela cadência.
+                </>
+              )}
             </div>
-          )}
+          </div>
+        ) : (
+          <>
+            {/* Divisor: "Como prosseguir?" */}
+            <div className="flex items-center gap-2 pt-1">
+              <div className="flex-1 h-px bg-border/60" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                {context === "lead" ? "Como prosseguir?" : "Quando voltar?"}
+              </span>
+              <div className="flex-1 h-px bg-border/60" />
+            </div>
+
+            {/* Cartão principal — Agendar (default destacado) */}
+            {outcome === "agendar" && (
+              <AgendarCard
+                novaTarefa={novaTarefa}
+                novoStageId={novoStageId}
+                leadId={leadId}
+                currentStageId={currentStageId}
+                currentStageNome={currentStageNome}
+                stages={stages}
+                stagesLoading={stagesLoading}
+                suggestion={suggestion}
+                suggestionLabel={suggestionLabel}
+                suggestionDismissed={suggestionDismissed}
+                onDismissSuggestion={() => setSuggestionDismissed(true)}
+                manualOpen={shouldShowManual}
+                onToggleManual={() => setManualOpen((v) => !v)}
+                semContato={semContato}
+                onChangeNovaTarefa={onChangeNovaTarefa}
+                onChangeNovoStage={onChangeNovoStage}
+                onApplyQuick={applyQuick}
+              />
+            )}
+
+            {/* Only-Complete */}
+            {outcome === "concluir" && (
+              <OnlyCompleteBlock
+                novoStageId={novoStageId}
+                leadId={leadId}
+                currentStageId={currentStageId}
+                currentStageNome={currentStageNome}
+                stages={stages}
+                stagesLoading={stagesLoading}
+                observacaoCurta={observacaoCurta}
+                semContato={semContato}
+                onChangeNovoStage={onChangeNovoStage}
+                onChangeObservacaoCurta={onChangeObservacaoCurta}
+                onBackToAgendar={() => onChangeOutcome("agendar")}
+              />
+            )}
+
+            {(outcome === "descartar" || outcome === "inativar") && (
+              <ReasonBlock
+                outcome={outcome}
+                reasons={
+                  outcome === "descartar" ? DESCARTE_REASONS : INATIVAR_REASONS
+                }
+                reasonCode={reasonCode}
+                reasonCustomText={reasonCustomText}
+                observacaoCurta={observacaoCurta}
+                warningMessage={
+                  outcome === "inativar"
+                    ? "Este lead não poderá receber mais contatos automáticos (Oferta Ativa, Reengajamento, etc)."
+                    : undefined
+                }
+                onChangeReasonCode={onChangeReasonCode}
+                onChangeReasonCustomText={onChangeReasonCustomText}
+                onChangeObservacaoCurta={onChangeObservacaoCurta}
+                onBackToAgendar={() => onChangeOutcome("agendar")}
+              />
+            )}
+
+            {/* Link discreto: "Só concluir sem agendar próxima" */}
+            {outcome === "agendar" && (
+              <button
+                type="button"
+                onClick={() => onChangeOutcome("concluir")}
+                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+              >
+                Só concluir, sem agendar próxima
+              </button>
+            )}
+
+            {/* Encerrar lead (só context=lead) */}
+            {context === "lead" &&
+              outcome !== "descartar" &&
+              outcome !== "inativar" && (
+                <div className="pt-2 border-t border-border/40">
+                  <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">
+                    Encerrar lead
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => onChangeOutcome("descartar")}
+                      className="px-2 py-1.5 rounded-md text-[11px] font-medium border border-warning-500/30 bg-warning-500/5 text-warning-700 dark:text-warning-500 hover:bg-warning-500/10 hover:border-warning-500/60 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Descartar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onChangeOutcome("inativar")}
+                      className="px-2 py-1.5 rounded-md text-[11px] font-medium border border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10 hover:border-destructive/60 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Archive className="w-3 h-3" />
+                      Inativar
+                    </button>
+                  </div>
+                </div>
+              )}
+          </>
+        )}
+
       </div>
 
       {/* CTA fixo no rodapé */}
@@ -1062,11 +1080,16 @@ function StageStatusBlock({ block }: { block: StageStatusPropsBlock }) {
   const title =
     block.kind === "qualificacao"
       ? "Status da qualificação"
-      : "Prazo do aquecimento";
+      : block.kind === "aquecimento"
+        ? "Prazo do aquecimento"
+        : "Situação da negociação";
   const helper =
     block.kind === "qualificacao"
       ? "Registre em que momento da qualificação a conversa está agora."
-      : "Registre o prazo acordado para retomar o contato.";
+      : block.kind === "aquecimento"
+        ? "Registre o prazo acordado para retomar o contato."
+        : "Registre em que ponto da negociação o lead está agora.";
+
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
       <div className="flex items-center justify-between">

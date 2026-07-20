@@ -64,11 +64,12 @@ export interface CompletionPayload {
   reason_custom_text?: string; // preenchido quando reason_code === 'outro'
 
   /**
-   * Status da etapa registrado ao concluir a tarefa (Qualificação/Aquecimento).
+   * Status da etapa registrado ao concluir a tarefa (Qualificação/Aquecimento/Negociação).
    * Persistido em pipeline_leads.flag_status[key] = value.
    * Sem automação de criação/cancelamento de tarefa — puro registro.
    */
-  status_etapa?: { key: "status_atendimento" | "prazo"; value: string };
+  status_etapa?: { key: "status_atendimento" | "prazo" | "status_negociacao"; value: string };
+
 }
 
 
