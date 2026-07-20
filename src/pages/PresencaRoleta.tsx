@@ -62,9 +62,9 @@ export default function PresencaRoleta() {
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Central de Presença</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Presença</h1>
         <p className="text-sm text-muted-foreground">
-          Validação de presença por turno, histórico e auditoria da roleta.
+          Validação por turno, histórico e auditoria.
           {scope === "ceo" ? " Empresa inteira." : " Seu time."}
         </p>
       </div>
