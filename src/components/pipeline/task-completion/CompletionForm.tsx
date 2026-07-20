@@ -108,6 +108,9 @@ export interface CompletionFormProps {
     tentativaConcluida: number;
     requiresNextTask: boolean;
     finalAttempt: boolean;
+    /** true quando a tarefa sendo concluída pertence à cadência automática (tarefaOrigem === "cadencia_sem_contato").
+     *  Nesse caso o sistema cria a próxima via trigger; travamos o "Agendar" manual pra não duplicar. */
+    isCadenciaTask: boolean;
   };
 
   // Step 1 state
