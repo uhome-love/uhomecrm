@@ -244,13 +244,31 @@ export default function TaskCompletionDialog({
       }
 
       // Sem contato: cadência (bloqueia SEMPRE, independe de tarefaOrigem)
-      // Etapa Visita (tipo real no banco = 'visita'): fluxo fixo.
-      // Próxima tarefa é criada pelo trigger visita_auto_tarefas via Agenda.
-      // Popup só conclui — sem AgendarCard, sem status pill.
+      // Etapa Visita (tipo real no banco = 'visita'): fluxo fixo por subtipo.
       if (stageTipo === "visita") {
         if (!cancelled) setOutcome("concluir");
+        // Busca a tarefa visita_auto pendente do lead (invariante: no máx. 1).
+        const { data: vTask } = await supabase
+          .from("pipeline_tarefas")
+          .select("id, subtipo, responsavel_id")
+          .eq("pipeline_lead_id", leadId)
+          .eq("origem", "visita_auto")
+          .eq("status", "pendente")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const row = vTask as { id?: string; subtipo?: string; responsavel_id?: string } | null;
+        if (!cancelled && row?.id && row.subtipo) {
+          setVisitaFlowCtx({
+            subtipo: row.subtipo as any,
+            tarefaId: row.id,
+            corretorId: row.responsavel_id ?? null,
+          });
+        }
         return;
       }
+
+
 
       if (stageTipo !== "sem_contato") return;
 
