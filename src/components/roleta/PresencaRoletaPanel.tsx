@@ -93,15 +93,20 @@ function TurnoChip({
   onMark: (turno: PresencaTurno, status: MarkStatus) => void;
   isMutating: boolean;
 }) {
-  const estado: EstadoCorretor = derivarEstadoTurno(presenca, credenciado);
+  const estadoDerivado: EstadoCorretor = derivarEstadoTurno(presenca, credenciado);
+  // Noturna é benefício automático: aprovou credenciamento → presente sempre.
+  // Sem botões de Presente/Faltou/Saiu no turno da noite.
+  const isNoturna = turno === "noturna";
+  const estado: EstadoCorretor =
+    isNoturna && credenciado ? "na_empresa" : estadoDerivado;
   // Botões:
   //  - Credenciado + presente → só "Saiu"
   //  - Não credenciado sem marcar → "Presente" + "Faltou"
   //  - Marcado "Faltou" ou "Saiu" → "Presente" pra corrigir
-  const showPresente = canManage && estado !== "na_empresa";
-  const showSaiu = canManage && estado === "na_empresa";
+  const showPresente = canManage && !isNoturna && estado !== "na_empresa";
+  const showSaiu = canManage && !isNoturna && estado === "na_empresa";
   const showFaltou =
-    canManage && !credenciado && estado === "sem_marcar";
+    canManage && !isNoturna && !credenciado && estado === "sem_marcar";
 
   return (
     <div
@@ -196,13 +201,9 @@ function CorretorRow({
   ) => void;
   isMutating: boolean;
 }) {
-  const presencaManha = getPresenca(c.corretor_id, "manha");
-  const presencaTarde = getPresenca(c.corretor_id, "tarde");
-  const elegívelNoturna =
-    presencaManha?.status === "na_empresa" &&
-    presencaTarde?.status === "na_empresa";
   const credenciadoNoturna = c.credenciamentos.includes("noturna");
-  const mostrarNoturna = elegívelNoturna || credenciadoNoturna;
+  // Noturna é benefício automático — só aparece para quem tem credenciamento aprovado.
+  const mostrarNoturna = credenciadoNoturna;
 
   const turnos: PresencaTurno[] = mostrarNoturna
     ? [...TURNOS_BASE, "noturna"]
