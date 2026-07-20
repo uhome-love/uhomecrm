@@ -156,7 +156,32 @@ export default function TaskCompletionDialog({
         .eq("id", stageId)
         .maybeSingle();
 
-      if ((stage as { tipo?: string } | null)?.tipo !== "sem_contato") {
+      const stageTipo = (stage as { tipo?: string } | null)?.tipo;
+
+      // Qualificação: carrega flag_status.status_atendimento + dados do lead p/ motor
+      if (stageTipo === "qualificacao") {
+        const { data: leadData } = await supabase
+          .from("pipeline_leads")
+          .select("id, nome, corretor_id, flag_status")
+          .eq("id", leadId)
+          .maybeSingle();
+        const fs = (leadData as any)?.flag_status || {};
+        const currentStatus = (fs.status_atendimento as string) || "";
+        if (!cancelled) {
+          const enabled = !!currentStatus;
+          setQualInfo({
+            enabled,
+            currentStatus,
+            lead: enabled ? (leadData as any) : null,
+          });
+          setQualPillStatus(enabled ? currentStatus : "");
+          setQualDataOverride(undefined);
+        }
+      } else if (!cancelled) {
+        setQualInfo({ enabled: false, currentStatus: "", lead: null });
+      }
+
+      if (stageTipo !== "sem_contato") {
         if (!cancelled) {
           setSemContatoInfo({
             enabled: false,
