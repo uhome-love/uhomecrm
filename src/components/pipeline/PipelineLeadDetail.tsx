@@ -784,6 +784,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 leadId={lead.id}
                 leadNome={lead.nome}
                 leadStageId={lead.stage_id ?? null}
+                stageTipo={currentStage?.tipo ?? null}
                 onAddTarefa={leadData.addTarefa}
                 onToggleTarefa={leadData.toggleTarefa}
                 onDeleteTarefa={leadData.deleteTarefa}
