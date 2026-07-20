@@ -338,11 +338,7 @@ const CardMinimal = memo(function CardMinimal({
                 Novo
               </span>
             )}
-            {parceiroNome && (
-              <span className="shrink-0 inline-flex items-center gap-0.5 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                🤝 Parceria
-              </span>
-            )}
+            {/* Parceria vira chip compacto ao lado do nome (linha do nome), não mais banner cheio. */}
             {cadenciaBadge && (
               <span
                 className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[9px] font-bold tabular-nums ${cadenciaBadge.tone}`}
