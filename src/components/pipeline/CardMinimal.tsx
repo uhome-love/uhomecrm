@@ -47,6 +47,7 @@ export interface CardMinimalProximaTarefa {
   tipo: string | null;
   vence_em: string | null;
   hora_vencimento: string | null;
+  origem?: string | null;
 }
 
 interface CardMinimalProps {
