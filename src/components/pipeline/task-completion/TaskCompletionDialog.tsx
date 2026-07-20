@@ -237,9 +237,10 @@ export default function TaskCompletionDialog({
       }
 
       // Sem contato: cadência (bloqueia SEMPRE, independe de tarefaOrigem)
-      // Etapa Visita: fluxo fixo. Próxima tarefa é criada pelo trigger da agenda.
-      // Popup só concluí — sem AgendarCard, sem status pill.
-      if (stageTipo === "visita_marcada" || stageTipo === "visita_realizada") {
+      // Etapa Visita (tipo real no banco = 'visita'): fluxo fixo.
+      // Próxima tarefa é criada pelo trigger visita_auto_tarefas via Agenda.
+      // Popup só conclui — sem AgendarCard, sem status pill.
+      if (stageTipo === "visita") {
         if (!cancelled) setOutcome("concluir");
         return;
       }

@@ -24,6 +24,8 @@ interface Props {
   leadId: string;
   leadNome: string;
   leadStageId?: string | null;
+  /** tipo real do stage do lead (ex: 'visita', 'sem_contato'). Usado para esconder "Nova tarefa" na etapa Visita. */
+  stageTipo?: string | null;
   onAddTarefa: (input: {
     tipo: TipoProximaTarefa;
     titulo: string;
@@ -115,6 +117,7 @@ export default function DrawerTasksTab({
   leadId,
   leadNome,
   leadStageId,
+  stageTipo,
   onAddTarefa,
   onToggleTarefa: _onToggleTarefa, // eslint-disable-line @typescript-eslint/no-unused-vars
   onDeleteTarefa,
@@ -122,6 +125,7 @@ export default function DrawerTasksTab({
   onNovaTarefa,
   loading = false,
 }: Props) {
+  const isVisitaStage = stageTipo === "visita";
   const queryClient = useQueryClient();
   const grouped = useMemo(() => groupTasksByDeadline(tarefas), [tarefas]);
   const countAtrasadas = grouped.atrasadas.length;
@@ -173,12 +177,18 @@ export default function DrawerTasksTab({
             {countProximas} próxima{countProximas !== 1 ? "s" : ""}
           </div>
         </div>
-        <button
-          onClick={onNovaTarefa}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
-        >
-          <Plus className="h-3.5 w-3.5" /> Nova tarefa
-        </button>
+        {isVisitaStage ? (
+          <div className="text-[11px] text-primary font-medium bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 max-w-[220px] leading-snug">
+            🏠 Fluxo fixo pela Agenda de Visitas
+          </div>
+        ) : (
+          <button
+            onClick={onNovaTarefa}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
+          >
+            <Plus className="h-3.5 w-3.5" /> Nova tarefa
+          </button>
+        )}
       </div>
 
       {/* Skeleton de carregamento — evita flash de "Nenhuma tarefa pendente" */}
@@ -203,14 +213,18 @@ export default function DrawerTasksTab({
             Nenhuma tarefa pendente
           </div>
           <div className="text-xs text-zinc-500 max-w-xs mx-auto mb-5 leading-relaxed">
-            Este lead está em dia. Crie uma tarefa de follow-up pra manter o ritmo de contato.
+            {isVisitaStage
+              ? "Etapa Visita: a próxima tarefa é criada automaticamente pela Agenda (confirmação D-1, reagendar após no-show, feedback após realizada)."
+              : "Este lead está em dia. Crie uma tarefa de follow-up pra manter o ritmo de contato."}
           </div>
-          <button
-            onClick={onNovaTarefa}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5"
-          >
-            <Plus className="h-3.5 w-3.5" /> Criar tarefa
-          </button>
+          {!isVisitaStage && (
+            <button
+              onClick={onNovaTarefa}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" /> Criar tarefa
+            </button>
+          )}
         </div>
       ) : (
         <div className="px-7 pt-4">
