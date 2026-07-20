@@ -122,12 +122,20 @@ export function useNegocioActions(reload?: () => void | Promise<void>) {
       // Atualiza campos do negócio conforme a fase
       const updates: Record<string, any> = { updated_at: new Date().toISOString() };
       if (data.fields.imovel) updates.empreendimento = data.fields.imovel;
-      if (data.fields.vgv) updates.vgv_estimado = parseFloat(data.fields.vgv);
-      if (data.fields.valor_proposta) updates.vgv_estimado = parseFloat(data.fields.valor_proposta);
+      if (data.fields.empreendimento) updates.empreendimento = data.fields.empreendimento;
+      if (data.fields.unidade) updates.unidade = data.fields.unidade;
+      if (data.fase === "vendido") {
+        // Ganho: VGV assinado alimenta vgv_final (fonte canônica de Vendas Realizadas / PDN)
+        if (data.fields.vgv) updates.vgv_final = parseFloat(data.fields.vgv);
+      } else {
+        if (data.fields.vgv) updates.vgv_estimado = parseFloat(data.fields.vgv);
+        if (data.fields.valor_proposta) updates.vgv_estimado = parseFloat(data.fields.valor_proposta);
+      }
       if (data.fields.data_assinatura) updates.data_assinatura = data.fields.data_assinatura;
       if (Object.keys(updates).length > 1) {
         await supabase.from("negocios").update(updates as any).eq("id", negocio.id);
       }
+
 
       // Queda do negócio → tratar o lead conforme o destino escolhido
       if (data.fase === "perdido") {
