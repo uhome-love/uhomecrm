@@ -796,6 +796,44 @@ function AgendarCard({
         </div>
       </div>
 
+      {/* Presets de próxima tarefa (Fase B) */}
+      {presets && presets.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[10px] uppercase tracking-wide font-semibold text-primary">
+            Próxima ação
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {presets.map((p) => {
+              const active = selectedPresetId === p.id;
+              const Icon = p.Icon;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => onSelectPreset(p)}
+                  className={cn(
+                    "px-2 py-1 rounded-full text-[11px] font-medium border transition-all inline-flex items-center gap-1",
+                    active
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-background hover:bg-muted border-border text-foreground",
+                  )}
+                >
+                  <Icon className="w-3 h-3" />
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+          {selectedPresetId && selectedPresetId !== PRESET_OUTRO_ID && (
+            <p className="text-[10px] text-muted-foreground">
+              Tipo, prazo e status foram preenchidos. Ajuste manualmente se
+              precisar.
+            </p>
+          )}
+        </div>
+      )}
+
+
       {semContato.enabled && semContato.requiresNextTask && (
         <div className="text-[10.5px] text-primary bg-primary/10 border border-primary/25 rounded-md p-2 flex items-start gap-1.5">
           <CheckCircle2 className="w-3 h-3 mt-0.5 shrink-0" />
