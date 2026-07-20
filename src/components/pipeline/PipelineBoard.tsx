@@ -737,36 +737,11 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       } catch (err) {
         console.error("[handleTransitionConfirm] Erro ao gravar substatus:", err);
       }
-
-      // Aquecimento: prazoRetomar 30/60/90 dias → cria tarefa "Retomar contato" real
-      if (extra.prazoRetomar && lead.corretor_id) {
-        try {
-          const dias = parseInt(String(extra.prazoRetomar).replace(/\D/g, ""), 10);
-          if ([30, 60, 90].includes(dias)) {
-            const venceData = new Date();
-            venceData.setDate(venceData.getDate() + dias);
-            const vence_em = venceData.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-            const dd = String(venceData.getDate()).padStart(2, "0");
-            const mm = String(venceData.getMonth() + 1).padStart(2, "0");
-            await supabase.from("pipeline_tarefas").insert({
-              pipeline_lead_id: lead.id,
-              tipo: "ligacao",
-              titulo: `Retomar contato: ${lead.nome || "Lead"} · ${dd}/${mm}`,
-              descricao: `Aquecimento — retomar em ${dias} dias conforme decidido na transição.`,
-              vence_em,
-              hora_vencimento: "10:00",
-              status: "pendente",
-              prioridade: "media",
-              responsavel_id: lead.corretor_id,
-              created_by: lead.corretor_id,
-              origem: "aquecimento_retomar",
-            } as any);
-          }
-        } catch (err) {
-          console.error("[handleTransitionConfirm] Erro ao criar tarefa de retomar:", err);
-        }
-      }
+      // Automação de criação de tarefa "Retomar contato" (30/60/90 dias) foi REMOVIDA
+      // em 2026-07-20. Aquecimento agora é registro puro: grava flag_status.prazo (acima)
+      // e o corretor cria a próxima tarefa manualmente pelo drawer/popup.
     }
+
 
 
 
