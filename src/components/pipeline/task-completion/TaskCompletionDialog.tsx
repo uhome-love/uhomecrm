@@ -347,8 +347,7 @@ export default function TaskCompletionDialog({
       if (
         isQualFlow &&
         qualInfo.lead &&
-        qualPillStatus &&
-        qualPillStatus !== qualInfo.currentStatus
+        qualPillStatus
       ) {
         try {
           await advanceQualificacaoStatus({
