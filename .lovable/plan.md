@@ -1,74 +1,70 @@
+## Entendimento validado (v2)
 
-# Revisão das Regras de Presença
+**Regime de Presença por dia/turno:**
 
-Ajustes de comportamento após validação ao vivo. Nada de novo módulo — só refino do que já está no ar em `/roleta/presenca`.
+| Dia / Turno | Como conta presença | Falta? |
+|---|---|---|
+| **Seg-Sex Manhã** | Presencial — gerente marca Presente/Faltou | ✅ Sim |
+| **Seg-Sex Tarde** | Presencial — gerente marca Presente/Faltou | ✅ Sim |
+| **Seg-Sex Noturna** | Automático via credenciamento aprovado (remoto, benefício) | ❌ Não participa ≠ falta |
+| **Sábado** | Automático via credenciamento aprovado. Quem credenciou = Presente. Quem NÃO credenciou = Falta | ✅ Sim |
+| **Domingo** | Benefício remoto. Só participa quem tem elegibilidade: **≥4 presenças na semana + ≥2 visitas realizadas na semana**. Sem falta. | ❌ Não participa ≠ falta |
 
-## 1. Falta deixa de ser automática
+**Princípios:**
+- **Presencial (Seg-Sex M/T + Sábado)** → tem falta.
+- **Remoto/Benefício (Noturna + Domingo)** → sem falta; ausência = não-participação neutra.
+- **Sábado credenciado = presencial na prática** (visitas/plantões), por isso conta falta.
 
-Hoje o cron `01:00 BRT` marca `faltou` para quem não tem registro. Isso vai sair.
+---
 
-- **Regra nova:** o gerente marca explicitamente **Presente** OU **Faltou** por corretor/turno. Sem marcação = **Sem marcar** (cinza), não conta como falta.
-- Adicionar botão **Faltou** ao lado de **Presente** para corretores não credenciados (credenciados continuam só com **Saiu**, já que estão auto-presentes).
-- Desativar o cron/job que marcava falta automaticamente.
-- No histórico e estatísticas: **falta = registro explícito de `faltou`**. "Sem marcar" fica separado, não polui contadores de assiduidade.
+## Ajustes de código
 
-## 2. Janela de registro = o dia todo (não por turno)
+### 1. `getRegimeDoDia()` — nova matriz
+```
+Seg-Sex: manha (presencial), tarde (presencial), noturna (auto/benefício)
+Sábado: sabado (auto via credenciamento, com falta)
+Domingo: domingo (benefício, sem falta, elegibilidade calculada)
+```
 
-Hoje, se passou o turno, o gerente não consegue mais marcar. Vai virar:
+### 2. `PresencaRoletaPanel.tsx`
+- **Noturna (Seg-Sex):** lista só credenciados aprovados como "Presente (auto)". Botão Saiu disponível. Sem Presente/Faltou manual. Sem alerta.
+- **Sábado:** lista TODOS os corretores ativos. Credenciados aprovados = "Presente (auto)". Não credenciados = "Faltou (auto)". Gerente pode ajustar manualmente (override). Botão Saiu disponível.
+- **Domingo:** lista credenciados aprovados como "Presente (auto)". Ao lado de cada nome, badge de elegibilidade (verde "Elegível" / vermelho "Inelegível — X/4 presenças, Y/2 visitas"). Sem Presente/Faltou manual.
 
-- Gerente pode registrar/editar presença de **qualquer turno do dia até 23:59 BRT** do mesmo dia.
-- Depois de virar o dia, trava (edição vira auditoria manual).
-- **Lembrete diário** no dashboard do gerente: banner persistente enquanto houver corretor da equipe em "Sem marcar" no dia — mensagem clara "Você tem X corretores sem marcação hoje. Finalize antes de encerrar o dia."
-- Um push/notification opcional às 18h para o gerente se ainda tiver pendências (fase 2, não bloqueante).
+### 3. Alerta persistente do gerente
+Só dispara em turnos **presenciais com marcação manual**: Seg-Sex Manhã, Seg-Sex Tarde. Sábado é auto (não gera alerta). Noturna/Domingo nunca.
 
-## 3. Regras por dia da semana
+### 4. Registro automático (backend)
+- `registrar_presenca_auto_credenciamento()` passa a rodar para: Noturna (Seg-Sex), Sábado (Presente para credenciados + Falta para não-credenciados no fim do dia — ou ao aprovar credenciamento), Domingo (Presente para credenciados elegíveis).
+- Sábado: no momento em que o CEO aprova credenciamento de sábado → grava Presente. Ao fim do dia (23:59 BRT), corretores ativos sem credenciamento aprovado no sábado → registro Falta automático.
+- Domingo: gate de elegibilidade no ato do credenciamento (já validado antes de aprovar? se não, adicionar validação server-side em `roleta_credenciamentos` ao aprovar credencial de domingo).
 
-A lógica de "quais turnos existem" muda por dia. Hoje está fixo Manhã/Tarde/Noturna todos os dias.
+### 5. Elegibilidade Roleta Domingo (função SQL)
+```sql
+elegivel_roleta_domingo(corretor_id, data_domingo) →
+  presencas_semana (Seg-Sáb anterior, status='presente') >= 4
+  AND visitas_realizadas_semana >= 2
+```
+Usada tanto na exibição do badge quanto no gate de aprovação.
 
-### Segunda a Sexta (presencial — como está hoje)
-- Turnos ativos: **Manhã** e **Tarde** (presencial na imobiliária).
-- **Noturna**: NÃO é turno de presença física. Quem está credenciado e ativo na roleta noturna aparece como "Presente – Noturna (de casa)" automaticamente. Sem botão de marcar/faltar para noturna.
-- Gerente valida só Manhã e Tarde.
+### 6. Contadores semanais
+- "Presenças da semana" = soma de status='presente' em qualquer turno **com regime de falta** (Seg-Sex M/T + Sábado). Noturna e Domingo não entram no contador.
 
-### Sábado
-- Não há presença na imobiliária.
-- **Presença conta se:** o corretor (a) está credenciado na roleta do sábado, OU (b) tem visita/plantão registrado no dia.
-- Quem não se encaixa em (a) nem (b) = **Falta** (mas ainda assim é registro automático baseado em dado, não cron cego — se não houver visita nem roleta, marca falta ao fim do dia).
-- Gerente pode sobrescrever manualmente (justificar presença) se for o caso.
+### 7. Backfill
+- Remover registros `status='faltou'` em turno Noturna e Domingo dos últimos 30 dias (não existem por definição).
+- Reportar contagem.
 
-### Domingo
-- Roleta 100% de casa.
-- **Presente = tem benefício ativo de roleta de domingo** (credenciado + aprovado).
-- Sem botões manuais nesse dia — é derivado da roleta.
-- Quem não está na roleta de domingo: não aparece na página (não é dia útil pra ele).
+### 8. UI — copy dos cards
+- Noturna: "Turno remoto — presença automática por credenciamento. Sem falta."
+- Sábado: "Presença via credenciamento aprovado. Não credenciado = falta."
+- Domingo: "Benefício remoto. Elegível: ≥4 presenças + ≥2 visitas na semana."
 
-## 4. Ajustes de UI na página `/roleta/presenca`
+---
 
-- Cabeçalho do dia mostra qual regime está ativo: "Seg-Sex presencial", "Sábado híbrido", "Domingo remoto".
-- Colunas de turno se adaptam:
-  - Seg-Sex: **Manhã | Tarde | Noturna (auto)**
-  - Sábado: **Roleta/Visita/Plantão** (coluna única derivada)
-  - Domingo: **Roleta Domingo** (coluna única derivada)
-- Botões por corretor não credenciado (Seg-Sex, turnos Manhã/Tarde): **Presente** · **Faltou** · **Saiu** (Saiu só após Presente).
-- Banner de lembrete do gerente aparece o dia todo enquanto tiver pendência.
+## Ordem de execução
+1. Migration: função `elegivel_roleta_domingo`, ajuste em `registrar_presenca_auto_credenciamento` para Sábado/Domingo, cron/trigger para Falta automática no Sábado.
+2. Backfill limpando Faltas indevidas em Noturna/Domingo.
+3. Frontend: `getRegimeDoDia` + painéis Noturna/Sábado/Domingo + alerta filtrado + badge de elegibilidade.
+4. Validação ao vivo com você antes de fechar.
 
-## 5. Backfill e limpeza
-
-- Reverter as `faltou` automáticas de dias passados criadas pelo cron nos últimos 7 dias, transformando em "Sem marcar" (pra não penalizar corretor por falha de gerente que na regra nova não existiria).
-- Recalcular estatísticas do histórico com a nova definição de falta.
-
-## Detalhes técnicos
-
-- Desabilitar cron `marcar_faltas_automaticas` (ou equivalente); manter apenas jobs de auto-presença por credenciamento.
-- `derivarEstadoTurno` em `src/lib/roletaPresenca.ts` passa a receber `diaSemana` e aplicar regime (util-week / saturday / sunday).
-- Novo helper `getRegimeDoDia(date)` retorna `{ turnosAtivos, fonteDePresenca, permiteMarcacaoManual }`.
-- `PresencaRoletaPanel.tsx`: renderização condicional das colunas e botões baseada em `regime`.
-- `RegistrarHorarioDialog.tsx`: adicionar variante "Faltou" (motivo opcional).
-- `usePresencaCorretoresDia.ts`: para sábado, cruzar com `visitas` do dia e `roleta_credenciamentos` para derivar presença; para domingo, só credenciamentos aprovados de domingo.
-- Trigger `trg_presenca_auto_credenciamento`: incluir roleta noturna (seg-sex) e roleta domingo como fontes automáticas.
-- Migration: remover job de auto-falta; backfill dos últimos 7 dias.
-
-## Fora do escopo desta fase
-
-- Notificações push proativas ao gerente (fica pra fase seguinte se ele quiser).
-- Relatório de assiduidade agregado com a nova definição (posso incluir depois se pedir).
+Confirma pra eu implementar?

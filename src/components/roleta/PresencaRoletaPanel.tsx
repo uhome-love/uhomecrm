@@ -20,7 +20,6 @@ import {
   ChevronDown,
   AlertTriangle,
   X,
-  Info,
 } from "lucide-react";
 import { RegistrarHorarioDialog } from "./RegistrarHorarioDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -34,6 +33,7 @@ import {
   type PresencaScope,
 } from "@/hooks/usePresencaCorretoresDia";
 import { useRoletaPresencas } from "@/hooks/useRoletaPresencas";
+import { useElegibilidadeDomingo } from "@/hooks/useElegibilidadeDomingo";
 import {
   derivarEstadoTurno,
   ESTADO_LABEL,
@@ -345,6 +345,191 @@ function TeamGroup({
 }
 
 // -----------------------------------------------------------------------------
+// WeekendPanel — renderização especial para Sábado e Domingo
+function WeekendPanel({
+  titulo,
+  regimeLabel,
+  modo,
+  corretores,
+  isLoading,
+  getPresenca,
+  onMarkSaiu,
+  isMutating,
+  canManage,
+  dataBRT,
+}: {
+  titulo: string;
+  regimeLabel: string;
+  modo: "sabado" | "domingo";
+  corretores: CorretorPresenca[];
+  isLoading: boolean;
+  getPresenca: (id: string, turno: string) => PresencaRow | undefined;
+  onMarkSaiu: (corretor_id: string) => void;
+  isMutating: boolean;
+  canManage: boolean;
+  dataBRT: string;
+}) {
+  // Filtra corretores conforme o modo:
+  // - sábado: TODOS (credenciados = presente, não credenciados = falta)
+  // - domingo: apenas os credenciados aprovados do dia
+  const lista =
+    modo === "domingo"
+      ? corretores.filter((c) => c.credenciamentos.length > 0)
+      : corretores;
+
+  const credenciadoIds = lista
+    .filter((c) => c.credenciamentos.length > 0)
+    .map((c) => c.corretor_id);
+
+  // Elegibilidade só pro domingo
+  const { data: elegibilidade } = useElegibilidadeDomingo(
+    modo === "domingo" ? credenciadoIds : [],
+    dataBRT,
+  );
+
+  const naEmpresa = lista.filter((c) => c.credenciamentos.length > 0).length;
+  const semCred = lista.length - naEmpresa;
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="mb-3">
+        <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
+        <p className="text-[11px] text-muted-foreground">{regimeLabel}</p>
+      </div>
+
+      <div className="rounded-lg px-3 py-2 mb-3 text-xs bg-muted/40 border border-border text-muted-foreground leading-snug">
+        {modo === "sabado" ? (
+          <>
+            <strong>Sábado:</strong> quem está no credenciamento aprovado conta
+            como <strong>Presente</strong> automaticamente. Quem não credenciou
+            é registrado como <strong>Falta</strong> no fechamento (23:59 BRT).
+          </>
+        ) : (
+          <>
+            <strong>Domingo:</strong> roleta é benefício remoto (de casa). Só
+            participa quem credenciou <em>e</em> tem elegibilidade da semana
+            (≥4 presenças + ≥2 visitas realizadas). Sem falta.
+          </>
+        )}
+      </div>
+
+      <div className="rounded-lg px-3 py-2 mb-3 text-xs flex flex-wrap items-center gap-x-4 gap-y-1 bg-success-50 text-success-700">
+        <span className="font-semibold">
+          {modo === "sabado" ? "Presentes hoje" : "Participantes"}:
+        </span>
+        <span className="tabular-nums font-bold">{naEmpresa}</span>
+        {modo === "sabado" && semCred > 0 && (
+          <span className="text-destructive">
+            Sem credenciar:{" "}
+            <span className="tabular-nums font-bold">{semCred}</span>
+          </span>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : lista.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <Users className="h-8 w-8 text-muted-foreground/60 mb-2" />
+          <p className="text-sm text-muted-foreground">
+            {modo === "domingo"
+              ? "Nenhum corretor credenciado para hoje."
+              : "Nenhum corretor ativo."}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {lista.map((c) => {
+            const credenciado = c.credenciamentos.length > 0;
+            const presMorning = getPresenca(c.corretor_id, "manha");
+            const saiu = presMorning?.status === "saiu";
+            const el = elegibilidade?.[c.corretor_id];
+            return (
+              <div
+                key={c.corretor_id}
+                className="rounded-lg border border-border bg-card p-2 hover:bg-muted/10 transition flex items-center gap-3"
+              >
+                <Avatar className="h-7 w-7 shrink-0">
+                  <AvatarImage
+                    src={c.avatar_url ?? undefined}
+                    alt={c.nome ?? ""}
+                  />
+                  <AvatarFallback className="text-[10px]">
+                    {(c.nome ?? "?").slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate leading-tight">
+                    {c.nome ?? "—"}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                    {modo === "sabado" ? (
+                      credenciado ? (
+                        <span
+                          className={cn(
+                            "text-[9px] font-semibold uppercase tracking-wide px-1.5 py-[1px] rounded-full",
+                            saiu
+                              ? "bg-yellow-500/15 text-yellow-700 border border-yellow-500/30"
+                              : "bg-success-500/15 text-success-700 border border-success-500/30",
+                          )}
+                        >
+                          {saiu ? "Saiu" : "Presente (auto)"}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-[1px] rounded-full bg-destructive/10 text-destructive border border-destructive/30">
+                          Sem credenciar
+                        </span>
+                      )
+                    ) : (
+                      <>
+                        <span className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-[1px] rounded-full bg-success-500/15 text-success-700 border border-success-500/30">
+                          Presente (auto)
+                        </span>
+                        {el && (
+                          <span
+                            className={cn(
+                              "text-[9px] font-semibold uppercase tracking-wide px-1.5 py-[1px] rounded-full",
+                              el.elegivel
+                                ? "bg-primary/10 text-primary border border-primary/30"
+                                : "bg-yellow-500/15 text-yellow-800 border border-yellow-500/30",
+                            )}
+                            title={`Presenças: ${el.presencas_semana}/4 · Visitas: ${el.visitas_semana}/2`}
+                          >
+                            {el.elegivel
+                              ? "Elegível"
+                              : `Inelegível ${el.presencas_semana}/4·${el.visitas_semana}/2`}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+                {modo === "sabado" && credenciado && !saiu && canManage && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 px-2 text-[10px] gap-1 border-yellow-500/40 text-yellow-700 hover:bg-yellow-500/10"
+                    disabled={isMutating}
+                    onClick={() => onMarkSaiu(c.corretor_id)}
+                  >
+                    <LogOut className="h-3 w-3" />
+                    Saiu
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
 export function PresencaRoletaPanel({
   scope,
   gestorId,
@@ -490,36 +675,51 @@ export function PresencaRoletaPanel({
     }
   };
 
-  // Regime não-presencial: exibe painel informativo (sáb/dom)
-  if (regime.regime !== "seg_sex") {
+  // ─── Regime SÁBADO: credenciado = Presente auto · sem credencial = Falta auto ─
+  if (regime.regime === "sabado") {
     return (
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-        <div className="mb-2">
-          <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
-          <p className="text-[11px] text-muted-foreground">{regime.label}</p>
-        </div>
-        <div className="rounded-lg px-3 py-3 bg-muted/40 border border-border text-xs flex items-start gap-2">
-          <Info className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
-          <div className="leading-snug text-muted-foreground">
-            {regime.regime === "sabado" ? (
-              <>
-                <strong>Sábado</strong> não tem presença na imobiliária. Conta
-                como presente quem estiver na roleta do dia <em>ou</em> tiver
-                visita/plantão registrado. Sem isso, conta como falta no
-                fechamento.
-              </>
-            ) : (
-              <>
-                <strong>Domingo</strong> a roleta é 100% de casa. Presente = quem
-                tem credenciamento aprovado da roleta de domingo. Nada a marcar
-                manualmente.
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+      <WeekendPanel
+        titulo={titulo}
+        regimeLabel={regime.label}
+        modo="sabado"
+        corretores={corretores}
+        isLoading={isLoading}
+        getPresenca={getPresenca}
+        onMarkSaiu={(cid) => {
+          const c = corretores.find((x) => x.corretor_id === cid);
+          setDialog({
+            open: true,
+            tipo: "saida",
+            corretor_id: cid,
+            corretor_nome: c?.nome ?? "corretor",
+            turno: "manha",
+          });
+        }}
+        isMutating={isMutating}
+        canManage={canManage}
+        dataBRT={dataBRT}
+      />
     );
   }
+
+  // ─── Regime DOMINGO: benefício remoto + elegibilidade ────────────────────────
+  if (regime.regime === "domingo") {
+    return (
+      <WeekendPanel
+        titulo={titulo}
+        regimeLabel={regime.label}
+        modo="domingo"
+        corretores={corretores}
+        isLoading={isLoading}
+        getPresenca={getPresenca}
+        onMarkSaiu={() => {}}
+        isMutating={isMutating}
+        canManage={canManage}
+        dataBRT={dataBRT}
+      />
+    );
+  }
+
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm flex flex-col">
