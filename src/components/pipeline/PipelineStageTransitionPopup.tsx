@@ -407,22 +407,25 @@ function AquecimentoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLea
       <DialogHeader>
         <DialogTitle className="text-base flex items-center gap-2">🔥 Aquecimento / Nutrição</DialogTitle>
       </DialogHeader>
-      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-xs text-muted-foreground mt-1">Lead: <strong>{lead.nome}</strong></p>
       <p className="text-[10px] text-muted-foreground">Defina quando retomar o contato — aparece no card.</p>
 
-      <div className="space-y-3">
-        <div>
-          <Label className="text-xs">Quando retomar? *</Label>
+      <div className="space-y-3 mt-3">
+        {/* 1. Quando retomar */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={1}>Quando retomar? *</SectionTitle>
           <Select value={prazo} onValueChange={setPrazo}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs bg-background"><SelectValue placeholder="Selecione..." /></SelectTrigger>
             <SelectContent>
               {AQUECIMENTO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs">Observação</Label>
-          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Motivo do aquecimento, próximos passos..." />
+
+        {/* 2. Observação */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={2}>Observação</SectionTitle>
+          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20 bg-background" placeholder="Motivo do aquecimento, próximos passos..." />
         </div>
       </div>
 
