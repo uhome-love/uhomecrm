@@ -164,6 +164,9 @@ export interface CompletionFormProps {
   onCancel: () => void;
   onConfirm: () => void;
 
+  /** Aplica/limpa o status da etapa quando um preset o cobre. */
+  onSelectStatusEtapa?: (v: string | undefined) => void;
+
   /** Fluxo fixo da etapa Visita — quando presente, substitui o corpo padrão. */
   visitaFlow?: {
     subtipo: VisitaSubtipo;
