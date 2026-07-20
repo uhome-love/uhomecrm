@@ -165,16 +165,9 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
         created_by: user.id,
         responsavel_id: user.id,
       } as any);
-      // Also register activity for the task
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: lead.id,
-        tipo: "tarefa",
-        titulo: `Tarefa criada: ${TASK_TYPES.find(t => t.value === taskType)?.label || taskType} — ${obs || lead.nome}`,
-        data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-        prioridade: "media",
-        status: "pendente",
-        created_by: user.id,
-      });
+      // Nota: NÃO inserimos em pipeline_atividades para "Tarefa criada" —
+      // o evento é sintetizado a partir de pipeline_tarefas em LeadHistoricoTab.
+
       // Update lead proxima_acao
       await supabase.from("pipeline_leads").update({
         proxima_acao: titulo,

@@ -110,17 +110,9 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
           setSaving(false);
           return;
         }
-        await supabase.from("pipeline_atividades").insert({
-          pipeline_lead_id: leadId,
-          tipo: "tarefa",
-          titulo: obsClean
-            ? `Tarefa criada: ${tituloLabel} — ${obsClean}`
-            : `Tarefa criada: ${tituloLabel}`,
-          data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-          prioridade: "media",
-          status: "pendente",
-          created_by: user.id,
-        } as any);
+        // Nota: NÃO inserimos em pipeline_atividades para "Tarefa criada" —
+        // o evento é sintetizado a partir de pipeline_tarefas em LeadHistoricoTab.
+
         await supabase.from("pipeline_leads").update({
           proxima_acao: tituloLabel,
           data_proxima_acao: tarefaData,
