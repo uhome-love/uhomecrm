@@ -471,6 +471,7 @@ export default function TaskCompletionDialog({
             onChangeReasonCode={setReasonCode}
             onChangeReasonCustomText={setReasonCustomText}
             onChangeObservacaoCurta={setObservacaoCurta}
+            onSelectStatusEtapa={(v) => setStageStatusPick(v ?? "")}
             onCancel={() => onOpenChange(false)}
             onConfirm={handleConfirm}
             visitaFlow={

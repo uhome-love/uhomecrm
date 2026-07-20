@@ -68,6 +68,12 @@ import {
 import type { CompletionPayload } from "./types";
 import VisitaCompletionFlow, { type VisitaSubtipo } from "./VisitaCompletionFlow";
 import { useStageOptions } from "./useStageOptions";
+import {
+  getPresetsForStage,
+  applyPresetToTarefa,
+  PRESET_OUTRO_ID,
+  type TaskPreset,
+} from "@/lib/taskPresets";
 
 export interface StageStatusPropsBlock {
   kind: "qualificacao" | "aquecimento" | "negociacao";
@@ -158,6 +164,9 @@ export interface CompletionFormProps {
   onCancel: () => void;
   onConfirm: () => void;
 
+  /** Aplica/limpa o status da etapa quando um preset o cobre. */
+  onSelectStatusEtapa?: (v: string | undefined) => void;
+
   /** Fluxo fixo da etapa Visita — quando presente, substitui o corpo padrão. */
   visitaFlow?: {
     subtipo: VisitaSubtipo;
@@ -197,10 +206,41 @@ export function CompletionForm(props: CompletionFormProps) {
     onChangeObservacaoCurta,
     onCancel,
     onConfirm,
+    onSelectStatusEtapa,
   } = props;
 
+  /* ─── Presets de tarefa (Fase B) ─── */
+  const stagePresets = useMemo(() => getPresetsForStage(stageTipo), [stageTipo]);
+  const hasPresets = stagePresets.length > 0;
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const selectedPreset = useMemo<TaskPreset | null>(
+    () => stagePresets.find((p) => p.id === selectedPresetId) ?? null,
+    [stagePresets, selectedPresetId],
+  );
+  const presetHandlesStatus =
+    !!selectedPreset && selectedPreset.id !== PRESET_OUTRO_ID && !!selectedPreset.syncFlagValue;
+
+  const handleSelectPreset = (preset: TaskPreset) => {
+    setSelectedPresetId(preset.id);
+    if (preset.id === PRESET_OUTRO_ID) {
+      // Modo livre: limpa qualquer status auto aplicado; usuário volta a preencher manual.
+      onSelectStatusEtapa?.(undefined);
+      return;
+    }
+    onChangeNovaTarefa(applyPresetToTarefa(preset));
+    if (preset.syncFlagKey && preset.syncFlagValue) {
+      onSelectStatusEtapa?.(preset.syncFlagValue);
+    } else {
+      onSelectStatusEtapa?.(undefined);
+    }
+  };
+
   const descricaoValida = descricao.trim().length >= 3;
-  const stageStatusReady = !stageStatus || !!stageStatus.pick;
+  const stageStatusReady =
+    !stageStatus ||
+    !!stageStatus.pick ||
+    // Quando estamos agendando E o preset já cobre o status, dispensa o bloco.
+    (outcome === "agendar" && presetHandlesStatus);
   const step1Ready = !!resultado && descricaoValida && stageStatusReady;
 
   /* ───── Fluxo Visita: substitui o corpo padrão ───── */
@@ -476,8 +516,8 @@ export function CompletionForm(props: CompletionFormProps) {
           )}
         </div>
 
-        {/* 3. Status da etapa (Qualificação/Aquecimento) — obrigatório */}
-        {stageStatus && (
+        {/* 3. Status da etapa — ocultado quando o preset já cobre o status via flag_status. */}
+        {stageStatus && !(outcome === "agendar" && presetHandlesStatus) && (
           <StageStatusBlock block={stageStatus} />
         )}
 
@@ -544,6 +584,9 @@ export function CompletionForm(props: CompletionFormProps) {
                 onChangeVenceEm={handleChangeVenceEm}
                 onChangeNovoStage={onChangeNovoStage}
                 onApplyQuick={applyQuick}
+                presets={hasPresets ? stagePresets : null}
+                selectedPresetId={selectedPresetId}
+                onSelectPreset={handleSelectPreset}
               />
             )}
 
@@ -697,6 +740,9 @@ function AgendarCard({
   onChangeVenceEm,
   onChangeNovoStage,
   onApplyQuick,
+  presets,
+  selectedPresetId,
+  onSelectPreset,
 }: {
   novaTarefa: NovaTarefaPayload;
   novoStageId?: string;
@@ -722,6 +768,9 @@ function AgendarCard({
   onChangeVenceEm: (iso: string) => void;
   onChangeNovoStage: (v: string | undefined) => void;
   onApplyQuick: (d: Date, h: string) => void;
+  presets: TaskPreset[] | null;
+  selectedPresetId: string | null;
+  onSelectPreset: (preset: TaskPreset) => void;
 }) {
   const showSuggestionCard = suggestion && !suggestionDismissed;
 
@@ -746,6 +795,44 @@ function AgendarCard({
           </div>
         </div>
       </div>
+
+      {/* Presets de próxima tarefa (Fase B) */}
+      {presets && presets.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[10px] uppercase tracking-wide font-semibold text-primary">
+            Próxima ação
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {presets.map((p) => {
+              const active = selectedPresetId === p.id;
+              const Icon = p.Icon;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => onSelectPreset(p)}
+                  className={cn(
+                    "px-2 py-1 rounded-full text-[11px] font-medium border transition-all inline-flex items-center gap-1",
+                    active
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-background hover:bg-muted border-border text-foreground",
+                  )}
+                >
+                  <Icon className="w-3 h-3" />
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+          {selectedPresetId && selectedPresetId !== PRESET_OUTRO_ID && (
+            <p className="text-[10px] text-muted-foreground">
+              Tipo, prazo e status foram preenchidos. Ajuste manualmente se
+              precisar.
+            </p>
+          )}
+        </div>
+      )}
+
 
       {semContato.enabled && semContato.requiresNextTask && (
         <div className="text-[10.5px] text-primary bg-primary/10 border border-primary/25 rounded-md p-2 flex items-start gap-1.5">
