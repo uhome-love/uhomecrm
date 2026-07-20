@@ -73,9 +73,26 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
   const availableStages = stages.filter(s => s.id !== currentStageId && s.tipo !== "descarte");
   const descarteStage = stages.find(s => s.tipo === "descarte");
   const currentStageTipo = stages.find(s => s.id === currentStageId)?.tipo ?? null;
+  const presets = getPresetsForStage(currentStageTipo);
+  const activePreset: TaskPreset | null =
+    selectedPresetId && selectedPresetId !== PRESET_OUTRO_ID
+      ? presets.find(p => p.id === selectedPresetId) ?? null
+      : null;
+  const freeMode = selectedPresetId === PRESET_OUTRO_ID || presets.length === 0;
+
+  const handlePresetPick = (p: TaskPreset) => {
+    setSelectedPresetId(p.id);
+    if (p.id === PRESET_OUTRO_ID) return;
+    const payload = applyPresetToTarefa(p);
+    setTipoTarefa(payload.tipo);
+    setTarefaData(payload.vence_em);
+    setTarefaHora(payload.hora_vencimento || "");
+    setObsTarefa(payload.obs || "");
+  };
 
   const resetForm = () => {
     setSelected("tarefa");
+    setSelectedPresetId(null);
     setTipoTarefa("follow_up");
     setTarefaData("");
     setTarefaHora("");
