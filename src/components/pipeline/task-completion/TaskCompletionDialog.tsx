@@ -389,9 +389,15 @@ export default function TaskCompletionDialog({
                   dataOverride: qualDataOverride,
                   onPickPill: (k) => {
                     setQualPillStatus(k);
-                    if (k !== "alinhando_visita") setQualDataOverride(undefined);
+                    if (k !== "alinhando_visita") {
+                      setQualDataOverride(undefined);
+                      setQualHoraOverride("10:00");
+                    }
                   },
-                  onPickData: (d) => setQualDataOverride(d),
+                  onPickData: (d, h) => {
+                    setQualDataOverride(d);
+                    if (h) setQualHoraOverride(h);
+                  },
                 }
               : undefined
           }
