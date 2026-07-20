@@ -362,43 +362,10 @@ export function CompletionForm(props: CompletionFormProps) {
 
       {/* Corpo scrollável */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-        {/* 1. Canal + Resultado (lado a lado no desktop) */}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
-              Canal <span className="text-destructive">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {TIPO_CONTATO_OPTIONS.map(({ value, label, Icon }) => {
-                const active = tipoContato === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => onChangeTipo(value)}
-                    className={cn(
-                      "px-2 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 border",
-                      active
-                        ? "border-transparent text-white shadow-sm"
-                        : "bg-background border-border text-foreground hover:bg-muted",
-                    )}
-                    style={
-                      active
-                        ? {
-                            background:
-                              "var(--gradient-focus, linear-gradient(135deg, #4969FF, #7C3AED))",
-                          }
-                        : undefined
-                    }
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span className="truncate">{label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
+        {/* 1. Canal + Resultado (lado a lado no desktop).
+             Em Qualificação · alinhando_visita: canal já foi definido quando a tarefa foi criada;
+             mostramos só Resultado (largura total). */}
+        {qualificacao?.currentStatus === "alinhando_visita" ? (
           <div>
             <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
               Resultado <span className="text-destructive">*</span>
@@ -424,7 +391,70 @@ export function CompletionForm(props: CompletionFormProps) {
               })}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
+                Canal <span className="text-destructive">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {TIPO_CONTATO_OPTIONS.map(({ value, label, Icon }) => {
+                  const active = tipoContato === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => onChangeTipo(value)}
+                      className={cn(
+                        "px-2 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 border",
+                        active
+                          ? "border-transparent text-white shadow-sm"
+                          : "bg-background border-border text-foreground hover:bg-muted",
+                      )}
+                      style={
+                        active
+                          ? {
+                              background:
+                                "var(--gradient-focus, linear-gradient(135deg, #4969FF, #7C3AED))",
+                            }
+                          : undefined
+                      }
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="truncate">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
+                Resultado <span className="text-destructive">*</span>
+              </label>
+              <div className="flex flex-wrap gap-1">
+                {RESULTADO_OPTIONS.map(({ value, label, Icon, tone }) => {
+                  const active = resultado === value;
+                  const t = RESULTADO_TONE[tone as ResultadoTone];
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => onChangeResultado(value)}
+                      className={cn(
+                        "px-2 py-1.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 border",
+                        active ? t.selected : t.base,
+                      )}
+                    >
+                      <Icon className={cn("w-3 h-3", t.icon)} />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 2. Observação */}
         <div>
