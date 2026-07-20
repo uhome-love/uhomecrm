@@ -865,13 +865,15 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             >
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </button>
-            <button
-              onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setNextActionOpen(true); }}
-              aria-label="Nova tarefa"
-              className="shrink-0 flex items-center justify-center h-11 w-11 rounded-xl border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
+            {currentStage?.tipo !== "visita" && (
+              <button
+                onClick={() => { trackPipelineEvent("drawer_action_clicked", { lead_id: lead.id, corretor_id: lead.corretor_id, action: "anotar" }); setNextActionOpen(true); }}
+                aria-label="Nova tarefa"
+                className="shrink-0 flex items-center justify-center h-11 w-11 rounded-xl border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            )}
           </div>
         )}
 
