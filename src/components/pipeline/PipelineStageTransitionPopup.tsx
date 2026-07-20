@@ -149,6 +149,13 @@ function ContatoInicialForm({ lead, onConfirm, targetStageId }: { lead: Pipeline
   );
 }
 
+const SectionTitle = ({ n, children }: { n: number; children: React.ReactNode }) => (
+  <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
+    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary text-[9px] font-bold">{n}</span>
+    {children}
+  </div>
+);
+
 // ─── Qualificação ───
 export const QUALIFICACAO_STATUS_ATEND: Record<string, string> = {
   contato_inicial: "Contato inicial",
@@ -272,12 +279,7 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
   ];
   const bairroStr = bairrosFinal.join(", ");
 
-  const SectionTitle = ({ n, children }: { n: number; children: React.ReactNode }) => (
-    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
-      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary text-[9px] font-bold">{n}</span>
-      {children}
-    </div>
-  );
+  
 
   return (
     <div className="max-w-lg mx-auto w-full">
@@ -407,22 +409,25 @@ function AquecimentoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLea
       <DialogHeader>
         <DialogTitle className="text-base flex items-center gap-2">🔥 Aquecimento / Nutrição</DialogTitle>
       </DialogHeader>
-      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-xs text-muted-foreground mt-1">Lead: <strong>{lead.nome}</strong></p>
       <p className="text-[10px] text-muted-foreground">Defina quando retomar o contato — aparece no card.</p>
 
-      <div className="space-y-3">
-        <div>
-          <Label className="text-xs">Quando retomar? *</Label>
+      <div className="space-y-3 mt-3">
+        {/* 1. Quando retomar */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={1}>Quando retomar? *</SectionTitle>
           <Select value={prazo} onValueChange={setPrazo}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs bg-background"><SelectValue placeholder="Selecione..." /></SelectTrigger>
             <SelectContent>
               {AQUECIMENTO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs">Observação</Label>
-          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Motivo do aquecimento, próximos passos..." />
+
+        {/* 2. Observação */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={2}>Observação</SectionTitle>
+          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20 bg-background" placeholder="Motivo do aquecimento, próximos passos..." />
         </div>
       </div>
 
@@ -888,40 +893,49 @@ function PropostaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
   const valorNum = Number(valor.replace(/\./g, "").replace(",", ".")) || 0;
 
   return (
-    <>
+    <div className="max-w-lg mx-auto w-full">
       <DialogHeader>
         <DialogTitle className="text-base flex items-center gap-2">🤝 Em Negociação</DialogTitle>
       </DialogHeader>
-      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-xs text-muted-foreground mt-1">Lead: <strong>{lead.nome}</strong></p>
       <p className="text-[10px] text-muted-foreground">Registre a negociação — fica salva no histórico do lead.</p>
 
-      <div className="space-y-3">
-        <div>
-          <Label className="text-xs">Situação da negociação *</Label>
+      <div className="space-y-3 mt-3">
+        {/* 1. Situação */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={1}>Situação da negociação *</SectionTitle>
           <Select value={statusNeg} onValueChange={setStatusNeg}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs bg-background"><SelectValue placeholder="Selecione..." /></SelectTrigger>
             <SelectContent>
               {NEGOCIACAO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs">Valor da proposta (R$) *</Label>
-          <Input type="text" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)} placeholder="Ex: 850000" className="h-8 text-xs" />
+
+        {/* 2. Proposta */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-3">
+          <SectionTitle n={2}>Proposta</SectionTitle>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Valor da proposta (R$) *</Label>
+            <Input type="text" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)} placeholder="Ex: 850000" className="h-8 text-xs bg-background" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Empreendimento</Label>
+            <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Unidade / imóvel</Label>
+            <Input value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className="h-8 text-xs bg-background" />
+          </div>
         </div>
-        <div>
-          <Label className="text-xs">Empreendimento</Label>
-          <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
-        </div>
-        <div>
-          <Label className="text-xs">Unidade / imóvel</Label>
-          <Input value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className="h-8 text-xs" />
-        </div>
-        <div>
-          <Label className="text-xs">Detalhes da proposta</Label>
-          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Condições, entrada, forma de pagamento..." />
+
+        {/* 3. Detalhes */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={3}>Detalhes da proposta</SectionTitle>
+          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20 bg-background" placeholder="Condições, entrada, forma de pagamento..." />
         </div>
       </div>
+
 
       <DialogFooter>
         <Button
@@ -941,7 +955,7 @@ function PropostaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
           🤝 Confirmar
         </Button>
       </DialogFooter>
-    </>
+    </div>
   );
 }
 
