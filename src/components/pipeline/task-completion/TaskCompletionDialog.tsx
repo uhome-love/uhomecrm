@@ -109,6 +109,7 @@ export default function TaskCompletionDialog({
     setQualInfo({ enabled: false, currentStatus: "", lead: null });
     setQualPillStatus("");
     setQualDataOverride(undefined);
+    setQualHoraOverride("10:00");
     setSaving(false);
   };
 
