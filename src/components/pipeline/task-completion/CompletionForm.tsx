@@ -270,8 +270,8 @@ export function CompletionForm(props: CompletionFormProps) {
   const canConfirm = useMemo(() => {
     if (!step1Ready) return false;
     if (semContato.enabled) {
-      if (semContato.requiresNextTask && outcome === "concluir") return false;
-      if (semContato.finalAttempt && outcome === "agendar") return false;
+      // Sem Contato: só concluir. Nada de agendar manual.
+      return outcome === "concluir";
     }
     switch (outcome) {
       case "agendar":
@@ -301,20 +301,21 @@ export function CompletionForm(props: CompletionFormProps) {
 
 
   const ctaConfig = useMemo(() => {
+    if (semContato.enabled) {
+      return {
+        label: semContato.finalAttempt ? "Concluir T7" : "Concluir tentativa",
+        variant: "neutral" as const,
+      };
+    }
     switch (outcome) {
       case "agendar":
         return {
-          label: semContato.enabled
-            ? "Concluir tentativa e criar próxima"
-            : "Concluir e criar próxima",
+          label: "Concluir e criar próxima",
           variant: "gradient" as const,
         };
       case "concluir":
         return {
-          label:
-            semContato.enabled && semContato.finalAttempt
-              ? "Concluir T7"
-              : "Apenas concluir",
+          label: "Apenas concluir",
           variant: "neutral" as const,
         };
       case "descartar":
@@ -323,6 +324,7 @@ export function CompletionForm(props: CompletionFormProps) {
         return { label: "Inativar definitivo", variant: "destructive" as const };
     }
   }, [outcome, semContato]);
+
 
   const applyQuick = (d: Date, h: string) => {
     onChangeNovaTarefa({ vence_em: dateToBRT(d), hora_vencimento: h });
