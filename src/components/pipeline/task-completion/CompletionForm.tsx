@@ -1158,6 +1158,33 @@ function QualificacaoPillsBlock({
   /** Recebe (data, hora HH:MM) — hora sempre presente. */
   onPickData: (dt: DataOverride | undefined, hora: string) => void;
 }) {
+  const isConfirmarVisita = currentStatus === "alinhando_visita";
+
+  // Modo enxuto: tarefa "Confirmar visita" → pula pills, pergunta direto "A visita é pra quando?"
+  // Auto-fixa pillStatus como 'alinhando_visita' pra o motor reagendar corretamente.
+  useEffect(() => {
+    if (isConfirmarVisita && pillStatus !== "alinhando_visita") {
+      onPickPill("alinhando_visita");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConfirmarVisita]);
+
+  if (isConfirmarVisita) {
+    return (
+      <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-2">
+        <VisitaDatePicker
+          variant="confirmar-visita"
+          onPick={(d, h) => onPickData(d, h)}
+        />
+        {dataOverride && (
+          <div className="text-[10px] text-primary">
+            ✓ {dataOverride === "hoje" ? "Hoje" : dataOverride === "amanha" ? "Amanhã" : dataOverride}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const showDatePicker = pillStatus === "alinhando_visita";
   return (
     <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-3">
