@@ -17,12 +17,19 @@
 // ─────────────────────────────────────────────────────────────────
 
 import { memo, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { formatNextAction } from "@/lib/formatNextAction";
 import { todayBRT, formatBRT } from "@/lib/brtTime";
-import { Handshake, Phone } from "lucide-react";
+import { Handshake, Phone, Check } from "lucide-react";
 import CardOverflowMenu from "./CardOverflowMenu";
+import TaskCompletionDialog from "./TaskCompletionDialog";
 import { trackPipelineEvent } from "@/lib/pipelineTelemetry";
+import { useAuth } from "@/hooks/useAuth";
+import { completeLeadTask } from "@/lib/completeLeadTask";
+import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
+import type { CompletionPayload } from "@/components/pipeline/task-completion/types";
 import {
   parseTaskActionType,
   ACTION_ICON,
@@ -35,6 +42,8 @@ import { fmtMoney } from "@/lib/fmtMoney";
 import { substatusValueLabel } from "@/lib/pipelineAudit";
 
 export interface CardMinimalProximaTarefa {
+  id?: string;
+  titulo?: string;
   tipo: string | null;
   vence_em: string | null;
   hora_vencimento: string | null;
@@ -173,6 +182,11 @@ const CardMinimal = memo(function CardMinimal({
   onMoveLead,
   onTransferred,
 }: CardMinimalProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [completingOpen, setCompletingOpen] = useState(false);
+  const [completingBusy, setCompletingBusy] = useState(false);
+
   const status = useMemo(
     () => resolveStatus(proximaTarefa ?? null, stage?.tipo),
     [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento, stage?.tipo]
@@ -212,6 +226,14 @@ const CardMinimal = memo(function CardMinimal({
 
   const isAtrasada = status === "atrasada";
   const showActionLine = stage?.tipo !== "convertido" && stage?.tipo !== "descarte";
+  // Atalho de check só aparece para tarefa vencendo hoje ou atrasada, e desde que tenhamos o id.
+  const canQuickComplete =
+    !!proximaTarefa?.id && (status === "atrasada" || status === "hoje");
+
+  const parceiroPrimeiroNome = useMemo(() => {
+    if (!parceiroNome) return "";
+    return parceiroNome.trim().split(/\s+/)[0] || parceiroNome;
+  }, [parceiroNome]);
 
   const substatus = useMemo(
     () => getLeadSubstatusBadge(lead.flag_status, stage?.tipo),
@@ -316,11 +338,7 @@ const CardMinimal = memo(function CardMinimal({
                 Novo
               </span>
             )}
-            {parceiroNome && (
-              <span className="shrink-0 inline-flex items-center gap-0.5 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                🤝 Parceria
-              </span>
-            )}
+            {/* Parceria vira chip compacto ao lado do nome (linha do nome), não mais banner cheio. */}
             {cadenciaBadge && (
               <span
                 className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[9px] font-bold tabular-nums ${cadenciaBadge.tone}`}
@@ -335,9 +353,20 @@ const CardMinimal = memo(function CardMinimal({
               </span>
             )}
           </div>
-          {/* Nome do lead: sempre em linha própria, largura total e legível */}
-          <div className="mt-0.5 text-[14px] font-semibold text-foreground tracking-tight leading-tight truncate">
-            {lead.nome || "Sem nome"}
+          {/* Nome do lead + chip compacto de parceria (mesma linha) */}
+          <div className="mt-0.5 flex items-center gap-1.5 min-w-0">
+            <span className="flex-1 min-w-0 text-[14px] font-semibold text-foreground tracking-tight leading-tight truncate">
+              {lead.nome || "Sem nome"}
+            </span>
+            {parceiroNome && (
+              <span
+                className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-200 px-1.5 py-px text-[9.5px] font-semibold"
+                title={`Parceria com ${parceiroNome}`}
+              >
+                <Handshake className="h-2.5 w-2.5" />
+                c/ {parceiroPrimeiroNome}
+              </span>
+            )}
           </div>
           {empreendimento && (
             <div className="text-[11px] text-muted-foreground truncate mt-0.5">
@@ -423,40 +452,79 @@ const CardMinimal = memo(function CardMinimal({
                 {diasLabel}
               </span>
             )}
+            {canQuickComplete && (
+              <button
+                type="button"
+                aria-label="Concluir tarefa"
+                title="Concluir tarefa"
+                disabled={completingBusy}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCompletingOpen(true);
+                }}
+                className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-colors disabled:opacity-60"
+              >
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </button>
+            )}
           </div>
         </>
       )}
 
-      {/* Rodapé: dono do lead (corretor) ou parceria — nome sempre visível */}
-      {(corretorNome || parceiroNome) && (
+      {/* Rodapé: dono do lead (corretor) — nome sempre visível.
+          Parceria agora aparece só como chip compacto ao lado do nome. */}
+      {corretorNome && (
         <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
-          {parceiroNome ? (
-            <>
-              <Handshake className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
-              <span className="truncate text-[11px] font-semibold text-purple-700 dark:text-purple-300">
-                {parceiroNome}
-              </span>
-            </>
+          {corretorAvatarUrl ? (
+            <img
+              src={corretorAvatarUrl}
+              alt={corretorNome}
+              className="w-[18px] h-[18px] rounded-full object-cover shrink-0"
+              loading="lazy"
+            />
           ) : (
-            <>
-              {corretorAvatarUrl ? (
-                <img
-                  src={corretorAvatarUrl}
-                  alt={corretorNome}
-                  className="w-[18px] h-[18px] rounded-full object-cover shrink-0"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">
-                  {getInitials(corretorNome!)}
-                </div>
-              )}
-              <span className="truncate text-[11px] font-medium text-foreground/80">
-                {corretorNome}
-              </span>
-            </>
+            <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">
+              {getInitials(corretorNome)}
+            </div>
           )}
+          <span className="truncate text-[11px] font-medium text-foreground/80">
+            {corretorNome}
+          </span>
         </div>
+      )}
+
+      {canQuickComplete && (
+        <TaskCompletionDialog
+          open={completingOpen}
+          onOpenChange={(v) => { if (!completingBusy) setCompletingOpen(v); }}
+          tarefaTitulo={proximaTarefa?.titulo || "Tarefa"}
+          leadNome={lead.nome || undefined}
+          leadId={lead.id}
+          currentStageId={lead.stage_id}
+          context="lead"
+          onConfirm={async (payload: CompletionPayload) => {
+            if (!user || !proximaTarefa?.id) return;
+            setCompletingBusy(true);
+            try {
+              const { toast: msg } = await completeLeadTask({
+                tarefaId: proximaTarefa.id,
+                tarefaTitulo: proximaTarefa.titulo || "Tarefa",
+                leadId: lead.id,
+                leadNome: lead.nome,
+                userId: user.id,
+                payload,
+              });
+              toast.success(msg);
+              setCompletingOpen(false);
+              invalidateTaskQueries(queryClient, lead.id);
+            } catch (err) {
+              const m = err instanceof Error ? err.message : "Erro ao concluir tarefa";
+              toast.error("Não foi possível concluir: " + m);
+            } finally {
+              setCompletingBusy(false);
+            }
+          }}
+        />
       )}
 
     </div>
