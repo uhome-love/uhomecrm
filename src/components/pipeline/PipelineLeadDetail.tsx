@@ -235,15 +235,19 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     return match ? `${match[1]}-UH` : jid;
   }, [(lead as any).jetimob_lead_id]);
 
+  const pendingTasksList = useMemo(
+    () => leadData.tarefas.filter(t => t.status === "pendente"),
+    [leadData.tarefas],
+  );
   const nextTask = useMemo(() => {
-    const pending = leadData.tarefas.filter(t => t.status === "pendente");
+    const pending = [...pendingTasksList];
     pending.sort((a, b) => {
       const aTime = parseDateBRTSafe(a.vence_em)?.getTime() ?? Number.POSITIVE_INFINITY;
       const bTime = parseDateBRTSafe(b.vence_em)?.getTime() ?? Number.POSITIVE_INFINITY;
       return aTime - bTime;
     });
     return pending[0] || null;
-  }, [leadData.tarefas]);
+  }, [pendingTasksList]);
 
   const handleSaveCommercial = async () => {
     setSaving(true);
@@ -503,8 +507,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       {/* Contador de estagnação (demais etapas com config) */}
       <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
 
+      {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) — no topo do modal */}
+      <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} pendingCount={pendingTasksList.length} />
+
       {/* Checklist de Qualificação — persistente em todas as etapas */}
       <QualificacaoChecklistCard lead={lead} />
+
 
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
       {empreendimentoOpen && (
@@ -536,8 +544,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         </div>
       )}
 
-      {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) */}
-      <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} />
+
 
       {/* Label + Grid 2x2 de ações */}
       <div className="space-y-1.5">

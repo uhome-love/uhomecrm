@@ -128,6 +128,60 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
       };
       const { error } = await supabase.from("pipeline_leads").update(updates as any).eq("id", lead.id);
       if (error) throw error;
+
+      // Motor de tarefa automática — status do atendimento mudou → cancela tarefas
+      // automáticas de qualificação pendentes e cria a próxima.
+      if (statusAtend && statusAtend !== initialStatus && lead.corretor_id) {
+        try {
+          const TASK_MAP: Record<string, { tipo: string; titulo: string; diasVence: number }> = {
+            contato_inicial:    { tipo: "whatsapp", titulo: "Perfil de busca completo?",                diasVence: 0 },
+            alinhamento_perfil: { tipo: "tarefa",   titulo: "Buscar imóveis compatíveis",               diasVence: 0 },
+            busca:              { tipo: "whatsapp", titulo: "Enviar opções de imóveis",                 diasVence: 0 },
+            envio_opcoes:       { tipo: "tarefa",   titulo: "Registrar retorno sobre as opções enviadas", diasVence: 2 },
+            follow_up:          { tipo: "ligacao",  titulo: "Follow-up com novidades",                  diasVence: 3 },
+            alinhando_visita:   { tipo: "ligacao",  titulo: "Confirmar data da visita",                 diasVence: 0 },
+          };
+          const cfg = TASK_MAP[statusAtend];
+          if (cfg) {
+            // Cancela tarefas automáticas de qualificação ainda pendentes (evita concorrência)
+            const { data: pend } = await supabase
+              .from("pipeline_tarefas")
+              .select("id, origem")
+              .eq("pipeline_lead_id", lead.id)
+              .eq("status", "pendente");
+            const cancelIds = (pend || [])
+              .filter((t: any) => typeof t.origem === "string" && t.origem.startsWith("qualificacao_"))
+              .map((t: any) => t.id);
+            if (cancelIds.length > 0) {
+              await supabase
+                .from("pipeline_tarefas")
+                .update({ status: "cancelada" } as any)
+                .in("id", cancelIds);
+            }
+
+            const venceData = new Date();
+            venceData.setDate(venceData.getDate() + cfg.diasVence);
+            const vence_em = venceData.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+            const leadNome = (lead as any).nome || "Lead";
+            await supabase.from("pipeline_tarefas").insert({
+              pipeline_lead_id: lead.id,
+              tipo: cfg.tipo,
+              titulo: `${cfg.titulo} — ${leadNome}`,
+              descricao: `Qualificação — ${QUALIFICACAO_STATUS_ATEND[statusAtend] || statusAtend}`,
+              vence_em,
+              hora_vencimento: "10:00",
+              status: "pendente",
+              prioridade: "media",
+              responsavel_id: lead.corretor_id,
+              created_by: lead.corretor_id,
+              origem: `qualificacao_${statusAtend}`,
+            } as any);
+          }
+        } catch (err) {
+          console.error("[QualificacaoChecklistCard] auto-task error:", err);
+        }
+      }
+
       toast.success("Checklist de qualificação atualizado");
       setEditing(false);
       onSaved?.();

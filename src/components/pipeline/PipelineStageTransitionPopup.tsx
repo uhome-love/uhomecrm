@@ -154,7 +154,9 @@ export const QUALIFICACAO_STATUS_ATEND: Record<string, string> = {
   contato_inicial: "Contato inicial",
   alinhamento_perfil: "Alinhamento de perfil",
   busca: "Busca de imóveis",
+  envio_opcoes: "Envio de opções",
   follow_up: "Follow up",
+  alinhando_visita: "Alinhando visita",
 };
 export const QUALIFICACAO_TIPOLOGIAS: { value: string; label: string }[] = [
   { value: "apartamento_2q", label: "Apto 2Q" },
