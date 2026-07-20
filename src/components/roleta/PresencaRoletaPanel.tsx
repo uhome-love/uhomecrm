@@ -490,36 +490,51 @@ export function PresencaRoletaPanel({
     }
   };
 
-  // Regime não-presencial: exibe painel informativo (sáb/dom)
-  if (regime.regime !== "seg_sex") {
+  // ─── Regime SÁBADO: credenciado = Presente auto · sem credencial = Falta auto ─
+  if (regime.regime === "sabado") {
     return (
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-        <div className="mb-2">
-          <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
-          <p className="text-[11px] text-muted-foreground">{regime.label}</p>
-        </div>
-        <div className="rounded-lg px-3 py-3 bg-muted/40 border border-border text-xs flex items-start gap-2">
-          <Info className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
-          <div className="leading-snug text-muted-foreground">
-            {regime.regime === "sabado" ? (
-              <>
-                <strong>Sábado</strong> não tem presença na imobiliária. Conta
-                como presente quem estiver na roleta do dia <em>ou</em> tiver
-                visita/plantão registrado. Sem isso, conta como falta no
-                fechamento.
-              </>
-            ) : (
-              <>
-                <strong>Domingo</strong> a roleta é 100% de casa. Presente = quem
-                tem credenciamento aprovado da roleta de domingo. Nada a marcar
-                manualmente.
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+      <WeekendPanel
+        titulo={titulo}
+        regimeLabel={regime.label}
+        modo="sabado"
+        corretores={corretores}
+        isLoading={isLoading}
+        getPresenca={getPresenca}
+        onMarkSaiu={(cid) => {
+          const c = corretores.find((x) => x.corretor_id === cid);
+          setDialog({
+            open: true,
+            tipo: "saida",
+            corretor_id: cid,
+            corretor_nome: c?.nome ?? "corretor",
+            turno: "manha",
+          });
+        }}
+        isMutating={isMutating}
+        canManage={canManage}
+        dataBRT={dataBRT}
+      />
     );
   }
+
+  // ─── Regime DOMINGO: benefício remoto + elegibilidade ────────────────────────
+  if (regime.regime === "domingo") {
+    return (
+      <WeekendPanel
+        titulo={titulo}
+        regimeLabel={regime.label}
+        modo="domingo"
+        corretores={corretores}
+        isLoading={isLoading}
+        getPresenca={getPresenca}
+        onMarkSaiu={() => {}}
+        isMutating={isMutating}
+        canManage={canManage}
+        dataBRT={dataBRT}
+      />
+    );
+  }
+
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm flex flex-col">
