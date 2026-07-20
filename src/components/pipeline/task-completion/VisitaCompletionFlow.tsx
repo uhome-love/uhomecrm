@@ -44,7 +44,9 @@ export type VisitaSubtipo =
   | "agendar_visita"
   | "reagendar_visita"
   | "registrar_resultado"
-  | "pegar_feedback";
+  | "pegar_feedback"
+  | "atualizar_visita"
+  | "decidir_descarte_visita";
 
 export interface VisitaCompletionFlowProps {
   subtipo: VisitaSubtipo;
