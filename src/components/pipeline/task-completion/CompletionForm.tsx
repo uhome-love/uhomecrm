@@ -1054,83 +1054,41 @@ function ReasonBlock({
   );
 }
 
-/* ─── QualificacaoPillsBlock ───
-   Substitui a seção de "Agendar próxima tarefa" quando o lead está em stage tipo=qualificacao.
-   Exibe as 6 pills de QUALIFICACAO_STATUS_ATEND; ao selecionar 'alinhando_visita' abre o
-   VisitaDatePicker inline (Hoje / Amanhã / Escolher data). O motor real de tarefas é
-   disparado no TaskCompletionDialog via advanceQualificacaoStatus. */
-function QualificacaoPillsBlock({
-  pillStatus,
-  currentStatus,
-  dataOverride,
-  onPickPill,
-  onPickData,
-}: {
-  pillStatus: string;
-  currentStatus: string;
-  dataOverride?: DataOverride;
-  onPickPill: (statusKey: string) => void;
-  /** Recebe (data, hora HH:MM) — hora sempre presente. */
-  onPickData: (dt: DataOverride | undefined, hora: string) => void;
-}) {
-  const isConfirmarVisita = currentStatus === "alinhando_visita";
-  const [showEtapaFallback, setShowEtapaFallback] = useState(false);
-
-  // Modo enxuto: tarefa "Confirmar visita" → pula pills, pergunta direto "A visita é pra quando?"
-  // Auto-fixa pillStatus como 'alinhando_visita' pra o motor reagendar corretamente.
-  useEffect(() => {
-    if (isConfirmarVisita && pillStatus !== "alinhando_visita") {
-      onPickPill("alinhando_visita");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConfirmarVisita]);
-
-  if (isConfirmarVisita && !showEtapaFallback) {
-    return (
-      <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-2">
-        <VisitaDatePicker
-          variant="confirmar-visita"
-          onPick={(d, h) => onPickData(d, h)}
-        />
-        {dataOverride && (
-          <div className="text-[10px] text-primary">
-            ✓ {dataOverride === "hoje" ? "Hoje" : dataOverride === "amanha" ? "Amanhã" : dataOverride}
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() => setShowEtapaFallback(true)}
-          className="text-[10.5px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-        >
-          A conversa mudou de rumo? Trocar etapa
-        </button>
-      </div>
-    );
-  }
-
-
-
-  const showDatePicker = pillStatus === "alinhando_visita";
+/* ─── StageStatusBlock ───
+   Seção obrigatória de status da etapa (Qualificação/Aquecimento). Puro registro:
+   o valor escolhido é persistido em `pipeline_leads.flag_status[key]` pelo backend
+   de conclusão da tarefa. Não cria nem cancela tarefas. */
+function StageStatusBlock({ block }: { block: StageStatusPropsBlock }) {
+  const title =
+    block.kind === "qualificacao"
+      ? "Status da qualificação"
+      : "Prazo do aquecimento";
+  const helper =
+    block.kind === "qualificacao"
+      ? "Registre em que momento da qualificação a conversa está agora."
+      : "Registre o prazo acordado para retomar o contato.";
   return (
-    <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-3">
+    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-foreground">
-          Etapa do atendimento
+          {title} <span className="text-destructive">*</span>
         </span>
-        {currentStatus && (
+        {block.currentValue && (
           <span className="text-[10px] text-muted-foreground">
-            atual: {QUALIFICACAO_STATUS_ATEND[currentStatus] ?? currentStatus}
+            atual:{" "}
+            {block.options.find((o) => o.value === block.currentValue)?.label ??
+              block.currentValue}
           </span>
         )}
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {Object.entries(QUALIFICACAO_STATUS_ATEND).map(([key, label]) => {
-          const active = pillStatus === key;
+        {block.options.map((o) => {
+          const active = block.pick === o.value;
           return (
             <button
-              key={key}
+              key={o.value}
               type="button"
-              onClick={() => onPickPill(key)}
+              onClick={() => block.onPick(o.value)}
               className={[
                 "px-2.5 py-1 rounded-full text-[11px] border transition",
                 active
@@ -1138,21 +1096,13 @@ function QualificacaoPillsBlock({
                   : "bg-background text-foreground border-border hover:bg-muted",
               ].join(" ")}
             >
-              {label}
+              {o.label}
             </button>
           );
         })}
       </div>
-      {showDatePicker && (
-        <div className="pt-1 border-t border-border/50">
-          <VisitaDatePicker onPick={(d, h) => onPickData(d, h)} />
-          {dataOverride && (
-            <div className="text-[10px] text-primary mt-1.5">
-              ✓ {dataOverride === "hoje" ? "Hoje" : dataOverride === "amanha" ? "Amanhã" : dataOverride}
-            </div>
-          )}
-        </div>
-      )}
+      <p className="text-[10px] text-muted-foreground">{helper}</p>
     </div>
   );
 }
+
