@@ -87,6 +87,7 @@ export default function TaskCompletionDialog({
   }>({ enabled: false, currentStatus: "", lead: null });
   const [qualPillStatus, setQualPillStatus] = useState<string>("");
   const [qualDataOverride, setQualDataOverride] = useState<DataOverride | undefined>();
+  const [qualHoraOverride, setQualHoraOverride] = useState<string>("10:00");
 
   const reset = () => {
     setTipoContato(undefined);
