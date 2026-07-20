@@ -349,7 +349,7 @@ export function CompletionForm(props: CompletionFormProps) {
       </div>
 
       {/* Corpo scrollável */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-2.5 space-y-3">
         {/* 1. Resultado (largura total — canal herdado do tipo da tarefa, sem UI) */}
         <div>
           <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
