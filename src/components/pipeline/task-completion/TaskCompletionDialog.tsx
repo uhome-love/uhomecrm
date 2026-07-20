@@ -117,6 +117,7 @@ export default function TaskCompletionDialog({
     setQualDataOverride(undefined);
     setQualHoraOverride("10:00");
     setSaving(false);
+    setContextLoaded(false);
   };
 
   useEffect(() => {
