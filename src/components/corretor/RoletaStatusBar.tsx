@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Settings, ChevronDown, Check, MapPin, Loader2, Clock, Lock, Unlock, Sun, Sunset, Moon, CheckCircle2, XCircle } from "lucide-react";
+import { Settings, MapPin, Loader2, Clock, Lock, Unlock, Sun, Sunset, Moon, CheckCircle2, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -14,26 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
+import PresencaDoCorretorPill from "@/components/corretor/PresencaDoCorretorPill";
 
-type StatusOnline = "na_empresa" | "em_plantao" | "em_pausa" | "offline";
+// Segmento shape
 
-interface StatusOption {
-  value: StatusOnline;
-  label: string;
-  icon: string;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-  description: string;
-  available: boolean;
-}
-
-const STATUS_OPTIONS: StatusOption[] = [
-  { value: "na_empresa", label: "Na Empresa", icon: "🟢", color: "text-emerald-700", bgColor: "bg-emerald-50", borderColor: "border-emerald-300", description: "Disponível para receber leads", available: true },
-  { value: "em_plantao", label: "Em Plantão", icon: "🔵", color: "text-blue-700", bgColor: "bg-blue-50", borderColor: "border-blue-300", description: "Plantão externo, disponível", available: true },
-  { value: "em_pausa", label: "Em Pausa", icon: "🟡", color: "text-amber-700", bgColor: "bg-amber-50", borderColor: "border-amber-300", description: "Pausa temporária, não recebe leads", available: false },
-  { value: "offline", label: "Offline", icon: "🔴", color: "text-red-700", bgColor: "bg-red-50", borderColor: "border-red-300", description: "Fora do expediente", available: false },
-];
 
 interface Segmento {
   id: string;
@@ -252,8 +236,6 @@ function useNightRequirements(
 export default function RoletaStatusBar() {
   const JANELAS_CONFIG = getJanelasConfig();
   const { user } = useAuth();
-  const [status, setStatus] = useState<StatusOnline>("offline");
-  const [statusOpen, setStatusOpen] = useState(false);
   const [credModalOpen, setCredModalOpen] = useState(false);
   const [segmentos, setSegmentos] = useState<Segmento[]>([]);
   const [credStatus, setCredStatus] = useState<string>("");
@@ -277,8 +259,7 @@ export default function RoletaStatusBar() {
     if (!user) return;
     setLoading(true);
 
-    const { data: profile } = await supabase.from("profiles").select("id, status_online").eq("user_id", user.id).single();
-    if (profile?.status_online) setStatus(profile.status_online as StatusOnline);
+    const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
     if (profile?.id) setProfileId(profile.id);
 
     // Fetch segmentos
@@ -325,49 +306,9 @@ export default function RoletaStatusBar() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const updateStatus = async (newStatus: StatusOnline) => {
-    if (!user) return;
-    setStatus(newStatus);
-    setStatusOpen(false);
-    const { error } = await supabase.from("profiles").update({ status_online: newStatus, status_updated_at: new Date().toISOString() }).eq("user_id", user.id);
-    if (error) { toast.error("Erro ao atualizar status"); return; }
-    const opt = STATUS_OPTIONS.find(o => o.value === newStatus)!;
-    toast.success(`Status atualizado: ${opt.label} ${opt.icon}`);
+  // Status auto-declarado removido. A presença é registrada pelo gestor
+  // (ver PresencaDoCorretorPill) e a saída é feita pelo botão "Sair" no pill.
 
-    // If going offline, remove from roleta (deactivate credenciamentos + fila)
-    if (newStatus === "offline" && profileId) {
-      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-      // Mark credenciamentos as "saiu"
-      const { error: credErr } = await supabase.from("roleta_credenciamentos")
-        .update({ status: "saiu", saiu_em: new Date().toISOString() })
-        .eq("corretor_id", profileId)
-        .eq("data", today)
-        .in("status", ["pendente", "aprovado"]);
-      // Deactivate from fila
-      const { error: filaErr } = await supabase.from("roleta_fila")
-        .update({ ativo: false })
-        .eq("corretor_id", profileId)
-        .eq("data", today)
-        .eq("ativo", true);
-      
-      // Sync corretor_disponibilidade.na_roleta = false
-      await supabase.from("corretor_disponibilidade")
-        .update({ na_roleta: false, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id);
-      
-      if (credErr) console.error("Erro ao sair da roleta (cred):", credErr);
-      if (filaErr) console.error("Erro ao sair da fila:", filaErr);
-      
-      // Reset local state immediately
-      setCredenciamentosPorJanela({});
-      setMySegmentoIds([]);
-      setSelectedIds([]);
-      setCredStatus("");
-      toast.info("Você saiu da roleta automaticamente.");
-      // Refetch to ensure consistency
-      setTimeout(() => fetchData(), 500);
-    }
-  };
 
   const toggleSegmento = (id: string) => {
     setSelectedIds(prev => {
@@ -430,10 +371,8 @@ export default function RoletaStatusBar() {
     toast.success(`Credenciamento enviado para ${jCfg.emoji} ${jCfg.label}! Aguardando aprovação do CEO ⏳`);
   };
 
-  const currentOpt = STATUS_OPTIONS.find(o => o.value === status) || STATUS_OPTIONS[3];
-  const isAvailable = status === "na_empresa" || status === "em_plantao";
   const hasSegmentos = mySegmentoIds.length > 0;
-  const isActiveRoleta = isAvailable && hasSegmentos && credStatus === "aprovado";
+  const isActiveRoleta = hasSegmentos && credStatus === "aprovado";
 
   const segNames = mySegmentoIds.map(id => segmentos.find(s => s.id === id)?.nome).filter(Boolean);
 
@@ -452,57 +391,20 @@ export default function RoletaStatusBar() {
           isActiveRoleta ? "border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20" : "border-border bg-card"
         }`}
       >
-        {/* Left: Status */}
-        <div className="relative flex items-center gap-2">
-          <button
-            onClick={() => setStatusOpen(!statusOpen)}
-            className={`flex items-center gap-1.5 text-sm font-medium rounded-lg px-2.5 py-1 transition-colors hover:bg-muted/50 ${currentOpt.color}`}
-          >
-            <span>{currentOpt.icon}</span>
-            <span>{currentOpt.label}</span>
-            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${statusOpen ? "rotate-180" : ""}`} />
-          </button>
+        {/* Left: Presença (marcada pelo gestor) + status da roleta */}
+        <div className="relative flex items-center gap-2 flex-wrap">
+          <PresencaDoCorretorPill profileId={profileId} authUserId={user?.id} />
 
-          <AnimatePresence>
-            {statusOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setStatusOpen(false)} />
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="absolute top-full left-0 mt-1 z-50 w-64 rounded-xl border border-border bg-popover shadow-lg overflow-hidden"
-                >
-                  {STATUS_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => updateStatus(opt.value)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${
-                        opt.value === status ? `${opt.bgColor} ${opt.borderColor} border-l-2` : ""
-                      }`}
-                    >
-                      <span className="text-lg">{opt.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${opt.color}`}>{opt.label}</p>
-                        <p className="text-xs text-muted-foreground">{opt.description}</p>
-                      </div>
-                      {opt.value === status && <Check className="h-4 w-4 text-primary shrink-0" />}
-                    </button>
-                  ))}
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-
-          <div className="h-5 w-px bg-border" />
+          <div className="h-5 w-px bg-border hidden sm:block" />
           <span className={`text-xs font-medium ${
-            isActiveRoleta ? "text-emerald-600" : 
+            isActiveRoleta ? "text-emerald-600" :
             credStatus === "pendente" ? "text-amber-600" : "text-muted-foreground"
           }`}>
-            {isActiveRoleta ? "🟢 Ativo na Roleta" : 
+            {isActiveRoleta ? "🟢 Ativo na Roleta" :
              credStatus === "pendente" ? "⏳ Aguardando aprovação" : "⚪ Inativo na Roleta"}
           </span>
         </div>
+
 
         {/* Right */}
         <div className="flex items-center gap-2">
