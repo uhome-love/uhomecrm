@@ -50,10 +50,10 @@ interface Props {
 }
 
 const TURNOS_BASE: PresencaTurno[] = ["manha", "tarde"];
-const TURNO_SHORT: Record<PresencaTurno, string> = {
-  manha: "M",
-  tarde: "T",
-  noturna: "N",
+const TURNO_LABEL_FULL: Record<PresencaTurno, string> = {
+  manha: "Manhã",
+  tarde: "Tarde",
+  noturna: "Noturna",
 };
 
 /** Corretor está credenciado neste turno? (dia_todo cobre manhã e tarde) */
