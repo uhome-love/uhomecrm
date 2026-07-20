@@ -68,12 +68,14 @@ export default function TaskCompletionDialog({
     tentativaConcluida: number;
     requiresNextTask: boolean;
     finalAttempt: boolean;
+    isCadenciaTask: boolean;
   }>({
     enabled: false,
     tentativaAtual: 0,
     tentativaConcluida: 1,
     requiresNextTask: false,
     finalAttempt: false,
+    isCadenciaTask: false,
   });
 
   const [saving, setSaving] = useState(false);
@@ -105,6 +107,7 @@ export default function TaskCompletionDialog({
       tentativaConcluida: 1,
       requiresNextTask: false,
       finalAttempt: false,
+      isCadenciaTask: false,
     });
     setQualInfo({ enabled: false, currentStatus: "", lead: null });
     setQualPillStatus("");
@@ -135,6 +138,7 @@ export default function TaskCompletionDialog({
             tentativaConcluida: 1,
             requiresNextTask: false,
             finalAttempt: false,
+            isCadenciaTask: false,
           });
         }
         return;
@@ -192,6 +196,7 @@ export default function TaskCompletionDialog({
             tentativaConcluida: 1,
             requiresNextTask: false,
             finalAttempt: false,
+            isCadenciaTask: false,
           });
         }
         return;
@@ -218,6 +223,7 @@ export default function TaskCompletionDialog({
           tentativaConcluida,
           requiresNextTask: !finalAttempt && !isCadenciaTask,
           finalAttempt,
+          isCadenciaTask,
         });
         setOutcome(finalAttempt || isCadenciaTask ? "concluir" : "agendar");
       }
@@ -238,6 +244,19 @@ export default function TaskCompletionDialog({
       setOutcome("concluir");
     }
   }, [semContatoInfo, outcome]);
+
+  // Confirmar visita (Qualificação · alinhando_visita): o canal já foi definido quando a
+  // tarefa foi criada. O popup esconde o bloco Canal, então pré-seleciona um default
+  // sensato pra não travar a validação.
+  useEffect(() => {
+    if (
+      qualInfo.enabled &&
+      qualInfo.currentStatus === "alinhando_visita" &&
+      !tipoContato
+    ) {
+      setTipoContato("whatsapp");
+    }
+  }, [qualInfo.enabled, qualInfo.currentStatus, tipoContato]);
 
   const handleConfirm = async () => {
     if (!tipoContato || !resultado) return;

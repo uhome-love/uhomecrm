@@ -202,10 +202,18 @@ const CardMinimal = memo(function CardMinimal({
     [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
 
+  // Título específico (novo formato do qualificacaoTaskEngine): "Ação às Hh · dd/mm".
+  // Quando presente, dispensa rótulo genérico + actionWhen no card e o badge de substatus (redundante).
+  const hasSpecificTitle = useMemo(() => {
+    const t = (proximaTarefa?.titulo || "").trim();
+    if (!t) return false;
+    return t.includes(" · ") || t.includes(" às ");
+  }, [proximaTarefa?.titulo]);
+
   // fallback acessível: usado como title e leitura por SR
   const fullActionLabel = useMemo(
-    () => formatNextAction(proximaTarefa ?? null),
-    [proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
+    () => (hasSpecificTitle ? (proximaTarefa?.titulo || "") : formatNextAction(proximaTarefa ?? null)),
+    [hasSpecificTitle, proximaTarefa?.titulo, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
 
   const empreendimento = useMemo(
@@ -347,7 +355,7 @@ const CardMinimal = memo(function CardMinimal({
                 📲 {cadenciaBadge.label}{cadenciaBadge.when ? ` · ${cadenciaBadge.when}` : ""}
               </span>
             )}
-            {substatus && (
+            {substatus && !hasSpecificTitle && (
               <span className={`shrink-0 ${substatus.className}`}>
                 {substatus.label}
               </span>
@@ -430,6 +438,20 @@ const CardMinimal = memo(function CardMinimal({
                 <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-500/15 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide">
                   ⚠ Definir tarefa
                 </span>
+              </span>
+            ) : hasSpecificTitle ? (
+              <span
+                className={`flex-1 min-w-0 truncate text-[11.5px] ${
+                  isAtrasada ? "text-red-600" : "text-foreground"
+                }`}
+              >
+                <strong
+                  className={`font-semibold ${
+                    isAtrasada ? "text-red-600" : "text-foreground"
+                  }`}
+                >
+                  {proximaTarefa?.titulo}
+                </strong>
               </span>
             ) : (
               <span

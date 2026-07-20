@@ -108,6 +108,9 @@ export interface CompletionFormProps {
     tentativaConcluida: number;
     requiresNextTask: boolean;
     finalAttempt: boolean;
+    /** true quando a tarefa sendo concluída pertence à cadência automática (tarefaOrigem === "cadencia_sem_contato").
+     *  Nesse caso o sistema cria a próxima via trigger; travamos o "Agendar" manual pra não duplicar. */
+    isCadenciaTask: boolean;
   };
 
   // Step 1 state
@@ -339,7 +342,11 @@ export function CompletionForm(props: CompletionFormProps) {
     onChangeNovaTarefa({ vence_em: dateToBRT(d), hora_vencimento: h });
   };
 
-  const subtitleText = `${tarefaTitulo}${leadNome ? ` · ${leadNome}` : ""}`;
+  // Dedup: alguns títulos antigos vêm com o nome embutido ("Confirmar visita — Juliana");
+  // não repetir " · Juliana" ao lado.
+  const nomeJaNoTitulo =
+    !!leadNome && tarefaTitulo.toLowerCase().includes(leadNome.toLowerCase());
+  const subtitleText = `${tarefaTitulo}${leadNome && !nomeJaNoTitulo ? ` · ${leadNome}` : ""}`;
 
   return (
     <div className="flex flex-col max-h-[90vh] max-[420px]:max-h-[92vh]">
@@ -355,43 +362,10 @@ export function CompletionForm(props: CompletionFormProps) {
 
       {/* Corpo scrollável */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-        {/* 1. Canal + Resultado (lado a lado no desktop) */}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
-              Canal <span className="text-destructive">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {TIPO_CONTATO_OPTIONS.map(({ value, label, Icon }) => {
-                const active = tipoContato === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => onChangeTipo(value)}
-                    className={cn(
-                      "px-2 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 border",
-                      active
-                        ? "border-transparent text-white shadow-sm"
-                        : "bg-background border-border text-foreground hover:bg-muted",
-                    )}
-                    style={
-                      active
-                        ? {
-                            background:
-                              "var(--gradient-focus, linear-gradient(135deg, #4969FF, #7C3AED))",
-                          }
-                        : undefined
-                    }
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span className="truncate">{label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
+        {/* 1. Canal + Resultado (lado a lado no desktop).
+             Em Qualificação · alinhando_visita: canal já foi definido quando a tarefa foi criada;
+             mostramos só Resultado (largura total). */}
+        {qualificacao?.currentStatus === "alinhando_visita" ? (
           <div>
             <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
               Resultado <span className="text-destructive">*</span>
@@ -417,7 +391,70 @@ export function CompletionForm(props: CompletionFormProps) {
               })}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
+                Canal <span className="text-destructive">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {TIPO_CONTATO_OPTIONS.map(({ value, label, Icon }) => {
+                  const active = tipoContato === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => onChangeTipo(value)}
+                      className={cn(
+                        "px-2 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 border",
+                        active
+                          ? "border-transparent text-white shadow-sm"
+                          : "bg-background border-border text-foreground hover:bg-muted",
+                      )}
+                      style={
+                        active
+                          ? {
+                              background:
+                                "var(--gradient-focus, linear-gradient(135deg, #4969FF, #7C3AED))",
+                            }
+                          : undefined
+                      }
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="truncate">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
+                Resultado <span className="text-destructive">*</span>
+              </label>
+              <div className="flex flex-wrap gap-1">
+                {RESULTADO_OPTIONS.map(({ value, label, Icon, tone }) => {
+                  const active = resultado === value;
+                  const t = RESULTADO_TONE[tone as ResultadoTone];
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => onChangeResultado(value)}
+                      className={cn(
+                        "px-2 py-1.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 border",
+                        active ? t.selected : t.base,
+                      )}
+                    >
+                      <Icon className={cn("w-3 h-3", t.icon)} />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 2. Observação */}
         <div>
@@ -500,7 +537,9 @@ export function CompletionForm(props: CompletionFormProps) {
             onChangeNovoStage={onChangeNovoStage}
             onChangeObservacaoCurta={onChangeObservacaoCurta}
             onBackToAgendar={
-              semContato.enabled && semContato.finalAttempt
+              // Trava "← Agendar" quando é tarefa da cadência Sem Contato (sistema cria a próxima)
+              // ou tentativa final — evita criar tarefa manual concorrente.
+              (semContato.enabled && (semContato.isCadenciaTask || semContato.finalAttempt))
                 ? undefined
                 : () => onChangeOutcome("agendar")
             }
@@ -903,7 +942,9 @@ function OnlyCompleteBlock({
       <div className="flex items-start gap-1.5">
         <div className="min-w-0 flex-1">
           <div className="text-xs font-semibold text-foreground">
-            Apenas concluir
+            {semContato.enabled && semContato.isCadenciaTask && !semContato.finalAttempt
+              ? `Tentativa ${semContato.tentativaConcluida} registrada`
+              : "Apenas concluir"}
           </div>
           <div className="text-[10.5px] text-muted-foreground">
             {semContato.enabled && semContato.finalAttempt ? (
@@ -911,6 +952,8 @@ function OnlyCompleteBlock({
                 <strong>T7</strong> concluída. Sem próxima tentativa; entra no
                 prazo final de 48h.
               </>
+            ) : semContato.enabled && semContato.isCadenciaTask ? (
+              <>A próxima tentativa é criada automaticamente pela cadência.</>
             ) : (
               <>Sem agendar próxima tarefa. Pode mover de etapa opcionalmente.</>
             )}
@@ -1115,6 +1158,33 @@ function QualificacaoPillsBlock({
   /** Recebe (data, hora HH:MM) — hora sempre presente. */
   onPickData: (dt: DataOverride | undefined, hora: string) => void;
 }) {
+  const isConfirmarVisita = currentStatus === "alinhando_visita";
+
+  // Modo enxuto: tarefa "Confirmar visita" → pula pills, pergunta direto "A visita é pra quando?"
+  // Auto-fixa pillStatus como 'alinhando_visita' pra o motor reagendar corretamente.
+  useEffect(() => {
+    if (isConfirmarVisita && pillStatus !== "alinhando_visita") {
+      onPickPill("alinhando_visita");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConfirmarVisita]);
+
+  if (isConfirmarVisita) {
+    return (
+      <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-2">
+        <VisitaDatePicker
+          variant="confirmar-visita"
+          onPick={(d, h) => onPickData(d, h)}
+        />
+        {dataOverride && (
+          <div className="text-[10px] text-primary">
+            ✓ {dataOverride === "hoje" ? "Hoje" : dataOverride === "amanha" ? "Amanhã" : dataOverride}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const showDatePicker = pillStatus === "alinhando_visita";
   return (
     <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-3">
