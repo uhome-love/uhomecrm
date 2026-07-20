@@ -1,6 +1,8 @@
 // =============================================================================
-// RegistrarHorarioDialog — Popup para o gestor registrar o horário real de
-// chegada ou saída do corretor no turno. Default = hora atual BRT.
+// RegistrarHorarioDialog — Popup para o gestor registrar presença/saída/falta.
+//   - "chegada": registra horário de chegada → status na_empresa
+//   - "saida"  : registra horário de saída  → status saiu
+//   - "falta"  : marca faltou (sem horário)  → status falta
 // =============================================================================
 import { useEffect, useState } from "react";
 import {
@@ -30,11 +32,10 @@ function nowHHmmBRT(): string {
 
 /** Combina data (YYYY-MM-DD BRT) + hora "HH:mm" em ISO timestamptz. */
 function combinarBRT(dataBRT: string, hhmm: string): string {
-  // Monta ISO com offset -03:00 (BRT sem DST desde 2019)
   return `${dataBRT}T${hhmm}:00-03:00`;
 }
 
-export type TipoHorario = "chegada" | "saida";
+export type TipoHorario = "chegada" | "saida" | "falta";
 
 interface Props {
   open: boolean;
@@ -43,6 +44,7 @@ interface Props {
   corretorNome: string;
   turnoLabel: string;
   onCancel: () => void;
+  /** Para "chegada"/"saida" recebe ISO; para "falta" recebe string vazia. */
   onConfirm: (isoTimestamp: string) => void;
   isSubmitting?: boolean;
 }
@@ -59,15 +61,20 @@ export function RegistrarHorarioDialog({
 }: Props) {
   const [hora, setHora] = useState<string>(nowHHmmBRT());
 
-  // Reseta pra hora atual toda vez que abrir
   useEffect(() => {
     if (open) setHora(nowHHmmBRT());
   }, [open]);
 
+  const isFalta = tipo === "falta";
   const titulo =
-    tipo === "chegada" ? "Registrar chegada" : "Registrar saída";
-  const descricao =
     tipo === "chegada"
+      ? "Registrar chegada"
+      : tipo === "saida"
+        ? "Registrar saída"
+        : "Marcar falta";
+  const descricao = isFalta
+    ? `Confirma que ${corretorNome} faltou neste turno?`
+    : tipo === "chegada"
       ? `Que horas ${corretorNome} chegou na empresa?`
       : `Que horas ${corretorNome} saiu da empresa?`;
 
@@ -85,34 +92,49 @@ export function RegistrarHorarioDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-2 py-2">
-          <Label htmlFor="horario">Horário</Label>
-          <Input
-            id="horario"
-            type="time"
-            value={hora}
-            onChange={(e) => setHora(e.target.value)}
-            step={60}
-            autoFocus
-          />
-          <p className="text-[11px] text-muted-foreground">
-            Padrão: horário atual. Ajuste se o corretor chegou/saiu em outro
-            momento.
+        {!isFalta && (
+          <div className="grid gap-2 py-2">
+            <Label htmlFor="horario">Horário</Label>
+            <Input
+              id="horario"
+              type="time"
+              value={hora}
+              onChange={(e) => setHora(e.target.value)}
+              step={60}
+              autoFocus
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Padrão: horário atual. Ajuste se o corretor chegou/saiu em outro
+              momento.
+            </p>
+          </div>
+        )}
+
+        {isFalta && (
+          <p className="text-[12px] text-muted-foreground py-2">
+            Esse registro fica no histórico do corretor. Para reverter, marque
+            "Presente" no mesmo turno.
           </p>
-        </div>
+        )}
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
             Cancelar
           </Button>
           <Button
+            variant={isFalta ? "destructive" : "default"}
             onClick={() => {
+              if (isFalta) return onConfirm("");
               if (!hora) return;
               onConfirm(combinarBRT(dataBRT, hora));
             }}
-            disabled={!hora || isSubmitting}
+            disabled={(!isFalta && !hora) || isSubmitting}
           >
-            {isSubmitting ? "Salvando..." : "Registrar"}
+            {isSubmitting
+              ? "Salvando..."
+              : isFalta
+                ? "Confirmar falta"
+                : "Registrar"}
           </Button>
         </DialogFooter>
       </DialogContent>

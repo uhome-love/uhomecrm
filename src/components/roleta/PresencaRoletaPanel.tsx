@@ -19,6 +19,8 @@ import {
   Target,
   ChevronDown,
   AlertTriangle,
+  X,
+  Info,
 } from "lucide-react";
 import { RegistrarHorarioDialog } from "./RegistrarHorarioDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,10 +39,13 @@ import {
   ESTADO_LABEL,
   ESTADO_CLASSES,
   TURNO_LABEL,
+  getRegimeDoDia,
   type EstadoCorretor,
   type PresencaTurno,
   type PresencaRow,
 } from "@/lib/roletaPresenca";
+
+type MarkStatus = "na_empresa" | "saiu" | "falta";
 
 interface Props {
   scope: PresencaScope;
@@ -85,12 +90,18 @@ function TurnoChip({
   presenca: PresencaRow | undefined;
   credenciado: boolean;
   canManage: boolean;
-  onMark: (turno: PresencaTurno, status: "na_empresa" | "saiu") => void;
+  onMark: (turno: PresencaTurno, status: MarkStatus) => void;
   isMutating: boolean;
 }) {
   const estado: EstadoCorretor = derivarEstadoTurno(presenca, credenciado);
-  const showChegou = canManage && estado !== "na_empresa" && estado !== "saiu";
+  // Botões:
+  //  - Credenciado + presente → só "Saiu"
+  //  - Não credenciado sem marcar → "Presente" + "Faltou"
+  //  - Marcado "Faltou" ou "Saiu" → "Presente" pra corrigir
+  const showPresente = canManage && estado !== "na_empresa";
   const showSaiu = canManage && estado === "na_empresa";
+  const showFaltou =
+    canManage && !credenciado && estado === "sem_marcar";
 
   return (
     <div
@@ -121,7 +132,7 @@ function TurnoChip({
         </span>
       )}
       <div className="ml-auto flex gap-1">
-        {showChegou && (
+        {showPresente && (
           <Button
             size="sm"
             variant="outline"
@@ -132,6 +143,19 @@ function TurnoChip({
           >
             <Check className="h-3 w-3" />
             <span className="hidden lg:inline">Presente</span>
+          </Button>
+        )}
+        {showFaltou && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[10px] gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+            disabled={isMutating}
+            onClick={() => onMark(turno, "falta")}
+            title="Marcar falta — corretor não compareceu"
+          >
+            <X className="h-3 w-3" />
+            <span className="hidden lg:inline">Faltou</span>
           </Button>
         )}
         {showSaiu && (
@@ -168,7 +192,7 @@ function CorretorRow({
   onMark: (
     corretor_id: string,
     turno: PresencaTurno,
-    status: "na_empresa" | "saiu",
+    status: MarkStatus,
   ) => void;
   isMutating: boolean;
 }) {
@@ -256,7 +280,7 @@ function TeamGroup({
   onMark: (
     corretor_id: string,
     turno: PresencaTurno,
-    status: "na_empresa" | "saiu",
+    status: MarkStatus,
   ) => void;
   isMutating: boolean;
   foraDeJanela: boolean;
@@ -340,10 +364,10 @@ export function PresencaRoletaPanel({
 
   const shouldGroup = (groupByTeam ?? scope === "ceo") && corretores.length > 0;
 
-  // Dialog state — registro de horário
+  // Dialog state — registro de horário / falta
   const [dialog, setDialog] = useState<{
     open: boolean;
-    tipo: "chegada" | "saida";
+    tipo: "chegada" | "saida" | "falta";
     corretor_id: string;
     corretor_nome: string;
     turno: PresencaTurno;
@@ -356,8 +380,31 @@ export function PresencaRoletaPanel({
     day: "2-digit",
   }).format(new Date());
 
-  // Estatísticas do topo — credenciados sem row já contam como presentes
-  // (rede de segurança: normalmente o trigger cria a linha automaticamente).
+  const regime = getRegimeDoDia(dataBRT);
+
+  // Pendências do DIA (não do turno ativo) — banner persiste até finalizar.
+  // Só conta em regime presencial (seg-sex); sáb/dom têm outra lógica.
+  const pendenciasDia = useMemo(() => {
+    if (regime.regime !== "seg_sex") return { total: 0, corretores: 0 };
+    let total = 0;
+    let corretoresPendentes = 0;
+    for (const c of corretores) {
+      let pendenciasDoCorretor = 0;
+      for (const t of regime.turnosMarcaveis) {
+        const p = getPresenca(c.corretor_id, t);
+        const credenciado = isCredenciadoNoTurno(c.credenciamentos, t);
+        // Sem row + não credenciado = pendente
+        if (!p && !credenciado) pendenciasDoCorretor++;
+      }
+      if (pendenciasDoCorretor > 0) {
+        total += pendenciasDoCorretor;
+        corretoresPendentes++;
+      }
+    }
+    return { total, corretores: corretoresPendentes };
+  }, [corretores, regime, getPresenca]);
+
+  // Estatísticas do turno ativo (mesma lógica anterior; para a faixa de resumo)
   const stats = useMemo(() => {
     if (foraDeJanela) return { naEmpresa: 0, faltas: 0, saidas: 0, semMarcar: 0 };
     let na = 0,
@@ -392,7 +439,6 @@ export function PresencaRoletaPanel({
     return Array.from(map.entries())
       .map(([key, v]) => ({ key, ...v }))
       .sort((a, b) => {
-        // "Sem equipe" sempre no fim
         if (a.key === "__sem_equipe__") return 1;
         if (b.key === "__sem_equipe__") return -1;
         return a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" });
@@ -404,12 +450,18 @@ export function PresencaRoletaPanel({
   const handleMark = (
     corretor_id: string,
     turno: PresencaTurno,
-    status: "na_empresa" | "saiu",
+    status: MarkStatus,
   ) => {
     const c = corretores.find((x) => x.corretor_id === corretor_id);
+    const tipo: "chegada" | "saida" | "falta" =
+      status === "na_empresa"
+        ? "chegada"
+        : status === "saiu"
+          ? "saida"
+          : "falta";
     setDialog({
       open: true,
-      tipo: status === "na_empresa" ? "chegada" : "saida",
+      tipo,
       corretor_id,
       corretor_nome: c?.nome ?? "corretor",
       turno,
@@ -419,10 +471,16 @@ export function PresencaRoletaPanel({
   const handleConfirmHorario = async (iso: string) => {
     if (!dialog) return;
     try {
+      const status: MarkStatus =
+        dialog.tipo === "chegada"
+          ? "na_empresa"
+          : dialog.tipo === "saida"
+            ? "saiu"
+            : "falta";
       await marcarAsync({
         corretor_id: dialog.corretor_id,
         turnos: [dialog.turno],
-        status: dialog.tipo === "chegada" ? "na_empresa" : "saiu",
+        status,
         chegou_em: dialog.tipo === "chegada" ? iso : null,
         saiu_em: dialog.tipo === "saida" ? iso : null,
       });
@@ -432,18 +490,49 @@ export function PresencaRoletaPanel({
     }
   };
 
+  // Regime não-presencial: exibe painel informativo (sáb/dom)
+  if (regime.regime !== "seg_sex") {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="mb-2">
+          <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
+          <p className="text-[11px] text-muted-foreground">{regime.label}</p>
+        </div>
+        <div className="rounded-lg px-3 py-3 bg-muted/40 border border-border text-xs flex items-start gap-2">
+          <Info className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+          <div className="leading-snug text-muted-foreground">
+            {regime.regime === "sabado" ? (
+              <>
+                <strong>Sábado</strong> não tem presença na imobiliária. Conta
+                como presente quem estiver na roleta do dia <em>ou</em> tiver
+                visita/plantão registrado. Sem isso, conta como falta no
+                fechamento.
+              </>
+            ) : (
+              <>
+                <strong>Domingo</strong> a roleta é 100% de casa. Presente = quem
+                tem credenciamento aprovado da roleta de domingo. Nada a marcar
+                manualmente.
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm flex flex-col">
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <div>
           <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
           <p className="text-[11px] text-muted-foreground">
-            Validada por turno pelo gestor, independente do credenciamento.
+            {regime.label} · gestor valida por turno.
           </p>
         </div>
       </div>
 
-      {/* Faixa de resumo */}
+      {/* Faixa de resumo do turno ativo */}
       <div
         className={cn(
           "rounded-lg px-3 py-2 mb-3 text-xs flex flex-wrap items-center gap-x-4 gap-y-1",
@@ -479,19 +568,22 @@ export function PresencaRoletaPanel({
         )}
       </div>
 
-      {/* Aviso: corretores NÃO credenciados sem presença marcada no turno ativo */}
-      {!foraDeJanela && canManage && stats.semMarcar > 0 && (
+      {/* Banner persistente: enquanto houver pendência no dia */}
+      {canManage && pendenciasDia.total > 0 && (
         <div className="rounded-lg px-3 py-2 mb-3 text-xs flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-800 dark:text-yellow-300">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <div className="leading-snug">
-            <strong>{stats.semMarcar}</strong> corretor
-            {stats.semMarcar === 1 ? "" : "es"} <strong>não credenciado{stats.semMarcar === 1 ? "" : "s"}</strong> em{" "}
-            <strong>{turnoAtivoLabel}</strong> ainda sem presença marcada. Quem
-            credenciou já entra como Presente automaticamente. Marque os demais
-            até o fim do turno — não marcados viram <strong>Falta</strong>.
+            <strong>{pendenciasDia.corretores}</strong> corretor
+            {pendenciasDia.corretores === 1 ? "" : "es"} sem marcação hoje (
+            <strong>{pendenciasDia.total}</strong> turno
+            {pendenciasDia.total === 1 ? "" : "s"} pendente
+            {pendenciasDia.total === 1 ? "" : "s"}). Registre <strong>Presente</strong>
+            {" "}ou <strong>Faltou</strong> antes de encerrar o dia — sem marcação
+            não conta como falta.
           </div>
         </div>
       )}
+
 
 
       <div className="flex-1 min-h-[180px]">

@@ -1,42 +1,74 @@
 
-## Contexto do que descobri
+# Revisão das Regras de Presença
 
-Auditei o banco antes de propor:
+Ajustes de comportamento após validação ao vivo. Nada de novo módulo — só refino do que já está no ar em `/roleta/presenca`.
 
-- **Trigger de auto-presença já existe** (`trg_presenca_auto_credenciamento` em `roleta_credenciamentos`, dispara em INSERT com `status='aprovado'` e em UPDATE para `aprovado`). A função `registrar_presenca_auto_credenciamento` insere linha `roleta_presencas` com `status='na_empresa'`, `origem='auto_credenciamento'`, mapeando `janela` → `turno` (manhã, tarde, dia_todo → manhã+tarde).
-- **Só que hoje ele não populou nada.** Existem 32 credenciamentos `aprovado` hoje (Manhã + Tarde) e apenas **1 linha em `roleta_presencas`** — e essa 1 é `origem='manual_gestor'`. Nenhuma `auto_credenciamento`. O trigger, portanto, não está entregando na prática hoje (motivo a investigar: ou foi criado após os primeiros approvals, ou está silenciosamente falhando).
-- Billy John hoje: 2 credenciamentos aprovados (manhã e tarde), zero linha em `roleta_presencas`. Exatamente o caso que o Lucas relatou.
+## 1. Falta deixa de ser automática
 
-O comportamento que o Lucas pediu é justamente o que o trigger deveria fazer. Então o plano é (1) fazer o trigger realmente funcionar + backfill do dia, (2) refletir isso na UI: quem credenciou vira Presente automaticamente e só mostra o botão "Saiu"; quem não credenciou é que o gerente marca.
+Hoje o cron `01:00 BRT` marca `faltou` para quem não tem registro. Isso vai sair.
 
-## O que vou fazer (em fases pequenas)
+- **Regra nova:** o gerente marca explicitamente **Presente** OU **Faltou** por corretor/turno. Sem marcação = **Sem marcar** (cinza), não conta como falta.
+- Adicionar botão **Faltou** ao lado de **Presente** para corretores não credenciados (credenciados continuam só com **Saiu**, já que estão auto-presentes).
+- Desativar o cron/job que marcava falta automaticamente.
+- No histórico e estatísticas: **falta = registro explícito de `faltou`**. "Sem marcar" fica separado, não polui contadores de assiduidade.
 
-### Fase 1 — Backfill do dia e diagnóstico do trigger (migração)
-1. Rodar backfill idempotente: para cada `roleta_credenciamentos` com `status='aprovado'` hoje, inserir a(s) linha(s) em `roleta_presencas` (`na_empresa`, `origem='auto_credenciamento'`, `chegou_em = c.created_at`) com `ON CONFLICT (corretor_id, data, turno) DO NOTHING`.
-2. Recriar/normalizar `registrar_presenca_auto_credenciamento` (idempotente) para garantir que o gatilho funcione daqui pra frente. Confirmar que a unique key `(corretor_id, data, turno)` existe em `roleta_presencas`.
-3. Reportar quantas linhas foram criadas no backfill e quantos corretores foram cobertos.
+## 2. Janela de registro = o dia todo (não por turno)
 
-### Fase 2 — UI: distinguir "credenciado" de "não credenciado" (`PresencaRoletaPanel.tsx`)
-Regra visual por turno em cada corretor:
+Hoje, se passou o turno, o gerente não consegue mais marcar. Vai virar:
 
-- **Credenciado no turno + sem `saiu_em`** → chip verde `PRESENTE (via roleta)` + botão único **"Saiu"** (abre `RegistrarHorarioDialog` para carimbar horário). Sem botão "Presente" (já está).
-- **Credenciado no turno + com `saiu_em`** → chip `SAIU HH:MM`. Sem botões (turno encerrado para ele).
-- **Não credenciado no turno + sem presença registrada** → mostra os dois botões atuais **"Presente"** (registra horário chegada) e **"Faltou"** (opcional, para o gerente marcar explicitamente). Estes são os que o gerente precisa validar.
-- **Não credenciado + `Presente` já marcado manual** → chip `NA EMPRESA (manual)` + botão "Saiu".
-- **Faltou (auto do cron 01:00 BRT)** → chip vermelho `FALTOU`, sem ação (dia fechado).
+- Gerente pode registrar/editar presença de **qualquer turno do dia até 23:59 BRT** do mesmo dia.
+- Depois de virar o dia, trava (edição vira auditoria manual).
+- **Lembrete diário** no dashboard do gerente: banner persistente enquanto houver corretor da equipe em "Sem marcar" no dia — mensagem clara "Você tem X corretores sem marcação hoje. Finalize antes de encerrar o dia."
+- Um push/notification opcional às 18h para o gerente se ainda tiver pendências (fase 2, não bloqueante).
 
-### Fase 3 — Banner de pendências
-Recalcular o texto do banner: **"N corretores sem presença marcada em [Turno]"** deve contar apenas **não credenciados sem `roleta_presencas`**, porque o resto já entra automático. Isso vai derrubar drasticamente o "27 pendentes" de agora.
+## 3. Regras por dia da semana
 
-### Fase 4 — Validação ao vivo
-- Abrir `/roleta/presenca` no preview.
-- Confirmar que Billy John, Andressa, Eliézer, etc. (todos credenciados) aparecem como **Presente** automaticamente nos turnos que credenciaram, com só o botão **Saiu** disponível.
-- Confirmar que corretores não credenciados aparecem com **Presente / Faltou** (para o gerente validar).
-- Confirmar contagens do header e do banner.
+A lógica de "quais turnos existem" muda por dia. Hoje está fixo Manhã/Tarde/Noturna todos os dias.
 
-## Fora de escopo desta rodada
-- Mexer em cron de "Faltou" (01:00 BRT) — segue como está.
-- Mexer no fluxo de credenciamento em si.
-- Mexer nas regras de elegibilidade Noturna/Domingo.
+### Segunda a Sexta (presencial — como está hoje)
+- Turnos ativos: **Manhã** e **Tarde** (presencial na imobiliária).
+- **Noturna**: NÃO é turno de presença física. Quem está credenciado e ativo na roleta noturna aparece como "Presente – Noturna (de casa)" automaticamente. Sem botão de marcar/faltar para noturna.
+- Gerente valida só Manhã e Tarde.
 
-Se aprovado, começo pela Fase 1 (migração de backfill + recriação do trigger) e trago o número de linhas criadas antes de partir para a UI.
+### Sábado
+- Não há presença na imobiliária.
+- **Presença conta se:** o corretor (a) está credenciado na roleta do sábado, OU (b) tem visita/plantão registrado no dia.
+- Quem não se encaixa em (a) nem (b) = **Falta** (mas ainda assim é registro automático baseado em dado, não cron cego — se não houver visita nem roleta, marca falta ao fim do dia).
+- Gerente pode sobrescrever manualmente (justificar presença) se for o caso.
+
+### Domingo
+- Roleta 100% de casa.
+- **Presente = tem benefício ativo de roleta de domingo** (credenciado + aprovado).
+- Sem botões manuais nesse dia — é derivado da roleta.
+- Quem não está na roleta de domingo: não aparece na página (não é dia útil pra ele).
+
+## 4. Ajustes de UI na página `/roleta/presenca`
+
+- Cabeçalho do dia mostra qual regime está ativo: "Seg-Sex presencial", "Sábado híbrido", "Domingo remoto".
+- Colunas de turno se adaptam:
+  - Seg-Sex: **Manhã | Tarde | Noturna (auto)**
+  - Sábado: **Roleta/Visita/Plantão** (coluna única derivada)
+  - Domingo: **Roleta Domingo** (coluna única derivada)
+- Botões por corretor não credenciado (Seg-Sex, turnos Manhã/Tarde): **Presente** · **Faltou** · **Saiu** (Saiu só após Presente).
+- Banner de lembrete do gerente aparece o dia todo enquanto tiver pendência.
+
+## 5. Backfill e limpeza
+
+- Reverter as `faltou` automáticas de dias passados criadas pelo cron nos últimos 7 dias, transformando em "Sem marcar" (pra não penalizar corretor por falha de gerente que na regra nova não existiria).
+- Recalcular estatísticas do histórico com a nova definição de falta.
+
+## Detalhes técnicos
+
+- Desabilitar cron `marcar_faltas_automaticas` (ou equivalente); manter apenas jobs de auto-presença por credenciamento.
+- `derivarEstadoTurno` em `src/lib/roletaPresenca.ts` passa a receber `diaSemana` e aplicar regime (util-week / saturday / sunday).
+- Novo helper `getRegimeDoDia(date)` retorna `{ turnosAtivos, fonteDePresenca, permiteMarcacaoManual }`.
+- `PresencaRoletaPanel.tsx`: renderização condicional das colunas e botões baseada em `regime`.
+- `RegistrarHorarioDialog.tsx`: adicionar variante "Faltou" (motivo opcional).
+- `usePresencaCorretoresDia.ts`: para sábado, cruzar com `visitas` do dia e `roleta_credenciamentos` para derivar presença; para domingo, só credenciamentos aprovados de domingo.
+- Trigger `trg_presenca_auto_credenciamento`: incluir roleta noturna (seg-sex) e roleta domingo como fontes automáticas.
+- Migration: remover job de auto-falta; backfill dos últimos 7 dias.
+
+## Fora do escopo desta fase
+
+- Notificações push proativas ao gerente (fica pra fase seguinte se ele quiser).
+- Relatório de assiduidade agregado com a nova definição (posso incluir depois se pedir).
