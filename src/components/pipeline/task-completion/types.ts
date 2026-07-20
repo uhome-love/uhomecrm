@@ -68,6 +68,13 @@ export interface CompletionPayload {
    */
   status_etapa?: { key: "status_atendimento" | "prazo" | "status_negociacao"; value: string };
 
+  /**
+   * Sinaliza que o fluxo customizado (ex.: VisitaCompletionFlow) já executou
+   * TODAS as escritas necessárias (marcar tarefa, atividade, mudar stage, etc.).
+   * Orquestradores (completeLeadTask / taskCompletion) devem apenas retornar
+   * sucesso sem repetir side-effects.
+   */
+  already_handled?: boolean;
 }
 
 
