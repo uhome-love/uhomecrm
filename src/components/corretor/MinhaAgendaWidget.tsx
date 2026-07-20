@@ -59,10 +59,6 @@ export default function MinhaAgendaWidget() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [adiarId, setAdiarId] = useState<string | null>(null);
-  const [adiarSource, setAdiarSource] = useState<"lead" | "negocio">("lead");
-  const [adiarData, setAdiarData] = useState("");
-  const [adiarHora, setAdiarHora] = useState("");
   const [completing, setCompleting] = useState<TarefaAgenda | null>(null);
 
   // Lead tasks
