@@ -229,25 +229,65 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
         <div className="space-y-3 pt-1">
           {selected === "tarefa" && (
             <>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo de tarefa</label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {TIPO_TAREFA_OPTIONS.map(t => (
-                    <button
-                      key={t.value}
-                      onClick={() => setTipoTarefa(t.value)}
-                      className={cn(
-                        "text-xs py-1.5 px-2 rounded-md border transition-all",
-                        tipoTarefa === t.value
-                          ? "border-primary bg-primary/10 font-semibold"
-                          : "border-border hover:bg-muted/50"
-                      )}
-                    >
-                      {t.emoji} {t.label}
-                    </button>
-                  ))}
+              {presets.length > 0 ? (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    O que fazer agora?
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {presets.map(p => {
+                      const isActive = selectedPresetId === p.id;
+                      const isOutro = p.id === PRESET_OUTRO_ID;
+                      const Icon = p.Icon;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => handlePresetPick(p)}
+                          className={cn(
+                            "flex items-center gap-1.5 text-xs py-1.5 px-2 rounded-md border transition-all text-left",
+                            isActive
+                              ? "border-primary bg-primary/10 font-semibold"
+                              : isOutro
+                              ? "border-dashed border-muted-foreground/40 hover:bg-muted/50"
+                              : "border-border hover:bg-muted/50"
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5 shrink-0" />
+                          <span className="leading-tight truncate">{p.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {activePreset && (
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      Preenchido automaticamente • edite abaixo se precisar.
+                    </p>
+                  )}
                 </div>
-              </div>
+              ) : null}
+
+              {freeMode && (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo de tarefa</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {TIPO_TAREFA_OPTIONS.map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => setTipoTarefa(t.value)}
+                        className={cn(
+                          "text-xs py-1.5 px-2 rounded-md border transition-all",
+                          tipoTarefa === t.value
+                            ? "border-primary bg-primary/10 font-semibold"
+                            : "border-border hover:bg-muted/50"
+                        )}
+                      >
+                        {t.emoji} {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">Data *</label>
