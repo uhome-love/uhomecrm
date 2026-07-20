@@ -29,7 +29,7 @@ export async function completeLeadTask({
   const {
     tipo_contato, resultado, descricao,
     outcome, nova_tarefa, novo_stage_id,
-    reason_label,
+    reason_label, status_etapa,
   } = payload;
 
   const now = new Date().toISOString();
@@ -38,8 +38,25 @@ export async function completeLeadTask({
     .update({ status: "concluida", concluida_em: now } as never).eq("id", tarefaId);
   if (toggleErr) throw toggleErr;
 
-  await supabase.from("pipeline_leads")
-    .update({ ultima_acao_at: now, updated_at: now } as never).eq("id", leadId);
+  // Persiste status da etapa (Qualificação/Aquecimento) em flag_status
+  if (status_etapa?.key && status_etapa.value) {
+    const { data: leadRow } = await supabase
+      .from("pipeline_leads")
+      .select("flag_status")
+      .eq("id", leadId)
+      .maybeSingle();
+    const nextFlag: Record<string, unknown> = {
+      ...(((leadRow as { flag_status?: Record<string, unknown> } | null)?.flag_status) || {}),
+    };
+    nextFlag[status_etapa.key] = status_etapa.value;
+    await supabase.from("pipeline_leads")
+      .update({ flag_status: nextFlag, ultima_acao_at: now, updated_at: now } as never)
+      .eq("id", leadId);
+  } else {
+    await supabase.from("pipeline_leads")
+      .update({ ultima_acao_at: now, updated_at: now } as never).eq("id", leadId);
+  }
+
 
   await supabase.from("pipeline_atividades").insert({
     pipeline_lead_id: leadId,
