@@ -172,7 +172,7 @@ function HistoricoTab({
                 <th className="text-left font-semibold py-2">Corretor</th>
                 {scope === "ceo" && (
                   <th className="text-left font-semibold py-2 hidden md:table-cell">
-                    Gestor
+                    Equipe
                   </th>
                 )}
                 <th className="text-center font-semibold py-2">Manhã</th>
