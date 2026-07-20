@@ -150,17 +150,66 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
 export function VisitaDatePicker({
   onPick,
   disabled,
+  variant = "default",
 }: {
   onPick: (dt: DataOverride, hora: string) => void;
   disabled?: boolean;
+  /** "confirmar-visita" = 3 botões em linha + horário abaixo, sem "Escolher data" separado. */
+  variant?: "default" | "confirmar-visita";
 }) {
   const [customDate, setCustomDate] = useState("");
   const [hora, setHora] = useState("10:00");
+  const [showCustom, setShowCustom] = useState(false);
 
   const clampInfo = willClampVisitaDate(customDate);
   const adjustedShort = clampInfo.adjustedTo
     ? clampInfo.adjustedTo.split("-").slice(1).reverse().join("/")
     : null;
+
+  if (variant === "confirmar-visita") {
+    return (
+      <div className="space-y-2">
+        <div className="text-[11px] font-semibold text-foreground">A visita é pra quando?</div>
+        <div className="grid grid-cols-3 gap-1.5">
+          <Button size="sm" variant="outline" className="h-7 text-[11px]" disabled={disabled}
+            onClick={() => { setShowCustom(false); onPick("hoje", hora); }}>
+            Hoje
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 text-[11px]" disabled={disabled}
+            onClick={() => { setShowCustom(false); onPick("amanha", hora); }}>
+            Amanhã
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 text-[11px]" disabled={disabled}
+            onClick={() => setShowCustom((v) => !v)}>
+            Escolher
+          </Button>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Horário</Label>
+          <Input type="time" value={hora} onChange={(e) => setHora(e.target.value || "10:00")}
+            className="h-7 text-[11px]" disabled={disabled} />
+        </div>
+        {showCustom && (
+          <div className="space-y-1">
+            <div className="flex gap-1.5">
+              <Input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)}
+                className="h-7 text-[11px]" disabled={disabled} />
+              <Button size="sm" className="h-7 text-[11px]"
+                disabled={disabled || !/^\d{4}-\d{2}-\d{2}$/.test(customDate)}
+                onClick={() => onPick(customDate, hora)}>
+                OK
+              </Button>
+            </div>
+            {clampInfo.clamped && adjustedShort && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                Máximo 7 dias — ajustado para {adjustedShort}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
