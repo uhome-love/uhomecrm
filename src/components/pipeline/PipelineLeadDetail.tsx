@@ -530,9 +530,13 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) — no topo do modal */}
       <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} pendingCount={pendingTasksList.length} />
 
-      {/* Checklist de Qualificação — persistente em todas as etapas */}
-      <QualificacaoEtapaCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
-      <PerfilLeadCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
+      {/* Checklist de Qualificação — só visível quando o lead está na etapa Qualificação */}
+      {currentStage?.tipo === "qualificacao" && (
+        <>
+          <QualificacaoEtapaCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
+          <PerfilLeadCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
+        </>
+      )}
 
 
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
