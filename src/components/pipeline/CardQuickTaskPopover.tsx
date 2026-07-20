@@ -91,15 +91,9 @@ export default function CardQuickTaskPopover({
         created_by: user.id,
         responsavel_id: corretorId || user.id,
       } as any);
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: leadId,
-        tipo: "tarefa",
-        titulo: `Tarefa criada: ${TIPO_LABELS[type]} — ${obs}`,
-        data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-        prioridade: "media",
-        status: "pendente",
-        created_by: user.id,
-      });
+      // Nota: NÃO inserimos em pipeline_atividades — o evento "Tarefa criada" é
+      // sintetizado a partir de pipeline_tarefas em LeadHistoricoTab.
+
       await supabase.from("pipeline_leads").update({
         proxima_acao: TIPO_LABELS[type] || titulo,
         data_proxima_acao: venceEm,
