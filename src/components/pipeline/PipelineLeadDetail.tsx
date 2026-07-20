@@ -33,6 +33,7 @@ import {
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
 import CadenciaSemContatoCard from "./CadenciaSemContatoCard";
 import EstagnacaoStatusCard from "./EstagnacaoStatusCard";
+import QualificacaoChecklistCard from "./QualificacaoChecklistCard";
 import DrawerLeadHeader from "./drawer/DrawerLeadHeader";
 import DrawerTimeline from "./drawer/DrawerTimeline";
 import DrawerActionGrid from "./drawer/DrawerActionGrid";
@@ -501,6 +502,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
       {/* Contador de estagnação (demais etapas com config) */}
       <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
+
+      {/* Checklist de Qualificação — persistente em todas as etapas */}
+      <QualificacaoChecklistCard lead={lead} />
 
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
       {empreendimentoOpen && (

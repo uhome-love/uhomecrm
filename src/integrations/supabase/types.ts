@@ -6047,6 +6047,7 @@ export type Database = {
           estagnado_aviso2_em: string | null
           estagnado_em: string | null
           estagnado_prazo_em: string | null
+          faixa_valor: string | null
           flag_status: Json | null
           forma_pagamento: string | null
           formulario: string | null
@@ -6079,6 +6080,7 @@ export type Database = {
           origem_detalhe: string | null
           origem_ref: string | null
           plataforma: string | null
+          prazo_decisao: string | null
           primeiro_contato_em: string | null
           prioridade_acao: string | null
           prioridade_lead: string
@@ -6143,6 +6145,7 @@ export type Database = {
           estagnado_aviso2_em?: string | null
           estagnado_em?: string | null
           estagnado_prazo_em?: string | null
+          faixa_valor?: string | null
           flag_status?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
@@ -6175,6 +6178,7 @@ export type Database = {
           origem_detalhe?: string | null
           origem_ref?: string | null
           plataforma?: string | null
+          prazo_decisao?: string | null
           primeiro_contato_em?: string | null
           prioridade_acao?: string | null
           prioridade_lead?: string
@@ -6239,6 +6243,7 @@ export type Database = {
           estagnado_aviso2_em?: string | null
           estagnado_em?: string | null
           estagnado_prazo_em?: string | null
+          faixa_valor?: string | null
           flag_status?: Json | null
           forma_pagamento?: string | null
           formulario?: string | null
@@ -6271,6 +6276,7 @@ export type Database = {
           origem_detalhe?: string | null
           origem_ref?: string | null
           plataforma?: string | null
+          prazo_decisao?: string | null
           primeiro_contato_em?: string | null
           prioridade_acao?: string | null
           prioridade_lead?: string

@@ -702,10 +702,27 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     // ─── Sub-status do Atendimento/Qualificação: grava no flag_status (mostrado no card) ───
     if (extra.statusAtendimento && lead) {
       try {
-        const nextFlag = { ...(lead.flag_status || {}), status_atendimento: String(extra.statusAtendimento) };
+        const nextFlag: Record<string, any> = { ...(lead.flag_status || {}), status_atendimento: String(extra.statusAtendimento) };
+        if (extra.tipologia) nextFlag.tipologia = String(extra.tipologia);
         await supabase.from("pipeline_leads").update({ flag_status: nextFlag } as any).eq("id", lead.id);
       } catch (err) {
         console.error("[handleTransitionConfirm] Erro ao gravar status do atendimento:", err);
+      }
+    }
+
+    // ─── Checklist de Qualificação: grava colunas estruturadas em pipeline_leads ───
+    if (lead && (extra.faixaValor !== undefined || extra.formaPagamento !== undefined || extra.bairroRegiao !== undefined || extra.prazoDecisao !== undefined)) {
+      try {
+        const qualUpdates: Record<string, any> = {};
+        if (extra.faixaValor) qualUpdates.faixa_valor = String(extra.faixaValor);
+        if (extra.formaPagamento) qualUpdates.forma_pagamento = String(extra.formaPagamento);
+        if (extra.bairroRegiao) qualUpdates.bairro_regiao = String(extra.bairroRegiao);
+        if (extra.prazoDecisao) qualUpdates.prazo_decisao = String(extra.prazoDecisao);
+        if (Object.keys(qualUpdates).length > 0) {
+          await supabase.from("pipeline_leads").update(qualUpdates as any).eq("id", lead.id);
+        }
+      } catch (err) {
+        console.error("[handleTransitionConfirm] Erro ao gravar checklist de qualificação:", err);
       }
     }
 

@@ -150,18 +150,125 @@ function ContatoInicialForm({ lead, onConfirm, targetStageId }: { lead: Pipeline
 }
 
 // ─── Qualificação ───
+export const QUALIFICACAO_STATUS_ATEND: Record<string, string> = {
+  contato_inicial: "Contato inicial",
+  alinhamento_perfil: "Alinhamento de perfil",
+  busca: "Busca de imóveis",
+  follow_up: "Follow up",
+};
+export const QUALIFICACAO_TIPOLOGIAS: { value: string; label: string }[] = [
+  { value: "apartamento_2q", label: "Apto 2Q" },
+  { value: "apartamento_3q", label: "Apto 3Q" },
+  { value: "apartamento_4q", label: "Apto 4+Q" },
+  { value: "studio", label: "Studio" },
+  { value: "cobertura", label: "Cobertura" },
+  { value: "casa", label: "Casa" },
+  { value: "comercial", label: "Comercial" },
+  { value: "terreno", label: "Terreno" },
+];
+export const QUALIFICACAO_FAIXAS: { value: string; label: string }[] = [
+  { value: "ate_300k", label: "Até R$ 300 mil" },
+  { value: "300k_500k", label: "R$ 300–500 mil" },
+  { value: "500k_800k", label: "R$ 500–800 mil" },
+  { value: "800k_1m", label: "R$ 800 mil – R$ 1M" },
+  { value: "1m_2m", label: "R$ 1M – R$ 2M" },
+  { value: "acima_2m", label: "Acima de R$ 2M" },
+];
+export const QUALIFICACAO_FORMAS_PAGAMENTO: { value: string; label: string }[] = [
+  { value: "a_vista", label: "À vista" },
+  { value: "financiamento", label: "Financiamento" },
+  { value: "fgts", label: "FGTS" },
+  { value: "consorcio", label: "Consórcio" },
+  { value: "nao_sei", label: "Não sei ainda" },
+];
+export const QUALIFICACAO_PRAZOS: { value: string; label: string }[] = [
+  { value: "imediato", label: "Imediato" },
+  { value: "ate_30_dias", label: "Até 30 dias" },
+  { value: "30_90_dias", label: "30–90 dias" },
+  { value: "sem_prazo", label: "Sem prazo definido" },
+];
+export const QUALIFICACAO_BAIRROS_UHOME: string[] = [
+  "Moinhos de Vento",
+  "Petrópolis",
+  "Bela Vista",
+  "Três Figueiras",
+  "Auxiliadora",
+  "Mont'Serrat",
+  "Menino Deus",
+];
+
+// Componente reutilizável de "chip toggle" (single-select)
+function ChipRow({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(o => {
+        const active = value === o.value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => onChange(active ? "" : o.value)}
+            className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted border-border text-foreground"}`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Chip multi-select
+function ChipMulti({ values, onToggle, options }: { values: string[]; onToggle: (v: string) => void; options: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(o => {
+        const active = values.includes(o);
+        return (
+          <button
+            key={o}
+            type="button"
+            onClick={() => onToggle(o)}
+            className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted border-border text-foreground"}`}
+          >
+            {o}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
-  const [statusAtend, setStatusAtend] = useState<string>(((lead as any)?.flag_status?.status_atendimento as string) || "contato_inicial");
-  const [tipologia, setTipologia] = useState("");
-  const [faixaValor, setFaixaValor] = useState("");
-  const [regiao, setRegiao] = useState("");
+  const flag = ((lead as any)?.flag_status || {}) as Record<string, any>;
+  const [statusAtend, setStatusAtend] = useState<string>((flag.status_atendimento as string) || "contato_inicial");
+  const [tipologia, setTipologia] = useState<string>((flag.tipologia as string) || "");
+  const [faixaValor, setFaixaValor] = useState<string>(((lead as any)?.faixa_valor as string) || "");
+  const [formaPagamento, setFormaPagamento] = useState<string>(((lead as any)?.forma_pagamento as string) || "");
+  const [prazoDecisao, setPrazoDecisao] = useState<string>(((lead as any)?.prazo_decisao as string) || "");
+  const bairroInicial: string[] = (() => {
+    const raw = ((lead as any)?.bairro_regiao as string) || "";
+    if (!raw) return [];
+    return raw.split(",").map(s => s.trim()).filter(Boolean).filter(b => QUALIFICACAO_BAIRROS_UHOME.includes(b));
+  })();
+  const outroInicial: string = (() => {
+    const raw = ((lead as any)?.bairro_regiao as string) || "";
+    if (!raw) return "";
+    const fora = raw.split(",").map(s => s.trim()).filter(Boolean).filter(b => !QUALIFICACAO_BAIRROS_UHOME.includes(b));
+    return fora.join(", ");
+  })();
+  const [bairros, setBairros] = useState<string[]>(bairroInicial);
+  const [outroSelecionado, setOutroSelecionado] = useState<boolean>(!!outroInicial);
+  const [outroBairro, setOutroBairro] = useState<string>(outroInicial);
   const [obs, setObs] = useState("");
-  const STATUS_ATEND: Record<string, string> = {
-    contato_inicial: "Contato inicial",
-    alinhamento_perfil: "Alinhamento de perfil",
-    busca: "Busca de imóveis",
-    follow_up: "Follow up",
-  };
+
+  const toggleBairro = (b: string) => setBairros(prev => prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]);
+
+  const bairrosFinal = [
+    ...bairros,
+    ...(outroSelecionado && outroBairro.trim() ? [outroBairro.trim()] : []),
+  ];
+  const bairroStr = bairrosFinal.join(", ");
 
   return (
     <>
@@ -176,46 +283,54 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
           <Select value={statusAtend} onValueChange={setStatusAtend}>
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
             <SelectContent>
-              {Object.entries(STATUS_ATEND).map(([k, label]) => (
+              {Object.entries(QUALIFICACAO_STATUS_ATEND).map(([k, label]) => (
                 <SelectItem key={k} value={k}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+
         <div>
-          <Label className="text-xs">Tipologia de interesse</Label>
-          <Select value={tipologia} onValueChange={setTipologia}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="apartamento_2q">Apartamento 2 quartos</SelectItem>
-              <SelectItem value="apartamento_3q">Apartamento 3 quartos</SelectItem>
-              <SelectItem value="apartamento_4q">Apartamento 4+ quartos</SelectItem>
-              <SelectItem value="studio">Studio / Compacto</SelectItem>
-              <SelectItem value="cobertura">Cobertura</SelectItem>
-              <SelectItem value="casa">Casa</SelectItem>
-              <SelectItem value="comercial">Comercial / Sala</SelectItem>
-              <SelectItem value="terreno">Terreno / Lote</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label className="text-xs mb-1.5 block">Tipologia de interesse</Label>
+          <ChipRow value={tipologia} onChange={setTipologia} options={QUALIFICACAO_TIPOLOGIAS} />
         </div>
+
         <div>
-          <Label className="text-xs">Faixa de valor do imóvel</Label>
-          <Select value={faixaValor} onValueChange={setFaixaValor}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ate_300k">Até R$ 300 mil</SelectItem>
-              <SelectItem value="300k_500k">R$ 300 mil — R$ 500 mil</SelectItem>
-              <SelectItem value="500k_800k">R$ 500 mil — R$ 800 mil</SelectItem>
-              <SelectItem value="800k_1m">R$ 800 mil — R$ 1 milhão</SelectItem>
-              <SelectItem value="1m_2m">R$ 1M — R$ 2M</SelectItem>
-              <SelectItem value="acima_2m">Acima de R$ 2M</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label className="text-xs mb-1.5 block">Faixa de valor do imóvel</Label>
+          <ChipRow value={faixaValor} onChange={setFaixaValor} options={QUALIFICACAO_FAIXAS} />
         </div>
+
         <div>
-          <Label className="text-xs">Região preferida</Label>
-          <Input value={regiao} onChange={e => setRegiao(e.target.value)} className="h-8 text-xs" placeholder="Ex: Centro, Zona Sul, Beira-mar..." />
+          <Label className="text-xs mb-1.5 block">Forma de pagamento</Label>
+          <ChipRow value={formaPagamento} onChange={setFormaPagamento} options={QUALIFICACAO_FORMAS_PAGAMENTO} />
         </div>
+
+        <div>
+          <Label className="text-xs mb-1.5 block">Prazo de decisão</Label>
+          <ChipRow value={prazoDecisao} onChange={setPrazoDecisao} options={QUALIFICACAO_PRAZOS} />
+        </div>
+
+        <div>
+          <Label className="text-xs mb-1.5 block">Região / Bairros de interesse</Label>
+          <ChipMulti values={bairros} onToggle={toggleBairro} options={QUALIFICACAO_BAIRROS_UHOME} />
+          <div className="mt-1.5 flex items-center gap-2">
+            <Checkbox
+              id="qual-outro-bairro"
+              checked={outroSelecionado}
+              onCheckedChange={(v) => setOutroSelecionado(!!v)}
+            />
+            <Label htmlFor="qual-outro-bairro" className="text-[11px] cursor-pointer">Outro bairro</Label>
+          </div>
+          {outroSelecionado && (
+            <Input
+              value={outroBairro}
+              onChange={e => setOutroBairro(e.target.value)}
+              className="h-8 text-xs mt-1.5"
+              placeholder="Digite o(s) bairro(s), separados por vírgula"
+            />
+          )}
+        </div>
+
         <div>
           <Label className="text-xs">Observação</Label>
           <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Detalhes adicionais sobre o perfil do cliente..." />
@@ -227,16 +342,30 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
           size="sm"
           className="text-xs gap-1"
           onClick={() => {
-            const parts: string[] = [`Status: ${STATUS_ATEND[statusAtend]}`];
-            if (tipologia) parts.push(`Tipologia: ${tipologia.replace(/_/g, " ")}`);
-            if (faixaValor) parts.push(`Valor: ${faixaValor.replace(/_/g, " ")}`);
-            if (regiao) parts.push(`Região: ${regiao}`);
+            const tipologiaLabel = QUALIFICACAO_TIPOLOGIAS.find(t => t.value === tipologia)?.label;
+            const faixaLabel = QUALIFICACAO_FAIXAS.find(f => f.value === faixaValor)?.label;
+            const formaLabel = QUALIFICACAO_FORMAS_PAGAMENTO.find(f => f.value === formaPagamento)?.label;
+            const prazoLabel = QUALIFICACAO_PRAZOS.find(p => p.value === prazoDecisao)?.label;
+            const parts: string[] = [`Status: ${QUALIFICACAO_STATUS_ATEND[statusAtend]}`];
+            if (tipologiaLabel) parts.push(`Tipologia: ${tipologiaLabel}`);
+            if (faixaLabel) parts.push(`Valor: ${faixaLabel}`);
+            if (formaLabel) parts.push(`Pagamento: ${formaLabel}`);
+            if (prazoLabel) parts.push(`Prazo: ${prazoLabel}`);
+            if (bairroStr) parts.push(`Região: ${bairroStr}`);
             if (obs) parts.push(obs);
             onConfirm({
               leadId: lead.id,
               targetStageId,
               observacao: `Atendimento: ${parts.join(" | ")}`,
-              extraData: { statusAtendimento: statusAtend, tipologia, faixaValor, regiao, observacao: obs },
+              extraData: {
+                statusAtendimento: statusAtend,
+                tipologia,
+                faixaValor,
+                formaPagamento,
+                prazoDecisao,
+                bairroRegiao: bairroStr,
+                observacao: obs,
+              },
             });
           }}
         >
