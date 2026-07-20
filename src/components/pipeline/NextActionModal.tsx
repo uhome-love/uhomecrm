@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { maxTaskDateBRT, isTaskDateTooFar, taskDateTooFarMessage } from "@/lib/taskScheduling";
+import { getPresetsForStage, applyPresetToTarefa, PRESET_OUTRO_ID, type TaskPreset } from "@/lib/taskPresets";
 
 type OptionType = "tarefa" | "avancar" | "descartar";
 
@@ -55,6 +56,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
   const [saving, setSaving] = useState(false);
 
   // Tarefa state
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [tipoTarefa, setTipoTarefa] = useState("follow_up");
   const [tarefaData, setTarefaData] = useState("");
   const [tarefaHora, setTarefaHora] = useState("");
@@ -71,9 +73,26 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
   const availableStages = stages.filter(s => s.id !== currentStageId && s.tipo !== "descarte");
   const descarteStage = stages.find(s => s.tipo === "descarte");
   const currentStageTipo = stages.find(s => s.id === currentStageId)?.tipo ?? null;
+  const presets = getPresetsForStage(currentStageTipo);
+  const activePreset: TaskPreset | null =
+    selectedPresetId && selectedPresetId !== PRESET_OUTRO_ID
+      ? presets.find(p => p.id === selectedPresetId) ?? null
+      : null;
+  const freeMode = selectedPresetId === PRESET_OUTRO_ID || presets.length === 0;
+
+  const handlePresetPick = (p: TaskPreset) => {
+    setSelectedPresetId(p.id);
+    if (p.id === PRESET_OUTRO_ID) return;
+    const payload = applyPresetToTarefa(p);
+    setTipoTarefa(payload.tipo);
+    setTarefaData(payload.vence_em);
+    setTarefaHora(payload.hora_vencimento || "");
+    setObsTarefa(payload.obs || "");
+  };
 
   const resetForm = () => {
     setSelected("tarefa");
+    setSelectedPresetId(null);
     setTipoTarefa("follow_up");
     setTarefaData("");
     setTarefaHora("");
@@ -91,7 +110,10 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
       if (selected === "tarefa") {
         if (!tarefaData) { toast.error("Informe a data da tarefa"); setSaving(false); return; }
         if (isTaskDateTooFar(tarefaData, currentStageTipo)) { toast.error(taskDateTooFarMessage(currentStageTipo)); setSaving(false); return; }
-        const tituloLabel = TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa;
+        if (presets.length > 0 && !selectedPresetId) { toast.error("Escolha um tipo de tarefa"); setSaving(false); return; }
+        const tituloLabel = activePreset?.label
+          || TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label
+          || tipoTarefa;
         const obsClean = obsTarefa.trim();
         const { error: insertErr } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: leadId,
@@ -113,11 +135,24 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
         // Nota: NÃO inserimos em pipeline_atividades para "Tarefa criada" —
         // o evento é sintetizado a partir de pipeline_tarefas em LeadHistoricoTab.
 
+        // Sync flag_status do preset (ex: alinhamento_perfil, proposta_enviada, prazo=30)
+        let flagPatch: Record<string, string> | null = null;
+        if (activePreset?.syncFlagKey && activePreset?.syncFlagValue) {
+          const { data: leadRow } = await supabase
+            .from("pipeline_leads")
+            .select("flag_status")
+            .eq("id", leadId)
+            .maybeSingle();
+          const currentFlags = ((leadRow as any)?.flag_status ?? {}) as Record<string, string>;
+          flagPatch = { ...currentFlags, [activePreset.syncFlagKey]: activePreset.syncFlagValue };
+        }
+
         await supabase.from("pipeline_leads").update({
           proxima_acao: tituloLabel,
           data_proxima_acao: tarefaData,
           ultima_acao_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          ...(flagPatch ? { flag_status: flagPatch } : {}),
         } as any).eq("id", leadId);
 
         toast.success("Tarefa agendada ✅");
@@ -194,25 +229,65 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
         <div className="space-y-3 pt-1">
           {selected === "tarefa" && (
             <>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo de tarefa</label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {TIPO_TAREFA_OPTIONS.map(t => (
-                    <button
-                      key={t.value}
-                      onClick={() => setTipoTarefa(t.value)}
-                      className={cn(
-                        "text-xs py-1.5 px-2 rounded-md border transition-all",
-                        tipoTarefa === t.value
-                          ? "border-primary bg-primary/10 font-semibold"
-                          : "border-border hover:bg-muted/50"
-                      )}
-                    >
-                      {t.emoji} {t.label}
-                    </button>
-                  ))}
+              {presets.length > 0 ? (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    O que fazer agora?
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {presets.map(p => {
+                      const isActive = selectedPresetId === p.id;
+                      const isOutro = p.id === PRESET_OUTRO_ID;
+                      const Icon = p.Icon;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => handlePresetPick(p)}
+                          className={cn(
+                            "flex items-center gap-1.5 text-xs py-1.5 px-2 rounded-md border transition-all text-left",
+                            isActive
+                              ? "border-primary bg-primary/10 font-semibold"
+                              : isOutro
+                              ? "border-dashed border-muted-foreground/40 hover:bg-muted/50"
+                              : "border-border hover:bg-muted/50"
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5 shrink-0" />
+                          <span className="leading-tight truncate">{p.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {activePreset && (
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      Preenchido automaticamente • edite abaixo se precisar.
+                    </p>
+                  )}
                 </div>
-              </div>
+              ) : null}
+
+              {freeMode && (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo de tarefa</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {TIPO_TAREFA_OPTIONS.map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => setTipoTarefa(t.value)}
+                        className={cn(
+                          "text-xs py-1.5 px-2 rounded-md border transition-all",
+                          tipoTarefa === t.value
+                            ? "border-primary bg-primary/10 font-semibold"
+                            : "border-border hover:bg-muted/50"
+                        )}
+                      >
+                        {t.emoji} {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">Data *</label>
