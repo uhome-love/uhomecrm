@@ -89,6 +89,14 @@ const SUBTIPO_HEADER: Record<VisitaSubtipo, { titulo: string; sub: string }> = {
     titulo: "Pegar feedback",
     sub: "Qual foi o feedback do cliente sobre a visita?",
   },
+  atualizar_visita: {
+    titulo: "Atualizar visita",
+    sub: "Esse lead está na etapa Visita sem visita marcada. Agende agora ou volte o lead.",
+  },
+  decidir_descarte_visita: {
+    titulo: "Decidir descarte (2º no-show)",
+    sub: "O cliente faltou 2 vezes seguidas. Reagendar mesmo assim ou descartar?",
+  },
 };
 
 export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
