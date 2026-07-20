@@ -165,6 +165,7 @@ export default function TaskCompletionDialog({
     setStageStatus({ kind: null, currentValue: "", options: [] });
     setStageStatusPick("");
     setStageTipo(null);
+    setVisitaFlowCtx(null);
     setSaving(false);
     setContextLoaded(false);
   };
