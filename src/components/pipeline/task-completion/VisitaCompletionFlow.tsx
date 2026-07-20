@@ -514,7 +514,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
           </Button>
         )}
 
-        {(subtipo === "agendar_visita" || subtipo === "reagendar_visita") && !regressOpen && (
+        {(subtipo === "agendar_visita" || subtipo === "reagendar_visita" || subtipo === "atualizar_visita") && !regressOpen && (
           <div className="space-y-2">
             <Button
               onClick={handleAgendouOk}
@@ -523,7 +523,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
               size="sm"
             >
               <CalendarPlus className="w-3.5 h-3.5" />
-              ✅ {subtipo === "agendar_visita" ? "Consegui agendar" : "Consegui remarcar"}
+              ✅ {subtipo === "atualizar_visita" ? "Agendar visita agora" : subtipo === "agendar_visita" ? "Consegui agendar" : "Consegui remarcar"}
             </Button>
             <Button
               onClick={() => setRegressOpen(true)}
@@ -538,7 +538,7 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
           </div>
         )}
 
-        {(subtipo === "agendar_visita" || subtipo === "reagendar_visita") && regressOpen && (
+        {(subtipo === "agendar_visita" || subtipo === "reagendar_visita" || subtipo === "atualizar_visita") && regressOpen && (
           <>
             {regressBlock}
             <button
@@ -549,6 +549,33 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
               ← voltar
             </button>
           </>
+        )}
+
+        {subtipo === "decidir_descarte_visita" && !regressOpen && (
+          <div className="space-y-2">
+            <div className="text-[11px] text-warning-700 dark:text-warning-500 bg-warning-500/10 border border-warning-500/30 rounded-md p-2">
+              ⚠ Este lead teve 2 no-shows consecutivos. Confirme com ele antes de reagendar.
+            </div>
+            <Button
+              onClick={handleAgendouOk}
+              disabled={!obsValida || saving}
+              className="w-full gap-1.5 bg-success-500 hover:bg-success-600 text-white"
+              size="sm"
+            >
+              <CalendarPlus className="w-3.5 h-3.5" />
+              ✅ Reagendar mesmo assim
+            </Button>
+            <Button
+              onClick={handleDesistiu}
+              disabled={!obsValida || saving}
+              variant="outline"
+              className="w-full gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5"
+              size="sm"
+            >
+              <X className="w-3.5 h-3.5" />
+              🗑 Descartar lead
+            </Button>
+          </div>
         )}
 
         {subtipo === "registrar_resultado" && (
