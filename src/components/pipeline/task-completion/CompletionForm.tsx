@@ -203,8 +203,24 @@ export function CompletionForm(props: CompletionFormProps) {
   const stageStatusReady = !stageStatus || !!stageStatus.pick;
   const step1Ready = !!resultado && descricaoValida && stageStatusReady;
 
+  /* ───── Fluxo Visita: substitui o corpo padrão ───── */
+  if (props.visitaFlow) {
+    return (
+      <VisitaCompletionFlow
+        subtipo={props.visitaFlow.subtipo}
+        tarefaId={props.visitaFlow.tarefaId}
+        leadId={leadId || ""}
+        leadNome={leadNome}
+        corretorId={props.visitaFlow.corretorId}
+        saving={saving}
+        onSaving={props.visitaFlow.onSavingChange}
+        onCancel={onCancel}
+        onConfirm={props.visitaFlow.onConfirmPayload}
+      />
+    );
+  }
 
-  /* ─── Sugestão do Homi (persiste enquanto o dialog está aberto) ─── */
+
   const [suggestion, setSuggestion] = useState<null | {
     tipo: TipoProximaTarefa;
     vence_em: string;
