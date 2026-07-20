@@ -392,7 +392,8 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
           🎯 Confirmar qualificação
         </Button>
       </DialogFooter>
-    </>
+    </div>
+
   );
 }
 
