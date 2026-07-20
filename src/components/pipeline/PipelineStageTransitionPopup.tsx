@@ -1029,55 +1029,65 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
   const [obs, setObs] = useState("");
   const vgvNum = Number(vgv.replace(/\./g, "").replace(",", ".")) || 0;
 
+  const canConfirm = vgvNum > 0 && unidade.trim().length > 0;
+
   return (
-    <>
+    <div className="max-w-lg mx-auto w-full">
       <DialogHeader>
         <DialogTitle className="text-base flex items-center gap-2">📄 Contrato</DialogTitle>
       </DialogHeader>
-      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-xs text-muted-foreground mt-1">Lead: <strong>{lead.nome}</strong></p>
       <p className="text-[10px] text-muted-foreground">Registre os dados do contrato — ficam salvos no histórico do lead e no PDN.</p>
 
-      <div className="space-y-3">
-        <div>
-          <Label className="text-xs">Situação do contrato *</Label>
+      <div className="space-y-3 mt-3">
+        {/* 1. Situação */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={1}>Situação do contrato *</SectionTitle>
           <Select value={statusContrato} onValueChange={setStatusContrato}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs bg-background"><SelectValue placeholder="Selecione..." /></SelectTrigger>
             <SelectContent>
               {CONTRATO_SUBSTATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs">Empreendimento</Label>
-          <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
+
+        {/* 2. Contrato */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-3">
+          <SectionTitle n={2}>Contrato</SectionTitle>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Empreendimento</Label>
+            <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Unidade *</Label>
+            <Input value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className="h-8 text-xs bg-background" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">VGV (R$) *</Label>
+            <Input type="text" inputMode="decimal" value={vgv} onChange={e => setVgv(e.target.value)} placeholder="Ex: 850000" className="h-8 text-xs bg-background" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Construtora</Label>
+            <Input value={construtora} onChange={e => setConstrutora(e.target.value)} placeholder="Ex: Melnick" className="h-8 text-xs bg-background" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Data de assinatura prevista</Label>
+            <Input type="date" value={dataAssinatura} onChange={e => setDataAssinatura(e.target.value)} className="h-8 text-xs bg-background" />
+          </div>
         </div>
-        <div>
-          <Label className="text-xs">Unidade *</Label>
-          <Input value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className="h-8 text-xs" />
-        </div>
-        <div>
-          <Label className="text-xs">VGV (R$) *</Label>
-          <Input type="text" inputMode="decimal" value={vgv} onChange={e => setVgv(e.target.value)} placeholder="Ex: 850000" className="h-8 text-xs" />
-        </div>
-        <div>
-          <Label className="text-xs">Construtora</Label>
-          <Input value={construtora} onChange={e => setConstrutora(e.target.value)} placeholder="Ex: Melnick" className="h-8 text-xs" />
-        </div>
-        <div>
-          <Label className="text-xs">Data de assinatura prevista</Label>
-          <Input type="date" value={dataAssinatura} onChange={e => setDataAssinatura(e.target.value)} className="h-8 text-xs" />
-        </div>
-        <div>
-          <Label className="text-xs">Observação</Label>
-          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Detalhes do contrato..." />
+
+        {/* 3. Observação */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={3}>Observação</SectionTitle>
+          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20 bg-background" placeholder="Detalhes do contrato..." />
         </div>
       </div>
 
-      <DialogFooter>
+      <DialogFooter className="mt-3">
         <Button
           size="sm"
           className="text-xs gap-1"
-          disabled={vgvNum <= 0 || !unidade.trim()}
+          disabled={!canConfirm}
           onClick={() => onConfirm({
             leadId: lead.id,
             targetStageId,
@@ -1088,9 +1098,10 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
           📄 Confirmar contrato
         </Button>
       </DialogFooter>
-    </>
+    </div>
   );
 }
+
 
 export default function PipelineStageTransitionPopup({ open, onOpenChange, lead, targetStage, onConfirm, onCancel }: Props) {
   const handleClose = (v: boolean) => {
