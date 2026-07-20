@@ -228,6 +228,7 @@ export interface ProximaTarefa {
   id?: string;
   titulo?: string;
   origem?: string | null;
+  subtipo?: string | null;
 }
 
 function _toValidDateFromYMD(value: string | null | undefined): Date | null {

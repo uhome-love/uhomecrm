@@ -45,9 +45,27 @@ export interface CardMinimalProximaTarefa {
   id?: string;
   titulo?: string;
   tipo: string | null;
+  subtipo?: string | null;
   vence_em: string | null;
   hora_vencimento: string | null;
   origem?: string | null;
+}
+
+// Mapa curto por subtipo para tarefas visita_auto — mostra o passo real
+// direto no card do Kanban, em vez do rótulo genérico "Follow-up".
+const VISITA_AUTO_SUBTIPO_LABEL: Record<string, string> = {
+  confirmar_visita: "Confirmar visita",
+  atualizar_visita: "Atualizar agenda",
+  agendar_visita: "Agendar visita",
+  reagendar_visita: "Remarcar visita",
+  pegar_feedback: "Alinhar pós-visita",
+  decidir_descarte_visita: "Decidir descarte",
+  definir_sequencia: "Definir próxima ação",
+};
+
+function visitaAutoLabel(subtipo: string | null | undefined): string | null {
+  if (!subtipo) return null;
+  return VISITA_AUTO_SUBTIPO_LABEL[subtipo] ?? null;
 }
 
 interface CardMinimalProps {
@@ -203,17 +221,27 @@ const CardMinimal = memo(function CardMinimal({
     [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
 
-  // Título específico = tarefa criada pelo qualificacaoTaskEngine (origem começa com "qualificacao_").
-  // Dispensa rótulo genérico + actionWhen no card e o badge de substatus (redundante).
-  // Não usar heurística de texto ("·"/"às") porque completeLeadTask também gera títulos com " · ".
+  // Título específico: tarefa criada por engine automático (qualificacao_*) OU
+  // tarefa visita_auto (rótulo curto por subtipo — "Confirmar visita", etc).
+  const visitaAutoTxt = useMemo(
+    () => (proximaTarefa?.origem === "visita_auto" ? visitaAutoLabel(proximaTarefa?.subtipo) : null),
+    [proximaTarefa?.origem, proximaTarefa?.subtipo]
+  );
   const hasSpecificTitle = useMemo(() => {
-    return !!proximaTarefa?.origem?.startsWith("qualificacao_");
-  }, [proximaTarefa?.origem]);
+    if (proximaTarefa?.origem?.startsWith("qualificacao_")) return true;
+    if (visitaAutoTxt) return true;
+    return false;
+  }, [proximaTarefa?.origem, visitaAutoTxt]);
+
+  const specificTitleText = useMemo(
+    () => visitaAutoTxt ?? proximaTarefa?.titulo ?? "",
+    [visitaAutoTxt, proximaTarefa?.titulo]
+  );
 
   // fallback acessível: usado como title e leitura por SR
   const fullActionLabel = useMemo(
-    () => (hasSpecificTitle ? (proximaTarefa?.titulo || "") : formatNextAction(proximaTarefa ?? null)),
-    [hasSpecificTitle, proximaTarefa?.titulo, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
+    () => (hasSpecificTitle ? specificTitleText : formatNextAction(proximaTarefa ?? null)),
+    [hasSpecificTitle, specificTitleText, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
 
   const empreendimento = useMemo(
@@ -455,8 +483,13 @@ const CardMinimal = memo(function CardMinimal({
                     isAtrasada ? "text-red-600" : "text-foreground"
                   }`}
                 >
-                  {proximaTarefa?.titulo}
+                  {specificTitleText}
                 </strong>
+                {visitaAutoTxt && actionWhen ? (
+                  <span className={`ml-1 ${isAtrasada ? "text-red-600" : "text-muted-foreground"}`}>
+                    · {actionWhen}
+                  </span>
+                ) : null}
               </span>
             ) : (
               <span

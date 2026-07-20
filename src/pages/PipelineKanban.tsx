@@ -277,7 +277,7 @@ export default function PipelineKanban() {
         (chunk) =>
           supabase
             .from("pipeline_tarefas")
-            .select("id, titulo, pipeline_lead_id, tipo, vence_em, hora_vencimento, origem")
+            .select("id, titulo, pipeline_lead_id, tipo, subtipo, vence_em, hora_vencimento, origem")
             .in("pipeline_lead_id", chunk)
             .eq("status", "pendente")
             .order("vence_em", { ascending: true })
@@ -286,7 +286,7 @@ export default function PipelineKanban() {
       );
 
       for (const row of rows) {
-        const nextTask: ProximaTarefa = { id: row.id, titulo: row.titulo || "Tarefa", tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento, origem: row.origem ?? null };
+        const nextTask: ProximaTarefa = { id: row.id, titulo: row.titulo || "Tarefa", tipo: row.tipo, subtipo: row.subtipo ?? null, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento, origem: row.origem ?? null };
         const currentTask = map[row.pipeline_lead_id];
         if (!currentTask || isTaskHigherPriority(nextTask, currentTask)) {
           map[row.pipeline_lead_id] = nextTask;

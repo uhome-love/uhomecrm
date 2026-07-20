@@ -283,16 +283,60 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
     });
   }
 
+  // Mapa de subtipo → rótulo legível para tarefas visita_auto (mesmo dicionário
+  // usado no card do Kanban). Mantém histórico consistente com a UI.
+  const VISITA_AUTO_LBL: Record<string, string> = {
+    confirmar_visita: "Confirmar visita",
+    atualizar_visita: "Atualizar agenda",
+    agendar_visita: "Agendar visita",
+    reagendar_visita: "Remarcar visita",
+    pegar_feedback: "Alinhar pós-visita",
+    decidir_descarte_visita: "Decidir descarte",
+    definir_sequencia: "Definir próxima ação",
+  };
+
+  const fmtVence = (v: string | null, h: string | null): string | null => {
+    if (!v) return null;
+    const [y, m, d] = v.split("-").map(Number);
+    if (!y || !m || !d) return null;
+    const dd = String(d).padStart(2, "0");
+    const mm = String(m).padStart(2, "0");
+    const hora = h ? ` ${h.slice(0, 5)}` : "";
+    return `${dd}/${mm}${hora}`;
+  };
+
+  const isAutomacao = (origem?: string | null): boolean => {
+    if (!origem) return false;
+    return (
+      origem === "visita_auto" ||
+      origem === "sistema" ||
+      origem.startsWith("qualificacao_") ||
+      origem.startsWith("auto_")
+    );
+  };
+
   for (const t of tarefas) {
-    const tTitulo = limparTexto(t.titulo, lead.nome) || t.titulo || "Tarefa";
-    // Tarefa criada (qual ação)
+    // Rótulo canônico da tarefa: para visita_auto usamos o subtipo mapeado;
+    // para as demais mantemos o título limpo.
+    const visitaLbl = t.origem === "visita_auto" ? VISITA_AUTO_LBL[t.subtipo || ""] : null;
+    const tTitulo = visitaLbl || limparTexto(t.titulo, lead.nome) || t.titulo || "Tarefa";
+    const origemBadge: { label: string; tone: "success" | "danger" | "neutral" | "warning" } | undefined =
+      isAutomacao(t.origem) ? { label: "🤖 Automação", tone: "neutral" } : undefined;
+    const vence = fmtVence(t.vence_em, t.hora_vencimento);
+
+    // Tarefa criada (qual ação, quando vence, origem)
     if (t.created_at) {
+      const partsDesc: string[] = [];
+      if (vence) partsDesc.push(`Prazo: ${vence}`);
+      if (!origemBadge) partsDesc.push("Manual");
       items.push({
         title: `Tarefa criada: ${tTitulo}`,
+        description: partsDesc.length ? partsDesc.join(" · ") : undefined,
         date: t.created_at,
         icon: Plus,
-        color: "bg-blue-100 text-blue-600",
+        color: "bg-primary/10 text-primary",
         autor: nome(t.created_by),
+        badge: origemBadge,
         sourceType: "tarefa",
         sourceId: `${t.id}-criada`,
       });
@@ -305,10 +349,24 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
         description: feedback,
         date: t.concluida_em,
         icon: CheckCircle2,
-        color: "bg-green-100 text-green-600",
+        color: "bg-success/10 text-success",
         autor: nome(t.created_by),
         sourceType: "tarefa",
         sourceId: t.id,
+      });
+    }
+    // Tarefa cancelada (ex: sistema cancela ao mover de etapa / reconciliação)
+    if (t.status === "cancelada") {
+      items.push({
+        title: `Tarefa cancelada: ${tTitulo}`,
+        description: limparTexto(t.descricao, lead.nome) || undefined,
+        date: t.concluida_em || t.created_at,
+        icon: Trash2,
+        color: "bg-muted text-muted-foreground",
+        autor: nome(t.created_by),
+        badge: origemBadge,
+        sourceType: "tarefa",
+        sourceId: `${t.id}-cancelada`,
       });
     }
   }
