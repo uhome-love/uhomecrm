@@ -6739,6 +6739,7 @@ export type Database = {
           pipeline_lead_id: string
           prioridade: string
           responsavel_id: string | null
+          retries_count: number
           status: string
           subtipo: string | null
           tipo: string | null
@@ -6759,6 +6760,7 @@ export type Database = {
           pipeline_lead_id: string
           prioridade?: string
           responsavel_id?: string | null
+          retries_count?: number
           status?: string
           subtipo?: string | null
           tipo?: string | null
@@ -6779,6 +6781,7 @@ export type Database = {
           pipeline_lead_id?: string
           prioridade?: string
           responsavel_id?: string | null
+          retries_count?: number
           status?: string
           subtipo?: string | null
           tipo?: string | null
@@ -8989,6 +8992,70 @@ export type Database = {
           },
         ]
       }
+      visita_eventos: {
+        Row: {
+          ator_id: string | null
+          created_at: string
+          data_anterior: string | null
+          data_nova: string | null
+          id: string
+          observacao: string | null
+          pipeline_lead_id: string | null
+          status_anterior: string | null
+          status_novo: string | null
+          tipo: string
+          visita_id: string
+        }
+        Insert: {
+          ator_id?: string | null
+          created_at?: string
+          data_anterior?: string | null
+          data_nova?: string | null
+          id?: string
+          observacao?: string | null
+          pipeline_lead_id?: string | null
+          status_anterior?: string | null
+          status_novo?: string | null
+          tipo: string
+          visita_id: string
+        }
+        Update: {
+          ator_id?: string | null
+          created_at?: string
+          data_anterior?: string | null
+          data_nova?: string | null
+          id?: string
+          observacao?: string | null
+          pipeline_lead_id?: string | null
+          status_anterior?: string | null
+          status_novo?: string | null
+          tipo?: string
+          visita_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visita_eventos_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visita_eventos_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpi_visitas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visita_eventos_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "visitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visitas: {
         Row: {
           cancel_reason: string | null
@@ -10130,6 +10197,19 @@ export type Database = {
           id?: string | null
           origem?: string | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      v_lead_timeline: {
+        Row: {
+          ator_id: string | null
+          categoria: string | null
+          created_at: string | null
+          descricao: string | null
+          event_id: string | null
+          lead_id: string | null
+          ref_id: string | null
+          tipo: string | null
         }
         Relationships: []
       }
