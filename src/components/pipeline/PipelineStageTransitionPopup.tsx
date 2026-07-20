@@ -149,6 +149,13 @@ function ContatoInicialForm({ lead, onConfirm, targetStageId }: { lead: Pipeline
   );
 }
 
+const SectionTitle = ({ n, children }: { n: number; children: React.ReactNode }) => (
+  <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
+    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary text-[9px] font-bold">{n}</span>
+    {children}
+  </div>
+);
+
 // ─── Qualificação ───
 export const QUALIFICACAO_STATUS_ATEND: Record<string, string> = {
   contato_inicial: "Contato inicial",
