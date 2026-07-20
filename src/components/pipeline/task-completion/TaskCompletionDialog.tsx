@@ -245,6 +245,19 @@ export default function TaskCompletionDialog({
     }
   }, [semContatoInfo, outcome]);
 
+  // Confirmar visita (Qualificação · alinhando_visita): o canal já foi definido quando a
+  // tarefa foi criada. O popup esconde o bloco Canal, então pré-seleciona um default
+  // sensato pra não travar a validação.
+  useEffect(() => {
+    if (
+      qualInfo.enabled &&
+      qualInfo.currentStatus === "alinhando_visita" &&
+      !tipoContato
+    ) {
+      setTipoContato("whatsapp");
+    }
+  }, [qualInfo.enabled, qualInfo.currentStatus, tipoContato]);
+
   const handleConfirm = async () => {
     if (!tipoContato || !resultado) return;
     if (descricao.trim().length < 3) return;
