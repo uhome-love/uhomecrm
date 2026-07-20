@@ -703,18 +703,45 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
               size="sm"
             >
               <Handshake className="w-3.5 h-3.5" />
-              ✅ Positivo — avançar p/ Em Negociação
+              ✅ Vai evoluir — avançar p/ Em Negociação
             </Button>
             <Button
-              onClick={() => setRegressOpen(true)}
-              disabled={saving}
+              onClick={handleAgendouOk}
+              disabled={!obsValida || saving}
+              variant="outline"
+              className="w-full gap-1.5 border-success-500/40 text-success-600 hover:bg-success-500/5"
+              size="sm"
+            >
+              <CalendarPlus className="w-3.5 h-3.5" />
+              🏠 Quer ver mais imóveis — agendar nova visita
+            </Button>
+            <Button
+              onClick={handleAindaDecidindo}
+              disabled={!obsValida || saving}
               variant="outline"
               className="w-full gap-1.5"
               size="sm"
             >
-              <ThumbsDown className="w-3.5 h-3.5" />
-              ❌ Negativo — voltar lead
+              <Clock className="w-3.5 h-3.5" />
+              ⏳ Ainda decidindo — retomar em 5 dias
             </Button>
+            <Button
+              onClick={handleDesistiu}
+              disabled={!obsValida || saving}
+              variant="outline"
+              className="w-full gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5"
+              size="sm"
+            >
+              <ThumbsDown className="w-3.5 h-3.5" />
+              🗑 Desistiu — descartar
+            </Button>
+            <button
+              type="button"
+              onClick={() => setRegressOpen(true)}
+              className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1"
+            >
+              ↩ Prefiro voltar o lead pra Qualificação/Aquecimento
+            </button>
           </div>
         )}
 
