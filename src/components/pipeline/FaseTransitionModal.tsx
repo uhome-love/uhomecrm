@@ -259,11 +259,15 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
 
       case "vendido": {
         const vgvNum = rawToNumber(assVgv);
-        const canConfirmVendido =
-          !!assDataAssinatura &&
-          vgvNum > 0 &&
-          !!assEmpreendimento.trim() &&
-          !!assUnidade.trim();
+        const errors = {
+          vgv: vgvNum > 0 ? "" : "Informe o VGV assinado (maior que zero).",
+          empreendimento: assEmpreendimento.trim() ? "" : "Informe o empreendimento.",
+          unidade: assUnidade.trim() ? "" : "Informe a unidade vendida.",
+          data: assDataAssinatura ? "" : "Informe a data de assinatura.",
+        };
+        const canConfirmVendido = !errors.vgv && !errors.empreendimento && !errors.unidade && !errors.data;
+        const errCls = "text-[10px] text-destructive mt-1";
+        const invalidInput = "border-destructive focus-visible:ring-destructive";
         return (
           <div className="max-w-lg mx-auto w-full">
             <DialogHeader>
@@ -279,19 +283,26 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
                   <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-primary/10 text-primary text-[10px] mr-1.5">1</span>
                   Venda fechada
                 </div>
-                <CurrencyInput label="VGV assinado (R$) *" value={assVgv} onChange={setAssVgv} placeholder="R$ 850.000" />
+                <div>
+                  <CurrencyInput label="VGV assinado (R$) *" value={assVgv} onChange={setAssVgv} placeholder="R$ 850.000" />
+                  {errors.vgv && <p className={errCls}>{errors.vgv}</p>}
+                </div>
                 <div>
                   <Label className="text-xs">Empreendimento *</Label>
-                  <Input value={assEmpreendimento} onChange={e => setAssEmpreendimento(e.target.value)} placeholder="Ex: Melnick Home" className="h-8 text-xs bg-background" />
+                  <Input value={assEmpreendimento} onChange={e => setAssEmpreendimento(e.target.value)} placeholder="Ex: Melnick Home" className={`h-8 text-xs bg-background ${errors.empreendimento ? invalidInput : ""}`} aria-invalid={!!errors.empreendimento} />
+                  {errors.empreendimento && <p className={errCls}>{errors.empreendimento}</p>}
                 </div>
                 <div>
                   <Label className="text-xs">Unidade vendida *</Label>
-                  <Input value={assUnidade} onChange={e => setAssUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className="h-8 text-xs bg-background" />
+                  <Input value={assUnidade} onChange={e => setAssUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className={`h-8 text-xs bg-background ${errors.unidade ? invalidInput : ""}`} aria-invalid={!!errors.unidade} />
+                  {errors.unidade && <p className={errCls}>{errors.unidade}</p>}
                 </div>
                 <div>
                   <Label className="text-xs">📅 Data real da assinatura *</Label>
-                  <Input type="date" value={assDataAssinatura} onChange={e => setAssDataAssinatura(e.target.value)} className="h-8 text-xs bg-background" />
-                  <p className="text-[10px] text-muted-foreground mt-1">Informe a data em que a venda foi realmente fechada.</p>
+                  <Input type="date" value={assDataAssinatura} onChange={e => setAssDataAssinatura(e.target.value)} className={`h-8 text-xs bg-background ${errors.data ? invalidInput : ""}`} aria-invalid={!!errors.data} />
+                  {errors.data
+                    ? <p className={errCls}>{errors.data}</p>
+                    : <p className="text-[10px] text-muted-foreground mt-1">Informe a data em que a venda foi realmente fechada.</p>}
                 </div>
               </div>
 
@@ -345,7 +356,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
               </Button>
               {!canConfirmVendido && (
                 <p className="text-[10px] text-destructive text-center">
-                  Preencha VGV, empreendimento, unidade e data de assinatura.
+                  Preencha os campos obrigatórios destacados acima.
                 </p>
               )}
             </DialogFooter>
@@ -353,6 +364,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
 
         );
       }
+
 
 
 
