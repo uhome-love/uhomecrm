@@ -68,6 +68,12 @@ import {
 import type { CompletionPayload } from "./types";
 import VisitaCompletionFlow, { type VisitaSubtipo } from "./VisitaCompletionFlow";
 import { useStageOptions } from "./useStageOptions";
+import {
+  getPresetsForStage,
+  applyPresetToTarefa,
+  PRESET_OUTRO_ID,
+  type TaskPreset,
+} from "@/lib/taskPresets";
 
 export interface StageStatusPropsBlock {
   kind: "qualificacao" | "aquecimento" | "negociacao";
