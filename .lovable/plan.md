@@ -1,69 +1,60 @@
-# Fix responsivo — Botões de Presença sobrepondo em telas médias
+## Trocar o status auto-declarado pelo status real de presença
 
-## Diagnóstico (validado no screenshot em 1277px CSS)
+### Situação hoje
+Na barra de status do corretor há um dropdown com 4 estados auto-declarados: Na Empresa / Em Plantão / Em Pausa / Offline. Grava em `profiles.status_online`. Confirmado:
+- Ninguém consome isso pra decidir distribuição de leads.
+- A distribuição real depende de credenciamento + presença marcada pelo gerente + fila da roleta.
+- O único outro lugar que lê `status_online` é o `CheckpointCards` do gerente, apenas pra ordenar a lista, e já tem fallback para `isOnline` (última atividade). Ou seja, dá pra desligar sem quebrar nada.
 
-Em `src/components/roleta/PresencaRoletaPanel.tsx`, o `TurnoChip` renderiza numa linha flex fixa:
+### Novo fluxo
+A pill da esquerda deixa de ser um dropdown auto-declarado e passa a refletir **o que o gerente marcou hoje** + um botão único de ação: **Sair**.
 
-```
-[Manhã w-14] [SEM MARCAR pill] [🎯 badge] [botões ml-auto: Presente + Faltou]
-```
+**Como monta o rótulo (regime já implementado):**
 
-E o `CorretorRow` usa grid de turnos `sm:grid-cols-2 md:grid-cols-3` — ou seja, a partir de 768px cada chip recebe ~1/3 do lado direito da linha. Nesse tamanho:
+Seg–sex, dentro do horário:
+- Turno atual = Manhã (até 12h) ou Tarde (12h–18h): mostra o status daquele turno do corretor
+  - Sem marcação → `Aguardando presença` (cinza)
+  - Presente → `Presente · Manhã 09:12` (verde) — hora vinda de `chegou_em`
+  - Faltou → `Faltou · Manhã` (vermelho)
+  - Saiu → `Saiu · 11:30` (âmbar)
+- Fora do horário útil (antes de 7h ou depois de 18h em dia útil): mostra o consolidado do dia (`Presente hoje` / `Faltou hoje` / `Sem registro`).
 
-- O rótulo dos botões só some abaixo de `lg` (≥1024): `<span className="hidden lg:inline">`. Entre `md` (768) e `lg` (1024), aparece **texto + ícone** num chip curto → botões extrapolam a largura do chip e **vazam por cima do chip vizinho** (efeito visível na captura: "Presente"/"Faltou" do Manhã sobrepondo o "SEM MARCAR" do Tarde).
-- Mesmo em `lg`, quando um corretor tem 3 turnos (Manhã + Tarde + Noturna auto) e há 2 botões visíveis num chip (`Presente + Faltou`), o conteúdo estoura o chip.
-- O container do chip não tem `min-w-0` nem `overflow` de contenção; o `ml-auto` empurra os botões pra fora do fluxo em vez de forçar quebra.
+Noturna (18h–23h30, seg–sex):
+- Se credenciado noturno aprovado → `Presente (noturna, benefício)` — automático, sem botão de sair (benefício remoto).
+- Se não credenciado → esconde.
 
-## Escopo
+Sábado:
+- Credenciamento aprovado → `Presente (sábado)`; não credenciado após 23:59 → `Faltou (sábado)`.
 
-Apenas UI/UX responsiva do painel de Presença — sem alterar regras de negócio, estados, mutations ou banco. Arquivo único:
+Domingo:
+- Credenciado + elegível → `Presente (domingo, benefício)`.
+- Credenciado mas não elegível → `Não elegível (domingo)` com tooltip explicando o critério (≥4 presenças + ≥2 visitas na semana anterior).
 
-- `src/components/roleta/PresencaRoletaPanel.tsx`
+**Botão "Sair" (substitui o dropdown de status):**
+- Só aparece se o corretor está ativo em algum turno presencial do dia (Manhã ou Tarde, seg–sex) e ainda não foi marcado como Saiu/Faltou.
+- Ao clicar: confirma "Sair da roleta agora? Você não recebe mais leads hoje."
+- Ao confirmar, chama a RPC `roleta_marcar_presenca` com `status='saiu'` + `saiu_em=now()` para o turno atual, e a rotina que já existe: desativa credenciamentos do dia (`status='saiu'`) e a fila (`ativo=false`).
+- Não aparece nos turnos automáticos (Noturna/Sábado/Domingo) — não faz sentido "sair" de benefício remoto.
 
-## Mudanças
+### O que sai do código
+- Dropdown `STATUS_OPTIONS` (Na Empresa/Em Plantão/Em Pausa/Offline) e função `updateStatus` — removidos de `RoletaStatusBar.tsx`.
+- Estado local `status`, leitura e escrita em `profiles.status_online` — removidos deste componente.
+- `CheckpointCards` continua funcionando (usa fallback `isOnline`).
 
-### 1) `TurnoChip` — conter overflow e permitir quebra
+### O que entra
+- Componente novo `PresencaDoCorretorPill.tsx` em `src/components/corretor/`:
+  - Recebe `profileId`; usa `useRoletaPresencas()` (já existe, com realtime); usa `getRegimeDoDia()` e `useElegibilidadeDomingo` (já existem).
+  - Renderiza a pill de estado + botão "Sair" quando aplicável.
+- `RoletaStatusBar.tsx` substitui a pill esquerda por esse componente. "Ativo na Roleta" e o botão de segmentos continuam intactos.
 
-- Adicionar `min-w-0` e `flex-wrap` no container flex.
-- Trocar `w-14` do label do turno por `min-w-0 shrink` com `truncate` (ainda em `text-[11px] font-semibold`) — libera espaço quando o chip é estreito.
-- Fazer o badge de estado (`SEM MARCAR`/`PRESENTE`/etc.) receber `shrink-0` para não quebrar em duas linhas.
-- Grupo de botões (`ml-auto flex gap-1`) recebe `shrink-0` e passa a quebrar para a linha de baixo em telas apertadas em vez de sobrepor.
+### Fora do escopo
+- Não mexer na página Presença do gerente/CEO.
+- Não mexer na tabela `profiles.status_online` no banco (deixa a coluna quieta; podemos deprecar num sweep futuro).
+- Nada de agregado semanal no dashboard do corretor.
+- Widget zerado do plano anterior segue removido.
 
-### 2) Botões — ícone-only até `xl`, texto a partir de `xl`
-
-Hoje: `hidden lg:inline` no texto → mostra texto entre 1024–~1280 onde não cabe.
-
-Novo: `hidden xl:inline` (≥1280) para "Presente" / "Faltou" / "Saiu". Nos tamanhos intermediários fica só o ícone com `aria-label` e `title` (já existem os `title`), garantindo acessibilidade.
-
-Complemento: adicionar `aria-label` explícito em cada botão para leitores de tela quando o texto está oculto.
-
-### 3) Grid de turnos no `CorretorRow` — degrau extra
-
-Trocar `grid-cols-1 sm:grid-cols-2 md:grid-cols-3` por `grid-cols-1 md:grid-cols-2 xl:grid-cols-3`:
-
-- <768px: 1 turno por linha (mobile, já ok).
-- 768–1279px: 2 turnos por linha (dois chips confortáveis lado a lado).
-- ≥1280px: 3 turnos por linha (Manhã/Tarde/Noturna).
-
-Ajustar o placeholder `!mostrarNoturna && <div className="hidden xl:block" />` para acompanhar o novo breakpoint.
-
-### 4) Coluna esquerda do `CorretorRow`
-
-Manter, mas trocar `md:grid-cols-[minmax(180px,220px)_1fr]` por `lg:grid-cols-[minmax(180px,220px)_1fr]` — em `md`, a identidade fica em cima e turnos embaixo (2 colunas de chips), o que dá muito mais respiro sem sobreposição.
-
-### 5) `WeekendPanel` (Sábado/Domingo)
-
-Mesmo tratamento no botão "Saiu" do painel de fim de semana (linha ~518): `hidden xl:inline` + `aria-label`. Sem outras mudanças.
-
-## Não muda
-
-- Nenhuma lógica de mutação, RPC, elegibilidade, cron, regime dia útil/sábado/domingo, credenciamento, ou estados.
-- Nenhum outro componente/página fora do arquivo `PresencaRoletaPanel.tsx`.
-
-## Validação após build
-
-1. `/roleta/presenca` em viewport 1277px (o do usuário): 2 chips por linha, botões com ícone só, sem sobreposição.
-2. Viewport ≥1280px: 3 chips por linha com texto nos botões.
-3. Mobile (<768px): 1 chip por linha, empilhado, botões íconados.
-4. Corretor com noturna (auto-presente) e sem noturna: layout consistente, sem gaps quebrados.
-5. Fluxo funcional: clicar Presente/Faltou/Saiu continua abrindo o `RegistrarHorarioDialog` e disparando a mutation atual.
+### Detalhes técnicos
+- Turno atual em BRT: reaproveitar helper de `getRegimeDoDia`/`roletaPresenca`.
+- RLS: confirmar que o corretor lê os próprios registros em `roleta_presencas` (se falhar, adicionar policy `corretor_read_own`). RPC `roleta_marcar_presenca` já valida quem pode marcar `saiu` — permitir o próprio corretor marcar `saiu` no próprio registro caso não permita hoje.
+- Ordenação em `CheckpointCards`: aceitável ficar só com `isOnline` (última atividade) enquanto ninguém mais grava `status_online`.
+- Feriados: se `isHolidayBRT()` true, tratar como domingo (benefício).
