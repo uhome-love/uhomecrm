@@ -87,6 +87,10 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
   const [assAtoPago, setAssAtoPago] = useState("sim");
   const [assObs, setAssObs] = useState("");
   const [assDataAssinatura, setAssDataAssinatura] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }));
+  const [assVgv, setAssVgv] = useState<string>(negocio.vgv_estimado ? String(Math.round(negocio.vgv_estimado)) : "");
+  const [assEmpreendimento, setAssEmpreendimento] = useState(negocio.empreendimento || "");
+  const [assUnidade, setAssUnidade] = useState((negocio as any).unidade || "");
+
 
   // Caiu fields
   const [caiuMotivo, setCaiuMotivo] = useState("");
