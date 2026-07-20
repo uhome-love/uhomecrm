@@ -23,7 +23,7 @@ import PreEstagnacaoCard from "@/components/corretor/PreEstagnacaoCard";
 import ConquistasKpis from "@/components/corretor/ConquistasKpis";
 import CaminhosCards from "@/components/corretor/CaminhosCards";
 import TarefasHojeLateral from "@/components/corretor/TarefasHojeLateral";
-import WidgetProdutividadeCorretor from "@/components/corretor/WidgetProdutividadeCorretor";
+// WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
 
 export default function CorretorDashboard() {
   const { user } = useAuth();
