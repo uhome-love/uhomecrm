@@ -45,9 +45,27 @@ export interface CardMinimalProximaTarefa {
   id?: string;
   titulo?: string;
   tipo: string | null;
+  subtipo?: string | null;
   vence_em: string | null;
   hora_vencimento: string | null;
   origem?: string | null;
+}
+
+// Mapa curto por subtipo para tarefas visita_auto — mostra o passo real
+// direto no card do Kanban, em vez do rótulo genérico "Follow-up".
+const VISITA_AUTO_SUBTIPO_LABEL: Record<string, string> = {
+  confirmar_visita: "Confirmar visita",
+  atualizar_visita: "Atualizar agenda",
+  agendar_visita: "Agendar visita",
+  reagendar_visita: "Remarcar visita",
+  pegar_feedback: "Alinhar pós-visita",
+  decidir_descarte_visita: "Decidir descarte",
+  definir_sequencia: "Definir próxima ação",
+};
+
+function visitaAutoLabel(subtipo: string | null | undefined): string | null {
+  if (!subtipo) return null;
+  return VISITA_AUTO_SUBTIPO_LABEL[subtipo] ?? null;
 }
 
 interface CardMinimalProps {
