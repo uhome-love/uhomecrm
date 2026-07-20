@@ -20,7 +20,9 @@ export interface TarefaHoje {
   lead_id: string;
   lead_nome: string;
   empreendimento: string | null;
+  stage_id: string | null;
   stage_nome: string;
+  adiamentos_count: number;
 }
 
 function startOfTodayBRT(): string {
