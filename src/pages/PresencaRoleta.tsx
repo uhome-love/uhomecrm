@@ -329,31 +329,36 @@ function AuditoriaTab({
           {(data ?? []).map((r: any) => (
             <div
               key={r.id}
-              className="flex items-center gap-2 text-xs rounded-md px-2 py-1.5 bg-muted/20 border border-transparent hover:border-border"
+              className="text-xs rounded-md px-2 py-1.5 bg-muted/20 border border-transparent hover:border-border"
             >
-              <span className="w-32 shrink-0 font-medium truncate">{r.nome}</span>
-              <span className="text-[10px] text-muted-foreground w-16 shrink-0">
-                {TURNO_LABEL[r.turno] ?? r.turno}
-              </span>
-              <span
-                className={cn(
-                  "text-[9px] font-semibold uppercase tracking-wide px-1.5 py-[1px] rounded-full",
-                  r.status === "na_empresa"
-                    ? "bg-success-500/15 text-success-700"
-                    : r.status === "saiu"
-                      ? "bg-yellow-500/15 text-yellow-700"
-                      : "bg-destructive/10 text-destructive",
-                )}
-              >
-                {r.status}
-              </span>
-              <span className="text-[10px] text-muted-foreground">{r.data}</span>
-              <span className="text-[10px] text-muted-foreground ml-auto">
-                {r.origem ?? "—"}
-              </span>
-              <span className="text-[10px] text-muted-foreground w-20 text-right shrink-0">
-                {r.criado_em ? formatBRT(r.criado_em, "dd/MM HH:mm") : ""}
-              </span>
+              {/* Linha 1: nome + status + data */}
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-medium truncate flex-1 min-w-0">{r.nome}</span>
+                <span
+                  className={cn(
+                    "text-[9px] font-semibold uppercase tracking-wide px-1.5 py-[1px] rounded-full shrink-0",
+                    r.status === "na_empresa"
+                      ? "bg-success-500/15 text-success-700"
+                      : r.status === "saiu"
+                        ? "bg-yellow-500/15 text-yellow-700"
+                        : "bg-destructive/10 text-destructive",
+                  )}
+                >
+                  {r.status}
+                </span>
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {r.data}
+                </span>
+              </div>
+              {/* Linha 2: turno · origem · timestamp */}
+              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                <span>{TURNO_LABEL[r.turno] ?? r.turno}</span>
+                <span>·</span>
+                <span className="truncate">{r.origem ?? "—"}</span>
+                <span className="ml-auto shrink-0">
+                  {r.criado_em ? formatBRT(r.criado_em, "dd/MM HH:mm") : ""}
+                </span>
+              </div>
             </div>
           ))}
         </div>
