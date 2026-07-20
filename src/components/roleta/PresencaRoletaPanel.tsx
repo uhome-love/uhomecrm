@@ -125,13 +125,13 @@ function TurnoChip({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2 text-[10px] gap-1"
+            className="h-6 px-2 text-[10px] gap-1 border-success-500/40 text-success-700 hover:bg-success-500/10"
             disabled={isMutating}
             onClick={() => onMark(turno, "na_empresa")}
-            title="Confirmar que chegou neste turno"
+            title="Marcar presente — registra o horário de chegada"
           >
             <Check className="h-3 w-3" />
-            <span className="hidden lg:inline">Chegou</span>
+            <span className="hidden lg:inline">Presente</span>
           </Button>
         )}
         {showSaiu && (
