@@ -329,7 +329,42 @@ function ScheduleNextFields({
     setDismissed(true);
   };
 
+  return (
     <div className="space-y-3">
+      {suggestion && !dismissed && (
+        <div className="text-xs bg-primary/5 border border-primary/30 rounded-md p-3 flex items-start gap-2">
+          <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-primary mb-0.5">💡 Sugestão do Homi</div>
+            <div className="text-foreground mb-2">{suggestionLabel}</div>
+            <div className="flex gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={applySuggestion}
+                className="text-[11px] px-2.5 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+              >
+                Usar sugestão
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissed(true)}
+                className="text-[11px] px-2.5 py-1 rounded-md border border-border text-muted-foreground hover:bg-muted"
+              >
+                Ajustar manualmente
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="text-muted-foreground hover:text-foreground shrink-0"
+            aria-label="Dispensar sugestão"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {semContato?.enabled && semContato.requiresNextTask && (
         <div className="text-xs text-primary bg-primary/5 border border-primary/25 rounded-md p-3 flex items-start gap-2">
           <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" />
