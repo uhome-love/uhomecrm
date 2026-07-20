@@ -139,24 +139,28 @@ export function usePresencaCorretoresDia(
             .select("user_id, gerente_id")
             .in("user_id", corretorUserIds)
             .eq("status", "ativo");
+          // gerente_id em team_members = auth.users.id (não profiles.id)
           const gerenteByCorretorUserId = new Map<string, string>();
-          const gerenteProfileIds = new Set<string>();
+          const gerenteAuthIds = new Set<string>();
           for (const r of tm ?? []) {
             const uid = (r as any).user_id;
             const gid = (r as any).gerente_id;
             if (uid && gid) {
               gerenteByCorretorUserId.set(uid, gid);
-              gerenteProfileIds.add(gid);
+              gerenteAuthIds.add(gid);
             }
           }
-          const gerenteNomeById = new Map<string, string>();
-          if (gerenteProfileIds.size > 0) {
+          const gerenteNomeByAuthId = new Map<string, string>();
+          if (gerenteAuthIds.size > 0) {
             const { data: gps } = await supabase
               .from("profiles")
-              .select("id, nome")
-              .in("id", Array.from(gerenteProfileIds));
+              .select("user_id, nome")
+              .in("user_id", Array.from(gerenteAuthIds));
             for (const g of gps ?? []) {
-              gerenteNomeById.set((g as any).id, (g as any).nome ?? "—");
+              gerenteNomeByAuthId.set(
+                (g as any).user_id,
+                (g as any).nome ?? "—",
+              );
             }
           }
           for (const [profileId, uid] of userIdByProfileId.entries()) {
