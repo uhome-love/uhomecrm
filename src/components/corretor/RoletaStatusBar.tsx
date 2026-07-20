@@ -388,10 +388,8 @@ export default function RoletaStatusBar() {
     toast.success(`Credenciamento enviado para ${jCfg.emoji} ${jCfg.label}! Aguardando aprovação do CEO ⏳`);
   };
 
-  const currentOpt = STATUS_OPTIONS.find(o => o.value === status) || STATUS_OPTIONS[3];
-  const isAvailable = status === "na_empresa" || status === "em_plantao";
   const hasSegmentos = mySegmentoIds.length > 0;
-  const isActiveRoleta = isAvailable && hasSegmentos && credStatus === "aprovado";
+  const isActiveRoleta = hasSegmentos && credStatus === "aprovado";
 
   const segNames = mySegmentoIds.map(id => segmentos.find(s => s.id === id)?.nome).filter(Boolean);
 
@@ -410,57 +408,20 @@ export default function RoletaStatusBar() {
           isActiveRoleta ? "border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20" : "border-border bg-card"
         }`}
       >
-        {/* Left: Status */}
-        <div className="relative flex items-center gap-2">
-          <button
-            onClick={() => setStatusOpen(!statusOpen)}
-            className={`flex items-center gap-1.5 text-sm font-medium rounded-lg px-2.5 py-1 transition-colors hover:bg-muted/50 ${currentOpt.color}`}
-          >
-            <span>{currentOpt.icon}</span>
-            <span>{currentOpt.label}</span>
-            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${statusOpen ? "rotate-180" : ""}`} />
-          </button>
+        {/* Left: Presença (marcada pelo gestor) + status da roleta */}
+        <div className="relative flex items-center gap-2 flex-wrap">
+          <PresencaDoCorretorPill profileId={profileId} authUserId={user?.id} />
 
-          <AnimatePresence>
-            {statusOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setStatusOpen(false)} />
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="absolute top-full left-0 mt-1 z-50 w-64 rounded-xl border border-border bg-popover shadow-lg overflow-hidden"
-                >
-                  {STATUS_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => updateStatus(opt.value)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${
-                        opt.value === status ? `${opt.bgColor} ${opt.borderColor} border-l-2` : ""
-                      }`}
-                    >
-                      <span className="text-lg">{opt.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${opt.color}`}>{opt.label}</p>
-                        <p className="text-xs text-muted-foreground">{opt.description}</p>
-                      </div>
-                      {opt.value === status && <Check className="h-4 w-4 text-primary shrink-0" />}
-                    </button>
-                  ))}
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-
-          <div className="h-5 w-px bg-border" />
+          <div className="h-5 w-px bg-border hidden sm:block" />
           <span className={`text-xs font-medium ${
-            isActiveRoleta ? "text-emerald-600" : 
+            isActiveRoleta ? "text-emerald-600" :
             credStatus === "pendente" ? "text-amber-600" : "text-muted-foreground"
           }`}>
-            {isActiveRoleta ? "🟢 Ativo na Roleta" : 
+            {isActiveRoleta ? "🟢 Ativo na Roleta" :
              credStatus === "pendente" ? "⏳ Aguardando aprovação" : "⚪ Inativo na Roleta"}
           </span>
         </div>
+
 
         {/* Right */}
         <div className="flex items-center gap-2">
