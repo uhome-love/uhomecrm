@@ -101,8 +101,7 @@ export default function CorretorDashboard() {
         <RoletaStatusBar />
       </motion.div>
 
-      {/* 2b. Widget motivacional Presença × Leads × Negócios */}
-      <WidgetProdutividadeCorretor />
+      {/* Widget de produtividade removido — estava zerado/não funcional */}
 
       {/* 3. Layout 2 colunas: principal (3 blocos) + lateral fixa 280px */}
       <div className="flex flex-col lg:flex-row gap-3.5">
