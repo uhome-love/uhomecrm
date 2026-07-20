@@ -121,6 +121,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "leads-estagnados": lazyRetry(() => import("@/pages/LeadsEstagnados")),
   "simulador-financiamento": lazyRetry(() => import("@/pages/SimuladorFinanciamento")),
   pdn: lazyRetry(() => import("@/pages/PdnGestor")),
+  "presenca-roleta": lazyRetry(() => import("@/pages/PresencaRoleta")),
 };
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
