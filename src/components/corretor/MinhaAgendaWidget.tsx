@@ -277,9 +277,6 @@ export default function MinhaAgendaWidget() {
           <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 ml-auto" onClick={(e) => { e.stopPropagation(); handleConcluir(t); }}>
             <CheckCircle2 className="h-3 w-3" /> Feito
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={(e) => { e.stopPropagation(); setAdiarId(t.id); setAdiarSource(t._source); setAdiarData(""); setAdiarHora(""); }}>
-            <Clock className="h-3 w-3" /> Adiar
-          </Button>
         </div>
       </div>
     );
