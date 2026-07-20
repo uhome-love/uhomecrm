@@ -288,16 +288,23 @@ export function PerfilLeadCard({ lead, onSaved }: Props) {
   const [outro, setOutro] = useState(initialOutro);
   const [saving, setSaving] = useState(false);
 
+  // Hidrata o formulário SOMENTE quando o popover abre (false → true).
+  // Isso evita que um `pipeline-reload` disparado por outra ação enquanto o
+  // corretor está editando sobrescreva o que ele já digitou.
+  const prevEditingRef = useRef(false);
   useEffect(() => {
-    if (!editing) return;
-    setTipologia(initialTipologia);
-    setFaixa(initialFaixa);
-    setForma(initialForma);
-    setPrazo(initialPrazo);
-    setBairros(initialBairros);
-    setOutroOn(!!initialOutro);
-    setOutro(initialOutro);
-  }, [editing, initialTipologia, initialFaixa, initialForma, initialPrazo, initialBairros, initialOutro]);
+    if (editing && !prevEditingRef.current) {
+      setTipologia(initialTipologia);
+      setFaixa(initialFaixa);
+      setForma(initialForma);
+      setPrazo(initialPrazo);
+      setBairros(initialBairros);
+      setOutroOn(!!initialOutro);
+      setOutro(initialOutro);
+    }
+    prevEditingRef.current = editing;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing]);
 
   const filled = [
     tipologia,
