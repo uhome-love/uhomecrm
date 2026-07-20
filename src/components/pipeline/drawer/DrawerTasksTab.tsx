@@ -312,17 +312,6 @@ export default function DrawerTasksTab({
           }}
         />
       )}
-      {adiarTarefa && (
-        <AdiarTaskDialog
-          tarefa={adiarTarefa}
-          onClose={() => setAdiarTarefa(null)}
-          onSaved={() => {
-            setAdiarTarefa(null);
-            invalidateTaskQueries(queryClient, leadId);
-            onReload();
-          }}
-        />
-      )}
 
       <TaskCompletionDialog
         open={!!completingTarefa}
