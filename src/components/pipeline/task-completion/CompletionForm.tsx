@@ -435,8 +435,8 @@ export function CompletionForm(props: CompletionFormProps) {
               onChangeNovoStage={onChangeNovoStage}
               onApplyQuick={applyQuick}
             />
-          )
         )}
+
 
         {/* Only-Complete */}
         {outcome === "concluir" && (
