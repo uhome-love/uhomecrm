@@ -34,11 +34,13 @@ function rawToNumber(raw: string): number {
   return parseInt(raw, 10);
 }
 
-function CurrencyInput({ value, onChange, placeholder, label }: { value: string; onChange: (v: string) => void; placeholder?: string; label: string }) {
+const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+function CurrencyInput({ value, onChange, placeholder, label, invalid }: { value: string; onChange: (v: string) => void; placeholder?: string; label: string; invalid?: boolean }) {
   const display = value ? `R$ ${formatBRL(value)}` : "";
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "");
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 12); // cap 12 digits
     onChange(raw);
   };
 
@@ -48,13 +50,15 @@ function CurrencyInput({ value, onChange, placeholder, label }: { value: string;
       <Input
         value={display}
         onChange={handleChange}
-        className="h-8 text-xs"
+        className={`h-8 text-xs ${invalid ? "border-destructive focus-visible:ring-destructive" : ""}`}
         placeholder={placeholder || "R$ 0"}
         inputMode="numeric"
+        aria-invalid={!!invalid}
       />
     </div>
   );
 }
+
 
 export default function FaseTransitionModal({ open, onOpenChange, targetFase, negocio, onConfirm }: Props) {
   // Proposta fields
