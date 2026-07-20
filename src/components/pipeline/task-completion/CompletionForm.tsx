@@ -206,10 +206,41 @@ export function CompletionForm(props: CompletionFormProps) {
     onChangeObservacaoCurta,
     onCancel,
     onConfirm,
+    onSelectStatusEtapa,
   } = props;
 
+  /* ─── Presets de tarefa (Fase B) ─── */
+  const stagePresets = useMemo(() => getPresetsForStage(stageTipo), [stageTipo]);
+  const hasPresets = stagePresets.length > 0;
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const selectedPreset = useMemo<TaskPreset | null>(
+    () => stagePresets.find((p) => p.id === selectedPresetId) ?? null,
+    [stagePresets, selectedPresetId],
+  );
+  const presetHandlesStatus =
+    !!selectedPreset && selectedPreset.id !== PRESET_OUTRO_ID && !!selectedPreset.syncFlagValue;
+
+  const handleSelectPreset = (preset: TaskPreset) => {
+    setSelectedPresetId(preset.id);
+    if (preset.id === PRESET_OUTRO_ID) {
+      // Modo livre: limpa qualquer status auto aplicado; usuário volta a preencher manual.
+      onSelectStatusEtapa?.(undefined);
+      return;
+    }
+    onChangeNovaTarefa(applyPresetToTarefa(preset));
+    if (preset.syncFlagKey && preset.syncFlagValue) {
+      onSelectStatusEtapa?.(preset.syncFlagValue);
+    } else {
+      onSelectStatusEtapa?.(undefined);
+    }
+  };
+
   const descricaoValida = descricao.trim().length >= 3;
-  const stageStatusReady = !stageStatus || !!stageStatus.pick;
+  const stageStatusReady =
+    !stageStatus ||
+    !!stageStatus.pick ||
+    // Quando estamos agendando E o preset já cobre o status, dispensa o bloco.
+    (outcome === "agendar" && presetHandlesStatus);
   const step1Ready = !!resultado && descricaoValida && stageStatusReady;
 
   /* ───── Fluxo Visita: substitui o corpo padrão ───── */
