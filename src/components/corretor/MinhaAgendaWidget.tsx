@@ -205,28 +205,7 @@ export default function MinhaAgendaWidget() {
   };
 
 
-  const handleAdiarRapido = async (id: string, horas: number, source: "lead" | "negocio") => {
-    const table = source === "negocio" ? "negocios_tarefas" : "pipeline_tarefas";
-    const novaData = addHours(new Date(), horas);
-    await supabase.from(table).update({
-      vence_em: dateToBRT(novaData),
-      hora_vencimento: format(novaData, "HH:mm"),
-    } as any).eq("id", id);
-    toast.success("Tarefa adiada ✅");
-    invalidateTaskQueries(queryClient, null);
-  };
 
-  const handleAdiarCustom = async () => {
-    if (!adiarId || !adiarData) return;
-    const table = adiarSource === "negocio" ? "negocios_tarefas" : "pipeline_tarefas";
-    await supabase.from(table).update({
-      vence_em: adiarData,
-      hora_vencimento: adiarHora || null,
-    } as any).eq("id", adiarId);
-    toast.success("Tarefa reagendada ✅");
-    setAdiarId(null);
-    invalidateTaskQueries(queryClient, null);
-  };
 
   const renderTarefa = (t: TarefaAgenda, variant: "atrasada" | "proxima" | "futura") => {
     const borderClass = variant === "atrasada" ? "border-l-red-500 bg-red-500/10" :
