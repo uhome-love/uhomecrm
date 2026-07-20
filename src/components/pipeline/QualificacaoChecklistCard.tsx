@@ -206,8 +206,9 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
                 <Input value={outro} onChange={e => setOutro(e.target.value)} className="h-8 text-xs mt-1.5" placeholder="Digite o(s) bairro(s), separados por vírgula" />
               )}
             </div>
+            </div>
 
-            <div className="flex justify-end gap-2 pt-1">
+            <div className="shrink-0 flex justify-end gap-2 border-t bg-background px-3 py-2">
               <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditing(false)} disabled={saving}>Cancelar</Button>
               <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSave} disabled={saving}>
                 {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
