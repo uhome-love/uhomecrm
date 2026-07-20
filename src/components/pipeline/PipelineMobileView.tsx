@@ -89,14 +89,14 @@ const PipelineMobileView = memo(function PipelineMobileView({
         const chunk = leadIds.slice(i, i + 200);
         const { data } = await supabase
           .from("pipeline_tarefas")
-          .select("id, titulo, pipeline_lead_id, tipo, vence_em, hora_vencimento, origem")
+          .select("id, titulo, pipeline_lead_id, tipo, subtipo, vence_em, hora_vencimento, origem")
           .in("pipeline_lead_id", chunk)
           .eq("status", "pendente")
           .order("vence_em", { ascending: true })
           .order("hora_vencimento", { ascending: true });
         if (data) {
           for (const row of data) {
-            const nextTask = { id: row.id, titulo: row.titulo || "Tarefa", tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento, origem: (row as any).origem ?? null };
+            const nextTask = { id: row.id, titulo: row.titulo || "Tarefa", tipo: row.tipo, subtipo: (row as any).subtipo ?? null, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento, origem: (row as any).origem ?? null };
             const currentTask = map[row.pipeline_lead_id];
             if (!currentTask || isTaskHigherPriority(nextTask, currentTask)) {
               map[row.pipeline_lead_id] = nextTask;
