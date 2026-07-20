@@ -350,7 +350,8 @@ export function PresencaRoletaPanel({
     day: "2-digit",
   }).format(new Date());
 
-  // Estatísticas do topo
+  // Estatísticas do topo — credenciados sem row já contam como presentes
+  // (rede de segurança: normalmente o trigger cria a linha automaticamente).
   const stats = useMemo(() => {
     if (foraDeJanela) return { naEmpresa: 0, faltas: 0, saidas: 0, semMarcar: 0 };
     let na = 0,
@@ -359,9 +360,14 @@ export function PresencaRoletaPanel({
       sem = 0;
     for (const c of corretores) {
       const p = getPresenca(c.corretor_id, turnoAtivo);
+      const credenciado = isCredenciadoNoTurno(
+        c.credenciamentos,
+        turnoAtivo as PresencaTurno,
+      );
       if (p?.status === "na_empresa") na++;
       else if (p?.status === "saiu") saiu++;
       else if (p?.status === "falta") falt++;
+      else if (credenciado) na++; // credenciado sem row = presente automático
       else sem++;
     }
     return { naEmpresa: na, faltas: falt, saidas: saiu, semMarcar: sem };
