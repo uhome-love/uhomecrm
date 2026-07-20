@@ -87,6 +87,7 @@ export default function TaskCompletionDialog({
   }>({ enabled: false, currentStatus: "", lead: null });
   const [qualPillStatus, setQualPillStatus] = useState<string>("");
   const [qualDataOverride, setQualDataOverride] = useState<DataOverride | undefined>();
+  const [qualHoraOverride, setQualHoraOverride] = useState<string>("10:00");
 
   const reset = () => {
     setTipoContato(undefined);
@@ -108,6 +109,7 @@ export default function TaskCompletionDialog({
     setQualInfo({ enabled: false, currentStatus: "", lead: null });
     setQualPillStatus("");
     setQualDataOverride(undefined);
+    setQualHoraOverride("10:00");
     setSaving(false);
   };
 
@@ -176,6 +178,7 @@ export default function TaskCompletionDialog({
           });
           setQualPillStatus(enabled ? currentStatus : "");
           setQualDataOverride(undefined);
+          setQualHoraOverride("10:00");
         }
       } else if (!cancelled) {
         setQualInfo({ enabled: false, currentStatus: "", lead: null });
@@ -326,6 +329,7 @@ export default function TaskCompletionDialog({
             lead: qualInfo.lead,
             statusKey: qualPillStatus,
             dataOverride: qualDataOverride,
+            horaOverride: qualHoraOverride,
             silent: true,
           });
         } catch (err) {
@@ -385,9 +389,15 @@ export default function TaskCompletionDialog({
                   dataOverride: qualDataOverride,
                   onPickPill: (k) => {
                     setQualPillStatus(k);
-                    if (k !== "alinhando_visita") setQualDataOverride(undefined);
+                    if (k !== "alinhando_visita") {
+                      setQualDataOverride(undefined);
+                      setQualHoraOverride("10:00");
+                    }
                   },
-                  onPickData: (d) => setQualDataOverride(d),
+                  onPickData: (d, h) => {
+                    setQualDataOverride(d);
+                    if (h) setQualHoraOverride(h);
+                  },
                 }
               : undefined
           }

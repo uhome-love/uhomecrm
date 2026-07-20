@@ -16,7 +16,11 @@ import {
   QUALIFICACAO_PRAZOS,
   QUALIFICACAO_BAIRROS_UHOME,
 } from "./PipelineStageTransitionPopup";
-import { advanceQualificacaoStatus, type DataOverride } from "@/lib/qualificacaoTaskEngine";
+import {
+  advanceQualificacaoStatus,
+  willClampVisitaDate,
+  type DataOverride,
+} from "@/lib/qualificacaoTaskEngine";
 
 interface Props {
   lead: PipelineLead;
@@ -58,10 +62,10 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
   const steps = Object.entries(QUALIFICACAO_STATUS_ATEND) as [string, string][];
   const currentIdx = steps.findIndex(([k]) => k === currentStatus);
 
-  const doAdvance = async (statusKey: string, dataOverride?: DataOverride) => {
+  const doAdvance = async (statusKey: string, dataOverride?: DataOverride, horaOverride?: string) => {
     setSaving(statusKey);
     try {
-      await advanceQualificacaoStatus({ lead, statusKey, dataOverride, onSaved });
+      await advanceQualificacaoStatus({ lead, statusKey, dataOverride, horaOverride, onSaved });
     } catch (err) {
       console.error("[QualificacaoEtapaCard] advance error:", err);
       toast.error("Erro ao atualizar etapa");
@@ -114,9 +118,9 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
             return (
               <Popover key={key} open={visitaPickerOpen} onOpenChange={setVisitaPickerOpen}>
                 <PopoverTrigger asChild>{btn}</PopoverTrigger>
-                <PopoverContent align="start" className="w-64 p-2">
+                <PopoverContent align="start" className="w-72 p-2">
                   <VisitaDatePicker
-                    onPick={(dt) => void doAdvance("alinhando_visita", dt)}
+                    onPick={(dt, hora) => void doAdvance("alinhando_visita", dt, hora)}
                     disabled={!!saving}
                   />
                 </PopoverContent>
@@ -136,23 +140,60 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
 }
 
 /**
- * Mini seletor "Hoje / Amanhã / Escolher data" para a pill "Alinhando visita".
- * Reusado tanto no card quanto no popup de conclusão de tarefa.
+ * Mini seletor "Hoje / Amanhã / Escolher data" + horário para a pill
+ * "Alinhando visita". Reusado no card e no popup de conclusão de tarefa.
+ *
+ * Emite `onPick(dt, hora)` — hora sempre presente (default "10:00").
+ * Se a data custom passar do teto de 7 dias, mostra aviso ("ajustado para dd/mm")
+ * mas ainda envia o valor original — o clamp real acontece no motor.
  */
 export function VisitaDatePicker({
   onPick,
   disabled,
 }: {
-  onPick: (dt: DataOverride) => void;
+  onPick: (dt: DataOverride, hora: string) => void;
   disabled?: boolean;
 }) {
   const [customDate, setCustomDate] = useState("");
+  const [hora, setHora] = useState("10:00");
+
+  const clampInfo = willClampVisitaDate(customDate);
+  const adjustedShort = clampInfo.adjustedTo
+    ? clampInfo.adjustedTo.split("-").slice(1).reverse().join("/")
+    : null;
+
   return (
     <div className="space-y-2">
       <div className="text-[11px] font-semibold text-foreground">Quando é a visita?</div>
       <div className="grid grid-cols-2 gap-1.5">
-        <Button size="sm" variant="outline" className="h-7 text-[11px]" disabled={disabled} onClick={() => onPick("hoje")}>Hoje</Button>
-        <Button size="sm" variant="outline" className="h-7 text-[11px]" disabled={disabled} onClick={() => onPick("amanha")}>Amanhã</Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-[11px]"
+          disabled={disabled}
+          onClick={() => onPick("hoje", hora)}
+        >
+          Hoje
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-[11px]"
+          disabled={disabled}
+          onClick={() => onPick("amanha", hora)}
+        >
+          Amanhã
+        </Button>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Horário</Label>
+        <Input
+          type="time"
+          value={hora}
+          onChange={(e) => setHora(e.target.value || "10:00")}
+          className="h-7 text-[11px]"
+          disabled={disabled}
+        />
       </div>
       <div className="space-y-1">
         <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Escolher data</Label>
@@ -168,11 +209,16 @@ export function VisitaDatePicker({
             size="sm"
             className="h-7 text-[11px]"
             disabled={disabled || !/^\d{4}-\d{2}-\d{2}$/.test(customDate)}
-            onClick={() => onPick(customDate)}
+            onClick={() => onPick(customDate, hora)}
           >
             OK
           </Button>
         </div>
+        {clampInfo.clamped && adjustedShort && (
+          <p className="text-[10px] text-amber-600 dark:text-amber-400">
+            Máximo 7 dias — ajustado para {adjustedShort}
+          </p>
+        )}
       </div>
     </div>
   );
