@@ -339,8 +339,28 @@ export function CompletionForm(props: CompletionFormProps) {
 
 
   const applyQuick = (d: Date, h: string) => {
-    onChangeNovaTarefa({ vence_em: dateToBRT(d), hora_vencimento: h });
+    const iso = dateToBRT(d);
+    const { value, clamped } = clampTaskDate(iso, stageTipo);
+    if (clamped) {
+      toast.info(
+        `${taskDateTooFarMessage(stageTipo)} Ajustado para ${formatBrDateShort(value)}.`,
+      );
+    }
+    onChangeNovaTarefa({ vence_em: value, hora_vencimento: h });
   };
+
+  const handleChangeVenceEm = (iso: string) => {
+    const { value, clamped } = clampTaskDate(iso, stageTipo);
+    if (clamped) {
+      toast.info(
+        `${taskDateTooFarMessage(stageTipo)} Ajustado para ${formatBrDateShort(value)}.`,
+      );
+    }
+    onChangeNovaTarefa({ vence_em: value });
+  };
+
+  const maxVenceEm = maxTaskDateBRT(stageTipo);
+  const maxDaysAhead = maxTaskDaysAhead(stageTipo);
 
   // Dedup: alguns títulos antigos vêm com o nome embutido ("Confirmar visita — Juliana");
   // não repetir " · Juliana" ao lado.
