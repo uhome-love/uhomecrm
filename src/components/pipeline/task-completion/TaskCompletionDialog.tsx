@@ -196,6 +196,7 @@ export default function TaskCompletionDialog({
             tentativaConcluida: 1,
             requiresNextTask: false,
             finalAttempt: false,
+            isCadenciaTask: false,
           });
         }
         return;
