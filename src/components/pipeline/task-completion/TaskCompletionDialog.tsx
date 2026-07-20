@@ -329,6 +329,7 @@ export default function TaskCompletionDialog({
             lead: qualInfo.lead,
             statusKey: qualPillStatus,
             dataOverride: qualDataOverride,
+            horaOverride: qualHoraOverride,
             silent: true,
           });
         } catch (err) {
