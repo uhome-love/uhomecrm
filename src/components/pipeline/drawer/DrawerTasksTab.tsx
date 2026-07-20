@@ -177,12 +177,18 @@ export default function DrawerTasksTab({
             {countProximas} próxima{countProximas !== 1 ? "s" : ""}
           </div>
         </div>
-        <button
-          onClick={onNovaTarefa}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
-        >
-          <Plus className="h-3.5 w-3.5" /> Nova tarefa
-        </button>
+        {isVisitaStage ? (
+          <div className="text-[11px] text-primary font-medium bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 max-w-[220px] leading-snug">
+            🏠 Fluxo fixo pela Agenda de Visitas
+          </div>
+        ) : (
+          <button
+            onClick={onNovaTarefa}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
+          >
+            <Plus className="h-3.5 w-3.5" /> Nova tarefa
+          </button>
+        )}
       </div>
 
       {/* Skeleton de carregamento — evita flash de "Nenhuma tarefa pendente" */}
