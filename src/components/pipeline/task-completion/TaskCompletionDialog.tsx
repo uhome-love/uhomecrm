@@ -78,6 +78,16 @@ export default function TaskCompletionDialog({
 
   const [saving, setSaving] = useState(false);
 
+  /* Qualificação mode: quando lead está em stage tipo='qualificacao' com status_atendimento setado,
+     a seção "próxima tarefa" do card Agendar vira as 6 pills de QUALIFICACAO_STATUS_ATEND. */
+  const [qualInfo, setQualInfo] = useState<{
+    enabled: boolean;
+    currentStatus: string;
+    lead: { id: string; nome?: string | null; corretor_id?: string | null; flag_status?: Record<string, any> | null } | null;
+  }>({ enabled: false, currentStatus: "", lead: null });
+  const [qualPillStatus, setQualPillStatus] = useState<string>("");
+  const [qualDataOverride, setQualDataOverride] = useState<DataOverride | undefined>();
+
   const reset = () => {
     setTipoContato(undefined);
     setResultado(undefined);
@@ -95,6 +105,9 @@ export default function TaskCompletionDialog({
       requiresNextTask: false,
       finalAttempt: false,
     });
+    setQualInfo({ enabled: false, currentStatus: "", lead: null });
+    setQualPillStatus("");
+    setQualDataOverride(undefined);
     setSaving(false);
   };
 
