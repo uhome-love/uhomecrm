@@ -16,6 +16,7 @@ import {
   QUALIFICACAO_PRAZOS,
   QUALIFICACAO_BAIRROS_UHOME,
 } from "./PipelineStageTransitionPopup";
+import { advanceQualificacaoStatus, type DataOverride } from "@/lib/qualificacaoTaskEngine";
 
 interface Props {
   lead: PipelineLead;
@@ -44,89 +45,39 @@ function ChipDisplay({ label, value, empty }: { label: string; value: string | n
 
 /**
  * Card "Etapa da qualificação" — pills clicáveis, sempre visíveis, sem popover.
- * Clicar em uma pill salva o novo status_atendimento e dispara o motor de tarefa
- * automática (cancela `qualificacao_*` pendentes e cria a próxima tarefa).
+ * Toda a lógica de salvar status + cancelar pendências + criar nova tarefa vive
+ * em `advanceQualificacaoStatus` (motor único compartilhado com o popup de
+ * conclusão de tarefa).
  */
 export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
   const flag = (lead.flag_status || {}) as Record<string, any>;
   const currentStatus = (flag.status_atendimento as string) || "";
   const [saving, setSaving] = useState<string | null>(null);
+  const [visitaPickerOpen, setVisitaPickerOpen] = useState(false);
 
   const steps = Object.entries(QUALIFICACAO_STATUS_ATEND) as [string, string][];
   const currentIdx = steps.findIndex(([k]) => k === currentStatus);
 
-  const handleClick = async (statusKey: string) => {
-    if (saving || statusKey === currentStatus) return;
+  const doAdvance = async (statusKey: string, dataOverride?: DataOverride) => {
     setSaving(statusKey);
     try {
-      const nextFlag: Record<string, any> = { ...(lead.flag_status || {}) };
-      nextFlag.status_atendimento = statusKey;
-      const { error } = await supabase
-        .from("pipeline_leads")
-        .update({ flag_status: nextFlag } as any)
-        .eq("id", lead.id);
-      if (error) throw error;
-
-      // Motor de tarefa automática — mesmo comportamento anterior.
-      if (lead.corretor_id) {
-        try {
-          const TASK_MAP: Record<string, { tipo: string; titulo: string; diasVence: number }> = {
-            contato_inicial:    { tipo: "whatsapp", titulo: "Perfil de busca completo?",                diasVence: 0 },
-            alinhamento_perfil: { tipo: "tarefa",   titulo: "Buscar imóveis compatíveis",               diasVence: 0 },
-            busca:              { tipo: "whatsapp", titulo: "Enviar opções de imóveis",                 diasVence: 0 },
-            envio_opcoes:       { tipo: "tarefa",   titulo: "Registrar retorno sobre as opções enviadas", diasVence: 2 },
-            follow_up:          { tipo: "ligacao",  titulo: "Follow-up com novidades",                  diasVence: 3 },
-            alinhando_visita:   { tipo: "ligacao",  titulo: "Confirmar data da visita",                 diasVence: 0 },
-          };
-          const cfg = TASK_MAP[statusKey];
-          if (cfg) {
-            const { data: pend } = await supabase
-              .from("pipeline_tarefas")
-              .select("id, origem")
-              .eq("pipeline_lead_id", lead.id)
-              .eq("status", "pendente");
-            const cancelIds = (pend || [])
-              .filter((t: any) => typeof t.origem === "string" && t.origem.startsWith("qualificacao_"))
-              .map((t: any) => t.id);
-            if (cancelIds.length > 0) {
-              await supabase
-                .from("pipeline_tarefas")
-                .update({ status: "cancelada" } as any)
-                .in("id", cancelIds);
-            }
-
-            const venceData = new Date();
-            venceData.setDate(venceData.getDate() + cfg.diasVence);
-            const vence_em = venceData.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-            const leadNome = (lead as any).nome || "Lead";
-            await supabase.from("pipeline_tarefas").insert({
-              pipeline_lead_id: lead.id,
-              tipo: cfg.tipo,
-              titulo: `${cfg.titulo} — ${leadNome}`,
-              descricao: `Qualificação — ${QUALIFICACAO_STATUS_ATEND[statusKey] || statusKey}`,
-              vence_em,
-              hora_vencimento: "10:00",
-              status: "pendente",
-              prioridade: "media",
-              responsavel_id: lead.corretor_id,
-              created_by: lead.corretor_id,
-              origem: `qualificacao_${statusKey}`,
-            } as any);
-          }
-        } catch (err) {
-          console.error("[QualificacaoEtapaCard] auto-task error:", err);
-        }
-      }
-
-      toast.success(`Etapa: ${QUALIFICACAO_STATUS_ATEND[statusKey] || statusKey}`);
-      onSaved?.();
-      window.dispatchEvent(new CustomEvent("pipeline-reload"));
+      await advanceQualificacaoStatus({ lead, statusKey, dataOverride, onSaved });
     } catch (err) {
-      console.error("[QualificacaoEtapaCard] save error:", err);
+      console.error("[QualificacaoEtapaCard] advance error:", err);
       toast.error("Erro ao atualizar etapa");
     } finally {
       setSaving(null);
+      setVisitaPickerOpen(false);
     }
+  };
+
+  const handleClick = (statusKey: string) => {
+    if (saving || statusKey === currentStatus) return;
+    if (statusKey === "alinhando_visita") {
+      setVisitaPickerOpen(true);
+      return;
+    }
+    void doAdvance(statusKey);
   };
 
   return (
@@ -143,7 +94,7 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
           let cls = "bg-background hover:bg-muted border-border text-foreground";
           if (isCurrent) cls = "bg-primary text-primary-foreground border-primary shadow-sm";
           else if (isDone) cls = "bg-muted/50 border-border text-muted-foreground line-through opacity-70 hover:opacity-100";
-          return (
+          const btn = (
             <button
               key={key}
               type="button"
@@ -159,6 +110,20 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
               {label}
             </button>
           );
+          if (key === "alinhando_visita") {
+            return (
+              <Popover key={key} open={visitaPickerOpen} onOpenChange={setVisitaPickerOpen}>
+                <PopoverTrigger asChild>{btn}</PopoverTrigger>
+                <PopoverContent align="start" className="w-64 p-2">
+                  <VisitaDatePicker
+                    onPick={(dt) => void doAdvance("alinhando_visita", dt)}
+                    disabled={!!saving}
+                  />
+                </PopoverContent>
+              </Popover>
+            );
+          }
+          return btn;
         })}
       </div>
       {!currentStatus && (
@@ -166,6 +131,49 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
           Clique em uma etapa para registrar o status do atendimento.
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Mini seletor "Hoje / Amanhã / Escolher data" para a pill "Alinhando visita".
+ * Reusado tanto no card quanto no popup de conclusão de tarefa.
+ */
+export function VisitaDatePicker({
+  onPick,
+  disabled,
+}: {
+  onPick: (dt: DataOverride) => void;
+  disabled?: boolean;
+}) {
+  const [customDate, setCustomDate] = useState("");
+  return (
+    <div className="space-y-2">
+      <div className="text-[11px] font-semibold text-foreground">Quando é a visita?</div>
+      <div className="grid grid-cols-2 gap-1.5">
+        <Button size="sm" variant="outline" className="h-7 text-[11px]" disabled={disabled} onClick={() => onPick("hoje")}>Hoje</Button>
+        <Button size="sm" variant="outline" className="h-7 text-[11px]" disabled={disabled} onClick={() => onPick("amanha")}>Amanhã</Button>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Escolher data</Label>
+        <div className="flex gap-1.5">
+          <Input
+            type="date"
+            value={customDate}
+            onChange={(e) => setCustomDate(e.target.value)}
+            className="h-7 text-[11px]"
+            disabled={disabled}
+          />
+          <Button
+            size="sm"
+            className="h-7 text-[11px]"
+            disabled={disabled || !/^\d{4}-\d{2}-\d{2}$/.test(customDate)}
+            onClick={() => onPick(customDate)}
+          >
+            OK
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -62,6 +62,9 @@ import {
   type TipoProximaTarefa,
 } from "./types";
 import { useStageOptions } from "./useStageOptions";
+import { QUALIFICACAO_STATUS_ATEND } from "@/components/pipeline/PipelineStageTransitionPopup";
+import { VisitaDatePicker } from "@/components/pipeline/QualificacaoChecklistCard";
+import type { DataOverride } from "@/lib/qualificacaoTaskEngine";
 
 const KEEP_STAGE = "__keep__";
 
@@ -122,6 +125,15 @@ export interface CompletionFormProps {
 
   saving: boolean;
 
+  /** Qualificação mode: substitui a seção "próxima tarefa" pelas 6 pills de status_atendimento. */
+  qualificacao?: {
+    currentStatus: string;
+    pillStatus: string;
+    dataOverride?: DataOverride;
+    onPickPill: (statusKey: string) => void;
+    onPickData: (dt: DataOverride | undefined) => void;
+  };
+
   onChangeTipo: (v: TipoContato) => void;
   onChangeResultado: (v: Resultado) => void;
   onChangeDescricao: (v: string) => void;
@@ -154,6 +166,7 @@ export function CompletionForm(props: CompletionFormProps) {
     reasonCustomText,
     observacaoCurta,
     saving,
+    qualificacao,
     onChangeTipo,
     onChangeResultado,
     onChangeDescricao,
@@ -264,6 +277,15 @@ export function CompletionForm(props: CompletionFormProps) {
     }
     switch (outcome) {
       case "agendar":
+        if (qualificacao) {
+          if (!qualificacao.pillStatus) return false;
+          if (
+            qualificacao.pillStatus === "alinhando_visita" &&
+            !qualificacao.dataOverride
+          )
+            return false;
+          return true;
+        }
         return (
           !!novaTarefa.tipo &&
           !!novaTarefa.vence_em &&
@@ -286,6 +308,7 @@ export function CompletionForm(props: CompletionFormProps) {
     reasonCode,
     reasonCustomText,
     semContato,
+    qualificacao,
   ]);
 
   const ctaConfig = useMemo(() => {
@@ -432,25 +455,35 @@ export function CompletionForm(props: CompletionFormProps) {
 
         {/* 3. Cartão principal — Agendar (default destacado) */}
         {outcome === "agendar" && !(semContato.enabled && semContato.finalAttempt) && (
-          <AgendarCard
-            novaTarefa={novaTarefa}
-            novoStageId={novoStageId}
-            leadId={leadId}
-            currentStageId={currentStageId}
-            currentStageNome={currentStageNome}
-            stages={stages}
-            stagesLoading={stagesLoading}
-            suggestion={suggestion}
-            suggestionLabel={suggestionLabel}
-            suggestionDismissed={suggestionDismissed}
-            onDismissSuggestion={() => setSuggestionDismissed(true)}
-            manualOpen={shouldShowManual}
-            onToggleManual={() => setManualOpen((v) => !v)}
-            semContato={semContato}
-            onChangeNovaTarefa={onChangeNovaTarefa}
-            onChangeNovoStage={onChangeNovoStage}
-            onApplyQuick={applyQuick}
-          />
+          qualificacao ? (
+            <QualificacaoPillsBlock
+              pillStatus={qualificacao.pillStatus}
+              currentStatus={qualificacao.currentStatus}
+              dataOverride={qualificacao.dataOverride}
+              onPickPill={qualificacao.onPickPill}
+              onPickData={qualificacao.onPickData}
+            />
+          ) : (
+            <AgendarCard
+              novaTarefa={novaTarefa}
+              novoStageId={novoStageId}
+              leadId={leadId}
+              currentStageId={currentStageId}
+              currentStageNome={currentStageNome}
+              stages={stages}
+              stagesLoading={stagesLoading}
+              suggestion={suggestion}
+              suggestionLabel={suggestionLabel}
+              suggestionDismissed={suggestionDismissed}
+              onDismissSuggestion={() => setSuggestionDismissed(true)}
+              manualOpen={shouldShowManual}
+              onToggleManual={() => setManualOpen((v) => !v)}
+              semContato={semContato}
+              onChangeNovaTarefa={onChangeNovaTarefa}
+              onChangeNovoStage={onChangeNovoStage}
+              onApplyQuick={applyQuick}
+            />
+          )
         )}
 
         {/* Only-Complete */}
@@ -1059,6 +1092,74 @@ function ReasonBlock({
           className="resize-none text-[11px] bg-background border-border text-foreground placeholder:text-muted-foreground/60"
         />
       </div>
+    </div>
+  );
+}
+
+/* ─── QualificacaoPillsBlock ───
+   Substitui a seção de "Agendar próxima tarefa" quando o lead está em stage tipo=qualificacao.
+   Exibe as 6 pills de QUALIFICACAO_STATUS_ATEND; ao selecionar 'alinhando_visita' abre o
+   VisitaDatePicker inline (Hoje / Amanhã / Escolher data). O motor real de tarefas é
+   disparado no TaskCompletionDialog via advanceQualificacaoStatus. */
+function QualificacaoPillsBlock({
+  pillStatus,
+  currentStatus,
+  dataOverride,
+  onPickPill,
+  onPickData,
+}: {
+  pillStatus: string;
+  currentStatus: string;
+  dataOverride?: DataOverride;
+  onPickPill: (statusKey: string) => void;
+  onPickData: (dt: DataOverride | undefined) => void;
+}) {
+  const showDatePicker = pillStatus === "alinhando_visita";
+  return (
+    <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-foreground">
+          Etapa do atendimento
+        </span>
+        {currentStatus && (
+          <span className="text-[10px] text-muted-foreground">
+            atual: {QUALIFICACAO_STATUS_ATEND[currentStatus] ?? currentStatus}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {Object.entries(QUALIFICACAO_STATUS_ATEND).map(([key, label]) => {
+          const active = pillStatus === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onPickPill(key)}
+              className={[
+                "px-2.5 py-1 rounded-full text-[11px] border transition",
+                active
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-border hover:bg-muted",
+              ].join(" ")}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {showDatePicker && (
+        <div className="pt-1 border-t border-border/50">
+          <div className="text-[10px] text-muted-foreground mb-1.5">
+            Quando é a visita?
+          </div>
+          <VisitaDatePicker onPick={(d) => onPickData(d)} />
+          {dataOverride && (
+            <div className="text-[10px] text-primary mt-1.5">
+              ✓ {dataOverride === "hoje" ? "Hoje" : dataOverride === "amanha" ? "Amanhã" : dataOverride}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

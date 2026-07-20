@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { CompletionForm } from "./CompletionForm";
+import { advanceQualificacaoStatus, type DataOverride } from "@/lib/qualificacaoTaskEngine";
 import {
   DESCARTE_REASONS,
   INATIVAR_REASONS,
@@ -77,6 +78,16 @@ export default function TaskCompletionDialog({
 
   const [saving, setSaving] = useState(false);
 
+  /* Qualificação mode: quando lead está em stage tipo='qualificacao' com status_atendimento setado,
+     a seção "próxima tarefa" do card Agendar vira as 6 pills de QUALIFICACAO_STATUS_ATEND. */
+  const [qualInfo, setQualInfo] = useState<{
+    enabled: boolean;
+    currentStatus: string;
+    lead: { id: string; nome?: string | null; corretor_id?: string | null; flag_status?: Record<string, any> | null } | null;
+  }>({ enabled: false, currentStatus: "", lead: null });
+  const [qualPillStatus, setQualPillStatus] = useState<string>("");
+  const [qualDataOverride, setQualDataOverride] = useState<DataOverride | undefined>();
+
   const reset = () => {
     setTipoContato(undefined);
     setResultado(undefined);
@@ -94,6 +105,9 @@ export default function TaskCompletionDialog({
       requiresNextTask: false,
       finalAttempt: false,
     });
+    setQualInfo({ enabled: false, currentStatus: "", lead: null });
+    setQualPillStatus("");
+    setQualDataOverride(undefined);
     setSaving(false);
   };
 
@@ -142,7 +156,32 @@ export default function TaskCompletionDialog({
         .eq("id", stageId)
         .maybeSingle();
 
-      if ((stage as { tipo?: string } | null)?.tipo !== "sem_contato") {
+      const stageTipo = (stage as { tipo?: string } | null)?.tipo;
+
+      // Qualificação: carrega flag_status.status_atendimento + dados do lead p/ motor
+      if (stageTipo === "qualificacao") {
+        const { data: leadData } = await supabase
+          .from("pipeline_leads")
+          .select("id, nome, corretor_id, flag_status")
+          .eq("id", leadId)
+          .maybeSingle();
+        const fs = (leadData as any)?.flag_status || {};
+        const currentStatus = (fs.status_atendimento as string) || "";
+        if (!cancelled) {
+          const enabled = !!currentStatus;
+          setQualInfo({
+            enabled,
+            currentStatus,
+            lead: enabled ? (leadData as any) : null,
+          });
+          setQualPillStatus(enabled ? currentStatus : "");
+          setQualDataOverride(undefined);
+        }
+      } else if (!cancelled) {
+        setQualInfo({ enabled: false, currentStatus: "", lead: null });
+      }
+
+      if (stageTipo !== "sem_contato") {
         if (!cancelled) {
           setSemContatoInfo({
             enabled: false,
@@ -223,6 +262,19 @@ export default function TaskCompletionDialog({
         return;
       }
 
+      /* Qualificação mode:
+         - força outcome='concluir' (no free-form nova_tarefa)
+         - após onConfirm: se pill != status atual, chama motor único (silencioso)
+           que cancela TODAS pendências e cria a próxima tarefa correta. */
+      const isQualFlow =
+        qualInfo.enabled && effectiveOutcome === "agendar" && !!qualInfo.lead;
+      if (isQualFlow) {
+        if (qualPillStatus === "alinhando_visita" && !qualDataOverride) {
+          // aguarda usuário escolher data
+          return;
+        }
+      }
+
       let reasonLabel: string | undefined;
       if (effectiveOutcome === "descartar" || effectiveOutcome === "inativar") {
         const list =
@@ -238,13 +290,14 @@ export default function TaskCompletionDialog({
         tipo_contato: tipoContato,
         resultado,
         descricao: descricao.trim() || undefined,
-        outcome: effectiveOutcome,
+        outcome: isQualFlow ? "concluir" : effectiveOutcome,
         novo_stage_id:
-          effectiveOutcome === "agendar" || effectiveOutcome === "concluir"
+          !isQualFlow &&
+          (effectiveOutcome === "agendar" || effectiveOutcome === "concluir")
             ? novoStageId
             : undefined,
         nova_tarefa:
-          effectiveOutcome === "agendar"
+          !isQualFlow && effectiveOutcome === "agendar"
             ? {
                 ...novaTarefa,
                 obs: observacaoCurta?.trim() || novaTarefa.obs,
@@ -260,6 +313,26 @@ export default function TaskCompletionDialog({
       };
 
       await onConfirm(payload);
+
+      // Pós-conclusão em qual mode: dispara motor único se houve avanço de pill
+      if (
+        isQualFlow &&
+        qualInfo.lead &&
+        qualPillStatus &&
+        qualPillStatus !== qualInfo.currentStatus
+      ) {
+        try {
+          await advanceQualificacaoStatus({
+            lead: qualInfo.lead,
+            statusKey: qualPillStatus,
+            dataOverride: qualDataOverride,
+            silent: true,
+          });
+        } catch (err) {
+          console.error("[TaskCompletionDialog] advanceQualificacaoStatus error", err);
+        }
+      }
+
       onOpenChange(false);
     } catch (err) {
       console.error("[TaskCompletionDialog] onConfirm error", err);
@@ -304,6 +377,20 @@ export default function TaskCompletionDialog({
           reasonCustomText={reasonCustomText}
           observacaoCurta={observacaoCurta}
           saving={saving}
+          qualificacao={
+            qualInfo.enabled
+              ? {
+                  currentStatus: qualInfo.currentStatus,
+                  pillStatus: qualPillStatus,
+                  dataOverride: qualDataOverride,
+                  onPickPill: (k) => {
+                    setQualPillStatus(k);
+                    if (k !== "alinhando_visita") setQualDataOverride(undefined);
+                  },
+                  onPickData: (d) => setQualDataOverride(d),
+                }
+              : undefined
+          }
           onChangeTipo={setTipoContato}
           onChangeResultado={setResultado}
           onChangeDescricao={setDescricao}
