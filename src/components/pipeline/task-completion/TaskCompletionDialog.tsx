@@ -389,7 +389,15 @@ export default function TaskCompletionDialog({
           "max-[420px]:top-auto max-[420px]:bottom-0 max-[420px]:left-0 max-[420px]:translate-x-0 max-[420px]:translate-y-0",
           "max-[420px]:w-full max-[420px]:max-w-full max-[420px]:rounded-t-2xl max-[420px]:rounded-b-none max-[420px]:border-b-0",
         ].join(" ")}
+        onClick={(e) => e.stopPropagation()}
       >
+        {!contextLoaded ? (
+          <div className="p-6 space-y-3 animate-pulse">
+            <div className="h-4 w-2/3 rounded bg-muted" />
+            <div className="h-24 w-full rounded bg-muted" />
+            <div className="h-10 w-full rounded bg-muted" />
+          </div>
+        ) : (
         <CompletionForm
           context={context}
           tarefaTitulo={tarefaTitulo}
