@@ -34,6 +34,7 @@ import {
   type PresencaScope,
 } from "@/hooks/usePresencaCorretoresDia";
 import { useRoletaPresencas } from "@/hooks/useRoletaPresencas";
+import { useElegibilidadeDomingo } from "@/hooks/useElegibilidadeDomingo";
 import {
   derivarEstadoTurno,
   ESTADO_LABEL,
