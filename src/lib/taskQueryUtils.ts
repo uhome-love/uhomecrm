@@ -225,6 +225,8 @@ export interface ProximaTarefa {
   tipo: string;
   vence_em: string | null;
   hora_vencimento: string | null;
+  id?: string;
+  titulo?: string;
 }
 
 function _toValidDateFromYMD(value: string | null | undefined): Date | null {
