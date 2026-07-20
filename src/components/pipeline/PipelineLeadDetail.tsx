@@ -531,8 +531,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} pendingCount={pendingTasksList.length} />
 
       {/* Checklist de Qualificação — persistente em todas as etapas */}
-      <QualificacaoEtapaCard lead={lead} />
-      <PerfilLeadCard lead={lead} />
+      <QualificacaoEtapaCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
+      <PerfilLeadCard lead={lead} onSaved={() => { onUpdate(lead.id, {} as any); leadData.reload(); }} />
 
 
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
