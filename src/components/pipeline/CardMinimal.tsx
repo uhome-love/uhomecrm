@@ -221,17 +221,27 @@ const CardMinimal = memo(function CardMinimal({
     [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
 
-  // Título específico = tarefa criada pelo qualificacaoTaskEngine (origem começa com "qualificacao_").
-  // Dispensa rótulo genérico + actionWhen no card e o badge de substatus (redundante).
-  // Não usar heurística de texto ("·"/"às") porque completeLeadTask também gera títulos com " · ".
+  // Título específico: tarefa criada por engine automático (qualificacao_*) OU
+  // tarefa visita_auto (rótulo curto por subtipo — "Confirmar visita", etc).
+  const visitaAutoTxt = useMemo(
+    () => (proximaTarefa?.origem === "visita_auto" ? visitaAutoLabel(proximaTarefa?.subtipo) : null),
+    [proximaTarefa?.origem, proximaTarefa?.subtipo]
+  );
   const hasSpecificTitle = useMemo(() => {
-    return !!proximaTarefa?.origem?.startsWith("qualificacao_");
-  }, [proximaTarefa?.origem]);
+    if (proximaTarefa?.origem?.startsWith("qualificacao_")) return true;
+    if (visitaAutoTxt) return true;
+    return false;
+  }, [proximaTarefa?.origem, visitaAutoTxt]);
+
+  const specificTitleText = useMemo(
+    () => visitaAutoTxt ?? proximaTarefa?.titulo ?? "",
+    [visitaAutoTxt, proximaTarefa?.titulo]
+  );
 
   // fallback acessível: usado como title e leitura por SR
   const fullActionLabel = useMemo(
-    () => (hasSpecificTitle ? (proximaTarefa?.titulo || "") : formatNextAction(proximaTarefa ?? null)),
-    [hasSpecificTitle, proximaTarefa?.titulo, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
+    () => (hasSpecificTitle ? specificTitleText : formatNextAction(proximaTarefa ?? null)),
+    [hasSpecificTitle, specificTitleText, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
 
   const empreendimento = useMemo(
