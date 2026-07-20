@@ -334,7 +334,18 @@ export function PerfilLeadCard({ lead, onSaved }: Props) {
         ...(outroOn && outro.trim() ? [outro.trim()] : []),
       ].join(", ");
 
-      const nextFlag: Record<string, any> = { ...(lead.flag_status || {}) };
+      // Re-buscar flag_status fresco pra não sobrescrever status_atendimento /
+      // status_negociacao que outra aba/dispositivo tenha atualizado enquanto
+      // o popover estava aberto.
+      const { data: fresh, error: fetchErr } = await supabase
+        .from("pipeline_leads")
+        .select("flag_status")
+        .eq("id", lead.id)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+
+      const baseFlag = (fresh?.flag_status as Record<string, any>) || (lead.flag_status as Record<string, any>) || {};
+      const nextFlag: Record<string, any> = { ...baseFlag };
       if (tipologia) nextFlag.tipologia = tipologia; else delete nextFlag.tipologia;
 
       const updates: Record<string, any> = {
