@@ -65,6 +65,8 @@ import {
   type Resultado,
   type TipoProximaTarefa,
 } from "./types";
+import type { CompletionPayload } from "./types";
+import VisitaCompletionFlow, { type VisitaSubtipo } from "./VisitaCompletionFlow";
 import { useStageOptions } from "./useStageOptions";
 
 export interface StageStatusPropsBlock {
