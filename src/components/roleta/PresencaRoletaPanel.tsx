@@ -219,7 +219,7 @@ function CorretorRow({
 
   return (
     <div className="rounded-lg border border-border bg-card p-2 hover:bg-muted/10 transition">
-      <div className="grid gap-2 md:grid-cols-[minmax(180px,220px)_1fr] md:items-center">
+      <div className="grid gap-2 lg:grid-cols-[minmax(180px,220px)_1fr] lg:items-center">
         {/* Coluna esquerda: identidade */}
         <div className="flex items-center gap-2 min-w-0">
           <Avatar className="h-7 w-7 shrink-0">
