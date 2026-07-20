@@ -201,13 +201,9 @@ function CorretorRow({
   ) => void;
   isMutating: boolean;
 }) {
-  const presencaManha = getPresenca(c.corretor_id, "manha");
-  const presencaTarde = getPresenca(c.corretor_id, "tarde");
-  const elegívelNoturna =
-    presencaManha?.status === "na_empresa" &&
-    presencaTarde?.status === "na_empresa";
   const credenciadoNoturna = c.credenciamentos.includes("noturna");
-  const mostrarNoturna = elegívelNoturna || credenciadoNoturna;
+  // Noturna é benefício automático — só aparece para quem tem credenciamento aprovado.
+  const mostrarNoturna = credenciadoNoturna;
 
   const turnos: PresencaTurno[] = mostrarNoturna
     ? [...TURNOS_BASE, "noturna"]
