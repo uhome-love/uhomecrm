@@ -584,6 +584,9 @@ export function CompletionForm(props: CompletionFormProps) {
                 onChangeVenceEm={handleChangeVenceEm}
                 onChangeNovoStage={onChangeNovoStage}
                 onApplyQuick={applyQuick}
+                presets={hasPresets ? stagePresets : null}
+                selectedPresetId={selectedPresetId}
+                onSelectPreset={handleSelectPreset}
               />
             )}
 
