@@ -792,16 +792,24 @@ function AgendarCard({
               Quando
             </label>
             <div className="flex flex-wrap gap-1 mb-1.5">
-              {quickDates().map((q) => (
-                <button
-                  key={q.label}
-                  type="button"
-                  onClick={() => onApplyQuick(q.d, q.h)}
-                  className="text-[10px] px-1.5 py-0.5 rounded transition-colors border bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                >
-                  {q.label}
-                </button>
-              ))}
+              {quickDates()
+                .filter((q) => {
+                  // Não oferecer atalho que ultrapasse o teto do stage.
+                  const diffDays = Math.round(
+                    (q.d.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000,
+                  );
+                  return diffDays <= maxDaysAhead;
+                })
+                .map((q) => (
+                  <button
+                    key={q.label}
+                    type="button"
+                    onClick={() => onApplyQuick(q.d, q.h)}
+                    className="text-[10px] px-1.5 py-0.5 rounded transition-colors border bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                  >
+                    {q.label}
+                  </button>
+                ))}
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               <div className="flex items-center gap-1 bg-background border border-border rounded-md px-2">
@@ -809,9 +817,8 @@ function AgendarCard({
                 <Input
                   type="date"
                   value={novaTarefa.vence_em}
-                  onChange={(e) =>
-                    onChangeNovaTarefa({ vence_em: e.target.value })
-                  }
+                  max={maxVenceEm}
+                  onChange={(e) => onChangeVenceEm(e.target.value)}
                   className="h-7 text-[11px] border-0 bg-transparent px-1 focus-visible:ring-0"
                 />
               </div>
