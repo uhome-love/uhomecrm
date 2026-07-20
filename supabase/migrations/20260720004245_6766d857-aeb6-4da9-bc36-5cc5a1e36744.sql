@@ -1,0 +1,1 @@
+ALTER TABLE public.pipeline_tarefas ADD COLUMN IF NOT EXISTS adiamentos_count integer NOT NULL DEFAULT 0;

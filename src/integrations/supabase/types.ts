@@ -6727,6 +6727,7 @@ export type Database = {
       }
       pipeline_tarefas: {
         Row: {
+          adiamentos_count: number
           concluida_em: string | null
           created_at: string
           created_by: string
@@ -6744,6 +6745,7 @@ export type Database = {
           vence_em: string | null
         }
         Insert: {
+          adiamentos_count?: number
           concluida_em?: string | null
           created_at?: string
           created_by: string
@@ -6761,6 +6763,7 @@ export type Database = {
           vence_em?: string | null
         }
         Update: {
+          adiamentos_count?: number
           concluida_em?: string | null
           created_at?: string
           created_by?: string
