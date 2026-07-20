@@ -233,7 +233,10 @@ export default function TaskCompletionDialog({
       }
     }
 
-    loadSemContatoInfo();
+    if (!open) return;
+    loadSemContatoInfo().finally(() => {
+      if (!cancelled) setContextLoaded(true);
+    });
     return () => {
       cancelled = true;
     };
