@@ -16,25 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
 import PresencaDoCorretorPill from "@/components/corretor/PresencaDoCorretorPill";
 
-type StatusOnline = "na_empresa" | "em_plantao" | "em_pausa" | "offline";
+// Segmento shape
 
-interface StatusOption {
-  value: StatusOnline;
-  label: string;
-  icon: string;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-  description: string;
-  available: boolean;
-}
-
-const STATUS_OPTIONS: StatusOption[] = [
-  { value: "na_empresa", label: "Na Empresa", icon: "🟢", color: "text-emerald-700", bgColor: "bg-emerald-50", borderColor: "border-emerald-300", description: "Disponível para receber leads", available: true },
-  { value: "em_plantao", label: "Em Plantão", icon: "🔵", color: "text-blue-700", bgColor: "bg-blue-50", borderColor: "border-blue-300", description: "Plantão externo, disponível", available: true },
-  { value: "em_pausa", label: "Em Pausa", icon: "🟡", color: "text-amber-700", bgColor: "bg-amber-50", borderColor: "border-amber-300", description: "Pausa temporária, não recebe leads", available: false },
-  { value: "offline", label: "Offline", icon: "🔴", color: "text-red-700", bgColor: "bg-red-50", borderColor: "border-red-300", description: "Fora do expediente", available: false },
-];
 
 interface Segmento {
   id: string;
