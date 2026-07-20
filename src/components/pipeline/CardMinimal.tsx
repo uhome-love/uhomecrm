@@ -298,6 +298,10 @@ const CardMinimal = memo(function CardMinimal({
   }, [negocioInfo?.vgv, negocioInfo?.fase_changed_at, lead.flag_status, stage?.tipo, empreendimento]);
 
   const handleOpen = () => {
+    // Guard: never open lead drawer while task-completion popup is open.
+    // Protects against React event bubbling from the Radix dialog portal into the card's onClick,
+    // which was causing accidental stage moves when interacting with the completion popup.
+    if (completingOpen) return;
     trackPipelineEvent("pipeline_card_clicked", {
       lead_id: lead.id,
       stage_id: lead.stage_id,
