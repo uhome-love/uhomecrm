@@ -262,6 +262,19 @@ export default function TaskCompletionDialog({
         return;
       }
 
+      /* Qualificação mode:
+         - força outcome='concluir' (no free-form nova_tarefa)
+         - após onConfirm: se pill != status atual, chama motor único (silencioso)
+           que cancela TODAS pendências e cria a próxima tarefa correta. */
+      const isQualFlow =
+        qualInfo.enabled && effectiveOutcome === "agendar" && !!qualInfo.lead;
+      if (isQualFlow) {
+        if (qualPillStatus === "alinhando_visita" && !qualDataOverride) {
+          // aguarda usuário escolher data
+          return;
+        }
+      }
+
       let reasonLabel: string | undefined;
       if (effectiveOutcome === "descartar" || effectiveOutcome === "inativar") {
         const list =
@@ -277,13 +290,14 @@ export default function TaskCompletionDialog({
         tipo_contato: tipoContato,
         resultado,
         descricao: descricao.trim() || undefined,
-        outcome: effectiveOutcome,
+        outcome: isQualFlow ? "concluir" : effectiveOutcome,
         novo_stage_id:
-          effectiveOutcome === "agendar" || effectiveOutcome === "concluir"
+          !isQualFlow &&
+          (effectiveOutcome === "agendar" || effectiveOutcome === "concluir")
             ? novoStageId
             : undefined,
         nova_tarefa:
-          effectiveOutcome === "agendar"
+          !isQualFlow && effectiveOutcome === "agendar"
             ? {
                 ...novaTarefa,
                 obs: observacaoCurta?.trim() || novaTarefa.obs,
@@ -299,6 +313,26 @@ export default function TaskCompletionDialog({
       };
 
       await onConfirm(payload);
+
+      // Pós-conclusão em qual mode: dispara motor único se houve avanço de pill
+      if (
+        isQualFlow &&
+        qualInfo.lead &&
+        qualPillStatus &&
+        qualPillStatus !== qualInfo.currentStatus
+      ) {
+        try {
+          await advanceQualificacaoStatus({
+            lead: qualInfo.lead,
+            statusKey: qualPillStatus,
+            dataOverride: qualDataOverride,
+            silent: true,
+          });
+        } catch (err) {
+          console.error("[TaskCompletionDialog] advanceQualificacaoStatus error", err);
+        }
+      }
+
       onOpenChange(false);
     } catch (err) {
       console.error("[TaskCompletionDialog] onConfirm error", err);
