@@ -300,29 +300,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   };
 
 
-  const handleAdiarRapido = async (id: string, horas: number) => {
-    const novaData = addHours(new Date(), horas);
-    await supabase.from("pipeline_tarefas").update({
-      vence_em: dateToBRT(novaData),
-      hora_vencimento: format(novaData, "HH:mm"),
-    } as any).eq("id", id);
-    toast.success("Tarefa adiada ✅");
-    invalidateTaskQueries(queryClient, leadId);
-    onReload();
-  };
 
-  const handleAdiarCustom = async () => {
-    if (!adiarId || !adiarData) return;
-    if (isTaskDateTooFar(adiarData)) { toast.error(TASK_DATE_TOO_FAR_MSG); return; }
-    await supabase.from("pipeline_tarefas").update({
-      vence_em: adiarData,
-      hora_vencimento: adiarHora || null,
-    } as any).eq("id", adiarId);
-    toast.success("Tarefa reagendada ✅");
-    setAdiarId(null);
-    invalidateTaskQueries(queryClient, leadId);
-    onReload();
-  };
 
   const handleEditSave = async () => {
     if (!editId) return;
