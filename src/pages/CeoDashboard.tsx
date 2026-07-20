@@ -440,8 +440,8 @@ export default function CeoDashboard() {
         </Card>
       )}
 
-      {/* ═══ PRESENÇA DA ROLETA ═══ */}
-      <PresencaSummaryCard scope="ceo" />
+      {/* Presença da Roleta migrada para a página /roleta/presenca (menu Presença) */}
+
 
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* LINHA 1 — ROLETA DE LEADS                                 */}
