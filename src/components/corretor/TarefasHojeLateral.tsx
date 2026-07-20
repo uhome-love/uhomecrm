@@ -32,9 +32,6 @@ export default function TarefasHojeLateral({ variant }: Props) {
   const [completing, setCompleting] = useState<TarefaHoje | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const [adiarTarefa, setAdiarTarefa] = useState<TarefaHoje | null>(null);
-  const [adiarData, setAdiarData] = useState("");
-  const [adiarHora, setAdiarHora] = useState("");
 
   const handleOpenLead = (taskId: string, leadId: string) => {
     logDashboard("dashboard_task_click", { task_id: taskId, lead_id: leadId, action: "open_drawer" });
