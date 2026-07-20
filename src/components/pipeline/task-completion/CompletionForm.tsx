@@ -1123,18 +1123,18 @@ function QualificacaoPillsBlock({
         </span>
         {currentStatus && (
           <span className="text-[10px] text-muted-foreground">
-            atual: {QUALIFICACAO_STATUS_ATEND.find((s) => s.key === currentStatus)?.label ?? currentStatus}
+            atual: {QUALIFICACAO_STATUS_ATEND[currentStatus] ?? currentStatus}
           </span>
         )}
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {QUALIFICACAO_STATUS_ATEND.map((s) => {
-          const active = pillStatus === s.key;
+        {Object.entries(QUALIFICACAO_STATUS_ATEND).map(([key, label]) => {
+          const active = pillStatus === key;
           return (
             <button
-              key={s.key}
+              key={key}
               type="button"
-              onClick={() => onPickPill(s.key)}
+              onClick={() => onPickPill(key)}
               className={[
                 "px-2.5 py-1 rounded-full text-[11px] border transition",
                 active
@@ -1142,7 +1142,7 @@ function QualificacaoPillsBlock({
                   : "bg-background text-foreground border-border hover:bg-muted",
               ].join(" ")}
             >
-              {s.label}
+              {label}
             </button>
           );
         })}
