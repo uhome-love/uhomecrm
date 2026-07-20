@@ -18,7 +18,9 @@ import {
   LogOut,
   Target,
   ChevronDown,
+  AlertTriangle,
 } from "lucide-react";
+import { RegistrarHorarioDialog } from "./RegistrarHorarioDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -123,13 +125,13 @@ function TurnoChip({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2 text-[10px] gap-1"
+            className="h-6 px-2 text-[10px] gap-1 border-success-500/40 text-success-700 hover:bg-success-500/10"
             disabled={isMutating}
             onClick={() => onMark(turno, "na_empresa")}
-            title="Confirmar que chegou neste turno"
+            title="Marcar presente — registra o horário de chegada"
           >
             <Check className="h-3 w-3" />
-            <span className="hidden lg:inline">Chegou</span>
+            <span className="hidden lg:inline">Presente</span>
           </Button>
         )}
         {showSaiu && (
@@ -323,7 +325,7 @@ export function PresencaRoletaPanel({
   const canManage = isAdmin || isGestor;
 
   const { data, isLoading } = usePresencaCorretoresDia(scope, gestorId);
-  const { getPresenca, marcar, isMutating } = useRoletaPresencas();
+  const { getPresenca, marcarAsync, isMutating } = useRoletaPresencas();
 
   const corretores = data?.corretores ?? [];
   const turnoAtivo = data?.turno_ativo_atual ?? "";
@@ -332,19 +334,37 @@ export function PresencaRoletaPanel({
 
   const shouldGroup = (groupByTeam ?? scope === "ceo") && corretores.length > 0;
 
+  // Dialog state — registro de horário
+  const [dialog, setDialog] = useState<{
+    open: boolean;
+    tipo: "chegada" | "saida";
+    corretor_id: string;
+    corretor_nome: string;
+    turno: PresencaTurno;
+  } | null>(null);
+
+  const dataBRT = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
   // Estatísticas do topo
   const stats = useMemo(() => {
-    if (foraDeJanela) return { naEmpresa: 0, faltas: 0, saidas: 0 };
+    if (foraDeJanela) return { naEmpresa: 0, faltas: 0, saidas: 0, semMarcar: 0 };
     let na = 0,
       falt = 0,
-      saiu = 0;
+      saiu = 0,
+      sem = 0;
     for (const c of corretores) {
       const p = getPresenca(c.corretor_id, turnoAtivo);
       if (p?.status === "na_empresa") na++;
       else if (p?.status === "saiu") saiu++;
       else if (p?.status === "falta") falt++;
+      else sem++;
     }
-    return { naEmpresa: na, faltas: falt, saidas: saiu };
+    return { naEmpresa: na, faltas: falt, saidas: saiu, semMarcar: sem };
   }, [corretores, turnoAtivo, foraDeJanela, getPresenca]);
 
   // Agrupamento por gestor
@@ -374,7 +394,30 @@ export function PresencaRoletaPanel({
     turno: PresencaTurno,
     status: "na_empresa" | "saiu",
   ) => {
-    marcar({ corretor_id, turnos: [turno], status });
+    const c = corretores.find((x) => x.corretor_id === corretor_id);
+    setDialog({
+      open: true,
+      tipo: status === "na_empresa" ? "chegada" : "saida",
+      corretor_id,
+      corretor_nome: c?.nome ?? "corretor",
+      turno,
+    });
+  };
+
+  const handleConfirmHorario = async (iso: string) => {
+    if (!dialog) return;
+    try {
+      await marcarAsync({
+        corretor_id: dialog.corretor_id,
+        turnos: [dialog.turno],
+        status: dialog.tipo === "chegada" ? "na_empresa" : "saiu",
+        chegou_em: dialog.tipo === "chegada" ? iso : null,
+        saiu_em: dialog.tipo === "saida" ? iso : null,
+      });
+      setDialog(null);
+    } catch {
+      // toast já disparado pelo hook
+    }
   };
 
   return (
@@ -423,6 +466,20 @@ export function PresencaRoletaPanel({
           </>
         )}
       </div>
+
+      {/* Aviso: corretores sem presença marcada no turno ativo */}
+      {!foraDeJanela && canManage && stats.semMarcar > 0 && (
+        <div className="rounded-lg px-3 py-2 mb-3 text-xs flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-800 dark:text-yellow-300">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="leading-snug">
+            <strong>{stats.semMarcar}</strong> corretor
+            {stats.semMarcar === 1 ? "" : "es"} sem presença marcada em{" "}
+            <strong>{turnoAtivoLabel}</strong>. Quem não for marcado até o fim
+            do turno vira <strong>Falta</strong>.
+          </div>
+        </div>
+      )}
+
 
       <div className="flex-1 min-h-[180px]">
         {isLoading ? (
@@ -483,6 +540,17 @@ export function PresencaRoletaPanel({
           </Link>
         </div>
       )}
+
+      <RegistrarHorarioDialog
+        open={!!dialog?.open}
+        tipo={dialog?.tipo ?? "chegada"}
+        dataBRT={dataBRT}
+        corretorNome={dialog?.corretor_nome ?? ""}
+        turnoLabel={TURNO_LABEL[dialog?.turno ?? ""] ?? "—"}
+        onCancel={() => setDialog(null)}
+        onConfirm={handleConfirmHorario}
+        isSubmitting={isMutating}
+      />
     </div>
   );
 }

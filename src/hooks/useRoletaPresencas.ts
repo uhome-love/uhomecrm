@@ -68,6 +68,8 @@ export function useRoletaPresencas(data?: string) {
       status: PresencaStatus;
       observacao?: string;
       data?: string;
+      chegou_em?: string | null;
+      saiu_em?: string | null;
     }) => {
       const { data, error } = await supabase.rpc("roleta_marcar_presenca", {
         p_corretor_id: input.corretor_id,
@@ -75,7 +77,9 @@ export function useRoletaPresencas(data?: string) {
         p_turnos: input.turnos,
         p_status: input.status,
         p_observacao: input.observacao ?? null,
-      });
+        p_chegou_em: input.chegou_em ?? null,
+        p_saiu_em: input.saiu_em ?? null,
+      } as any);
       if (error) throw error;
       return data;
     },
