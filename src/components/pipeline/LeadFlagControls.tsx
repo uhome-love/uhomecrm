@@ -74,20 +74,12 @@ export default function LeadFlagControls({ leadId, stageTipo, flagStatus, onUpda
     return null;
   }
 
+  // Etapa "Qualificação": substatus (status_atendimento) e demais campos agora
+  // vivem no card "Checklist de Qualificação" (QualificacaoChecklistCard), que
+  // aparece em Qualificação e todas as etapas seguintes. Evita duplicação na
+  // coluna esquerda do drawer.
   if (stageTipo === "qualificacao") {
-    return wrapper(
-      <>
-        <Label className="text-xs text-muted-foreground">Substatus:</Label>
-        <Select value={flags.status_atendimento || ""} onValueChange={(v) => setFlag("status_atendimento", v)}>
-          <SelectTrigger className="h-7 w-44 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
-          <SelectContent>
-            {QUALIFICACAO_SUBSTATUS.map((o) => (
-              <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </>
-    );
+    return null;
   }
 
   if (stageTipo === "contato_inicial") {
