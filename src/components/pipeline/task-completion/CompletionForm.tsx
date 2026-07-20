@@ -1095,3 +1095,71 @@ function ReasonBlock({
     </div>
   );
 }
+
+/* ─── QualificacaoPillsBlock ───
+   Substitui a seção de "Agendar próxima tarefa" quando o lead está em stage tipo=qualificacao.
+   Exibe as 6 pills de QUALIFICACAO_STATUS_ATEND; ao selecionar 'alinhando_visita' abre o
+   VisitaDatePicker inline (Hoje / Amanhã / Escolher data). O motor real de tarefas é
+   disparado no TaskCompletionDialog via advanceQualificacaoStatus. */
+function QualificacaoPillsBlock({
+  pillStatus,
+  currentStatus,
+  dataOverride,
+  onPickPill,
+  onPickData,
+}: {
+  pillStatus: string;
+  currentStatus: string;
+  dataOverride?: DataOverride;
+  onPickPill: (statusKey: string) => void;
+  onPickData: (dt: DataOverride | undefined) => void;
+}) {
+  const showDatePicker = pillStatus === "alinhando_visita";
+  return (
+    <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-foreground">
+          Etapa do atendimento
+        </span>
+        {currentStatus && (
+          <span className="text-[10px] text-muted-foreground">
+            atual: {QUALIFICACAO_STATUS_ATEND.find((s) => s.key === currentStatus)?.label ?? currentStatus}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {QUALIFICACAO_STATUS_ATEND.map((s) => {
+          const active = pillStatus === s.key;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => onPickPill(s.key)}
+              className={[
+                "px-2.5 py-1 rounded-full text-[11px] border transition",
+                active
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-border hover:bg-muted",
+              ].join(" ")}
+            >
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+      {showDatePicker && (
+        <div className="pt-1 border-t border-border/50">
+          <div className="text-[10px] text-muted-foreground mb-1.5">
+            Quando é a visita?
+          </div>
+          <VisitaDatePicker onPick={(d) => onPickData(d)} />
+          {dataOverride && (
+            <div className="text-[10px] text-primary mt-1.5">
+              ✓ {dataOverride === "hoje" ? "Hoje" : dataOverride === "amanha" ? "Amanhã" : dataOverride}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
