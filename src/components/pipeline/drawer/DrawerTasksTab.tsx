@@ -137,7 +137,7 @@ export default function DrawerTasksTab({
   );
 
   const [editTarefa, setEditTarefa] = useState<PipelineTarefa | null>(null);
-  const [adiarTarefa, setAdiarTarefa] = useState<PipelineTarefa | null>(null);
+  
   const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
   const [showConcluidas, setShowConcluidas] = useState(false);
 
@@ -234,7 +234,7 @@ export default function DrawerTasksTab({
                     bucket={g.key}
                     onToggle={() => setCompletingTarefa(t)}
                     onDelete={() => onDeleteTarefa(t.id)}
-                    onAdiar={() => setAdiarTarefa(t)}
+                    
                     onEdit={() => setEditTarefa(t)}
                   />
                 ))}
@@ -312,17 +312,6 @@ export default function DrawerTasksTab({
           }}
         />
       )}
-      {adiarTarefa && (
-        <AdiarTaskDialog
-          tarefa={adiarTarefa}
-          onClose={() => setAdiarTarefa(null)}
-          onSaved={() => {
-            setAdiarTarefa(null);
-            invalidateTaskQueries(queryClient, leadId);
-            onReload();
-          }}
-        />
-      )}
 
       <TaskCompletionDialog
         open={!!completingTarefa}
@@ -346,14 +335,12 @@ function TaskCard({
   bucket,
   onToggle,
   onDelete,
-  onAdiar,
   onEdit,
 }: {
   tarefa: PipelineTarefa;
   bucket: keyof ReturnType<typeof groupTasksByDeadline>;
   onToggle: () => void;
   onDelete: () => void;
-  onAdiar: () => void;
   onEdit: () => void;
 }) {
   const tipo = canonTipo(tarefa.tipo);
@@ -407,12 +394,6 @@ function TaskCard({
           <CheckCircle2 className="h-3 w-3" /> Feito
         </button>
         <button
-          onClick={onAdiar}
-          className="bg-white border border-zinc-200 hover:bg-zinc-50 rounded-md px-2.5 py-1 text-[11px] font-medium text-zinc-600 flex items-center gap-1"
-        >
-          <RotateCw className="h-3 w-3" /> Adiar
-        </button>
-        <button
           onClick={onEdit}
           className="bg-white border border-zinc-200 hover:bg-zinc-50 rounded-md px-2.5 py-1 text-[11px] font-medium text-zinc-600 flex items-center gap-1"
         >
@@ -432,54 +413,6 @@ function TaskCard({
   );
 }
 
-// ───── Adiar dialog ─────
-function AdiarTaskDialog({ tarefa, onClose, onSaved }: { tarefa: PipelineTarefa; onClose: () => void; onSaved: () => void }) {
-  const [data, setData] = useState(tarefa.vence_em ?? "");
-  const [hora, setHora] = useState(tarefa.hora_vencimento?.slice(0, 5) ?? "09:00");
-  const [saving, setSaving] = useState(false);
-
-  async function handleSave() {
-    if (!data) { toast.error("Informe a nova data."); return; }
-    setSaving(true);
-    const { error } = await supabase
-      .from("pipeline_tarefas")
-      .update({ vence_em: data, hora_vencimento: hora ? `${hora}:00` : null })
-      .eq("id", tarefa.id);
-    setSaving(false);
-    if (error) { toast.error("Erro ao adiar: " + error.message); return; }
-    toast.success("Tarefa adiada.");
-    onSaved();
-  }
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4" /> Adiar tarefa
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="text-sm text-zinc-700">{tarefa.titulo}</div>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="text-[11px] font-medium text-zinc-500">Nova data</label>
-              <Input type="date" value={data} onChange={e => setData(e.target.value)} />
-            </div>
-            <div className="w-32">
-              <label className="text-[11px] font-medium text-zinc-500">Hora</label>
-              <Input type="time" value={hora} onChange={e => setHora(e.target.value)} />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
-          <Button size="sm" onClick={handleSave} disabled={saving}>Adiar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // ───── Edit dialog ─────
 function EditTaskDialog({ tarefa, onClose, onSaved }: { tarefa: PipelineTarefa; onClose: () => void; onSaved: () => void }) {

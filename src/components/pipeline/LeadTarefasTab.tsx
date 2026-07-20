@@ -71,9 +71,6 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   });
   const [obs, setObs] = useState("");
   const [showConcluidas, setShowConcluidas] = useState(false);
-  const [adiarId, setAdiarId] = useState<string | null>(null);
-  const [adiarData, setAdiarData] = useState("");
-  const [adiarHora, setAdiarHora] = useState("");
   // Edit task state
   const [editId, setEditId] = useState<string | null>(null);
   const [editTipo, setEditTipo] = useState("follow_up");
@@ -300,29 +297,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   };
 
 
-  const handleAdiarRapido = async (id: string, horas: number) => {
-    const novaData = addHours(new Date(), horas);
-    await supabase.from("pipeline_tarefas").update({
-      vence_em: dateToBRT(novaData),
-      hora_vencimento: format(novaData, "HH:mm"),
-    } as any).eq("id", id);
-    toast.success("Tarefa adiada ✅");
-    invalidateTaskQueries(queryClient, leadId);
-    onReload();
-  };
 
-  const handleAdiarCustom = async () => {
-    if (!adiarId || !adiarData) return;
-    if (isTaskDateTooFar(adiarData)) { toast.error(TASK_DATE_TOO_FAR_MSG); return; }
-    await supabase.from("pipeline_tarefas").update({
-      vence_em: adiarData,
-      hora_vencimento: adiarHora || null,
-    } as any).eq("id", adiarId);
-    toast.success("Tarefa reagendada ✅");
-    setAdiarId(null);
-    invalidateTaskQueries(queryClient, leadId);
-    onReload();
-  };
 
   const handleEditSave = async () => {
     if (!editId) return;
@@ -401,9 +376,6 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
                 setEditObs(tarefa.descricao || "");
               }} style={{ padding: '4px 8px', fontSize: 11, color: 'var(--muted-foreground)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 <Pencil className="h-3 w-3" /> Editar
-              </button>
-              <button onClick={() => { setAdiarId(tarefa.id); setAdiarData(""); setAdiarHora(""); }} style={{ padding: '4px 8px', fontSize: 11, color: 'var(--muted-foreground)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Calendar className="h-3 w-3" /> Adiar
               </button>
               <button onClick={() => onDeleteTarefa(tarefa.id)} style={{ padding: '4px 4px', fontSize: 11, color: 'var(--muted-foreground)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
                 <Trash2 className="h-3 w-3" />
@@ -559,23 +531,6 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
         </div>
       )}
 
-      {/* Adiar dialog */}
-      <Dialog open={!!adiarId} onOpenChange={() => setAdiarId(null)}>
-        <DialogContent className="sm:max-w-xs">
-          <DialogHeader><DialogTitle>Adiar tarefa</DialogTitle></DialogHeader>
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 1); setAdiarId(null); }}>Daqui 1h</Button>
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 2); setAdiarId(null); }}>Daqui 2h</Button>
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 24); setAdiarId(null); }}>Amanhã</Button>
-            </div>
-            <p className="text-xs text-muted-foreground text-center">ou escolha data/hora:</p>
-            <Input type="date" value={adiarData} max={maxTaskDateBRT()} onChange={e => setAdiarData(e.target.value)} />
-            <Input type="time" value={adiarHora} onChange={e => setAdiarHora(e.target.value)} />
-            <Button className="w-full" onClick={handleAdiarCustom} disabled={!adiarData}>Reagendar ✅</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Edit task dialog */}
       <Dialog open={!!editId} onOpenChange={() => setEditId(null)}>

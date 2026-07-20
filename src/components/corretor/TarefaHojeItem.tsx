@@ -1,17 +1,15 @@
 /**
  * TarefaHojeItem — Item individual da lista lateral "📋 Hoje".
- * Fase 2 Motor de Próxima Ação: ações inline (Concluir + Adiar) com limite de 2 adiamentos.
+ * Ação inline: Concluir. (Adiar removido definitivamente.)
  */
-import { Phone, MessageCircle, Home, Calendar, ListChecks, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Phone, MessageCircle, Home, Calendar, ListChecks, CheckCircle2 } from "lucide-react";
 import type { TarefaHoje } from "@/hooks/useTarefasHoje";
 import { formatBRT } from "@/lib/brtTime";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
   tarefa: TarefaHoje;
   onClick: () => void;
   onConcluir: () => void;
-  onAdiar: () => void;
 }
 
 function iconForTipo(tipo: string | null) {
@@ -23,12 +21,10 @@ function iconForTipo(tipo: string | null) {
   return { Icon: ListChecks, color: "bg-slate-100 text-slate-700" };
 }
 
-export default function TarefaHojeItem({ tarefa, onClick, onConcluir, onAdiar }: Props) {
+export default function TarefaHojeItem({ tarefa, onClick, onConcluir }: Props) {
   const { Icon, color } = iconForTipo(tarefa.tipo);
   const meta = [tarefa.empreendimento, tarefa.stage_nome].filter(Boolean).join(" · ");
   const hora = formatBRT(tarefa.vence_em, "HH:mm");
-  const adiamentos = tarefa.adiamentos_count ?? 0;
-  const bateuLimite = adiamentos >= 2;
 
   const stop = (e: React.MouseEvent) => { e.stopPropagation(); };
 
@@ -37,7 +33,10 @@ export default function TarefaHojeItem({ tarefa, onClick, onConcluir, onAdiar }:
       role="button"
       tabIndex={0}
       onClick={onClick}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick(); }}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") onClick();
+      }}
       className="w-full text-left rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all p-2.5 cursor-pointer"
     >
       <div className="flex gap-2.5 items-start">
@@ -67,25 +66,6 @@ export default function TarefaHojeItem({ tarefa, onClick, onConcluir, onAdiar }:
         >
           <CheckCircle2 className="h-3 w-3" /> Concluir
         </button>
-        {bateuLimite ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="flex items-center gap-1 h-6 px-1.5 rounded text-[10px] font-medium bg-destructive/10 text-destructive cursor-help">
-                <AlertTriangle className="h-3 w-3" /> Adiado 2x — resolver
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>Esta tarefa já foi adiada 2 vezes. Use Concluir para resolver o lead.</TooltipContent>
-          </Tooltip>
-        ) : (
-          <button
-            type="button"
-            onClick={(e) => { stop(e); onAdiar(); }}
-            title={adiamentos === 1 ? "Último adiamento disponível" : "Adiar tarefa"}
-            className="flex items-center gap-1 h-6 px-1.5 rounded text-[10px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            <Clock className="h-3 w-3" /> Adiar{adiamentos === 1 ? " (último)" : ""}
-          </button>
-        )}
       </div>
     </div>
   );

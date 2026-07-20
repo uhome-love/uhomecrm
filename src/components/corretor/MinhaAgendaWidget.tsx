@@ -4,16 +4,12 @@ import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { format, isToday, isTomorrow, isBefore, startOfDay, addHours } from "date-fns";
-import { dateToBRT, parseDateBRT } from "@/lib/utils";
 import { runQueryWithRetry } from "@/lib/taskQueryUtils";
-import { Phone, MessageCircle, CheckCircle2, Clock, ClipboardList, ChevronRight } from "lucide-react";
+import { Phone, MessageCircle, CheckCircle2, ClipboardList, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
 import type { CompletionPayload } from "@/components/pipeline/task-completion/types";
@@ -59,10 +55,6 @@ export default function MinhaAgendaWidget() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [adiarId, setAdiarId] = useState<string | null>(null);
-  const [adiarSource, setAdiarSource] = useState<"lead" | "negocio">("lead");
-  const [adiarData, setAdiarData] = useState("");
-  const [adiarHora, setAdiarHora] = useState("");
   const [completing, setCompleting] = useState<TarefaAgenda | null>(null);
 
   // Lead tasks
@@ -209,28 +201,7 @@ export default function MinhaAgendaWidget() {
   };
 
 
-  const handleAdiarRapido = async (id: string, horas: number, source: "lead" | "negocio") => {
-    const table = source === "negocio" ? "negocios_tarefas" : "pipeline_tarefas";
-    const novaData = addHours(new Date(), horas);
-    await supabase.from(table).update({
-      vence_em: dateToBRT(novaData),
-      hora_vencimento: format(novaData, "HH:mm"),
-    } as any).eq("id", id);
-    toast.success("Tarefa adiada ✅");
-    invalidateTaskQueries(queryClient, null);
-  };
 
-  const handleAdiarCustom = async () => {
-    if (!adiarId || !adiarData) return;
-    const table = adiarSource === "negocio" ? "negocios_tarefas" : "pipeline_tarefas";
-    await supabase.from(table).update({
-      vence_em: adiarData,
-      hora_vencimento: adiarHora || null,
-    } as any).eq("id", adiarId);
-    toast.success("Tarefa reagendada ✅");
-    setAdiarId(null);
-    invalidateTaskQueries(queryClient, null);
-  };
 
   const renderTarefa = (t: TarefaAgenda, variant: "atrasada" | "proxima" | "futura") => {
     const borderClass = variant === "atrasada" ? "border-l-red-500 bg-red-500/10" :
@@ -276,9 +247,6 @@ export default function MinhaAgendaWidget() {
           )}
           <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 ml-auto" onClick={(e) => { e.stopPropagation(); handleConcluir(t); }}>
             <CheckCircle2 className="h-3 w-3" /> Feito
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={(e) => { e.stopPropagation(); setAdiarId(t.id); setAdiarSource(t._source); setAdiarData(""); setAdiarHora(""); }}>
-            <Clock className="h-3 w-3" /> Adiar
           </Button>
         </div>
       </div>
@@ -376,23 +344,6 @@ export default function MinhaAgendaWidget() {
         </CardContent>
       </Card>
 
-      {/* Adiar dialog */}
-      <Dialog open={!!adiarId} onOpenChange={() => setAdiarId(null)}>
-        <DialogContent className="sm:max-w-xs">
-          <DialogHeader><DialogTitle>Adiar tarefa</DialogTitle></DialogHeader>
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 1, adiarSource); setAdiarId(null); }}>Daqui 1h</Button>
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 2, adiarSource); setAdiarId(null); }}>Daqui 2h</Button>
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 24, adiarSource); setAdiarId(null); }}>Amanhã</Button>
-            </div>
-            <p className="text-xs text-muted-foreground text-center">ou escolha data/hora:</p>
-            <Input type="date" value={adiarData} onChange={e => setAdiarData(e.target.value)} />
-            <Input type="time" value={adiarHora} onChange={e => setAdiarHora(e.target.value)} />
-            <Button className="w-full" onClick={handleAdiarCustom} disabled={!adiarData}>Reagendar ✅</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <TaskCompletionDialog
         open={!!completing}
