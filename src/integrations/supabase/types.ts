@@ -11303,6 +11303,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      roleta_corretor_sair: { Args: { p_turno: string }; Returns: undefined }
       roleta_expand_turnos: { Args: { p_turnos: string[] }; Returns: string[] }
       roleta_fechar_dia: { Args: { p_data?: string }; Returns: number }
       roleta_marcar_presenca:
