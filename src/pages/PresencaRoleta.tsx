@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { PresencaRoletaPanel } from "@/components/roleta/PresencaRoletaPanel";
+import { PresencaHeaderStats } from "@/components/roleta/PresencaHeaderStats";
 import { usePresencaAgregada } from "@/hooks/usePresencaAgregada";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
