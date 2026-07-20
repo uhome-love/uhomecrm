@@ -99,22 +99,28 @@ export function expandirTurnos(turnos: string[]): PresencaTurno[] {
 // =============================================================================
 export type RegimeDia = "seg_sex" | "sabado" | "domingo";
 
+export type RegimeModo =
+  | "presencial"          // seg-sex: manhã/tarde manual + noturna auto
+  | "sabado_credencial"   // sábado: credenciado = presente; sem credencial = falta
+  | "domingo_beneficio";  // domingo: benefício remoto por credencial + elegibilidade
+
 export interface RegimeInfo {
   regime: RegimeDia;
+  modo: RegimeModo;
   label: string;
-  turnosMarcaveis: PresencaTurno[]; // turnos onde o gestor marca manual
+  turnosMarcaveis: PresencaTurno[]; // turnos com marcação MANUAL
   mostrarNoturnaAuto: boolean;      // seg-sex: exibir noturna como derivada
 }
 
 /** dataBRT no formato YYYY-MM-DD. */
 export function getRegimeDoDia(dataBRT: string): RegimeInfo {
-  // Cria Date interpretando como meio-dia BRT pra evitar edge de fuso.
   const d = new Date(`${dataBRT}T12:00:00-03:00`);
   const dow = d.getDay(); // 0=dom, 6=sáb
   if (dow === 0) {
     return {
       regime: "domingo",
-      label: "Domingo · roleta de casa",
+      modo: "domingo_beneficio",
+      label: "Domingo · roleta de casa (benefício)",
       turnosMarcaveis: [],
       mostrarNoturnaAuto: false,
     };
@@ -122,13 +128,15 @@ export function getRegimeDoDia(dataBRT: string): RegimeInfo {
   if (dow === 6) {
     return {
       regime: "sabado",
-      label: "Sábado · visita/plantão ou roleta",
+      modo: "sabado_credencial",
+      label: "Sábado · presença via credenciamento",
       turnosMarcaveis: [],
       mostrarNoturnaAuto: false,
     };
   }
   return {
     regime: "seg_sex",
+    modo: "presencial",
     label: "Seg a sex · presencial",
     turnosMarcaveis: ["manha", "tarde"],
     mostrarNoturnaAuto: true,
