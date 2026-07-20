@@ -41,6 +41,7 @@ interface TarefaComLead {
   concluida_em: string | null;
   pipeline_lead_id: string;
   created_at: string;
+  adiamentos_count?: number | null;
   lead_nome?: string;
   lead_telefone?: string;
   lead_empreendimento?: string;
