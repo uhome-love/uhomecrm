@@ -117,6 +117,7 @@ export default function DrawerTasksTab({
   leadId,
   leadNome,
   leadStageId,
+  stageTipo,
   onAddTarefa,
   onToggleTarefa: _onToggleTarefa, // eslint-disable-line @typescript-eslint/no-unused-vars
   onDeleteTarefa,
@@ -124,6 +125,7 @@ export default function DrawerTasksTab({
   onNovaTarefa,
   loading = false,
 }: Props) {
+  const isVisitaStage = stageTipo === "visita";
   const queryClient = useQueryClient();
   const grouped = useMemo(() => groupTasksByDeadline(tarefas), [tarefas]);
   const countAtrasadas = grouped.atrasadas.length;
