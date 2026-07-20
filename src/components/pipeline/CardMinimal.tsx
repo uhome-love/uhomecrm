@@ -322,10 +322,6 @@ const CardMinimal = memo(function CardMinimal({
       onDragEnd={() => setIsDragging(false)}
       onClick={handleOpen}
       onKeyDown={(e) => {
-        // Só ativa Enter/Espaço quando o foco está no PRÓPRIO card, nunca
-        // em um input/textarea filho (ex.: textarea de Observação no popup
-        // de conclusão renderizado via portal do Radix mas cujo evento de
-        // teclado ainda borbulha pela árvore React).
         if (e.target !== e.currentTarget) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
