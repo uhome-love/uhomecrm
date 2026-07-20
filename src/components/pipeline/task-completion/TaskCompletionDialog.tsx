@@ -237,6 +237,13 @@ export default function TaskCompletionDialog({
       }
 
       // Sem contato: cadência (bloqueia SEMPRE, independe de tarefaOrigem)
+      // Etapa Visita: fluxo fixo. Próxima tarefa é criada pelo trigger da agenda.
+      // Popup só concluí — sem AgendarCard, sem status pill.
+      if (stageTipo === "visita_marcada" || stageTipo === "visita_realizada") {
+        if (!cancelled) setOutcome("concluir");
+        return;
+      }
+
       if (stageTipo !== "sem_contato") return;
 
       const { data: cadencia } = await supabase

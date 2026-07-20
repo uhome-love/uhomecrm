@@ -6735,6 +6735,7 @@ export type Database = {
           hora_vencimento: string | null
           id: string
           origem: string | null
+          origem_ref: string | null
           pipeline_lead_id: string
           prioridade: string
           responsavel_id: string | null
@@ -6753,6 +6754,7 @@ export type Database = {
           hora_vencimento?: string | null
           id?: string
           origem?: string | null
+          origem_ref?: string | null
           pipeline_lead_id: string
           prioridade?: string
           responsavel_id?: string | null
@@ -6771,6 +6773,7 @@ export type Database = {
           hora_vencimento?: string | null
           id?: string
           origem?: string | null
+          origem_ref?: string | null
           pipeline_lead_id?: string
           prioridade?: string
           responsavel_id?: string | null
