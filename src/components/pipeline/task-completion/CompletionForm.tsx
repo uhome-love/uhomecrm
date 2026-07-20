@@ -125,6 +125,15 @@ export interface CompletionFormProps {
 
   saving: boolean;
 
+  /** Qualificação mode: substitui a seção "próxima tarefa" pelas 6 pills de status_atendimento. */
+  qualificacao?: {
+    currentStatus: string;
+    pillStatus: string;
+    dataOverride?: DataOverride;
+    onPickPill: (statusKey: string) => void;
+    onPickData: (dt: DataOverride | undefined) => void;
+  };
+
   onChangeTipo: (v: TipoContato) => void;
   onChangeResultado: (v: Resultado) => void;
   onChangeDescricao: (v: string) => void;
