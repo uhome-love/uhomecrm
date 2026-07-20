@@ -264,9 +264,15 @@ function TeamGroup({
   const [open, setOpen] = useState(true);
   const naEmpresa = foraDeJanela
     ? 0
-    : corretores.filter(
-        (c) => getPresenca(c.corretor_id, turnoAtivo)?.status === "na_empresa",
-      ).length;
+    : corretores.filter((c) => {
+        const p = getPresenca(c.corretor_id, turnoAtivo);
+        if (p?.status === "na_empresa") return true;
+        if (p) return false;
+        return isCredenciadoNoTurno(
+          c.credenciamentos,
+          turnoAtivo as PresencaTurno,
+        );
+      }).length;
 
   return (
     <div className="rounded-xl border border-border bg-muted/10 overflow-hidden">
@@ -473,15 +479,16 @@ export function PresencaRoletaPanel({
         )}
       </div>
 
-      {/* Aviso: corretores sem presença marcada no turno ativo */}
+      {/* Aviso: corretores NÃO credenciados sem presença marcada no turno ativo */}
       {!foraDeJanela && canManage && stats.semMarcar > 0 && (
         <div className="rounded-lg px-3 py-2 mb-3 text-xs flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-800 dark:text-yellow-300">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <div className="leading-snug">
             <strong>{stats.semMarcar}</strong> corretor
-            {stats.semMarcar === 1 ? "" : "es"} sem presença marcada em{" "}
-            <strong>{turnoAtivoLabel}</strong>. Quem não for marcado até o fim
-            do turno vira <strong>Falta</strong>.
+            {stats.semMarcar === 1 ? "" : "es"} <strong>não credenciado{stats.semMarcar === 1 ? "" : "s"}</strong> em{" "}
+            <strong>{turnoAtivoLabel}</strong> ainda sem presença marcada. Quem
+            credenciou já entra como Presente automaticamente. Marque os demais
+            até o fim do turno — não marcados viram <strong>Falta</strong>.
           </div>
         </div>
       )}
