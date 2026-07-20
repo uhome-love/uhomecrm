@@ -740,6 +740,9 @@ function AgendarCard({
   onChangeVenceEm,
   onChangeNovoStage,
   onApplyQuick,
+  presets,
+  selectedPresetId,
+  onSelectPreset,
 }: {
   novaTarefa: NovaTarefaPayload;
   novoStageId?: string;
@@ -765,6 +768,9 @@ function AgendarCard({
   onChangeVenceEm: (iso: string) => void;
   onChangeNovoStage: (v: string | undefined) => void;
   onApplyQuick: (d: Date, h: string) => void;
+  presets: TaskPreset[] | null;
+  selectedPresetId: string | null;
+  onSelectPreset: (preset: TaskPreset) => void;
 }) {
   const showSuggestionCard = suggestion && !suggestionDismissed;
 
