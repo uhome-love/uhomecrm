@@ -376,23 +376,6 @@ export default function MinhaAgendaWidget() {
         </CardContent>
       </Card>
 
-      {/* Adiar dialog */}
-      <Dialog open={!!adiarId} onOpenChange={() => setAdiarId(null)}>
-        <DialogContent className="sm:max-w-xs">
-          <DialogHeader><DialogTitle>Adiar tarefa</DialogTitle></DialogHeader>
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 1, adiarSource); setAdiarId(null); }}>Daqui 1h</Button>
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 2, adiarSource); setAdiarId(null); }}>Daqui 2h</Button>
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 24, adiarSource); setAdiarId(null); }}>Amanhã</Button>
-            </div>
-            <p className="text-xs text-muted-foreground text-center">ou escolha data/hora:</p>
-            <Input type="date" value={adiarData} onChange={e => setAdiarData(e.target.value)} />
-            <Input type="time" value={adiarHora} onChange={e => setAdiarHora(e.target.value)} />
-            <Button className="w-full" onClick={handleAdiarCustom} disabled={!adiarData}>Reagendar ✅</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <TaskCompletionDialog
         open={!!completing}
