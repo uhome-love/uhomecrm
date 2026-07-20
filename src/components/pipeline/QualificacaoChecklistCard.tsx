@@ -157,7 +157,13 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
               Editar
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-[360px] max-h-[70vh] overflow-y-auto p-3 space-y-3">
+          <PopoverContent
+            align="end"
+            side="bottom"
+            collisionPadding={16}
+            className="w-[360px] p-0 flex flex-col max-h-[min(70vh,var(--radix-popover-content-available-height))]"
+          >
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
             <div>
               <Label className="text-xs">Status do atendimento</Label>
               <Select value={statusAtend || "__none"} onValueChange={(v) => setStatusAtend(v === "__none" ? "" : v)}>
@@ -200,8 +206,9 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
                 <Input value={outro} onChange={e => setOutro(e.target.value)} className="h-8 text-xs mt-1.5" placeholder="Digite o(s) bairro(s), separados por vírgula" />
               )}
             </div>
+            </div>
 
-            <div className="flex justify-end gap-2 pt-1">
+            <div className="shrink-0 flex justify-end gap-2 border-t bg-background px-3 py-2">
               <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditing(false)} disabled={saving}>Cancelar</Button>
               <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSave} disabled={saving}>
                 {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
@@ -212,14 +219,20 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
         </Popover>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <ChipDisplay label="Status" value={statusLabel} empty="—" />
-        <ChipDisplay label="Tipologia" value={tipologiaLabel} empty="—" />
-        <ChipDisplay label="Faixa de valor" value={faixaLabel} empty="—" />
-        <ChipDisplay label="Pagamento" value={formaLabel} empty="—" />
-        <ChipDisplay label="Prazo" value={prazoLabel} empty="—" />
-        <ChipDisplay label="Bairros" value={bairroDisplay} empty="—" />
-      </div>
+      {filled === 0 ? (
+        <p className="text-[11px] text-muted-foreground italic">
+          Nenhum campo preenchido ainda. Clique em <span className="font-medium">Editar</span> para qualificar.
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <ChipDisplay label="Status" value={statusLabel} empty="—" />
+          <ChipDisplay label="Tipologia" value={tipologiaLabel} empty="—" />
+          <ChipDisplay label="Faixa de valor" value={faixaLabel} empty="—" />
+          <ChipDisplay label="Pagamento" value={formaLabel} empty="—" />
+          <ChipDisplay label="Prazo" value={prazoLabel} empty="—" />
+          <ChipDisplay label="Bairros" value={bairroDisplay} empty="—" />
+        </div>
+      )}
     </div>
   );
 }
