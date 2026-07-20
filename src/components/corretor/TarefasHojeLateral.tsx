@@ -1,7 +1,7 @@
 /**
  * TarefasHojeLateral — Coluna lateral fixa 280px (desktop) com tarefas de hoje.
  * Em mobile (<1024px) vira accordion fechado por padrão.
- * Fase 2 Motor de Próxima Ação: Concluir + Adiar inline (limite 2 adiamentos).
+ * Ação inline: Concluir. (Adiar removido definitivamente.)
  */
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,16 +10,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { addHours, format } from "date-fns";
-import { dateToBRT } from "@/lib/utils";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
-import { maxTaskDateBRT, isTaskDateTooFar, TASK_DATE_TOO_FAR_MSG } from "@/lib/taskScheduling";
 import { runTaskCompletion } from "@/lib/taskCompletion";
 import TarefaHojeItem from "@/components/corretor/TarefaHojeItem";
 import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { logDashboard } from "@/lib/dashboardTelemetry";
 import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import type { CompletionPayload } from "@/components/pipeline/task-completion/types";
