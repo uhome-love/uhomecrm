@@ -318,6 +318,93 @@ export default function VisitaCompletionFlow(props: VisitaCompletionFlowProps) {
     }
   }
 
+  async function handleDesistiu() {
+    if (!obsValida) return;
+    const descarteId = stages["descarte"];
+    if (!descarteId) {
+      toast.error("Etapa Descarte não encontrada.");
+      return;
+    }
+    onSaving(true);
+    try {
+      const now = new Date().toISOString();
+      const userId = (await supabase.auth.getUser()).data?.user?.id || "";
+      await markTaskDone("Cliente desistiu após visita. " + obs.trim());
+      const motivo = "reengajavel: desistiu após visita — " + obs.trim();
+      const { error } = await supabase
+        .from("pipeline_leads")
+        .update({
+          stage_id: descarteId,
+          stage_changed_at: now,
+          updated_at: now,
+          motivo_descarte: motivo,
+          tipo_descarte: "reengajavel",
+        } as never)
+        .eq("id", leadId);
+      if (error) throw error;
+      await supabase.from("pipeline_historico").insert({
+        pipeline_lead_id: leadId,
+        stage_novo_id: descarteId,
+        movido_por: userId,
+        observacao: motivo,
+      } as never);
+      await finish("Lead descartado ✅");
+    } catch (err) {
+      console.error("[VisitaFlow.desistiu]", err);
+      toast.error("Erro ao descartar");
+    } finally {
+      onSaving(false);
+    }
+  }
+
+  async function handleAindaDecidindo() {
+    if (!obsValida) return;
+    onSaving(true);
+    try {
+      const userId = (await supabase.auth.getUser()).data?.user?.id || "";
+      // Conta quantas definir_sequencia já foram concluídas/canceladas neste lead pra limitar em 2
+      const { count } = await supabase
+        .from("pipeline_tarefas")
+        .select("id", { count: "exact", head: true })
+        .eq("pipeline_lead_id", leadId)
+        .eq("origem", "visita_auto")
+        .eq("subtipo", "definir_sequencia")
+        .in("status", ["concluida", "cancelada"]);
+      if ((count ?? 0) >= 2) {
+        // 3ª vez → força decisão via descarte
+        await handleDesistiu();
+        toast.info("Limite de 2 retomadas atingido — lead movido pra descarte.");
+        return;
+      }
+      await markTaskDone("Cliente ainda decidindo. " + obs.trim());
+      const vence = new Date();
+      vence.setDate(vence.getDate() + 5);
+      const vDate = vence.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      await supabase.from("pipeline_tarefas").insert({
+        pipeline_lead_id: leadId,
+        tipo: "follow_up",
+        subtipo: "definir_sequencia",
+        titulo: `Definir sequência — ${leadNome || "Lead"}`,
+        descricao: obs.trim() || null,
+        prioridade: "media",
+        status: "pendente",
+        responsavel_id: corretorId || userId,
+        vence_em: vDate,
+        hora_vencimento: "10:00",
+        origem: "visita_auto",
+        retries_count: (count ?? 0) + 1,
+        created_by: userId,
+      } as never);
+      await finish("Follow-up de decisão agendado (+5 dias) ⏳");
+    } catch (err) {
+      console.error("[VisitaFlow.aindaDecidindo]", err);
+      toast.error("Erro ao agendar follow-up");
+    } finally {
+      onSaving(false);
+    }
+  }
+
+
   async function handleRegressao() {
     if (!obsValida) return;
     if (!regressStageTipo) {
