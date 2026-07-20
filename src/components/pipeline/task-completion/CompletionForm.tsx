@@ -166,6 +166,7 @@ export function CompletionForm(props: CompletionFormProps) {
     reasonCustomText,
     observacaoCurta,
     saving,
+    qualificacao,
     onChangeTipo,
     onChangeResultado,
     onChangeDescricao,
