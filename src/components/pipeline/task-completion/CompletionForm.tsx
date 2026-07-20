@@ -274,15 +274,6 @@ export function CompletionForm(props: CompletionFormProps) {
     }
     switch (outcome) {
       case "agendar":
-        if (qualificacao) {
-          if (!qualificacao.pillStatus) return false;
-          if (
-            qualificacao.pillStatus === "alinhando_visita" &&
-            !qualificacao.dataOverride
-          )
-            return false;
-          return true;
-        }
         return (
           !!novaTarefa.tipo &&
           !!novaTarefa.vence_em &&
@@ -305,8 +296,8 @@ export function CompletionForm(props: CompletionFormProps) {
     reasonCode,
     reasonCustomText,
     semContato,
-    qualificacao,
   ]);
+
 
   const ctaConfig = useMemo(() => {
     switch (outcome) {
