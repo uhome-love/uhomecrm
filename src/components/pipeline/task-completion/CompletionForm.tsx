@@ -44,6 +44,14 @@ import {
   X,
 } from "lucide-react";
 import { cn, dateToBRT } from "@/lib/utils";
+import { toast } from "sonner";
+import {
+  clampTaskDate,
+  formatBrDateShort,
+  maxTaskDateBRT,
+  maxTaskDaysAhead,
+  taskDateTooFarMessage,
+} from "@/lib/taskScheduling";
 import {
   DESCARTE_REASONS,
   INATIVAR_REASONS,
@@ -105,6 +113,9 @@ export interface CompletionFormProps {
   leadNome?: string;
   leadId?: string;
   currentStageId?: string;
+  /** Tipo canônico do stage atual do lead. Usado para calcular o teto de
+   *  agendamento manual (aquecimento=90d, demais=30d). */
+  stageTipo?: string | null;
   semContato: {
     enabled: boolean;
     tentativaAtual: number;
@@ -153,6 +164,7 @@ export function CompletionForm(props: CompletionFormProps) {
     leadNome,
     leadId,
     currentStageId,
+    stageTipo,
     semContato,
     resultado,
     descricao,
@@ -327,8 +339,28 @@ export function CompletionForm(props: CompletionFormProps) {
 
 
   const applyQuick = (d: Date, h: string) => {
-    onChangeNovaTarefa({ vence_em: dateToBRT(d), hora_vencimento: h });
+    const iso = dateToBRT(d);
+    const { value, clamped } = clampTaskDate(iso, stageTipo);
+    if (clamped) {
+      toast.info(
+        `${taskDateTooFarMessage(stageTipo)} Ajustado para ${formatBrDateShort(value)}.`,
+      );
+    }
+    onChangeNovaTarefa({ vence_em: value, hora_vencimento: h });
   };
+
+  const handleChangeVenceEm = (iso: string) => {
+    const { value, clamped } = clampTaskDate(iso, stageTipo);
+    if (clamped) {
+      toast.info(
+        `${taskDateTooFarMessage(stageTipo)} Ajustado para ${formatBrDateShort(value)}.`,
+      );
+    }
+    onChangeNovaTarefa({ vence_em: value });
+  };
+
+  const maxVenceEm = maxTaskDateBRT(stageTipo);
+  const maxDaysAhead = maxTaskDaysAhead(stageTipo);
 
   // Dedup: alguns títulos antigos vêm com o nome embutido ("Confirmar visita — Juliana");
   // não repetir " · Juliana" ao lado.
@@ -454,7 +486,10 @@ export function CompletionForm(props: CompletionFormProps) {
                 manualOpen={shouldShowManual}
                 onToggleManual={() => setManualOpen((v) => !v)}
                 semContato={semContato}
+                maxVenceEm={maxVenceEm}
+                maxDaysAhead={maxDaysAhead}
                 onChangeNovaTarefa={onChangeNovaTarefa}
+                onChangeVenceEm={handleChangeVenceEm}
                 onChangeNovoStage={onChangeNovoStage}
                 onApplyQuick={applyQuick}
               />
@@ -604,7 +639,10 @@ function AgendarCard({
   manualOpen,
   onToggleManual,
   semContato,
+  maxVenceEm,
+  maxDaysAhead,
   onChangeNovaTarefa,
+  onChangeVenceEm,
   onChangeNovoStage,
   onApplyQuick,
 }: {
@@ -626,7 +664,10 @@ function AgendarCard({
   manualOpen: boolean;
   onToggleManual: () => void;
   semContato: CompletionFormProps["semContato"];
+  maxVenceEm: string;
+  maxDaysAhead: number;
   onChangeNovaTarefa: (patch: Partial<NovaTarefaPayload>) => void;
+  onChangeVenceEm: (iso: string) => void;
   onChangeNovoStage: (v: string | undefined) => void;
   onApplyQuick: (d: Date, h: string) => void;
 }) {
@@ -751,16 +792,24 @@ function AgendarCard({
               Quando
             </label>
             <div className="flex flex-wrap gap-1 mb-1.5">
-              {quickDates().map((q) => (
-                <button
-                  key={q.label}
-                  type="button"
-                  onClick={() => onApplyQuick(q.d, q.h)}
-                  className="text-[10px] px-1.5 py-0.5 rounded transition-colors border bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                >
-                  {q.label}
-                </button>
-              ))}
+              {quickDates()
+                .filter((q) => {
+                  // Não oferecer atalho que ultrapasse o teto do stage.
+                  const diffDays = Math.round(
+                    (q.d.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000,
+                  );
+                  return diffDays <= maxDaysAhead;
+                })
+                .map((q) => (
+                  <button
+                    key={q.label}
+                    type="button"
+                    onClick={() => onApplyQuick(q.d, q.h)}
+                    className="text-[10px] px-1.5 py-0.5 rounded transition-colors border bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                  >
+                    {q.label}
+                  </button>
+                ))}
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               <div className="flex items-center gap-1 bg-background border border-border rounded-md px-2">
@@ -768,9 +817,8 @@ function AgendarCard({
                 <Input
                   type="date"
                   value={novaTarefa.vence_em}
-                  onChange={(e) =>
-                    onChangeNovaTarefa({ vence_em: e.target.value })
-                  }
+                  max={maxVenceEm}
+                  onChange={(e) => onChangeVenceEm(e.target.value)}
                   className="h-7 text-[11px] border-0 bg-transparent px-1 focus-visible:ring-0"
                 />
               </div>

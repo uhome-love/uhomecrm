@@ -132,6 +132,7 @@ export default function TaskCompletionDialog({
     options: StageStatusOption[];
   }>({ kind: null, currentValue: "", options: [] });
   const [stageStatusPick, setStageStatusPick] = useState<string>("");
+  const [stageTipo, setStageTipo] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [contextLoaded, setContextLoaded] = useState(false);
@@ -156,6 +157,7 @@ export default function TaskCompletionDialog({
     });
     setStageStatus({ kind: null, currentValue: "", options: [] });
     setStageStatusPick("");
+    setStageTipo(null);
     setSaving(false);
     setContextLoaded(false);
   };
@@ -198,7 +200,9 @@ export default function TaskCompletionDialog({
         .select("tipo")
         .eq("id", stageId)
         .maybeSingle();
-      const stageTipo = (stage as { tipo?: string } | null)?.tipo;
+      const stageTipoLocal = (stage as { tipo?: string } | null)?.tipo;
+      if (!cancelled) setStageTipo(stageTipoLocal ?? null);
+      const stageTipo = stageTipoLocal;
 
       // Stage status obrigatório: qualificacao / aquecimento / negociacao
       if (
@@ -402,7 +406,9 @@ export default function TaskCompletionDialog({
             leadNome={leadNome}
             leadId={leadId}
             currentStageId={currentStageId}
+            stageTipo={stageTipo}
             semContato={semContatoInfo}
+            
             
             resultado={resultado}
             descricao={descricao}
