@@ -263,8 +263,17 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
 
       case "vendido": {
         const vgvNum = rawToNumber(assVgv);
+        const MIN_VGV = 1000;
+        const MAX_VGV = 999_999_999;
+        const vgvError = !assVgv || !Number.isFinite(vgvNum) || vgvNum <= 0
+          ? "Informe o VGV assinado (maior que R$ 0)."
+          : vgvNum < MIN_VGV
+          ? `Valor muito baixo — o VGV mínimo aceito é ${BRL.format(MIN_VGV)}.`
+          : vgvNum > MAX_VGV
+          ? `Valor acima do limite (${BRL.format(MAX_VGV)}). Revise o VGV.`
+          : "";
         const errors = {
-          vgv: vgvNum > 0 ? "" : "Informe o VGV assinado (maior que zero).",
+          vgv: vgvError,
           empreendimento: assEmpreendimento.trim() ? "" : "Informe o empreendimento.",
           unidade: assUnidade.trim() ? "" : "Informe a unidade vendida.",
           data: assDataAssinatura ? "" : "Informe a data de assinatura.",
@@ -288,9 +297,12 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
                   Venda fechada
                 </div>
                 <div>
-                  <CurrencyInput label="VGV assinado (R$) *" value={assVgv} onChange={setAssVgv} placeholder="R$ 850.000" />
-                  {errors.vgv && <p className={errCls}>{errors.vgv}</p>}
+                  <CurrencyInput label="VGV assinado (R$) *" value={assVgv} onChange={setAssVgv} placeholder="R$ 850.000" invalid={!!errors.vgv} />
+                  {errors.vgv
+                    ? <p className={errCls}>{errors.vgv}</p>
+                    : vgvNum > 0 && <p className="text-[10px] text-muted-foreground mt-1">Valor: <strong>{BRL.format(vgvNum)}</strong></p>}
                 </div>
+
                 <div>
                   <Label className="text-xs">Empreendimento *</Label>
                   <Input value={assEmpreendimento} onChange={e => setAssEmpreendimento(e.target.value)} placeholder="Ex: Melnick Home" className={`h-8 text-xs bg-background ${errors.empreendimento ? invalidInput : ""}`} aria-invalid={!!errors.empreendimento} />
