@@ -18,10 +18,8 @@ import { dateToBRT } from "@/lib/utils";
 export type TipoContato = "ligacao" | "whatsapp" | "email" | "visita";
 
 export type Resultado =
-  | "atendeu"
-  | "nao_atendeu"
-  | "agendou_proximo"
-  | "sem_interesse"
+  | "respondeu"
+  | "nao_respondeu"
   | "outro";
 
 export type TipoProximaTarefa =
