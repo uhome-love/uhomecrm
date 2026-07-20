@@ -955,7 +955,7 @@ function PropostaForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
           🤝 Confirmar
         </Button>
       </DialogFooter>
-    </>
+    </div>
   );
 }
 
