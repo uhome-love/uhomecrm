@@ -31,7 +31,7 @@ void _formatBRLCompactLegacy; // M5 cleanup
 const formatBRLCompact = (v: number) => fmtMoney(v, "short");
 import { CeoDashboardSkeleton } from "@/components/ui/skeleton-dashboard";
 import KpiDetailDialog, { type KpiDetailType } from "@/components/ceo/KpiDetailDialog";
-import { PresencaRoletaPanel } from "@/components/roleta/PresencaRoletaPanel";
+import { PresencaSummaryCard } from "@/components/roleta/PresencaSummaryCard";
 
 
 const FRASES = [
@@ -441,7 +441,7 @@ export default function CeoDashboard() {
       )}
 
       {/* ═══ PRESENÇA DA ROLETA ═══ */}
-      <PresencaRoletaPanel scope="ceo" hideManagerLink />
+      <PresencaSummaryCard scope="ceo" />
 
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* LINHA 1 — ROLETA DE LEADS                                 */}

@@ -8351,6 +8351,7 @@ export type Database = {
           data: string
           id: string
           observacao: string | null
+          origem: string
           saiu_em: string | null
           status: string
           turno: string
@@ -8365,6 +8366,7 @@ export type Database = {
           data: string
           id?: string
           observacao?: string | null
+          origem?: string
           saiu_em?: string | null
           status?: string
           turno: string
@@ -8379,6 +8381,7 @@ export type Database = {
           data?: string
           id?: string
           observacao?: string | null
+          origem?: string
           saiu_em?: string | null
           status?: string
           turno?: string
@@ -10825,6 +10828,48 @@ export type Database = {
           ultima_acao_humana: string
         }[]
       }
+      get_presenca_agregada: {
+        Args: {
+          _corretor_id?: string
+          _data_fim: string
+          _data_inicio: string
+          _gestor_id?: string
+        }
+        Returns: {
+          auth_user_id: string
+          avatar_url: string
+          corretor_id: string
+          dias_ativos: number
+          diurnas: number
+          domingos: number
+          faltas: number
+          gerente_nome: string
+          manha: number
+          nome: string
+          noturnas: number
+          saidas: number
+          tarde: number
+          total_presencas: number
+        }[]
+      }
+      get_presenca_hoje: {
+        Args: { _data?: string }
+        Returns: {
+          auth_user_id: string
+          avatar_url: string
+          chegou_em: string
+          corretor_id: string
+          cred_status: string
+          credenciado: boolean
+          gerente_id: string
+          gerente_nome: string
+          nome: string
+          origem: string
+          saiu_em: string
+          status: string
+          turno: string
+        }[]
+      }
       get_profile_id_for_auth: { Args: never; Returns: string }
       get_ranking_central: {
         Args: { p_end: string; p_gestor_id: string; p_start: string }
@@ -11027,6 +11072,10 @@ export type Database = {
           vgv_pipeline: number
         }[]
       }
+      get_widget_corretor_semana: {
+        Args: { _corretor_id?: string; _periodo?: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -11143,6 +11192,7 @@ export type Database = {
       monitor_primeiro_contato_v1_coverage: { Args: never; Returns: undefined }
       norm_empreendimento: { Args: { s: string }; Returns: string }
       normalize_telefone: { Args: { raw: string }; Returns: string }
+      presenca_role_scope: { Args: { _user_id: string }; Returns: string }
       processar_cadencia_sem_contato: {
         Args: never
         Returns: {
@@ -11261,6 +11311,7 @@ export type Database = {
           data: string
           id: string
           observacao: string | null
+          origem: string
           saiu_em: string | null
           status: string
           turno: string

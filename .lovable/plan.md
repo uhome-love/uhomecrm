@@ -1,106 +1,144 @@
-## Fluxo canônico (validado ponta a ponta)
+## Objetivo
+
+Fechar o fluxo ponta-a-ponta de presença com **auto-presença via trigger**, **escopos corretos** (admin/CEO/diretora = empresa inteira; gestor = time; corretor = próprio), **visibilidade dinâmica** no dashboard do corretor, e um **widget motivacional** que conecta presença → leads → negócios.
+
+## Fluxo canônico
 
 ```text
-1. CORRETOR              → pede credenciamento na roleta (manhã/tarde/noturna/domingo)
-2. CEO                   → aprova credenciamento
-                           (só quem foi aprovado recebe lead no turno)
-3. GERENTE (por turno)   → marca "Chegou" quando o corretor está fisicamente na empresa
-                           - manhã e tarde são independentes
-                           - vale mesmo se o corretor NÃO se credenciou naquele turno
-                             (chegou 10:30, credenciamento manhã já fechou → presença vale)
-4. GERENTE (durante turno) → marca "Saiu" se corretor deixou a empresa antes do fim
-                             → RPC roleta_marcar_presenca(status='saiu') já suspende
-                               distribuição de lead pra ele naquele turno
-5. FIM DO DIA (01:00 BRT)  → cron roleta_fechar_dia marca 'falta' quem não foi validado
-6. ELEGIBILIDADE           → get_elegibilidade_roleta lê roleta_presencas:
-                             - Noturna: exige presença 'na_empresa' em manhã E tarde no dia
-                             - Domingo: exige 4 dias de presença + 2 visitas realizadas na semana
+Corretor pede credenciamento          →  status = pendente
+CEO/diretora aprova                    →  status = aprovado
+    └► TRIGGER cria roleta_presencas ('na_empresa', origem='auto_credenciamento')
+
+Corretor abre dashboard
+    RoletaStatusBar → ✅ Aprovado + 🟢 Presente desde HH:MM
+    Widget Motivacional → "5 presenças este mês · 42 leads recebidos"
+
+Se sair (corretor OU gestor):
+    roleta_credenciamentos.status = saiu
+    roleta_presencas.status = saiu          ← unificado
+    Distribuição bloqueia · dashboard corretor mostra 🟡 Saiu às HH:MM
+
+Novo dia (00:00 BRT):
+    Card do corretor "zera" · status volta a refletir só o dia atual
+    (histórico continua contando, mas não aparece como chip ativo)
+
+01:00 BRT (cron):
+    Aprovados sem presença → status='falta' (não aparece pro corretor
+    no dia seguinte, só entra no histórico e nos rankings)
 ```
 
-**Backend já suporta 100% desse fluxo** — RPC `roleta_marcar_presenca`, tabela `roleta_presencas`, cron `roleta_fechar_dia` e `get_elegibilidade_roleta` estão prontas e não precisam mudar.
+## Escopo por papel — final
 
-## O que está errado hoje (só na UI)
+| Papel | O que vê | Marca presença |
+|---|---|---|
+| **Corretor** | Só a si mesmo (dashboard + widget) | Só o próprio "Sair" |
+| **Gestor** | Time dele (via `team_members`) | Time dele |
+| **Diretora / CEO / Admin** | Empresa inteira, filtro opcional por gestor | Qualquer um |
 
-O painel `PresencaRoletaPanel` **filtra a lista pelos credenciamentos aprovados do dia**. Consequência:
+Diretora entra na mesma trilha lógica de admin/CEO em todo lugar (rotas, RPCs, RLS).
 
-- Corretor que **não pediu credenciamento** de manhã mas chegou 10:30 → **não aparece na lista** → gerente não consegue clicar em "Chegou" → presença nunca é registrada → perde elegibilidade de noturna/domingo.
-- O gestor tem que abrir o diálogo "Marcar presença avulsa" pra achar o corretor num dropdown, o que ninguém faz na prática.
+## Widget do corretor — "Sua presença faz diferença"
 
-Presença e credenciamento **são coisas diferentes** e a UI precisa refletir isso.
-
-## Correção — só front-end, sem SQL
-
-### 1. Nova fonte de dados: lista de corretores do dia
-
-Novo hook `usePresencaCorretoresDia(scope, gestorId)` que devolve **todos os corretores relevantes**, credenciados ou não:
-
-- `scope="gestor"`: `team_members` do gestor → `profiles` (nome, avatar, id) dos corretores ativos.
-- `scope="ceo"`: `profiles` com `cargo='corretor'` e `ativo=true`.
-- Junta com `roleta_credenciamentos` aprovados de hoje só pra marcar quais turnos cada um se credenciou (vira selo, não filtro).
-
-Formato:
-```ts
-{
-  turno_ativo_atual: 'manha' | 'tarde' | 'noturna' | 'domingo' | '-',
-  corretores: Array<{
-    corretor_id, nome, avatar_url,
-    credenciamentos: Array<'manha'|'tarde'|'noturna'|'dia_todo'|'domingo'>,
-  }>
-}
-```
-
-### 2. Novo layout do card do corretor
-
-Uma linha por corretor com **duas colunas fixas de turno (Manhã, Tarde)** e Noturna/Domingo aparecendo condicionalmente:
+Card compacto no dashboard do corretor, logo abaixo do `RoletaStatusBar`. Conecta presença com resultado para motivar.
 
 ```text
-[avatar] Fulano                                     [selo Roleta: 🎯M 🎯T]
-  Manhã   [🟢 Na empresa]                          [Saiu]
-  Tarde   [—]                                       [Chegou]
-  Noturna (só se elegível: manhã E tarde na_empresa)
+┌─────────────────────────────────────────────────────────┐
+│  📊 Sua semana                                          │
+│                                                         │
+│   Presenças        Leads recebidos     Negócios criados │
+│      5                 42                    3          │
+│    ▲ +2 vs sem passada                                  │
+│                                                         │
+│   ─────────────────────────────────────────────         │
+│                                                         │
+│   Média da equipe: 4 presenças → 32 leads               │
+│   Você: 5 presenças → 42 leads   (+31% acima)           │
+│                                                         │
+│   💡 Cada presença adicional = ~8 leads em média        │
+│                                                         │
+│   [ Ver detalhes → ]                                    │
+└─────────────────────────────────────────────────────────┘
 ```
 
-Regras de renderização por linha de turno:
-- **Chip de estado**: usa `derivarEstadoTurno(presenca, credenciado)` já existente.
-- **Selo "🎯 Na roleta"**: aparece quando o corretor tem credenciamento aprovado naquele turno. É informativo, não filtra.
-- **Botões por turno**:
-  - Sem presença → botão **Chegou** (marca `na_empresa` naquele turno específico).
-  - Estado `na_empresa` → botão **Saiu** (marca `saiu`, remove da fila do turno).
-  - Estado `saiu` ou `falta` → sem botão.
+**Dados que puxa** (tudo do que já existe):
 
-O turno **ativo agora** (via `getCurrentWindowInfo`) recebe borda/fundo destacado.
+- `roleta_presencas` (presenças da semana, agrupadas por corretor)
+- `roleta_distribuicoes` (leads recebidos na semana)
+- `negocios` (criados na semana)
+- Média da equipe: query agregada com `team_members` do gestor do corretor
 
-### 3. Cabeçalho e contadores
+**Regra do insight dinâmico** (frase de rodapé):
 
-- Título: `Presença — {DataHoje}` (o "turno —" atual sai do lugar principal).
-- Contador: **"Na empresa agora: X / Y"** onde:
-  - X = corretores com presença `na_empresa` no turno ativo.
-  - Y = total de corretores listados (time do gestor ou empresa).
-- Fora de janela ativa (entre turnos): mostra "Presença de hoje" sem X/Y.
+- Se `presencas_semana ≥ 5`: "🔥 Semana no ritmo. Continue!"
+- Se `presencas_semana` acima da média do time: "+X% acima da média da equipe"
+- Se abaixo: "💡 Cada presença adicional = ~N leads em média" (com N calculado do time)
+- Se elegibilidade Domingo travada: "⛔ Falta 1 presença pra desbloquear Domingo"
 
-### 4. O que remover
+**Aba mensal secundária** (toggle Semana/Mês) mostra o mesmo com escopo mês.
 
-- Filtro pela lista de credenciados aprovados (motivo do bug).
-- Botão + diálogo **"Marcar presença avulsa"** — some, deixa de fazer sentido porque todo mundo já está listado.
-- Empty state "Nenhum credenciamento aprovado hoje" → vira "Nenhum corretor no time" (só quando `corretores.length === 0`).
+## Backend — 1 migration aditiva
 
-### 5. Arquivos afetados
+1. **Coluna** `origem text` em `roleta_presencas` (default `manual_gestor`).
+2. **Trigger** `trg_presenca_auto_credenciamento`:
+   - `AFTER UPDATE OF status ON roleta_credenciamentos WHEN NEW.status='aprovado'`
+   - `INSERT ... ON CONFLICT (corretor_id, data, turno) DO NOTHING` com `status='na_empresa'`, `origem='auto_credenciamento'`, `chegou_em=now()`.
+3. **Trigger** `trg_presenca_sync_saiu`:
+   - `AFTER UPDATE OF status ON roleta_credenciamentos WHEN NEW.status='saiu'`
+   - Atualiza `roleta_presencas` correspondente para `status='saiu'`, `saiu_em=now()` (unifica "sair pelo corretor" com "sair pelo gestor").
+4. **RPC** `get_presenca_agregada(_data_inicio, _data_fim, _gestor_id uuid DEFAULT NULL, _corretor_id uuid DEFAULT NULL)`:
+   - Retorna por corretor: nome, avatar, gestor, diurnas, manhã, tarde, noturnas, domingos, faltas, saídas, dias_ativos.
+   - Escopo pelo `auth.uid()` + role: corretor força `_corretor_id=auth.uid()`; gestor filtra por `team_members`; admin/CEO/diretora vê tudo.
+   - `SECURITY DEFINER`, `search_path = public`.
+5. **RPC** `get_presenca_hoje(_data date)`:
+   - Retorna a lista pronta para a tab Hoje com escopo automático por role.
+6. **RPC** `get_widget_corretor_semana(_corretor_id uuid, _periodo text)`:
+   - Retorna `{ presencas, leads, negocios, media_time_presencas, media_time_leads, elegibilidade_domingo }` para o widget.
+   - Se `_corretor_id` for de outro user e o caller não for admin/gestor do time, retorna erro.
+7. **Policies em `roleta_presencas`**:
+   - SELECT: corretor lê próprio; gestor lê time; admin/CEO/diretora lê tudo.
+   - INSERT/UPDATE só via RPC `security definer` (ninguém escreve direto do client).
+   - Trigger continua rodando com `security definer` do owner.
 
-- `src/hooks/usePresencaCorretoresDia.ts` (novo).
-- `src/components/roleta/PresencaRoletaPanel.tsx` (reescrita do render — mantém contrato `scope`/`gestorId`/`hideManagerLink`).
-- `src/hooks/useRoletaPresencaDia.ts` (deprecar/remover — substituído pelo novo hook).
-- `src/components/dashboard-v4/V4PanelRoleta.tsx` e `src/pages/CeoDashboard.tsx`: nenhuma mudança, continuam usando o painel via `PresencaRoletaPanel`.
+## Frontend — arquivos
 
-## O que fica igual (importante)
+**Editar (loop do corretor):**
+- `src/components/corretor/RoletaStatusBar.tsx` — chip de presença por turno ao lado do chip de credenciamento; realtime da presença (subscription filtrada por `corretor_id`).
+- `src/hooks/useRoletaPresencas.ts` — expor `presencasHoje` filtrado por `corretor_id` para uso no dashboard.
 
-- Fluxo do corretor pedir credenciamento e CEO aprovar em `/roleta`.
-- Marca "Saiu" durante o turno → RPC já remove da fila do turno atual (comportamento correto, mantido).
-- Cron 01:00 BRT marca `falta` no fim do dia.
-- Regras de elegibilidade noturna/domingo baseadas em `roleta_presencas`.
-- Botões Chegou/Saiu por linha usam a **RPC existente** `roleta_marcar_presenca(p_turnos=[turno])`.
+**Novos (widget motivacional):**
+- `src/components/corretor/WidgetProdutividadeCorretor.tsx` — card com Semana/Mês toggle, comparação com média do time, insight dinâmico.
+- `src/hooks/useWidgetProdutividadeCorretor.ts` — chama `get_widget_corretor_semana`.
+- Inserir o widget em `src/pages/CorretorDashboard.tsx` logo abaixo do `RoletaStatusBar`.
 
-## Resultado esperado
+**Novos (página de gestão):**
+- `src/pages/PresencaRoleta.tsx` — página `/roleta/presenca` com tabs Hoje / Histórico / Auditoria.
+- `src/components/roleta/presenca/{PresencaHojeGrid, PresencaCorretorCard, PresencaHistoricoTable, PresencaAuditoriaTable, PresencaKpiHeader}.tsx`
+- `src/hooks/usePresencaAgregada.ts`
 
-- Gestor abre o dashboard → vê o time inteiro dele → clica **Chegou** na linha "Manhã" do Fulano que chegou 10:30 → presença gravada mesmo sem credenciamento manhã → à noite Fulano pode se credenciar na noturna.
-- Fulano teve credenciamento manhã aprovado mas gerente clica **Saiu** às 09:30 → status vira `saiu`, roleta para de distribuir lead pra ele no turno da manhã. Se ele se credenciou também tarde, a linha da tarde continua independente.
-- CEO no `/ceo` vê a mesma coisa, escopo empresa inteira.
+**Editar (rota + navegação):**
+- `src/App.tsx` — rota lazy `/roleta/presenca`.
+- `src/components/layout/Sidebar.tsx` — item "Presença" no grupo Roleta para admin/gestor/diretora.
+- `src/pages/CeoDashboard.tsx` + `src/components/dashboard-v4/V4PanelRoleta.tsx` — trocar painel gigante por card resumo compacto com link "Abrir Presença →".
+
+**Ajuste de role — diretora**: verificar `useUserRole()` e checks de `profiles.cargo`. Se `diretora` ainda não é reconhecido, adicionar na mesma trilha de `admin`/`ceo` em rotas, RPCs e RLS.
+
+## Ordem de execução
+
+1. **Migration**: coluna `origem` + trigger auto-presença + trigger sync-saiu + 3 RPCs + policies.
+2. **Corretor — visibilidade**: `RoletaStatusBar` com chip de presença + realtime.
+3. **Corretor — widget** produtividade + insight dinâmico.
+4. **Página `/roleta/presenca`** com tab Hoje.
+5. Tab **Histórico** + tabela agregada + export CSV.
+6. Tab **Auditoria** (admin/CEO/diretora).
+7. **Encolher** painéis no dashboard do CEO e do gestor.
+8. **Sidebar + rota**.
+9. **Validação ponta-a-ponta**:
+   - Aprovar credenciamento → conferir presença auto-criada.
+   - Chip aparece no dashboard do corretor em tempo real.
+   - Corretor clica "Sair" → chip amarelo em ambos os lados.
+   - Widget atualiza contadores.
+   - Novo dia → chip do dia anterior some do dashboard do corretor.
+   - Falta gerada no cron aparece só em Histórico/rankings.
+   - Ranking de presenças e Relatório Semanal batem com a nova contagem.
+
+Pronto pra implementar.
