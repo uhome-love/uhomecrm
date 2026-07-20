@@ -156,6 +156,7 @@ export function CompletionForm(props: CompletionFormProps) {
     leadNome,
     leadId,
     currentStageId,
+    stageTipo,
     semContato,
     resultado,
     descricao,
