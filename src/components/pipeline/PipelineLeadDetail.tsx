@@ -544,8 +544,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         </div>
       )}
 
-      {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) */}
-      <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} />
+
 
       {/* Label + Grid 2x2 de ações */}
       <div className="space-y-1.5">
