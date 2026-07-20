@@ -16,6 +16,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { CompletionForm } from "./CompletionForm";
 import { QUALIFICACAO_STATUS_ATEND } from "@/components/pipeline/PipelineStageTransitionPopup";
+import { NEGOCIACAO_SUBSTATUS } from "@/lib/leadHelpers";
+
 import {
   DESCARTE_REASONS,
   INATIVAR_REASONS,
