@@ -172,8 +172,8 @@ function HistoricoTab({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="-mx-3 sm:mx-0 overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px] px-3 sm:px-0">
             <thead>
               <tr className="text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border">
                 <th className="text-left font-semibold py-2">Corretor</th>
