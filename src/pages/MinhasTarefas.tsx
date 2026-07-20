@@ -1181,12 +1181,17 @@ export default function MinhasTarefas() {
       {/* Adiar dialog */}
       <Dialog open={!!adiarId} onOpenChange={() => setAdiarId(null)}>
         <DialogContent className="sm:max-w-xs">
-          <DialogHeader><DialogTitle>Adiar tarefa</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Adiar tarefa {adiarCount > 0 ? `(${adiarCount}/2)` : ""}</DialogTitle></DialogHeader>
           <div className="space-y-2">
+            {adiarCount === 1 && (
+              <div className="text-xs bg-warning-500/10 border border-warning-500/30 text-warning-700 rounded-md p-2 leading-snug">
+                ⚠️ Essa é a última vez que dá pra adiar sem resolver. Na próxima, você vai precisar concluir, descartar ou repassar esse lead.
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 1); setAdiarId(null); }}>Daqui 1h</Button>
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 2); setAdiarId(null); }}>Daqui 2h</Button>
-              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 24); setAdiarId(null); }}>Amanhã</Button>
+              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 1, adiarCount, adiarLeadId); setAdiarId(null); }}>Daqui 1h</Button>
+              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 2, adiarCount, adiarLeadId); setAdiarId(null); }}>Daqui 2h</Button>
+              <Button variant="outline" size="sm" onClick={() => { handleAdiarRapido(adiarId!, 24, adiarCount, adiarLeadId); setAdiarId(null); }}>Amanhã</Button>
             </div>
             <p className="text-xs text-muted-foreground text-center">ou escolha data/hora:</p>
             <Input type="date" value={adiarData} max={maxTaskDateBRT()} onChange={e => setAdiarData(e.target.value)} />
