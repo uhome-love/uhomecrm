@@ -24,6 +24,8 @@ interface Props {
   leadId: string;
   leadNome: string;
   leadStageId?: string | null;
+  /** tipo real do stage do lead (ex: 'visita', 'sem_contato'). Usado para esconder "Nova tarefa" na etapa Visita. */
+  stageTipo?: string | null;
   onAddTarefa: (input: {
     tipo: TipoProximaTarefa;
     titulo: string;
