@@ -441,14 +441,33 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             const diasSemContato = noContactAlert
               ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
               : 0;
+            // Detecta se a nextTask está vencida (mesma lógica de overdueTasks,
+            // considerando também hora_vencimento quando presente).
+            const nextTaskOverdue = (() => {
+              if (!nextTask) return false;
+              const due = parseDateBRTSafe((nextTask as any).vence_em);
+              if (!due) return false;
+              const hora = (nextTask as any).hora_vencimento as string | null | undefined;
+              if (hora && /^\d{2}:\d{2}/.test(hora)) {
+                const [hh, mm] = hora.split(":").map(Number);
+                due.setHours(hh || 0, mm || 0, 0, 0);
+              } else {
+                due.setHours(23, 59, 59, 999);
+              }
+              return due.getTime() < Date.now();
+            })();
             const chipColor = nextTask
-              ? { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' }
+              ? (nextTaskOverdue
+                  ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Atrasado' }
+                  : { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' })
               : noContactAlert === 'critical'
                 ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Desatualizado' }
                 : { bg: '#FAEEDA', color: '#854F0B', dot: '#EF9F27', text: 'Atenção' };
             const motivosDesat: string[] = [];
             if (!nextTask) motivosDesat.push('sem tarefa futura');
             if (noContactAlert) motivosDesat.push(`${diasSemContato}d sem contato`);
+            if (nextTaskOverdue) motivosDesat.push('tarefa vencida');
+            const showTooltip = motivosDesat.length > 0;
             return (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -457,7 +476,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                     {chipColor.text}
                   </span>
                 </TooltipTrigger>
-                {!nextTask && motivosDesat.length > 0 && (
+                {showTooltip && (
                   <TooltipContent side="bottom" className="text-xs">
                     {motivosDesat.join(' · ')}
                   </TooltipContent>
