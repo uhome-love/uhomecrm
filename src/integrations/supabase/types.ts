@@ -11296,36 +11296,69 @@ export type Database = {
       }
       roleta_expand_turnos: { Args: { p_turnos: string[] }; Returns: string[] }
       roleta_fechar_dia: { Args: { p_data?: string }; Returns: number }
-      roleta_marcar_presenca: {
-        Args: {
-          p_corretor_id: string
-          p_data: string
-          p_observacao?: string
-          p_status: string
-          p_turnos: string[]
-        }
-        Returns: {
-          chegou_em: string | null
-          corretor_id: string
-          created_at: string
-          data: string
-          id: string
-          observacao: string | null
-          origem: string
-          saiu_em: string | null
-          status: string
-          turno: string
-          updated_at: string
-          validado_em: string
-          validado_por: string | null
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "roleta_presencas"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
+      roleta_marcar_presenca:
+        | {
+            Args: {
+              p_corretor_id: string
+              p_data: string
+              p_observacao?: string
+              p_status: string
+              p_turnos: string[]
+            }
+            Returns: {
+              chegou_em: string | null
+              corretor_id: string
+              created_at: string
+              data: string
+              id: string
+              observacao: string | null
+              origem: string
+              saiu_em: string | null
+              status: string
+              turno: string
+              updated_at: string
+              validado_em: string
+              validado_por: string | null
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "roleta_presencas"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
+        | {
+            Args: {
+              p_chegou_em?: string
+              p_corretor_id: string
+              p_data: string
+              p_observacao?: string
+              p_saiu_em?: string
+              p_status: string
+              p_turnos: string[]
+            }
+            Returns: {
+              chegou_em: string | null
+              corretor_id: string
+              created_at: string
+              data: string
+              id: string
+              observacao: string | null
+              origem: string
+              saiu_em: string | null
+              status: string
+              turno: string
+              updated_at: string
+              validado_em: string
+              validado_por: string | null
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "roleta_presencas"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
       rpc_placar_do_dia: { Args: never; Returns: Json }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
