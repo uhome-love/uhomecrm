@@ -60,12 +60,13 @@ import {
 import { useStageOptions } from "./useStageOptions";
 
 export interface StageStatusPropsBlock {
-  kind: "qualificacao" | "aquecimento";
+  kind: "qualificacao" | "aquecimento" | "negociacao";
   options: Array<{ value: string; label: string }>;
   currentValue: string;
   pick: string;
   onPick: (v: string) => void;
 }
+
 
 
 const KEEP_STAGE = "__keep__";
@@ -1062,11 +1063,16 @@ function StageStatusBlock({ block }: { block: StageStatusPropsBlock }) {
   const title =
     block.kind === "qualificacao"
       ? "Status da qualificação"
-      : "Prazo do aquecimento";
+      : block.kind === "aquecimento"
+        ? "Prazo do aquecimento"
+        : "Situação da negociação";
   const helper =
     block.kind === "qualificacao"
       ? "Registre em que momento da qualificação a conversa está agora."
-      : "Registre o prazo acordado para retomar o contato.";
+      : block.kind === "aquecimento"
+        ? "Registre o prazo acordado para retomar o contato."
+        : "Registre em que ponto da negociação o lead está agora.";
+
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
       <div className="flex items-center justify-between">
