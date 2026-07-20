@@ -263,29 +263,31 @@ export function VisitaDatePicker({
  * tipologia, faixa de valor, forma de pagamento, prazo de decisão, bairros.
  */
 export function PerfilLeadCard({ lead, onSaved }: Props) {
-  const initialTipologia = ((lead.flag_status || {}) as any).tipologia as string || "";
-  const initialFaixa = ((lead as any).faixa_valor as string) || "";
-  const initialForma = ((lead as any).forma_pagamento as string) || "";
-  const initialPrazo = ((lead as any).prazo_decisao as string) || "";
-  const initialBairroRaw = ((lead as any).bairro_regiao as string) || "";
+  // --- DISPLAY (sempre derivado do lead prop — reflete o estado real no banco) ---
+  const displayTipologia = ((lead.flag_status || {}) as any).tipologia as string || "";
+  const displayFaixa = ((lead as any).faixa_valor as string) || "";
+  const displayForma = ((lead as any).forma_pagamento as string) || "";
+  const displayPrazo = ((lead as any).prazo_decisao as string) || "";
+  const displayBairroRaw = ((lead as any).bairro_regiao as string) || "";
 
-  const initialBairros = useMemo(
-    () => initialBairroRaw.split(",").map(s => s.trim()).filter(Boolean).filter(b => QUALIFICACAO_BAIRROS_UHOME.includes(b)),
-    [initialBairroRaw],
+  const displayBairros = useMemo(
+    () => displayBairroRaw.split(",").map(s => s.trim()).filter(Boolean).filter(b => QUALIFICACAO_BAIRROS_UHOME.includes(b)),
+    [displayBairroRaw],
   );
-  const initialOutro = useMemo(
-    () => initialBairroRaw.split(",").map(s => s.trim()).filter(Boolean).filter(b => !QUALIFICACAO_BAIRROS_UHOME.includes(b)).join(", "),
-    [initialBairroRaw],
+  const displayOutro = useMemo(
+    () => displayBairroRaw.split(",").map(s => s.trim()).filter(Boolean).filter(b => !QUALIFICACAO_BAIRROS_UHOME.includes(b)).join(", "),
+    [displayBairroRaw],
   );
 
+  // --- FORM STATE (apenas dentro do popover, hidratado ao abrir) ---
   const [editing, setEditing] = useState(false);
-  const [tipologia, setTipologia] = useState(initialTipologia);
-  const [faixa, setFaixa] = useState(initialFaixa);
-  const [forma, setForma] = useState(initialForma);
-  const [prazo, setPrazo] = useState(initialPrazo);
-  const [bairros, setBairros] = useState<string[]>(initialBairros);
-  const [outroOn, setOutroOn] = useState(!!initialOutro);
-  const [outro, setOutro] = useState(initialOutro);
+  const [tipologia, setTipologia] = useState(displayTipologia);
+  const [faixa, setFaixa] = useState(displayFaixa);
+  const [forma, setForma] = useState(displayForma);
+  const [prazo, setPrazo] = useState(displayPrazo);
+  const [bairros, setBairros] = useState<string[]>(displayBairros);
+  const [outroOn, setOutroOn] = useState(!!displayOutro);
+  const [outro, setOutro] = useState(displayOutro);
   const [saving, setSaving] = useState(false);
 
   // Hidrata o formulário SOMENTE quando o popover abre (false → true).
@@ -294,37 +296,39 @@ export function PerfilLeadCard({ lead, onSaved }: Props) {
   const prevEditingRef = useRef(false);
   useEffect(() => {
     if (editing && !prevEditingRef.current) {
-      setTipologia(initialTipologia);
-      setFaixa(initialFaixa);
-      setForma(initialForma);
-      setPrazo(initialPrazo);
-      setBairros(initialBairros);
-      setOutroOn(!!initialOutro);
-      setOutro(initialOutro);
+      setTipologia(displayTipologia);
+      setFaixa(displayFaixa);
+      setForma(displayForma);
+      setPrazo(displayPrazo);
+      setBairros(displayBairros);
+      setOutroOn(!!displayOutro);
+      setOutro(displayOutro);
     }
     prevEditingRef.current = editing;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing]);
 
+  // --- Contadores e labels baseados no LEAD (não no form) ---
   const filled = [
-    tipologia,
-    faixa,
-    forma,
-    prazo,
-    (bairros.length > 0 || (outroOn && outro.trim())) ? "x" : "",
+    displayTipologia,
+    displayFaixa,
+    displayForma,
+    displayPrazo,
+    (displayBairros.length > 0 || displayOutro) ? "x" : "",
   ].filter(Boolean).length;
   const total = 5;
 
-  const tipologiaLabel = labelOf(QUALIFICACAO_TIPOLOGIAS, tipologia);
-  const faixaLabel = labelOf(QUALIFICACAO_FAIXAS, faixa);
-  const formaLabel = labelOf(QUALIFICACAO_FORMAS_PAGAMENTO, forma);
-  const prazoLabel = labelOf(QUALIFICACAO_PRAZOS, prazo);
+  const tipologiaLabel = labelOf(QUALIFICACAO_TIPOLOGIAS, displayTipologia);
+  const faixaLabel = labelOf(QUALIFICACAO_FAIXAS, displayFaixa);
+  const formaLabel = labelOf(QUALIFICACAO_FORMAS_PAGAMENTO, displayForma);
+  const prazoLabel = labelOf(QUALIFICACAO_PRAZOS, displayPrazo);
   const bairroDisplay = [
-    ...bairros,
-    ...(outroOn && outro.trim() ? [outro.trim()] : []),
+    ...displayBairros,
+    ...(displayOutro ? [displayOutro] : []),
   ].join(", ") || null;
 
   const toggleBairro = (b: string) => setBairros(prev => prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]);
+
 
   const handleSave = async () => {
     setSaving(true);

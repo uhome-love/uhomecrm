@@ -272,18 +272,26 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
   ];
   const bairroStr = bairrosFinal.join(", ");
 
+  const SectionTitle = ({ n, children }: { n: number; children: React.ReactNode }) => (
+    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
+      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary text-[9px] font-bold">{n}</span>
+      {children}
+    </div>
+  );
+
   return (
-    <>
+    <div className="max-w-lg mx-auto w-full">
       <DialogHeader>
         <DialogTitle className="text-base flex items-center gap-2">🎯 Perfil de Interesse — Qualificação</DialogTitle>
       </DialogHeader>
-      <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-xs text-muted-foreground mt-1">Lead: <strong>{lead.nome}</strong></p>
 
-      <div className="space-y-3">
-        <div>
-          <Label className="text-xs">Status do atendimento *</Label>
+      <div className="space-y-3 mt-3">
+        {/* 1. Status */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={1}>Status do atendimento *</SectionTitle>
           <Select value={statusAtend} onValueChange={setStatusAtend}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs bg-background"><SelectValue placeholder="Selecione..." /></SelectTrigger>
             <SelectContent>
               {Object.entries(QUALIFICACAO_STATUS_ATEND).map(([k, label]) => (
                 <SelectItem key={k} value={k}>{label}</SelectItem>
@@ -292,30 +300,38 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
           </Select>
         </div>
 
-        <div>
-          <Label className="text-xs mb-1.5 block">Tipologia de interesse</Label>
-          <ChipRow value={tipologia} onChange={setTipologia} options={QUALIFICACAO_TIPOLOGIAS} />
+        {/* 2. O que ele procura */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-3">
+          <SectionTitle n={2}>O que ele procura</SectionTitle>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Tipologia</Label>
+            <ChipRow value={tipologia} onChange={setTipologia} options={QUALIFICACAO_TIPOLOGIAS} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Faixa de valor</Label>
+            <ChipRow value={faixaValor} onChange={setFaixaValor} options={QUALIFICACAO_FAIXAS} />
+          </div>
         </div>
 
-        <div>
-          <Label className="text-xs mb-1.5 block">Faixa de valor do imóvel</Label>
-          <ChipRow value={faixaValor} onChange={setFaixaValor} options={QUALIFICACAO_FAIXAS} />
+        {/* 3. Como e quando */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-3">
+          <SectionTitle n={3}>Como e quando</SectionTitle>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Forma de pagamento</Label>
+            <ChipRow value={formaPagamento} onChange={setFormaPagamento} options={QUALIFICACAO_FORMAS_PAGAMENTO} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Prazo de decisão</Label>
+            <ChipRow value={prazoDecisao} onChange={setPrazoDecisao} options={QUALIFICACAO_PRAZOS} />
+          </div>
         </div>
 
-        <div>
-          <Label className="text-xs mb-1.5 block">Forma de pagamento</Label>
-          <ChipRow value={formaPagamento} onChange={setFormaPagamento} options={QUALIFICACAO_FORMAS_PAGAMENTO} />
-        </div>
-
-        <div>
-          <Label className="text-xs mb-1.5 block">Prazo de decisão</Label>
-          <ChipRow value={prazoDecisao} onChange={setPrazoDecisao} options={QUALIFICACAO_PRAZOS} />
-        </div>
-
-        <div>
-          <Label className="text-xs mb-1.5 block">Região / Bairros de interesse</Label>
+        {/* 4. Onde */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={4}>Onde</SectionTitle>
+          <Label className="text-xs font-medium">Região / bairros</Label>
           <ChipMulti values={bairros} onToggle={toggleBairro} options={QUALIFICACAO_BAIRROS_UHOME} />
-          <div className="mt-1.5 flex items-center gap-2">
+          <div className="mt-1 flex items-center gap-2">
             <Checkbox
               id="qual-outro-bairro"
               checked={outroSelecionado}
@@ -327,17 +343,19 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
             <Input
               value={outroBairro}
               onChange={e => setOutroBairro(e.target.value)}
-              className="h-8 text-xs mt-1.5"
+              className="h-8 text-xs mt-1.5 bg-background"
               placeholder="Digite o(s) bairro(s), separados por vírgula"
             />
           )}
         </div>
 
-        <div>
-          <Label className="text-xs">Observação</Label>
-          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20" placeholder="Detalhes adicionais sobre o perfil do cliente..." />
+        {/* 5. Observação */}
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <SectionTitle n={5}>Observação</SectionTitle>
+          <Textarea value={obs} onChange={e => setObs(e.target.value)} className="text-xs h-20 bg-background" placeholder="Detalhes adicionais sobre o perfil do cliente..." />
         </div>
       </div>
+
 
       <DialogFooter>
         <Button
@@ -374,7 +392,8 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
           🎯 Confirmar qualificação
         </Button>
       </DialogFooter>
-    </>
+    </div>
+
   );
 }
 
