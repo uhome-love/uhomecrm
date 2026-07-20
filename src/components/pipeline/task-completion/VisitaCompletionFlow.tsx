@@ -18,6 +18,7 @@ import {
   Calendar,
   CalendarPlus,
   CheckCircle2,
+  Clock,
   Handshake,
   ThumbsDown,
   ThumbsUp,
