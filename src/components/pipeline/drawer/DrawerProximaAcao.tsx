@@ -43,7 +43,8 @@ const META: Record<NonNullable<ReturnType<typeof parseNextActionType>>, { icon: 
  * Caixa destacada "PRÓXIMA AÇÃO" com gradient indigo→roxo (Fix Drawer Wide v3).
  * Estado vazio em cinza claro se não houver próxima ação.
  */
-export default function DrawerProximaAcao({ nextTask, proximaAcaoTexto }: Props) {
+export default function DrawerProximaAcao({ nextTask, proximaAcaoTexto, pendingCount }: Props) {
+  const multiplePending = (pendingCount ?? 0) > 1;
   if (!nextTask) {
     return (
       <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
@@ -75,11 +76,18 @@ export default function DrawerProximaAcao({ nextTask, proximaAcaoTexto }: Props)
       className="rounded-lg border border-indigo-200/60 dark:border-indigo-900/50 px-4 py-3"
       style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.05))" }}
     >
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <Sparkles className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-          Próxima ação
-        </span>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            Próxima ação
+          </span>
+        </div>
+        {multiplePending && (
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
+            ⚠ {pendingCount} tarefas pendentes
+          </span>
+        )}
       </div>
       <div className="text-base font-semibold text-foreground">
         <span className="mr-1.5">{meta.icon}</span>{meta.label}
