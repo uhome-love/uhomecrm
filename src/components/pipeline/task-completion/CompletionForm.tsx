@@ -131,7 +131,7 @@ export interface CompletionFormProps {
     pillStatus: string;
     dataOverride?: DataOverride;
     onPickPill: (statusKey: string) => void;
-    onPickData: (dt: DataOverride | undefined) => void;
+    onPickData: (dt: DataOverride | undefined, hora: string) => void;
   };
 
   onChangeTipo: (v: TipoContato) => void;
