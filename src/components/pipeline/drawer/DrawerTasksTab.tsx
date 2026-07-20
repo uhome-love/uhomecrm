@@ -213,14 +213,18 @@ export default function DrawerTasksTab({
             Nenhuma tarefa pendente
           </div>
           <div className="text-xs text-zinc-500 max-w-xs mx-auto mb-5 leading-relaxed">
-            Este lead está em dia. Crie uma tarefa de follow-up pra manter o ritmo de contato.
+            {isVisitaStage
+              ? "Etapa Visita: a próxima tarefa é criada automaticamente pela Agenda (confirmação D-1, reagendar após no-show, feedback após realizada)."
+              : "Este lead está em dia. Crie uma tarefa de follow-up pra manter o ritmo de contato."}
           </div>
-          <button
-            onClick={onNovaTarefa}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5"
-          >
-            <Plus className="h-3.5 w-3.5" /> Criar tarefa
-          </button>
+          {!isVisitaStage && (
+            <button
+              onClick={onNovaTarefa}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" /> Criar tarefa
+            </button>
+          )}
         </div>
       ) : (
         <div className="px-7 pt-4">
