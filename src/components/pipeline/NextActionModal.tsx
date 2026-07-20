@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { maxTaskDateBRT, isTaskDateTooFar, taskDateTooFarMessage } from "@/lib/taskScheduling";
+import { getPresetsForStage, applyPresetToTarefa, PRESET_OUTRO_ID, type TaskPreset } from "@/lib/taskPresets";
 
 type OptionType = "tarefa" | "avancar" | "descartar";
 
