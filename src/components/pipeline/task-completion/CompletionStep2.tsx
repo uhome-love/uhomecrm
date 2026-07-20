@@ -260,7 +260,75 @@ function ScheduleNextFields({
     onChangeNovaTarefa({ vence_em: dateToBRT(d), hora_vencimento: h });
   };
 
-  return (
+  /* ─── Sugestão de IA (Fase 2 item 4) ─── */
+  const [suggestion, setSuggestion] = useState<null | {
+    tipo: TipoProximaTarefa;
+    vence_em: string;
+    hora_vencimento: string;
+  }>(null);
+  const [dismissed, setDismissed] = useState(false);
+  const fetchedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    const texto = (step1Descricao ?? "").trim();
+    if (texto.length < 10) return;
+    if (fetchedFor.current === texto) return;
+    fetchedFor.current = texto;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    (async () => {
+      try {
+        const dataReferencia = dateToBRT(new Date());
+        const { data, error } = await supabase.functions.invoke(
+          "homi-next-task-suggestion",
+          { body: { texto, dataReferencia } },
+        );
+        if (error) return;
+        if (data?.confianca === "alta" && data?.vence_em && data?.hora_vencimento) {
+          setSuggestion({
+            tipo: data.tipo,
+            vence_em: data.vence_em,
+            hora_vencimento: data.hora_vencimento,
+          });
+        }
+      } catch {
+        /* silencioso — cai no fluxo manual */
+      } finally {
+        clearTimeout(timeout);
+      }
+    })();
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [step1Descricao]);
+
+  const suggestionLabel = useMemo(() => {
+    if (!suggestion) return null;
+    const tipoLabel =
+      PROXIMA_TAREFA_OPTIONS.find((o) => o.value === suggestion.tipo)?.label ??
+      suggestion.tipo;
+    // vence_em está em YYYY-MM-DD BRT — formatar por extenso
+    const [y, m, d] = suggestion.vence_em.split("-").map(Number);
+    const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
+    const diaSemana = dt.toLocaleDateString("pt-BR", { weekday: "long" });
+    const diaMes = dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    return `${tipoLabel} — ${diaSemana}, ${diaMes} às ${suggestion.hora_vencimento}`;
+  }, [suggestion]);
+
+  const applySuggestion = () => {
+    if (!suggestion) return;
+    onChangeNovaTarefa({
+      tipo: suggestion.tipo,
+      vence_em: suggestion.vence_em,
+      hora_vencimento: suggestion.hora_vencimento,
+    });
+    setDismissed(true);
+  };
+
     <div className="space-y-3">
       {semContato?.enabled && semContato.requiresNextTask && (
         <div className="text-xs text-primary bg-primary/5 border border-primary/25 rounded-md p-3 flex items-start gap-2">
