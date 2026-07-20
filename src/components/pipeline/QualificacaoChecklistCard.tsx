@@ -62,10 +62,10 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
   const steps = Object.entries(QUALIFICACAO_STATUS_ATEND) as [string, string][];
   const currentIdx = steps.findIndex(([k]) => k === currentStatus);
 
-  const doAdvance = async (statusKey: string, dataOverride?: DataOverride) => {
+  const doAdvance = async (statusKey: string, dataOverride?: DataOverride, horaOverride?: string) => {
     setSaving(statusKey);
     try {
-      await advanceQualificacaoStatus({ lead, statusKey, dataOverride, onSaved });
+      await advanceQualificacaoStatus({ lead, statusKey, dataOverride, horaOverride, onSaved });
     } catch (err) {
       console.error("[QualificacaoEtapaCard] advance error:", err);
       toast.error("Erro ao atualizar etapa");
