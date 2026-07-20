@@ -1112,7 +1112,8 @@ function QualificacaoPillsBlock({
   currentStatus: string;
   dataOverride?: DataOverride;
   onPickPill: (statusKey: string) => void;
-  onPickData: (dt: DataOverride | undefined) => void;
+  /** Recebe (data, hora HH:MM) — hora sempre presente. */
+  onPickData: (dt: DataOverride | undefined, hora: string) => void;
 }) {
   const showDatePicker = pillStatus === "alinhando_visita";
   return (
@@ -1149,10 +1150,7 @@ function QualificacaoPillsBlock({
       </div>
       {showDatePicker && (
         <div className="pt-1 border-t border-border/50">
-          <div className="text-[10px] text-muted-foreground mb-1.5">
-            Quando é a visita?
-          </div>
-          <VisitaDatePicker onPick={(d) => onPickData(d)} />
+          <VisitaDatePicker onPick={(d, h) => onPickData(d, h)} />
           {dataOverride && (
             <div className="text-[10px] text-primary mt-1.5">
               ✓ {dataOverride === "hoje" ? "Hoje" : dataOverride === "amanha" ? "Amanhã" : dataOverride}
