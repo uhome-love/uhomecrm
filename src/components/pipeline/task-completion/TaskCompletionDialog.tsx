@@ -134,6 +134,13 @@ export default function TaskCompletionDialog({
   const [stageStatusPick, setStageStatusPick] = useState<string>("");
   const [stageTipo, setStageTipo] = useState<string | null>(null);
 
+  /** Fluxo Visita — subtipo + id da tarefa visita_auto pendente. */
+  const [visitaFlowCtx, setVisitaFlowCtx] = useState<{
+    subtipo: import("./VisitaCompletionFlow").VisitaSubtipo;
+    tarefaId: string;
+    corretorId?: string | null;
+  } | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [contextLoaded, setContextLoaded] = useState(false);
 
