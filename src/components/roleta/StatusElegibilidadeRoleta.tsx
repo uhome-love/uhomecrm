@@ -197,23 +197,71 @@ export function StatusElegibilidadeRoleta() {
 
         {/* Regra noturna */}
         {proximaRoleta.tipo === "noturna" && (
-          <div
-            className={`mt-3 rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${
-              elegibilidade.tem_visita_hoje
-                ? "bg-primary/10 text-primary"
-                : "bg-orange-500/10 text-orange-700 dark:text-orange-400"
-            }`}
-          >
-            <Moon className="w-3.5 h-3.5 flex-shrink-0" />
-            {elegibilidade.tem_visita_hoje ? (
-              <span>Visita registrada hoje — acesso à roleta noturna liberado</span>
-            ) : (
-              <span>
-                Roleta noturna exige visita agendada ou realizada hoje. Registre uma visita no pipeline para participar.
-              </span>
+          <div className="mt-3 space-y-2">
+            <div
+              className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${
+                elegibilidade.tem_visita_hoje
+                  ? "bg-primary/10 text-primary"
+                  : "bg-orange-500/10 text-orange-700 dark:text-orange-400"
+              }`}
+            >
+              <Moon className="w-3.5 h-3.5 flex-shrink-0" />
+              {elegibilidade.tem_visita_hoje ? (
+                <span>Visita registrada hoje ✓</span>
+              ) : (
+                <span>
+                  Noturna exige visita marcada/realizada hoje. Registre no pipeline.
+                </span>
+              )}
+            </div>
+            {elegibilidade.noturna_exige_manha_tarde && (
+              <div
+                className={`rounded-lg px-3 py-2 text-xs flex items-start gap-2 ${
+                  elegibilidade.presente_manha_hoje && elegibilidade.presente_tarde_hoje
+                    ? "bg-primary/10 text-primary"
+                    : "bg-orange-500/10 text-orange-700 dark:text-orange-400"
+                }`}
+              >
+                <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                <span>
+                  Presença validada:{" "}
+                  <strong>manhã {elegibilidade.presente_manha_hoje ? "✓" : "—"}</strong>
+                  {"  ·  "}
+                  <strong>tarde {elegibilidade.presente_tarde_hoje ? "✓" : "—"}</strong>
+                  {!(elegibilidade.presente_manha_hoje && elegibilidade.presente_tarde_hoje) && (
+                    <> — a Noturna libera após o gestor confirmar sua presença nos dois turnos.</>
+                  )}
+                </span>
+              </div>
             )}
           </div>
         )}
+
+        {/* Regra domingo: presenças + visitas na semana */}
+        {(elegibilidade.presencas_semana !== undefined ||
+          elegibilidade.visitas_semana !== undefined) && (
+          <div
+            className={`mt-3 rounded-lg px-3 py-2 text-xs flex items-start gap-2 ${
+              elegibilidade.pode_domingo
+                ? "bg-success-500/10 text-success-700 dark:text-success-400"
+                : "bg-muted/50 text-muted-foreground"
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span>
+              Roleta domingo:{" "}
+              <strong>
+                {elegibilidade.presencas_semana ?? 0}/{elegibilidade.presencas_minimas_domingo ?? 4} presenças
+              </strong>
+              {"  ·  "}
+              <strong>
+                {elegibilidade.visitas_semana}/{elegibilidade.visitas_min_domingo} visitas realizadas
+              </strong>
+              {elegibilidade.pode_domingo ? " ✓ elegível" : ""}
+            </span>
+          </div>
+        )}
+
       </div>
 
       {/* Expandido: lista de leads */}

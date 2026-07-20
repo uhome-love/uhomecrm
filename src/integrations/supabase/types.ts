@@ -8343,6 +8343,80 @@ export type Database = {
           },
         ]
       }
+      roleta_presencas: {
+        Row: {
+          chegou_em: string | null
+          corretor_id: string
+          created_at: string
+          data: string
+          id: string
+          observacao: string | null
+          saiu_em: string | null
+          status: string
+          turno: string
+          updated_at: string
+          validado_em: string
+          validado_por: string | null
+        }
+        Insert: {
+          chegou_em?: string | null
+          corretor_id: string
+          created_at?: string
+          data: string
+          id?: string
+          observacao?: string | null
+          saiu_em?: string | null
+          status?: string
+          turno: string
+          updated_at?: string
+          validado_em?: string
+          validado_por?: string | null
+        }
+        Update: {
+          chegou_em?: string | null
+          corretor_id?: string
+          created_at?: string
+          data?: string
+          id?: string
+          observacao?: string | null
+          saiu_em?: string | null
+          status?: string
+          turno?: string
+          updated_at?: string
+          validado_em?: string
+          validado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roleta_presencas_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roleta_presencas_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "roleta_presencas_validado_por_fkey"
+            columns: ["validado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roleta_presencas_validado_por_fkey"
+            columns: ["validado_por"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
       roleta_segmentos: {
         Row: {
           ativo: boolean | null
@@ -11169,6 +11243,37 @@ export type Database = {
         Returns: {
           user_id: string
         }[]
+      }
+      roleta_expand_turnos: { Args: { p_turnos: string[] }; Returns: string[] }
+      roleta_fechar_dia: { Args: { p_data?: string }; Returns: number }
+      roleta_marcar_presenca: {
+        Args: {
+          p_corretor_id: string
+          p_data: string
+          p_observacao?: string
+          p_status: string
+          p_turnos: string[]
+        }
+        Returns: {
+          chegou_em: string | null
+          corretor_id: string
+          created_at: string
+          data: string
+          id: string
+          observacao: string | null
+          saiu_em: string | null
+          status: string
+          turno: string
+          updated_at: string
+          validado_em: string
+          validado_por: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "roleta_presencas"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       rpc_placar_do_dia: { Args: never; Returns: Json }
       show_limit: { Args: never; Returns: number }

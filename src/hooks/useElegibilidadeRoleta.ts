@@ -29,6 +29,12 @@ export interface ElegibilidadeRoleta {
   descartes_mes: number;
   bloqueado_descarte: boolean;
   limite_descartes: number;
+  // Presença (novo)
+  presente_manha_hoje?: boolean;
+  presente_tarde_hoje?: boolean;
+  presencas_semana?: number;
+  presencas_minimas_domingo?: number;
+  noturna_exige_manha_tarde?: boolean;
 }
 
 export function useElegibilidadeRoleta() {
