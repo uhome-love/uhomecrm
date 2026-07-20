@@ -178,6 +178,7 @@ export default function TaskCompletionDialog({
           });
           setQualPillStatus(enabled ? currentStatus : "");
           setQualDataOverride(undefined);
+          setQualHoraOverride("10:00");
         }
       } else if (!cancelled) {
         setQualInfo({ enabled: false, currentStatus: "", lead: null });
