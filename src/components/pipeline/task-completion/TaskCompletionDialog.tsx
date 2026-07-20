@@ -223,6 +223,7 @@ export default function TaskCompletionDialog({
           tentativaConcluida,
           requiresNextTask: !finalAttempt && !isCadenciaTask,
           finalAttempt,
+          isCadenciaTask,
         });
         setOutcome(finalAttempt || isCadenciaTask ? "concluir" : "agendar");
       }
