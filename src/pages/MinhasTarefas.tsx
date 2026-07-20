@@ -152,6 +152,8 @@ export default function MinhasTarefas() {
     }
   }, [searchParams]);
   const [adiarId, setAdiarId] = useState<string | null>(null);
+  const [adiarCount, setAdiarCount] = useState<number>(0);
+  const [adiarLeadId, setAdiarLeadId] = useState<string | null>(null);
   const [adiarData, setAdiarData] = useState("");
   const [adiarHora, setAdiarHora] = useState("");
   const [showNovaTarefa, setShowNovaTarefa] = useState(false);
