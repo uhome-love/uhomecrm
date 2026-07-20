@@ -604,7 +604,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         empreendimento={lead.empreendimento}
         meta={(() => {
           const parts: string[] = [];
-          if (lead.origem) parts.push(lead.origem);
+          const origemInfo = getOrigemLabel(lead.origem);
+          if (origemInfo) parts.push(`${origemInfo.emoji} ${origemInfo.label}`);
+          else if (lead.origem) parts.push(lead.origem);
           if (lead.campanha) parts.push(lead.campanha);
           else if (lead.formulario) parts.push(lead.formulario);
           return parts.join(" · ") || null;
