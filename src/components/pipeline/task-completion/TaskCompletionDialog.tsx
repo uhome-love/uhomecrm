@@ -377,6 +377,20 @@ export default function TaskCompletionDialog({
           reasonCustomText={reasonCustomText}
           observacaoCurta={observacaoCurta}
           saving={saving}
+          qualificacao={
+            qualInfo.enabled
+              ? {
+                  currentStatus: qualInfo.currentStatus,
+                  pillStatus: qualPillStatus,
+                  dataOverride: qualDataOverride,
+                  onPickPill: (k) => {
+                    setQualPillStatus(k);
+                    if (k !== "alinhando_visita") setQualDataOverride(undefined);
+                  },
+                  onPickData: (d) => setQualDataOverride(d),
+                }
+              : undefined
+          }
           onChangeTipo={setTipoContato}
           onChangeResultado={setResultado}
           onChangeDescricao={setDescricao}
