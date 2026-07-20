@@ -276,8 +276,7 @@ export default function RoletaStatusBar() {
     if (!user) return;
     setLoading(true);
 
-    const { data: profile } = await supabase.from("profiles").select("id, status_online").eq("user_id", user.id).single();
-    if (profile?.status_online) setStatus(profile.status_online as StatusOnline);
+    const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
     if (profile?.id) setProfileId(profile.id);
 
     // Fetch segmentos
