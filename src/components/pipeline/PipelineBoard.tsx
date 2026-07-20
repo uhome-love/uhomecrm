@@ -36,7 +36,7 @@ interface PipelineBoardProps {
   sortOrder?: PipelineSortOrder;
   // Opcional para preservar consumidores legados (ex: PosVendas) que ainda
   // não passam o mapa; nesse caso o Board faz fallback para query local.
-  tarefasMap?: Record<string, { id?: string; titulo?: string; tipo: string; vence_em: string | null; hora_vencimento: string | null; origem?: string | null }>;
+  tarefasMap?: Record<string, { id?: string; titulo?: string; tipo: string; subtipo?: string | null; vence_em: string | null; hora_vencimento: string | null; origem?: string | null }>;
   // Quando true, mostra APENAS a coluna Ganho (visão de leads vendidos/ganhos).
   showGanhos?: boolean;
 }
