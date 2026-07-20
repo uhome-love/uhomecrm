@@ -272,12 +272,7 @@ function QualificacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLe
   ];
   const bairroStr = bairrosFinal.join(", ");
 
-  const SectionTitle = ({ n, children }: { n: number; children: React.ReactNode }) => (
-    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
-      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary text-[9px] font-bold">{n}</span>
-      {children}
-    </div>
-  );
+  
 
   return (
     <div className="max-w-lg mx-auto w-full">
