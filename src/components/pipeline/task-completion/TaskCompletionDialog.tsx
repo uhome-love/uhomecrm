@@ -79,6 +79,9 @@ export default function TaskCompletionDialog({
   });
 
   const [saving, setSaving] = useState(false);
+  // Bloqueia primeira renderização do formulário até que loadSemContatoInfo termine —
+  // evita flash do layout genérico virando o certo (Sem Contato/Qualificação).
+  const [contextLoaded, setContextLoaded] = useState(false);
 
   /* Qualificação mode: quando lead está em stage tipo='qualificacao' com status_atendimento setado,
      a seção "próxima tarefa" do card Agendar vira as 6 pills de QUALIFICACAO_STATUS_ATEND. */
@@ -114,6 +117,7 @@ export default function TaskCompletionDialog({
     setQualDataOverride(undefined);
     setQualHoraOverride("10:00");
     setSaving(false);
+    setContextLoaded(false);
   };
 
   useEffect(() => {
@@ -229,7 +233,10 @@ export default function TaskCompletionDialog({
       }
     }
 
-    loadSemContatoInfo();
+    if (!open) return;
+    loadSemContatoInfo().finally(() => {
+      if (!cancelled) setContextLoaded(true);
+    });
     return () => {
       cancelled = true;
     };
@@ -382,7 +389,15 @@ export default function TaskCompletionDialog({
           "max-[420px]:top-auto max-[420px]:bottom-0 max-[420px]:left-0 max-[420px]:translate-x-0 max-[420px]:translate-y-0",
           "max-[420px]:w-full max-[420px]:max-w-full max-[420px]:rounded-t-2xl max-[420px]:rounded-b-none max-[420px]:border-b-0",
         ].join(" ")}
+        onClick={(e) => e.stopPropagation()}
       >
+        {!contextLoaded ? (
+          <div className="p-6 space-y-3 animate-pulse">
+            <div className="h-4 w-2/3 rounded bg-muted" />
+            <div className="h-24 w-full rounded bg-muted" />
+            <div className="h-10 w-full rounded bg-muted" />
+          </div>
+        ) : (
         <CompletionForm
           context={context}
           tarefaTitulo={tarefaTitulo}
@@ -434,6 +449,7 @@ export default function TaskCompletionDialog({
           onCancel={() => onOpenChange(false)}
           onConfirm={handleConfirm}
         />
+        )}
       </DialogContent>
     </Dialog>
   );
