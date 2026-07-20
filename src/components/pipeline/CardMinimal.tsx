@@ -452,40 +452,79 @@ const CardMinimal = memo(function CardMinimal({
                 {diasLabel}
               </span>
             )}
+            {canQuickComplete && (
+              <button
+                type="button"
+                aria-label="Concluir tarefa"
+                title="Concluir tarefa"
+                disabled={completingBusy}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCompletingOpen(true);
+                }}
+                className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-colors disabled:opacity-60"
+              >
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </button>
+            )}
           </div>
         </>
       )}
 
-      {/* Rodapé: dono do lead (corretor) ou parceria — nome sempre visível */}
-      {(corretorNome || parceiroNome) && (
+      {/* Rodapé: dono do lead (corretor) — nome sempre visível.
+          Parceria agora aparece só como chip compacto ao lado do nome. */}
+      {corretorNome && (
         <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center gap-1.5 min-w-0">
-          {parceiroNome ? (
-            <>
-              <Handshake className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
-              <span className="truncate text-[11px] font-semibold text-purple-700 dark:text-purple-300">
-                {parceiroNome}
-              </span>
-            </>
+          {corretorAvatarUrl ? (
+            <img
+              src={corretorAvatarUrl}
+              alt={corretorNome}
+              className="w-[18px] h-[18px] rounded-full object-cover shrink-0"
+              loading="lazy"
+            />
           ) : (
-            <>
-              {corretorAvatarUrl ? (
-                <img
-                  src={corretorAvatarUrl}
-                  alt={corretorNome}
-                  className="w-[18px] h-[18px] rounded-full object-cover shrink-0"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">
-                  {getInitials(corretorNome!)}
-                </div>
-              )}
-              <span className="truncate text-[11px] font-medium text-foreground/80">
-                {corretorNome}
-              </span>
-            </>
+            <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7e22ce] text-white flex items-center justify-center font-semibold text-[8px] shrink-0">
+              {getInitials(corretorNome)}
+            </div>
           )}
+          <span className="truncate text-[11px] font-medium text-foreground/80">
+            {corretorNome}
+          </span>
         </div>
+      )}
+
+      {canQuickComplete && (
+        <TaskCompletionDialog
+          open={completingOpen}
+          onOpenChange={(v) => { if (!completingBusy) setCompletingOpen(v); }}
+          tarefaTitulo={proximaTarefa?.titulo || "Tarefa"}
+          leadNome={lead.nome || undefined}
+          leadId={lead.id}
+          currentStageId={lead.stage_id}
+          context="lead"
+          onConfirm={async (payload: CompletionPayload) => {
+            if (!user || !proximaTarefa?.id) return;
+            setCompletingBusy(true);
+            try {
+              const { toast: msg } = await completeLeadTask({
+                tarefaId: proximaTarefa.id,
+                tarefaTitulo: proximaTarefa.titulo || "Tarefa",
+                leadId: lead.id,
+                leadNome: lead.nome,
+                userId: user.id,
+                payload,
+              });
+              toast.success(msg);
+              setCompletingOpen(false);
+              invalidateTaskQueries(queryClient, lead.id);
+            } catch (err) {
+              const m = err instanceof Error ? err.message : "Erro ao concluir tarefa";
+              toast.error("Não foi possível concluir: " + m);
+            } finally {
+              setCompletingBusy(false);
+            }
+          }}
+        />
       )}
 
     </div>
