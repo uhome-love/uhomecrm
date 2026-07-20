@@ -132,6 +132,7 @@ export default function TaskCompletionDialog({
     options: StageStatusOption[];
   }>({ kind: null, currentValue: "", options: [] });
   const [stageStatusPick, setStageStatusPick] = useState<string>("");
+  const [stageTipo, setStageTipo] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [contextLoaded, setContextLoaded] = useState(false);
