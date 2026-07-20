@@ -6740,6 +6740,7 @@ export type Database = {
           prioridade: string
           responsavel_id: string | null
           status: string
+          subtipo: string | null
           tipo: string | null
           titulo: string
           updated_at: string
@@ -6759,6 +6760,7 @@ export type Database = {
           prioridade?: string
           responsavel_id?: string | null
           status?: string
+          subtipo?: string | null
           tipo?: string | null
           titulo: string
           updated_at?: string
@@ -6778,6 +6780,7 @@ export type Database = {
           prioridade?: string
           responsavel_id?: string | null
           status?: string
+          subtipo?: string | null
           tipo?: string | null
           titulo?: string
           updated_at?: string
@@ -10452,6 +10455,13 @@ export type Database = {
       fn_cadencia_sc_recalcular_por_tarefas: {
         Args: { p_lead_id: string }
         Returns: undefined
+      }
+      fn_reconciliar_visita_auto: {
+        Args: never
+        Returns: {
+          criadas: number
+          subtipo: string
+        }[]
       }
       get_bairros_disponiveis: {
         Args: { p_cidade?: string; p_cidades?: string[] }
