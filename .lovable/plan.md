@@ -1,65 +1,53 @@
-## Reorganização da página Presença — UX/UI
+## O que muda
 
-Só mudanças visuais/de layout. Nenhuma alteração em backend, hooks, RPCs, regras de elegibilidade ou triggers.
+Duas mudanças pequenas e coerentes:
 
-### 1. Renomear a página
+**A) Deletar usuários fantasmas de vez** (`hugo teste`, `TIAGO MOLITOR`) — hoje só estão desativados (`ativo=false`), continuam ocupando espaço em consultas e podem voltar a aparecer se algum filtro esquecer o `ativo`. Deletar via migration com limpeza de refs.
 
-- Título passa de **"Central de Presença"** para **"Presença"**.
-- Sidebar: item "Presença Roleta" vira **"Presença"** (mesma rota `/roleta/presenca`).
-- Subtítulo curto: "Validação por turno, histórico e auditoria."
+**B) Fluxo "Presente / Saiu" com horário manual** na página `/roleta/presenca` (e no card compacto do dashboard). Gerente registra o horário real de chegada/saída em vez de o sistema carimbar `now()`. Não veio até o fim do turno = falta automática (já existe, mantém).
 
-### 2. Aba "Hoje" — encurtar drasticamente cada corretor
+## Como valido a ideia
 
-Hoje cada corretor ocupa um card grande com 2–3 linhas verticais (uma por turno). Vamos para **uma linha por corretor**, com os turnos em colunas lado a lado. Isso reduz a altura em ~70%.
+A ideia é sólida, com 3 pontos de atenção:
 
-Layout novo por linha (desktop ≥ md):
+1. **Registro manual bate com o objetivo.** Hoje `chegou_em`/`saiu_em` viram `now()` no clique. Gestor que valida presença 14:30 de um cara que chegou 10:30 registra errado. Popup com hora resolve.
+2. **Falta = "não preencheu até o fim do turno"** — já implementado pelo cron 01:00 BRT que fecha o dia. Reforço: adicionar um **aviso persistente no dashboard do gestor** enquanto o turno ativo tem corretores sem status marcado ("N corretores sem presença marcada — Manhã").
+3. **Validação de horário**: hora de chegada tem que cair dentro do dia atual (BRT) e antes do momento presente; hora de saída tem que ser ≥ chegada. Se não preencher, aceita `now()` como fallback (default no input).
 
-```text
-┌──────────────────────────────────────────────────────────────────────────┐
-│ [avatar] Nome do corretor        │ Manhã: [chip] [Chegou/Saiu]           │
-│          🎯 Roleta (se cred.)    │ Tarde: [chip] [Chegou/Saiu]           │
-│                                  │ Noturna: [chip] [Chegou/Saiu]  (cond.)│
-└──────────────────────────────────────────────────────────────────────────┘
-```
+## Passos
 
-- Coluna esquerda fixa (avatar + nome + selo Roleta compacto).
-- Coluna direita: 2 (ou 3) mini-blocos horizontais por turno, cada um com label "M/T/N", chip de estado e botão de ação. Turno ativo destacado com borda `primary/30`.
-- Mobile (< md): cai para o layout atual empilhado (avatar em cima, turnos abaixo em coluna). Sem regressão em telefone.
+### 1. Deletar usuários fantasmas (migration)
+- Reatribuir/nullificar refs em tabelas onde `hugo teste` e `TIAGO MOLITOR` possam ter FKs (pipeline_leads.corretor_id, negocios, tarefas, presenças). Fazer `SELECT` pré-migration para dimensionar impacto.
+- `DELETE FROM public.profiles WHERE id IN (...)` — trigger em cascata cuida do resto onde configurado; caso contrário, `SET NULL` explícito.
+- `DELETE FROM auth.users` **não é seguro fazer diretamente** (schema gerenciado). Alternativa: manter em auth mas remover do `profiles` (some do app inteiro).
 
-Refatoração: `CorretorRow` em `PresencaRoletaPanel.tsx` passa a renderizar grid `md:grid-cols-[minmax(180px,220px)_1fr]`; `TurnoLinha` recebe variante `compact` que usa `flex` horizontal em vez de linha cheia.
+### 2. RPC aceitar horário manual
+Estender `public.roleta_marcar_presenca` adicionando `p_chegou_em timestamptz DEFAULT NULL` e `p_saiu_em timestamptz DEFAULT NULL`. Se vier `NULL`, mantém comportamento atual (`now()`). Validações no plpgsql:
+- `p_chegou_em`: entre início do dia BRT e `now()`.
+- `p_saiu_em`: ≥ `chegou_em` existente e ≤ `now()`.
 
-### 3. Aba "Hoje" — agrupar por equipe (escopo CEO/Diretora)
+### 3. Frontend — Popup de horário
+- `useRoletaPresencas.marcar` ganha params `chegou_em?` / `saiu_em?`.
+- Em `PresencaRoletaPanel.tsx`:
+  - Botão **"Chegou"** → **"Presente"** (label + ícone Check mantido).
+  - Clicar em "Presente" abre `Dialog` com `input type="time"` pré-preenchido com hora atual BRT + botão "Registrar". Ao confirmar, dispara `marcar({ status: 'na_empresa', chegou_em })`.
+  - Clicar em "Saiu" abre mesmo Dialog para hora de saída (default = agora), dispara `marcar({ status: 'saiu', saiu_em })`.
+- Novo componente enxuto: `RegistrarHorarioDialog.tsx` (~60 linhas, reutilizado nos dois casos).
 
-Quando `scope === "ceo"`, agrupar as linhas por gestor em blocos colapsáveis.
+### 4. Aviso no dashboard do gestor
+No card compacto de presença (`PresencaSummaryCard` no `GerenteDashboard`), quando `turno_ativo_atual` estiver rolando e houver corretores do time sem `roleta_presencas` do turno → banner amarelo: **"⚠️ 3 corretores sem presença marcada na Manhã — quem não for marcado até 12h vira falta"**. Link direto pra `/roleta/presenca`.
 
-- Header do grupo: nome do gestor + contador "X na empresa / Y total" do turno ativo.
-- Padrão: expandidos.
-- Ordenados por nome do gestor; corretores sem gestor entram em bloco "Sem equipe" no fim.
+### 5. Backfill / dados existentes
+Nenhum. Regra só passa a valer daqui pra frente.
 
-Para isso o hook `usePresencaCorretoresDia` precisa de um campo extra `gerente_id` + `gerente_nome` por corretor (uma query a `team_members` + `profiles` do gestor). É a única mudança de dados — leitura pura, sem migração.
+## Detalhes técnicos
 
-No escopo gestor a UI ignora o agrupamento (todos já são do time dele).
+- Migration nova (RPC replace) + migration nova (delete profiles) — 2 migrations hoje, dentro do limite.
+- Sem quebra: RPC continua compatível (params default NULL).
+- Sem mudança no cron de falta automática — já roda 01:00 BRT e marca `falta` em quem não tem linha.
+- ESTADO_LABEL mantém "Na empresa" internamente; só o **botão** vira "Presente" (mais direto pro gestor).
 
-### 4. Barra de resumo do topo
+## Fora do escopo
 
-Substituir o retângulo cinza atual por uma faixa mais leve e informativa em `flex`:
-
-- Turno ativo · Na empresa: **N / Total** · Faltas hoje: N · Saíram: N
-- Fora de janela: mostra só "Presença de hoje · N corretores" (mantém).
-
-### 5. Ajustes menores nas outras abas
-
-- **Histórico**: manter tabela, mas nas primeiras colunas usar avatar+nome compactos e adicionar "Equipe" para CEO/Diretora (já existe como "Gestor" — só renomear header para "Equipe").
-- **Auditoria**: sem mudanças estruturais; só usar o mesmo chip de estado do "Hoje" para consistência visual.
-
-### 6. Arquivos tocados
-
-- `src/pages/PresencaRoleta.tsx` — título/subtítulo, grupos por equipe na aba Hoje.
-- `src/components/roleta/PresencaRoletaPanel.tsx` — `CorretorRow` em linha, `TurnoLinha` variante compacta, faixa de resumo, opção `groupByTeam`.
-- `src/hooks/usePresencaCorretoresDia.ts` — incluir `gerente_id` e `gerente_nome` (query extra em `team_members`+`profiles`).
-- `src/components/layout/Sidebar.tsx` + `src/config/pageRegistry.ts` — label "Presença".
-
-### Fora de escopo
-
-- Nenhuma mudança em regras de elegibilidade, RPCs, triggers, `roleta_presencas`, `useRoletaPresencas`.
-- Nenhuma mudança nos widgets/dashboards do corretor, gestor e CEO — só na página `/roleta/presenca`.
+- Editar horário de uma presença já registrada (pode virar Fase 2 na aba Auditoria).
+- Mudar cor/tema.
