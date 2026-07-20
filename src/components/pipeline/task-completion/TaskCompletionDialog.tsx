@@ -396,9 +396,6 @@ export default function TaskCompletionDialog({
           "max-[420px]:w-full max-[420px]:max-w-full max-[420px]:rounded-t-2xl max-[420px]:rounded-b-none max-[420px]:border-b-0",
         ].join(" ")}
         onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-        onFocusCapture={(e) => e.stopPropagation()}
       >
         {!contextLoaded ? (
           <div className="p-6 space-y-3 animate-pulse">
