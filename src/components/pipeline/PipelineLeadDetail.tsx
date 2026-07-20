@@ -507,8 +507,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       {/* Contador de estagnação (demais etapas com config) */}
       <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
 
+      {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) — no topo do modal */}
+      <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} pendingCount={pendingTasksList.length} />
+
       {/* Checklist de Qualificação — persistente em todas as etapas */}
       <QualificacaoChecklistCard lead={lead} />
+
 
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
       {empreendimentoOpen && (
