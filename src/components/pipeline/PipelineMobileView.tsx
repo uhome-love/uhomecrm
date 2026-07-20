@@ -84,19 +84,19 @@ const PipelineMobileView = memo(function PipelineMobileView({
     queryKey: ["pipeline-tarefas-map-mobile", leadIdsKey],
     queryFn: async () => {
       if (leadIds.length === 0) return {};
-      const map: Record<string, ProximaTarefa> = {};
+      const map: Record<string, ProximaTarefa & { id?: string; titulo?: string }> = {};
       for (let i = 0; i < leadIds.length; i += 200) {
         const chunk = leadIds.slice(i, i + 200);
         const { data } = await supabase
           .from("pipeline_tarefas")
-          .select("pipeline_lead_id, tipo, vence_em, hora_vencimento")
+          .select("id, titulo, pipeline_lead_id, tipo, vence_em, hora_vencimento")
           .in("pipeline_lead_id", chunk)
           .eq("status", "pendente")
           .order("vence_em", { ascending: true })
           .order("hora_vencimento", { ascending: true });
         if (data) {
           for (const row of data) {
-            const nextTask: ProximaTarefa = { tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento };
+            const nextTask = { id: row.id, titulo: row.titulo || "Tarefa", tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento };
             const currentTask = map[row.pipeline_lead_id];
             if (!currentTask || isTaskHigherPriority(nextTask, currentTask)) {
               map[row.pipeline_lead_id] = nextTask;

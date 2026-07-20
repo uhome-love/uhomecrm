@@ -139,7 +139,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
   stageIndexMap: Map<string, number>;
   handleDragStart: (leadId: string) => void;
-  tarefasMap: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
+  tarefasMap: Record<string, { id?: string; titulo?: string; tipo: string; vence_em: string | null; hora_vencimento: string | null }>;
   whatsappUnreadSet: Set<string>;
   cadenciaMap: Record<string, { tentativa: number; proxima_em: string | null }>;
   negociosMap: Record<string, { fase: string; vgv: number; fase_changed_at: string }>;
@@ -284,12 +284,12 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     queryKey: ["pipeline-tarefas-map", leadIdsKey],
     queryFn: async () => {
       if (leadIds.length === 0) return {};
-      const map: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }> = {};
+      const map: Record<string, { id?: string; titulo?: string; tipo: string; vence_em: string | null; hora_vencimento: string | null }> = {};
       for (let i = 0; i < leadIds.length; i += 200) {
         const chunk = leadIds.slice(i, i + 200);
         const { data } = await supabase
           .from("pipeline_tarefas")
-          .select("pipeline_lead_id, tipo, vence_em, hora_vencimento")
+          .select("id, titulo, pipeline_lead_id, tipo, vence_em, hora_vencimento")
           .in("pipeline_lead_id", chunk)
           .eq("status", "pendente")
           .order("vence_em", { ascending: true })
@@ -297,7 +297,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         if (data) {
           for (const t of data) {
             if (!map[t.pipeline_lead_id]) {
-              map[t.pipeline_lead_id] = { tipo: t.tipo || "follow_up", vence_em: t.vence_em, hora_vencimento: t.hora_vencimento };
+              map[t.pipeline_lead_id] = { id: t.id, titulo: t.titulo || "Tarefa", tipo: t.tipo || "follow_up", vence_em: t.vence_em, hora_vencimento: t.hora_vencimento };
             }
           }
         }
