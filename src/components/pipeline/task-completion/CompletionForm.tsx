@@ -537,7 +537,9 @@ export function CompletionForm(props: CompletionFormProps) {
             onChangeNovoStage={onChangeNovoStage}
             onChangeObservacaoCurta={onChangeObservacaoCurta}
             onBackToAgendar={
-              semContato.enabled && semContato.finalAttempt
+              // Trava "← Agendar" quando é tarefa da cadência Sem Contato (sistema cria a próxima)
+              // ou tentativa final — evita criar tarefa manual concorrente.
+              (semContato.enabled && (semContato.isCadenciaTask || semContato.finalAttempt))
                 ? undefined
                 : () => onChangeOutcome("agendar")
             }
