@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { CompletionForm } from "./CompletionForm";
+import { advanceQualificacaoStatus, type DataOverride } from "@/lib/qualificacaoTaskEngine";
 import {
   DESCARTE_REASONS,
   INATIVAR_REASONS,
