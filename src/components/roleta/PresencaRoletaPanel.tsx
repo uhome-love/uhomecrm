@@ -323,7 +323,7 @@ export function PresencaRoletaPanel({
   const canManage = isAdmin || isGestor;
 
   const { data, isLoading } = usePresencaCorretoresDia(scope, gestorId);
-  const { getPresenca, marcar, isMutating } = useRoletaPresencas();
+  const { getPresenca, marcarAsync, isMutating } = useRoletaPresencas();
 
   const corretores = data?.corretores ?? [];
   const turnoAtivo = data?.turno_ativo_atual ?? "";
@@ -332,19 +332,37 @@ export function PresencaRoletaPanel({
 
   const shouldGroup = (groupByTeam ?? scope === "ceo") && corretores.length > 0;
 
+  // Dialog state — registro de horário
+  const [dialog, setDialog] = useState<{
+    open: boolean;
+    tipo: "chegada" | "saida";
+    corretor_id: string;
+    corretor_nome: string;
+    turno: PresencaTurno;
+  } | null>(null);
+
+  const dataBRT = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
   // Estatísticas do topo
   const stats = useMemo(() => {
-    if (foraDeJanela) return { naEmpresa: 0, faltas: 0, saidas: 0 };
+    if (foraDeJanela) return { naEmpresa: 0, faltas: 0, saidas: 0, semMarcar: 0 };
     let na = 0,
       falt = 0,
-      saiu = 0;
+      saiu = 0,
+      sem = 0;
     for (const c of corretores) {
       const p = getPresenca(c.corretor_id, turnoAtivo);
       if (p?.status === "na_empresa") na++;
       else if (p?.status === "saiu") saiu++;
       else if (p?.status === "falta") falt++;
+      else sem++;
     }
-    return { naEmpresa: na, faltas: falt, saidas: saiu };
+    return { naEmpresa: na, faltas: falt, saidas: saiu, semMarcar: sem };
   }, [corretores, turnoAtivo, foraDeJanela, getPresenca]);
 
   // Agrupamento por gestor
@@ -374,7 +392,30 @@ export function PresencaRoletaPanel({
     turno: PresencaTurno,
     status: "na_empresa" | "saiu",
   ) => {
-    marcar({ corretor_id, turnos: [turno], status });
+    const c = corretores.find((x) => x.corretor_id === corretor_id);
+    setDialog({
+      open: true,
+      tipo: status === "na_empresa" ? "chegada" : "saida",
+      corretor_id,
+      corretor_nome: c?.nome ?? "corretor",
+      turno,
+    });
+  };
+
+  const handleConfirmHorario = async (iso: string) => {
+    if (!dialog) return;
+    try {
+      await marcarAsync({
+        corretor_id: dialog.corretor_id,
+        turnos: [dialog.turno],
+        status: dialog.tipo === "chegada" ? "na_empresa" : "saiu",
+        chegou_em: dialog.tipo === "chegada" ? iso : null,
+        saiu_em: dialog.tipo === "saida" ? iso : null,
+      });
+      setDialog(null);
+    } catch {
+      // toast já disparado pelo hook
+    }
   };
 
   return (
