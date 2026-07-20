@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -288,16 +288,23 @@ export function PerfilLeadCard({ lead, onSaved }: Props) {
   const [outro, setOutro] = useState(initialOutro);
   const [saving, setSaving] = useState(false);
 
+  // Hidrata o formulário SOMENTE quando o popover abre (false → true).
+  // Isso evita que um `pipeline-reload` disparado por outra ação enquanto o
+  // corretor está editando sobrescreva o que ele já digitou.
+  const prevEditingRef = useRef(false);
   useEffect(() => {
-    if (!editing) return;
-    setTipologia(initialTipologia);
-    setFaixa(initialFaixa);
-    setForma(initialForma);
-    setPrazo(initialPrazo);
-    setBairros(initialBairros);
-    setOutroOn(!!initialOutro);
-    setOutro(initialOutro);
-  }, [editing, initialTipologia, initialFaixa, initialForma, initialPrazo, initialBairros, initialOutro]);
+    if (editing && !prevEditingRef.current) {
+      setTipologia(initialTipologia);
+      setFaixa(initialFaixa);
+      setForma(initialForma);
+      setPrazo(initialPrazo);
+      setBairros(initialBairros);
+      setOutroOn(!!initialOutro);
+      setOutro(initialOutro);
+    }
+    prevEditingRef.current = editing;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing]);
 
   const filled = [
     tipologia,
@@ -327,7 +334,18 @@ export function PerfilLeadCard({ lead, onSaved }: Props) {
         ...(outroOn && outro.trim() ? [outro.trim()] : []),
       ].join(", ");
 
-      const nextFlag: Record<string, any> = { ...(lead.flag_status || {}) };
+      // Re-buscar flag_status fresco pra não sobrescrever status_atendimento /
+      // status_negociacao que outra aba/dispositivo tenha atualizado enquanto
+      // o popover estava aberto.
+      const { data: fresh, error: fetchErr } = await supabase
+        .from("pipeline_leads")
+        .select("flag_status")
+        .eq("id", lead.id)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+
+      const baseFlag = (fresh?.flag_status as Record<string, any>) || (lead.flag_status as Record<string, any>) || {};
+      const nextFlag: Record<string, any> = { ...baseFlag };
       if (tipologia) nextFlag.tipologia = tipologia; else delete nextFlag.tipologia;
 
       const updates: Record<string, any> = {
