@@ -157,7 +157,13 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
               Editar
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-[360px] max-h-[70vh] overflow-y-auto p-3 space-y-3">
+          <PopoverContent
+            align="end"
+            side="bottom"
+            collisionPadding={16}
+            className="w-[360px] p-0 flex flex-col max-h-[min(70vh,var(--radix-popover-content-available-height))]"
+          >
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
             <div>
               <Label className="text-xs">Status do atendimento</Label>
               <Select value={statusAtend || "__none"} onValueChange={(v) => setStatusAtend(v === "__none" ? "" : v)}>
