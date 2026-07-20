@@ -592,8 +592,9 @@ export default function MinhasTarefas() {
     const {
       tipo_contato, resultado, descricao,
       outcome, nova_tarefa, novo_stage_id,
-      reason_label, reason_code,
+      reason_label, reason_code, status_etapa,
     } = payload;
+
     setSavingCompletion(true);
 
     try {
