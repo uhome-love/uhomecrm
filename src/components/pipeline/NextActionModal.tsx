@@ -110,7 +110,10 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
       if (selected === "tarefa") {
         if (!tarefaData) { toast.error("Informe a data da tarefa"); setSaving(false); return; }
         if (isTaskDateTooFar(tarefaData, currentStageTipo)) { toast.error(taskDateTooFarMessage(currentStageTipo)); setSaving(false); return; }
-        const tituloLabel = TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label || tipoTarefa;
+        if (presets.length > 0 && !selectedPresetId) { toast.error("Escolha um tipo de tarefa"); setSaving(false); return; }
+        const tituloLabel = activePreset?.label
+          || TIPO_TAREFA_OPTIONS.find(t => t.value === tipoTarefa)?.label
+          || tipoTarefa;
         const obsClean = obsTarefa.trim();
         const { error: insertErr } = await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: leadId,
@@ -132,11 +135,24 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
         // Nota: NÃO inserimos em pipeline_atividades para "Tarefa criada" —
         // o evento é sintetizado a partir de pipeline_tarefas em LeadHistoricoTab.
 
+        // Sync flag_status do preset (ex: alinhamento_perfil, proposta_enviada, prazo=30)
+        let flagPatch: Record<string, string> | null = null;
+        if (activePreset?.syncFlagKey && activePreset?.syncFlagValue) {
+          const { data: leadRow } = await supabase
+            .from("pipeline_leads")
+            .select("flag_status")
+            .eq("id", leadId)
+            .maybeSingle();
+          const currentFlags = ((leadRow as any)?.flag_status ?? {}) as Record<string, string>;
+          flagPatch = { ...currentFlags, [activePreset.syncFlagKey]: activePreset.syncFlagValue };
+        }
+
         await supabase.from("pipeline_leads").update({
           proxima_acao: tituloLabel,
           data_proxima_acao: tarefaData,
           ultima_acao_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          ...(flagPatch ? { flag_status: flagPatch } : {}),
         } as any).eq("id", leadId);
 
         toast.success("Tarefa agendada ✅");
