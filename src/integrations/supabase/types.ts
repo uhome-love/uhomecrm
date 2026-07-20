@@ -10476,6 +10476,14 @@ export type Database = {
           total_calls: number
         }[]
       }
+      elegivel_roleta_domingo: {
+        Args: { p_corretor_id: string; p_domingo: string }
+        Returns: {
+          elegivel: boolean
+          presencas_semana: number
+          visitas_semana: number
+        }[]
+      }
       escalonar_notificacoes_leads: { Args: never; Returns: number }
       expirar_aceites_roleta: { Args: never; Returns: Json }
       fetch_next_lead: {
@@ -11271,6 +11279,7 @@ export type Database = {
         }[]
       }
       reengajamento_resumo_hoje: { Args: never; Returns: Json }
+      registrar_faltas_sabado: { Args: { p_data?: string }; Returns: number }
       rejeitar_lead: {
         Args: { p_corretor_id: string; p_lead_id: string; p_motivo?: string }
         Returns: Json
