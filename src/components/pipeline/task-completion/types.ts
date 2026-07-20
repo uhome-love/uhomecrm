@@ -105,10 +105,8 @@ export const RESULTADO_OPTIONS: ReadonlyArray<{
   Icon: LucideIcon;
   tone: "positive" | "neutral" | "warning" | "negative";
 }> = [
-  { value: "atendeu", label: "Atendeu", Icon: CheckCircle2, tone: "positive" },
-  { value: "agendou_proximo", label: "Agendou próximo", Icon: CalendarCheck, tone: "positive" },
-  { value: "nao_atendeu", label: "Não atendeu", Icon: XCircle, tone: "warning" },
-  { value: "sem_interesse", label: "Sem interesse", Icon: ThumbsDown, tone: "negative" },
+  { value: "respondeu", label: "Respondeu", Icon: CheckCircle2, tone: "positive" },
+  { value: "nao_respondeu", label: "Não respondeu", Icon: XCircle, tone: "neutral" },
   { value: "outro", label: "Outro", Icon: HelpCircle, tone: "neutral" },
 ];
 
