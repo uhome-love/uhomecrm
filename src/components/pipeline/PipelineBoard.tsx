@@ -284,12 +284,12 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     queryKey: ["pipeline-tarefas-map", leadIdsKey],
     queryFn: async () => {
       if (leadIds.length === 0) return {};
-      const map: Record<string, { id?: string; titulo?: string; tipo: string; vence_em: string | null; hora_vencimento: string | null; origem?: string | null }> = {};
+      const map: Record<string, { id?: string; titulo?: string; tipo: string; subtipo?: string | null; vence_em: string | null; hora_vencimento: string | null; origem?: string | null }> = {};
       for (let i = 0; i < leadIds.length; i += 200) {
         const chunk = leadIds.slice(i, i + 200);
         const { data } = await supabase
           .from("pipeline_tarefas")
-          .select("id, titulo, pipeline_lead_id, tipo, vence_em, hora_vencimento, origem")
+          .select("id, titulo, pipeline_lead_id, tipo, subtipo, vence_em, hora_vencimento, origem")
           .in("pipeline_lead_id", chunk)
           .eq("status", "pendente")
           .order("vence_em", { ascending: true })
@@ -297,7 +297,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         if (data) {
           for (const t of data) {
             if (!map[t.pipeline_lead_id]) {
-              map[t.pipeline_lead_id] = { id: t.id, titulo: t.titulo || "Tarefa", tipo: t.tipo || "follow_up", vence_em: t.vence_em, hora_vencimento: t.hora_vencimento, origem: (t as any).origem ?? null };
+              map[t.pipeline_lead_id] = { id: t.id, titulo: t.titulo || "Tarefa", tipo: t.tipo || "follow_up", subtipo: (t as any).subtipo ?? null, vence_em: t.vence_em, hora_vencimento: t.hora_vencimento, origem: (t as any).origem ?? null };
             }
           }
         }
