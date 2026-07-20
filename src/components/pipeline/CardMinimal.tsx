@@ -202,10 +202,18 @@ const CardMinimal = memo(function CardMinimal({
     [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
 
+  // Título específico (novo formato do qualificacaoTaskEngine): "Ação às Hh · dd/mm".
+  // Quando presente, dispensa rótulo genérico + actionWhen no card e o badge de substatus (redundante).
+  const hasSpecificTitle = useMemo(() => {
+    const t = (proximaTarefa?.titulo || "").trim();
+    if (!t) return false;
+    return t.includes(" · ") || t.includes(" às ");
+  }, [proximaTarefa?.titulo]);
+
   // fallback acessível: usado como title e leitura por SR
   const fullActionLabel = useMemo(
-    () => formatNextAction(proximaTarefa ?? null),
-    [proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
+    () => (hasSpecificTitle ? (proximaTarefa?.titulo || "") : formatNextAction(proximaTarefa ?? null)),
+    [hasSpecificTitle, proximaTarefa?.titulo, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
 
   const empreendimento = useMemo(
