@@ -56,7 +56,7 @@ export function useTarefasHoje() {
       // 2) Tarefas pendentes hoje
       const { data: tarefas } = await supabase
         .from("pipeline_tarefas")
-        .select("id, tipo, vence_em, titulo, pipeline_lead_id")
+        .select("id, tipo, vence_em, titulo, pipeline_lead_id, adiamentos_count")
         .eq("status", "pendente")
         .in("pipeline_lead_id", leadIds)
         .gte("vence_em", startOfTodayBRT())
@@ -85,7 +85,9 @@ export function useTarefasHoje() {
           lead_id: t.pipeline_lead_id,
           lead_nome: lead.nome || "—",
           empreendimento: lead.empreendimento,
+          stage_id: lead.stage_id || null,
           stage_nome: stageNomeById.get(lead.stage_id) || "—",
+          adiamentos_count: Number(t.adiamentos_count ?? 0),
         } as TarefaHoje;
       });
     },
