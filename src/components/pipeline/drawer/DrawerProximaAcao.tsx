@@ -14,6 +14,8 @@ interface Props {
   nextTask: NextTaskLike | null;
   /** texto livre opcional (lead.proxima_acao) usado como fallback */
   proximaAcaoTexto?: string | null;
+  /** total de tarefas pendentes do lead — se >1 exibe aviso */
+  pendingCount?: number;
 }
 
 /** Detecta o tipo canônico (ligar/whatsapp/email/visita) a partir do tipo+titulo da tarefa. */
