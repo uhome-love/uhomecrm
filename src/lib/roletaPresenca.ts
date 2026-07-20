@@ -28,7 +28,9 @@ export interface EstadoTurno {
  * - Se tem presença 'saiu' → saiu (removido da fila)
  * - Se tem presença 'na_empresa' → na_empresa (validado, participando)
  * - Se tem presença 'falta' → falta (não compareceu, fechamento do dia)
- * - Sem presença mas com credenciamento aprovado → na_roleta (aguardando validação)
+ * - Sem presença mas credenciado na roleta → na_empresa (participou da roleta =
+ *   presente; o trigger de aprovação já cria a linha, isso é rede de segurança).
+ * - Sem presença e sem credenciamento → sem_marcar (gestor precisa validar).
  */
 export function derivarEstadoTurno(
   presenca: PresencaRow | undefined,
@@ -39,21 +41,21 @@ export function derivarEstadoTurno(
     if (presenca.status === "falta") return "falta";
     return "na_empresa";
   }
-  return temCredenciamento ? "na_roleta" : "falta";
+  return temCredenciamento ? "na_empresa" : "falta";
 }
 
 export const ESTADO_LABEL: Record<EstadoCorretor, string> = {
   na_roleta: "Na roleta",
-  na_empresa: "Na empresa",
+  na_empresa: "Presente",
   saiu: "Saiu",
-  falta: "Faltou",
+  falta: "Sem marcar",
 };
 
 export const ESTADO_CLASSES: Record<EstadoCorretor, string> = {
   na_roleta: "bg-muted text-muted-foreground border border-border",
   na_empresa: "bg-success-500/15 text-success-700 border border-success-500/30",
   saiu: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border border-yellow-500/30",
-  falta: "bg-destructive/10 text-destructive border border-destructive/30",
+  falta: "bg-muted text-muted-foreground border border-border",
 };
 
 export const TURNO_LABEL: Record<string, string> = {
