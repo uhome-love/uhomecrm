@@ -416,12 +416,18 @@ export function CompletionForm(props: CompletionFormProps) {
             Observação <span className="text-destructive">*</span>
           </label>
           <Textarea
+            ref={descricaoRef}
             placeholder="Ex: Cliente pediu para ligar amanhã às 14h, interessado no apto 301..."
             value={descricao}
-            onChange={(e) => onChangeDescricao(e.target.value)}
-            rows={2}
+            onChange={(e) => {
+              onChangeDescricao(e.target.value);
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+            }}
+            rows={1}
             className={cn(
-              "resize-none text-xs bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/20",
+              "resize-none text-xs bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/20 min-h-[32px] overflow-hidden",
               descricao.length > 0 &&
                 !descricaoValida &&
                 "border-destructive focus-visible:ring-destructive/20",
