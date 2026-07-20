@@ -118,9 +118,9 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
             return (
               <Popover key={key} open={visitaPickerOpen} onOpenChange={setVisitaPickerOpen}>
                 <PopoverTrigger asChild>{btn}</PopoverTrigger>
-                <PopoverContent align="start" className="w-64 p-2">
+                <PopoverContent align="start" className="w-72 p-2">
                   <VisitaDatePicker
-                    onPick={(dt) => void doAdvance("alinhando_visita", dt)}
+                    onPick={(dt, hora) => void doAdvance("alinhando_visita", dt, hora)}
                     disabled={!!saving}
                   />
                 </PopoverContent>
