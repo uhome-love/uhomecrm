@@ -192,7 +192,7 @@ function CorretorRow({
   onMark: (
     corretor_id: string,
     turno: PresencaTurno,
-    status: "na_empresa" | "saiu",
+    status: MarkStatus,
   ) => void;
   isMutating: boolean;
 }) {
