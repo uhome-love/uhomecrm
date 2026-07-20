@@ -4,6 +4,7 @@ import { invalidateTaskQueries } from "@/lib/taskQueryUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { runQueryWithRetry } from "@/lib/taskQueryUtils";
 import { Phone, MessageCircle, CheckCircle2, ClipboardList, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
