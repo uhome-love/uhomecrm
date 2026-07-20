@@ -516,8 +516,8 @@ export function CompletionForm(props: CompletionFormProps) {
           )}
         </div>
 
-        {/* 3. Status da etapa (Qualificação/Aquecimento) — obrigatório */}
-        {stageStatus && (
+        {/* 3. Status da etapa — ocultado quando o preset já cobre o status via flag_status. */}
+        {stageStatus && !(outcome === "agendar" && presetHandlesStatus) && (
           <StageStatusBlock block={stageStatus} />
         )}
 
