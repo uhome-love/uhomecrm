@@ -353,9 +353,20 @@ const CardMinimal = memo(function CardMinimal({
               </span>
             )}
           </div>
-          {/* Nome do lead: sempre em linha própria, largura total e legível */}
-          <div className="mt-0.5 text-[14px] font-semibold text-foreground tracking-tight leading-tight truncate">
-            {lead.nome || "Sem nome"}
+          {/* Nome do lead + chip compacto de parceria (mesma linha) */}
+          <div className="mt-0.5 flex items-center gap-1.5 min-w-0">
+            <span className="flex-1 min-w-0 text-[14px] font-semibold text-foreground tracking-tight leading-tight truncate">
+              {lead.nome || "Sem nome"}
+            </span>
+            {parceiroNome && (
+              <span
+                className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-200 px-1.5 py-px text-[9.5px] font-semibold"
+                title={`Parceria com ${parceiroNome}`}
+              >
+                <Handshake className="h-2.5 w-2.5" />
+                c/ {parceiroPrimeiroNome}
+              </span>
+            )}
           </div>
           {empreendimento && (
             <div className="text-[11px] text-muted-foreground truncate mt-0.5">
