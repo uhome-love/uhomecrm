@@ -182,6 +182,11 @@ const CardMinimal = memo(function CardMinimal({
   onMoveLead,
   onTransferred,
 }: CardMinimalProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [completingOpen, setCompletingOpen] = useState(false);
+  const [completingBusy, setCompletingBusy] = useState(false);
+
   const status = useMemo(
     () => resolveStatus(proximaTarefa ?? null, stage?.tipo),
     [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento, stage?.tipo]
@@ -221,6 +226,14 @@ const CardMinimal = memo(function CardMinimal({
 
   const isAtrasada = status === "atrasada";
   const showActionLine = stage?.tipo !== "convertido" && stage?.tipo !== "descarte";
+  // Atalho de check só aparece para tarefa vencendo hoje ou atrasada, e desde que tenhamos o id.
+  const canQuickComplete =
+    !!proximaTarefa?.id && (status === "atrasada" || status === "hoje");
+
+  const parceiroPrimeiroNome = useMemo(() => {
+    if (!parceiroNome) return "";
+    return parceiroNome.trim().split(/\s+/)[0] || parceiroNome;
+  }, [parceiroNome]);
 
   const substatus = useMemo(
     () => getLeadSubstatusBadge(lead.flag_status, stage?.tipo),
