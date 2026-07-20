@@ -146,8 +146,17 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
     } else if (targetFase === "vendido") {
       onConfirm({
         fase: "vendido",
-        fields: { tipo_assinatura: assDigital, ato_pago: assAtoPago, observacoes: assObs, data_assinatura: assDataAssinatura },
+        fields: {
+          tipo_assinatura: assDigital,
+          ato_pago: assAtoPago,
+          observacoes: assObs,
+          data_assinatura: assDataAssinatura,
+          vgv: rawToNumber(assVgv),
+          empreendimento: assEmpreendimento,
+          unidade: assUnidade,
+        },
       });
+
     } else if (targetFase === "perdido") {
       if (!caiuMotivo.trim()) return;
       onConfirm({
