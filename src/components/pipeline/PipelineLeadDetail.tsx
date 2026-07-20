@@ -33,7 +33,8 @@ import {
 import DrawerLeadInfo from "./drawer/DrawerLeadInfo";
 import CadenciaSemContatoCard from "./CadenciaSemContatoCard";
 import EstagnacaoStatusCard from "./EstagnacaoStatusCard";
-import QualificacaoChecklistCard from "./QualificacaoChecklistCard";
+import { QualificacaoEtapaCard, PerfilLeadCard } from "./QualificacaoChecklistCard";
+import { getOrigemLabel } from "./LeadHistoricoTab";
 import DrawerLeadHeader from "./drawer/DrawerLeadHeader";
 import DrawerTimeline from "./drawer/DrawerTimeline";
 import DrawerActionGrid from "./drawer/DrawerActionGrid";
@@ -511,7 +512,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} pendingCount={pendingTasksList.length} />
 
       {/* Checklist de Qualificação — persistente em todas as etapas */}
-      <QualificacaoChecklistCard lead={lead} />
+      <QualificacaoEtapaCard lead={lead} />
+      <PerfilLeadCard lead={lead} />
 
 
       {/* Editor de empreendimento (renderizado só quando ativo — disparado pelo card abaixo) */}
@@ -602,7 +604,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         empreendimento={lead.empreendimento}
         meta={(() => {
           const parts: string[] = [];
-          if (lead.origem) parts.push(lead.origem);
+          const origemInfo = getOrigemLabel(lead.origem);
+          if (origemInfo) parts.push(`${origemInfo.emoji} ${origemInfo.label}`);
+          else if (lead.origem) parts.push(lead.origem);
           if (lead.campanha) parts.push(lead.campanha);
           else if (lead.formulario) parts.push(lead.formulario);
           return parts.join(" · ") || null;
@@ -667,7 +671,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         </Collapsible>
       )}
 
-      {lead.origem_detalhe && !lead.observacoes && (
+      {lead.origem_detalhe && !lead.observacoes && lead.origem_detalhe.trim().toLowerCase() !== (lead.empreendimento || "").trim().toLowerCase() && (
         <p className="text-[11px] text-muted-foreground flex items-start gap-1 min-w-0" title={lead.origem_detalhe}>
           <FileText className="h-3 w-3 shrink-0 mt-0.5" />
           <span className="line-clamp-2 min-w-0 break-words">{lead.origem_detalhe}</span>

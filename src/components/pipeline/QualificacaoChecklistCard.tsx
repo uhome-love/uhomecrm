@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Pencil, ClipboardList } from "lucide-react";
+import { Loader2, Pencil, ClipboardList, ListChecks, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { PipelineLead } from "@/hooks/usePipeline";
@@ -43,95 +42,33 @@ function ChipDisplay({ label, value, empty }: { label: string; value: string | n
   );
 }
 
-export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
+/**
+ * Card "Etapa da qualificação" — pills clicáveis, sempre visíveis, sem popover.
+ * Clicar em uma pill salva o novo status_atendimento e dispara o motor de tarefa
+ * automática (cancela `qualificacao_*` pendentes e cria a próxima tarefa).
+ */
+export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
   const flag = (lead.flag_status || {}) as Record<string, any>;
-  const initialStatus = (flag.status_atendimento as string) || "";
-  const initialTipologia = (flag.tipologia as string) || "";
-  const initialFaixa = ((lead as any).faixa_valor as string) || "";
-  const initialForma = ((lead as any).forma_pagamento as string) || "";
-  const initialPrazo = ((lead as any).prazo_decisao as string) || "";
-  const initialBairroRaw = ((lead as any).bairro_regiao as string) || "";
+  const currentStatus = (flag.status_atendimento as string) || "";
+  const [saving, setSaving] = useState<string | null>(null);
 
-  const initialBairros = useMemo(
-    () => initialBairroRaw.split(",").map(s => s.trim()).filter(Boolean).filter(b => QUALIFICACAO_BAIRROS_UHOME.includes(b)),
-    [initialBairroRaw],
-  );
-  const initialOutro = useMemo(
-    () => initialBairroRaw.split(",").map(s => s.trim()).filter(Boolean).filter(b => !QUALIFICACAO_BAIRROS_UHOME.includes(b)).join(", "),
-    [initialBairroRaw],
-  );
+  const steps = Object.entries(QUALIFICACAO_STATUS_ATEND) as [string, string][];
+  const currentIdx = steps.findIndex(([k]) => k === currentStatus);
 
-  const [editing, setEditing] = useState(false);
-  const [statusAtend, setStatusAtend] = useState(initialStatus);
-  const [tipologia, setTipologia] = useState(initialTipologia);
-  const [faixa, setFaixa] = useState(initialFaixa);
-  const [forma, setForma] = useState(initialForma);
-  const [prazo, setPrazo] = useState(initialPrazo);
-  const [bairros, setBairros] = useState<string[]>(initialBairros);
-  const [outroOn, setOutroOn] = useState(!!initialOutro);
-  const [outro, setOutro] = useState(initialOutro);
-  const [saving, setSaving] = useState(false);
-
-  // Reset local state when lead changes / popover reopens
-  useEffect(() => {
-    if (!editing) return;
-    setStatusAtend(initialStatus);
-    setTipologia(initialTipologia);
-    setFaixa(initialFaixa);
-    setForma(initialForma);
-    setPrazo(initialPrazo);
-    setBairros(initialBairros);
-    setOutroOn(!!initialOutro);
-    setOutro(initialOutro);
-  }, [editing, initialStatus, initialTipologia, initialFaixa, initialForma, initialPrazo, initialBairros, initialOutro]);
-
-  const filled = [
-    statusAtend,
-    tipologia,
-    faixa,
-    forma,
-    prazo,
-    (bairros.length > 0 || (outroOn && outro.trim())) ? "x" : "",
-  ].filter(Boolean).length;
-  const total = 6;
-
-  const statusLabel = statusAtend ? QUALIFICACAO_STATUS_ATEND[statusAtend] || statusAtend : null;
-  const tipologiaLabel = labelOf(QUALIFICACAO_TIPOLOGIAS, tipologia);
-  const faixaLabel = labelOf(QUALIFICACAO_FAIXAS, faixa);
-  const formaLabel = labelOf(QUALIFICACAO_FORMAS_PAGAMENTO, forma);
-  const prazoLabel = labelOf(QUALIFICACAO_PRAZOS, prazo);
-  const bairroDisplay = [
-    ...bairros,
-    ...(outroOn && outro.trim() ? [outro.trim()] : []),
-  ].join(", ") || null;
-
-  const toggleBairro = (b: string) => setBairros(prev => prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]);
-
-  const handleSave = async () => {
-    setSaving(true);
+  const handleClick = async (statusKey: string) => {
+    if (saving || statusKey === currentStatus) return;
+    setSaving(statusKey);
     try {
-      const bairroFinal = [
-        ...bairros,
-        ...(outroOn && outro.trim() ? [outro.trim()] : []),
-      ].join(", ");
-
       const nextFlag: Record<string, any> = { ...(lead.flag_status || {}) };
-      if (statusAtend) nextFlag.status_atendimento = statusAtend; else delete nextFlag.status_atendimento;
-      if (tipologia) nextFlag.tipologia = tipologia; else delete nextFlag.tipologia;
-
-      const updates: Record<string, any> = {
-        flag_status: nextFlag,
-        faixa_valor: faixa || null,
-        forma_pagamento: forma || null,
-        prazo_decisao: prazo || null,
-        bairro_regiao: bairroFinal || null,
-      };
-      const { error } = await supabase.from("pipeline_leads").update(updates as any).eq("id", lead.id);
+      nextFlag.status_atendimento = statusKey;
+      const { error } = await supabase
+        .from("pipeline_leads")
+        .update({ flag_status: nextFlag } as any)
+        .eq("id", lead.id);
       if (error) throw error;
 
-      // Motor de tarefa automática — status do atendimento mudou → cancela tarefas
-      // automáticas de qualificação pendentes e cria a próxima.
-      if (statusAtend && statusAtend !== initialStatus && lead.corretor_id) {
+      // Motor de tarefa automática — mesmo comportamento anterior.
+      if (lead.corretor_id) {
         try {
           const TASK_MAP: Record<string, { tipo: string; titulo: string; diasVence: number }> = {
             contato_inicial:    { tipo: "whatsapp", titulo: "Perfil de busca completo?",                diasVence: 0 },
@@ -141,9 +78,8 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
             follow_up:          { tipo: "ligacao",  titulo: "Follow-up com novidades",                  diasVence: 3 },
             alinhando_visita:   { tipo: "ligacao",  titulo: "Confirmar data da visita",                 diasVence: 0 },
           };
-          const cfg = TASK_MAP[statusAtend];
+          const cfg = TASK_MAP[statusKey];
           if (cfg) {
-            // Cancela tarefas automáticas de qualificação ainda pendentes (evita concorrência)
             const { data: pend } = await supabase
               .from("pipeline_tarefas")
               .select("id, origem")
@@ -167,28 +103,162 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
               pipeline_lead_id: lead.id,
               tipo: cfg.tipo,
               titulo: `${cfg.titulo} — ${leadNome}`,
-              descricao: `Qualificação — ${QUALIFICACAO_STATUS_ATEND[statusAtend] || statusAtend}`,
+              descricao: `Qualificação — ${QUALIFICACAO_STATUS_ATEND[statusKey] || statusKey}`,
               vence_em,
               hora_vencimento: "10:00",
               status: "pendente",
               prioridade: "media",
               responsavel_id: lead.corretor_id,
               created_by: lead.corretor_id,
-              origem: `qualificacao_${statusAtend}`,
+              origem: `qualificacao_${statusKey}`,
             } as any);
           }
         } catch (err) {
-          console.error("[QualificacaoChecklistCard] auto-task error:", err);
+          console.error("[QualificacaoEtapaCard] auto-task error:", err);
         }
       }
 
-      toast.success("Checklist de qualificação atualizado");
+      toast.success(`Etapa: ${QUALIFICACAO_STATUS_ATEND[statusKey] || statusKey}`);
+      onSaved?.();
+      window.dispatchEvent(new CustomEvent("pipeline-reload"));
+    } catch (err) {
+      console.error("[QualificacaoEtapaCard] save error:", err);
+      toast.error("Erro ao atualizar etapa");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border bg-card p-3 space-y-2">
+      <div className="flex items-center gap-1.5">
+        <ListChecks className="h-3.5 w-3.5 text-primary" />
+        <span className="text-xs font-semibold">Etapa da qualificação</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {steps.map(([key, label], idx) => {
+          const isCurrent = key === currentStatus;
+          const isDone = currentIdx >= 0 && idx < currentIdx;
+          const isSaving = saving === key;
+          let cls = "bg-background hover:bg-muted border-border text-foreground";
+          if (isCurrent) cls = "bg-primary text-primary-foreground border-primary shadow-sm";
+          else if (isDone) cls = "bg-muted/50 border-border text-muted-foreground line-through opacity-70 hover:opacity-100";
+          return (
+            <button
+              key={key}
+              type="button"
+              disabled={!!saving}
+              onClick={() => handleClick(key)}
+              className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition-all ${cls} ${saving && !isSaving ? "opacity-50" : ""}`}
+            >
+              {isSaving ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : isDone ? (
+                <Check className="h-3 w-3" />
+              ) : null}
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {!currentStatus && (
+        <p className="text-[11px] text-muted-foreground italic">
+          Clique em uma etapa para registrar o status do atendimento.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Card "Perfil do lead" — mantém o popover com Editar. 5 campos:
+ * tipologia, faixa de valor, forma de pagamento, prazo de decisão, bairros.
+ */
+export function PerfilLeadCard({ lead, onSaved }: Props) {
+  const initialTipologia = ((lead.flag_status || {}) as any).tipologia as string || "";
+  const initialFaixa = ((lead as any).faixa_valor as string) || "";
+  const initialForma = ((lead as any).forma_pagamento as string) || "";
+  const initialPrazo = ((lead as any).prazo_decisao as string) || "";
+  const initialBairroRaw = ((lead as any).bairro_regiao as string) || "";
+
+  const initialBairros = useMemo(
+    () => initialBairroRaw.split(",").map(s => s.trim()).filter(Boolean).filter(b => QUALIFICACAO_BAIRROS_UHOME.includes(b)),
+    [initialBairroRaw],
+  );
+  const initialOutro = useMemo(
+    () => initialBairroRaw.split(",").map(s => s.trim()).filter(Boolean).filter(b => !QUALIFICACAO_BAIRROS_UHOME.includes(b)).join(", "),
+    [initialBairroRaw],
+  );
+
+  const [editing, setEditing] = useState(false);
+  const [tipologia, setTipologia] = useState(initialTipologia);
+  const [faixa, setFaixa] = useState(initialFaixa);
+  const [forma, setForma] = useState(initialForma);
+  const [prazo, setPrazo] = useState(initialPrazo);
+  const [bairros, setBairros] = useState<string[]>(initialBairros);
+  const [outroOn, setOutroOn] = useState(!!initialOutro);
+  const [outro, setOutro] = useState(initialOutro);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!editing) return;
+    setTipologia(initialTipologia);
+    setFaixa(initialFaixa);
+    setForma(initialForma);
+    setPrazo(initialPrazo);
+    setBairros(initialBairros);
+    setOutroOn(!!initialOutro);
+    setOutro(initialOutro);
+  }, [editing, initialTipologia, initialFaixa, initialForma, initialPrazo, initialBairros, initialOutro]);
+
+  const filled = [
+    tipologia,
+    faixa,
+    forma,
+    prazo,
+    (bairros.length > 0 || (outroOn && outro.trim())) ? "x" : "",
+  ].filter(Boolean).length;
+  const total = 5;
+
+  const tipologiaLabel = labelOf(QUALIFICACAO_TIPOLOGIAS, tipologia);
+  const faixaLabel = labelOf(QUALIFICACAO_FAIXAS, faixa);
+  const formaLabel = labelOf(QUALIFICACAO_FORMAS_PAGAMENTO, forma);
+  const prazoLabel = labelOf(QUALIFICACAO_PRAZOS, prazo);
+  const bairroDisplay = [
+    ...bairros,
+    ...(outroOn && outro.trim() ? [outro.trim()] : []),
+  ].join(", ") || null;
+
+  const toggleBairro = (b: string) => setBairros(prev => prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const bairroFinal = [
+        ...bairros,
+        ...(outroOn && outro.trim() ? [outro.trim()] : []),
+      ].join(", ");
+
+      const nextFlag: Record<string, any> = { ...(lead.flag_status || {}) };
+      if (tipologia) nextFlag.tipologia = tipologia; else delete nextFlag.tipologia;
+
+      const updates: Record<string, any> = {
+        flag_status: nextFlag,
+        faixa_valor: faixa || null,
+        forma_pagamento: forma || null,
+        prazo_decisao: prazo || null,
+        bairro_regiao: bairroFinal || null,
+      };
+      const { error } = await supabase.from("pipeline_leads").update(updates as any).eq("id", lead.id);
+      if (error) throw error;
+
+      toast.success("Perfil do lead atualizado");
       setEditing(false);
       onSaved?.();
       window.dispatchEvent(new CustomEvent("pipeline-reload"));
     } catch (err) {
-      console.error("[QualificacaoChecklistCard] save error:", err);
-      toast.error("Erro ao salvar checklist");
+      console.error("[PerfilLeadCard] save error:", err);
+      toast.error("Erro ao salvar perfil");
     } finally {
       setSaving(false);
     }
@@ -199,7 +269,7 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <ClipboardList className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-semibold">Checklist de Qualificação</span>
+          <span className="text-xs font-semibold">Perfil do lead</span>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${filled === total ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : filled === 0 ? "bg-muted text-muted-foreground border border-border" : "bg-amber-500/10 text-amber-600 border border-amber-500/20"}`}>
             {filled}/{total} preenchido
           </span>
@@ -218,48 +288,36 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
             className="w-[360px] p-0 flex flex-col max-h-[min(70vh,var(--radix-popover-content-available-height))]"
           >
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            <div>
-              <Label className="text-xs">Status do atendimento</Label>
-              <Select value={statusAtend || "__none"} onValueChange={(v) => setStatusAtend(v === "__none" ? "" : v)}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">— Não preenchido —</SelectItem>
-                  {Object.entries(QUALIFICACAO_STATUS_ATEND).map(([k, label]) => (
-                    <SelectItem key={k} value={k}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <ChipEditor label="Tipologia" value={tipologia} onChange={setTipologia} options={QUALIFICACAO_TIPOLOGIAS} />
-            <ChipEditor label="Faixa de valor" value={faixa} onChange={setFaixa} options={QUALIFICACAO_FAIXAS} />
-            <ChipEditor label="Forma de pagamento" value={forma} onChange={setForma} options={QUALIFICACAO_FORMAS_PAGAMENTO} />
-            <ChipEditor label="Prazo de decisão" value={prazo} onChange={setPrazo} options={QUALIFICACAO_PRAZOS} />
+              <ChipEditor label="Tipologia" value={tipologia} onChange={setTipologia} options={QUALIFICACAO_TIPOLOGIAS} />
+              <ChipEditor label="Faixa de valor" value={faixa} onChange={setFaixa} options={QUALIFICACAO_FAIXAS} />
+              <ChipEditor label="Forma de pagamento" value={forma} onChange={setForma} options={QUALIFICACAO_FORMAS_PAGAMENTO} />
+              <ChipEditor label="Prazo de decisão" value={prazo} onChange={setPrazo} options={QUALIFICACAO_PRAZOS} />
 
-            <div>
-              <Label className="text-xs mb-1.5 block">Região / Bairros</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {QUALIFICACAO_BAIRROS_UHOME.map(b => {
-                  const active = bairros.includes(b);
-                  return (
-                    <button
-                      key={b}
-                      type="button"
-                      onClick={() => toggleBairro(b)}
-                      className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted border-border"}`}
-                    >
-                      {b}
-                    </button>
-                  );
-                })}
+              <div>
+                <Label className="text-xs mb-1.5 block">Região / Bairros</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {QUALIFICACAO_BAIRROS_UHOME.map(b => {
+                    const active = bairros.includes(b);
+                    return (
+                      <button
+                        key={b}
+                        type="button"
+                        onClick={() => toggleBairro(b)}
+                        className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted border-border"}`}
+                      >
+                        {b}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <Checkbox id="pl-outro" checked={outroOn} onCheckedChange={(v) => setOutroOn(!!v)} />
+                  <Label htmlFor="pl-outro" className="text-[11px] cursor-pointer">Outro bairro</Label>
+                </div>
+                {outroOn && (
+                  <Input value={outro} onChange={e => setOutro(e.target.value)} className="h-8 text-xs mt-1.5" placeholder="Digite o(s) bairro(s), separados por vírgula" />
+                )}
               </div>
-              <div className="mt-1.5 flex items-center gap-2">
-                <Checkbox id="qc-outro" checked={outroOn} onCheckedChange={(v) => setOutroOn(!!v)} />
-                <Label htmlFor="qc-outro" className="text-[11px] cursor-pointer">Outro bairro</Label>
-              </div>
-              {outroOn && (
-                <Input value={outro} onChange={e => setOutro(e.target.value)} className="h-8 text-xs mt-1.5" placeholder="Digite o(s) bairro(s), separados por vírgula" />
-              )}
-            </div>
             </div>
 
             <div className="shrink-0 flex justify-end gap-2 border-t bg-background px-3 py-2">
@@ -275,18 +333,29 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
 
       {filled === 0 ? (
         <p className="text-[11px] text-muted-foreground italic">
-          Nenhum campo preenchido ainda. Clique em <span className="font-medium">Editar</span> para qualificar.
+          Nenhum campo preenchido ainda. Clique em <span className="font-medium">Editar</span> para completar o perfil.
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-2">
-          <ChipDisplay label="Status" value={statusLabel} empty="—" />
           <ChipDisplay label="Tipologia" value={tipologiaLabel} empty="—" />
           <ChipDisplay label="Faixa de valor" value={faixaLabel} empty="—" />
           <ChipDisplay label="Pagamento" value={formaLabel} empty="—" />
           <ChipDisplay label="Prazo" value={prazoLabel} empty="—" />
-          <ChipDisplay label="Bairros" value={bairroDisplay} empty="—" />
+          <div className="col-span-2">
+            <ChipDisplay label="Bairros" value={bairroDisplay} empty="—" />
+          </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Compat: default export renders both cards empilhados. */
+export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
+  return (
+    <div className="space-y-2">
+      <QualificacaoEtapaCard lead={lead} onSaved={onSaved} />
+      <PerfilLeadCard lead={lead} onSaved={onSaved} />
     </div>
   );
 }

@@ -151,7 +151,7 @@ const IMOVEL_EVENT_META: Record<string, { label: string; icon: any; color: strin
   whatsapp_clicked: { label: "💬 WhatsApp clicado", icon: MessageSquare, color: "bg-green-100 text-green-600" },
 };
 
-function getOrigemLabel(origem: string | null | undefined): { emoji: string; label: string } | null {
+export function getOrigemLabel(origem: string | null | undefined): { emoji: string; label: string } | null {
   if (!origem) return null;
   const o = origem.toLowerCase();
   if (o.includes("meta") || o.includes("facebook")) return { emoji: "📱", label: "Meta Ads" };
