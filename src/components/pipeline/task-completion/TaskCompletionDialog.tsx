@@ -406,7 +406,9 @@ export default function TaskCompletionDialog({
             leadNome={leadNome}
             leadId={leadId}
             currentStageId={currentStageId}
+            stageTipo={stageTipo}
             semContato={semContatoInfo}
+            
             
             resultado={resultado}
             descricao={descricao}
