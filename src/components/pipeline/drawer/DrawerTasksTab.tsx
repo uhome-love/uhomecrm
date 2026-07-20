@@ -432,54 +432,6 @@ function TaskCard({
   );
 }
 
-// ───── Adiar dialog ─────
-function AdiarTaskDialog({ tarefa, onClose, onSaved }: { tarefa: PipelineTarefa; onClose: () => void; onSaved: () => void }) {
-  const [data, setData] = useState(tarefa.vence_em ?? "");
-  const [hora, setHora] = useState(tarefa.hora_vencimento?.slice(0, 5) ?? "09:00");
-  const [saving, setSaving] = useState(false);
-
-  async function handleSave() {
-    if (!data) { toast.error("Informe a nova data."); return; }
-    setSaving(true);
-    const { error } = await supabase
-      .from("pipeline_tarefas")
-      .update({ vence_em: data, hora_vencimento: hora ? `${hora}:00` : null })
-      .eq("id", tarefa.id);
-    setSaving(false);
-    if (error) { toast.error("Erro ao adiar: " + error.message); return; }
-    toast.success("Tarefa adiada.");
-    onSaved();
-  }
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4" /> Adiar tarefa
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="text-sm text-zinc-700">{tarefa.titulo}</div>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="text-[11px] font-medium text-zinc-500">Nova data</label>
-              <Input type="date" value={data} onChange={e => setData(e.target.value)} />
-            </div>
-            <div className="w-32">
-              <label className="text-[11px] font-medium text-zinc-500">Hora</label>
-              <Input type="time" value={hora} onChange={e => setHora(e.target.value)} />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
-          <Button size="sm" onClick={handleSave} disabled={saving}>Adiar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // ───── Edit dialog ─────
 function EditTaskDialog({ tarefa, onClose, onSaved }: { tarefa: PipelineTarefa; onClose: () => void; onSaved: () => void }) {
