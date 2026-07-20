@@ -467,6 +467,20 @@ export function PresencaRoletaPanel({
         )}
       </div>
 
+      {/* Aviso: corretores sem presença marcada no turno ativo */}
+      {!foraDeJanela && canManage && stats.semMarcar > 0 && (
+        <div className="rounded-lg px-3 py-2 mb-3 text-xs flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-800 dark:text-yellow-300">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="leading-snug">
+            <strong>{stats.semMarcar}</strong> corretor
+            {stats.semMarcar === 1 ? "" : "es"} sem presença marcada em{" "}
+            <strong>{turnoAtivoLabel}</strong>. Quem não for marcado até o fim
+            do turno vira <strong>Falta</strong>.
+          </div>
+        </div>
+      )}
+
+
       <div className="flex-1 min-h-[180px]">
         {isLoading ? (
           <div className="space-y-2">
