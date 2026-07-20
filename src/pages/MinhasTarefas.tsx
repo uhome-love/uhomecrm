@@ -1138,6 +1138,21 @@ export default function MinhasTarefas() {
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-success-700 hover:text-success-700 hover:bg-success-500/10" onClick={() => handleConcluir(tarefa)}>
                         <CheckCircle2 className="h-3.5 w-3.5" /> Concluir
                       </Button>
+                      {(tarefa.adiamentos_count ?? 0) >= 2 ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="destructive" className="text-[10px] gap-1 cursor-help">
+                              <Clock className="h-3 w-3" /> Adiado 2x — resolver
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>Esta tarefa já foi adiada 2 vezes. Use Concluir para resolver (concluir, descartar ou inativar).</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground" onClick={() => openAdiar(tarefa)} title={(tarefa.adiamentos_count ?? 0) === 1 ? "Último adiamento disponível" : "Adiar tarefa"}>
+                          <Clock className="h-3.5 w-3.5" />
+                          Adiar{(tarefa.adiamentos_count ?? 0) === 1 ? " (último)" : ""}
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Editar" onClick={() => openEditTarefa(tarefa)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
