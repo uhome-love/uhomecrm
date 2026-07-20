@@ -203,13 +203,12 @@ const CardMinimal = memo(function CardMinimal({
     [proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]
   );
 
-  // Título específico (novo formato do qualificacaoTaskEngine): "Ação às Hh · dd/mm".
-  // Quando presente, dispensa rótulo genérico + actionWhen no card e o badge de substatus (redundante).
+  // Título específico = tarefa criada pelo qualificacaoTaskEngine (origem começa com "qualificacao_").
+  // Dispensa rótulo genérico + actionWhen no card e o badge de substatus (redundante).
+  // Não usar heurística de texto ("·"/"às") porque completeLeadTask também gera títulos com " · ".
   const hasSpecificTitle = useMemo(() => {
-    const t = (proximaTarefa?.titulo || "").trim();
-    if (!t) return false;
-    return t.includes(" · ") || t.includes(" às ");
-  }, [proximaTarefa?.titulo]);
+    return !!proximaTarefa?.origem?.startsWith("qualificacao_");
+  }, [proximaTarefa?.origem]);
 
   // fallback acessível: usado como title e leitura por SR
   const fullActionLabel = useMemo(
