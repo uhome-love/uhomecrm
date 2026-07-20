@@ -50,10 +50,10 @@ interface Props {
 }
 
 const TURNOS_BASE: PresencaTurno[] = ["manha", "tarde"];
-const TURNO_SHORT: Record<PresencaTurno, string> = {
-  manha: "M",
-  tarde: "T",
-  noturna: "N",
+const TURNO_LABEL_FULL: Record<PresencaTurno, string> = {
+  manha: "Manhã",
+  tarde: "Tarde",
+  noturna: "Noturna",
 };
 
 /** Corretor está credenciado neste turno? (dia_todo cobre manhã e tarde) */
@@ -93,14 +93,14 @@ function TurnoChip({
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] min-w-0",
+        "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs min-w-0 transition",
         ativoAgora
-          ? "bg-primary/5 border border-primary/30"
-          : "bg-muted/30 border border-transparent",
+          ? "bg-primary/5 border border-primary/30 shadow-sm"
+          : "bg-muted/40 border border-border/50 hover:border-border",
       )}
     >
-      <span className="w-4 shrink-0 font-bold text-muted-foreground text-center">
-        {TURNO_SHORT[turno]}
+      <span className="shrink-0 text-[11px] font-semibold text-muted-foreground w-14">
+        {TURNO_LABEL_FULL[turno]}
       </span>
       <span
         className={cn(
@@ -111,35 +111,41 @@ function TurnoChip({
         {ESTADO_LABEL[estado]}
       </span>
       {credenciado && (
-        <Target
-          className="h-2.5 w-2.5 text-primary shrink-0"
-          aria-label="Credenciado neste turno"
-        />
-      )}
-      {showChegou && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-5 px-1.5 text-[10px] gap-1 ml-auto"
-          disabled={isMutating}
-          onClick={() => onMark(turno, "na_empresa")}
-          title="Confirmar que chegou neste turno"
+        <span
+          className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0"
+          title="Credenciado neste turno"
         >
-          <Check className="h-3 w-3" />
-        </Button>
+          <Target className="h-2.5 w-2.5" />
+        </span>
       )}
-      {showSaiu && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-5 px-1.5 text-[10px] gap-1 ml-auto border-yellow-500/40 text-yellow-700 hover:bg-yellow-500/10"
-          disabled={isMutating}
-          onClick={() => onMark(turno, "saiu")}
-          title="Marcar que saiu — remove da fila neste turno"
-        >
-          <LogOut className="h-3 w-3" />
-        </Button>
-      )}
+      <div className="ml-auto flex gap-1">
+        {showChegou && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[10px] gap-1"
+            disabled={isMutating}
+            onClick={() => onMark(turno, "na_empresa")}
+            title="Confirmar que chegou neste turno"
+          >
+            <Check className="h-3 w-3" />
+            <span className="hidden lg:inline">Chegou</span>
+          </Button>
+        )}
+        {showSaiu && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[10px] gap-1 border-yellow-500/40 text-yellow-700 hover:bg-yellow-500/10"
+            disabled={isMutating}
+            onClick={() => onMark(turno, "saiu")}
+            title="Marcar que saiu — remove da fila neste turno"
+          >
+            <LogOut className="h-3 w-3" />
+            <span className="hidden lg:inline">Saiu</span>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
