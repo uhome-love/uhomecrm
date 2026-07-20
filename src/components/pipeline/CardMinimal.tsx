@@ -439,6 +439,20 @@ const CardMinimal = memo(function CardMinimal({
                   ⚠ Definir tarefa
                 </span>
               </span>
+            ) : hasSpecificTitle ? (
+              <span
+                className={`flex-1 min-w-0 truncate text-[11.5px] ${
+                  isAtrasada ? "text-red-600" : "text-foreground"
+                }`}
+              >
+                <strong
+                  className={`font-semibold ${
+                    isAtrasada ? "text-red-600" : "text-foreground"
+                  }`}
+                >
+                  {proximaTarefa?.titulo}
+                </strong>
+              </span>
             ) : (
               <span
                 className={`flex-1 min-w-0 truncate text-[11.5px] ${
