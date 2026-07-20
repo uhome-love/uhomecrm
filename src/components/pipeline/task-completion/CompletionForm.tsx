@@ -116,7 +116,6 @@ export interface CompletionFormProps {
   };
 
   // Step 1 state
-  tipoContato?: TipoContato;
   resultado?: Resultado;
   descricao: string;
 
@@ -130,16 +129,9 @@ export interface CompletionFormProps {
 
   saving: boolean;
 
-  /** Qualificação mode: substitui a seção "próxima tarefa" pelas 6 pills de status_atendimento. */
-  qualificacao?: {
-    currentStatus: string;
-    pillStatus: string;
-    dataOverride?: DataOverride;
-    onPickPill: (statusKey: string) => void;
-    onPickData: (dt: DataOverride | undefined, hora: string) => void;
-  };
+  /** Status da etapa (Qualificação/Aquecimento) — pill obrigatória, puro registro. */
+  stageStatus?: StageStatusPropsBlock;
 
-  onChangeTipo: (v: TipoContato) => void;
   onChangeResultado: (v: Resultado) => void;
   onChangeDescricao: (v: string) => void;
   onChangeOutcome: (v: OutcomeChoice) => void;
@@ -161,7 +153,6 @@ export function CompletionForm(props: CompletionFormProps) {
     leadId,
     currentStageId,
     semContato,
-    tipoContato,
     resultado,
     descricao,
     outcome,
@@ -171,8 +162,7 @@ export function CompletionForm(props: CompletionFormProps) {
     reasonCustomText,
     observacaoCurta,
     saving,
-    qualificacao,
-    onChangeTipo,
+    stageStatus,
     onChangeResultado,
     onChangeDescricao,
     onChangeOutcome,
@@ -186,7 +176,9 @@ export function CompletionForm(props: CompletionFormProps) {
   } = props;
 
   const descricaoValida = descricao.trim().length >= 3;
-  const step1Ready = !!tipoContato && !!resultado && descricaoValida;
+  const stageStatusReady = !stageStatus || !!stageStatus.pick;
+  const step1Ready = !!resultado && descricaoValida && stageStatusReady;
+
 
   /* ─── Sugestão do Homi (persiste enquanto o dialog está aberto) ─── */
   const [suggestion, setSuggestion] = useState<null | {
