@@ -196,6 +196,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
+        { label: "Presença Roleta",    path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
       ],
     },
     {
