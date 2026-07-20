@@ -339,7 +339,11 @@ export function CompletionForm(props: CompletionFormProps) {
     onChangeNovaTarefa({ vence_em: dateToBRT(d), hora_vencimento: h });
   };
 
-  const subtitleText = `${tarefaTitulo}${leadNome ? ` · ${leadNome}` : ""}`;
+  // Dedup: alguns títulos antigos vêm com o nome embutido ("Confirmar visita — Juliana");
+  // não repetir " · Juliana" ao lado.
+  const nomeJaNoTitulo =
+    !!leadNome && tarefaTitulo.toLowerCase().includes(leadNome.toLowerCase());
+  const subtitleText = `${tarefaTitulo}${leadNome && !nomeJaNoTitulo ? ` · ${leadNome}` : ""}`;
 
   return (
     <div className="flex flex-col max-h-[90vh] max-[420px]:max-h-[92vh]">
