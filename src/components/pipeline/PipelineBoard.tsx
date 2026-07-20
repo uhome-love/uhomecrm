@@ -139,7 +139,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
   stageIndexMap: Map<string, number>;
   handleDragStart: (leadId: string) => void;
-  tarefasMap: Record<string, { id?: string; titulo?: string; tipo: string; vence_em: string | null; hora_vencimento: string | null; origem?: string | null }>;
+  tarefasMap: Record<string, { id?: string; titulo?: string; tipo: string; subtipo?: string | null; vence_em: string | null; hora_vencimento: string | null; origem?: string | null }>;
   whatsappUnreadSet: Set<string>;
   cadenciaMap: Record<string, { tentativa: number; proxima_em: string | null }>;
   negociosMap: Record<string, { fase: string; vgv: number; fase_changed_at: string }>;
