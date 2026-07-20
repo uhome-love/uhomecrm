@@ -201,6 +201,15 @@ export function CompletionForm(props: CompletionFormProps) {
   }>(null);
   const [suggestionDismissed, setSuggestionDismissed] = useState(false);
   const fetchedFor = useRef<string | null>(null);
+  const descricaoRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow inicial e ao receber valor externo (sugestão do Homi, reset, etc.)
+  useEffect(() => {
+    const el = descricaoRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+  }, [descricao]);
 
   useEffect(() => {
     const texto = descricao.trim();
