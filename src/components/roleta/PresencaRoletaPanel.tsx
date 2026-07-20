@@ -516,12 +516,14 @@ function WeekendPanel({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-6 px-2 text-[10px] gap-1 border-yellow-500/40 text-yellow-700 hover:bg-yellow-500/10"
+                    className="h-6 px-2 text-[10px] gap-1 border-yellow-500/40 text-yellow-700 hover:bg-yellow-500/10 shrink-0"
                     disabled={isMutating}
                     onClick={() => onMarkSaiu(c.corretor_id)}
+                    title="Marcar que saiu"
+                    aria-label="Marcar que saiu"
                   >
                     <LogOut className="h-3 w-3" />
-                    Saiu
+                    <span className="hidden xl:inline">Saiu</span>
                   </Button>
                 )}
               </div>
