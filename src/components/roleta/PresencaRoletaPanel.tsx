@@ -241,7 +241,7 @@ function CorretorRow({
         </div>
 
         {/* Coluna direita: turnos lado a lado */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-1.5 min-w-0">
           {turnos.map((t) => (
             <TurnoChip
               key={t}
@@ -256,7 +256,7 @@ function CorretorRow({
           ))}
           {/* Placeholder para manter 3 colunas quando noturna não aparece */}
           {!mostrarNoturna && (
-            <div className="hidden md:block" aria-hidden />
+            <div className="hidden xl:block" aria-hidden />
           )}
         </div>
       </div>
