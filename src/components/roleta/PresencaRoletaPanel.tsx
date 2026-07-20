@@ -20,7 +20,6 @@ import {
   ChevronDown,
   AlertTriangle,
   X,
-  Info,
 } from "lucide-react";
 import { RegistrarHorarioDialog } from "./RegistrarHorarioDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
