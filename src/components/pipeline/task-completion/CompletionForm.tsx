@@ -942,7 +942,9 @@ function OnlyCompleteBlock({
       <div className="flex items-start gap-1.5">
         <div className="min-w-0 flex-1">
           <div className="text-xs font-semibold text-foreground">
-            Apenas concluir
+            {semContato.enabled && semContato.isCadenciaTask && !semContato.finalAttempt
+              ? `Tentativa ${semContato.tentativaConcluida} registrada`
+              : "Apenas concluir"}
           </div>
           <div className="text-[10.5px] text-muted-foreground">
             {semContato.enabled && semContato.finalAttempt ? (
@@ -950,6 +952,8 @@ function OnlyCompleteBlock({
                 <strong>T7</strong> concluída. Sem próxima tentativa; entra no
                 prazo final de 48h.
               </>
+            ) : semContato.enabled && semContato.isCadenciaTask ? (
+              <>A próxima tentativa é criada automaticamente pela cadência.</>
             ) : (
               <>Sem agendar próxima tarefa. Pode mover de etapa opcionalmente.</>
             )}
