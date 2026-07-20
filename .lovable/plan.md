@@ -1,61 +1,48 @@
-## O que vou fazer (backend + frontend + textos)
+## Objetivo
 
-### Backend
+Deixar a validação de presença da roleta acessível em **dois lugares**: dashboard do gerente (já existe hoje via `V4PanelRoleta`) e dashboard do CEO (`/ceo`, hoje não tem nada de presença). Sem página nova, sem aba nova em `/roleta` — segue o pedido de manter no dashboard de cada um.
 
-**Migration (1 migration só, DDL):**
-1. Tabela `roleta_presencas` (`corretor_id`→profiles, `data`, `turno` em [manha/tarde/noturna], `status` em [na_empresa/saiu/falta], `chegou_em`, `saiu_em`, `validado_por`, `validado_em`, `observacao`) com UNIQUE (corretor,data,turno). Grants + RLS: leitura autenticada, escrita só admin/gestor. Publicação em realtime.
-2. `roleta_expand_turnos(text[])` — traduz `dia_todo` em `['manha','tarde']`.
-3. `roleta_marcar_presenca(corretor, data, turnos[], status, obs)` — SECURITY DEFINER, valida role, aceita `auth.uid()` ou `profiles.id`, faz upsert por turno, e ao marcar `saiu` desativa a linha do corretor em `roleta_fila` naquele turno.
-4. `roleta_fechar_dia(data)` — para todo credenciamento aprovado do dia sem presença correspondente, insere `falta`. Idempotente.
-5. Config nova em `roleta_config`: `presencas_minimas_domingo=4`, `noturna_exige_manha_tarde=true`.
-6. `get_elegibilidade_roleta` v2:
-   - Noturna = geral + visita hoje + (presença `na_empresa` OU `saiu` em manhã E tarde).
-   - Domingo = geral + `visitas_realizadas ≥ 2` + `COUNT DISTINCT dias com presença ≥ 4`.
-   - Retorna novos campos `presente_manha_hoje`, `presente_tarde_hoje`, `presencas_semana`, `presencas_minimas_domingo`, `noturna_exige_manha_tarde`.
+## Situação atual
 
-**Edge function + cron:**
-- `supabase/functions/roleta-fechamento-dia/index.ts` chama `roleta_fechar_dia()`. Autenticação via `CRON_SECRET`.
-- `pg_cron` diário 22:00 BRT (01:00 UTC).
+- `V4PanelRoleta.tsx` (dashboard do gerente `/gerente/dashboard`) já implementa: chips de status por turno, botões Chegou/Saiu, "+ Marcar presença" avulsa. Puxa dados via `useDashboardGerenteV4Dia` (filtrado pela equipe do gestor).
+- `CeoDashboard.tsx` (`/ceo`) não tem nenhum bloco de presença hoje.
+- Backend (`roleta_presencas`, RPC `roleta_marcar_presenca`, `get_elegibilidade_roleta`) já está pronto e é agnóstico a papel — só depende de o usuário ser gestor/admin nas policies.
 
-### Frontend
+## O que muda
 
-1. **Hook novo** `src/hooks/useRoletaPresencas.ts`:
-   - Query lista presenças do dia (join com credenciamentos para agrupar).
-   - Mutation `marcarPresenca({corretor_id, data, turnos, status, obs})` chamando o RPC.
-   - Realtime channel em `roleta_presencas`.
+### 1. Extrair painel de presença compartilhado
 
-2. **Estado dinâmico do corretor** (lógica em `src/lib/roletaPresenca.ts`):
-   - `saiu` > `na_empresa` > `na_roleta` (tem cred. aprovado sem presença) > `falta` (após fechamento).
-   - Helpers de chip/cor.
+Extrair o miolo de `V4PanelRoleta.tsx` para um componente reutilizável `src/components/roleta/PresencaRoletaPanel.tsx`, com prop `scope`:
 
-3. **`V4PanelRoleta.tsx`** — extendido:
-   - Chip de status dinâmico ao lado do nome (Na roleta cinza / Na empresa verde / Saiu amarelo / Falta vermelho).
-   - Botões inline: `✓ Chegou` (na_empresa) e `→ Saiu` (saiu). Estado ↔ botões condicionais.
-   - Botão topo `+ Marcar presença` que abre dialog para escolher corretor + turno(s) — cobre o caso "apareceu sem credenciar".
+- `scope="gestor"` → mostra só credenciados/presenças da equipe do gestor logado (comportamento atual, via `useDashboardGerenteV4Dia`).
+- `scope="ceo"` → mostra todos os credenciados/presenças do dia, sem filtro de equipe. Usar consulta direta a `roleta_credenciamentos` + `roleta_presencas` do dia (ou um novo hook fino `useRoletaPresencaDia({ escopo })`), reaproveitando `derivarEstadoTurno`, `expandirTurnos` e o `MarcarPresencaAvulsaDialog` já existentes.
 
-4. **`StatusElegibilidadeRoleta`** (corretor) — atualiza motivos de bloqueio:
-   - "Aguardando validação de presença na tarde para liberar a Noturna"
-   - "Faltam 2 presenças esta semana (2/4)"
+Mantém: cards por corretor, chips por turno (Manhã/Tarde/Noite), botões Chegou/Saiu, ação "+ Marcar presença" avulsa, contadores no topo (Na empresa / Saiu / Falta / Na roleta).
 
-5. **`useElegibilidadeRoleta.ts`** — tipa os campos novos.
+### 2. Montar no dashboard do gerente
 
-### Rollout seguro
+`V4PanelRoleta.tsx` vira um wrapper fino que renderiza `<PresencaRoletaPanel scope="gestor" gestorId={...} />`. Layout, título e posição no grid ficam iguais — nenhuma mudança visual pro gestor.
 
-Fase A (este deploy): tudo acima ATIVO menos gate na distribuição de leads. Painel do gestor funcional, elegibilidade nova já aplicada, mas o dispatcher continua olhando `roleta_credenciamentos.status='aprovado'` como hoje. Zero risco pra funil.
+### 3. Montar no dashboard do CEO
 
-Fase B (só depois de você validar em preview): ligo `system_flags.presenca_gate_distribuicao=true` e o dispatcher passa a exigir presença `na_empresa` para receber lead — corretor que só se credenciou e não foi validado não recebe até o gestor marcar Chegou. Reversível apagando a flag.
+Em `CeoDashboard.tsx`, adicionar um bloco novo "Presença da Roleta hoje" com `<PresencaRoletaPanel scope="ceo" />`. Posicionamento: acima ou ao lado dos blocos operacionais existentes (definir junto do bloco de fila/roleta se houver, senão logo abaixo do header de KPIs). Colapsável por padrão fechado, pra não pesar o dashboard.
 
-### Textos que vou entregar após o deploy
+### 4. Não mexer
 
-- **Guia para gerentes** (1 página) — regras, o painel, o botão "Marcar presença", o que muda pro corretor.
-- **Recado curto pro time no WhatsApp** — 5–8 linhas em bullet points.
+- Central de Roleta (`/roleta`) segue exatamente como está — sem aba de presença.
+- Regras de elegibilidade, RPC e edge function de fechamento do dia continuam idênticas.
+- Nada de banco nesta etapa.
 
-## Ordem de execução em build mode
+## Detalhes técnicos
 
-1. Migration acima (via `supabase--migration`).
-2. Edge function `roleta-fechamento-dia` + cron via `supabase--insert`.
-3. Frontend (hook + libs + UI).
-4. Verifico build/tsgo e testo o RPC via `supabase--read_query`.
-5. Envio os 2 textos.
+- Novo arquivo: `src/components/roleta/PresencaRoletaPanel.tsx` (~300 linhas migradas de `V4PanelRoleta`).
+- Novo hook (se necessário pra escopo CEO): `src/hooks/useRoletaPresencaDia.ts` — retorna `{ credenciados, presencas, isLoading }` para o dia atual em BRT, com realtime em `roleta_presencas`.
+- `V4PanelRoleta.tsx` reduzido a wrapper.
+- `CeoDashboard.tsx` ganha o import e a seção nova; sem tocar nos hooks/KPIs existentes.
+- RLS: gestor já lê `roleta_presencas` da equipe; admin lê tudo. Sem alteração de policy.
 
-**Preciso que você troque para build mode para eu rodar.**
+## Fora de escopo
+
+- Página `/roleta/presenca` dedicada.
+- Aba "Presença" dentro da Central de Roleta.
+- Ativar o gate duro de distribuição por presença (`system_flags.presenca_gate_distribuicao`) — segue desligado até você mandar ligar.
