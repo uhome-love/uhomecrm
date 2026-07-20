@@ -200,7 +200,9 @@ export default function TaskCompletionDialog({
         .select("tipo")
         .eq("id", stageId)
         .maybeSingle();
-      const stageTipo = (stage as { tipo?: string } | null)?.tipo;
+      const stageTipoLocal = (stage as { tipo?: string } | null)?.tipo;
+      if (!cancelled) setStageTipo(stageTipoLocal ?? null);
+      const stageTipo = stageTipoLocal;
 
       // Stage status obrigatório: qualificacao / aquecimento / negociacao
       if (
