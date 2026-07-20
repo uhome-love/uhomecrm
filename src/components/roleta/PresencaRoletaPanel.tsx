@@ -540,6 +540,17 @@ export function PresencaRoletaPanel({
           </Link>
         </div>
       )}
+
+      <RegistrarHorarioDialog
+        open={!!dialog?.open}
+        tipo={dialog?.tipo ?? "chegada"}
+        dataBRT={dataBRT}
+        corretorNome={dialog?.corretor_nome ?? ""}
+        turnoLabel={TURNO_LABEL[dialog?.turno ?? ""] ?? "—"}
+        onCancel={() => setDialog(null)}
+        onConfirm={handleConfirmHorario}
+        isSubmitting={isMutating}
+      />
     </div>
   );
 }
