@@ -1,22 +1,20 @@
 /**
- * CompletionForm — Redesign single-screen (2026-07-20)
+ * CompletionForm — Single-screen simplificado (2026-07-20)
  *
- * Fusão dos antigos CompletionStep1 + CompletionStep2 num único formulário
- * scrollável com CTA fixo (sticky) no rodapé. Não navega mais entre telas
- * "1/2" e não expõe botão "Próximo" no meio.
+ * Mudanças desta revisão:
+ * - REMOVIDO o campo "Canal" (tipo_contato herdado do tipo da tarefa).
+ * - REMOVIDO o bloco QualificacaoPillsBlock/VisitaDatePicker (nenhum motor
+ *   automático aqui). O status da etapa (Qualificação/Aquecimento) vira uma
+ *   seção obrigatória de pills, puro registro em flag_status.
+ * - Criação da próxima tarefa continua 100% MANUAL (AgendarCard).
  *
- * Hierarquia visual:
- *   1. Canal de contato + Resultado (compactos, lado a lado quando cabe)
- *   2. Observação (textarea obrigatória)
- *   3. Card principal "Agendar" (default, destacado) com sugestão do Homi
- *      pré-aplicada quando confiança alta + link "Ajustar manualmente"
- *   4. Link discreto "Só concluir, sem agendar próxima"
- *   5. Dois botões secundários menores "Descartar" / "Inativar"
- *      (context='lead' apenas)
+ * Hierarquia:
+ *   1. Resultado (largura total)
+ *   2. Observação obrigatória
+ *   3. Status da etapa (Qualificação/Aquecimento) — obrigatório quando aplicável
+ *   4. Card "Agendar próxima tarefa" (default) + link "Só concluir"
+ *   5. Botões secundários "Descartar" / "Inativar" (context='lead')
  *   6. CTA sticky no rodapé
- *
- * Compatibilidade: a interface pública de TaskCompletionDialog (props +
- * CompletionPayload) NÃO muda. Este arquivo é interno.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,19 +50,23 @@ import {
   PROXIMA_TAREFA_OPTIONS,
   quickDates,
   RESULTADO_OPTIONS,
-  TIPO_CONTATO_OPTIONS,
   type CompletionContext,
   type NovaTarefaPayload,
   type OutcomeChoice,
   type OutcomeReason,
   type Resultado,
-  type TipoContato,
   type TipoProximaTarefa,
 } from "./types";
 import { useStageOptions } from "./useStageOptions";
-import { QUALIFICACAO_STATUS_ATEND } from "@/components/pipeline/PipelineStageTransitionPopup";
-import { VisitaDatePicker } from "@/components/pipeline/QualificacaoChecklistCard";
-import type { DataOverride } from "@/lib/qualificacaoTaskEngine";
+
+export interface StageStatusPropsBlock {
+  kind: "qualificacao" | "aquecimento";
+  options: Array<{ value: string; label: string }>;
+  currentValue: string;
+  pick: string;
+  onPick: (v: string) => void;
+}
+
 
 const KEEP_STAGE = "__keep__";
 
@@ -114,7 +116,6 @@ export interface CompletionFormProps {
   };
 
   // Step 1 state
-  tipoContato?: TipoContato;
   resultado?: Resultado;
   descricao: string;
 
@@ -128,16 +129,9 @@ export interface CompletionFormProps {
 
   saving: boolean;
 
-  /** Qualificação mode: substitui a seção "próxima tarefa" pelas 6 pills de status_atendimento. */
-  qualificacao?: {
-    currentStatus: string;
-    pillStatus: string;
-    dataOverride?: DataOverride;
-    onPickPill: (statusKey: string) => void;
-    onPickData: (dt: DataOverride | undefined, hora: string) => void;
-  };
+  /** Status da etapa (Qualificação/Aquecimento) — pill obrigatória, puro registro. */
+  stageStatus?: StageStatusPropsBlock;
 
-  onChangeTipo: (v: TipoContato) => void;
   onChangeResultado: (v: Resultado) => void;
   onChangeDescricao: (v: string) => void;
   onChangeOutcome: (v: OutcomeChoice) => void;
@@ -159,7 +153,6 @@ export function CompletionForm(props: CompletionFormProps) {
     leadId,
     currentStageId,
     semContato,
-    tipoContato,
     resultado,
     descricao,
     outcome,
@@ -169,8 +162,7 @@ export function CompletionForm(props: CompletionFormProps) {
     reasonCustomText,
     observacaoCurta,
     saving,
-    qualificacao,
-    onChangeTipo,
+    stageStatus,
     onChangeResultado,
     onChangeDescricao,
     onChangeOutcome,
@@ -184,7 +176,9 @@ export function CompletionForm(props: CompletionFormProps) {
   } = props;
 
   const descricaoValida = descricao.trim().length >= 3;
-  const step1Ready = !!tipoContato && !!resultado && descricaoValida;
+  const stageStatusReady = !stageStatus || !!stageStatus.pick;
+  const step1Ready = !!resultado && descricaoValida && stageStatusReady;
+
 
   /* ─── Sugestão do Homi (persiste enquanto o dialog está aberto) ─── */
   const [suggestion, setSuggestion] = useState<null | {
@@ -280,15 +274,6 @@ export function CompletionForm(props: CompletionFormProps) {
     }
     switch (outcome) {
       case "agendar":
-        if (qualificacao) {
-          if (!qualificacao.pillStatus) return false;
-          if (
-            qualificacao.pillStatus === "alinhando_visita" &&
-            !qualificacao.dataOverride
-          )
-            return false;
-          return true;
-        }
         return (
           !!novaTarefa.tipo &&
           !!novaTarefa.vence_em &&
@@ -311,8 +296,8 @@ export function CompletionForm(props: CompletionFormProps) {
     reasonCode,
     reasonCustomText,
     semContato,
-    qualificacao,
   ]);
+
 
   const ctaConfig = useMemo(() => {
     switch (outcome) {
@@ -362,99 +347,32 @@ export function CompletionForm(props: CompletionFormProps) {
 
       {/* Corpo scrollável */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-        {/* 1. Canal + Resultado (lado a lado no desktop).
-             Em Qualificação · alinhando_visita: canal já foi definido quando a tarefa foi criada;
-             mostramos só Resultado (largura total). */}
-        {qualificacao?.currentStatus === "alinhando_visita" ? (
-          <div>
-            <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
-              Resultado <span className="text-destructive">*</span>
-            </label>
-            <div className="flex flex-wrap gap-1">
-              {RESULTADO_OPTIONS.map(({ value, label, Icon, tone }) => {
-                const active = resultado === value;
-                const t = RESULTADO_TONE[tone as ResultadoTone];
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => onChangeResultado(value)}
-                    className={cn(
-                      "px-2 py-1.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 border",
-                      active ? t.selected : t.base,
-                    )}
-                  >
-                    <Icon className={cn("w-3 h-3", t.icon)} />
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+        {/* 1. Resultado (largura total — canal herdado do tipo da tarefa, sem UI) */}
+        <div>
+          <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
+            Resultado <span className="text-destructive">*</span>
+          </label>
+          <div className="flex flex-wrap gap-1">
+            {RESULTADO_OPTIONS.map(({ value, label, Icon, tone }) => {
+              const active = resultado === value;
+              const t = RESULTADO_TONE[tone as ResultadoTone];
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => onChangeResultado(value)}
+                  className={cn(
+                    "px-2 py-1.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 border",
+                    active ? t.selected : t.base,
+                  )}
+                >
+                  <Icon className={cn("w-3 h-3", t.icon)} />
+                  {label}
+                </button>
+              );
+            })}
           </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
-                Canal <span className="text-destructive">*</span>
-              </label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {TIPO_CONTATO_OPTIONS.map(({ value, label, Icon }) => {
-                  const active = tipoContato === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => onChangeTipo(value)}
-                      className={cn(
-                        "px-2 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 border",
-                        active
-                          ? "border-transparent text-white shadow-sm"
-                          : "bg-background border-border text-foreground hover:bg-muted",
-                      )}
-                      style={
-                        active
-                          ? {
-                              background:
-                                "var(--gradient-focus, linear-gradient(135deg, #4969FF, #7C3AED))",
-                            }
-                          : undefined
-                      }
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span className="truncate">{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] uppercase tracking-wide font-semibold text-primary mb-1.5 flex items-center gap-1">
-                Resultado <span className="text-destructive">*</span>
-              </label>
-              <div className="flex flex-wrap gap-1">
-                {RESULTADO_OPTIONS.map(({ value, label, Icon, tone }) => {
-                  const active = resultado === value;
-                  const t = RESULTADO_TONE[tone as ResultadoTone];
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => onChangeResultado(value)}
-                      className={cn(
-                        "px-2 py-1.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 border",
-                        active ? t.selected : t.base,
-                      )}
-                    >
-                      <Icon className={cn("w-3 h-3", t.icon)} />
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* 2. Observação */}
         <div>
@@ -481,6 +399,11 @@ export function CompletionForm(props: CompletionFormProps) {
           )}
         </div>
 
+        {/* 3. Status da etapa (Qualificação/Aquecimento) — obrigatório */}
+        {stageStatus && (
+          <StageStatusBlock block={stageStatus} />
+        )}
+
         {/* Divisor: "Como prosseguir?" */}
         <div className="flex items-center gap-2 pt-1">
           <div className="flex-1 h-px bg-border/60" />
@@ -490,18 +413,9 @@ export function CompletionForm(props: CompletionFormProps) {
           <div className="flex-1 h-px bg-border/60" />
         </div>
 
-        {/* 3. Cartão principal — Agendar (default destacado) */}
+        {/* 4. Cartão principal — Agendar (default destacado) */}
         {outcome === "agendar" && !(semContato.enabled && semContato.finalAttempt) && (
-          qualificacao ? (
-            <QualificacaoPillsBlock
-              pillStatus={qualificacao.pillStatus}
-              currentStatus={qualificacao.currentStatus}
-              dataOverride={qualificacao.dataOverride}
-              onPickPill={qualificacao.onPickPill}
-              onPickData={qualificacao.onPickData}
-            />
-          ) : (
-            <AgendarCard
+          <AgendarCard
               novaTarefa={novaTarefa}
               novoStageId={novoStageId}
               leadId={leadId}
@@ -513,6 +427,7 @@ export function CompletionForm(props: CompletionFormProps) {
               suggestionLabel={suggestionLabel}
               suggestionDismissed={suggestionDismissed}
               onDismissSuggestion={() => setSuggestionDismissed(true)}
+
               manualOpen={shouldShowManual}
               onToggleManual={() => setManualOpen((v) => !v)}
               semContato={semContato}
@@ -520,8 +435,8 @@ export function CompletionForm(props: CompletionFormProps) {
               onChangeNovoStage={onChangeNovoStage}
               onApplyQuick={applyQuick}
             />
-          )
         )}
+
 
         {/* Only-Complete */}
         {outcome === "concluir" && (
@@ -1139,83 +1054,41 @@ function ReasonBlock({
   );
 }
 
-/* ─── QualificacaoPillsBlock ───
-   Substitui a seção de "Agendar próxima tarefa" quando o lead está em stage tipo=qualificacao.
-   Exibe as 6 pills de QUALIFICACAO_STATUS_ATEND; ao selecionar 'alinhando_visita' abre o
-   VisitaDatePicker inline (Hoje / Amanhã / Escolher data). O motor real de tarefas é
-   disparado no TaskCompletionDialog via advanceQualificacaoStatus. */
-function QualificacaoPillsBlock({
-  pillStatus,
-  currentStatus,
-  dataOverride,
-  onPickPill,
-  onPickData,
-}: {
-  pillStatus: string;
-  currentStatus: string;
-  dataOverride?: DataOverride;
-  onPickPill: (statusKey: string) => void;
-  /** Recebe (data, hora HH:MM) — hora sempre presente. */
-  onPickData: (dt: DataOverride | undefined, hora: string) => void;
-}) {
-  const isConfirmarVisita = currentStatus === "alinhando_visita";
-  const [showEtapaFallback, setShowEtapaFallback] = useState(false);
-
-  // Modo enxuto: tarefa "Confirmar visita" → pula pills, pergunta direto "A visita é pra quando?"
-  // Auto-fixa pillStatus como 'alinhando_visita' pra o motor reagendar corretamente.
-  useEffect(() => {
-    if (isConfirmarVisita && pillStatus !== "alinhando_visita") {
-      onPickPill("alinhando_visita");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConfirmarVisita]);
-
-  if (isConfirmarVisita && !showEtapaFallback) {
-    return (
-      <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-2">
-        <VisitaDatePicker
-          variant="confirmar-visita"
-          onPick={(d, h) => onPickData(d, h)}
-        />
-        {dataOverride && (
-          <div className="text-[10px] text-primary">
-            ✓ {dataOverride === "hoje" ? "Hoje" : dataOverride === "amanha" ? "Amanhã" : dataOverride}
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() => setShowEtapaFallback(true)}
-          className="text-[10.5px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-        >
-          A conversa mudou de rumo? Trocar etapa
-        </button>
-      </div>
-    );
-  }
-
-
-
-  const showDatePicker = pillStatus === "alinhando_visita";
+/* ─── StageStatusBlock ───
+   Seção obrigatória de status da etapa (Qualificação/Aquecimento). Puro registro:
+   o valor escolhido é persistido em `pipeline_leads.flag_status[key]` pelo backend
+   de conclusão da tarefa. Não cria nem cancela tarefas. */
+function StageStatusBlock({ block }: { block: StageStatusPropsBlock }) {
+  const title =
+    block.kind === "qualificacao"
+      ? "Status da qualificação"
+      : "Prazo do aquecimento";
+  const helper =
+    block.kind === "qualificacao"
+      ? "Registre em que momento da qualificação a conversa está agora."
+      : "Registre o prazo acordado para retomar o contato.";
   return (
-    <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-3">
+    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-foreground">
-          Etapa do atendimento
+          {title} <span className="text-destructive">*</span>
         </span>
-        {currentStatus && (
+        {block.currentValue && (
           <span className="text-[10px] text-muted-foreground">
-            atual: {QUALIFICACAO_STATUS_ATEND[currentStatus] ?? currentStatus}
+            atual:{" "}
+            {block.options.find((o) => o.value === block.currentValue)?.label ??
+              block.currentValue}
           </span>
         )}
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {Object.entries(QUALIFICACAO_STATUS_ATEND).map(([key, label]) => {
-          const active = pillStatus === key;
+        {block.options.map((o) => {
+          const active = block.pick === o.value;
           return (
             <button
-              key={key}
+              key={o.value}
               type="button"
-              onClick={() => onPickPill(key)}
+              onClick={() => block.onPick(o.value)}
               className={[
                 "px-2.5 py-1 rounded-full text-[11px] border transition",
                 active
@@ -1223,21 +1096,13 @@ function QualificacaoPillsBlock({
                   : "bg-background text-foreground border-border hover:bg-muted",
               ].join(" ")}
             >
-              {label}
+              {o.label}
             </button>
           );
         })}
       </div>
-      {showDatePicker && (
-        <div className="pt-1 border-t border-border/50">
-          <VisitaDatePicker onPick={(d, h) => onPickData(d, h)} />
-          {dataOverride && (
-            <div className="text-[10px] text-primary mt-1.5">
-              ✓ {dataOverride === "hoje" ? "Hoje" : dataOverride === "amanha" ? "Amanhã" : dataOverride}
-            </div>
-          )}
-        </div>
-      )}
+      <p className="text-[10px] text-muted-foreground">{helper}</p>
     </div>
   );
 }
+

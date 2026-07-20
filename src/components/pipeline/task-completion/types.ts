@@ -62,7 +62,15 @@ export interface CompletionPayload {
   reason_code?: string;
   reason_label?: string; // label efetivamente gravado em motivo_descarte
   reason_custom_text?: string; // preenchido quando reason_code === 'outro'
+
+  /**
+   * Status da etapa registrado ao concluir a tarefa (Qualificação/Aquecimento).
+   * Persistido em pipeline_leads.flag_status[key] = value.
+   * Sem automação de criação/cancelamento de tarefa — puro registro.
+   */
+  status_etapa?: { key: "status_atendimento" | "prazo"; value: string };
 }
+
 
 /* ─────────── Labels e mapas para UI (Step 1) ─────────── */
 
