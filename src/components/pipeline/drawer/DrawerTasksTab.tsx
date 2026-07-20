@@ -335,14 +335,12 @@ function TaskCard({
   bucket,
   onToggle,
   onDelete,
-  onAdiar,
   onEdit,
 }: {
   tarefa: PipelineTarefa;
   bucket: keyof ReturnType<typeof groupTasksByDeadline>;
   onToggle: () => void;
   onDelete: () => void;
-  onAdiar: () => void;
   onEdit: () => void;
 }) {
   const tipo = canonTipo(tarefa.tipo);
