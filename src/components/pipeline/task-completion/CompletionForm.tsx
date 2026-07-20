@@ -639,7 +639,10 @@ function AgendarCard({
   manualOpen,
   onToggleManual,
   semContato,
+  maxVenceEm,
+  maxDaysAhead,
   onChangeNovaTarefa,
+  onChangeVenceEm,
   onChangeNovoStage,
   onApplyQuick,
 }: {
@@ -661,7 +664,10 @@ function AgendarCard({
   manualOpen: boolean;
   onToggleManual: () => void;
   semContato: CompletionFormProps["semContato"];
+  maxVenceEm: string;
+  maxDaysAhead: number;
   onChangeNovaTarefa: (patch: Partial<NovaTarefaPayload>) => void;
+  onChangeVenceEm: (iso: string) => void;
   onChangeNovoStage: (v: string | undefined) => void;
   onApplyQuick: (d: Date, h: string) => void;
 }) {
