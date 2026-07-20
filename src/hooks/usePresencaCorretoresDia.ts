@@ -167,7 +167,7 @@ export function usePresencaCorretoresDia(
             const gid = gerenteByCorretorUserId.get(uid) ?? null;
             gerenteByCorretor.set(profileId, {
               id: gid,
-              nome: gid ? gerenteNomeById.get(gid) ?? null : null,
+              nome: gid ? gerenteNomeByAuthId.get(gid) ?? null : null,
             });
           }
         }
