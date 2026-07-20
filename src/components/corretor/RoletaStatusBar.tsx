@@ -253,8 +253,6 @@ function useNightRequirements(
 export default function RoletaStatusBar() {
   const JANELAS_CONFIG = getJanelasConfig();
   const { user } = useAuth();
-  const [status, setStatus] = useState<StatusOnline>("offline");
-  const [statusOpen, setStatusOpen] = useState(false);
   const [credModalOpen, setCredModalOpen] = useState(false);
   const [segmentos, setSegmentos] = useState<Segmento[]>([]);
   const [credStatus, setCredStatus] = useState<string>("");
