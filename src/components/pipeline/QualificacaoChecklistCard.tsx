@@ -219,14 +219,20 @@ export default function QualificacaoChecklistCard({ lead, onSaved }: Props) {
         </Popover>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <ChipDisplay label="Status" value={statusLabel} empty="—" />
-        <ChipDisplay label="Tipologia" value={tipologiaLabel} empty="—" />
-        <ChipDisplay label="Faixa de valor" value={faixaLabel} empty="—" />
-        <ChipDisplay label="Pagamento" value={formaLabel} empty="—" />
-        <ChipDisplay label="Prazo" value={prazoLabel} empty="—" />
-        <ChipDisplay label="Bairros" value={bairroDisplay} empty="—" />
-      </div>
+      {filled === 0 ? (
+        <p className="text-[11px] text-muted-foreground italic">
+          Nenhum campo preenchido ainda. Clique em <span className="font-medium">Editar</span> para qualificar.
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <ChipDisplay label="Status" value={statusLabel} empty="—" />
+          <ChipDisplay label="Tipologia" value={tipologiaLabel} empty="—" />
+          <ChipDisplay label="Faixa de valor" value={faixaLabel} empty="—" />
+          <ChipDisplay label="Pagamento" value={formaLabel} empty="—" />
+          <ChipDisplay label="Prazo" value={prazoLabel} empty="—" />
+          <ChipDisplay label="Bairros" value={bairroDisplay} empty="—" />
+        </div>
+      )}
     </div>
   );
 }
