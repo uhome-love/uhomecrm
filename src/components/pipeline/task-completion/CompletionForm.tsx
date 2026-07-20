@@ -157,6 +157,15 @@ export interface CompletionFormProps {
 
   onCancel: () => void;
   onConfirm: () => void;
+
+  /** Fluxo fixo da etapa Visita — quando presente, substitui o corpo padrão. */
+  visitaFlow?: {
+    subtipo: VisitaSubtipo;
+    tarefaId: string;
+    corretorId?: string | null;
+    onConfirmPayload: (payload: CompletionPayload) => Promise<void> | void;
+    onSavingChange: (v: boolean) => void;
+  };
 }
 
 export function CompletionForm(props: CompletionFormProps) {
