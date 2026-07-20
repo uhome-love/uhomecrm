@@ -394,12 +394,6 @@ function TaskCard({
           <CheckCircle2 className="h-3 w-3" /> Feito
         </button>
         <button
-          onClick={onAdiar}
-          className="bg-white border border-zinc-200 hover:bg-zinc-50 rounded-md px-2.5 py-1 text-[11px] font-medium text-zinc-600 flex items-center gap-1"
-        >
-          <RotateCw className="h-3 w-3" /> Adiar
-        </button>
-        <button
           onClick={onEdit}
           className="bg-white border border-zinc-200 hover:bg-zinc-50 rounded-md px-2.5 py-1 text-[11px] font-medium text-zinc-600 flex items-center gap-1"
         >
