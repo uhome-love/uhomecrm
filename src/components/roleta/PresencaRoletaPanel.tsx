@@ -18,7 +18,9 @@ import {
   LogOut,
   Target,
   ChevronDown,
+  AlertTriangle,
 } from "lucide-react";
+import { RegistrarHorarioDialog } from "./RegistrarHorarioDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
