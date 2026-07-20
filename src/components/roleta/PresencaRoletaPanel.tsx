@@ -111,18 +111,18 @@ function TurnoChip({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs min-w-0 transition",
+        "flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg px-2.5 py-1.5 text-xs min-w-0 transition",
         ativoAgora
           ? "bg-primary/5 border border-primary/30 shadow-sm"
           : "bg-muted/40 border border-border/50 hover:border-border",
       )}
     >
-      <span className="shrink-0 text-[11px] font-semibold text-muted-foreground w-14">
+      <span className="shrink-0 text-[11px] font-semibold text-muted-foreground truncate">
         {TURNO_LABEL_FULL[turno]}
       </span>
       <span
         className={cn(
-          "text-[9px] font-semibold uppercase tracking-wide px-1.5 py-[1px] rounded-full whitespace-nowrap",
+          "shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-[1px] rounded-full whitespace-nowrap",
           ESTADO_CLASSES[estado],
         )}
       >
@@ -136,7 +136,7 @@ function TurnoChip({
           <Target className="h-2.5 w-2.5" />
         </span>
       )}
-      <div className="ml-auto flex gap-1">
+      <div className="ml-auto flex flex-wrap justify-end gap-1 shrink-0">
         {showPresente && (
           <Button
             size="sm"
@@ -145,9 +145,10 @@ function TurnoChip({
             disabled={isMutating}
             onClick={() => onMark(turno, "na_empresa")}
             title="Marcar presente — registra o horário de chegada"
+            aria-label="Marcar presente"
           >
             <Check className="h-3 w-3" />
-            <span className="hidden lg:inline">Presente</span>
+            <span className="hidden xl:inline">Presente</span>
           </Button>
         )}
         {showFaltou && (
@@ -158,9 +159,10 @@ function TurnoChip({
             disabled={isMutating}
             onClick={() => onMark(turno, "falta")}
             title="Marcar falta — corretor não compareceu"
+            aria-label="Marcar falta"
           >
             <X className="h-3 w-3" />
-            <span className="hidden lg:inline">Faltou</span>
+            <span className="hidden xl:inline">Faltou</span>
           </Button>
         )}
         {showSaiu && (
@@ -171,9 +173,10 @@ function TurnoChip({
             disabled={isMutating}
             onClick={() => onMark(turno, "saiu")}
             title="Marcar que saiu — remove da fila neste turno"
+            aria-label="Marcar que saiu"
           >
             <LogOut className="h-3 w-3" />
-            <span className="hidden lg:inline">Saiu</span>
+            <span className="hidden xl:inline">Saiu</span>
           </Button>
         )}
       </div>
