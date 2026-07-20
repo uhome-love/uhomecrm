@@ -17,7 +17,6 @@ import {
   QUALIFICACAO_BAIRROS_UHOME,
 } from "./PipelineStageTransitionPopup";
 import {
-  advanceQualificacaoStatus,
   willClampVisitaDate,
   type DataOverride,
 } from "@/lib/qualificacaoTaskEngine";
@@ -48,40 +47,39 @@ function ChipDisplay({ label, value, empty }: { label: string; value: string | n
 }
 
 /**
- * Card "Etapa da qualificação" — pills clicáveis, sempre visíveis, sem popover.
- * Toda a lógica de salvar status + cancelar pendências + criar nova tarefa vive
- * em `advanceQualificacaoStatus` (motor único compartilhado com o popup de
- * conclusão de tarefa).
+ * Card "Etapa da qualificação" — pills clicáveis (2026-07-20 simplificado).
+ * Clicar numa pill agora faz APENAS: gravar flag_status.status_atendimento no lead,
+ * chamar onSaved() e disparar `pipeline-reload`. Sem cancelar tarefas, sem criar
+ * tarefa, sem popover, sem date picker. A criação da próxima tarefa passou a ser
+ * 100% manual (via popup de conclusão de tarefa ou botão "Nova tarefa").
  */
 export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
   const flag = (lead.flag_status || {}) as Record<string, any>;
   const currentStatus = (flag.status_atendimento as string) || "";
   const [saving, setSaving] = useState<string | null>(null);
-  const [visitaPickerOpen, setVisitaPickerOpen] = useState(false);
 
   const steps = Object.entries(QUALIFICACAO_STATUS_ATEND) as [string, string][];
   const currentIdx = steps.findIndex(([k]) => k === currentStatus);
 
-  const doAdvance = async (statusKey: string, dataOverride?: DataOverride, horaOverride?: string) => {
+  const handleClick = async (statusKey: string) => {
+    if (saving || statusKey === currentStatus) return;
     setSaving(statusKey);
     try {
-      await advanceQualificacaoStatus({ lead, statusKey, dataOverride, horaOverride, onSaved });
+      const nextFlag = { ...(lead.flag_status || {}), status_atendimento: statusKey };
+      const { error } = await supabase
+        .from("pipeline_leads")
+        .update({ flag_status: nextFlag } as any)
+        .eq("id", lead.id);
+      if (error) throw error;
+      toast.success("Status atualizado");
+      onSaved?.();
+      window.dispatchEvent(new CustomEvent("pipeline-reload"));
     } catch (err) {
-      console.error("[QualificacaoEtapaCard] advance error:", err);
-      toast.error("Erro ao atualizar etapa");
+      console.error("[QualificacaoEtapaCard] save error:", err);
+      toast.error("Erro ao atualizar status");
     } finally {
       setSaving(null);
-      setVisitaPickerOpen(false);
     }
-  };
-
-  const handleClick = (statusKey: string) => {
-    if (saving || statusKey === currentStatus) return;
-    if (statusKey === "alinhando_visita") {
-      setVisitaPickerOpen(true);
-      return;
-    }
-    void doAdvance(statusKey);
   };
 
   return (
@@ -98,7 +96,7 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
           let cls = "bg-background hover:bg-muted border-border text-foreground";
           if (isCurrent) cls = "bg-primary text-primary-foreground border-primary shadow-sm";
           else if (isDone) cls = "bg-muted/50 border-border text-muted-foreground line-through opacity-70 hover:opacity-100";
-          const btn = (
+          return (
             <button
               key={key}
               type="button"
@@ -114,20 +112,6 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
               {label}
             </button>
           );
-          if (key === "alinhando_visita") {
-            return (
-              <Popover key={key} open={visitaPickerOpen} onOpenChange={setVisitaPickerOpen}>
-                <PopoverTrigger asChild>{btn}</PopoverTrigger>
-                <PopoverContent align="start" className="w-72 p-2">
-                  <VisitaDatePicker
-                    onPick={(dt, hora) => void doAdvance("alinhando_visita", dt, hora)}
-                    disabled={!!saving}
-                  />
-                </PopoverContent>
-              </Popover>
-            );
-          }
-          return btn;
         })}
       </div>
       {!currentStatus && (
@@ -138,6 +122,7 @@ export function QualificacaoEtapaCard({ lead, onSaved }: Props) {
     </div>
   );
 }
+
 
 /**
  * Mini seletor "Hoje / Amanhã / Escolher data" + horário para a pill
