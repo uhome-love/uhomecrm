@@ -441,7 +441,7 @@ export default function CeoDashboard() {
       )}
 
       {/* ═══ PRESENÇA DA ROLETA ═══ */}
-      <PresencaRoletaPanel scope="ceo" hideManagerLink />
+      <PresencaSummaryCard scope="ceo" />
 
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* LINHA 1 — ROLETA DE LEADS                                 */}

@@ -1,13 +1,13 @@
-import { PresencaRoletaPanel } from "@/components/roleta/PresencaRoletaPanel";
+import { PresencaSummaryCard } from "@/components/roleta/PresencaSummaryCard";
 
 interface Props {
   gestorId: string | undefined;
 }
 
 /**
- * V4PanelRoleta — wrapper fino em torno do painel compartilhado.
- * A lógica vive em `PresencaRoletaPanel` e é usada também no dashboard do CEO.
+ * V4PanelRoleta — card compacto de presença no dashboard do gestor.
+ * A gestão completa fica em /roleta/presenca.
  */
 export function V4PanelRoleta({ gestorId }: Props) {
-  return <PresencaRoletaPanel scope="gestor" gestorId={gestorId} />;
+  return <PresencaSummaryCard scope="gestor" gestorId={gestorId} />;
 }

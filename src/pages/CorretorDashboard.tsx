@@ -23,6 +23,7 @@ import PreEstagnacaoCard from "@/components/corretor/PreEstagnacaoCard";
 import ConquistasKpis from "@/components/corretor/ConquistasKpis";
 import CaminhosCards from "@/components/corretor/CaminhosCards";
 import TarefasHojeLateral from "@/components/corretor/TarefasHojeLateral";
+import WidgetProdutividadeCorretor from "@/components/corretor/WidgetProdutividadeCorretor";
 
 export default function CorretorDashboard() {
   const { user } = useAuth();
@@ -99,6 +100,9 @@ export default function CorretorDashboard() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
         <RoletaStatusBar />
       </motion.div>
+
+      {/* 2b. Widget motivacional Presença × Leads × Negócios */}
+      <WidgetProdutividadeCorretor />
 
       {/* 3. Layout 2 colunas: principal (3 blocos) + lateral fixa 280px */}
       <div className="flex flex-col lg:flex-row gap-3.5">
