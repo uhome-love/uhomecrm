@@ -26,6 +26,7 @@ import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/lib/taskQueryUtils";
 import { maxTaskDateBRT, isTaskDateTooFar, TASK_DATE_TOO_FAR_MSG } from "@/lib/taskScheduling";
 import { lazy, Suspense } from "react";
+import { getPresetsForStage, applyPresetToTarefa, PRESET_OUTRO_ID, type TaskPreset } from "@/lib/taskPresets";
 
 const CorretorScriptsView = lazy(() => import("@/components/scripts/CorretorScriptsView"));
 
