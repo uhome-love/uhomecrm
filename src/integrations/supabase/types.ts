@@ -11350,6 +11350,15 @@ export type Database = {
         Returns: boolean
       }
       lead_teve_contato_v3: { Args: { p_lead_id: string }; Returns: boolean }
+      list_empreendimentos_nao_resolvidos: {
+        Args: { p_dias?: number }
+        Returns: {
+          leads_count: number
+          texto: string
+          tipo: string
+          ultimo_lead_at: string
+        }[]
+      }
       list_manageable_users: {
         Args: never
         Returns: {
@@ -11652,6 +11661,10 @@ export type Database = {
       vault_secret_upsert: {
         Args: { p_name: string; p_secret: string }
         Returns: string
+      }
+      vincular_alias_com_backfill: {
+        Args: { p_empreendimento_id: string; p_texto: string; p_tipo: string }
+        Returns: Json
       }
       vincular_alias_empreendimento: {
         Args: { p_alias: string; p_empreendimento_id: string; p_tipo: string }
