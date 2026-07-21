@@ -115,6 +115,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const [dispatching, setDispatching] = useState(false);
   const [allLeads, setAllLeads] = useState<any[]>([]);
   const [campanhas, setCampanhas] = useState<CampanhaMap[]>([]);
+  const [empreendimentosMap, setEmpreendimentosMap] = useState<Record<string, string>>({});
   // leadId → empreendimento resolvido pelo template do disparo de reengajamento
   const [reengEmpreendimento, setReengEmpreendimento] = useState<Record<string, string>>({});
   const { isSunday, isHoliday } = getBrtDateInfo();
@@ -122,6 +123,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
   const [includeUnidentified, setIncludeUnidentified] = useState(true);
   const [activeTab, setActiveTab] = useState<"novos" | "reengajamento">(initialTab ?? "novos");
+  const [repasseLead, setRepasseLead] = useState<{ id: string; nome: string } | null>(null);
 
   // Separa leads por categoria
   const leadsReengajamento = useMemo(() => allLeads.filter((l) => !!l.reativado_por_nutricao), [allLeads]);
