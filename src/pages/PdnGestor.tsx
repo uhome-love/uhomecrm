@@ -26,6 +26,7 @@ import {
   RefreshCw, Users, Send, Copy,
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
+import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
 
 // ─── Status: opções fixas (com cores) + livre ─────────────────────────────────
@@ -216,6 +217,7 @@ export default function PdnGestor() {
     } catch { return new Set(); }
   });
   const [quedaRow, setQuedaRow] = useState<PdnRow | null>(null);
+  const [selectedRow, setSelectedRow] = useState<PdnRow | null>(null);
   // Padrão por dispositivo: mobile→kanban (foco em 1 coluna), desktop→planilha (densidade p/ gestão).
   // Preferência persistida separadamente para cada form factor.
   const [view, setView] = useState<"planilha" | "kanban">(() => {
@@ -545,6 +547,7 @@ export default function PdnGestor() {
                 onReativar={reativarQueda}
                 onMudarEtapa={mudarEtapa}
                 onAvisar={avisarCorretor}
+                onOpenRow={setSelectedRow}
               />
             );
           })}
@@ -599,6 +602,19 @@ export default function PdnGestor() {
         row={quedaRow}
         onClose={() => setQuedaRow(null)}
         onConfirm={(motivo) => { if (quedaRow) marcarQueda(quedaRow, motivo); setQuedaRow(null); }}
+      />
+
+      <PdnLeadDrawer
+        row={selectedRow ? (filtered.find(r => r.id === selectedRow.id) ?? selectedRow) : null}
+        onClose={() => setSelectedRow(null)}
+        onSave={handleSave}
+        onUpdateManual={updateManualRow}
+        onRemove={handleRemove}
+        onQueda={setQuedaRow}
+        onReativar={reativarQueda}
+        onMudarEtapa={mudarEtapa}
+        onLimparEtapa={limparEtapaOverride}
+        onAvisar={avisarCorretor}
       />
     </div>
   );
@@ -669,7 +685,7 @@ function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
   isMobile, colWidths, onColResize, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
-  onMudarEtapa, onAvisar,
+  onMudarEtapa, onAvisar, onOpenRow,
 }: {
   grupo: PdnGrupo;
   label: string;
@@ -692,6 +708,7 @@ function GrupoBloco({
   onReativar: (row: PdnRow) => void;
   onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
   onAvisar: (row: PdnRow, mensagem: string) => void;
+  onOpenRow: (row: PdnRow) => void;
 }) {
   const isCaidos = grupo === "caidos";
   const subtotal = rows.reduce((s, r) => s + r.vgv, 0);
@@ -731,7 +748,7 @@ function GrupoBloco({
             {rows.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">Nenhum negócio neste grupo.</div>
             ) : rows.map(r => (
-              <MobileCard key={r.id} r={r} onSave={onSave} onUpdateManual={onUpdateManual} onRemove={onRemove} onQueda={onQueda} onReativar={onReativar} onMudarEtapa={onMudarEtapa} onAvisar={onAvisar} />
+              <MobileCard key={r.id} r={r} onSave={onSave} onUpdateManual={onUpdateManual} onRemove={onRemove} onQueda={onQueda} onReativar={onReativar} onMudarEtapa={onMudarEtapa} onAvisar={onAvisar} onOpenRow={onOpenRow} />
             ))}
           </div>
         ) : (
@@ -768,11 +785,16 @@ function GrupoBloco({
                       {r.isManual ? (
                         <EditableCell value={r.nome} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { nome: v })} />
                       ) : (
-                        <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onOpenRow(r)}
+                          className="flex w-full items-center gap-1.5 text-left hover:text-primary"
+                          title="Abrir detalhes"
+                        >
                           {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
-                          <span className="truncate">{r.nome}</span>
+                          <span className="truncate underline-offset-2 hover:underline">{r.nome}</span>
                           {r.etapaAjustada && <Badge variant="secondary" className="shrink-0 text-[9px] px-1">ajustada</Badge>}
-                        </div>
+                        </button>
                       )}
                       <div className="mt-1">
                         <Select value={r.grupo} onValueChange={(v) => onMudarEtapa(r, v as PdnGrupo)}>
@@ -851,7 +873,7 @@ function GrupoBloco({
   );
 }
 
-function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar }: {
+function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow }: {
   r: PdnRow;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
@@ -860,15 +882,16 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
   onReativar: (row: PdnRow) => void;
   onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
   onAvisar: (row: PdnRow, mensagem: string) => void;
+  onOpenRow: (row: PdnRow) => void;
 }) {
   return (
     <div className={`space-y-2 p-3 ${r.emRisco ? "bg-amber-500/5" : ""} ${r.caiu ? "opacity-70" : ""}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 font-medium">
+          <button type="button" onClick={() => onOpenRow(r)} className="flex items-center gap-1.5 text-left font-medium hover:text-primary">
             {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
-            <span className="truncate">{r.nome}</span>
-          </div>
+            <span className="truncate underline-offset-2 hover:underline">{r.nome}</span>
+          </button>
           <div className="text-xs text-muted-foreground">
             {r.empreendimento !== "—" ? r.empreendimento : "Sem empreendimento"} · {r.data ? formatBRT(r.data, "dd/MM/yy") : "—"}
           </div>
