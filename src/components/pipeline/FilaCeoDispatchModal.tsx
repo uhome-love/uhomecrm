@@ -148,10 +148,10 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
     setCampanhas([]);
     setReengEmpreendimento({});
     (async () => {
-      const [leadsRes, segRes, campRes] = await Promise.all([
+      const [leadsRes, segRes, campRes, empRes] = await Promise.all([
         supabase
           .from("pipeline_leads")
-          .select("id, nome, empreendimento, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
+          .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
           .is("corretor_id", null)
           .eq("aceite_status", "pendente_distribuicao")
           .eq("arquivado", false)
@@ -165,6 +165,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
           .from("roleta_campanhas")
           .select("empreendimento, segmento_id, ativo, ignorar_segmento, roleta_segmentos(id, nome, ativo)")
           .eq("ativo", true),
+        supabase
+          .from("empreendimentos_canonicos")
+          .select("id, nome"),
       ]);
       if (cancelled) return;
 
