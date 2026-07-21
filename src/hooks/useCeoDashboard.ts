@@ -129,26 +129,44 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     queryFn: async () => {
       const { data: creds } = await supabase.from("roleta_credenciamentos").select("*").eq("data", hoje).eq("status", "pendente").order("created_at");
       if (!creds?.length) return [];
-      const ids = [...new Set(creds.map(c => c.corretor_id).filter(Boolean))] as string[];
+      const profileIds = [...new Set(creds.map(c => c.corretor_id).filter(Boolean))] as string[];
       const [{ data: profs }, { data: segs }] = await Promise.all([
-        supabase.from("profiles").select("id, nome, avatar_gamificado_url").in("id", ids),
+        supabase.from("profiles").select("id, user_id, nome, avatar_gamificado_url").in("id", profileIds),
         supabase.from("roleta_segmentos").select("id, nome"),
       ]);
       const pm = new Map((profs as any[])?.map((p: any) => [p.id, p]) || []);
       const sm = new Map((segs as any[])?.map((s: any) => [s.id, s.nome]) || []);
-      return creds.map(c => ({
-        ...c,
-        corretor_nome: c.corretor_id ? pm.get(c.corretor_id)?.nome || "Corretor" : "Corretor",
-        avatar: c.corretor_id ? pm.get(c.corretor_id)?.avatar_gamificado_url : null,
-        seg1_nome: c.segmento_1_id ? sm.get(c.segmento_1_id) || "—" : "—",
-        seg2_nome: c.segmento_2_id ? sm.get(c.segmento_2_id) || "—" : null,
-      }));
+      const userIds = [...new Set((profs as any[])?.map((p: any) => p.user_id).filter(Boolean) || [])] as string[];
+      // Buscar alocação (empreendimentos) por auth user_id
+      const { data: alocs } = userIds.length
+        ? await supabase.from("corretor_alocacao").select("user_id, empreendimentos").in("user_id", userIds)
+        : { data: [] as any[] };
+      const allEmpIds = [...new Set((alocs as any[])?.flatMap((a: any) => a.empreendimentos || []) || [])] as string[];
+      const { data: emps } = allEmpIds.length
+        ? await supabase.from("empreendimentos_canonicos").select("id, nome").in("id", allEmpIds)
+        : { data: [] as any[] };
+      const em = new Map((emps as any[])?.map((e: any) => [e.id, e.nome]) || []);
+      const am = new Map((alocs as any[])?.map((a: any) => [a.user_id, (a.empreendimentos || []).map((id: string) => em.get(id)).filter(Boolean)]) || []);
+      return creds.map(c => {
+        const prof: any = c.corretor_id ? pm.get(c.corretor_id) : null;
+        const empNomes: string[] = prof?.user_id ? (am.get(prof.user_id) || []) : [];
+        return {
+          ...c,
+          corretor_nome: prof?.nome || "Corretor",
+          avatar: prof?.avatar_gamificado_url || null,
+          seg1_nome: c.segmento_1_id ? sm.get(c.segmento_1_id) || "—" : "—",
+          seg2_nome: c.segmento_2_id ? sm.get(c.segmento_2_id) || "—" : null,
+          empreendimentos_alocados: empNomes,
+        };
+      });
     },
     enabled: !!user,
     staleTime: 15_000,
     refetchInterval: 30_000,
     placeholderData: keepPreviousData,
   });
+
+
 
   // ── KPIs (current period) ──
   const { data: kpis = EMPTY_KPIS, isFetching: kpisFetching, isLoading: kpisFirstLoad } = useQuery({
