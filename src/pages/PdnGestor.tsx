@@ -242,7 +242,7 @@ export default function PdnGestor() {
 
   // Larguras de coluna redimensionáveis (planilha), persistidas por sessão
   const DEFAULT_COL_WIDTHS: Record<string, number> = {
-    nome: 190, data: 110, empreendimento: 170, vgv: 140, corretor: 140, status: 150, obs: 220,
+    nome: 160, data: 88, empreendimento: 150, vgv: 110, corretor: 120, status: 130, obs: 200,
   };
   const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
     try {
