@@ -556,7 +556,7 @@ export default function RoletaStatusBar() {
               })}
             </div>
           ) : (
-            /* Segmento selection for chosen janela */
+            /* Confirmação de credenciamento por alocação */
             <div className="space-y-4">
               <button
                 onClick={() => setSelectedJanela(null)}
@@ -572,45 +572,49 @@ export default function RoletaStatusBar() {
                 </span>
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                Selecione até <strong>2 segmentos</strong> para receber leads:
-              </p>
-
-              <div className="space-y-2">
-                {segmentos.map(seg => {
-                  const isChecked = selectedIds.includes(seg.id);
-                  return (
-                    <button
-                      key={seg.id}
-                      onClick={() => toggleSegmento(seg.id)}
-                      className={`w-full text-left rounded-xl border p-3 transition-all ${
-                        isChecked ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30 hover:bg-muted/30"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Checkbox checked={isChecked} className="mt-0.5" onCheckedChange={() => toggleSegmento(seg.id)} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground">{seg.nome}</p>
-                          {seg.empreendimentos.length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{seg.empreendimentos.join(", ")}</p>
-                          )}
-                          {seg.faixa_preco && (
-                            <p className="text-[10px] text-muted-foreground/70 mt-0.5">{seg.faixa_preco}</p>
-                          )}
-                        </div>
+              {loadingAlocacao ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : alocacaoAtiva.length === 0 ? (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-4 space-y-2">
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                    ⚠️ Sem alocação de empreendimento
+                  </p>
+                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80 leading-relaxed">
+                    Você não recebe leads porque ainda não foi alocado a nenhum empreendimento ativo.
+                    Fale com o seu gestor para configurar em <strong>Foco Corretores</strong>.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Você receberá leads dos seus empreendimentos alocados:
+                  </p>
+                  <div className="space-y-2">
+                    {alocacaoAtiva.map((a) => (
+                      <div
+                        key={a.empreendimento_id}
+                        className="w-full rounded-xl border border-primary/20 bg-primary/5 p-3"
+                      >
+                        <p className="text-sm font-semibold text-foreground">{a.empreendimento_nome}</p>
+                        {a.segmento_nome && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{a.segmento_nome}</p>
+                        )}
                       </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {selectedIds.length >= 2 && (
-                <p className="text-xs text-amber-600 font-medium flex items-center gap-1">⚠️ Máximo 2 segmentos por corretor</p>
+                    ))}
+                  </div>
+                  {minhaAlocacao.length > alocacaoAtiva.length && (
+                    <p className="text-[11px] text-muted-foreground">
+                      {minhaAlocacao.length - alocacaoAtiva.length} empreendimento(s) alocado(s) estão pausados e não recebem leads agora.
+                    </p>
+                  )}
+                </>
               )}
 
               <Button
                 onClick={() => saveCredenciamento(selectedJanela)}
-                disabled={saving || selectedIds.length === 0}
+                disabled={saving || loadingAlocacao || alocacaoAtiva.length === 0}
                 className="w-full"
               >
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
