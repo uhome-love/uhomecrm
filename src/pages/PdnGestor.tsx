@@ -216,10 +216,16 @@ export default function PdnGestor() {
     } catch { return new Set(); }
   });
   const [quedaRow, setQuedaRow] = useState<PdnRow | null>(null);
+  // Padrão por dispositivo: mobile→kanban (foco em 1 coluna), desktop→planilha (densidade p/ gestão).
+  // Preferência persistida separadamente para cada form factor.
   const [view, setView] = useState<"planilha" | "kanban">(() => {
-    try { return (sessionStorage.getItem("pdn:view") as "planilha" | "kanban") || "planilha"; } catch { return "planilha"; }
+    try {
+      const isMob = typeof window !== "undefined" && window.innerWidth < 768;
+      const key = `pdn:view:${isMob ? "mobile" : "desktop"}`;
+      const saved = sessionStorage.getItem(key) as "planilha" | "kanban" | null;
+      return saved ?? (isMob ? "kanban" : "planilha");
+    } catch { return "planilha"; }
   });
-  useEffect(() => { try { sessionStorage.setItem("pdn:view", view); } catch { /* ignore */ } }, [view]);
 
   const { isDiretor, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
@@ -370,7 +376,8 @@ export default function PdnGestor() {
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="sticky top-0 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-background/85 px-4 py-2.5 backdrop-blur md:-mx-6 md:px-6">
+        {/* Header sticky com backdrop-blur — mantém contexto e ações do mês visíveis durante o scroll da planilha. */}
         <div>
           <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
             <ClipboardList className="h-5 w-5 text-primary" /> PDN — Plano de Negócios
