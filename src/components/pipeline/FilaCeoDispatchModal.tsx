@@ -205,6 +205,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       }
 
       setCampanhas(camps);
+      const empMap: Record<string, string> = {};
+      for (const e of ((empRes.data || []) as any[])) empMap[e.id] = e.nome;
+      setEmpreendimentosMap(empMap);
       const leadsList = (leadsRes.data || []) as any[];
       setAllLeads(leadsList);
 
