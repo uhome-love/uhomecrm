@@ -81,6 +81,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Config",
     subs: [
       { value: "parametros", label: "Parâmetros & Segmentos" },
+      { value: "mapeamento", label: "Mapeamento Meta" },
       { value: "performance", label: "Performance" },
     ],
   },
@@ -210,6 +211,7 @@ export function CentralRoletaCeo() {
         {activeSub === "metricas" && <RoletaMetricasTab />}
         {activeSub === "inteligencia" && <LeadIntelligenceTab />}
         {activeSub === "parametros" && <RoletaConfigTab />}
+        {activeSub === "mapeamento" && <MapeamentoMetaTab />}
         {activeSub === "performance" && <DistributionDashboard />}
       </div>
 
