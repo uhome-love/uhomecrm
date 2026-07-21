@@ -10,7 +10,7 @@ import { dateToBRT, parseDateBRT, cn } from "@/lib/utils";
 import { fetchInBatchesWithRetry, normalizeQueryError, runQueryWithRetry } from "@/lib/taskQueryUtils";
 import { classifyTask } from "@/lib/taskBuckets";
 import { ptBR } from "date-fns/locale";
-import { Phone, MessageCircle, CheckCircle2, Clock, Calendar, Building2, User, ClipboardList, Plus, Search, Pencil, BookOpen, Target, Briefcase, FileText, Send, RefreshCw, CornerUpLeft } from "lucide-react";
+import { Phone, MessageCircle, CheckCircle2, Clock, Calendar, Building2, User, ClipboardList, Plus, Search, Pencil, BookOpen, FileText, Send, RefreshCw, CornerUpLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -59,25 +59,6 @@ const TIPO_EMOJI: Record<string, string> = {
   enviar_material: "📎", marcar_visita: "📅", confirmar_visita: "✅", retornar_cliente: "↩️", outro: "📋",
 };
 
-const NEGOCIO_TIPO_LABELS: Record<string, string> = {
-  mandar_simulacao: "Mandar simulação",
-  mandar_sugestao_proposta: "Mandar sugestão de proposta",
-  solicitar_documentos: "Solicitar documentos",
-  enviar_minuta: "Enviar minuta de contrato",
-  enviar_contrato_assinar: "Enviar contrato para assinar",
-  assinar_contrato: "Assinar contrato",
-  entregar_presente: "Entregar presente da venda",
-};
-
-const NEGOCIO_TIPO_EMOJI: Record<string, string> = {
-  mandar_simulacao: "📊",
-  mandar_sugestao_proposta: "💡",
-  solicitar_documentos: "📋",
-  enviar_minuta: "📄",
-  enviar_contrato_assinar: "✍️",
-  assinar_contrato: "🖊️",
-  entregar_presente: "🎁",
-};
 
 type TabFilter = "todas" | "hoje" | "amanha" | "semana" | "atrasadas" | "desatualizados" | "concluidas";
 
@@ -140,8 +121,6 @@ export default function MinhasTarefas() {
     const valid: TabFilter[] = ["todas", "hoje", "amanha", "semana", "atrasadas", "desatualizados", "concluidas"];
     return (valid as string[]).includes(t || "") ? (t as TabFilter) : "todas";
   })();
-  // "desatualizados" só existe para leads; força categoria correta.
-  const [categoria, setCategoria] = useState<"leads" | "negocios">(initialTab === "desatualizados" ? "leads" : "leads");
   const [activeTab, setActiveTab] = useState<TabFilter>(initialTab);
   // Sync com URL quando navegação muda ?tab= sem remontar (TabProvider Chrome-style)
   useEffect(() => {
@@ -149,12 +128,9 @@ export default function MinhasTarefas() {
     const valid: TabFilter[] = ["todas", "hoje", "amanha", "semana", "atrasadas", "desatualizados", "concluidas"];
     if (t && (valid as string[]).includes(t) && t !== activeTab) {
       setActiveTab(t as TabFilter);
-      if (t === "desatualizados") setCategoria("leads");
     }
   }, [searchParams]);
   const [showNovaTarefa, setShowNovaTarefa] = useState(false);
-  const [showTipoSelector, setShowTipoSelector] = useState(false);
-  const [showNovaTarefaNegocio, setShowNovaTarefaNegocio] = useState(false);
   const [novoTipo, setNovoTipo] = useState("follow_up");
   const [novoData, setNovoData] = useState("");
   const [novoHora, setNovoHora] = useState("");
@@ -162,14 +138,6 @@ export default function MinhasTarefas() {
   const [leadSearch, setLeadSearch] = useState("");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [selectedLeadNome, setSelectedLeadNome] = useState("");
-  // Negocio task state
-  const [negocioSearch, setNegocioSearch] = useState("");
-  const [selectedNegocioId, setSelectedNegocioId] = useState<string | null>(null);
-  const [selectedNegocioNome, setSelectedNegocioNome] = useState("");
-  const [negocioTipo, setNegocioTipo] = useState("mandar_simulacao");
-  const [negocioData, setNegocioData] = useState("");
-  const [negocioHora, setNegocioHora] = useState("");
-  const [negocioObs, setNegocioObs] = useState("");
   // Edit task state
   const [editId, setEditId] = useState<string | null>(null);
   const [editTipo, setEditTipo] = useState("follow_up");
@@ -420,34 +388,6 @@ export default function MinhasTarefas() {
     enabled: !!user && !isLoadingOwnedLeads,
     refetchOnWindowFocus: true,
   });
-  const { data: negociosTarefas = [], isLoading: isLoadingNegocios } = useQuery({
-    queryKey: ["minhas-tarefas-negocios", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from("negocios_tarefas")
-        .select("*")
-        .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
-        .order("vence_em", { ascending: true })
-        .order("hora_vencimento", { ascending: true });
-      if (error) return [];
-      const rows = (data || []) as any[];
-      // Enrich with negocio info
-      const negIds = [...new Set(rows.map(r => r.negocio_id).filter(Boolean))];
-      if (negIds.length > 0) {
-        const { data: negs } = await supabase
-          .from("negocios").select("id, nome_cliente, telefone, empreendimento").in("id", negIds);
-        const negMap = new Map((negs as any[] || []).map((n: any) => [n.id, n]));
-        rows.forEach(r => {
-          const neg = negMap.get(r.negocio_id);
-          if (neg) { r.lead_nome = neg.nome_cliente; r.lead_telefone = neg.telefone; r.lead_empreendimento = neg.empreendimento; r.pipeline_lead_id = neg.id; }
-        });
-      }
-      return rows as TarefaComLead[];
-    },
-    enabled: !!user,
-    refetchOnWindowFocus: true,
-  });
 
   const { data: searchLeads = [] } = useQuery({
     queryKey: ["lead-search-tarefas", leadSearch],
@@ -485,22 +425,12 @@ export default function MinhasTarefas() {
     [presetsDisponiveis, presetSelecionadoId],
   );
 
-  const { data: searchNegocios = [] } = useQuery({
-    queryKey: ["negocio-search-tarefas", negocioSearch],
-    queryFn: async () => {
-      if (!user || negocioSearch.length < 2) return [];
-      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, fase")
-        .not("fase", "eq", "caiu").ilike("nome_cliente", `%${negocioSearch}%`).limit(10);
-      return (data || []) as { id: string; nome_cliente: string | null; empreendimento: string | null; fase: string | null }[];
-    },
-    enabled: !!user && negocioSearch.length >= 2,
-  });
 
   const now = new Date();
   const todayStart = startOfDay(now);
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
 
-  const activeTarefas = categoria === "leads" ? tarefas : negociosTarefas;
+  const activeTarefas = tarefas;
 
   // Map de leads "elegíveis" (igual ao pipeline: exclui descarte e leads com negócio criado)
   const ownedLeadsMap = useMemo(() => {
@@ -529,9 +459,9 @@ export default function MinhasTarefas() {
   };
 
   const pendentes = useMemo(
-    () => activeTarefas.filter(t => t.status === "pendente" && (categoria !== "leads" || isLeadElegivel(t))),
+    () => activeTarefas.filter(t => t.status === "pendente" && isLeadElegivel(t)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeTarefas, categoria, ownedLeadsMap]
+    [activeTarefas, ownedLeadsMap]
   );
   const concluidas = useMemo(
     () =>
@@ -565,11 +495,11 @@ export default function MinhasTarefas() {
   // Conta TAREFAS (não leads distintos) para alinhar com o KPI do dashboard.
   const atrasadasTarefas = useMemo(() => {
     return pendentes.filter(t => {
-      if (categoria === "leads" && !isLeadElegivel(t)) return false;
+      if (!isLeadElegivel(t)) return false;
       return classifyTask({ vence_em: t.vence_em, hora_vencimento: t.hora_vencimento }).isOverdue;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendentes, categoria, ownedLeadsMap]);
+  }, [pendentes, ownedLeadsMap]);
 
   // Conta de leads únicos atrasados (uso interno — ex: badge auxiliar)
   const atrasadasLeadCount = useMemo(() => new Set(atrasadasTarefas.map(t => t.pipeline_lead_id).filter(Boolean)).size, [atrasadasTarefas]);
@@ -584,11 +514,10 @@ export default function MinhasTarefas() {
 
   // Desatualizados: leads do corretor (elegíveis) SEM nenhuma tarefa pendente
   const desatualizados = useMemo<OwnedLead[]>(() => {
-    if (categoria !== "leads") return [];
     return ownedLeadsFull
       .filter(l => ownedLeadStatusMap.get(l.id) === "desatualizado")
       .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
-  }, [ownedLeadsFull, ownedLeadStatusMap, categoria]);
+  }, [ownedLeadsFull, ownedLeadStatusMap]);
 
   const filteredTarefas = activeTab === "todas" ? pendentes : activeTab === "atrasadas" ? atrasadasTarefas : activeTab === "hoje" ? hoje :
     activeTab === "amanha" ? amanha : activeTab === "concluidas" ? concluidas : activeTab === "desatualizados" ? [] : semana;
@@ -619,41 +548,6 @@ export default function MinhasTarefas() {
     try {
       const now = new Date().toISOString();
 
-      // ── NEGÓCIOS: fluxo legado preservado integralmente ─────────────
-      if (categoria === "negocios") {
-        const { error } = await supabase.from("negocios_tarefas")
-          .update({ status: "concluida", concluida_em: now } as never).eq("id", id);
-        if (error) throw error;
-
-        // Cria próxima (negócios só aceita outcome='agendar' via prop context='negocio')
-        if (outcome === "agendar" && nova_tarefa) {
-          const negocioNome = completingTarefa.lead_nome || "Negócio";
-          const TIPO_LABELS_NEG: Record<string, string> = {
-            ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up",
-            visita: "Visita", proposta: "Proposta", email: "E-mail",
-          };
-          const [yPt, mPt, dPt] = (nova_tarefa.vence_em || "").split("-");
-          const dateSuffix = yPt && mPt && dPt ? ` · ${dPt}/${mPt}` : "";
-          const titulo = `${TIPO_LABELS_NEG[nova_tarefa.tipo] || nova_tarefa.tipo}: ${negocioNome}${dateSuffix}`;
-          await supabase.from("negocios_tarefas").insert({
-            negocio_id: (completingTarefa as any).negocio_id,
-            tipo: nova_tarefa.tipo,
-            titulo,
-            descricao: nova_tarefa.obs?.trim() || descricao?.trim() || null,
-            prioridade: "media",
-            status: "pendente",
-            responsavel_id: user.id,
-            vence_em: nova_tarefa.vence_em,
-            hora_vencimento: nova_tarefa.hora_vencimento || null,
-            created_by: user.id,
-          } as any);
-        }
-
-        toast.success("Tarefa concluída ✅");
-        setCompletingTarefa(null);
-        queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
-        return;
-      }
 
       // ── LEADS: fluxo com switch de outcomes ─────────────────────────
       const { error: toggleErr } = await supabase.from("pipeline_tarefas")
@@ -796,7 +690,7 @@ export default function MinhasTarefas() {
         }
       }
 
-      console.info("[task_completed]", { lead_id: leadId, tarefa_id: id, outcome, reason_code, categoria });
+      console.info("[task_completed]", { lead_id: leadId, tarefa_id: id, outcome, reason_code });
       toast.success(toastMsg);
       setCompletingTarefa(null);
       invalidateTaskQueries(queryClient, leadId);
@@ -850,34 +744,6 @@ export default function MinhasTarefas() {
     invalidateTaskQueries(queryClient, selectedLeadId);
   };
 
-  const handleCriarTarefaNegocio = async () => {
-    if (!user || !selectedNegocioId || !negocioData) return;
-    const { error } = await supabase.from("negocios_tarefas").insert({
-      negocio_id: selectedNegocioId,
-      titulo: `${NEGOCIO_TIPO_LABELS[negocioTipo] || negocioTipo}: ${selectedNegocioNome}`,
-      descricao: negocioObs || null,
-      tipo: negocioTipo,
-      vence_em: negocioData,
-      hora_vencimento: negocioHora || null,
-      status: "pendente",
-      prioridade: "media",
-      responsavel_id: user.id,
-      created_by: user.id,
-    } as any);
-    if (error) {
-      toast.error("Não foi possível criar a tarefa: " + error.message);
-      return;
-    }
-    toast.success("Tarefa de negócio criada ✅");
-    setShowNovaTarefaNegocio(false);
-    setSelectedNegocioId(null);
-    setSelectedNegocioNome("");
-    setNegocioSearch("");
-    setNegocioObs("");
-    setNegocioData("");
-    setNegocioHora("");
-    invalidateTaskQueries(queryClient, null);
-  };
 
   const openEditTarefa = (tarefa: TarefaComLead) => {
     setEditId(tarefa.id);
@@ -909,7 +775,7 @@ export default function MinhasTarefas() {
     { key: "hoje", label: "Hoje", count: hoje.length, tone: "warning" },
     { key: "amanha", label: "Amanhã", count: amanha.length },
     { key: "semana", label: "Semana", count: semana.length },
-    ...(categoria === "leads" ? [{ key: "desatualizados" as TabFilter, label: "Desatualizados", count: desatualizados.length, tone: "warning" as const }] : []),
+    { key: "desatualizados" as TabFilter, label: "Desatualizados", count: desatualizados.length, tone: "warning" as const },
     { key: "concluidas", label: "Concluídas", count: concluidas.length, tone: "success" },
   ];
 
@@ -921,23 +787,12 @@ export default function MinhasTarefas() {
         icon={<ClipboardList className="h-5 w-5" />}
         className="mb-0"
         actions={
-          <Button size="sm" className="gap-1.5" onClick={() => setShowTipoSelector(true)}>
+          <Button size="sm" className="gap-1.5" onClick={() => setShowNovaTarefa(true)}>
             <Plus className="h-4 w-4" /> Nova Tarefa
           </Button>
         }
       />
 
-      {/* Category tabs: Leads vs Negócios */}
-      <div className="flex gap-1 p-0.5 rounded-[10px] border bg-muted/40 w-fit max-w-full overflow-x-auto">
-        <Button variant={categoria === "leads" ? "default" : "ghost"} size="sm" aria-pressed={categoria === "leads"} className="h-8 text-xs gap-1.5 shrink-0" onClick={() => { setCategoria("leads"); setActiveTab("todas"); }}>
-          <Target className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Tarefas de </span>Leads
-          <Badge variant="secondary" className="ml-0.5 text-[10px] px-1.5">{tarefas.filter(t => t.status === "pendente").length}</Badge>
-        </Button>
-        <Button variant={categoria === "negocios" ? "default" : "ghost"} size="sm" aria-pressed={categoria === "negocios"} className="h-8 text-xs gap-1.5 shrink-0" onClick={() => { setCategoria("negocios"); setActiveTab("todas"); }}>
-          <Briefcase className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Tarefas de </span>Negócios
-          <Badge variant="secondary" className="ml-0.5 text-[10px] px-1.5">{negociosTarefas.filter(t => t.status === "pendente").length}</Badge>
-        </Button>
-      </div>
 
       {/* Tabs */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible" role="tablist" aria-label="Filtrar tarefas por período">
@@ -965,7 +820,7 @@ export default function MinhasTarefas() {
 
 
       {/* Task list */}
-      {(isLoading || isLoadingNegocios || isLoadingOwnedLeads || isLoadingOwnedLeadTaskMap) ? (
+      {(isLoading || isLoadingOwnedLeads || isLoadingOwnedLeadTaskMap) ? (
         <div className="rounded-[12px] border divide-y overflow-hidden">
           {[0, 1, 2, 3].map(i => (
             <div key={i} className="flex items-center gap-3 px-3 py-2.5 border-l-[3px] border-l-muted animate-pulse">
@@ -1062,11 +917,10 @@ export default function MinhasTarefas() {
                     {/* Row 1: name + prazo */}
                     <div className="flex items-start justify-between gap-2">
                       <button onClick={() => {
-                        if (categoria === "negocios") { navigate("/pipeline-negocios"); }
-                        else { navigate(`/pipeline-leads?lead=${tarefa.pipeline_lead_id}`); }
+                        navigate(`/pipeline-leads?lead=${tarefa.pipeline_lead_id}`);
                       }} className="text-[15px] font-semibold text-foreground hover:text-primary transition-colors truncate flex items-center gap-1.5 min-w-0">
                         <User className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">{tarefa.lead_nome || (categoria === "negocios" ? "Negócio" : "Lead")}</span>
+                        <span className="truncate">{tarefa.lead_nome || "Lead"}</span>
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isOverdue && <Badge variant="destructive" className="text-[10px]">ATRASADA</Badge>}
@@ -1293,111 +1147,6 @@ export default function MinhasTarefas() {
       </Dialog>
 
 
-      {/* Type selector dialog */}
-      <Dialog open={showTipoSelector} onOpenChange={setShowTipoSelector}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader><DialogTitle className="text-center text-lg font-bold">Qual tipo de tarefa?</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <button
-              onClick={() => { setShowTipoSelector(false); setShowNovaTarefa(true); }}
-              className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border/60 bg-card hover:border-primary hover:bg-primary/5 transition-all group"
-            >
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <Target className="h-7 w-7 text-primary" />
-
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-foreground">Tarefa de Lead</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Follow-up, ligar, enviar material</p>
-              </div>
-            </button>
-            <button
-              onClick={() => { setShowTipoSelector(false); setShowNovaTarefaNegocio(true); }}
-              className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border/60 bg-card hover:border-primary hover:bg-primary/5 transition-all group"
-            >
-              <div className="h-14 w-14 rounded-2xl bg-warning-500/10 flex items-center justify-center group-hover:bg-warning-500/20 transition-colors">
-                <Briefcase className="h-7 w-7 text-warning-700" />
-
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-foreground">Tarefa de Negócio</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Simulação, contrato, presente</p>
-              </div>
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Nova Tarefa de Negócio dialog */}
-      <Dialog open={showNovaTarefaNegocio} onOpenChange={setShowNovaTarefaNegocio}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-warning-700" /> Nova Tarefa de Negócio</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Negócio *</label>
-              {selectedNegocioId ? (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-sm">{selectedNegocioNome}</Badge>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setSelectedNegocioId(null); setSelectedNegocioNome(""); }}>Trocar</Button>
-                </div>
-              ) : (
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Buscar negócio..." value={negocioSearch} onChange={e => setNegocioSearch(e.target.value)} className="pl-8" />
-                  {searchNegocios.length > 0 && (
-                    <div role="listbox" aria-label="Resultados da busca de negócio" className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto">
-                      {searchNegocios.map((n: any) => (
-                        <button key={n.id} type="button" role="option" aria-selected={false} className="w-full px-3 py-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none" onClick={() => {
-                          setSelectedNegocioId(n.id);
-                          setSelectedNegocioNome(n.nome_cliente || "Sem nome");
-                          setNegocioSearch("");
-                        }}>
-                          <p className="font-medium">{n.nome_cliente || "Sem nome"}</p>
-                          <p className="text-xs text-muted-foreground">{[n.empreendimento, n.fase].filter(Boolean).join(" · ")}</p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
-              <Select value={negocioTipo} onValueChange={setNegocioTipo}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(NEGOCIO_TIPO_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{NEGOCIO_TIPO_EMOJI[k]} {v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Data *</label>
-                <Input type="date" value={negocioData} onChange={e => setNegocioData(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Hora</label>
-                <Input type="time" value={negocioHora} onChange={e => setNegocioHora(e.target.value)} />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Observação</label>
-              <Textarea value={negocioObs} onChange={e => setNegocioObs(e.target.value)} placeholder="Ex: Enviar simulação do apto 301" rows={2} />
-            </div>
-
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowNovaTarefaNegocio(false)}>Cancelar</Button>
-              <Button onClick={handleCriarTarefaNegocio} disabled={!selectedNegocioId || !negocioData}>✅ Criar Tarefa</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Scripts Marketplace Sheet */}
       <Sheet open={scriptsOpen} onOpenChange={setScriptsOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
@@ -1421,7 +1170,7 @@ export default function MinhasTarefas() {
         tarefaTitulo={completingTarefa?.titulo || ""}
         leadNome={completingTarefa?.lead_nome}
         leadId={completingTarefa?.pipeline_lead_id}
-        context={categoria === "negocios" ? "negocio" : "lead"}
+        context="lead"
         onConfirm={handleCompletionConfirm}
       />
     </div>
