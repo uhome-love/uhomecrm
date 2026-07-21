@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Rocket, AlertTriangle, Sparkles, HeartHandshake } from "lucide-react";
+import { Loader2, Rocket, AlertTriangle, Sparkles, HeartHandshake, UserPlus, PauseCircle, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { getBrtDateInfo } from "@/hooks/useRoleta";
 import { empreendimentoFromTemplate } from "@/lib/reengajamentoEmpreendimento";
+import FilaCeoRepassarDialog from "./FilaCeoRepassarDialog";
 
 interface CampanhaMap {
   empreendimento: string;
@@ -114,6 +115,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const [dispatching, setDispatching] = useState(false);
   const [allLeads, setAllLeads] = useState<any[]>([]);
   const [campanhas, setCampanhas] = useState<CampanhaMap[]>([]);
+  const [empreendimentosMap, setEmpreendimentosMap] = useState<Record<string, string>>({});
   // leadId → empreendimento resolvido pelo template do disparo de reengajamento
   const [reengEmpreendimento, setReengEmpreendimento] = useState<Record<string, string>>({});
   const { isSunday, isHoliday } = getBrtDateInfo();
@@ -121,6 +123,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
   const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
   const [includeUnidentified, setIncludeUnidentified] = useState(true);
   const [activeTab, setActiveTab] = useState<"novos" | "reengajamento">(initialTab ?? "novos");
+  const [repasseLead, setRepasseLead] = useState<{ id: string; nome: string } | null>(null);
 
   // Separa leads por categoria
   const leadsReengajamento = useMemo(() => allLeads.filter((l) => !!l.reativado_por_nutricao), [allLeads]);
@@ -145,10 +148,10 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
     setCampanhas([]);
     setReengEmpreendimento({});
     (async () => {
-      const [leadsRes, segRes, campRes] = await Promise.all([
+      const [leadsRes, segRes, campRes, empRes] = await Promise.all([
         supabase
           .from("pipeline_leads")
-          .select("id, nome, empreendimento, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
+          .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
           .is("corretor_id", null)
           .eq("aceite_status", "pendente_distribuicao")
           .eq("arquivado", false)
@@ -162,6 +165,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
           .from("roleta_campanhas")
           .select("empreendimento, segmento_id, ativo, ignorar_segmento, roleta_segmentos(id, nome, ativo)")
           .eq("ativo", true),
+        supabase
+          .from("empreendimentos_canonicos")
+          .select("id, nome"),
       ]);
       if (cancelled) return;
 
@@ -199,6 +205,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
       }
 
       setCampanhas(camps);
+      const empMap: Record<string, string> = {};
+      for (const e of ((empRes.data || []) as any[])) empMap[e.id] = e.nome;
+      setEmpreendimentosMap(empMap);
       const leadsList = (leadsRes.data || []) as any[];
       setAllLeads(leadsList);
 
@@ -263,71 +272,64 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
     return () => { cancelled = true; };
   }, [open]);
 
-  const { preview, unidentifiedCount, identifiedLeadIds, allLeadIds } = useMemo(() => {
-    const groups: Record<string, SegmentoPreview> = {};
-    const labelCounts: Record<string, Record<string, number>> = {};
+  const UNIDENT_KEY = "__sem_empreendimento__";
+
+  const { grupos, unidentifiedCount, identifiedLeadIds, allLeadIds } = useMemo(() => {
+    const groups: Record<string, { nome: string; leads: any[] }> = {};
     let unidentified = 0;
     const identified: string[] = [];
     const all: string[] = [];
 
-    // S3 - Avulso é segmento por origem (sem empreendimento próprio na roleta_campanhas)
-    const hasAvulso = true;
-
     for (const lead of leads) {
       all.push(lead.id);
-      const segNome = resolveSegmentoNome(lead.empreendimento, lead.origem, campanhas, hasAvulso);
-      if (segNome) {
+      let empNome: string | null = null;
+      if (lead.empreendimento_canonico_id && empreendimentosMap[lead.empreendimento_canonico_id]) {
+        empNome = empreendimentosMap[lead.empreendimento_canonico_id];
+      } else if (String(lead.empreendimento || "").trim()) {
+        empNome = String(lead.empreendimento).trim();
+      }
+
+      if (empNome) {
         identified.push(lead.id);
-        if (!groups[segNome]) {
-          groups[segNome] = { segmento_nome: segNome, empreendimentos: [], count: 0 };
-        }
-        groups[segNome].count++;
-        const label = leadOrigemLabel(lead.empreendimento, lead.origem);
-        labelCounts[segNome] = labelCounts[segNome] || {};
-        labelCounts[segNome][label] = (labelCounts[segNome][label] || 0) + 1;
+        if (!groups[empNome]) groups[empNome] = { nome: empNome, leads: [] };
+        groups[empNome].leads.push(lead);
       } else {
         unidentified++;
+        if (!groups[UNIDENT_KEY]) groups[UNIDENT_KEY] = { nome: "Sem empreendimento identificado", leads: [] };
+        groups[UNIDENT_KEY].leads.push(lead);
       }
     }
 
-    // Monta rótulos legíveis (origem/imóvel) com contagem por segmento
-    for (const seg of Object.keys(groups)) {
-      const counts = labelCounts[seg] || {};
-      groups[seg].empreendimentos = Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([label, n]) => (n > 1 ? `${label} (${n})` : label));
-    }
-
-    // Ordenação canônica: "Geral" primeiro, depois S1, S2, S3, S4.
-    const segOrder = (nome: string): number => {
-      if (nome === SEG_GERAL) return 0;
-      const m = /^s\s*(\d+)/i.exec(nome.trim());
-      return m ? parseInt(m[1], 10) : 999;
-    };
+    const ordered = Object.entries(groups).sort(([ka, a], [kb, b]) => {
+      if (ka === UNIDENT_KEY) return 1;
+      if (kb === UNIDENT_KEY) return -1;
+      return a.nome.localeCompare(b.nome, "pt-BR");
+    });
 
     return {
-      preview: Object.values(groups).sort((a, b) => {
-        const oa = segOrder(a.segmento_nome);
-        const ob = segOrder(b.segmento_nome);
-        if (oa !== ob) return oa - ob;
-        return a.segmento_nome.localeCompare(b.segmento_nome, "pt-BR");
-      }),
+      grupos: ordered.map(([key, g]) => ({ key, ...g })),
       unidentifiedCount: unidentified,
       identifiedLeadIds: identified,
       allLeadIds: all,
     };
-  }, [leads, campanhas]);
+  }, [leads, empreendimentosMap]);
 
   const isOfertaAtiva = selectedDestino === "oferta_ativa";
   const leadsToDispatch = includeUnidentified ? allLeadIds : identifiedLeadIds;
 
-  const SEGMENTO_COLORS: Record<string, string> = {
-    [SEG_GERAL]: "bg-indigo-500/10 text-indigo-700 border-indigo-500/30 dark:text-indigo-300",
-    "S1 - Moradia": "bg-blue-500/10 text-blue-700 border-blue-500/30 dark:text-blue-300",
-    "S2 - Investimento": "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300",
-    "S3 - Alto Padrão": "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300",
-    "S4 - MCMV": "bg-green-500/10 text-green-700 border-green-500/30 dark:text-green-300",
+  const refetchLeads = async () => {
+    const { data } = await supabase
+      .from("pipeline_leads")
+      .select("id, nome, empreendimento, empreendimento_canonico_id, telefone, origem, aceite_status, is_redistribuicao, motivo_redistribuicao, motivo_pendencia, corretor_anterior_id, reativado_por_nutricao, reativado_em, updated_at")
+      .is("corretor_id", null)
+      .eq("aceite_status", "pendente_distribuicao")
+      .eq("arquivado", false)
+      .order("created_at", { ascending: true })
+      .limit(2000);
+    setAllLeads((data || []) as any[]);
+    onDispatched?.();
   };
+
 
   const handleDispatch = async () => {
     if (leadsToDispatch.length === 0) return;
@@ -478,31 +480,70 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
 
             <TabsContent value="novos" className="mt-4">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prévia por segmento</p>
-                {preview.map((p) => (
-                  <div key={p.segmento_nome} className={`flex items-center justify-between p-2.5 rounded-lg border ${SEGMENTO_COLORS[p.segmento_nome] || "bg-muted/50 border-border"}`}>
-                    <div>
-                      <span className="text-sm font-medium">● {p.segmento_nome}</span>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{p.empreendimentos.join(", ")}</p>
-                    </div>
-                    <Badge variant="secondary" className="font-bold">{p.count} leads</Badge>
-                  </div>
-                ))}
-                {unidentifiedCount > 0 && (
-                  <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/40">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Sem segmento</span>
-                    </div>
-                    <Badge variant="secondary" className="font-bold">{unidentifiedCount} leads</Badge>
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prévia por empreendimento</p>
+                {grupos.length === 0 && (
+                  <div className="text-center py-6 text-sm text-muted-foreground">
+                    Nenhum lead novo aguardando distribuição. 🎉
                   </div>
                 )}
+                {grupos.map((g) => {
+                  const isUnident = g.key === UNIDENT_KEY;
+                  return (
+                    <div
+                      key={g.key}
+                      className={`rounded-lg border ${isUnident ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-card"} border-l-[3px] ${isUnident ? "border-l-amber-500" : "border-l-primary"}`}
+                    >
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-border/60">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {isUnident ? (
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                          ) : (
+                            <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                          )}
+                          <span className="text-sm font-semibold truncate">{g.nome}</span>
+                        </div>
+                        <Badge variant="secondary" className="font-bold shrink-0">
+                          {g.leads.length} {g.leads.length === 1 ? "lead" : "leads"}
+                        </Badge>
+                      </div>
+                      <div className="divide-y divide-border/40">
+                        {g.leads.map((l) => (
+                          <div key={l.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                              <span className="text-sm font-medium truncate">{l.nome || "Sem nome"}</span>
+                              {l.origem && (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-normal">
+                                  {l.origem}
+                                </Badge>
+                              )}
+                              {l.motivo_pendencia && (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1.5 gap-0.5 border-amber-500/40 text-amber-700 dark:text-amber-300">
+                                  <PauseCircle className="h-2.5 w-2.5" /> Pausado
+                                </Badge>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 gap-1.5 shrink-0"
+                              onClick={() => setRepasseLead({ id: l.id, nome: l.nome || "Sem nome" })}
+                            >
+                              <UserPlus className="h-3 w-3" />
+                              Repassar
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
                 <p className="text-[10px] text-muted-foreground">
                   💡 Em domingo e feriado a roleta usa Dia Todo. De segunda a sábado, usa turnos normais.
                 </p>
               </div>
             </TabsContent>
+
           </Tabs>
 
           <div className="space-y-5 mt-5 pt-5 border-t border-border">
@@ -557,7 +598,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
               <div className="flex items-center gap-2">
                 <Checkbox id="include-unidentified" checked={includeUnidentified} onCheckedChange={(v) => setIncludeUnidentified(!!v)} />
                 <label htmlFor="include-unidentified" className="text-xs text-muted-foreground cursor-pointer">
-                  Incluir leads sem segmento
+                  Incluir leads sem empreendimento identificado
                 </label>
               </div>
             )}
@@ -575,6 +616,14 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
           </>
         )}
       </DialogContent>
+      <FilaCeoRepassarDialog
+        open={!!repasseLead}
+        onOpenChange={(v) => { if (!v) setRepasseLead(null); }}
+        leadId={repasseLead?.id ?? null}
+        leadNome={repasseLead?.nome ?? ""}
+        onDone={refetchLeads}
+      />
     </Dialog>
   );
+
 }

@@ -1,89 +1,71 @@
+## O que muda
 
-# Foco Corretores + Mapeador de Campanhas Meta
+Na Fila CEO, aba **Novos**, trocar a "PRÉVIA POR SEGMENTO" (S1/S3/S4) por uma listagem **agrupada por Empreendimento (produto)** — Casa Tua, Lake Baikal, Flow, etc. — com **um lead por linha** (nome + empreendimento + origem) e um **botão "Repassar" em cada linha** para atribuição manual imediata a um corretor. O restante do modal (aba Reengajamento, escolha de destino Roleta/Oferta Ativa, botão "Disparar N leads") continua igual.
 
-## Fundamentação (histórico 90 dias, dados do CRM)
+Escopo: apenas o arquivo `src/components/pipeline/FilaCeoDispatchModal.tsx` + 1 componente novo pra picker de corretor.
 
-**Oscilação de corretores**
-- 28 de 30 corretores rodaram em 3–4 segmentos nos últimos 90d; 16 nos 4.
-- Concorrência interna diária: S3 Alto Padrão 11 corretores/dia (pico 23), S1 Moradia 8,1, S2 Investimento 6,8, S4 MCMV 5,6.
-- Volume/produção pulverizados. Os únicos com produção consistente (Matheus, Jéssica) oscilaram menos.
+## Nova UI (aba Novos)
 
-**Fragmentação de campanhas Meta**
-- Casa Tua tem **18 campanhas / 54 conjuntos / 50 anúncios** distintos no CRM.
-- Terrace, Shift, Átrio, Vivid, Flow, Casa Menino Deus, Connect JW, Lake Baikal, Avulso somam dezenas de variantes.
-- **790 leads (21% dos 90d) caem em "Outros / não classificado"**.
+```text
+PRÉVIA POR EMPREENDIMENTO
 
-**Rastreabilidade mídia → venda**
-- 35 vendas em 90d; só 7 têm `lead_id` no negócio, e apenas 4 destas com campanha preenchida. Mídia (~R$ 5–7k/mês) hoje decidida sem custo por venda por campanha.
+▼ Casa Tua                                            2 leads
+  • João Silva      · Site               [Repassar]
+  • Maria Souza     · Meta Ads           [Repassar]
 
-## Objetivo
-1. Consolidar campanhas/conjuntos/anúncios Meta em empreendimento canônico.
-2. CEO/Gestor define, por corretor, quais empreendimentos ele atende.
-3. Credenciamento vira "Marcar Presença" + aprovação CEO — corretor recebe só leads dos empreendimentos alocados.
-4. Visibilidade real: performance por empreendimento (acumulada por corretor) e por campanha (para decidir mídia).
+▼ Lake Baikal                                         2 leads
+  • Pedro Alves     · Meta Ads           [Repassar]
+  • Ana Costa       · ImóvelWeb          [Repassar]
 
-## Fases
+▼ Flow                                                1 lead
+  • Carlos Dias     · Meta Ads           [Repassar]
 
-### Fase 1 — Empreendimentos canônicos + Mapeador Meta
-- Tabela `empreendimentos_canonicos` (nome, segmento_id → `roleta_segmentos`, ativo, ordem).
-- Tabela `empreendimento_aliases` (alias case-insensitive, empreendimento_id, tipo `campanha|conjunto|anuncio|formulario|empreendimento_texto|origem_detalhe`).
-- Coluna `pipeline_leads.empreendimento_canonico_id UUID` + trigger no INSERT/UPDATE resolvendo cascata: campanha → conjunto → anúncio → formulário → empreendimento_texto → origem_detalhe.
-- Backfill 180d.
-- Aba **"Mapeamento Meta"** na Roleta (CEO): lista strings distintas sem alias dos últimos 30d com contagem, dropdown do canônico, botão "Vincular" (grava alias + reprocessa leads via RPC).
-- Seed: canônicos iniciais + aliases das 18 variantes de Casa Tua e afins já observados nos 90d.
+▼ Sem empreendimento identificado                     N leads
+  • ...
+```
 
-### Fase 2 — Alocação por corretor
-- Tabela `corretor_alocacao`: `user_id` PK, `empreendimentos UUID[]`, `atualizado_por`, `atualizado_em`, `observacao`.
-- RPC `set_corretor_alocacao(user_id, empreendimentos[])` restrita a admin/gestor/ceo.
-- Segmento derivado dos empreendimentos.
+Grupos ordenados por: (1) empreendimento canônico ativo em ordem alfabética, (2) "Sem empreendimento" por último. Cada grupo é um card colapsável (default aberto), com contagem à direita.
 
-### Fase 3 — Página `/foco-corretores` com 2 abas
-**Aba "Alocação"** (default)
-- 1 linha por corretor: avatar + nome + equipe · chips de empreendimentos alocados · "+ Empreendimento" (multi-select canônicos ativos) · resumo `Leads 30d · Vis. realiz. · Vendas 30d` · alerta vermelho quando sem alocação.
-- Admin/CEO/diretor veem todo mundo agrupado por equipe; gestor só o seu time.
+Cada linha mostra: nome do lead · badge origem (se houver) · botão "Repassar" (ícone + label, `size="sm"`, `variant="outline"`).
 
-**Aba "Dados" (nova, esta requisição)**
-- **Matriz Corretor × Empreendimento** — uma linha por corretor, uma coluna por empreendimento canônico ativo, mais colunas de total.
-- Cada célula: `Leads · Vis. Agendadas · Vis. Realizadas · No-show · Vendas` (formato compacto com tooltip detalhado).
-- Filtros no topo: período (7d / 30d / 90d / mês atual / customizado — default 30d), equipe (CEO/diretor), empreendimento específico.
-- Linha "Total" ao final consolidando por empreendimento; coluna "Total" no fim de cada corretor.
-- Heatmap opcional na coluna de conversão (Lead→Visita e Visita→Realizada) pra saltar aos olhos quem converte no produto.
-- Export CSV do que estiver filtrado.
-- Fonte: `pipeline_leads` (leads recebidos) + `visitas` (agendada/realizada/no-show) + `negocios` (vendas), agrupados por `empreendimento_canonico_id` e `corretor_id`. **Números acumulam sozinhos** assim que o alias novo for mapeado, sem tabela intermediária.
+## Fluxo "Repassar" manual
 
-### Fase 4 — Credenciamento simplificado + roleta filtrada
-- `RoletaCorretorView.tsx`: substitui selects de segmento por botão único **"Marcar Presença"**, com read-only dos empreendimentos que vai receber.
-- Fluxo: presença → `pendente` → CEO aprova → `aprovado`.
-- Sem alocação = botão desabilitado com "Peça ao seu gestor pra definir seus produtos".
-- Função de distribuição filtra `alocacao.empreendimentos @> ARRAY[lead.empreendimento_canonico_id]` + turno.
-- Lead sem canônico ou sem corretor ativo naquele produto → `pendente_distribuicao` (Fila do CEO) com motivo `sem_match_empreendimento`.
+Clicar em "Repassar" abre um **CorretorPickerDialog** (novo, leve) sobre o modal:
 
-### Fase 5 — Fila do CEO: sem match + repasse manual
-- Sub-seção "Sem match de empreendimento" na Fila do CEO, com botão "Repassar" (popover de corretores ativos hoje).
-- RPC `repassar_lead_manual(lead_id, corretor_id)` registra em `distribuicao_historico` com origem `repasse_manual_ceo`.
+- Lista corretores ativos (`team_members` where `status='ativo'`), busca por nome.
+- Ao confirmar: `UPDATE pipeline_leads SET corretor_id=?, aceite_status='aceito', aceito_em=now(), motivo_pendencia=null WHERE id=?` — mesmo padrão usado hoje pela política de "atribuição manual" (já existente no memory: `manual-attribution-policy`, seta lead como aceito, bypassa roleta).
+- Registra em `audit_log` (`modulo='roleta'`, `acao='fila_ceo_repasse_manual'`).
+- Toast de sucesso, refetch da lista do modal e invalidação de `pending-leads` / `ceo-dashboard`.
 
-### Fase 6 — Painel financeiro (dashboard CEO)
-- Card **Performance por Empreendimento × Campanha × Conjunto × Anúncio** em `/ceo`.
-- Colunas: Leads · Visitas · Vendas · VGV · Conv. Lead→Visita · Conv. Lead→Venda; drilldown por conjunto/anúncio; filtro de período.
+Sem RPC nova — usar update direto igual `PipelineTransferDialog` já faz.
 
-## Escopo NÃO incluído
-- Não puxa spend automático da Graph API do Meta (etapa futura).
-- Não muda regras de presença/roleta noturna nem regime seg-sex/sáb/dom.
-- Não cria alocação inicial automática — CEO/gestor define.
+## Dados
 
-## Detalhes técnicos
-- Migrations (≤2/dia, 08–19h BRT), na ordem: (a) `empreendimentos_canonicos` + `empreendimento_aliases` + GRANTs + RLS + seed; (b) coluna + trigger + backfill 180d em `pipeline_leads`; (c) `corretor_alocacao` + RPC `set_corretor_alocacao` + `repassar_lead_manual`; (d) função de distribuição.
-- View `v_corretor_empreendimento_performance` (agregada por `corretor_id`, `empreendimento_canonico_id`, faixa temporal) pra alimentar a aba Dados sem repetir SQL no frontend.
-- Sem `_v2`/`_novo`. Arquivos ≤500 linhas: `MapeamentoMetaTab.tsx`, `AliasVincularDialog.tsx`, `FocoCorretoresPage.tsx`, `FocoAlocacaoTab.tsx`, `FocoDadosTab.tsx`, `CorretorFocoRow.tsx`, `EmpreendimentoMultiSelect.tsx`, `FilaCeoSemMatchList.tsx`, `PerformanceEmpreendimentoCampanhaCard.tsx`.
-- BRT em toda janela temporal.
+Fonte por lead: usa `empreendimento_canonico_id` (resolvido pelo trigger existente) → nome via `empreendimentos_canonicos`. Fallback pro texto bruto `empreendimento` quando canônico ainda não resolveu. Quando nenhum dos dois, cai em "Sem empreendimento identificado".
 
-## Ordem de execução (validando no preview a cada fase)
-1. Fase 1 — canônicos + mapeador Meta + backfill.
-2. Fase 2 + 3 (Alocação) — CEO/gestor define foco.
-3. Fase 3 (Dados) — matriz por corretor × empreendimento.
-4. Fase 4 — roleta filtrada.
-5. Fase 5 — repasse manual.
-6. Fase 6 — painel Empreendimento × Campanha.
+Ajuste no `SELECT` do `pipeline_leads` já existente: adicionar `empreendimento_canonico_id`. Fetch adicional único de `empreendimentos_canonicos (id, nome)` para mapear nomes.
 
-## Após aprovação
-Mando texto objetivo e curto (WhatsApp) explicando o novo fluxo pro time de corretores validarem antes do rollout.
+Lógica antiga de `resolveSegmentoNome` / `SEGMENTO_COLORS` / `preview por segmento` é removida da aba Novos (deixa de ser usada). `unidentifiedCount` continua existindo (agora = leads sem empreendimento identificado) e alimenta o mesmo checkbox "Incluir leads sem segmento" (rótulo passa a "Incluir leads sem empreendimento").
+
+## Melhorias aproveitadas
+
+1. Contagem por grupo já visível (`N leads`), evitando o antigo "Casa Tua (2)".
+2. Botão "Repassar" ganha ícone `UserPlus` e fica desabilitado durante submit.
+3. Card do grupo tem borda esquerda colorida discreta (indigo/primary) só pra separação visual — sem cor por segmento.
+4. Se o lead já tem `motivo_pendencia` (empreendimento pausado), badge pequeno `⏸️ Pausado` na linha, pra CEO saber por que caiu ali.
+5. Log de auditoria explícito em cada repasse (rastreável).
+
+## Fora do escopo
+
+- Aba Reengajamento (mantida como está).
+- Bloco "Disparar novos leads para onde?" (roleta/oferta ativa) e botão em massa (mantidos).
+- Nenhuma migration nova.
+
+## Arquivos
+
+- `src/components/pipeline/FilaCeoDispatchModal.tsx` — reescreve `TabsContent value="novos"` + `useMemo preview` + `SELECT`.
+- `src/components/pipeline/FilaCeoRepassarDialog.tsx` — novo, ~120 linhas, dialog picker de corretor.
+
+## Validação
+
+Ao final: abrir a Fila CEO em preview, conferir agrupamento por empreendimento, testar "Repassar" com um lead de teste (lead → corretor alvo), verificar audit_log e sumiço da linha da fila. Roleta em massa continua funcionando (regressão check no botão "Disparar N leads").
