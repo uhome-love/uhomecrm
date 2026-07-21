@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { X, Check, Phone, PhoneOff, MessageSquare, CalendarClock, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getPresetsForStage, applyPresetToTarefa, PRESET_OUTRO_ID, type TaskPreset } from "@/lib/taskPresets";
 
 interface CallFocusOverlayProps {
   isOpen: boolean;
