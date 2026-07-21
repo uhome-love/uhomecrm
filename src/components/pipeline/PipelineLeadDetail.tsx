@@ -182,6 +182,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [tipoDescarte, setTipoDescarte] = useState<string>("reengajavel");
   const [inativando, setInativando] = useState(false);
   const [nextActionOpen, setNextActionOpen] = useState(false);
+  const [autoCompleteTaskId, setAutoCompleteTaskId] = useState<string | null>(null);
   const [scheduleVisitOpen, setScheduleVisitOpen] = useState(false);
   const { createVisita } = useVisitas();
   const [isCallOpen, setIsCallOpen] = useState(false);
@@ -521,14 +522,22 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       )}
 
 
+      {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) — PRIMEIRO card do drawer */}
+      <DrawerProximaAcao
+        nextTask={nextTask}
+        proximaAcaoTexto={lead.proxima_acao}
+        pendingCount={pendingTasksList.length}
+        onComplete={(taskId) => { setActiveTab("tarefas"); setAutoCompleteTaskId(taskId); }}
+        onSeeAll={() => setActiveTab("tarefas")}
+        onCreateTask={() => setNextActionOpen(true)}
+      />
+
       {/* Aviso de cadência Sem Contato (apenas nessa etapa) */}
       <CadenciaSemContatoCard leadId={lead.id} stageTipo={currentStage?.tipo} leadNome={lead.nome} leadEmpreendimento={(lead as any).empreendimento} />
 
       {/* Contador de estagnação (demais etapas com config) */}
       <EstagnacaoStatusCard leadId={lead.id} stageTipo={currentStage?.tipo} />
 
-      {/* Caixa PRÓXIMA AÇÃO (gradient indigo→roxo) — no topo do modal */}
-      <DrawerProximaAcao nextTask={nextTask} proximaAcaoTexto={lead.proxima_acao} pendingCount={pendingTasksList.length} />
 
       {/* Checklist de Qualificação — só visível quando o lead está na etapa Qualificação */}
       {currentStage?.tipo === "qualificacao" && (
@@ -790,7 +799,10 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 onDeleteTarefa={leadData.deleteTarefa}
                 onReload={leadData.reload}
                 onNovaTarefa={() => setNextActionOpen(true)}
+                autoCompleteTaskId={autoCompleteTaskId}
+                onAutoCompleteConsumed={() => setAutoCompleteTaskId(null)}
               />
+
             </TabsContent>
 
             {/* ===== TAB: HISTÓRICO ===== */}

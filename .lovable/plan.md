@@ -1,63 +1,80 @@
+# Plano — Card "Próxima Ação" (v2) + Presets na Central de Tarefas
 
-# Fase B — Presets de Tarefa Manual
+Duas frentes independentes, entregues em sequência. Só backend/UI de frontend — sem migration.
 
-Objetivo: acabar com "digitar descrição da próxima tarefa no braço". O corretor escolhe um **preset** (chip) e o sistema preenche descrição, tipo, prazo default e — quando fizer sentido — atualiza o `flag_status` do lead automaticamente. Isso elimina o campo "Status do atendimento" redundante em Qualificação e Negociação.
+---
 
-## 1) Catálogo canônico (fonte única)
+## Frente 1 · Card "Próxima Ação" no topo do drawer do lead
 
-Novo arquivo `src/lib/taskPresets.ts` — 10 presets, agrupados por etapa:
+### Situação atual
+- `DrawerProximaAcao` já existe (`src/components/pipeline/drawer/DrawerProximaAcao.tsx`) e é renderizado no drawer, mas: (a) fica DEPOIS dos cards de cadência/estagnação, (b) não tem botões de ação, (c) estado vazio só exibe texto.
 
-```text
-Qualificação
-  • Alinhar perfil          → tipo=ligacao,  +1 dia útil, syncStatus=alinhamento_perfil
-  • Buscar imóveis          → tipo=tarefa,   +2 dias,     syncStatus=busca
-  • Enviar imóveis          → tipo=whatsapp, +1 dia,      syncStatus=envio_opcoes
-  • Follow-up               → tipo=whatsapp, +2 dias,     syncStatus=follow_up
-  • Alinhar visita          → tipo=ligacao,  +1 dia,      syncStatus=alinhando_visita
+### Mudanças
+1. **Reordenar** em `PipelineLeadDetail.tsx`: mover `<DrawerProximaAcao ... />` para ser o PRIMEIRO card do `bodyNode` (acima de `CadenciaSemContatoCard` e `EstagnacaoStatusCard`). A sugestão de etapa do gestor continua acima de tudo (é um aviso, não um card).
+2. **Adicionar 2 botões** dentro de `DrawerProximaAcao` quando há tarefa:
+   - **✓ Concluir agora** (primary) → chama o mesmo handler já existente no drawer para abrir o `TaskCompletionDialog` da tarefa mais próxima. Passar via prop `onComplete(taskId)`.
+   - **Ver todas (N)** (ghost, só aparece se `pendingCount > 1`) → chama prop `onSeeAll()` que troca para a aba "Tarefas" do drawer e faz scroll.
+3. **Estado vazio**: substituir texto italico atual por card cinza claro + botão "➕ Criar tarefa" que chama prop `onCreateTask()` (abre o `NextActionModal` já existente).
+4. **Badge âmbar** "⚠ N tarefas pendentes" já existe — mantém.
+5. Sem "Adiar" (já removido do sistema, nada a fazer).
 
-Aquecimento
-  • Retomar contato         → tipo=whatsapp, prazo=prazo_aquecimento (30/60/90), syncStatus=null
-
-Negociação
-  • Enviar proposta         → tipo=tarefa,   +1 dia,      syncStatus=proposta_enviada
-  • Cobrar retorno proposta → tipo=whatsapp, +2 dias,     syncStatus=null
-  • Acompanhar aprovação    → tipo=tarefa,   +3 dias,     syncStatus=aprovacao_bancaria
-
-Geral (todas as etapas exceto Visita/Contrato)
-  • Outro (livre)           → abre input de texto tradicional
+### Contrato do componente (novo)
+```ts
+interface Props {
+  nextTask: NextTaskLike | null;
+  proximaAcaoTexto?: string | null;
+  pendingCount?: number;
+  onComplete?: (taskId: string) => void;   // NOVO
+  onSeeAll?: () => void;                   // NOVO
+  onCreateTask?: () => void;               // NOVO
+}
 ```
 
-Cada preset é `{ id, label, icon, tipo, prazoDias, syncFlagKey, syncFlagValue, etapas[] }`. Uma única fonte, importada pelo popup de conclusão e por qualquer botão "+ Nova tarefa" manual.
+### Wiring em `PipelineLeadDetail.tsx`
+- `onComplete`: reusar o handler já existente que abre `TaskCompletionDialog` para uma tarefa (mesmo caminho que a lista de tarefas pendentes usa).
+- `onSeeAll`: `setActiveTab("tarefas")` (aba já existente) — se não houver tab, fazer scroll até `#pending-tasks-anchor`.
+- `onCreateTask`: `setNextActionOpen(true)` (mesmo botão "Nova tarefa" já existente no header).
 
-## 2) UI — Popup de conclusão (CompletionForm)
+### Arquivos alterados
+- `src/components/pipeline/drawer/DrawerProximaAcao.tsx` — adicionar botões, estado vazio com CTA.
+- `src/components/pipeline/PipelineLeadDetail.tsx` — reordenar card + passar as 3 props.
 
-Na seção "Agendar próxima tarefa":
-- Substituir o `Select` de tipo + textarea livre por uma **grade de chips** com os presets da etapa atual do lead.
-- Ao clicar em um chip: preenche `descricao`, `tipo` e `data_prevista` (com hora default 09:00 BRT). Continua editável.
-- Chip "Outro" volta ao modo atual (texto livre).
-- Se o preset tiver `syncFlagValue`, ao concluir a tarefa o `flag_status[syncFlagKey]` do lead é atualizado no mesmo update.
+---
 
-## 3) Remoção do "Status do atendimento" redundante
+## Frente 2 · Presets manuais na Central de Tarefas (`MinhasTarefas.tsx`)
 
-- Em Qualificação e Negociação, o bloco "Status da etapa (obrigatório)" do popup de conclusão **sai**. O status passa a vir do preset escolhido.
-- Se o corretor escolher "Outro", pedimos o status por pill como hoje (fallback, sem quebra).
-- No `QualificacaoEtapaCard` do drawer: o pill de status atual continua **visível como leitura** (mostra o que a última tarefa/preset gravou). Editar continua possível pelo Checklist.
+### Situação atual
+- Página ativa é `src/pages/MinhasTarefas.tsx` (roteamento em `pageRegistry.ts`).
+- Dialog "➕ Nova Tarefa" (linhas 1149-1218) tem: busca de lead, tipo, data, hora, observação. Sem presets.
+- `src/lib/taskPresets.ts` já expõe `getPresetsForStage()` e `applyPresetToTarefa()` — mesma lógica do drawer.
 
-## 4) Fase B.1 — Checklist bug (item 3 do usuário)
+### Mudanças
+1. Ao selecionar um lead na busca, resolver o **stage_id → tipo da etapa** (query rápida em `pipeline_stages` OU incluir `stage_tipo` no `searchLeads` que já busca leads).
+2. Se `getPresetsForStage(stageTipo).length > 0`, renderizar acima do bloco "Tipo" um grid de chips (mesmo visual do drawer/CompletionForm).
+3. Clicar em chip → `applyPresetToTarefa(preset)` → preenche `novoTipo`, `novoData`, `novoHora`, `novoObs`. Campos continuam editáveis.
+4. Guardar o preset selecionado em state (`selectedPreset`). Ao salvar (`handleCriarTarefa`), se houver `preset.syncFlagKey`, aplicar em `pipeline_leads.flag_status[key] = value` — mesmo padrão já usado em `NextActionModal.tsx` (copiar a lógica de sync).
+5. Chip "Outro (livre)" limpa o preset e volta ao modo manual.
+6. Etapa "visita" mantém bloqueio já existente na criação manual (não altero — `getPresetsForStage("visita")` retorna vazio e nada aparece; a validação anti-visita atual permanece).
 
-Investigar e corrigir por que o checklist "não está funcionando direito" em Qualificação no drawer. Provável causa: com a Fase A hidratamos só ao abrir, mas o toggle dos chips de bairros/tipo pode não estar disparando `onChange` no formato esperado. Fazer sweep no `QualificacaoChecklistCard` — garantir que cada campo (faixa_valor, prazo_decisao, forma_pagamento, regioes, tipos) marca `dirty` e persiste no `handleSave`.
+### Arquivos alterados
+- `src/pages/MinhasTarefas.tsx` — adicionar state `selectedLeadStageTipo` + `selectedPreset`, buscar stage_tipo junto do lead, renderizar chips no dialog, aplicar `flag_status` no save.
 
-## Escopo fora desta fase
-- Não mexer no fluxo de Visita (fixo, automático).
-- Não mexer em Sem Contato (sem tarefa manual).
-- Não criar edge function nova.
-- Sem migração de banco — `flag_status` já é JSONB flexível.
+Sem novos arquivos, sem migration, sem alterar `taskPresets.ts`.
 
-## Ordem de entrega
-1. `taskPresets.ts` + tipos.
-2. Refactor da seção "Próxima tarefa" no `CompletionForm.tsx`.
-3. Remover bloco "Status da etapa" redundante e cabear syncStatus no save.
-4. Bugfix do `QualificacaoChecklistCard`.
-5. Validar ao vivo com lead de teste em Qualificação, Aquecimento e Negociação (sempre cancelando ao fim).
+---
 
-Confirma que posso seguir?
+## Ordem de execução
+
+1. **Frente 1** (Próxima Ação) — mais isolado e visível. Validar ao vivo abrindo drawer de qualquer lead com tarefa pendente e sem tarefa.
+2. **Frente 2** (Presets em MinhasTarefas) — após validação da Frente 1.
+
+## Validação (ao vivo, sem alterar leads reais)
+
+- **Frente 1**: abrir drawer de lead com tarefa atrasada → card no topo, texto vermelho, botão Concluir abre popup, Cancelar sem alterar. Lead sem tarefa → estado vazio com CTA. Lead com 2+ tarefas → badge âmbar aparece.
+- **Frente 2**: em /minhas-tarefas → Nova Tarefa → buscar lead em Qualificação → chips aparecem, clicar em "Alinhar perfil" preenche campos, Cancelar sem salvar. Buscar lead em Sem Contato → chips não aparecem.
+
+## Não-escopo (fica para próxima)
+
+- Presets no `TarefasPage.tsx` legado (não roteado).
+- Presets na aba "Nova tarefa de Negócio" (fluxo separado).
+- Alteração visual dos chips (herda visual atual do drawer).

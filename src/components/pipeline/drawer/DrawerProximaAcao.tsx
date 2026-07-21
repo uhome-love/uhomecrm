@@ -1,9 +1,11 @@
 import { parseDateBRTSafe } from "@/lib/utils";
 import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Sparkles } from "lucide-react";
+import { CheckCircle2, ListChecks, Plus, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface NextTaskLike {
+  id?: string;
   tipo?: string | null;
   titulo?: string | null;
   descricao?: string | null;
@@ -16,6 +18,12 @@ interface Props {
   proximaAcaoTexto?: string | null;
   /** total de tarefas pendentes do lead — se >1 exibe aviso */
   pendingCount?: number;
+  /** Concluir a próxima tarefa (abre popup na aba Tarefas) */
+  onComplete?: (taskId: string) => void;
+  /** Ver todas as tarefas (troca para aba Tarefas) */
+  onSeeAll?: () => void;
+  /** Criar nova tarefa (abre NextActionModal) — usado no estado vazio */
+  onCreateTask?: () => void;
 }
 
 /** Detecta o tipo canônico (ligar/whatsapp/email/visita) a partir do tipo+titulo da tarefa. */
@@ -40,20 +48,40 @@ const META: Record<NonNullable<ReturnType<typeof parseNextActionType>>, { icon: 
 };
 
 /**
- * Caixa destacada "PRÓXIMA AÇÃO" com gradient indigo→roxo (Fix Drawer Wide v3).
- * Estado vazio em cinza claro se não houver próxima ação.
+ * Caixa destacada "PRÓXIMA AÇÃO" com gradient indigo→roxo.
+ * Estado vazio em cinza claro com CTA para criar tarefa.
  */
-export default function DrawerProximaAcao({ nextTask, proximaAcaoTexto, pendingCount }: Props) {
+export default function DrawerProximaAcao({
+  nextTask,
+  proximaAcaoTexto,
+  pendingCount,
+  onComplete,
+  onSeeAll,
+  onCreateTask,
+}: Props) {
   const multiplePending = (pendingCount ?? 0) > 1;
+
+  // Estado vazio — sem próxima tarefa
   if (!nextTask) {
     return (
       <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
           Próxima ação
         </div>
-        <div className="text-sm text-muted-foreground italic">
+        <div className="text-sm text-muted-foreground italic mb-2">
           Sem próxima ação definida
         </div>
+        {onCreateTask && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs gap-1.5"
+            onClick={onCreateTask}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Criar tarefa
+          </Button>
+        )}
       </div>
     );
   }
@@ -98,6 +126,32 @@ export default function DrawerProximaAcao({ nextTask, proximaAcaoTexto, pendingC
       {(absoluto || relativo) && (
         <div className={`text-sm mt-1 ${overdue ? "text-red-600 dark:text-red-400 font-medium" : "text-muted-foreground"}`}>
           {absoluto}{absoluto && relativo ? " · " : ""}{relativo}
+        </div>
+      )}
+
+      {(onComplete || onSeeAll) && (
+        <div className="flex items-center gap-2 mt-2.5">
+          {onComplete && nextTask.id && (
+            <Button
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => onComplete(nextTask.id!)}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Concluir agora
+            </Button>
+          )}
+          {onSeeAll && multiplePending && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 text-xs gap-1.5"
+              onClick={onSeeAll}
+            >
+              <ListChecks className="h-3.5 w-3.5" />
+              Ver todas ({pendingCount})
+            </Button>
+          )}
         </div>
       )}
     </div>

@@ -2,7 +2,7 @@
 // DrawerTasksTab — Aba Tarefas editorial v4
 // Agrupa por prazo: atrasadas / hoje / amanhã / esta semana / próximas
 // ─────────────────────────────────────────────────────────────────
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -39,6 +39,10 @@ interface Props {
   onReload: () => void;
   onNovaTarefa: () => void;
   loading?: boolean;
+  /** Se preenchido, abre automaticamente o dialog de conclusão para essa tarefa. */
+  autoCompleteTaskId?: string | null;
+  /** Callback disparado após aplicarmos o autoCompleteTaskId (para o pai limpar o estado). */
+  onAutoCompleteConsumed?: () => void;
 }
 
 type TipoCanon = "call" | "msg" | "followup" | "visit" | "outro";
@@ -124,6 +128,8 @@ export default function DrawerTasksTab({
   onReload,
   onNovaTarefa,
   loading = false,
+  autoCompleteTaskId = null,
+  onAutoCompleteConsumed,
 }: Props) {
   const isVisitaStage = stageTipo === "visita";
   const queryClient = useQueryClient();
@@ -144,6 +150,14 @@ export default function DrawerTasksTab({
   
   const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
   const [showConcluidas, setShowConcluidas] = useState(false);
+
+  // Abre auto-completion vinda do card "Próxima ação" no topo do drawer
+  useEffect(() => {
+    if (!autoCompleteTaskId) return;
+    const t = tarefas.find((x) => x.id === autoCompleteTaskId && x.status === "pendente");
+    if (t) setCompletingTarefa(t);
+    onAutoCompleteConsumed?.();
+  }, [autoCompleteTaskId, tarefas, onAutoCompleteConsumed]);
 
   async function handleCompletionConfirm(payload: CompletionPayload) {
     if (!completingTarefa) return;
