@@ -90,12 +90,21 @@ export function useUsuariosCentral() {
       });
 
       // Non-privileged (gerente): scope to own team
+      console.log("[useUsuariosCentral]", {
+        profiles: profRes.data?.length,
+        roles: rolesRes.data?.length,
+        team: tmRes.data?.length,
+        userId: user?.id,
+        isPrivileged,
+        listBefore: list.length,
+      });
       if (!isPrivileged && user?.id) {
         list = list.filter((u) => u.gerente_id === user.id || u.user_id === user.id);
       }
 
       setRows(list);
     } catch (err: any) {
+      console.error("[useUsuariosCentral] error", err);
       setError(err?.message || "Erro ao carregar usuários");
     } finally {
       setLoading(false);
