@@ -11455,6 +11455,10 @@ export type Database = {
         Args: { p_corretor_id: string; p_lead_id: string; p_motivo?: string }
         Returns: Json
       }
+      remover_alias_empreendimento: {
+        Args: { p_alias_id: string }
+        Returns: undefined
+      }
       renew_lead_lock: {
         Args: {
           p_corretor_id: string
@@ -11577,6 +11581,10 @@ export type Database = {
       }
       vault_secret_upsert: {
         Args: { p_name: string; p_secret: string }
+        Returns: string
+      }
+      vincular_alias_empreendimento: {
+        Args: { p_alias: string; p_empreendimento_id: string; p_tipo: string }
         Returns: string
       }
     }
