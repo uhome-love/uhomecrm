@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { dateToBRT } from "@/lib/utils";
+import { getPresetsForStage, applyPresetToTarefa, PRESET_OUTRO_ID, type TaskPreset } from "@/lib/taskPresets";
 
 interface WhatsAppFocusFlowProps {
   isOpen: boolean;
@@ -99,6 +100,27 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editedBody, setEditedBody] = useState("");
 
+  // Presets Fase B — chips por etapa (Qualif/Aquec/Negoc)
+  const stagePresets = useMemo(() => getPresetsForStage(stageTipo), [stageTipo]);
+  const hasPresets = stagePresets.length > 0;
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const selectedPreset = useMemo<TaskPreset | null>(
+    () => stagePresets.find((p) => p.id === selectedPresetId) ?? null,
+    [stagePresets, selectedPresetId],
+  );
+  const freeMode = !hasPresets || selectedPresetId === PRESET_OUTRO_ID;
+
+  const handlePickPreset = (p: TaskPreset) => {
+    setSelectedPresetId(p.id);
+    if (p.id === PRESET_OUTRO_ID) return;
+    const payload = applyPresetToTarefa(p);
+    setTaskType(payload.tipo);
+    setTaskDate(payload.vence_em);
+    setTaskTime(payload.hora_vencimento || "10:00");
+    if (payload.obs && !obs.trim()) setObs(payload.obs);
+  };
+
+
   const nome = lead.nome?.split(" ")[0] || "cliente";
   const emp = lead.empreendimento || "nosso empreendimento";
 
@@ -150,9 +172,16 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
 
   const handleSaveTask = async () => {
     if (!user) return;
+    if (hasPresets && !selectedPresetId) {
+      toast.error("Escolha um tipo de tarefa");
+      return;
+    }
     setSaving(true);
     try {
-      const titulo = `${TASK_TYPES.find(t => t.value === taskType)?.label || taskType} — ${lead.nome}`;
+      const activePreset = selectedPreset && selectedPreset.id !== PRESET_OUTRO_ID ? selectedPreset : null;
+      const titulo = activePreset
+        ? activePreset.label
+        : `${TASK_TYPES.find(t => t.value === taskType)?.label || taskType} — ${lead.nome}`;
       await supabase.from("pipeline_tarefas").insert({
         pipeline_lead_id: lead.id,
         titulo,
@@ -165,14 +194,24 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
         created_by: user.id,
         responsavel_id: user.id,
       } as any);
-      // Nota: NÃO inserimos em pipeline_atividades para "Tarefa criada" —
-      // o evento é sintetizado a partir de pipeline_tarefas em LeadHistoricoTab.
 
-      // Update lead proxima_acao
+      // Sync flag_status quando preset carrega status da etapa.
+      let flagPatch: Record<string, string> | null = null;
+      if (activePreset?.syncFlagKey && activePreset?.syncFlagValue) {
+        const { data: leadRow } = await supabase
+          .from("pipeline_leads")
+          .select("flag_status")
+          .eq("id", lead.id)
+          .maybeSingle();
+        const currentFlags = ((leadRow as any)?.flag_status ?? {}) as Record<string, string>;
+        flagPatch = { ...currentFlags, [activePreset.syncFlagKey]: activePreset.syncFlagValue };
+      }
+
       await supabase.from("pipeline_leads").update({
         proxima_acao: titulo,
         data_proxima_acao: taskDate,
         updated_at: new Date().toISOString(),
+        ...(flagPatch ? { flag_status: flagPatch } : {}),
       } as any).eq("id", lead.id);
       toast.success("Tarefa criada ✅");
       onRefresh();
@@ -193,11 +232,13 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
     setFreeText("");
     setEditingIdx(null);
     setEditedBody("");
+    setSelectedPresetId(null);
     const d = new Date();
     d.setDate(d.getDate() + 1);
     setTaskDate(d.toISOString().split("T")[0]);
     onClose();
   };
+
 
   if (!isOpen) return null;
 
@@ -444,22 +485,64 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#52525b", display: "block", marginBottom: 8 }}>
                   📋 Próxima tarefa
                 </label>
-                <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                  {TASK_TYPES.map(t => (
-                    <button
-                      key={t.value}
-                      onClick={() => setTaskType(t.value)}
-                      className={cn(
-                        "text-[11px] px-3 py-1.5 rounded-md border transition-colors font-semibold",
-                        taskType === t.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-border hover:border-primary/50"
-                      )}
-                    >
-                      {t.emoji} {t.label}
-                    </button>
-                  ))}
-                </div>
+                {hasPresets ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                    {stagePresets.map((p) => {
+                      const Icon = p.Icon;
+                      const active = selectedPresetId === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => handlePickPreset(p)}
+                          className={cn(
+                            "text-[11px] px-3 py-1.5 rounded-full border transition-colors font-semibold inline-flex items-center gap-1",
+                            active
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background border-border hover:border-primary/50",
+                          )}
+                        >
+                          <Icon className="h-3 w-3" />
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                    {TASK_TYPES.map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => setTaskType(t.value)}
+                        className={cn(
+                          "text-[11px] px-3 py-1.5 rounded-md border transition-colors font-semibold",
+                          taskType === t.value
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:border-primary/50"
+                        )}
+                      >
+                        {t.emoji} {t.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {hasPresets && freeMode && (
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                    {TASK_TYPES.map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => setTaskType(t.value)}
+                        className={cn(
+                          "text-[11px] px-3 py-1.5 rounded-md border transition-colors font-semibold",
+                          taskType === t.value
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:border-primary/50"
+                        )}
+                      >
+                        {t.emoji} {t.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 8 }}>
                   <Input type="date" className="h-8 text-[12px] flex-1" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} />
                   <Input type="time" className="h-8 text-[12px] w-28" value={taskTime} onChange={(e) => setTaskTime(e.target.value)} />

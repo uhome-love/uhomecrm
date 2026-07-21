@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { X, Check, Phone, PhoneOff, MessageSquare, CalendarClock, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getPresetsForStage, applyPresetToTarefa, PRESET_OUTRO_ID, type TaskPreset } from "@/lib/taskPresets";
 
 interface CallFocusOverlayProps {
   isOpen: boolean;
@@ -123,6 +125,30 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
   const [novaEtapaSelecionada, setNovaEtapaSelecionada] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
+  // Presets Fase B — chips por etapa
+  const stagePresets = useMemo(() => getPresetsForStage(stageTipo), [stageTipo]);
+  const hasPresets = stagePresets.length > 0;
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const selectedPreset = useMemo<TaskPreset | null>(
+    () => stagePresets.find((p) => p.id === selectedPresetId) ?? null,
+    [stagePresets, selectedPresetId],
+  );
+
+  const TIPO_TO_LABEL: Record<string, string> = {
+    ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up", proposta: "Proposta",
+  };
+
+  const handlePickPreset = (p: TaskPreset) => {
+    setSelectedPresetId(p.id);
+    if (p.id === PRESET_OUTRO_ID) return;
+    const payload = applyPresetToTarefa(p);
+    setTarefaTipo(TIPO_TO_LABEL[payload.tipo] || "Ligar");
+    setTarefaData(payload.vence_em);
+    setTarefaHora(payload.hora_vencimento || "11:00");
+    if (payload.obs && !observacao.trim()) setObservacao(payload.obs);
+  };
+
+
   const primeiroNome = lead.nome.split(" ")[0];
   const emp = lead.empreendimento || "empreendimento";
 
@@ -156,6 +182,10 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
 
   const handleSalvar = async () => {
     if (!user?.id) return;
+    if (hasPresets && !selectedPresetId) {
+      toast.error("Escolha um tipo de tarefa");
+      return;
+    }
     setSalvando(true);
     try {
       await supabase.from("pipeline_atividades").insert({
@@ -166,16 +196,35 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
         created_by: user.id,
       });
 
+      const activePreset = selectedPreset && selectedPreset.id !== PRESET_OUTRO_ID ? selectedPreset : null;
+
+      // flag_status sync
+      let flagPatch: Record<string, string> | null = null;
+      if (activePreset?.syncFlagKey && activePreset?.syncFlagValue) {
+        const { data: leadRow } = await supabase
+          .from("pipeline_leads")
+          .select("flag_status")
+          .eq("id", lead.id)
+          .maybeSingle();
+        const currentFlags = ((leadRow as any)?.flag_status ?? {}) as Record<string, string>;
+        flagPatch = { ...currentFlags, [activePreset.syncFlagKey]: activePreset.syncFlagValue };
+      }
+
       await supabase.from("pipeline_leads")
-        .update({ ultima_acao_at: new Date().toISOString() })
+        .update({
+          ultima_acao_at: new Date().toISOString(),
+          ...(flagPatch ? { flag_status: flagPatch } : {}),
+        } as any)
         .eq("id", lead.id);
 
       if (tarefaTipo && tarefaData) {
         const venceEm = new Date(`${tarefaData}T${tarefaHora}:00`);
+        const titulo = activePreset ? activePreset.label : `${tarefaTipo} — ${lead.nome}`;
         await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: lead.id,
           tipo: tarefaTipo.toLowerCase(),
-          titulo: `${tarefaTipo} — ${lead.nome}`,
+          titulo,
+          descricao: observacao || null,
           status: "pendente",
           vence_em: venceEm.toISOString(),
           responsavel_id: user.id,
@@ -200,6 +249,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
       setSalvando(false);
     }
   };
+
 
   if (!isOpen) return null;
 
@@ -335,31 +385,58 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
             <div className="space-y-2">
               <div>
                 <label className="text-xs font-medium text-foreground">Próxima tarefa</label>
-                <p className="text-[10px] text-muted-foreground">(obrigatório para atualizar o lead)</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {hasPresets ? "Escolha um preset da etapa" : "(obrigatório para atualizar o lead)"}
+                </p>
               </div>
-              <div className="flex gap-1.5">
-                {["Ligar", "WhatsApp", "Follow-up"].map(tipo => (
-                  <button
-                    key={tipo}
-                    onClick={() => setTarefaTipo(tipo)}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                    style={{
-                      background: tarefaTipo === tipo ? "hsl(var(--primary))" : "hsl(var(--muted))",
-                      color: tarefaTipo === tipo ? "#fff" : "hsl(var(--foreground))",
-                    }}
-                  >
-                    {tipo === "Ligar" && <Phone className="h-3 w-3 inline mr-1" />}
-                    {tipo === "WhatsApp" && <MessageSquare className="h-3 w-3 inline mr-1" />}
-                    {tipo === "Follow-up" && <CalendarClock className="h-3 w-3 inline mr-1" />}
-                    {tipo}
-                  </button>
-                ))}
-              </div>
+              {hasPresets ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {stagePresets.map((p) => {
+                    const Icon = p.Icon;
+                    const active = selectedPresetId === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => handlePickPreset(p)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-xs font-medium transition-colors inline-flex items-center gap-1 border",
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted border-transparent hover:border-primary/40",
+                        )}
+                      >
+                        <Icon className="h-3 w-3" />
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex gap-1.5">
+                  {["Ligar", "WhatsApp", "Follow-up"].map(tipo => (
+                    <button
+                      key={tipo}
+                      onClick={() => setTarefaTipo(tipo)}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                      style={{
+                        background: tarefaTipo === tipo ? "hsl(var(--primary))" : "hsl(var(--muted))",
+                        color: tarefaTipo === tipo ? "#fff" : "hsl(var(--foreground))",
+                      }}
+                    >
+                      {tipo === "Ligar" && <Phone className="h-3 w-3 inline mr-1" />}
+                      {tipo === "WhatsApp" && <MessageSquare className="h-3 w-3 inline mr-1" />}
+                      {tipo === "Follow-up" && <CalendarClock className="h-3 w-3 inline mr-1" />}
+                      {tipo}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2">
                 <Input type="date" value={tarefaData} onChange={e => setTarefaData(e.target.value)} className="flex-1 text-sm h-9" />
                 <Input type="time" value={tarefaHora} onChange={e => setTarefaHora(e.target.value)} className="w-24 text-sm h-9" />
               </div>
             </div>
+
           </div>
         )}
 
