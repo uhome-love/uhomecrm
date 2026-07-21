@@ -42,6 +42,7 @@ export function FocoEmpreendimentosTab() {
 
   return (
     <div className="space-y-3">
+      <EmpreendimentosNaoResolvidosCard />
       <Card>
         <CardContent className="p-3 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[220px]">
