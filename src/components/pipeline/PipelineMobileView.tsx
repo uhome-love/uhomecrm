@@ -132,7 +132,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
           gap: 2,
           position: "sticky",
           top: 0,
-          zIndex: 35,
+          zIndex: 25 /* Z.mobileTabs */,
         }}
         className="scrollbar-none bg-card border-b border-border"
       >

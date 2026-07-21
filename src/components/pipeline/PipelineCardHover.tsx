@@ -189,9 +189,10 @@ const PipelineCardHover = memo(function PipelineCardHover({ lead, children, onOp
 
       {visible && (
         <div
-          className={`absolute top-0 z-50 w-[280px] animate-fade-in ${
+          className={`absolute top-0 w-[280px] animate-fade-in ${
             position === "right" ? "left-full ml-2" : "right-full mr-2"
           }`}
+          style={{ zIndex: 45 /* Z.cardHover */ }}
           onMouseEnter={handlePopoverEnter}
           onMouseLeave={handlePopoverLeave}
           onClick={(e) => e.stopPropagation()}

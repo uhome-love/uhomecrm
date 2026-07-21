@@ -894,7 +894,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
         {/* ════════════ HOMI SIDE PANEL ════════════ */}
         {homiOpen && (
-          <div className={`absolute inset-y-0 right-0 z-40 bg-card border-l border-border shadow-xl flex flex-col ${homiInitialPrompt ? "w-full sm:w-[42%] sm:min-w-[380px] sm:max-w-[520px]" : "w-full sm:w-[45%] sm:min-w-[420px] sm:max-w-[520px]"} transition-all duration-200`}>
+          <div className={`absolute inset-y-0 right-0 bg-card border-l border-border shadow-xl flex flex-col ${homiInitialPrompt ? "w-full sm:w-[42%] sm:min-w-[380px] sm:max-w-[520px]" : "w-full sm:w-[45%] sm:min-w-[420px] sm:max-w-[520px]"} transition-all duration-200`} style={{ zIndex: 55 /* Z.drawerHomiPanel */ }}>
             <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-primary/5">
               <span className="text-xs font-bold text-primary flex items-center gap-1.5">
                 <Bot className="h-3.5 w-3.5" /> HOMI

@@ -258,7 +258,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
   return createPortal(
     <div
       style={{
-        position: "fixed", inset: 0, zIndex: 99999,
+        position: "fixed", inset: 0, zIndex: 70 /* Z.focusOverlay */,
         background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
         display: "flex", alignItems: "center", justifyContent: "center",
         fontFamily: "'Plus Jakarta Sans', sans-serif",
