@@ -26,6 +26,7 @@ import {
   RefreshCw, Users, Send, Copy,
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
+import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
 
 // ─── Status: opções fixas (com cores) + livre ─────────────────────────────────
@@ -216,6 +217,7 @@ export default function PdnGestor() {
     } catch { return new Set(); }
   });
   const [quedaRow, setQuedaRow] = useState<PdnRow | null>(null);
+  const [selectedRow, setSelectedRow] = useState<PdnRow | null>(null);
   // Padrão por dispositivo: mobile→kanban (foco em 1 coluna), desktop→planilha (densidade p/ gestão).
   // Preferência persistida separadamente para cada form factor.
   const [view, setView] = useState<"planilha" | "kanban">(() => {
