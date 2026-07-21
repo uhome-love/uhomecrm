@@ -341,6 +341,26 @@ serve(async (req) => {
       await assertCanManage(target_user_id);
       if (target_user_id === caller.id) throw new Error("Você não pode inativar a si mesmo");
 
+      // Check if target is a gerente (has team_members under them)
+      const { data: teamUnder } = await supabase
+        .from("team_members").select("id", { count: "exact", head: true })
+        .eq("gerente_id", target_user_id);
+      const isTargetGerente = (teamUnder as any)?.length !== undefined ? false : true; // count-only response
+      const { count: teamCount } = await supabase
+        .from("team_members").select("id", { count: "exact", head: true })
+        .eq("gerente_id", target_user_id);
+      if ((teamCount || 0) > 0) {
+        if (!isAdmin && !isDiretora) {
+          throw new Error("Apenas CEO/Diretora podem inativar um gerente");
+        }
+        if (!absorb_team_to) {
+          throw new Error("Este usuário é gerente. Informe outro gerente para absorver o time (absorb_team_to).");
+        }
+        await supabase.from("team_members")
+          .update({ gerente_id: absorb_team_to })
+          .eq("gerente_id", target_user_id);
+      }
+
       if (reassign_to) {
         await assertCanManage(reassign_to).catch(() => {
           if (!isAdmin) throw new Error("O corretor destino não pertence à sua equipe");
@@ -359,10 +379,13 @@ serve(async (req) => {
       await supabase.from("profiles").update({ ativo: false }).eq("user_id", target_user_id);
       await supabase.from("team_members").update({ status: "inativo" }).eq("user_id", target_user_id);
 
+      await logAudit("inactivate_user", target_user_id, { ativo: true }, { ativo: false, reassign_to, absorb_team_to });
+
       return new Response(JSON.stringify({ success: true, message: "Usuário inativado e dados repassados." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     // ── REACTIVATE USER ─────────────────────────────────────────────────────
     if (action === "reactivate_user") {
