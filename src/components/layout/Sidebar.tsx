@@ -95,6 +95,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Ferramentas",
       items: [
         { label: "HOMI CEO",           path: "/homi-ceo",          icon: <Bot          size={15} strokeWidth={1.5} /> },
+        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Base HOMI",          path: "/homi/base-conhecimento", icon: <BookOpen size={15} strokeWidth={1.5} /> },
         { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
