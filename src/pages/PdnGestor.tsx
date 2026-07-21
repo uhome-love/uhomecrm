@@ -735,7 +735,7 @@ function GrupoBloco({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <Table style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}>
+            <Table style={{ tableLayout: "fixed", width: "100%", minWidth: "100%" }}>
               <colgroup>
                 <col style={{ width: colWidths.nome }} />
                 <col style={{ width: colWidths.data }} />
