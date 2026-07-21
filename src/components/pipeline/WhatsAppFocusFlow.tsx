@@ -485,6 +485,12 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
               </div>
 
               {/* Próxima tarefa */}
+              {stageTipo === "visita" ? (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-[11px] text-amber-700 dark:text-amber-300">
+                  <p className="font-semibold mb-0.5">Etapa Visita — tarefas automáticas</p>
+                  <p className="opacity-90">Confirmação, remarcação e feedback são geradas pelo sistema.</p>
+                </div>
+              ) : (
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#52525b", display: "block", marginBottom: 8 }}>
                   📋 Próxima tarefa
@@ -552,6 +558,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
                   <Input type="time" className="h-8 text-[12px] w-28" value={taskTime} onChange={(e) => setTaskTime(e.target.value)} />
                 </div>
               </div>
+              )}
             </div>
           )}
         </div>
