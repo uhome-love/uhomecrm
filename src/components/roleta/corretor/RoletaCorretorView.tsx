@@ -51,17 +51,17 @@ function CountdownTimer({ target }: { target: Date }) {
 
 export function RoletaCorretorView() {
   const { user } = useAuth();
-  const { segmentos, meuCredenciamento, fila, loading, submitting, credenciar, sairDaRoleta } =
+  const { segmentos, meuCredenciamento, fila, loading, submitting, sairDaRoleta } =
     useRoleta();
   const { elegibilidade, carregando: carregandoElegibilidade } = useElegibilidadeRoleta();
+  const { data: minhaAlocacao = [], isLoading: loadingAlocacao } = useMinhaAlocacao();
   const windowInfo = getCurrentWindowInfo();
   const { isSunday, isHoliday } = getBrtDateInfo();
   const isDiaEspecial = isSunday || isHoliday;
   const [selectedJanela, setSelectedJanela] = useState<string>(
     isDiaEspecial ? "dia_todo" : windowInfo.credenciamentoJanela || windowInfo.janela
   );
-  const [seg1, setSeg1] = useState<string>("");
-  const [seg2, setSeg2] = useState<string>("");
+  const [marcandoPresenca, setMarcandoPresenca] = useState(false);
 
   // Noturna eligibility state
   const [noturnaEligible, setNoturnaEligible] = useState<boolean | null>(null);
