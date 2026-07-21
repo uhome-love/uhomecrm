@@ -418,11 +418,17 @@ export default function CeoDashboard() {
                     </Avatar>
                     <div>
                       <p className="font-medium text-sm">{c.corretor_nome}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         <Badge variant="outline" className="text-[10px]">{c.janela}</Badge>
-                        <Badge className="text-[10px] bg-primary/10 text-primary border-0">{c.seg1_nome}</Badge>
-                        {c.seg2_nome && <Badge className="text-[10px] bg-muted text-muted-foreground border-0">{c.seg2_nome}</Badge>}
+                        {(c.empreendimentos_alocados && c.empreendimentos_alocados.length > 0) ? (
+                          c.empreendimentos_alocados.map((nome: string) => (
+                            <Badge key={nome} className="text-[10px] bg-primary/10 text-primary border-0">{nome}</Badge>
+                          ))
+                        ) : (
+                          <Badge className="text-[10px] bg-warning/10 text-warning border-0">Sem alocação</Badge>
+                        )}
                       </div>
+
                     </div>
                   </div>
                   <div className="flex gap-2">
