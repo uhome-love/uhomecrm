@@ -38,9 +38,12 @@ export function useUsuariosCentral() {
     setLoading(true);
     setError(null);
     try {
-      const [profRes, rolesRes, tmRes, signInRes] = await Promise.all([
+      // list_profiles_admin (SECURITY DEFINER) devolve dados sensíveis (email/cpf/creci/telefone)
+      // apenas para admin/gestor/diretor. Não podemos SELECT direto por causa de column privileges.
+      const [profAdminRes, profBasicRes, rolesRes, tmRes, signInRes] = await Promise.all([
+        supabase.rpc("list_profiles_admin"),
         supabase.from("profiles")
-          .select("id, user_id, nome, email, telefone, cpf, creci, jetimob_user_id, avatar_url, ativo")
+          .select("id, user_id, nome, avatar_url, ativo")
           .order("nome"),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("team_members").select("user_id, gerente_id, equipe, status"),
@@ -49,7 +52,13 @@ export function useUsuariosCentral() {
           : Promise.resolve({ data: null, error: null } as any),
       ]);
 
-      if (profRes.error) throw profRes.error;
+      if (profBasicRes.error) throw profBasicRes.error;
+
+      // profAdminRes pode falhar para papéis sem permissão — degradar sem quebrar.
+      const adminById = new Map<string, any>();
+      if (!profAdminRes.error && Array.isArray(profAdminRes.data)) {
+        (profAdminRes.data as any[]).forEach((p) => adminById.set(p.id, p));
+      }
 
       const roleMap = new Map<string, string>();
       (rolesRes.data || []).forEach((r: any) => {
@@ -63,41 +72,33 @@ export function useUsuariosCentral() {
       });
 
       const nomeById = new Map<string, string>();
-      (profRes.data || []).forEach((p: any) => nomeById.set(p.user_id, p.nome || ""));
+      (profBasicRes.data || []).forEach((p: any) => nomeById.set(p.user_id, p.nome || ""));
 
       const lastSignIn: Record<string, string | null> = signInRes?.data?.last_sign_in || {};
 
-      let list: UsuarioCentralRow[] = (profRes.data || []).map((p: any) => {
+      let list: UsuarioCentralRow[] = (profBasicRes.data || []).map((p: any) => {
         const team = teamByUser.get(p.user_id);
         const gid = team?.gerente_id || null;
+        const admin = adminById.get(p.user_id);
         return {
           user_id: p.user_id,
           profile_id: p.id,
-          nome: p.nome || "-",
-          email: p.email,
-          telefone: p.telefone,
-          cpf: p.cpf,
-          creci: p.creci,
-          jetimob_user_id: p.jetimob_user_id,
-          avatar_url: p.avatar_url,
+          nome: p.nome || admin?.nome || "-",
+          email: admin?.email ?? null,
+          telefone: admin?.telefone ?? null,
+          cpf: admin?.cpf ?? null,
+          creci: admin?.creci ?? null,
+          jetimob_user_id: null,
+          avatar_url: p.avatar_url ?? admin?.avatar_url ?? null,
           role: roleMap.get(p.user_id) || "corretor",
           ativo: !!p.ativo,
           gerente_id: gid,
           gerente_nome: gid ? nomeById.get(gid) || null : null,
-          equipe: team?.equipe || null,
+          equipe: team?.equipe || admin?.equipe || null,
           last_sign_in: lastSignIn[p.user_id] || null,
         };
       });
 
-      // Non-privileged (gerente): scope to own team
-      console.log("[useUsuariosCentral]", {
-        profiles: profRes.data?.length,
-        roles: rolesRes.data?.length,
-        team: tmRes.data?.length,
-        userId: user?.id,
-        isPrivileged,
-        listBefore: list.length,
-      });
       if (!isPrivileged && user?.id) {
         list = list.filter((u) => u.gerente_id === user.id || u.user_id === user.id);
       }
