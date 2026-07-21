@@ -108,6 +108,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
     setSaving(true);
     try {
       if (selected === "tarefa") {
+        if (currentStageTipo === "visita") { toast.error("Etapa Visita: tarefas são automáticas. Não crie tarefa manual."); setSaving(false); return; }
         if (!tarefaData) { toast.error("Informe a data da tarefa"); setSaving(false); return; }
         if (isTaskDateTooFar(tarefaData, currentStageTipo)) { toast.error(taskDateTooFarMessage(currentStageTipo)); setSaving(false); return; }
         if (presets.length > 0 && !selectedPresetId) { toast.error("Escolha um tipo de tarefa"); setSaving(false); return; }
