@@ -384,6 +384,12 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
             </div>
 
             {/* Próxima tarefa */}
+            {stageTipo === "visita" ? (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+                <p className="font-semibold mb-0.5">Etapa Visita — tarefas automáticas</p>
+                <p className="opacity-90 text-[11px]">Confirmação, remarcação e feedback são geradas pelo sistema.</p>
+              </div>
+            ) : (
             <div className="space-y-2">
               <div>
                 <label className="text-xs font-medium text-foreground">Próxima tarefa</label>
@@ -438,6 +444,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
                 <Input type="time" value={tarefaHora} onChange={e => setTarefaHora(e.target.value)} className="w-24 text-sm h-9" />
               </div>
             </div>
+            )}
 
           </div>
         )}
