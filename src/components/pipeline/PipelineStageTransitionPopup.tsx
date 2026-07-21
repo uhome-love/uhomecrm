@@ -1022,13 +1022,16 @@ function AprovacaoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead;
 // ─── Contrato Gerado ───
 function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
   const [unidade, setUnidade] = useState("");
-  const [vgv, setVgv] = useState<string>(lead.valor_estimado ? String(lead.valor_estimado) : "");
+  const [vgv, setVgv] = useState<string>(
+    lead.valor_estimado ? String(Math.round(Number(lead.valor_estimado) * 100)) : ""
+  );
   const [construtora, setConstrutora] = useState("");
   const [empreendimento, setEmpreendimento] = useState(lead.empreendimento || "");
   const [dataAssinatura, setDataAssinatura] = useState("");
   const [statusContrato, setStatusContrato] = useState<string>(((lead as any)?.flag_status?.status_contrato as string) || "em_confeccao");
   const [obs, setObs] = useState("");
-  const vgvNum = Number(vgv.replace(/\./g, "").replace(",", ".")) || 0;
+  const vgvNum = parseCurrencyToNumber(formatCurrencyInput(vgv));
+  const todayISO = new Date().toISOString().slice(0, 10);
 
   const MIN_VGV = 1000;
   const MAX_VGV = 999_999_999;
@@ -1040,15 +1043,21 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
     : vgvNum > MAX_VGV
     ? `Valor acima do limite (${BRL.format(MAX_VGV)}). Revise o VGV.`
     : "";
+  const dataError = !dataAssinatura
+    ? "Informe a data de assinatura prevista."
+    : dataAssinatura < todayISO
+    ? "A data de assinatura não pode ser anterior a hoje."
+    : "";
   const errors = {
     vgv: vgvError,
     empreendimento: empreendimento.trim() ? "" : "Informe o empreendimento.",
     unidade: unidade.trim() ? "" : "Informe a unidade.",
-    data: dataAssinatura ? "" : "Informe a data de assinatura prevista.",
+    data: dataError,
   };
   const canConfirm = !errors.vgv && !errors.empreendimento && !errors.unidade && !errors.data;
   const errCls = "text-[10px] text-destructive mt-1";
   const invalidInput = "border-destructive focus-visible:ring-destructive";
+
 
   return (
     <div className="max-w-lg mx-auto w-full">
