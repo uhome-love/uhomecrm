@@ -5,7 +5,7 @@ import { formatBRT } from "@/lib/brtTime";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, AlertTriangle, Sparkles, Flame, CalendarClock } from "lucide-react";
-import { PdnCardDrawer } from "./PdnCardDrawer";
+import { PdnLeadDrawer } from "./drawer/PdnLeadDrawer";
 
 const PRIORIDADE_META: Record<string, { label: string; cls: string }> = {
   alta: { label: "Alta", cls: "bg-red-500/15 text-red-600 dark:text-red-400" },
@@ -128,7 +128,7 @@ export function PdnKanban({
         })}
       </div>
 
-      <PdnCardDrawer
+      <PdnLeadDrawer
         row={selectedLive}
         onClose={() => setSelected(null)}
         onSave={onSave}
