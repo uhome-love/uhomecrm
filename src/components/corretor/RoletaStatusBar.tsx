@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { compareRoletaSegmentosByNome } from "@/hooks/useRoletaSegmentos";
+import { useMinhaAlocacao } from "@/hooks/useFocoCorretores";
 import PresencaDoCorretorPill from "@/components/corretor/PresencaDoCorretorPill";
 
 // Segmento shape
