@@ -82,7 +82,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "base-conhecimento": lazyRetry(() => import("@/pages/BaseConhecimento")),
   negocios: lazyRetry(() => import("@/pages/MeusNegocios")),
   "vendas-realizadas": lazyRetry(() => import("@/pages/VendasRealizadas")),
-  "pos-vendas": lazyRetry(() => import("@/pages/PosVendas")),
+  
   imoveis: lazyRetry(() => import("@/pages/ImoveisShell")),
   "busca-leads": lazyRetry(() => import("@/pages/BuscaLeads")),
   configuracoes: lazyRetry(() => import("@/pages/Configuracoes")),
