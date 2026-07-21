@@ -54,10 +54,10 @@ export function useUsuariosCentral() {
 
       if (profBasicRes.error) throw profBasicRes.error;
 
-      // profAdminRes pode falhar para papéis sem permissão — degradar sem quebrar.
-      const adminById = new Map<string, any>();
+      // list_profiles_admin retorna id = profiles.id; indexamos por profile_id.
+      const adminByProfileId = new Map<string, any>();
       if (!profAdminRes.error && Array.isArray(profAdminRes.data)) {
-        (profAdminRes.data as any[]).forEach((p) => adminById.set(p.id, p));
+        (profAdminRes.data as any[]).forEach((p) => adminByProfileId.set(p.id, p));
       }
 
       const roleMap = new Map<string, string>();
