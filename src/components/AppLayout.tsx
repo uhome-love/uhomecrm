@@ -240,7 +240,7 @@ export default function AppLayout() {
                   <DropdownMenuSeparator />
                   {(isAdmin || isGestor) && (
                     <DropdownMenuItem onSelect={() => navigate("/meu-time")} className="text-xs gap-2 cursor-pointer">
-                      <Users className="h-3.5 w-3.5" /> {isAdmin ? "Gestão de Usuários" : "Meu Time"}
+                      <Users className="h-3.5 w-3.5" /> Meu Time
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onSelect={() => navigate("/configuracoes")} className="text-xs gap-2 cursor-pointer">
