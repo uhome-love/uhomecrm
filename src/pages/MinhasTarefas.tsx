@@ -26,6 +26,7 @@ import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
 import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/lib/taskQueryUtils";
 import { maxTaskDateBRT, isTaskDateTooFar, TASK_DATE_TOO_FAR_MSG } from "@/lib/taskScheduling";
 import { lazy, Suspense } from "react";
+import { getPresetsForStage, applyPresetToTarefa, PRESET_OUTRO_ID, type TaskPreset } from "@/lib/taskPresets";
 
 const CorretorScriptsView = lazy(() => import("@/components/scripts/CorretorScriptsView"));
 
@@ -461,6 +462,29 @@ export default function MinhasTarefas() {
     enabled: !!user && leadSearch.length >= 2,
   });
 
+  // Etapa do lead selecionado — dispara presets contextuais no popup "Nova tarefa"
+  const { data: selectedLeadStage } = useQuery({
+    queryKey: ["nova-tarefa-lead-stage", selectedLeadId],
+    queryFn: async () => {
+      if (!selectedLeadId) return null;
+      const { data } = await supabase
+        .from("pipeline_leads")
+        .select("stage_id, flag_status, pipeline_stages:stage_id(tipo)")
+        .eq("id", selectedLeadId)
+        .maybeSingle();
+      const stageTipo = (data as any)?.pipeline_stages?.tipo ?? null;
+      return { stageTipo, flagStatus: (data as any)?.flag_status ?? {} };
+    },
+    enabled: !!selectedLeadId,
+  });
+  const stageTipoSelecionado = selectedLeadStage?.stageTipo ?? null;
+  const presetsDisponiveis = useMemo(() => getPresetsForStage(stageTipoSelecionado), [stageTipoSelecionado]);
+  const [presetSelecionadoId, setPresetSelecionadoId] = useState<string | null>(null);
+  const presetSelecionado = useMemo<TaskPreset | null>(
+    () => presetsDisponiveis.find((p) => p.id === presetSelecionadoId) ?? null,
+    [presetsDisponiveis, presetSelecionadoId],
+  );
+
   const { data: searchNegocios = [] } = useQuery({
     queryKey: ["negocio-search-tarefas", negocioSearch],
     queryFn: async () => {
@@ -804,6 +828,16 @@ export default function MinhasTarefas() {
       toast.error("Não foi possível criar a tarefa: " + error.message);
       return;
     }
+    // Se um preset com syncFlag foi selecionado, sincroniza flag_status do lead
+    if (presetSelecionado?.syncFlagKey && presetSelecionado?.syncFlagValue) {
+      const currentFlag = (selectedLeadStage?.flagStatus as Record<string, unknown>) || {};
+      const nextFlag = { ...currentFlag, [presetSelecionado.syncFlagKey]: presetSelecionado.syncFlagValue };
+      const { error: flagErr } = await supabase
+        .from("pipeline_leads")
+        .update({ flag_status: nextFlag } as any)
+        .eq("id", selectedLeadId);
+      if (flagErr) toast.warning("Tarefa criada, mas não consegui atualizar o status da etapa.");
+    }
     toast.success("Tarefa criada ✅");
     setShowNovaTarefa(false);
     setSelectedLeadId(null);
@@ -812,6 +846,7 @@ export default function MinhasTarefas() {
     setNovoObs("");
     setNovoData("");
     setNovoHora("");
+    setPresetSelecionadoId(null);
     invalidateTaskQueries(queryClient, selectedLeadId);
   };
 
@@ -1157,7 +1192,7 @@ export default function MinhasTarefas() {
               {selectedLeadId ? (
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="text-sm">{selectedLeadNome}</Badge>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setSelectedLeadId(null); setSelectedLeadNome(""); }}>Trocar</Button>
+                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setSelectedLeadId(null); setSelectedLeadNome(""); setPresetSelecionadoId(null); }}>Trocar</Button>
                 </div>
               ) : (
                 <div className="relative">
@@ -1180,6 +1215,46 @@ export default function MinhasTarefas() {
                 </div>
               )}
             </div>
+
+            {/* Presets contextuais por etapa (Qualificação / Aquecimento / Negociação) */}
+            {selectedLeadId && presetsDisponiveis.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Sugestão de próxima tarefa · <span className="text-foreground/70 capitalize">{stageTipoSelecionado}</span>
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {presetsDisponiveis.map((p) => {
+                    const Icon = p.Icon;
+                    const active = presetSelecionadoId === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setPresetSelecionadoId(p.id);
+                          if (p.id === PRESET_OUTRO_ID) return; // "outro" só limpa a seleção visual
+                          const payload = applyPresetToTarefa(p);
+                          setNovoTipo(payload.tipo);
+                          setNovoData(payload.vence_em);
+                          setNovoHora(payload.hora_vencimento ?? "");
+                          setNovoObs(payload.obs ?? "");
+                        }}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border text-[11px] transition-colors",
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted border-border text-foreground",
+                        )}
+                      >
+                        <Icon className="h-3 w-3" />
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
 
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Tipo</label>
