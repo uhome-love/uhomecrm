@@ -7,6 +7,8 @@ import {
 } from "@/hooks/useRoleta";
 import { compareRoletaSegmentos } from "@/hooks/useRoletaSegmentos";
 import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
+import { useMinhaAlocacao } from "@/hooks/useFocoCorretores";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
