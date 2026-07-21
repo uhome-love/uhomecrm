@@ -1096,7 +1096,15 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">VGV (R$) *</Label>
-            <Input type="text" inputMode="decimal" value={vgv} onChange={e => setVgv(e.target.value)} placeholder="Ex: 850000" className={`h-8 text-xs bg-background ${errors.vgv ? invalidInput : ""}`} aria-invalid={!!errors.vgv} />
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={formatCurrencyInput(vgv)}
+              onChange={e => setVgv(handleCurrencyChange(e.target.value))}
+              placeholder="R$ 850.000,00"
+              className={`h-8 text-xs bg-background ${errors.vgv ? invalidInput : ""}`}
+              aria-invalid={!!errors.vgv}
+            />
             {errors.vgv
               ? <p className={errCls}>{errors.vgv}</p>
               : vgvNum > 0 && <p className="text-[10px] text-muted-foreground mt-1">Valor: <strong>{BRL.format(vgvNum)}</strong></p>}
@@ -1107,9 +1115,19 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Data de assinatura prevista *</Label>
-            <Input type="date" value={dataAssinatura} onChange={e => setDataAssinatura(e.target.value)} className={`h-8 text-xs bg-background ${errors.data ? invalidInput : ""}`} aria-invalid={!!errors.data} />
-            {errors.data && <p className={errCls}>{errors.data}</p>}
+            <Input
+              type="date"
+              value={dataAssinatura}
+              min={todayISO}
+              onChange={e => setDataAssinatura(e.target.value)}
+              className={`h-8 text-xs bg-background ${errors.data ? invalidInput : ""}`}
+              aria-invalid={!!errors.data}
+            />
+            {errors.data
+              ? <p className={errCls}>{errors.data}</p>
+              : dataAssinatura && <p className="text-[10px] text-muted-foreground mt-1">Assinatura: <strong>{new Date(dataAssinatura + "T00:00:00").toLocaleDateString("pt-BR")}</strong></p>}
           </div>
+
         </div>
 
         {/* 3. Observação */}
