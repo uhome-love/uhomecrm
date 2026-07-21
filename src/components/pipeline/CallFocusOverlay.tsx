@@ -125,6 +125,30 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
   const [novaEtapaSelecionada, setNovaEtapaSelecionada] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
+  // Presets Fase B — chips por etapa
+  const stagePresets = useMemo(() => getPresetsForStage(stageTipo), [stageTipo]);
+  const hasPresets = stagePresets.length > 0;
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const selectedPreset = useMemo<TaskPreset | null>(
+    () => stagePresets.find((p) => p.id === selectedPresetId) ?? null,
+    [stagePresets, selectedPresetId],
+  );
+
+  const TIPO_TO_LABEL: Record<string, string> = {
+    ligacao: "Ligar", whatsapp: "WhatsApp", follow_up: "Follow-up", proposta: "Proposta",
+  };
+
+  const handlePickPreset = (p: TaskPreset) => {
+    setSelectedPresetId(p.id);
+    if (p.id === PRESET_OUTRO_ID) return;
+    const payload = applyPresetToTarefa(p);
+    setTarefaTipo(TIPO_TO_LABEL[payload.tipo] || "Ligar");
+    setTarefaData(payload.vence_em);
+    setTarefaHora(payload.hora_vencimento || "11:00");
+    if (payload.obs && !observacao.trim()) setObservacao(payload.obs);
+  };
+
+
   const primeiroNome = lead.nome.split(" ")[0];
   const emp = lead.empreendimento || "empreendimento";
 
