@@ -1205,6 +1205,46 @@ export default function MinhasTarefas() {
               )}
             </div>
 
+            {/* Presets contextuais por etapa (Qualificação / Aquecimento / Negociação) */}
+            {selectedLeadId && presetsDisponiveis.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Sugestão de próxima tarefa · <span className="text-foreground/70 capitalize">{stageTipoSelecionado}</span>
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {presetsDisponiveis.map((p) => {
+                    const Icon = p.Icon;
+                    const active = presetSelecionadoId === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setPresetSelecionadoId(p.id);
+                          if (p.id === PRESET_OUTRO_ID) return; // "outro" só limpa a seleção visual
+                          const payload = applyPresetToTarefa(p);
+                          setNovoTipo(payload.tipo);
+                          setNovoData(payload.vence_em);
+                          setNovoHora(payload.hora_vencimento ?? "");
+                          setNovoObs(payload.obs ?? "");
+                        }}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border text-[11px] transition-colors",
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted border-border text-foreground",
+                        )}
+                      >
+                        <Icon className="h-3 w-3" />
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Tipo</label>
               <Select value={novoTipo} onValueChange={setNovoTipo}>
