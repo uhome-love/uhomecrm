@@ -144,11 +144,11 @@ export default function VendaCelebration({ nomeCliente, empreendimento, vgv, cor
             className="flex items-center gap-3 mt-4"
           >
             <Button
-              onClick={() => { onDismiss(); navigate("/pos-vendas"); }}
+              onClick={() => { onDismiss(); navigate("/vendas-realizadas"); }}
               className="gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold px-6 h-11 text-sm shadow-lg"
             >
               <PartyPopper className="h-4 w-4" />
-              Iniciar Pós-Venda
+              Ver venda
               <ArrowRight className="h-4 w-4" />
             </Button>
             <Button

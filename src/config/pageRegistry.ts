@@ -82,7 +82,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "base-conhecimento": lazyRetry(() => import("@/pages/BaseConhecimento")),
   negocios: lazyRetry(() => import("@/pages/MeusNegocios")),
   "vendas-realizadas": lazyRetry(() => import("@/pages/VendasRealizadas")),
-  "pos-vendas": lazyRetry(() => import("@/pages/PosVendas")),
+  
   imoveis: lazyRetry(() => import("@/pages/ImoveisShell")),
   "busca-leads": lazyRetry(() => import("@/pages/BuscaLeads")),
   configuracoes: lazyRetry(() => import("@/pages/Configuracoes")),
@@ -167,7 +167,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/homi/base-conhecimento":{ key: "base-conhecimento",    label: "Base HOMI",           icon: "BookOpen",      roles: ["admin", "gestor"] },
   // "/pipeline-negocios" desativado — negócios agora vivem no Pipeline de Leads (lente Negócios). Redirect em App.tsx.
   "/vendas-realizadas":     { key: "vendas-realizadas",    label: "Vendas",              icon: "TrendingUp" },
-  "/pos-vendas":            { key: "pos-vendas",           label: "Pós-Vendas",          icon: "Heart" },
+  
   "/imoveis":               { key: "imoveis",              label: "Imóveis",             icon: "Home" },
   "/busca-leads":           { key: "busca-leads",          label: "Busca Leads",         icon: "Search",        roles: ["gestor", "admin", "diretor"] },
   "/configuracoes":         { key: "configuracoes",        label: "Configurações",       icon: "Settings" },

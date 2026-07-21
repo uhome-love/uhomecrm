@@ -61,7 +61,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
-        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -69,7 +68,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "PDN",                path: "/pdn",               icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
-        { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
         { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
@@ -97,6 +95,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Ferramentas",
       items: [
         { label: "HOMI CEO",           path: "/homi-ceo",          icon: <Bot          size={15} strokeWidth={1.5} /> },
+        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Base HOMI",          path: "/homi/base-conhecimento", icon: <BookOpen size={15} strokeWidth={1.5} /> },
         { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
@@ -130,7 +129,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "PDN",                path: "/pdn",               icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
-        { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
         { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
@@ -178,7 +176,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
-        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -186,7 +183,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "PDN",                path: "/pdn",               icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
-        { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
         { label: "Intermediação",      path: "/intermediacao",     icon: <FileSignature size={15} strokeWidth={1.5} /> },
         { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
@@ -205,6 +201,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Ferramentas",
       items: [
         { label: "HOMI Gerente",       path: "/homi-gerente",      icon: <Bot          size={15} strokeWidth={1.5} /> },
+        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Templates",          path: "/templates-comunicacao", icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
@@ -240,7 +237,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Negócios",
       items: [
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
-        { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
+        
         { label: "Simulador financiamento", path: "/simulador-financiamento", icon: <Calculator size={15} strokeWidth={1.5} /> },
       ],
     },
