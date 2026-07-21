@@ -389,18 +389,40 @@ export default function MinhasTarefas() {
     refetchOnWindowFocus: true,
   });
 
+  // Etapas elegíveis para tarefa manual (as demais têm cadência/fluxo automático)
+  const { data: elegibleStageIds = [] } = useQuery({
+    queryKey: ["nova-tarefa-elegible-stages"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pipeline_stages")
+        .select("id, tipo")
+        .in("tipo", ["qualificacao", "aquecimento", "negociacao"]);
+      return (data || []).map((s: any) => s.id as string);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: searchLeads = [] } = useQuery({
-    queryKey: ["lead-search-tarefas", leadSearch],
+    queryKey: ["lead-search-tarefas", leadSearch, elegibleStageIds],
     queryFn: async () => {
       if (!user || leadSearch.length < 2) return [];
+      if (elegibleStageIds.length === 0) return [];
       const corretorIds = [user.id, profileId].filter(Boolean) as string[];
       if (corretorIds.length === 0) return [];
-      const { data } = await supabase.from("pipeline_leads").select("id, nome, telefone, empreendimento")
-        .in("corretor_id", corretorIds).ilike("nome", `%${leadSearch}%`).limit(10);
+      const { data } = await supabase
+        .from("pipeline_leads")
+        .select("id, nome, telefone, empreendimento, stage_id, pipeline_stages:stage_id(tipo, nome)")
+        .in("corretor_id", corretorIds)
+        .in("stage_id", elegibleStageIds)
+        .eq("arquivado", false)
+        .in("aceite_status", ["aceito", "pendente", "aguardando_aceite"])
+        .ilike("nome", `%${leadSearch}%`)
+        .limit(10);
       return data || [];
     },
-    enabled: !!user && leadSearch.length >= 2,
+    enabled: !!user && leadSearch.length >= 2 && elegibleStageIds.length > 0,
   });
+
 
   // Etapa do lead selecionado — dispara presets contextuais no popup "Nova tarefa"
   const { data: selectedLeadStage } = useQuery({
@@ -1044,8 +1066,13 @@ export default function MinhasTarefas() {
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Lead</label>
               {selectedLeadId ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="secondary" className="text-sm">{selectedLeadNome}</Badge>
+                  {stageTipoSelecionado && (
+                    <Badge variant="outline" className="text-[10px] capitalize">
+                      {stageTipoSelecionado === "negociacao" ? "Em Negociação" : stageTipoSelecionado}
+                    </Badge>
+                  )}
                   <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setSelectedLeadId(null); setSelectedLeadNome(""); setPresetSelecionadoId(null); }}>Trocar</Button>
                 </div>
               ) : (
@@ -1066,9 +1093,15 @@ export default function MinhasTarefas() {
                       ))}
                     </div>
                   )}
+                  {leadSearch.length >= 2 && searchLeads.length === 0 && (
+                    <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
+                      Nenhum lead disponível. Tarefa manual só existe em <span className="text-foreground/80">Qualificação, Aquecimento e Em Negociação</span> — as demais etapas rodam por automação.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
+
 
             {/* Presets contextuais por etapa (Qualificação / Aquecimento / Negociação) */}
             {selectedLeadId && presetsDisponiveis.length > 0 && (
