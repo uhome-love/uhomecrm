@@ -1029,7 +1029,25 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
   const [obs, setObs] = useState("");
   const vgvNum = Number(vgv.replace(/\./g, "").replace(",", ".")) || 0;
 
-  const canConfirm = vgvNum > 0 && unidade.trim().length > 0;
+  const MIN_VGV = 1000;
+  const MAX_VGV = 999_999_999;
+  const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  const vgvError = !vgv || !Number.isFinite(vgvNum) || vgvNum <= 0
+    ? "Informe o VGV do contrato (maior que R$ 0)."
+    : vgvNum < MIN_VGV
+    ? `Valor muito baixo — o VGV mínimo aceito é ${BRL.format(MIN_VGV)}.`
+    : vgvNum > MAX_VGV
+    ? `Valor acima do limite (${BRL.format(MAX_VGV)}). Revise o VGV.`
+    : "";
+  const errors = {
+    vgv: vgvError,
+    empreendimento: empreendimento.trim() ? "" : "Informe o empreendimento.",
+    unidade: unidade.trim() ? "" : "Informe a unidade.",
+    data: dataAssinatura ? "" : "Informe a data de assinatura prevista.",
+  };
+  const canConfirm = !errors.vgv && !errors.empreendimento && !errors.unidade && !errors.data;
+  const errCls = "text-[10px] text-destructive mt-1";
+  const invalidInput = "border-destructive focus-visible:ring-destructive";
 
   return (
     <div className="max-w-lg mx-auto w-full">
@@ -1055,24 +1073,32 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
         <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-3">
           <SectionTitle n={2}>Contrato</SectionTitle>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Empreendimento</Label>
-            <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
+            <Label className="text-xs font-medium">Empreendimento *</Label>
+            <div className={errors.empreendimento ? "ring-1 ring-destructive rounded-md" : ""}>
+              <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
+            </div>
+            {errors.empreendimento && <p className={errCls}>{errors.empreendimento}</p>}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Unidade *</Label>
-            <Input value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className="h-8 text-xs bg-background" />
+            <Input value={unidade} onChange={e => setUnidade(e.target.value)} placeholder="Ex: Torre A, apto 1203" className={`h-8 text-xs bg-background ${errors.unidade ? invalidInput : ""}`} aria-invalid={!!errors.unidade} />
+            {errors.unidade && <p className={errCls}>{errors.unidade}</p>}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">VGV (R$) *</Label>
-            <Input type="text" inputMode="decimal" value={vgv} onChange={e => setVgv(e.target.value)} placeholder="Ex: 850000" className="h-8 text-xs bg-background" />
+            <Input type="text" inputMode="decimal" value={vgv} onChange={e => setVgv(e.target.value)} placeholder="Ex: 850000" className={`h-8 text-xs bg-background ${errors.vgv ? invalidInput : ""}`} aria-invalid={!!errors.vgv} />
+            {errors.vgv
+              ? <p className={errCls}>{errors.vgv}</p>
+              : vgvNum > 0 && <p className="text-[10px] text-muted-foreground mt-1">Valor: <strong>{BRL.format(vgvNum)}</strong></p>}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Construtora</Label>
             <Input value={construtora} onChange={e => setConstrutora(e.target.value)} placeholder="Ex: Melnick" className="h-8 text-xs bg-background" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Data de assinatura prevista</Label>
-            <Input type="date" value={dataAssinatura} onChange={e => setDataAssinatura(e.target.value)} className="h-8 text-xs bg-background" />
+            <Label className="text-xs font-medium">Data de assinatura prevista *</Label>
+            <Input type="date" value={dataAssinatura} onChange={e => setDataAssinatura(e.target.value)} className={`h-8 text-xs bg-background ${errors.data ? invalidInput : ""}`} aria-invalid={!!errors.data} />
+            {errors.data && <p className={errCls}>{errors.data}</p>}
           </div>
         </div>
 
@@ -1083,7 +1109,7 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
         </div>
       </div>
 
-      <DialogFooter className="mt-3">
+      <DialogFooter className="mt-3 flex-col gap-1 sm:flex-col sm:items-stretch">
         <Button
           size="sm"
           className="text-xs gap-1"
@@ -1097,6 +1123,11 @@ function ContratoForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
         >
           📄 Confirmar contrato
         </Button>
+        {!canConfirm && (
+          <p className="text-[10px] text-destructive text-center">
+            Preencha os campos obrigatórios destacados acima.
+          </p>
+        )}
       </DialogFooter>
     </div>
   );
