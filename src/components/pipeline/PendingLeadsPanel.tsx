@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RotateCw, Clock, User, Building2, AlertTriangle } from "lucide-react";
+import { Loader2, RotateCw, Clock, User, Building2, AlertTriangle, PauseCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -18,7 +18,7 @@ export default function PendingLeadsPanel() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, telefone, empreendimento, origem, prioridade_lead, created_at, observacoes, reativado_por_nutricao")
+        .select("id, nome, telefone, empreendimento, origem, prioridade_lead, created_at, observacoes, reativado_por_nutricao, motivo_pendencia")
         .eq("aceite_status", "pendente_distribuicao")
         .eq("arquivado", false)
         .order("created_at", { ascending: false });
@@ -102,6 +102,11 @@ export default function PendingLeadsPanel() {
                     {lead.reativado_por_nutricao && (
                       <Badge className="text-[9px] px-1.5 bg-purple-500/10 text-purple-600 border-purple-500/20">
                         🔄 Nutrição
+                      </Badge>
+                    )}
+                    {lead.motivo_pendencia === "empreendimento_inativo" && (
+                      <Badge className="text-[9px] px-1.5 bg-orange-500/10 text-orange-600 border-orange-500/20 gap-0.5">
+                        <PauseCircle className="h-2.5 w-2.5" /> Empreendimento pausado
                       </Badge>
                     )}
                   </div>
