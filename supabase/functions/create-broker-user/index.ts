@@ -399,6 +399,8 @@ serve(async (req) => {
       await supabase.from("profiles").update({ ativo: true }).eq("user_id", target_user_id);
       await supabase.from("team_members").update({ status: "ativo" }).eq("user_id", target_user_id);
 
+      await logAudit("reactivate_user", target_user_id, { ativo: false }, { ativo: true });
+
       return new Response(JSON.stringify({ success: true, message: "Usuário reativado com sucesso!" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
