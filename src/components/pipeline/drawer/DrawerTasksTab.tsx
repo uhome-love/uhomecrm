@@ -128,6 +128,8 @@ export default function DrawerTasksTab({
   onReload,
   onNovaTarefa,
   loading = false,
+  autoCompleteTaskId = null,
+  onAutoCompleteConsumed,
 }: Props) {
   const isVisitaStage = stageTipo === "visita";
   const queryClient = useQueryClient();
