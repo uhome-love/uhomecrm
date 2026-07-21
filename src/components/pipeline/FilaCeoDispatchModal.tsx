@@ -598,7 +598,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
               <div className="flex items-center gap-2">
                 <Checkbox id="include-unidentified" checked={includeUnidentified} onCheckedChange={(v) => setIncludeUnidentified(!!v)} />
                 <label htmlFor="include-unidentified" className="text-xs text-muted-foreground cursor-pointer">
-                  Incluir leads sem segmento
+                  Incluir leads sem empreendimento identificado
                 </label>
               </div>
             )}
