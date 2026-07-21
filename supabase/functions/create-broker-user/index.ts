@@ -407,8 +407,25 @@ serve(async (req) => {
     if (action === "delete_user") {
       if (!target_user_id) throw new Error("ID do usuário não informado");
       if (target_user_id === caller.id) throw new Error("Você não pode excluir a si mesmo");
+      // Só CEO/Diretora podem excluir definitivamente
+      if (!isAdmin && !isDiretora) {
+        throw new Error("Apenas CEO/Diretora podem excluir usuários definitivamente. Use inativar.");
+      }
       await assertCanManage(target_user_id);
       if (!reassign_to) throw new Error("Informe para quem repassar os dados antes de excluir");
+
+      // Se target é gerente, exigir absorb_team_to
+      const { count: teamCount } = await supabase
+        .from("team_members").select("id", { count: "exact", head: true })
+        .eq("gerente_id", target_user_id);
+      if ((teamCount || 0) > 0) {
+        if (!absorb_team_to) {
+          throw new Error("Este usuário é gerente. Informe outro gerente para absorver o time (absorb_team_to).");
+        }
+        await supabase.from("team_members")
+          .update({ gerente_id: absorb_team_to })
+          .eq("gerente_id", target_user_id);
+      }
 
       // Validate destination is within caller's scope
       if (!isAdmin) {
@@ -417,6 +434,7 @@ serve(async (req) => {
           throw new Error("O corretor destino não pertence à sua equipe");
         }
       }
+
 
       // Repassar dados operacionais ao corretor destino
       await reassignData(target_user_id, reassign_to, {
