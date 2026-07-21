@@ -6174,6 +6174,7 @@ export type Database = {
           modo_conducao: string
           modulo_atual: string
           motivo_descarte: string | null
+          motivo_pendencia: string | null
           motivo_redistribuicao: string | null
           motivo_rejeicao: string | null
           negocio_id: string | null
@@ -6273,6 +6274,7 @@ export type Database = {
           modo_conducao?: string
           modulo_atual?: string
           motivo_descarte?: string | null
+          motivo_pendencia?: string | null
           motivo_redistribuicao?: string | null
           motivo_rejeicao?: string | null
           negocio_id?: string | null
@@ -6372,6 +6374,7 @@ export type Database = {
           modo_conducao?: string
           modulo_atual?: string
           motivo_descarte?: string | null
+          motivo_pendencia?: string | null
           motivo_redistribuicao?: string | null
           motivo_rejeicao?: string | null
           negocio_id?: string | null
