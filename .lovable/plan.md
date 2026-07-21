@@ -1,68 +1,111 @@
-#  Auditoria do fluxo de criação de tarefas — presets em toda a base
+## Decisões consolidadas
+- **Publicar no lead**: cada observação/próxima ação tem um botão explícito "Publicar no lead" que grava uma nota em `pipeline_anotacoes` (histórico do lead).
+- **Permissões**: Diretoria e CEO podem editar o overlay do PDN (além do gestor da equipe).
+- **Padrão desktop = Planilha; padrão mobile = Kanban** (justificativa abaixo).
+- Estruturo **os dois modos**, cada um com sua vocação, e o toggle na toolbar permite alternar.
 
-## Mapa de entradas de criação (`INSERT pipeline_tarefas`)
+---
 
+## Kanban vs Planilha — recomendação
 
-| #   | Onde                                              | Contexto                                                                                          | Presets?                                   | Filtro etapa?            |
-| --- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------ |
-| 1   | `MinhasTarefas.tsx` (popup "Nova Tarefa")         | Central de Tarefas — botão ➕                                                                      | ✅                                          | ✅ Q/A/N (feito hoje)     |
-| 2   | `NextActionModal.tsx`                             | Drawer do lead: "Nova tarefa" na aba Tarefas, "Criar tarefa" no Card Próxima Ação, botão "Anotar" | ✅                                          | ✅ por `currentStageTipo` |
-| 3   | `CompletionForm.tsx` (via `TaskCompletionDialog`) | Bloco "Agendar próxima tarefa" ao concluir qualquer tarefa                                        | ✅                                          | ✅                        |
-| 4   | `FocusModeModal.tsx`                              | Modo Foco — usa `TaskCompletionDialog`, herda presets                                             | ✅                                          | ✅                        |
-| 5   | `TarefasHojeLateral.tsx`                          | Widget "Tarefas de hoje" no dashboard — usa `TaskCompletionDialog`, herda                         | ✅                                          | ✅                        |
-| 6   | `WhatsAppFocusFlow.tsx`                           | Fluxo WhatsApp (drawer): passo "agendar próxima tarefa"                                           | ❌ **livre, sem presets**                   | ❌                        |
-| 7   | `CallFocusOverlay.tsx`                            | Fluxo Ligação (drawer): "próximo passo → agendar tarefa"                                          | ❌ **livre, sem presets**                   | ❌                        |
-| 8   | `QuickActionMenu.tsx`                             | "Liguei — não atendeu" cria callback fixo +2h                                                     | Automático (fixo) — sem escolha do usuário | &nbsp;                   |
-| 9   | `CardQuickTaskPopover.tsx`                        | **Não é importado em lugar nenhum — código morto**                                                | ❌                                          | ❌                        |
+Analisando o uso real: o PDN tem **5 grupos com fluxo direcionado** (Visita → Negociação → Contrato → Ganho | Caídos) e **entre 30 e 200 linhas/mês**.
 
+| Critério | Planilha | Kanban |
+|---|---|---|
+| Ver 100+ negócios de uma vez | Ganha (densa, ordenável, filtrável) | Perde (scroll horizontal cansa) |
+| Comparar VGV/status entre negócios | Ganha (colunas alinhadas) | Perde |
+| Reordenar etapa (drag) | Perde | Ganha (natural) |
+| Foco em "onde cada negócio está" | Empata | Ganha visualmente |
+| Editar em lote (mesmo status para 3) | Ganha | Perde |
+| Mobile 440px | Perde (tabela não cabe) | Ganha (1 coluna por vez) |
+| Reunião 1:1 gestor↔corretor | Ganha (lê linha) | Empata |
 
-## Diagnóstico
+**Recomendação final**: **Planilha como padrão no desktop** (gerente/diretor/CEO fazem gestão sentados, precisam ver muito de uma vez, editar rápido, comparar). **Kanban como padrão no mobile** (gestor no celular durante o dia quer arrastar e ver progresso). Toggle mantido para trocar. Preferência persistida por dispositivo (`pdn:view:desktop` / `pdn:view:mobile`).
 
-- **Coberto (5 pontos):** Central de Tarefas, Drawer do lead, Conclusão de tarefa, Modo Foco, Widget Tarefas de Hoje.
-- **Gap real (2 pontos):** WhatsApp Focus e Call Focus — quando o corretor registra o contato e agenda a próxima tarefa dentro desses fluxos, ele **não recebe os chips de preset da etapa do lead**. Isso quebra a padronização: a mesma "Enviar imóveis" pode virar `follow_up` no CallFocus e `envio_material` na Central, dependendo do caminho que o corretor usar.
-- **Ruído:** `CardQuickTaskPopover.tsx` existe mas não é usado — mantém código legado desalinhado.
-- **Não é gap:** `QuickActionMenu` é fluxo automático (callback fixo +2h para "não atendeu"); não deve receber presets.
+Ambos os modos consomem os **mesmos hooks e drawer**, então nenhum código duplica.
 
-## Ações
+---
 
-### 1. Deletar código morto
+## Plano final
 
-- Remover `src/components/pipeline/CardQuickTaskPopover.tsx` (nenhum import na base).
+### Mockup primeiro
+Antes de qualquer código, apresento **1 mockup HTML/imagem** com:
+- Desktop 1280px em modo planilha.
+- Mobile 440px em modo kanban.
+- Drawer novo (`PdnLeadPanel`) com timeline + botão "Publicar no lead".
 
-### 2. Presets no WhatsAppFocusFlow
+Você aprova o mockup → sigo para a Fase 1.
 
-Passar `stageTipo` do lead como prop (ou buscar via query) e renderizar o mesmo bloco de chips do `NextActionModal` no passo de agendamento. Ao clicar num chip, popular `taskType`, `taskDate`, `taskTime`, `obs`. Se `presets.length === 0`, manter o modo livre atual (etapa sem preset). Sincronizar `flag_status` no update do lead se o preset tiver `syncFlagKey`.
+### Fase 1 — Redesign visual + quebra de arquivo (sem mudança de comportamento)
+- Quebrar `PdnGestor.tsx` (968 linhas) em: `PdnHeader`, `PdnKpiStrip`, `PdnFilters`, `PdnPlanilhaView`, `PdnDuplicadosCard`, `PdnResumoEquipes`. Página raiz fica <200 linhas.
+- Tokens semânticos no lugar das cores hard-coded (`#10B981` etc.).
+- Header sticky com blur, KPI strip com scroll horizontal em mobile.
+- Filtros como chips arredondados.
+- Kanban como default no mobile, planilha no desktop (persistido por device).
+- Cores de risco/frescor consistentes com o resto do CRM.
+- Empty states ilustrados.
 
-### 3. Presets no CallFocusOverlay
+### Fase 2 — Contexto do corretor dentro do PDN
+- Novo `PdnLeadPanel` (substitui `PdnCardDrawer`):
+  - Header rico: nome, empreendimento, VGV, badges (risco, prioridade, dias parado, avisado há X).
+  - Tabs internas: **Contexto** (timeline via `v_lead_timeline`, última observação do corretor, próxima tarefa dele) | **Ação do gestor** (status, prioridade, observação, próxima ação, risco) | **Etapa** (mudar grupo do PDN + queda).
+  - Atalhos no header: "Abrir lead no pipeline" (nova aba), WhatsApp, visitas.
 
-Mesma mudança do #2 no bloco "agendar tarefa" da fase 3 (`Próximo passo`).
+### Fase 3 — Publicação bidirecional (a mudança de comportamento)
+Cada bloco editável do drawer ganha um **botão "Publicar no lead"** com dois efeitos:
+1. Salva no overlay (`pdn_entries`) como hoje.
+2. **Cria uma anotação em `pipeline_anotacoes`** com:
+   - `tipo='gestor_pdn'`
+   - Texto: `"[Gestor · <nome>] <conteúdo>"` (observação, próxima ação, ou aviso).
+   - `origem_ref='pdn:<override_id>:<campo>:<hash>'` para idempotência (evita duplicar se clicar 2×).
+3. Se o campo publicado for "próxima ação" **com data**, oferece toggle adicional "criar tarefa para o corretor" → `pipeline_tarefas` com `origem='pdn'` e mesma `origem_ref`.
 
-### 4. Validação ao vivo (roteiro fixo)
+Regras:
+- Botão só aparece quando o campo tem conteúdo E há `pipeline_lead_id` (linha do pipeline).
+- Botão vira "Publicado ✓ há Xh" após o clique; muda para "Republicar" se o texto for editado depois.
+- "Avisar corretor" continua enviando notificação **e** publica no lead (nota + notificação juntas).
+- Notas publicadas aparecem no histórico do lead marcadas com badge "Gestor" para o corretor.
 
-Para cada ponto, testar num lead **em Qualificação** (chips visíveis), **em Aquecimento** (chips diferentes), **em Sem Contato** (modo livre / bloqueado quando fizer sentido):
+### Fase 4 — Permissões e RLS
+- Auditar policies de `pdn_entries`, `pipeline_anotacoes`, `pipeline_tarefas`.
+- Garantir INSERT/UPDATE em `pdn_entries` para roles `gestor`, `diretor`, `admin` (CEO cai em `admin` ou `diretor` no projeto — confirmo antes).
+- Se faltar cobertura para `diretor`, adiciono policy via migration:
+  ```
+  CREATE POLICY "diretoria manages pdn_entries" ON public.pdn_entries
+    FOR ALL TO authenticated
+    USING (public.has_role(auth.uid(), 'diretor') OR public.has_role(auth.uid(), 'admin'))
+    WITH CHECK (public.has_role(auth.uid(), 'diretor') OR public.has_role(auth.uid(), 'admin'));
+  ```
+- `pipeline_anotacoes`: garantir INSERT permitido para gestor/diretor/admin do lead.
+- Nenhuma mudança de schema além de policies faltantes (não crio colunas novas).
 
-1. **Central de Tarefas** (`/minhas-tarefas`) → ➕ Nova Tarefa → buscar lead → chips renderizam por etapa; leads em Descarte/Visita/Contrato não aparecem.
-2. **Drawer do lead → aba Tarefas** → "Nova tarefa" → NextActionModal com chips.
-3. **Drawer → Card Próxima Ação (vazio)** → "Criar tarefa" → NextActionModal com chips.
-4. **Concluir tarefa** (qualquer origem) → bloco "Agendar próxima tarefa" com chips.
-5. **Modo Foco** → concluir tarefa do lead → chips no fluxo de agendar próxima.
-6. **Widget Dashboard "Tarefas de hoje"** → concluir tarefa direto do widget → chips.
-7. **Drawer → botão WhatsApp** → após enviar, agendar próxima → chips (após implementação).
-8. **Drawer → botão Ligar** → concluir ligação, próximo passo → chips (após implementação).
+### Fase 5 — Foco do dia + comparativo (evolução)
+- Banda "Foco do dia" (contratos travados >3d, negociação sem toque >7d, ganhos assinados hoje, caídos da semana).
+- Mini-gráfico VGV assinado vs mês anterior vs meta.
+- "Copiar resumo para WhatsApp" (texto pronto pro CEO/diretor mandar).
 
-Cada passo confirma:
+---
 
-- Chips corretos por etapa (Qualificação: enviar imóveis, busca, alinhar perfil, retomar, outro; Aquecimento: prazos 30/60/90; Em Negociação: proposta enviada, aprovação, correspondente, documentação).
-- Ao clicar o chip → tipo/data/hora/observação preenchidos.
-- `flag_status` do lead atualiza quando o preset tem `syncFlagKey`.
+## Ordem de entrega
 
-### 5. Fora de escopo
+1. Mockup (desktop planilha + mobile kanban + drawer com "Publicar no lead") → aprovação.
+2. **Fase 1** (redesign + quebra do arquivo) → validação ao vivo no preview.
+3. **Fase 2** (drawer novo com contexto) → validação.
+4. **Fase 4** (policies de diretor/CEO) — migration entra aqui, antes de habilitar a publicação em massa.
+5. **Fase 3** (botão "Publicar no lead" + nota no histórico) → validação com lead de teste (nunca real).
+6. **Fase 5** (foco do dia + comparativo).
 
-- Não mexer em `QuickActionMenu` (callback +2h é fixo por design).
-- Não mexer em criação implícita por triggers/cron (visita, cadência sem contato, aquecimento auto).
-- Sem migration.
+Cada fase validada ao vivo antes da próxima. Nenhuma migration destrutiva. Testes adicionados para o fluxo "Publicar no lead cria anotação idempotente".
 
-## Arquivos afetados
+---
 
-- **Deletar:** `src/components/pipeline/CardQuickTaskPopover.tsx`
-- **Editar:** `src/components/pipeline/WhatsAppFocusFlow.tsx`, `src/components/pipeline/CallFocusOverlay.tsx`
+## Detalhes técnicos
+
+- Sem mudança de schema além de policies em Fase 4.
+- Publicação usa cliente autenticado — RLS cuida da permissão real; UI esconde o botão se o role não puder publicar.
+- Idempotência por `origem_ref='pdn:<override_id>:<campo>:<md5(texto)>'` — republicar com texto igual não duplica; com texto diferente cria nova nota.
+- Timezone BRT em toda formatação de datas (`formatBRT`).
+- Todos os arquivos novos ≤300 linhas; `PdnGestor.tsx` fica ≤200.
+- Testes: `pdn/pdnPublish.test.tsx` cobrindo publicação, republicação, idempotência.
+
+Se aprovar este plano, começo pelo **mockup visual** (Fase 0 do padrão de trabalho).
