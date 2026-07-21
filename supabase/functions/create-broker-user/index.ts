@@ -24,7 +24,24 @@ serve(async (req) => {
       action, jetimob_user_id, email, nome, senha, gerente_id, role,
       target_user_id, reassign_to, telefone, cpf, creci,
       reassign_leads, reassign_negocios, reassign_tarefas,
+      absorb_team_to,
     } = body;
+
+    // Helper: best-effort audit log
+    async function logAudit(acao: string, targetId: string | null, antes: any, depois: any) {
+      try {
+        await (globalThis as any).__supa_audit_client__?.from("audit_log").insert({
+          user_id: targetId,
+          modulo: "usuarios",
+          acao,
+          chave_unica: targetId,
+          antes: antes ?? null,
+          depois: depois ?? null,
+          origem: "central_usuarios",
+          descricao: `${acao} by ${(globalThis as any).__caller_email__ || "system"}`,
+        });
+      } catch (e) { /* ignore */ }
+    }
 
     // Verify caller
     const authHeader = req.headers.get("Authorization");
