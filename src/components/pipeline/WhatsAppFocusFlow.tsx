@@ -485,22 +485,64 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#52525b", display: "block", marginBottom: 8 }}>
                   📋 Próxima tarefa
                 </label>
-                <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                  {TASK_TYPES.map(t => (
-                    <button
-                      key={t.value}
-                      onClick={() => setTaskType(t.value)}
-                      className={cn(
-                        "text-[11px] px-3 py-1.5 rounded-md border transition-colors font-semibold",
-                        taskType === t.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-border hover:border-primary/50"
-                      )}
-                    >
-                      {t.emoji} {t.label}
-                    </button>
-                  ))}
-                </div>
+                {hasPresets ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                    {stagePresets.map((p) => {
+                      const Icon = p.Icon;
+                      const active = selectedPresetId === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => handlePickPreset(p)}
+                          className={cn(
+                            "text-[11px] px-3 py-1.5 rounded-full border transition-colors font-semibold inline-flex items-center gap-1",
+                            active
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background border-border hover:border-primary/50",
+                          )}
+                        >
+                          <Icon className="h-3 w-3" />
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                    {TASK_TYPES.map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => setTaskType(t.value)}
+                        className={cn(
+                          "text-[11px] px-3 py-1.5 rounded-md border transition-colors font-semibold",
+                          taskType === t.value
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:border-primary/50"
+                        )}
+                      >
+                        {t.emoji} {t.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {hasPresets && freeMode && (
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                    {TASK_TYPES.map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => setTaskType(t.value)}
+                        className={cn(
+                          "text-[11px] px-3 py-1.5 rounded-md border transition-colors font-semibold",
+                          taskType === t.value
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:border-primary/50"
+                        )}
+                      >
+                        {t.emoji} {t.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 8 }}>
                   <Input type="date" className="h-8 text-[12px] flex-1" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} />
                   <Input type="time" className="h-8 text-[12px] w-28" value={taskTime} onChange={(e) => setTaskTime(e.target.value)} />
