@@ -462,6 +462,29 @@ export default function MinhasTarefas() {
     enabled: !!user && leadSearch.length >= 2,
   });
 
+  // Etapa do lead selecionado — dispara presets contextuais no popup "Nova tarefa"
+  const { data: selectedLeadStage } = useQuery({
+    queryKey: ["nova-tarefa-lead-stage", selectedLeadId],
+    queryFn: async () => {
+      if (!selectedLeadId) return null;
+      const { data } = await supabase
+        .from("pipeline_leads")
+        .select("stage_id, flag_status, pipeline_stages:stage_id(tipo)")
+        .eq("id", selectedLeadId)
+        .maybeSingle();
+      const stageTipo = (data as any)?.pipeline_stages?.tipo ?? null;
+      return { stageTipo, flagStatus: (data as any)?.flag_status ?? {} };
+    },
+    enabled: !!selectedLeadId,
+  });
+  const stageTipoSelecionado = selectedLeadStage?.stageTipo ?? null;
+  const presetsDisponiveis = useMemo(() => getPresetsForStage(stageTipoSelecionado), [stageTipoSelecionado]);
+  const [presetSelecionadoId, setPresetSelecionadoId] = useState<string | null>(null);
+  const presetSelecionado = useMemo<TaskPreset | null>(
+    () => presetsDisponiveis.find((p) => p.id === presetSelecionadoId) ?? null,
+    [presetsDisponiveis, presetSelecionadoId],
+  );
+
   const { data: searchNegocios = [] } = useQuery({
     queryKey: ["negocio-search-tarefas", negocioSearch],
     queryFn: async () => {
