@@ -11618,6 +11618,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_empreendimento_ativo: {
+        Args: { p_ativo: boolean; p_empreendimento_id: string }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       skip_oa_lead: {
