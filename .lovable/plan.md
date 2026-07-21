@@ -1,130 +1,66 @@
-# PDN unificado — plano de evolução
 
-Objetivo: transformar o PDN em UMA página com dois modos de leitura (Planilha e Kanban) alimentados pela **mesma fonte, o mesmo drawer e as mesmas ações**. Hoje só o Kanban tem drawer com "Publicar no lead" — a Planilha edita inline e nunca abre o drawer. Vamos fechar essa lacuna e usar o momento pra elevar o PDN ao nível de "central de gestão de negócios do gestor".
+# Fase 1 — Drawer Universal do PDN
 
----
+Hoje a Planilha edita tudo inline e o Kanban abre um `PdnCardDrawer` com "Publicar no lead". Isso quebra a paridade: ações-chave (publicar, avisar, timeline, mudar etapa) só existem em um dos lados. A Fase 1 resolve isso trocando os dois pontos de entrada por um único drawer com 3 abas.
 
-## Estudo: Planilha vs Kanban (qual é melhor?)
+## Objetivo
 
-Ambos têm razão de existir. A diferença não é "qual é melhor", é "melhor pra quê":
+Um único ponto de verdade para "editar um negócio no PDN", chamado tanto pela Planilha (clique no nome/linha) quanto pelo Kanban (clique no card). Todas as ações — publicar no lead, avisar corretor, mudar etapa PDN, editar VGV/observação, ver o histórico do lead — ficam disponíveis em qualquer view.
 
-| Uso real do gestor | Vence | Por quê |
-|---|---|---|
-| Reunião 1:1 com corretor, ler linha por linha | **Planilha** | densidade, colunas alinhadas, comparar VGV/data lado a lado |
-| Bater olho "onde cada negócio está" | **Kanban** | agrupamento visual por etapa é imediato |
-| Editar em lote (mesma prioridade em 5 negócios) | **Planilha** | seleção múltipla natural em linhas |
-| Mover negócio de etapa | **Kanban** | drag entre colunas é o gesto certo |
-| Ver 100+ negócios ao mesmo tempo | **Planilha** | scroll vertical vence scroll horizontal |
-| Foco em um negócio específico | **empate** | ambos abrem o mesmo drawer |
-| Mobile 440px | **Kanban** | 1 coluna por vez cabe; tabela larga não cabe |
-| Ordenar por VGV / data / risco | **Planilha** | headers clicáveis |
+## O que muda na UI
 
-**Recomendação**: manter os dois, com padrão por dispositivo (planilha no desktop, kanban no mobile) e **paridade total de funcionalidade**. Toggle na toolbar. Preferência persistida por device (já implementado).
+Drawer lateral (Sheet 480px desktop, full mobile), com header + 3 abas:
 
-O ganho não é escolher um — é fazer os dois falarem a mesma língua.
+- **Contexto** — dados de leitura do lead + timeline. Nome, corretor, equipe, data, atalho "Abrir lead no pipeline", e a última janela de eventos vinda de `v_lead_timeline` (últimos 15). Para linhas manuais (`isManual`), a aba mostra só um aviso "negócio manual — sem lead no pipeline".
+- **Ação** — o que hoje já está no `PdnCardDrawer`: Status, Prioridade, Próxima ação + data, Observação interna, com os botões "Publicar no lead" idempotentes (SHA-1 marker). Para linhas manuais, os botões de publicar somem.
+- **Etapa** — seletor de etapa PDN + "voltar à etapa do pipeline", editor de Empreendimento/VGV (overlay do gestor), bloco "Avisar corretor", risco manual + motivo, e ações destrutivas (Queda / Reativar / Remover da planilha) no rodapé.
 
----
+Ícone/menu na Planilha: a coluna "Nome" vira clicável (abre drawer). Os ícones da direita (avisar/queda/remover) continuam como atalho rápido sem abrir o drawer. No Kanban, o clique no card continua abrindo o drawer (comportamento atual).
 
-## O gap real hoje
+## Escopo técnico
 
-- **Planilha edita inline** (célula a célula) e **não abre drawer**. Publicar no lead, timeline, avisar corretor, mudar etapa, marcar queda → tudo indisponível.
-- **Kanban abre drawer**, mas não tem edição rápida sem abrir o drawer (todo campo exige 2 cliques).
-- **Ações destrutivas** (queda, reativar, remover) só existem no drawer do kanban.
-- **Botão "Publicar no lead"** só aparece no drawer → planilha nunca publica.
-- **Colunas fixas** na planilha; gestor não escolhe o que vê.
-- **Sem seleção múltipla** em nenhum modo → não dá pra fazer "marcar prioridade alta em 8 negócios" numa 1:1.
-- **Sem busca/atalho** de negócio dentro do PDN (só filtros de topo).
-- **Drawer é o `PdnCardDrawer`** — só edita PDN, não mostra o contexto do lead (timeline, última nota do corretor, próxima tarefa dele).
+### Arquivos novos
 
----
+- `src/components/pdn/drawer/PdnLeadDrawer.tsx` — orquestrador. Recebe `row`, `onClose`, e os mesmos handlers que o `PdnCardDrawer` recebe hoje. Renderiza header + Tabs.
+- `src/components/pdn/drawer/PdnTabContexto.tsx` — timeline via `v_lead_timeline` (query direta filtrando `pipeline_lead_id`), reaproveita `DrawerTimelineGroup` de `src/components/pipeline/drawer/`.
+- `src/components/pdn/drawer/PdnTabAcao.tsx` — status, prioridade, próxima ação, observação + `PublishButton`. Extrai o `PublishButton` e `sha1Short` para um helper compartilhado `src/components/pdn/drawer/publish.ts`.
+- `src/components/pdn/drawer/PdnTabEtapa.tsx` — etapa PDN, empreendimento/VGV, avisar corretor, risco manual, ações destrutivas.
 
-## Fases
+### Arquivos alterados
 
-### Fase 1 — Drawer único e universal (a mudança que destrava tudo)
+- `src/components/pdn/PdnKanban.tsx` — troca `PdnCardDrawer` por `PdnLeadDrawer`. Sem outra mudança.
+- `src/pages/PdnGestor.tsx` — a Planilha ganha `selectedRow` state e passa `onOpenRow` para `PdnPlanilha` (subcomponente já interno ao arquivo). Clique no nome dispara o drawer. Renderiza `PdnLeadDrawer` no fim.
+- `src/components/pdn/PdnCardDrawer.tsx` — deletado (`rm`). Toda a lógica migra pra `PdnLeadDrawer` e as 3 tabs.
 
-Consolidar o drawer como **o ponto único de ação**, chamado tanto do Kanban quanto da Planilha.
+### Contrato de dados
 
-- Criar `PdnLeadDrawer` (substitui `PdnCardDrawer`) com 3 abas:
-  1. **Contexto do lead** — cabeçalho rico (nome, empreendimento, VGV, badges de risco/prioridade/dias parado). Timeline via `v_lead_timeline` (últimos 10 eventos). Última observação do corretor. Próxima tarefa dele. Atalhos: abrir lead no pipeline, WhatsApp, agenda.
-  2. **Ação do gestor** — status PDN, prioridade, observação, próxima ação (com data opcional), risco manual + motivo, empreendimento, VGV. **Cada bloco editável tem o botão "Publicar no lead"** (idempotente por hash — já funciona).
-  3. **Etapa** — mover entre grupos do PDN (Visita → Negociação → Contrato → Ganho), marcar queda, reativar. Nunca mexe no pipeline do corretor.
-- Planilha e Kanban chamam o **mesmo drawer**. Um clique na linha (planilha) ou no card (kanban) abre.
-- Drawer preserva o estado ao salvar (não fecha sozinho).
+- Timeline vem de `v_lead_timeline` (view canônica já existente, usada no lead drawer do pipeline). Filtro por `pipeline_lead_id`, limit 15, ordem DESC. Se a view não expor os campos esperados (`id`, `tipo`, `title`, `description`, `date`), a aba mostra fallback "sem eventos".
+- "Publicar no lead" continua idempotente por SHA-1 curto em `pipeline_anotacoes.conteudo` com marker `[pdn:<leadId>:<field>:<hash>]`. Nada muda no backend.
+- Sem migração de banco nesta fase.
 
-Resultado: paridade instantânea. Tudo que hoje só existe no kanban passa a existir também na planilha.
+### Comportamentos preservados
 
-### Fase 2 — Planilha nível SaaS
+- Edição de VGV/empreendimento continua sendo overlay (não altera o pipeline do corretor).
+- Ícones de ação rápida na direita da linha da Planilha continuam funcionando sem abrir drawer.
+- Mudança de etapa no PDN continua sendo local (não move o lead no pipeline).
+- Salvamento continua otimista via `onSave` / `onUpdateManual` como hoje.
 
-- **Linha inteira clicável** abre o drawer. Célula continua editável inline com duplo clique (mantém o fluxo de digitação rápida que o gestor já usa).
-- **Ícone de ação por linha**: 3 ícones fixos ao passar o mouse — abrir drawer, publicar no lead (atalho direto do texto de observação da linha), marcar queda.
-- **Colunas configuráveis** — menu "Colunas" na toolbar deixa o gestor escolher o que ver (empreendimento, VGV, status, prioridade, próxima ação, dias parado, corretor, última publicação). Preferência persistida por device.
-- **Seleção múltipla** (checkbox na primeira coluna) + barra de ação em lote no topo: "Definir prioridade", "Marcar como avisado", "Publicar observação no lead" (em massa), "Mover para Queda".
-- **Ordenação por qualquer coluna** com indicador visual.
-- **Densidade compacta/confortável** — toggle na toolbar (o Excel-like do gestor experiente).
-- **Zebra sutil + linha ativa destacada** (sem tabelão do Windows 98).
+## Fora do escopo (fica pra fases seguintes)
 
-### Fase 3 — Kanban nível SaaS
+- Fase 2: edição inline em mais campos, seleção múltipla, bulk actions, colunas configuráveis.
+- Fase 3: ações rápidas no hover do card do Kanban e preview horizontal de impacto.
+- Fase 4: criar tarefa no pipeline do corretor a partir do PDN.
 
-- Card do kanban ganha **botões rápidos no hover**: publicar no lead (usa a observação atual como corpo), avisar corretor, marcar queda. Sem precisar abrir drawer pra tarefas repetitivas.
-- Badge de **"publicado há Xh"** no card quando a última observação já virou nota no lead.
-- **Drag horizontal com preview** do impacto (VGV que sai da coluna origem, entra na destino).
-- **Colunas colapsáveis** (Ganho/Caídos ocupam muito espaço em meses grandes).
-- **Contador de risco/novos** no topo de cada coluna já existe; adicionar contador de "pendentes de publicar" (linhas com observação nova ainda não publicada no lead).
+## Validação antes de fechar
 
-### Fase 4 — Integração com o pipeline (bidirecional de verdade)
+1. Typecheck limpo + `bunx vitest run` verde.
+2. Playwright em `/pdn`: clicar num nome na Planilha abre o drawer; alternar Planilha↔Kanban e clicar num card abre o mesmo drawer; navegar entre as 3 abas; publicar uma observação e ver o botão virar "Publicado ✓"; recarregar e o estado "Publicado ✓" persistir; em lead manual, aba Contexto mostra o aviso e a aba Ação esconde os botões de publicar.
+3. Smoke em 440px: drawer full-width, tabs legíveis, sem overflow.
 
-- **Publicar no lead** continua idempotente por hash + `origem_ref='pdn:<override_id>:<campo>:<hash>'`.
-- Nota gerada aparece no histórico do lead com badge visual **"Gestor · PDN"** (já combinado; falta confirmar o styling do badge no `LeadHistoricoTab`).
-- **Se a próxima ação tiver data**, oferecer toggle "Também criar tarefa pro corretor" → `pipeline_tarefas` com `origem='pdn'` e mesmo `origem_ref`. Sem duplicar se republicar. Bloqueado se lead está em Visita (respeita regras já existentes).
-- **Botão "Avisar corretor"** unifica: manda notificação **e** publica a mensagem no histórico do lead (uma ação só, dois efeitos).
-- **Voltar do lead pro PDN**: no drawer do lead no pipeline, adicionar link "Ver no PDN do mês" quando o lead tem entrada em `pdn_entries`.
+## Riscos / mitigação
 
-### Fase 5 — Toolbar unificada e busca
+- Perda de estado ao trocar de aba enquanto edita: o form vive no `PdnLeadDrawer`, tabs só trocam qual bloco fica visível. Sem desmontar campos.
+- Timeline lenta em leads com muitos eventos: limit 15 + skeleton.
+- Regressão no Kanban: teste manual do fluxo drag-drop de etapa continua igual (drawer não toca em drag).
 
-- **Barra de busca** dentro do PDN (`⌘K` estilo) que encontra negócio por nome do lead, empreendimento ou corretor e abre o drawer direto.
-- **Filtros como chips arredondados** (equipe, corretor, empreendimento, status, prioridade, risco) — mesmos filtros valem pros dois modos.
-- **Toggle "Meus negócios / Time / Todos"** persistente por role (gestor vê time por default, CEO vê todos).
-- **Botão "Copiar resumo pro WhatsApp"** — gera texto pronto com VGV assinado no mês, negócios em risco e caídos da semana.
-- Header sticky com blur (já implementado).
-
-### Fase 6 — Quebra do arquivo + performance
-
-- `PdnGestor.tsx` (978 linhas) vira `<200`: extrair `PdnHeader`, `PdnKpiStrip`, `PdnFilters`, `PdnPlanilhaView`, `PdnDuplicadosCard`, `PdnResumoEquipes`, `PdnBulkActionsBar`.
-- `PdnLeadDrawer` também `<300` linhas (dividir em `PdnLeadContextTab`, `PdnLeadActionTab`, `PdnLeadStageTab`).
-- Virtualização da planilha a partir de 100 linhas (já sofre em meses grandes).
-- Memoização das linhas do kanban (re-render evitado no drag).
-
-### Fase 7 — Permissões e RLS
-
-- Confirmar policies em `pdn_entries` e `pipeline_anotacoes` pra gestor/diretor/admin (CEO cai em admin no projeto — já validado).
-- UI esconde botões que o role não pode acionar (nunca só desabilita — some).
-- Se faltar cobertura pra `diretor`, migration aditiva com `has_role(auth.uid(), 'diretor')`.
-
----
-
-## Ordem de entrega (com validação ao vivo entre cada fase)
-
-1. **Mockup HTML** (desktop planilha + mobile kanban + drawer unificado com abas Contexto/Ação/Etapa) → você aprova.
-2. **Fase 1** — drawer único chamado dos dois modos. Sozinho já resolve 80% do problema (planilha ganha publicar, avisar, queda). → validar clicando em lead de teste.
-3. **Fase 2** — planilha nível SaaS (colunas configuráveis, seleção múltipla, ações em lote).
-4. **Fase 3** — kanban nível SaaS (ações rápidas no card).
-5. **Fase 4** — integrações bidirecionais (tarefa pro corretor + link de volta).
-6. **Fase 5** — busca + copiar resumo.
-7. **Fase 6** — quebra de arquivo + virtualização.
-8. **Fase 7** — auditoria de RLS.
-
-Cada fase é validada ao vivo no preview com lead de teste (sempre Cancelar em leads reais). Nenhuma migration destrutiva. Nada que já funciona no kanban regride.
-
----
-
-## Detalhes técnicos
-
-- Nenhuma mudança de schema até Fase 7 (só se faltar policy).
-- Idempotência mantida: `origem_ref='pdn:<override_id>:<campo>:<md5(texto)>'`.
-- Publicação em lote (Fase 2) faz N inserts com `origem_ref` distinto por linha; se hash já existe, pula.
-- Preferências (view mode, colunas visíveis, densidade) em `localStorage` chaveadas por device: `pdn:view:{desktop|mobile}`, `pdn:cols:{desktop|mobile}`, `pdn:density`.
-- Timezone BRT em todo formato de data (`formatBRT`).
-- Tokens semânticos do design system — nada de cor hard-coded.
-- Testes: `pdn/pdnDrawerParity.test.tsx` (drawer abre igual dos dois modos), `pdn/pdnBulkPublish.test.tsx` (publicação em lote idempotente).
-
-Se aprovar o rumo, começo pelo **mockup visual da Fase 1** (drawer unificado com as 3 abas + como fica o clique da linha da planilha abrindo esse drawer).
+Aprovando esse escopo, sigo pro build.
