@@ -196,14 +196,17 @@ export function useFocoPerformance(from: string, to: string, enabled = true) {
     queryKey: ["foco", "performance", from, to],
     enabled,
     queryFn: async (): Promise<PerfRow[]> => {
-      const { data, error } = await supabase
-        .from("v_corretor_empreendimento_performance")
-        .select("auth_user_id, empreendimento_id, leads_recebidos, visitas_agendadas, visitas_realizadas, no_shows, vendas, vgv, dia")
-        .gte("dia", from)
-        .lte("dia", to);
-      if (error) throw error;
+      const { fetchAllRows } = await import("@/lib/paginatedFetch");
+      const data = await fetchAllRows<any>((fromIdx, toIdx) =>
+        supabase
+          .from("v_corretor_empreendimento_performance")
+          .select("auth_user_id, empreendimento_id, leads_recebidos, visitas_agendadas, visitas_realizadas, no_shows, vendas, vgv, dia")
+          .gte("dia", from)
+          .lte("dia", to)
+          .range(fromIdx, toIdx),
+      );
       const agg = new Map<string, PerfRow>();
-      for (const r of data || []) {
+      for (const r of data) {
         const k = `${r.auth_user_id}::${r.empreendimento_id ?? "null"}`;
         const cur = agg.get(k) || {
           auth_user_id: r.auth_user_id,
@@ -228,6 +231,7 @@ export function useFocoPerformance(from: string, to: string, enabled = true) {
     staleTime: 60_000,
   });
 }
+
 
 /** Alocação do corretor logado (empreendimentos + segmentos derivados). */
 export interface MinhaAlocacaoRow {
