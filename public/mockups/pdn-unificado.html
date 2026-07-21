@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PDN Unificado — Mockup Fase 1</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --bg: #0A0E1A;
+    --surface: #111725;
+    --surface-2: #171f30;
+    --border: #1f2a3f;
+    --border-strong: #2a3852;
+    --text: #E6EAF2;
+    --muted: #8a94a8;
+    --primary: #4969FF;
+    --primary-soft: #4969ff22;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --violet: #a855f7;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); transition: all .15s; }
+  .btn:hover { border-color: var(--primary); }
+  .btn-primary { background: var(--primary); border-color: var(--primary); color: white; }
+  .btn-primary:hover { background: #3855e0; }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
+  .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+  .divider { height: 1px; background: var(--border); }
+  .tab { padding: 10px 16px; font-size: 13px; font-weight: 500; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; }
+  .tab.active { color: var(--text); border-color: var(--primary); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th { text-align: left; font-weight: 500; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  tr.row:hover { background: var(--surface-2); cursor: pointer; }
+  tr.row:hover .row-actions { opacity: 1; }
+  .row-actions { opacity: 0; transition: opacity .15s; }
+  .kanban-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 290px; flex-shrink: 0; }
+  .kanban-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; }
+  .kanban-card:hover { border-color: var(--primary); }
+  .scroll-hint { color: var(--muted); font-size: 11px; }
+  .toggle { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+  .toggle button { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .toggle button.active { background: var(--primary); color: white; }
+  .kpi-card { flex: 1; min-width: 140px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .kpi-value { font-size: 20px; font-weight: 600; margin-top: 4px; }
+  .drawer { position: fixed; right: 0; top: 0; bottom: 0; width: 520px; background: var(--surface); border-left: 1px solid var(--border); z-index: 50; overflow-y: auto; box-shadow: -20px 0 40px rgba(0,0,0,.5); }
+  .badge-published { background: #22c55e22; color: #22c55e; }
+  .badge-pending { background: #f59e0b22; color: #f59e0b; }
+  .badge-risk { background: #ef444422; color: #ef4444; }
+  .badge-prio-alta { background: #ef444422; color: #ef4444; }
+  .badge-prio-media { background: #f59e0b22; color: #f59e0b; }
+  .field-block { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .field-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+  .field-value { font-size: 14px; }
+  .timeline-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 12px; }
+  .timeline-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); margin-top: 6px; flex-shrink: 0; }
+  .stage-pill { padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; }
+  .stage-pill.active { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+  .section-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 0 12px; }
+  input, select, textarea { background: var(--bg); border: 1px solid var(--border-strong); color: var(--text); border-radius: 6px; padding: 6px 10px; font-size: 13px; width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="max-w-[1600px] mx-auto p-6 space-y-10">
+
+  <!-- Título -->
+  <div>
+    <h1 class="text-2xl font-semibold">PDN Unificado — Mockup Fase 1</h1>
+    <p class="text-sm text-[color:var(--muted)] mt-1">Planilha + Kanban falam a mesma língua. Um único drawer atende os dois modos. "Publicar no lead" disponível em qualquer visualização.</p>
+  </div>
+
+  <!-- ============================================= -->
+  <!-- 1) DESKTOP — PLANILHA -->
+  <!-- ============================================= -->
+  <section>
+    <div class="flex items-center gap-3 mb-3">
+      <span class="chip bg-[color:var(--primary-soft)] text-[color:var(--primary)]">1</span>
+      <h2 class="text-lg font-medium">Desktop 1280px — Modo Planilha (padrão)</h2>
+    </div>
+
+    <div class="card overflow-hidden">
+      <!-- Header sticky -->
+      <div class="px-4 py-3 border-b border-[color:var(--border)] flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <button class="btn-ghost btn">◀</button>
+            <span class="font-medium">Julho de 2026</span>
+            <button class="btn-ghost btn">▶</button>
+          </div>
+          <div class="toggle">
+            <button class="active">📋 Planilha</button>
+            <button>🔲 Kanban</button>
+          </div>
+          <div class="toggle">
+            <button class="active">Meu time</button>
+            <button>Todos</button>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <input placeholder="🔍 Buscar negócio (⌘K)" class="w-64 !text-xs" />
+          <button class="btn">🧩 Colunas</button>
+          <button class="btn">⚙ Densidade</button>
+          <button class="btn">📤 Exportar</button>
+          <button class="btn btn-primary">↻ Atualizar</button>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="px-4 py-3 border-b border-[color:var(--border)] flex gap-3 overflow-x-auto">
+        <div class="kpi-card"><div class="kpi-label">VGV Total</div><div class="kpi-value">R$ 12,4M</div></div>
+        <div class="kpi-card"><div class="kpi-label">Assinado no mês</div><div class="kpi-value text-[color:var(--success)]">R$ 3,1M</div></div>
+        <div class="kpi-card"><div class="kpi-label">Em risco</div><div class="kpi-value text-[color:var(--warn)]">7</div></div>
+        <div class="kpi-card"><div class="kpi-label">Caídos (mês)</div><div class="kpi-value text-[color:var(--danger)]">4</div></div>
+        <div class="kpi-card"><div class="kpi-label">Pendentes publicar</div><div class="kpi-value text-[color:var(--primary)]">12</div></div>
+      </div>
+
+      <!-- Filtros chips -->
+      <div class="px-4 py-2 border-b border-[color:var(--border)] flex gap-2 flex-wrap">
+        <span class="chip bg-[color:var(--surface-2)] border border-[color:var(--border)]">Equipe · Todas ▾</span>
+        <span class="chip bg-[color:var(--surface-2)] border border-[color:var(--border)]">Corretor · Todos ▾</span>
+        <span class="chip bg-[color:var(--surface-2)] border border-[color:var(--border)]">Empreendimento · Todos ▾</span>
+        <span class="chip bg-[color:var(--primary-soft)] text-[color:var(--primary)]">Prioridade · Alta ✕</span>
+        <span class="chip bg-[color:var(--surface-2)] border border-[color:var(--border)]">Risco · Todos ▾</span>
+      </div>
+
+      <!-- Barra de ação em lote (aparece quando há seleção) -->
+      <div class="px-4 py-2 border-b border-[color:var(--border)] bg-[color:var(--primary-soft)] flex items-center justify-between">
+        <span class="text-sm"><b>3 negócios selecionados</b></span>
+        <div class="flex gap-2">
+          <button class="btn text-xs">🚩 Prioridade</button>
+          <button class="btn text-xs">📢 Avisar corretor</button>
+          <button class="btn text-xs">📮 Publicar no lead (3)</button>
+          <button class="btn text-xs">📉 Mover para Queda</button>
+        </div>
+      </div>
+
+      <!-- Tabela -->
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th class="w-8"><input type="checkbox" class="!w-auto" /></th>
+              <th>Lead / Empreendimento</th>
+              <th>Corretor</th>
+              <th>Etapa PDN</th>
+              <th>Status</th>
+              <th>VGV</th>
+              <th>Próx. ação</th>
+              <th>Última publ.</th>
+              <th>Prio</th>
+              <th class="w-24">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row">
+              <td><input type="checkbox" class="!w-auto" checked /></td>
+              <td>
+                <div class="font-medium">Wagner Silva</div>
+                <div class="text-xs text-[color:var(--muted)]">Reserva Panamby · Torre B — 902</div>
+              </td>
+              <td class="text-xs">Billy Freitas</td>
+              <td><span class="chip bg-[color:var(--surface-2)] border border-[color:var(--border)]">Em Negociação</span></td>
+              <td class="text-xs">Proposta enviada</td>
+              <td class="font-medium">R$ 1,2M</td>
+              <td class="text-xs">21/07 · Ligar 14h</td>
+              <td><span class="chip badge-published">✓ Publicado 2h</span></td>
+              <td><span class="chip badge-prio-alta">Alta</span></td>
+              <td>
+                <div class="row-actions flex gap-1">
+                  <button class="btn-ghost btn !p-1" title="Abrir">🗂</button>
+                  <button class="btn-ghost btn !p-1" title="Publicar">📮</button>
+                  <button class="btn-ghost btn !p-1" title="Queda">📉</button>
+                </div>
+              </td>
+            </tr>
+            <tr class="row" style="background: var(--primary-soft)">
+              <td><input type="checkbox" class="!w-auto" checked /></td>
+              <td>
+                <div class="font-medium">Maria Fernanda Costa</div>
+                <div class="text-xs text-[color:var(--muted)]">Alto Butantã · Unid. 501</div>
+              </td>
+              <td class="text-xs">Leonardo B.</td>
+              <td><span class="chip bg-[color:var(--surface-2)] border border-[color:var(--border)]">Contrato</span></td>
+              <td class="text-xs">Em confecção</td>
+              <td class="font-medium">R$ 890k</td>
+              <td class="text-xs text-[color:var(--danger)]">Atrasado · 2d</td>
+              <td><span class="chip badge-pending">Novo texto</span></td>
+              <td><span class="chip badge-prio-alta">Alta</span></td>
+              <td>
+                <div class="row-actions flex gap-1" style="opacity:1">
+                  <button class="btn-ghost btn !p-1">🗂</button>
+                  <button class="btn-ghost btn !p-1">📮</button>
+                  <button class="btn-ghost btn !p-1">📉</button>
+                </div>
+              </td>
+            </tr>
+            <tr class="row">
+              <td><input type="checkbox" class="!w-auto" checked /></td>
+              <td>
+                <div class="font-medium">Roberto Almeida</div>
+                <div class="text-xs text-[color:var(--muted)]">Vila Madalena · 203</div>
+              </td>
+              <td class="text-xs">Amanda R.</td>
+              <td><span class="chip bg-[color:var(--surface-2)] border border-[color:var(--border)]">Visita</span></td>
+              <td class="text-xs">Visita marcada 22/07</td>
+              <td class="font-medium">R$ 640k</td>
+              <td class="text-xs">Confirmar 21/07</td>
+              <td><span class="chip badge-pending">Novo texto</span></td>
+              <td><span class="chip badge-prio-media">Média</span></td>
+              <td>
+                <div class="row-actions flex gap-1">
+                  <button class="btn-ghost btn !p-1">🗂</button>
+                  <button class="btn-ghost btn !p-1">📮</button>
+                  <button class="btn-ghost btn !p-1">📉</button>
+                </div>
+              </td>
+            </tr>
+            <tr class="row">
+              <td><input type="checkbox" class="!w-auto" /></td>
+              <td>
+                <div class="font-medium">Carla Mendes <span class="chip badge-risk ml-1">⚠ risco</span></div>
+                <div class="text-xs text-[color:var(--muted)]">Casa Verde · 1104</div>
+              </td>
+              <td class="text-xs">Billy Freitas</td>
+              <td><span class="chip bg-[color:var(--surface-2)] border border-[color:var(--border)]">Em Negociação</span></td>
+              <td class="text-xs">Aprovação bancária</td>
+              <td class="font-medium">R$ 1,05M</td>
+              <td class="text-xs">— parado 9d</td>
+              <td><span class="text-xs text-[color:var(--muted)]">—</span></td>
+              <td><span class="chip badge-prio-media">Média</span></td>
+              <td>
+                <div class="row-actions flex gap-1">
+                  <button class="btn-ghost btn !p-1">🗂</button>
+                  <button class="btn-ghost btn !p-1">📮</button>
+                  <button class="btn-ghost btn !p-1">📉</button>
+                </div>
+              </td>
+            </tr>
+            <tr class="row">
+              <td><input type="checkbox" class="!w-auto" /></td>
+              <td>
+                <div class="font-medium">Paulo Henrique</div>
+                <div class="text-xs text-[color:var(--muted)]">Bela Vista · 88</div>
+              </td>
+              <td class="text-xs">Leonardo B.</td>
+              <td><span class="chip bg-[color:var(--surface-2)] border border-[color:var(--border)]">Ganho 🏆</span></td>
+              <td class="text-xs">Assinado 18/07</td>
+              <td class="font-medium text-[color:var(--success)]">R$ 720k</td>
+              <td class="text-xs">—</td>
+              <td><span class="chip badge-published">✓ Publicado 1d</span></td>
+              <td><span class="chip bg-[color:var(--surface-2)]">Baixa</span></td>
+              <td>
+                <div class="row-actions flex gap-1">
+                  <button class="btn-ghost btn !p-1">🗂</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="px-4 py-3 text-xs text-[color:var(--muted)] flex items-center justify-between">
+        <span>Mostrando 5 de 42 negócios</span>
+        <span>💡 Clique numa linha pra abrir o drawer completo · duplo-clique numa célula pra editar inline</span>
+      </div>
+    </div>
+
+    <p class="text-xs text-[color:var(--muted)] mt-3">
+      🔑 <b>O que muda:</b> linha inteira abre drawer (paridade com kanban) · ações rápidas no hover (abrir/publicar/queda) · seleção múltipla com barra de ação em lote · colunas configuráveis · busca dentro do PDN · badge "publicado / pendente" em cada linha.
+    </p>
+  </section>
+
+  <!-- ============================================= -->
+  <!-- 2) DRAWER UNIFICADO -->
+  <!-- ============================================= -->
+  <section>
+    <div class="flex items-center gap-3 mb-3">
+      <span class="chip bg-[color:var(--primary-soft)] text-[color:var(--primary)]">2</span>
+      <h2 class="text-lg font-medium">Drawer único — chamado dos dois modos</h2>
+    </div>
+
+    <div class="card overflow-hidden relative" style="min-height: 720px">
+      <!-- fundo esmaecido -->
+      <div class="p-8 opacity-40 select-none pointer-events-none">
+        <div class="text-sm text-[color:var(--muted)]">... (planilha ou kanban embaixo, esmaecidos)</div>
+      </div>
+
+      <!-- drawer -->
+      <div class="drawer" style="position: absolute; right: 0; top: 0; bottom: 0; box-shadow: none;">
+        <!-- Header do drawer -->
+        <div class="p-4 border-b border-[color:var(--border)]">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1">
+              <div class="text-xs text-[color:var(--muted)] mb-1">Reserva Panamby · Torre B — 902</div>
+              <div class="text-lg font-semibold">Wagner Silva</div>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span class="chip badge-prio-alta">🔥 Alta</span>
+                <span class="chip badge-risk">⚠ Em risco</span>
+                <span class="chip bg-[color:var(--surface-2)] border border-[color:var(--border)]">Parado 4d</span>
+                <span class="chip badge-published">✓ Publicado 2h</span>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              <button class="btn-ghost btn !p-1.5" title="Abrir no pipeline">↗</button>
+              <button class="btn-ghost btn !p-1.5" title="WhatsApp">💬</button>
+              <button class="btn-ghost btn !p-1.5" title="Fechar">✕</button>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center justify-between text-sm">
+            <span class="text-[color:var(--muted)]">VGV</span>
+            <span class="font-semibold text-lg">R$ 1.200.000</span>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex border-b border-[color:var(--border)] px-2">
+          <div class="tab active">Contexto do lead</div>
+          <div class="tab">Ação do gestor</div>
+          <div class="tab">Etapa</div>
+        </div>
+
+        <!-- Conteúdo aba "Contexto do lead" -->
+        <div class="p-4">
+          <div class="section-title">Última observação do corretor</div>
+          <div class="field-block">
+            <div class="text-sm italic">"Cliente aguardando aprovação do FGTS. Falei ontem, ele disse que deve sair até quinta. Marquei follow-up sexta 10h."</div>
+            <div class="text-xs text-[color:var(--muted)] mt-2">Billy Freitas · 20/07 15:42</div>
+          </div>
+
+          <div class="section-title">Próxima tarefa dele</div>
+          <div class="field-block">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm font-medium">Ligar para follow-up FGTS</div>
+                <div class="text-xs text-[color:var(--muted)]">Vence 24/07 · 10:00</div>
+              </div>
+              <span class="chip bg-[color:var(--surface)]">Pendente</span>
+            </div>
+          </div>
+
+          <div class="section-title">Timeline</div>
+          <div class="field-block">
+            <div class="timeline-item"><div class="timeline-dot"></div><div><b>Observação PDN publicada</b> · Gestor Ana · <span class="text-[color:var(--muted)]">2h atrás</span></div></div>
+            <div class="timeline-item"><div class="timeline-dot" style="background: var(--warn)"></div><div><b>Proposta enviada</b> · Billy · <span class="text-[color:var(--muted)]">ontem 15h</span></div></div>
+            <div class="timeline-item"><div class="timeline-dot" style="background: var(--success)"></div><div><b>Visita realizada</b> — cliente gostou muito · <span class="text-[color:var(--muted)]">15/07</span></div></div>
+            <div class="timeline-item"><div class="timeline-dot"></div><div><b>Lead qualificado</b> — perfil MCMV · <span class="text-[color:var(--muted)]">12/07</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-xs text-[color:var(--muted)] mt-3">
+      🔑 <b>3 abas</b>: <b>Contexto</b> (timeline do lead, o que o corretor escreveu, o que ele vai fazer) · <b>Ação do gestor</b> (campos editáveis + botão publicar por bloco — mockup abaixo) · <b>Etapa</b> (mover no PDN, queda, reativar).
+    </p>
+  </section>
+
+  <!-- ============================================= -->
+  <!-- 3) DRAWER — ABA AÇÃO DO GESTOR -->
+  <!-- ============================================= -->
+  <section>
+    <div class="flex items-center gap-3 mb-3">
+      <span class="chip bg-[color:var(--primary-soft)] text-[color:var(--primary)]">3</span>
+      <h2 class="text-lg font-medium">Drawer — aba "Ação do gestor" (publicar por bloco)</h2>
+    </div>
+
+    <div class="card p-4 max-w-[520px] space-y-3">
+      <div class="flex border-b border-[color:var(--border)] -mx-4 px-2 mb-2">
+        <div class="tab">Contexto</div>
+        <div class="tab active">Ação do gestor</div>
+        <div class="tab">Etapa</div>
+      </div>
+
+      <!-- Bloco: observação -->
+      <div class="field-block">
+        <div class="flex items-center justify-between mb-2">
+          <div class="field-label">📝 Observação do gestor</div>
+          <button class="btn btn-primary text-xs">📮 Publicar no lead</button>
+        </div>
+        <textarea rows="3">Billy precisa acelerar o retorno do banco. Se sexta não sair, mudar de correspondente.</textarea>
+        <div class="text-xs text-[color:var(--muted)] mt-2">💡 Publicar vira nota no histórico do lead como <b>[Gestor · PDN]</b> — o corretor vê. Idempotente por hash.</div>
+      </div>
+
+      <!-- Bloco: próxima ação -->
+      <div class="field-block">
+        <div class="flex items-center justify-between mb-2">
+          <div class="field-label">🎯 Próxima ação</div>
+          <span class="chip badge-published">✓ Publicado há 2h</span>
+        </div>
+        <input value="Retornar ligação FGTS até sexta 10h" />
+        <div class="flex items-center gap-2 mt-2">
+          <input type="date" value="2026-07-24" class="!w-40" />
+          <label class="text-xs flex items-center gap-1"><input type="checkbox" class="!w-auto" /> Criar tarefa pro corretor</label>
+        </div>
+        <button class="btn text-xs mt-2">🔄 Republicar (texto mudou)</button>
+      </div>
+
+      <!-- Bloco: status + prioridade + risco -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="field-block !mb-0">
+          <div class="field-label">Status PDN</div>
+          <select><option>Proposta enviada</option><option>Aprovação bancária</option></select>
+        </div>
+        <div class="field-block !mb-0">
+          <div class="field-label">Prioridade</div>
+          <select><option>Alta 🔥</option><option>Média</option></select>
+        </div>
+      </div>
+
+      <div class="field-block">
+        <div class="flex items-center justify-between mb-2">
+          <div class="field-label">⚠ Risco (motivo)</div>
+          <button class="btn btn-primary text-xs">📮 Publicar no lead</button>
+        </div>
+        <input value="Banco travando aprovação há 5 dias" />
+      </div>
+
+      <!-- Avisar corretor -->
+      <div class="field-block bg-[color:var(--primary-soft)] border-[color:var(--primary)]">
+        <div class="field-label text-[color:var(--primary)]">📢 Avisar corretor</div>
+        <textarea rows="2">Billy, precisamos de update do FGTS até amanhã. Se travar, muda de correspondente.</textarea>
+        <div class="text-xs text-[color:var(--muted)] mt-2">Envia notificação <b>e</b> publica a mensagem no histórico do lead — 1 ação, 2 efeitos.</div>
+        <button class="btn btn-primary text-xs mt-2">Enviar + Publicar</button>
+      </div>
+    </div>
+
+    <p class="text-xs text-[color:var(--muted)] mt-3">
+      🔑 Cada bloco tem seu próprio "Publicar no lead". Estados: <b>Publicar</b> (nunca publicado) · <b>Publicado ✓ há Xh</b> (idêntico ao publicado) · <b>Republicar</b> (texto mudou desde a última publicação).
+    </p>
+  </section>
+
+  <!-- ============================================= -->
+  <!-- 4) MOBILE — KANBAN -->
+  <!-- ============================================= -->
+  <section>
+    <div class="flex items-center gap-3 mb-3">
+      <span class="chip bg-[color:var(--primary-soft)] text-[color:var(--primary)]">4</span>
+      <h2 class="text-lg font-medium">Mobile 440px — Modo Kanban (padrão)</h2>
+    </div>
+
+    <div class="flex gap-6 items-start">
+      <div class="card overflow-hidden" style="width: 440px; flex-shrink: 0">
+        <!-- Header sticky mobile -->
+        <div class="p-3 border-b border-[color:var(--border)] space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1">
+              <button class="btn-ghost btn !p-1">◀</button>
+              <span class="font-medium text-sm">Julho de 2026</span>
+              <button class="btn-ghost btn !p-1">▶</button>
+            </div>
+            <div class="toggle text-xs">
+              <button>📋</button>
+              <button class="active">🔲</button>
+            </div>
+          </div>
+          <div class="flex gap-2 overflow-x-auto">
+            <div class="kpi-card !min-w-[120px] !p-2"><div class="kpi-label !text-[10px]">VGV Total</div><div class="kpi-value !text-base">R$ 12,4M</div></div>
+            <div class="kpi-card !min-w-[120px] !p-2"><div class="kpi-label !text-[10px]">Assinado</div><div class="kpi-value !text-base text-[color:var(--success)]">R$ 3,1M</div></div>
+            <div class="kpi-card !min-w-[120px] !p-2"><div class="kpi-label !text-[10px]">Risco</div><div class="kpi-value !text-base text-[color:var(--warn)]">7</div></div>
+          </div>
+        </div>
+
+        <!-- Kanban col (1 visível, swipe pra próxima) -->
+        <div class="p-3">
+          <div class="kanban-col !w-full" style="border-top: 3px solid var(--warn); border-radius: 12px;">
+            <div class="p-3 border-b border-[color:var(--border)] flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-sm">🤝 Em Negociação</span>
+                <span class="chip bg-[color:var(--surface-2)]">8</span>
+              </div>
+              <button class="btn-ghost btn !p-1">+</button>
+            </div>
+            <div class="p-2 space-y-2">
+              <!-- Card com ações rápidas -->
+              <div class="kanban-card relative">
+                <div class="flex justify-between items-start">
+                  <div class="font-medium text-sm">Wagner Silva</div>
+                  <span class="chip badge-prio-alta">🔥</span>
+                </div>
+                <div class="text-xs text-[color:var(--muted)] mt-1">Reserva Panamby · 902</div>
+                <div class="flex justify-between items-center mt-2">
+                  <span class="font-semibold text-sm">R$ 1,2M</span>
+                  <span class="chip bg-[color:var(--surface)] text-[11px]">Proposta enviada</span>
+                </div>
+                <div class="flex gap-1 mt-2 pt-2 border-t border-[color:var(--border)]">
+                  <button class="btn text-xs !py-1 flex-1">📮 Publicar</button>
+                  <button class="btn text-xs !py-1 flex-1">📢 Avisar</button>
+                  <button class="btn text-xs !py-1">📉</button>
+                </div>
+              </div>
+              <div class="kanban-card">
+                <div class="flex justify-between items-start">
+                  <div class="font-medium text-sm">Carla Mendes</div>
+                  <span class="chip badge-risk">⚠</span>
+                </div>
+                <div class="text-xs text-[color:var(--muted)] mt-1">Casa Verde · 1104</div>
+                <div class="flex justify-between items-center mt-2">
+                  <span class="font-semibold text-sm">R$ 1,05M</span>
+                  <span class="chip badge-pending text-[11px]">Publicar</span>
+                </div>
+              </div>
+            </div>
+            <div class="p-2 border-t border-[color:var(--border)] flex justify-between text-xs">
+              <span class="text-[color:var(--muted)]">Total <b class="text-[color:var(--warn)]">R$ 8,3M</b></span>
+              <span class="text-[color:var(--warn)]">2 risco</span>
+            </div>
+          </div>
+          <div class="text-center mt-3 text-xs text-[color:var(--muted)]">◀ deslize pra ver outras etapas ▶</div>
+        </div>
+      </div>
+
+      <div class="flex-1 space-y-3 text-sm">
+        <div class="card p-4">
+          <div class="font-medium mb-2">🔑 Mobile: kanban padrão</div>
+          <ul class="text-xs text-[color:var(--muted)] space-y-1 list-disc list-inside">
+            <li>1 coluna visível por vez (swipe horizontal)</li>
+            <li>Card ganha atalhos "Publicar" e "Avisar" direto — sem abrir drawer</li>
+            <li>Tap no card abre o mesmo drawer do desktop, adaptado full-screen</li>
+            <li>Toggle Planilha ↔ Kanban preservado (persistido por device)</li>
+          </ul>
+        </div>
+        <div class="card p-4">
+          <div class="font-medium mb-2">🔑 O que é comum aos dois modos</div>
+          <ul class="text-xs text-[color:var(--muted)] space-y-1 list-disc list-inside">
+            <li>Mesma fonte de dados (<code>usePdn</code>)</li>
+            <li>Mesmo drawer (<code>PdnLeadDrawer</code>)</li>
+            <li>Mesmas ações (publicar, avisar, queda, reativar, mudar etapa)</li>
+            <li>Mesmos filtros e KPIs</li>
+            <li>Publicação idempotente por hash — nunca duplica</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================= -->
+  <!-- Rodapé de decisões -->
+  <!-- ============================================= -->
+  <section class="card p-5">
+    <h3 class="font-medium mb-3">Decisões que este mockup fixa</h3>
+    <ol class="text-sm space-y-2 list-decimal list-inside text-[color:var(--muted)]">
+      <li><b class="text-[color:var(--text)]">Planilha e Kanban têm paridade total</b> — ambos abrem o mesmo drawer, ambos publicam no lead, ambos disparam queda/reativar/avisar.</li>
+      <li><b class="text-[color:var(--text)]">Padrão por dispositivo</b> — desktop = planilha, mobile = kanban. Toggle na toolbar troca. Preferência persiste por device.</li>
+      <li><b class="text-[color:var(--text)]">"Publicar no lead" está em toda parte</b> — no drawer (por bloco), na linha da planilha (hover), no card do kanban (mobile e desktop), e em lote na barra de seleção.</li>
+      <li><b class="text-[color:var(--text)]">Drawer com 3 abas</b> — Contexto (timeline do lead), Ação do gestor (edita + publica), Etapa (move no PDN sem tocar no pipeline do corretor).</li>
+      <li><b class="text-[color:var(--text)]">Idempotência por hash</b> — republicar o mesmo texto não duplica no histórico do lead.</li>
+    </ol>
+    <div class="mt-4 text-xs text-[color:var(--muted)]">
+      Aprovando este mockup, sigo pra <b>Fase 1 em código</b>: criar <code>PdnLeadDrawer</code> com 3 abas, fazer a planilha abrir o drawer no clique da linha, e replicar as ações que hoje só existem no kanban.
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
