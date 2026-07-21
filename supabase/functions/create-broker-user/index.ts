@@ -27,20 +27,29 @@ serve(async (req) => {
       absorb_team_to,
     } = body;
 
-    // Helper: best-effort audit log
+    // Verify caller
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Não autorizado");
+    const token = authHeader.replace("Bearer ", "");
+    const SUPABASE_URL_2 = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+    const anonClient = createClient(SUPABASE_URL_2, SUPABASE_ANON_KEY!);
+    const { data: { user: caller } } = await anonClient.auth.getUser(token);
+    if (!caller) throw new Error("Não autorizado");
+
     async function logAudit(acao: string, targetId: string | null, antes: any, depois: any) {
       try {
-        await (globalThis as any).__supa_audit_client__?.from("audit_log").insert({
-          user_id: targetId,
+        await supabase.from("audit_log").insert({
+          user_id: caller.id,
           modulo: "usuarios",
           acao,
           chave_unica: targetId,
           antes: antes ?? null,
           depois: depois ?? null,
           origem: "central_usuarios",
-          descricao: `${acao} by ${(globalThis as any).__caller_email__ || "system"}`,
+          descricao: `${acao} target=${targetId || "-"} by=${caller.email || caller.id}`,
         });
-      } catch (e) { /* ignore */ }
+      } catch (_) { /* best-effort */ }
     }
 
     // Verify caller
