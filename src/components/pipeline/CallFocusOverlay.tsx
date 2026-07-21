@@ -182,6 +182,10 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
 
   const handleSalvar = async () => {
     if (!user?.id) return;
+    if (hasPresets && !selectedPresetId) {
+      toast.error("Escolha um tipo de tarefa");
+      return;
+    }
     setSalvando(true);
     try {
       await supabase.from("pipeline_atividades").insert({
@@ -192,16 +196,35 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
         created_by: user.id,
       });
 
+      const activePreset = selectedPreset && selectedPreset.id !== PRESET_OUTRO_ID ? selectedPreset : null;
+
+      // flag_status sync
+      let flagPatch: Record<string, string> | null = null;
+      if (activePreset?.syncFlagKey && activePreset?.syncFlagValue) {
+        const { data: leadRow } = await supabase
+          .from("pipeline_leads")
+          .select("flag_status")
+          .eq("id", lead.id)
+          .maybeSingle();
+        const currentFlags = ((leadRow as any)?.flag_status ?? {}) as Record<string, string>;
+        flagPatch = { ...currentFlags, [activePreset.syncFlagKey]: activePreset.syncFlagValue };
+      }
+
       await supabase.from("pipeline_leads")
-        .update({ ultima_acao_at: new Date().toISOString() })
+        .update({
+          ultima_acao_at: new Date().toISOString(),
+          ...(flagPatch ? { flag_status: flagPatch } : {}),
+        } as any)
         .eq("id", lead.id);
 
       if (tarefaTipo && tarefaData) {
         const venceEm = new Date(`${tarefaData}T${tarefaHora}:00`);
+        const titulo = activePreset ? activePreset.label : `${tarefaTipo} — ${lead.nome}`;
         await supabase.from("pipeline_tarefas").insert({
           pipeline_lead_id: lead.id,
           tipo: tarefaTipo.toLowerCase(),
-          titulo: `${tarefaTipo} — ${lead.nome}`,
+          titulo,
+          descricao: observacao || null,
           status: "pendente",
           vence_em: venceEm.toISOString(),
           responsavel_id: user.id,
@@ -226,6 +249,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
       setSalvando(false);
     }
   };
+
 
   if (!isOpen) return null;
 
