@@ -736,7 +736,7 @@ function GrupoBloco({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <Table style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}>
+            <Table style={{ tableLayout: "fixed", width: "100%", minWidth: 980 }}>
               <colgroup>
                 <col style={{ width: colWidths.nome }} />
                 <col style={{ width: colWidths.data }} />
@@ -745,7 +745,7 @@ function GrupoBloco({
                 <col style={{ width: colWidths.corretor }} />
                 <col style={{ width: colWidths.status }} />
                 <col style={{ width: colWidths.obs }} />
-                <col style={{ width: 70 }} />
+                <col style={{ width: 96 }} />
               </colgroup>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
