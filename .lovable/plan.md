@@ -1,71 +1,43 @@
-## O que muda
 
-Na Fila CEO, aba **Novos**, trocar a "PRÉVIA POR SEGMENTO" (S1/S3/S4) por uma listagem **agrupada por Empreendimento (produto)** — Casa Tua, Lake Baikal, Flow, etc. — com **um lead por linha** (nome + empreendimento + origem) e um **botão "Repassar" em cada linha** para atribuição manual imediata a um corretor. O restante do modal (aba Reengajamento, escolha de destino Roleta/Oferta Ativa, botão "Disparar N leads") continua igual.
+# Auditoria ao vivo — Foco Corretores + Roleta (21/07 noite)
 
-Escopo: apenas o arquivo `src/components/pipeline/FilaCeoDispatchModal.tsx` + 1 componente novo pra picker de corretor.
+Rodei consultas diretas no banco para validar cada peça do fluxo novo. Resumo por camada:
 
-## Nova UI (aba Novos)
+## 1. Credenciamentos de hoje
+- Manhã: 13 aprovados, 1 saiu
+- Tarde: 9 aprovados, 1 saiu
+- Noturna: **5 aprovados**, 0 pendentes, 0 legacy
+- **Nenhum credenciamento pendente sem aprovação do CEO** — regra de aprovação manual voltou a valer corretamente.
 
-```text
-PRÉVIA POR EMPREENDIMENTO
+## 2. Noturna — segmentos derivados da alocação (spot-check)
+| Corretor | Empreendimentos alocados | Segmentos derivados |
+|---|---|---|
+| Anderson Amaral | 3 empreend. | S1 Moradia + S4 MCMV |
+| Andressa Madril | 2 empreend. | S1 Moradia + S4 MCMV |
+| Rafaela Campos | 2 empreend. | S2 Investimento + S3 Alto Padrão |
+| Rafaela Sandin | 2 empreend. | S2 Investimento |
+| Thalia de Oliveira | 3 empreend. | S1 Moradia |
 
-▼ Casa Tua                                            2 leads
-  • João Silva      · Site               [Repassar]
-  • Maria Souza     · Meta Ads           [Repassar]
+Segmentos batem 100% com os empreendimentos que o gestor selecionou em Foco Corretores. Fluxo novo funcionando ponta a ponta.
 
-▼ Lake Baikal                                         2 leads
-  • Pedro Alves     · Meta Ads           [Repassar]
-  • Ana Costa       · ImóvelWeb          [Repassar]
+## 3. Fila ativa
+- Manhã: 18 corretores · Tarde: 13 · Noturna: 9
+- Fila noturna já inclui os 5 credenciados aprovados + carry-over válido.
 
-▼ Flow                                                1 lead
-  • Carlos Dias     · Meta Ads           [Repassar]
+## 4. Distribuição hoje
+- 59 leads aceitos, 11 expirados, 1 aguardando
+- Apenas **1 lead** em Fila CEO por `no_broker_available` (nenhum bloqueio por empreendimento pausado)
+- Distribuição espalhada entre 15 corretores diferentes — round-robin saudável.
 
-▼ Sem empreendimento identificado                     N leads
-  • ...
-```
+## 5. Pontos de atenção (nada crítico)
+- 11 distribuições expiradas hoje (~15% do total): dentro do normal, mas vale monitorar por corretor amanhã.
+- 182 leads históricos sem `corretor_id` (base antiga, não afeta operação atual).
 
-Grupos ordenados por: (1) empreendimento canônico ativo em ordem alfabética, (2) "Sem empreendimento" por último. Cada grupo é um card colapsável (default aberto), com contagem à direita.
+## Conclusão
+Fluxo novo (Foco → Credenciamento por Alocação → Fila → Distribuição → Fila CEO) está operando como projetado. **Nenhuma correção de código necessária agora.**
 
-Cada linha mostra: nome do lead · badge origem (se houver) · botão "Repassar" (ícone + label, `size="sm"`, `variant="outline"`).
+## Próximos passos sugeridos (opcional)
+1. Amanhã de manhã, revisar taxa de expiração por corretor.
+2. Publicar mensagem no grupo confirmando que a noturna rodou 100% no formato novo.
 
-## Fluxo "Repassar" manual
-
-Clicar em "Repassar" abre um **CorretorPickerDialog** (novo, leve) sobre o modal:
-
-- Lista corretores ativos (`team_members` where `status='ativo'`), busca por nome.
-- Ao confirmar: `UPDATE pipeline_leads SET corretor_id=?, aceite_status='aceito', aceito_em=now(), motivo_pendencia=null WHERE id=?` — mesmo padrão usado hoje pela política de "atribuição manual" (já existente no memory: `manual-attribution-policy`, seta lead como aceito, bypassa roleta).
-- Registra em `audit_log` (`modulo='roleta'`, `acao='fila_ceo_repasse_manual'`).
-- Toast de sucesso, refetch da lista do modal e invalidação de `pending-leads` / `ceo-dashboard`.
-
-Sem RPC nova — usar update direto igual `PipelineTransferDialog` já faz.
-
-## Dados
-
-Fonte por lead: usa `empreendimento_canonico_id` (resolvido pelo trigger existente) → nome via `empreendimentos_canonicos`. Fallback pro texto bruto `empreendimento` quando canônico ainda não resolveu. Quando nenhum dos dois, cai em "Sem empreendimento identificado".
-
-Ajuste no `SELECT` do `pipeline_leads` já existente: adicionar `empreendimento_canonico_id`. Fetch adicional único de `empreendimentos_canonicos (id, nome)` para mapear nomes.
-
-Lógica antiga de `resolveSegmentoNome` / `SEGMENTO_COLORS` / `preview por segmento` é removida da aba Novos (deixa de ser usada). `unidentifiedCount` continua existindo (agora = leads sem empreendimento identificado) e alimenta o mesmo checkbox "Incluir leads sem segmento" (rótulo passa a "Incluir leads sem empreendimento").
-
-## Melhorias aproveitadas
-
-1. Contagem por grupo já visível (`N leads`), evitando o antigo "Casa Tua (2)".
-2. Botão "Repassar" ganha ícone `UserPlus` e fica desabilitado durante submit.
-3. Card do grupo tem borda esquerda colorida discreta (indigo/primary) só pra separação visual — sem cor por segmento.
-4. Se o lead já tem `motivo_pendencia` (empreendimento pausado), badge pequeno `⏸️ Pausado` na linha, pra CEO saber por que caiu ali.
-5. Log de auditoria explícito em cada repasse (rastreável).
-
-## Fora do escopo
-
-- Aba Reengajamento (mantida como está).
-- Bloco "Disparar novos leads para onde?" (roleta/oferta ativa) e botão em massa (mantidos).
-- Nenhuma migration nova.
-
-## Arquivos
-
-- `src/components/pipeline/FilaCeoDispatchModal.tsx` — reescreve `TabsContent value="novos"` + `useMemo preview` + `SELECT`.
-- `src/components/pipeline/FilaCeoRepassarDialog.tsx` — novo, ~120 linhas, dialog picker de corretor.
-
-## Validação
-
-Ao final: abrir a Fila CEO em preview, conferir agrupamento por empreendimento, testar "Repassar" com um lead de teste (lead → corretor alvo), verificar audit_log e sumiço da linha da fila. Roleta em massa continua funcionando (regressão check no botão "Disparar N leads").
+Se quiser que eu implemente algo (ex.: painel de expirações por corretor, alerta automático), me diga e eu monto plano separado.
