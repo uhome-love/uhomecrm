@@ -172,9 +172,16 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
 
   const handleSaveTask = async () => {
     if (!user) return;
+    if (hasPresets && !selectedPresetId) {
+      toast.error("Escolha um tipo de tarefa");
+      return;
+    }
     setSaving(true);
     try {
-      const titulo = `${TASK_TYPES.find(t => t.value === taskType)?.label || taskType} — ${lead.nome}`;
+      const activePreset = selectedPreset && selectedPreset.id !== PRESET_OUTRO_ID ? selectedPreset : null;
+      const titulo = activePreset
+        ? activePreset.label
+        : `${TASK_TYPES.find(t => t.value === taskType)?.label || taskType} — ${lead.nome}`;
       await supabase.from("pipeline_tarefas").insert({
         pipeline_lead_id: lead.id,
         titulo,
@@ -187,14 +194,24 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
         created_by: user.id,
         responsavel_id: user.id,
       } as any);
-      // Nota: NÃO inserimos em pipeline_atividades para "Tarefa criada" —
-      // o evento é sintetizado a partir de pipeline_tarefas em LeadHistoricoTab.
 
-      // Update lead proxima_acao
+      // Sync flag_status quando preset carrega status da etapa.
+      let flagPatch: Record<string, string> | null = null;
+      if (activePreset?.syncFlagKey && activePreset?.syncFlagValue) {
+        const { data: leadRow } = await supabase
+          .from("pipeline_leads")
+          .select("flag_status")
+          .eq("id", lead.id)
+          .maybeSingle();
+        const currentFlags = ((leadRow as any)?.flag_status ?? {}) as Record<string, string>;
+        flagPatch = { ...currentFlags, [activePreset.syncFlagKey]: activePreset.syncFlagValue };
+      }
+
       await supabase.from("pipeline_leads").update({
         proxima_acao: titulo,
         data_proxima_acao: taskDate,
         updated_at: new Date().toISOString(),
+        ...(flagPatch ? { flag_status: flagPatch } : {}),
       } as any).eq("id", lead.id);
       toast.success("Tarefa criada ✅");
       onRefresh();
@@ -215,11 +232,13 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
     setFreeText("");
     setEditingIdx(null);
     setEditedBody("");
+    setSelectedPresetId(null);
     const d = new Date();
     d.setDate(d.getDate() + 1);
     setTaskDate(d.toISOString().split("T")[0]);
     onClose();
   };
+
 
   if (!isOpen) return null;
 
