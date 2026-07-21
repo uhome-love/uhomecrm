@@ -244,13 +244,14 @@ export default function PdnGestor() {
   const DEFAULT_COL_WIDTHS: Record<string, number> = {
     nome: 160, data: 88, empreendimento: 150, vgv: 110, corretor: 120, status: 130, obs: 200,
   };
+  const COL_WIDTHS_KEY = "pdn:colWidths:v2";
   const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
     try {
-      const raw = sessionStorage.getItem("pdn:colWidths");
+      const raw = sessionStorage.getItem(COL_WIDTHS_KEY);
       return raw ? { ...DEFAULT_COL_WIDTHS, ...JSON.parse(raw) } : DEFAULT_COL_WIDTHS;
     } catch { return DEFAULT_COL_WIDTHS; }
   });
-  useEffect(() => { try { sessionStorage.setItem("pdn:colWidths", JSON.stringify(colWidths)); } catch { /* ignore */ } }, [colWidths]);
+  useEffect(() => { try { sessionStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(colWidths)); } catch { /* ignore */ } }, [colWidths]);
   const setColWidth = (key: string, w: number) => setColWidths(prev => ({ ...prev, [key]: Math.max(70, w) }));
   const colsCustomized = useMemo(
     () => Object.keys(DEFAULT_COL_WIDTHS).some(k => colWidths[k] !== DEFAULT_COL_WIDTHS[k]),
