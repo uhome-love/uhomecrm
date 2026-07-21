@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 import UsuarioDrawer, { type UsuarioRow } from "./UsuarioDrawer";
 import InativarOuExcluirDialog from "./InativarOuExcluirDialog";
 import NovoUsuarioDialog from "./NovoUsuarioDialog";
@@ -19,7 +20,9 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export default function UsuariosTable() {
-  const { isAdmin, isDiretor, userId } = useUserRole();
+  const { isAdmin, isDiretor } = useUserRole();
+  const { user } = useAuth();
+  const userId = user?.id;
   const isPrivileged = isAdmin || isDiretor;
 
   const [rows, setRows] = useState<UsuarioRow[]>([]);
