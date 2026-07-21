@@ -523,62 +523,15 @@ export function useRoleta() {
 
   // ─── Corretor Actions ───
 
-  const credenciar = useCallback(async (janela: string, segmento1Id: string, segmento2Id: string | null) => {
-    if (!user) {
-      toast.error("Sessão expirada. Faça login novamente.");
-      return;
-    }
-    // Tenta resolver profileId on-demand se ainda não tiver
-    let effectiveProfileId = profileId;
-    if (!effectiveProfileId) {
-      const { data } = await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle();
-      if (data?.id) {
-        effectiveProfileId = data.id;
-        setProfileId(data.id);
-      }
-    }
-    if (!effectiveProfileId) {
-      toast.error("Não foi possível carregar seu perfil. Recarregue a página (Ctrl+F5).");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      let lastError: any = null;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        try {
-          const { error } = await supabase.from("roleta_credenciamentos").upsert({
-            corretor_id: effectiveProfileId,
-            janela,
-            segmento_1_id: segmento1Id,
-            segmento_2_id: segmento2Id || null,
-            data: hoje,
-            status: "pendente",
-          } as any, {
-            onConflict: "corretor_id,data,janela",
-          });
-          if (!error) { lastError = null; break; }
-          lastError = error;
-          const msg = String(error?.message || "");
-          const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || (error as any)?.name === "AbortError";
-          if (!isLockError) break;
-        } catch (thrown: any) {
-          lastError = thrown;
-          const msg = String(thrown?.message || "");
-          const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || thrown?.name === "AbortError";
-          if (!isLockError) break;
-        }
-        await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
-      }
-      if (lastError) throw lastError;
-      toast.success("Credenciamento enviado! Aguardando aprovação.");
-      await loadCredenciamentos();
-    } catch (e: any) {
-      console.error(e);
-      toast.error("Erro ao se credenciar: " + (e.message || ""));
-    } finally {
-      setSubmitting(false);
-    }
-  }, [user, profileId, hoje, loadCredenciamentos]);
+  // DEPRECATED (removido em Jul/2026): credenciamento self-service agora usa a RPC
+  // `credenciar_por_alocacao` chamada direto pelos componentes de UI
+  // (RoletaCorretorView.tsx e RoletaStatusBar.tsx). O formato antigo com
+  // segmento_1_id/segmento_2_id foi removido junto com a UI de seleção de
+  // segmentos — segmentos são derivados da alocação de empreendimento.
+  const credenciar = useCallback(async (_janela: string, _segmento1Id: string, _segmento2Id: string | null) => {
+    toast.error("Credenciamento antigo foi desativado. Recarregue a página (Ctrl+F5) para usar o novo formato.");
+  }, []);
+
 
   const sairDaRoleta = useCallback(async (credenciamentoId: string) => {
     if (!user) return;
