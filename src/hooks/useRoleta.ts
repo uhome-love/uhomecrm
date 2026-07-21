@@ -444,6 +444,7 @@ export function useRoleta() {
       const key = auth ? `${auth}|${seg}` : "";
       return {
         ...f,
+        auth_user_id: auth || null,
         leads_recebidos: auth ? (ownedByAuth.get(auth)?.size ?? 0) : 0,
         distribuidos_roleta: auth ? (distMap.get(key) || 0) : 0,
         aceitos_roleta: auth ? (aceMap.get(key) || 0) : 0,
