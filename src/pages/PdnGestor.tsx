@@ -547,6 +547,7 @@ export default function PdnGestor() {
                 onReativar={reativarQueda}
                 onMudarEtapa={mudarEtapa}
                 onAvisar={avisarCorretor}
+                onOpenRow={setSelectedRow}
               />
             );
           })}
