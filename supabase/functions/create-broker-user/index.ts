@@ -330,6 +330,10 @@ serve(async (req) => {
         await supabase.from("team_members").update({ nome }).eq("user_id", target_user_id);
       }
 
+      await logAudit("update_user", target_user_id, null, { ...profileUpdates, senha_reset: !!senha });
+
+
+
       return new Response(JSON.stringify({ success: true, message: "Usuário atualizado com sucesso!" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
