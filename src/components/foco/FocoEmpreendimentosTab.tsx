@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Power, PowerOff } from "lucide-react";
 import { useEmpreendimentosCanonicos, useLeadsPorEmpreendimento, useSetEmpreendimentoAtivo } from "@/hooks/useFocoCorretores";
+import { EmpreendimentosNaoResolvidosCard } from "./EmpreendimentosNaoResolvidosCard";
 import { cn } from "@/lib/utils";
 
 /**
