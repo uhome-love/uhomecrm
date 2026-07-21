@@ -104,6 +104,11 @@ export default function PendingLeadsPanel() {
                         🔄 Nutrição
                       </Badge>
                     )}
+                    {lead.motivo_pendencia === "empreendimento_inativo" && (
+                      <Badge className="text-[9px] px-1.5 bg-orange-500/10 text-orange-600 border-orange-500/20 gap-0.5">
+                        <PauseCircle className="h-2.5 w-2.5" /> Empreendimento pausado
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
                     {lead.empreendimento && (
