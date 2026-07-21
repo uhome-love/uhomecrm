@@ -24,16 +24,34 @@ serve(async (req) => {
       action, jetimob_user_id, email, nome, senha, gerente_id, role,
       target_user_id, reassign_to, telefone, cpf, creci,
       reassign_leads, reassign_negocios, reassign_tarefas,
+      absorb_team_to,
     } = body;
 
     // Verify caller
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Não autorizado");
     const token = authHeader.replace("Bearer ", "");
+    const SUPABASE_URL_2 = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
-    const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY!);
+    const anonClient = createClient(SUPABASE_URL_2, SUPABASE_ANON_KEY!);
     const { data: { user: caller } } = await anonClient.auth.getUser(token);
     if (!caller) throw new Error("Não autorizado");
+
+    async function logAudit(acao: string, targetId: string | null, antes: any, depois: any) {
+      try {
+        await supabase.from("audit_log").insert({
+          user_id: caller.id,
+          modulo: "usuarios",
+          acao,
+          chave_unica: targetId,
+          antes: antes ?? null,
+          depois: depois ?? null,
+          origem: "central_usuarios",
+          descricao: `${acao} target=${targetId || "-"} by=${caller.email || caller.id}`,
+        });
+      } catch (_) { /* best-effort */ }
+    }
+
 
     const { data: callerRoles } = await supabase
       .from("user_roles")
@@ -276,6 +294,7 @@ serve(async (req) => {
       const message = teamLinkError
         ? `${baseMessage} (Atenção: vínculo com a equipe falhou — ${teamLinkError}. Vincule manualmente.)`
         : baseMessage;
+      await logAudit("create_user", newUser.user.id, null, { nome, email, role: assignedRole, gerente_id: effectiveGerenteId });
       return new Response(JSON.stringify({
         success: true, user_id: newUser.user.id, team_link_error: teamLinkError, message,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -312,6 +331,10 @@ serve(async (req) => {
         await supabase.from("team_members").update({ nome }).eq("user_id", target_user_id);
       }
 
+      await logAudit("update_user", target_user_id, null, { ...profileUpdates, senha_reset: !!senha });
+
+
+
       return new Response(JSON.stringify({ success: true, message: "Usuário atualizado com sucesso!" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -322,6 +345,22 @@ serve(async (req) => {
       if (!target_user_id) throw new Error("ID do usuário não informado");
       await assertCanManage(target_user_id);
       if (target_user_id === caller.id) throw new Error("Você não pode inativar a si mesmo");
+
+      // Check if target is a gerente (has team_members under them)
+      const { count: teamCount } = await supabase
+        .from("team_members").select("id", { count: "exact", head: true })
+        .eq("gerente_id", target_user_id);
+      if ((teamCount || 0) > 0) {
+        if (!isAdmin && !isDiretora) {
+          throw new Error("Apenas CEO/Diretora podem inativar um gerente");
+        }
+        if (!absorb_team_to) {
+          throw new Error("Este usuário é gerente. Informe outro gerente para absorver o time (absorb_team_to).");
+        }
+        await supabase.from("team_members")
+          .update({ gerente_id: absorb_team_to })
+          .eq("gerente_id", target_user_id);
+      }
 
       if (reassign_to) {
         await assertCanManage(reassign_to).catch(() => {
@@ -341,10 +380,13 @@ serve(async (req) => {
       await supabase.from("profiles").update({ ativo: false }).eq("user_id", target_user_id);
       await supabase.from("team_members").update({ status: "inativo" }).eq("user_id", target_user_id);
 
+      await logAudit("inactivate_user", target_user_id, { ativo: true }, { ativo: false, reassign_to, absorb_team_to });
+
       return new Response(JSON.stringify({ success: true, message: "Usuário inativado e dados repassados." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     // ── REACTIVATE USER ─────────────────────────────────────────────────────
     if (action === "reactivate_user") {
@@ -357,6 +399,8 @@ serve(async (req) => {
       await supabase.from("profiles").update({ ativo: true }).eq("user_id", target_user_id);
       await supabase.from("team_members").update({ status: "ativo" }).eq("user_id", target_user_id);
 
+      await logAudit("reactivate_user", target_user_id, { ativo: false }, { ativo: true });
+
       return new Response(JSON.stringify({ success: true, message: "Usuário reativado com sucesso!" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -366,8 +410,25 @@ serve(async (req) => {
     if (action === "delete_user") {
       if (!target_user_id) throw new Error("ID do usuário não informado");
       if (target_user_id === caller.id) throw new Error("Você não pode excluir a si mesmo");
+      // Só CEO/Diretora podem excluir definitivamente
+      if (!isAdmin && !isDiretora) {
+        throw new Error("Apenas CEO/Diretora podem excluir usuários definitivamente. Use inativar.");
+      }
       await assertCanManage(target_user_id);
       if (!reassign_to) throw new Error("Informe para quem repassar os dados antes de excluir");
+
+      // Se target é gerente, exigir absorb_team_to
+      const { count: teamCount } = await supabase
+        .from("team_members").select("id", { count: "exact", head: true })
+        .eq("gerente_id", target_user_id);
+      if ((teamCount || 0) > 0) {
+        if (!absorb_team_to) {
+          throw new Error("Este usuário é gerente. Informe outro gerente para absorver o time (absorb_team_to).");
+        }
+        await supabase.from("team_members")
+          .update({ gerente_id: absorb_team_to })
+          .eq("gerente_id", target_user_id);
+      }
 
       // Validate destination is within caller's scope
       if (!isAdmin) {
@@ -376,6 +437,7 @@ serve(async (req) => {
           throw new Error("O corretor destino não pertence à sua equipe");
         }
       }
+
 
       // Repassar dados operacionais ao corretor destino
       await reassignData(target_user_id, reassign_to, {
@@ -436,6 +498,8 @@ serve(async (req) => {
 
       const { error: deleteError } = await supabase.auth.admin.deleteUser(target_user_id);
       if (deleteError) throw new Error(`Erro ao excluir usuário: ${deleteError.message}`);
+
+      await logAudit("delete_user", target_user_id, null, { reassign_to, absorb_team_to });
 
       return new Response(JSON.stringify({
         success: true,

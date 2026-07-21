@@ -1,48 +1,50 @@
 import { useState } from "react";
-import { UserPlus } from "lucide-react";
+import { Users, Table as TableIcon } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TeamManagement from "@/components/checkpoint/TeamManagement";
 import CeoTeamPanel from "@/components/ceo/CeoTeamPanel";
-import CreateCorretorDialog from "@/components/checkpoint/CreateCorretorDialog";
+import UsuariosTable from "@/components/team/UsuariosTable";
 
 export default function MeuTime() {
-  const { isAdmin, isGestor, loading } = useUserRole();
-  const [createOpen, setCreateOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { isAdmin, isDiretor, isGestor, loading } = useUserRole();
+  const [tab, setTab] = useState<"visao" | "usuarios">("visao");
 
   if (loading) return null;
-
-  const showCreateButton = isGestor && !isAdmin;
+  const isPrivileged = isAdmin || isDiretor;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            {isAdmin ? "Painel da " : "Meu "}
-            <span className="text-primary">Equipe</span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isAdmin
-              ? "Estrutura completa da Uhome Negócios Imobiliários"
-              : "Gerencie os corretores da sua equipe"}
-          </p>
-        </div>
-        {showCreateButton && (
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" /> Criar Corretor
-          </Button>
-        )}
+      <div>
+        <h1 className="font-display text-2xl font-bold text-foreground">
+          {isPrivileged ? "Central de " : "Meu "}
+          <span className="text-primary">{isPrivileged ? "Usuários" : "Equipe"}</span>
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {isPrivileged
+            ? "Gerencie todos os usuários do CRM — criação, edição, inativação e exclusão."
+            : "Gerencie os corretores da sua equipe"}
+        </p>
       </div>
-      {isAdmin ? <CeoTeamPanel /> : <TeamManagement key={refreshKey} />}
-      {showCreateButton && (
-        <CreateCorretorDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          onCreated={() => setRefreshKey((k) => k + 1)}
-        />
-      )}
+
+      <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="visao" className="gap-2">
+            <Users className="h-4 w-4" /> Visão de Times
+          </TabsTrigger>
+          <TabsTrigger value="usuarios" className="gap-2">
+            <TableIcon className="h-4 w-4" /> {isPrivileged ? "Todos os Usuários" : "Meu Time"}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="visao" className="m-0">
+          {isPrivileged ? <CeoTeamPanel /> : (isGestor ? <TeamManagement /> : null)}
+        </TabsContent>
+
+        <TabsContent value="usuarios" className="m-0">
+          <UsuariosTable />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
