@@ -616,6 +616,14 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
           </>
         )}
       </DialogContent>
+      <FilaCeoRepassarDialog
+        open={!!repasseLead}
+        onOpenChange={(v) => { if (!v) setRepasseLead(null); }}
+        leadId={repasseLead?.id ?? null}
+        leadNome={repasseLead?.nome ?? ""}
+        onDone={refetchLeads}
+      />
     </Dialog>
   );
+
 }
