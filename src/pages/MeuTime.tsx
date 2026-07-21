@@ -17,7 +17,7 @@ export default function MeuTime() {
     <div className="space-y-4">
       <div>
         <h1 className="font-display text-2xl font-bold text-foreground">
-          {isPrivileged ? "Central de " : "Meu "}
+          {isPrivileged ? "Central de " : "Minha "}
           <span className="text-primary">{isPrivileged ? "Usuários" : "Equipe"}</span>
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
