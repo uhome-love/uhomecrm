@@ -1,42 +1,61 @@
-## Diagnóstico (verificado)
+## Motivo (o que mudou no plano)
+Você não quer só volume de leads/visitas por corretor — quer descobrir **em quais empreendimentos e campanhas cada corretor tem melhor performance**, para poder **segmentar a empresa por especialidade** (Corretor X domina Terrace/Vivid, Corretor Y é bom em avulso, Corretor Z converte melhor no MCMV, etc.).
 
-A página `/meu-time` hoje tem **duas abas** com propósitos misturados:
+Reescrevi o plano com foco em **taxa de conversão** e **especialização**, não em contagem crua.
 
-**Aba 1 — "Visão de Times"** (dois componentes diferentes, um por perfil):
-- **Gerente** → `TeamManagement.tsx` (547 linhas). Além de vincular/desvincular corretores a `team_members` e editar o "tag de equipe", **puxa métricas operacionais**: cards "Ligações (semana)" e "Visitas (semana)" (via `oferta_ativa_tentativas` e `visitas`), e mostra esses números por linha de corretor.
-- **CEO / Diretor** → `CeoTeamPanel.tsx` (469 linhas). Cards KPI "Total Colaboradores / Gerentes / Corretores / Admin / Online Hoje" + times comerciais agrupados por gerente com **"ligações hoje", "aproveitados hoje", "visitas semana", "VGV mês"** por corretor e por time.
+## Fonte dos dados (julho/2026, BRT)
+- **Leads da roleta**: `roleta_distribuicoes` com `status='aceito'` em julho → julho tem 844 leads aceitos.
+- **Empreendimento/campanha**: `pipeline_leads.empreendimento` e `pipeline_leads.campanha`.
+- **Visitas**: `visitas` por `pipeline_lead_id`, com 3 status já em julho (20 marcadas · 123 realizadas · 91 no-show).
+- **Negócios/vendas**: `negocios` por `pipeline_lead_id` (julho tem 39 propostas + 22 vendidos + outros).
+- **Equipe**: `team_members` → gerente/equipe do corretor.
 
-**Aba 2 — "Todos os Usuários" / "Meu Time"** → `UsuariosTable.tsx` (a Central de Usuários nova). Já cobre 100% da gestão de usuários: busca, filtros por status/perfil, criar, editar (drawer com abas Perfil / Acesso / Equipe / Atividade), inativar, reativar, excluir com transferência de dados, trocar de equipe e trocar de perfil.
+## Métricas do PDF
+Para cada linha (corretor × empreendimento e corretor × campanha):
 
-**Por que existem as duas visões e por que elas divergem:** são de gerações diferentes. `TeamManagement` e `CeoTeamPanel` são anteriores à Central de Usuários e foram construídos misturando organograma + operacional. A Central de Usuários foi a refatoração recente, mas as visões antigas ficaram convivendo como uma aba paralela — daí a duplicação de métricas e a diferença de UX entre gerente e CEO.
+| Métrica | Definição |
+|---|---|
+| Leads | Distribuições aceitas em julho |
+| Visitas marcadas | Visitas criadas do lead (qualquer status) |
+| Visitas realizadas | `visitas.status = 'realizada'` |
+| No-show | `visitas.status = 'no_show'` |
+| Negócios | Linhas em `negocios` do lead |
+| Vendas | `negocios.fase = 'vendido'` |
+| **Conv. Visita %** | Visitas realizadas ÷ Leads |
+| **Conv. Venda %** | Vendas ÷ Leads |
+| **Show rate %** | Realizadas ÷ (Realizadas + No-show) |
 
-**Nenhum outro lugar importa esses dois componentes** — só a página `MeuTime.tsx` os usa. Deletá-los não quebra outras telas.
+## O que o PDF vai mostrar (foco em especialidade)
 
-## Decisão do plano
+**1. Capa executiva — Top especialistas**
+   - "Especialistas por empreendimento": top 3 corretores em conv. venda por empreendimento (com volume mínimo de 5 leads para não distorcer).
+   - "Especialistas por campanha": mesmo, por campanha.
+   - **Ranking de conv. Venda geral** dos corretores em julho.
 
-Unificar tudo na Central de Usuários (a aba nova). A página `/meu-time` passa a ser **exclusivamente gestão de usuários**, sem KPIs operacionais. Ligações/Visitas/VGV continuam existindo — no seu lugar correto: Relatórios de Performance.
+**2. Uma seção por equipe**
+   Cabeçalho: Gerente · totais · conv. visita · conv. venda.
+   Depois duas tabelas:
+   - **Corretor × Empreendimento** — leads / visitas realiz. / vendas / conv. venda %
+     Célula em verde quando corretor está no top 3 daquele empreendimento; vermelho quando conv. bem abaixo da média com volume ≥ 5.
+   - **Corretor × Campanha** — mesmo layout.
 
-## O que muda
+**3. Análises extras que estou incluindo (você pediu)**
+   - **Show rate por corretor**: quem consegue efetivamente colocar o lead dentro do stand (indicador de qualidade de agendamento).
+   - **"Avulso" vs "com empreendimento"**: separo leads sem empreendimento marcado (`empreendimento IS NULL/''`) como categoria própria — atende o "corretor Y é bom em avulso".
+   - **Matriz de calor de especialização**: uma tabela final Empreendimento (linhas) × Top 5 corretores (colunas) com conv. venda %, deixando visível quem domina o quê.
+   - **Alertas de mismatch**: corretor com muito lead de um empreendimento mas conv. baixa → sugestão de realocar leads.
+   - **Volume por campanha**: quais campanhas do Meta/RD estão trazendo mais leads e qual empreendimento carrega cada campanha (para o marketing na reunião).
 
-1. **Remover as abas** em `src/pages/MeuTime.tsx`. A página passa a renderizar diretamente `<UsuariosTable />`, mantendo o header (título + descrição) que já muda entre "Central de Usuários" (CEO/Diretor) e "Minha Equipe" (Gerente).
-2. **Deletar os arquivos legados** (não há mais nenhum consumidor):
-   - `src/components/checkpoint/TeamManagement.tsx`
-   - `src/components/ceo/CeoTeamPanel.tsx`
-3. **Preservar o que era útil das visões antigas**, garantindo que já existe na Central de Usuários:
-   - Ver o gerente/equipe de cada corretor → já é coluna "Equipe" da tabela + aba "Equipe" do drawer.
-   - Trocar corretor de equipe → já existe em `TrocarEquipeDialog` acionado pelo drawer.
-   - Ativar/inativar/excluir → já existe.
-   - Criar novo usuário (com vínculo a gerente) → já existe no `NovoUsuarioWizard`.
-4. **Não mover nem duplicar nenhum KPI operacional.** Ligações/Visitas/VGV **saem** desta página. Se o usuário quiser vê-los depois, o caminho é Relatórios de Performance (fora do escopo deste plano).
+**4. Consolidado da empresa**
+   Totais gerais, conv. média da empresa, ticket médio (VGV vendido), e ranking de campanhas por conv. venda.
 
-## Validação
+## Regras de leitura
+- **Volume mínimo** de 5 leads por combinação para uma linha "contar" no ranking (evita corretor com 1 lead virando "melhor conv."). Linhas abaixo aparecem em cinza claro como "amostra pequena".
+- Empreendimento/campanha vazios viram "— Avulso —" e "— Sem campanha —".
+- Julho = 01/07 a 31/07 BRT.
 
-- Confirmar que a página abre limpa como gerente (Bruno) e como CEO, sem cards de Ligações/Visitas/VGV.
-- Confirmar que criar, editar, inativar, reativar e trocar de equipe continuam funcionando pelo drawer.
-- Confirmar que os arquivos legados foram deletados e o typecheck passa sem imports quebrados.
+## Entrega
+- Arquivo `/mnt/documents/especialistas-roleta-julho-2026.pdf`, paisagem A4, tabelas com autotable/reportlab (já usados no projeto).
+- Também exporto `/mnt/documents/especialistas-roleta-julho-2026.xlsx` com abas por equipe caso queira filtrar ao vivo na reunião.
 
-## Fora de escopo
-
-- Redesenhar Relatórios de Performance ou mover os KPIs operacionais para lá.
-- Alterar RLS, RPCs (`list_profiles_admin`) ou o edge function `create-broker-user`.
-- Alterar o organograma visual por times coloridos (se voltar a ser desejado, cria-se uma página separada de "Estrutura / Organograma" — não é gestão de usuários).
+Confirma que posso executar assim? Se quiser algum recorte extra (ex: separar por segmento MCMV/Alto Padrão, ou por gerente específico), diz agora que já incluo antes de gerar.
