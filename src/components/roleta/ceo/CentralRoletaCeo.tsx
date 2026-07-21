@@ -17,6 +17,7 @@ import RoletaConfigTab from "@/components/roleta/RoletaConfigTab";
 import CorretoresBloqueadosPanel from "@/components/roleta/CorretoresBloqueadosPanel";
 import PendingLeadsPanel from "@/components/pipeline/PendingLeadsPanel";
 import DistributionDashboard from "@/components/pipeline/DistributionDashboard";
+import { MapeamentoMetaTab } from "./MapeamentoMetaTab";
 
 // ─── Countdown Timer ───
 function CountdownTimer({ target }: { target: Date }) {
