@@ -323,56 +323,33 @@ export default function RoletaStatusBar() {
   };
 
   const saveCredenciamento = async (janela: JanelaKey) => {
-    if (!user || !profileId || selectedIds.length === 0) return;
-    setSaving(true);
-    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-    const janelaDb = toDbJanela(janela);
-
-    const payload = {
-      corretor_id: profileId,
-      auth_user_id: user.id,
-      data: today,
-      janela: janelaDb,
-      segmento_1_id: selectedIds[0] || null,
-      segmento_2_id: selectedIds[1] || null,
-      status: "pendente",
-    } as any;
-
-    // Retry up to 5x on transient AbortError "Lock was stolen" (supabase-js navigator.locks race).
-    // The error can be either THROWN (exception) or returned via { error }, so we handle both.
-    let lastError: any = null;
-    for (let attempt = 0; attempt < 5; attempt++) {
-      try {
-        const { error } = await supabase.from("roleta_credenciamentos").upsert(payload, {
-          onConflict: "corretor_id,data,janela",
-        });
-        if (!error) { lastError = null; break; }
-        lastError = error;
-        const msg = String(error?.message || "");
-        const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || error?.name === "AbortError";
-        if (!isLockError) break;
-      } catch (thrown: any) {
-        lastError = thrown;
-        const msg = String(thrown?.message || "");
-        const isLockError = msg.includes("Lock was stolen") || msg.includes("AbortError") || thrown?.name === "AbortError";
-        if (!isLockError) break;
-      }
-      await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
-    }
-
-    if (lastError) {
-      console.error("Credenciamento error:", lastError);
-      toast.error(`Erro ao salvar credenciamento: ${lastError.message}`);
-      setSaving(false);
+    if (!user || !profileId) return;
+    if (alocacaoAtiva.length === 0) {
+      toast.error("Você não tem empreendimentos alocados. Fale com o gestor.");
       return;
     }
-
-    await fetchData();
-    setSelectedJanela(null);
-    setCredModalOpen(false);
-    setSaving(false);
-    const jCfg = JANELAS_CONFIG.find(j => j.key === janela)!;
-    toast.success(`Credenciamento enviado para ${jCfg.emoji} ${jCfg.label}! Aguardando aprovação do CEO ⏳`);
+    setSaving(true);
+    const janelaDb = toDbJanela(janela);
+    try {
+      const { data, error } = await supabase.rpc("credenciar_por_alocacao", { p_janela: janelaDb });
+      if (error) throw error;
+      const res = data as { success: boolean; error?: string; message?: string };
+      if (!res?.success) {
+        toast.error(res?.error || "Falha ao credenciar");
+        setSaving(false);
+        return;
+      }
+      await fetchData();
+      setSelectedJanela(null);
+      setCredModalOpen(false);
+      setSaving(false);
+      const jCfg = JANELAS_CONFIG.find(j => j.key === janela)!;
+      toast.success(`Credenciamento enviado para ${jCfg.emoji} ${jCfg.label}! Aguardando aprovação do CEO ⏳`);
+    } catch (e: any) {
+      console.error("Credenciamento error:", e);
+      toast.error(`Erro ao salvar credenciamento: ${e.message || String(e)}`);
+      setSaving(false);
+    }
   };
 
   const hasSegmentos = mySegmentoIds.length > 0;
