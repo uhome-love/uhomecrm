@@ -1,61 +1,89 @@
-## Motivo (o que mudou no plano)
-Você não quer só volume de leads/visitas por corretor — quer descobrir **em quais empreendimentos e campanhas cada corretor tem melhor performance**, para poder **segmentar a empresa por especialidade** (Corretor X domina Terrace/Vivid, Corretor Y é bom em avulso, Corretor Z converte melhor no MCMV, etc.).
 
-Reescrevi o plano com foco em **taxa de conversão** e **especialização**, não em contagem crua.
+# Foco Corretores + Mapeador de Campanhas Meta
 
-## Fonte dos dados (julho/2026, BRT)
-- **Leads da roleta**: `roleta_distribuicoes` com `status='aceito'` em julho → julho tem 844 leads aceitos.
-- **Empreendimento/campanha**: `pipeline_leads.empreendimento` e `pipeline_leads.campanha`.
-- **Visitas**: `visitas` por `pipeline_lead_id`, com 3 status já em julho (20 marcadas · 123 realizadas · 91 no-show).
-- **Negócios/vendas**: `negocios` por `pipeline_lead_id` (julho tem 39 propostas + 22 vendidos + outros).
-- **Equipe**: `team_members` → gerente/equipe do corretor.
+## Fundamentação (histórico 90 dias, dados do CRM)
 
-## Métricas do PDF
-Para cada linha (corretor × empreendimento e corretor × campanha):
+**Oscilação de corretores**
+- 28 de 30 corretores rodaram em 3–4 segmentos nos últimos 90d; 16 nos 4.
+- Concorrência interna diária: S3 Alto Padrão 11 corretores/dia (pico 23), S1 Moradia 8,1, S2 Investimento 6,8, S4 MCMV 5,6.
+- Volume/produção pulverizados. Os únicos com produção consistente (Matheus, Jéssica) oscilaram menos.
 
-| Métrica | Definição |
-|---|---|
-| Leads | Distribuições aceitas em julho |
-| Visitas marcadas | Visitas criadas do lead (qualquer status) |
-| Visitas realizadas | `visitas.status = 'realizada'` |
-| No-show | `visitas.status = 'no_show'` |
-| Negócios | Linhas em `negocios` do lead |
-| Vendas | `negocios.fase = 'vendido'` |
-| **Conv. Visita %** | Visitas realizadas ÷ Leads |
-| **Conv. Venda %** | Vendas ÷ Leads |
-| **Show rate %** | Realizadas ÷ (Realizadas + No-show) |
+**Fragmentação de campanhas Meta**
+- Casa Tua tem **18 campanhas / 54 conjuntos / 50 anúncios** distintos no CRM.
+- Terrace, Shift, Átrio, Vivid, Flow, Casa Menino Deus, Connect JW, Lake Baikal, Avulso somam dezenas de variantes.
+- **790 leads (21% dos 90d) caem em "Outros / não classificado"**.
 
-## O que o PDF vai mostrar (foco em especialidade)
+**Rastreabilidade mídia → venda**
+- 35 vendas em 90d; só 7 têm `lead_id` no negócio, e apenas 4 destas com campanha preenchida. Mídia (~R$ 5–7k/mês) hoje decidida sem custo por venda por campanha.
 
-**1. Capa executiva — Top especialistas**
-   - "Especialistas por empreendimento": top 3 corretores em conv. venda por empreendimento (com volume mínimo de 5 leads para não distorcer).
-   - "Especialistas por campanha": mesmo, por campanha.
-   - **Ranking de conv. Venda geral** dos corretores em julho.
+## Objetivo
+1. Consolidar campanhas/conjuntos/anúncios Meta em empreendimento canônico.
+2. CEO/Gestor define, por corretor, quais empreendimentos ele atende.
+3. Credenciamento vira "Marcar Presença" + aprovação CEO — corretor recebe só leads dos empreendimentos alocados.
+4. Visibilidade real: performance por empreendimento (acumulada por corretor) e por campanha (para decidir mídia).
 
-**2. Uma seção por equipe**
-   Cabeçalho: Gerente · totais · conv. visita · conv. venda.
-   Depois duas tabelas:
-   - **Corretor × Empreendimento** — leads / visitas realiz. / vendas / conv. venda %
-     Célula em verde quando corretor está no top 3 daquele empreendimento; vermelho quando conv. bem abaixo da média com volume ≥ 5.
-   - **Corretor × Campanha** — mesmo layout.
+## Fases
 
-**3. Análises extras que estou incluindo (você pediu)**
-   - **Show rate por corretor**: quem consegue efetivamente colocar o lead dentro do stand (indicador de qualidade de agendamento).
-   - **"Avulso" vs "com empreendimento"**: separo leads sem empreendimento marcado (`empreendimento IS NULL/''`) como categoria própria — atende o "corretor Y é bom em avulso".
-   - **Matriz de calor de especialização**: uma tabela final Empreendimento (linhas) × Top 5 corretores (colunas) com conv. venda %, deixando visível quem domina o quê.
-   - **Alertas de mismatch**: corretor com muito lead de um empreendimento mas conv. baixa → sugestão de realocar leads.
-   - **Volume por campanha**: quais campanhas do Meta/RD estão trazendo mais leads e qual empreendimento carrega cada campanha (para o marketing na reunião).
+### Fase 1 — Empreendimentos canônicos + Mapeador Meta
+- Tabela `empreendimentos_canonicos` (nome, segmento_id → `roleta_segmentos`, ativo, ordem).
+- Tabela `empreendimento_aliases` (alias case-insensitive, empreendimento_id, tipo `campanha|conjunto|anuncio|formulario|empreendimento_texto|origem_detalhe`).
+- Coluna `pipeline_leads.empreendimento_canonico_id UUID` + trigger no INSERT/UPDATE resolvendo cascata: campanha → conjunto → anúncio → formulário → empreendimento_texto → origem_detalhe.
+- Backfill 180d.
+- Aba **"Mapeamento Meta"** na Roleta (CEO): lista strings distintas sem alias dos últimos 30d com contagem, dropdown do canônico, botão "Vincular" (grava alias + reprocessa leads via RPC).
+- Seed: canônicos iniciais + aliases das 18 variantes de Casa Tua e afins já observados nos 90d.
 
-**4. Consolidado da empresa**
-   Totais gerais, conv. média da empresa, ticket médio (VGV vendido), e ranking de campanhas por conv. venda.
+### Fase 2 — Alocação por corretor
+- Tabela `corretor_alocacao`: `user_id` PK, `empreendimentos UUID[]`, `atualizado_por`, `atualizado_em`, `observacao`.
+- RPC `set_corretor_alocacao(user_id, empreendimentos[])` restrita a admin/gestor/ceo.
+- Segmento derivado dos empreendimentos.
 
-## Regras de leitura
-- **Volume mínimo** de 5 leads por combinação para uma linha "contar" no ranking (evita corretor com 1 lead virando "melhor conv."). Linhas abaixo aparecem em cinza claro como "amostra pequena".
-- Empreendimento/campanha vazios viram "— Avulso —" e "— Sem campanha —".
-- Julho = 01/07 a 31/07 BRT.
+### Fase 3 — Página `/foco-corretores` com 2 abas
+**Aba "Alocação"** (default)
+- 1 linha por corretor: avatar + nome + equipe · chips de empreendimentos alocados · "+ Empreendimento" (multi-select canônicos ativos) · resumo `Leads 30d · Vis. realiz. · Vendas 30d` · alerta vermelho quando sem alocação.
+- Admin/CEO/diretor veem todo mundo agrupado por equipe; gestor só o seu time.
 
-## Entrega
-- Arquivo `/mnt/documents/especialistas-roleta-julho-2026.pdf`, paisagem A4, tabelas com autotable/reportlab (já usados no projeto).
-- Também exporto `/mnt/documents/especialistas-roleta-julho-2026.xlsx` com abas por equipe caso queira filtrar ao vivo na reunião.
+**Aba "Dados" (nova, esta requisição)**
+- **Matriz Corretor × Empreendimento** — uma linha por corretor, uma coluna por empreendimento canônico ativo, mais colunas de total.
+- Cada célula: `Leads · Vis. Agendadas · Vis. Realizadas · No-show · Vendas` (formato compacto com tooltip detalhado).
+- Filtros no topo: período (7d / 30d / 90d / mês atual / customizado — default 30d), equipe (CEO/diretor), empreendimento específico.
+- Linha "Total" ao final consolidando por empreendimento; coluna "Total" no fim de cada corretor.
+- Heatmap opcional na coluna de conversão (Lead→Visita e Visita→Realizada) pra saltar aos olhos quem converte no produto.
+- Export CSV do que estiver filtrado.
+- Fonte: `pipeline_leads` (leads recebidos) + `visitas` (agendada/realizada/no-show) + `negocios` (vendas), agrupados por `empreendimento_canonico_id` e `corretor_id`. **Números acumulam sozinhos** assim que o alias novo for mapeado, sem tabela intermediária.
 
-Confirma que posso executar assim? Se quiser algum recorte extra (ex: separar por segmento MCMV/Alto Padrão, ou por gerente específico), diz agora que já incluo antes de gerar.
+### Fase 4 — Credenciamento simplificado + roleta filtrada
+- `RoletaCorretorView.tsx`: substitui selects de segmento por botão único **"Marcar Presença"**, com read-only dos empreendimentos que vai receber.
+- Fluxo: presença → `pendente` → CEO aprova → `aprovado`.
+- Sem alocação = botão desabilitado com "Peça ao seu gestor pra definir seus produtos".
+- Função de distribuição filtra `alocacao.empreendimentos @> ARRAY[lead.empreendimento_canonico_id]` + turno.
+- Lead sem canônico ou sem corretor ativo naquele produto → `pendente_distribuicao` (Fila do CEO) com motivo `sem_match_empreendimento`.
+
+### Fase 5 — Fila do CEO: sem match + repasse manual
+- Sub-seção "Sem match de empreendimento" na Fila do CEO, com botão "Repassar" (popover de corretores ativos hoje).
+- RPC `repassar_lead_manual(lead_id, corretor_id)` registra em `distribuicao_historico` com origem `repasse_manual_ceo`.
+
+### Fase 6 — Painel financeiro (dashboard CEO)
+- Card **Performance por Empreendimento × Campanha × Conjunto × Anúncio** em `/ceo`.
+- Colunas: Leads · Visitas · Vendas · VGV · Conv. Lead→Visita · Conv. Lead→Venda; drilldown por conjunto/anúncio; filtro de período.
+
+## Escopo NÃO incluído
+- Não puxa spend automático da Graph API do Meta (etapa futura).
+- Não muda regras de presença/roleta noturna nem regime seg-sex/sáb/dom.
+- Não cria alocação inicial automática — CEO/gestor define.
+
+## Detalhes técnicos
+- Migrations (≤2/dia, 08–19h BRT), na ordem: (a) `empreendimentos_canonicos` + `empreendimento_aliases` + GRANTs + RLS + seed; (b) coluna + trigger + backfill 180d em `pipeline_leads`; (c) `corretor_alocacao` + RPC `set_corretor_alocacao` + `repassar_lead_manual`; (d) função de distribuição.
+- View `v_corretor_empreendimento_performance` (agregada por `corretor_id`, `empreendimento_canonico_id`, faixa temporal) pra alimentar a aba Dados sem repetir SQL no frontend.
+- Sem `_v2`/`_novo`. Arquivos ≤500 linhas: `MapeamentoMetaTab.tsx`, `AliasVincularDialog.tsx`, `FocoCorretoresPage.tsx`, `FocoAlocacaoTab.tsx`, `FocoDadosTab.tsx`, `CorretorFocoRow.tsx`, `EmpreendimentoMultiSelect.tsx`, `FilaCeoSemMatchList.tsx`, `PerformanceEmpreendimentoCampanhaCard.tsx`.
+- BRT em toda janela temporal.
+
+## Ordem de execução (validando no preview a cada fase)
+1. Fase 1 — canônicos + mapeador Meta + backfill.
+2. Fase 2 + 3 (Alocação) — CEO/gestor define foco.
+3. Fase 3 (Dados) — matriz por corretor × empreendimento.
+4. Fase 4 — roleta filtrada.
+5. Fase 5 — repasse manual.
+6. Fase 6 — painel Empreendimento × Campanha.
+
+## Após aprovação
+Mando texto objetivo e curto (WhatsApp) explicando o novo fluxo pro time de corretores validarem antes do rollout.

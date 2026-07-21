@@ -17,6 +17,7 @@ import RoletaConfigTab from "@/components/roleta/RoletaConfigTab";
 import CorretoresBloqueadosPanel from "@/components/roleta/CorretoresBloqueadosPanel";
 import PendingLeadsPanel from "@/components/pipeline/PendingLeadsPanel";
 import DistributionDashboard from "@/components/pipeline/DistributionDashboard";
+import { MapeamentoMetaTab } from "./MapeamentoMetaTab";
 
 // ─── Countdown Timer ───
 function CountdownTimer({ target }: { target: Date }) {
@@ -80,6 +81,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Config",
     subs: [
       { value: "parametros", label: "Parâmetros & Segmentos" },
+      { value: "mapeamento", label: "Mapeamento Meta" },
       { value: "performance", label: "Performance" },
     ],
   },
@@ -209,6 +211,7 @@ export function CentralRoletaCeo() {
         {activeSub === "metricas" && <RoletaMetricasTab />}
         {activeSub === "inteligencia" && <LeadIntelligenceTab />}
         {activeSub === "parametros" && <RoletaConfigTab />}
+        {activeSub === "mapeamento" && <MapeamentoMetaTab />}
         {activeSub === "performance" && <DistributionDashboard />}
       </div>
 
