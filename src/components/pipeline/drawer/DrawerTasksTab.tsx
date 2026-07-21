@@ -39,6 +39,10 @@ interface Props {
   onReload: () => void;
   onNovaTarefa: () => void;
   loading?: boolean;
+  /** Se preenchido, abre automaticamente o dialog de conclusão para essa tarefa. */
+  autoCompleteTaskId?: string | null;
+  /** Callback disparado após aplicarmos o autoCompleteTaskId (para o pai limpar o estado). */
+  onAutoCompleteConsumed?: () => void;
 }
 
 type TipoCanon = "call" | "msg" | "followup" | "visit" | "outro";
