@@ -7,6 +7,8 @@ import {
 } from "@/hooks/useRoleta";
 import { compareRoletaSegmentos } from "@/hooks/useRoletaSegmentos";
 import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
+import { useMinhaAlocacao } from "@/hooks/useFocoCorretores";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,17 +51,17 @@ function CountdownTimer({ target }: { target: Date }) {
 
 export function RoletaCorretorView() {
   const { user } = useAuth();
-  const { segmentos, meuCredenciamento, fila, loading, submitting, credenciar, sairDaRoleta } =
+  const { segmentos, meuCredenciamento, fila, loading, submitting, sairDaRoleta } =
     useRoleta();
   const { elegibilidade, carregando: carregandoElegibilidade } = useElegibilidadeRoleta();
+  const { data: minhaAlocacao = [], isLoading: loadingAlocacao } = useMinhaAlocacao();
   const windowInfo = getCurrentWindowInfo();
   const { isSunday, isHoliday } = getBrtDateInfo();
   const isDiaEspecial = isSunday || isHoliday;
   const [selectedJanela, setSelectedJanela] = useState<string>(
     isDiaEspecial ? "dia_todo" : windowInfo.credenciamentoJanela || windowInfo.janela
   );
-  const [seg1, setSeg1] = useState<string>("");
-  const [seg2, setSeg2] = useState<string>("");
+  const [marcandoPresenca, setMarcandoPresenca] = useState(false);
 
   // Noturna eligibility state
   const [noturnaEligible, setNoturnaEligible] = useState<boolean | null>(null);
@@ -258,14 +260,30 @@ export function RoletaCorretorView() {
     );
   }
 
-  // Credenciamento form
-  const handleCredenciar = () => {
-    if (!seg1) return;
-    credenciar(selectedJanela, seg1, seg2 || null);
+  // Marcar presença via alocação
+  const handleMarcarPresenca = async () => {
+    if (minhaAlocacao.length === 0) return;
+    setMarcandoPresenca(true);
+    try {
+      const { data, error } = await supabase.rpc("credenciar_por_alocacao", {
+        p_janela: selectedJanela,
+      });
+      if (error) throw error;
+      const res = data as { success: boolean; error?: string; message?: string };
+      if (!res.success) {
+        toast.error(res.error || "Falha ao marcar presença");
+        return;
+      }
+      toast.success(res.message || "Presença registrada!");
+    } catch (e: any) {
+      toast.error("Erro: " + (e.message || String(e)));
+    } finally {
+      setMarcandoPresenca(false);
+    }
   };
 
-  const segmentosOrdenados = [...segmentos].sort(compareRoletaSegmentos);
-  const seg2Options = segmentosOrdenados.filter((s) => s.id !== seg1);
+  const semAlocacao = !loadingAlocacao && minhaAlocacao.length === 0;
+  const alocacaoAtiva = minhaAlocacao.filter((a) => a.ativo);
 
   return (
     <div className="max-w-lg mx-auto space-y-6 py-8">
@@ -282,7 +300,7 @@ export function RoletaCorretorView() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">📋 Quero participar da roleta</CardTitle>
+          <CardTitle className="text-base">📋 Marcar presença na roleta</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Janela */}
@@ -345,52 +363,47 @@ export function RoletaCorretorView() {
             </Select>
           </div>
 
-          {/* Segmento 1 */}
+          {/* Card: Seus empreendimentos hoje */}
           <div>
             <label className="text-sm font-medium mb-1.5 block">
-              Segmento 1 <span className="text-destructive">*</span>
+              Seus empreendimentos hoje
             </label>
-            <Select
-              value={seg1}
-              onValueChange={(v) => {
-                setSeg1(v);
-                if (seg2 === v) setSeg2("");
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o segmento principal" />
-              </SelectTrigger>
-              <SelectContent>
-                {segmentosOrdenados.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.nome} {s.campanhas.length > 0 && `(${s.campanhas.join(", ")})`}
-                  </SelectItem>
+            {loadingAlocacao ? (
+              <div className="flex items-center gap-2 p-3 rounded-md border bg-muted">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Carregando alocação...</span>
+              </div>
+            ) : semAlocacao ? (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Você ainda não tem empreendimentos alocados. Fale com seu gestor pra receber
+                  leads da roleta.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-md border bg-muted/30 divide-y">
+                {alocacaoAtiva.map((a) => (
+                  <div
+                    key={a.empreendimento_id}
+                    className="flex items-center justify-between px-3 py-2"
+                  >
+                    <span className="text-sm">🏢 {a.empreendimento_nome}</span>
+                    {a.segmento_nome && (
+                      <Badge variant="outline" className="text-[10px]">
+                        {a.segmento_nome}
+                      </Badge>
+                    )}
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
+                <div className="px-3 py-2 text-[11px] text-muted-foreground bg-background/50">
+                  Definido pelo seu gestor. Alteração? Fale com ele.
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Segmento 2 */}
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">
-              Segmento 2 <span className="text-muted-foreground text-xs">(opcional)</span>
-            </label>
-            <Select value={seg2} onValueChange={setSeg2}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um segundo segmento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
-                {seg2Options.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.nome} {s.campanhas.length > 0 && `(${s.campanhas.join(", ")})`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Sunday/Holiday eligibility check */}
+          {/* Sunday/Holiday eligibility */}
           {isDiaEspecial && elegibilidade && !elegibilidade.pode_domingo && (
             <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30">
               <Ban className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
@@ -447,9 +460,11 @@ export function RoletaCorretorView() {
 
           <Button
             className="w-full"
-            onClick={handleCredenciar}
+            onClick={handleMarcarPresenca}
             disabled={
-              !seg1 ||
+              semAlocacao ||
+              loadingAlocacao ||
+              marcandoPresenca ||
               submitting ||
               (selectedJanela === "noturna" &&
                 (checkingNoturna || noturnaEligible === false)) ||
@@ -457,15 +472,16 @@ export function RoletaCorretorView() {
               carregandoElegibilidade
             }
           >
-            {submitting ? (
+            {marcandoPresenca ? (
               <Loader2 className="h-4 w-4 animate-spin mr-1" />
             ) : (
-              <Users className="h-4 w-4 mr-1" />
+              <CheckCircle2 className="h-4 w-4 mr-1" />
             )}
-            📋 Me credenciar
+            ✅ Marcar presença
           </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
+

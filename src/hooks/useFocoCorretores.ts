@@ -228,3 +228,44 @@ export function useFocoPerformance(from: string, to: string, enabled = true) {
     staleTime: 60_000,
   });
 }
+
+/** Alocação do corretor logado (empreendimentos + segmentos derivados). */
+export interface MinhaAlocacaoRow {
+  empreendimento_id: string;
+  empreendimento_nome: string;
+  segmento_id: string | null;
+  segmento_nome: string | null;
+  ativo: boolean;
+}
+
+export function useMinhaAlocacao() {
+  return useQuery({
+    queryKey: ["foco", "minha-alocacao"],
+    queryFn: async (): Promise<MinhaAlocacaoRow[]> => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return [];
+      const { data: alloc, error } = await supabase
+        .from("corretor_alocacao")
+        .select("empreendimentos")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (error) throw error;
+      const ids = (alloc?.empreendimentos as string[] | null) || [];
+      if (ids.length === 0) return [];
+      const { data: emps, error: e2 } = await supabase
+        .from("empreendimentos_canonicos")
+        .select("id, nome, segmento_id, ativo, roleta_segmentos(nome)")
+        .in("id", ids);
+      if (e2) throw e2;
+      return (emps || []).map((r: any) => ({
+        empreendimento_id: r.id,
+        empreendimento_nome: r.nome,
+        segmento_id: r.segmento_id,
+        segmento_nome: r.roleta_segmentos?.nome ?? null,
+        ativo: r.ativo,
+      }));
+    },
+    staleTime: 60_000,
+  });
+}
