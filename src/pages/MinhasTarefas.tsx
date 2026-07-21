@@ -1192,7 +1192,7 @@ export default function MinhasTarefas() {
               {selectedLeadId ? (
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="text-sm">{selectedLeadNome}</Badge>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setSelectedLeadId(null); setSelectedLeadNome(""); }}>Trocar</Button>
+                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setSelectedLeadId(null); setSelectedLeadNome(""); setPresetSelecionadoId(null); }}>Trocar</Button>
                 </div>
               ) : (
                 <div className="relative">
