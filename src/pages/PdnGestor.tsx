@@ -685,7 +685,7 @@ function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort
 function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
   isMobile, colWidths, onColResize, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
-  onMudarEtapa, onAvisar,
+  onMudarEtapa, onAvisar, onOpenRow,
 }: {
   grupo: PdnGrupo;
   label: string;
@@ -708,6 +708,7 @@ function GrupoBloco({
   onReativar: (row: PdnRow) => void;
   onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
   onAvisar: (row: PdnRow, mensagem: string) => void;
+  onOpenRow: (row: PdnRow) => void;
 }) {
   const isCaidos = grupo === "caidos";
   const subtotal = rows.reduce((s, r) => s + r.vgv, 0);
@@ -747,7 +748,7 @@ function GrupoBloco({
             {rows.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">Nenhum negócio neste grupo.</div>
             ) : rows.map(r => (
-              <MobileCard key={r.id} r={r} onSave={onSave} onUpdateManual={onUpdateManual} onRemove={onRemove} onQueda={onQueda} onReativar={onReativar} onMudarEtapa={onMudarEtapa} onAvisar={onAvisar} />
+              <MobileCard key={r.id} r={r} onSave={onSave} onUpdateManual={onUpdateManual} onRemove={onRemove} onQueda={onQueda} onReativar={onReativar} onMudarEtapa={onMudarEtapa} onAvisar={onAvisar} onOpenRow={onOpenRow} />
             ))}
           </div>
         ) : (
@@ -784,11 +785,16 @@ function GrupoBloco({
                       {r.isManual ? (
                         <EditableCell value={r.nome} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { nome: v })} />
                       ) : (
-                        <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onOpenRow(r)}
+                          className="flex w-full items-center gap-1.5 text-left hover:text-primary"
+                          title="Abrir detalhes"
+                        >
                           {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
-                          <span className="truncate">{r.nome}</span>
+                          <span className="truncate underline-offset-2 hover:underline">{r.nome}</span>
                           {r.etapaAjustada && <Badge variant="secondary" className="shrink-0 text-[9px] px-1">ajustada</Badge>}
-                        </div>
+                        </button>
                       )}
                       <div className="mt-1">
                         <Select value={r.grupo} onValueChange={(v) => onMudarEtapa(r, v as PdnGrupo)}>
