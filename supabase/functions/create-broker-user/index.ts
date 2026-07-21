@@ -507,6 +507,95 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ── SET ROLE (CEO/Diretora only) ────────────────────────────────────────
+    if (action === "set_role") {
+      if (!isAdmin && !isDiretora) throw new Error("Apenas CEO/Diretora podem alterar perfil de acesso");
+      if (!target_user_id) throw new Error("ID do usuário não informado");
+      if (target_user_id === caller.id) throw new Error("Você não pode alterar o próprio perfil");
+      const validRoles = ["corretor", "gestor", "backoffice", "rh", "diretor", "admin"];
+      if (!validRoles.includes(role)) throw new Error("Perfil inválido");
+      if ((role === "admin" || role === "diretor") && !isAdmin) {
+        throw new Error("Apenas CEO pode designar CEO ou Diretor");
+      }
+      // Fetch previous role for audit
+      const { data: prevRoles } = await supabase.from("user_roles").select("role").eq("user_id", target_user_id);
+      const prevList = (prevRoles || []).map((r: any) => r.role);
+
+      await supabase.from("user_roles").delete().eq("user_id", target_user_id);
+      await supabase.from("user_roles").insert({ user_id: target_user_id, role });
+
+      if (role === "corretor") {
+        if (!gerente_id) throw new Error("Informe o gerente para o corretor");
+        const { data: profile } = await supabase.from("profiles").select("nome").eq("user_id", target_user_id).maybeSingle();
+        const { data: gProfile } = await supabase.from("profiles").select("nome").eq("user_id", gerente_id).maybeSingle();
+        const equipeNome = gProfile?.nome ? String(gProfile.nome).trim().split(/\s+/)[0] : null;
+        const { data: existing } = await supabase.from("team_members").select("id").eq("user_id", target_user_id).maybeSingle();
+        if (existing) {
+          await supabase.from("team_members")
+            .update({ gerente_id, equipe: equipeNome, status: "ativo" })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("team_members").insert({
+            gerente_id, nome: profile?.nome || "Corretor",
+            user_id: target_user_id, equipe: equipeNome, status: "ativo",
+          });
+        }
+      } else {
+        // non-corretor roles: remove from team_members as member
+        await supabase.from("team_members").delete().eq("user_id", target_user_id);
+      }
+
+      await logAudit("set_role", target_user_id, { roles: prevList }, { role, gerente_id });
+      return new Response(JSON.stringify({ success: true, message: "Perfil atualizado." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── MOVE TO TEAM ────────────────────────────────────────────────────────
+    if (action === "move_to_team") {
+      if (!target_user_id) throw new Error("ID do usuário não informado");
+      if (!gerente_id) throw new Error("Novo gerente não informado");
+      await assertCanManage(target_user_id);
+      // gerente must be valid
+      const { data: gRoles } = await supabase.from("user_roles").select("role").eq("user_id", gerente_id);
+      if (!(gRoles || []).some((r: any) => r.role === "gestor")) {
+        throw new Error("Destino não é gerente");
+      }
+      // Non-admin can only move within their scope
+      if (!isAdmin && !managedGerentes.includes(gerente_id)) {
+        throw new Error("Você só pode mover para gerentes da sua diretoria");
+      }
+      const { data: gProfile } = await supabase.from("profiles").select("nome").eq("user_id", gerente_id).maybeSingle();
+      const equipeNome = gProfile?.nome ? String(gProfile.nome).trim().split(/\s+/)[0] : null;
+      const { data: existing } = await supabase.from("team_members").select("id").eq("user_id", target_user_id).maybeSingle();
+      if (existing) {
+        await supabase.from("team_members")
+          .update({ gerente_id, equipe: equipeNome })
+          .eq("id", existing.id);
+      } else {
+        const { data: prof } = await supabase.from("profiles").select("nome").eq("user_id", target_user_id).maybeSingle();
+        await supabase.from("team_members").insert({
+          gerente_id, user_id: target_user_id, nome: prof?.nome || "Corretor",
+          equipe: equipeNome, status: "ativo",
+        });
+      }
+      await logAudit("move_to_team", target_user_id, null, { new_gerente_id: gerente_id });
+      return new Response(JSON.stringify({ success: true, message: "Corretor movido para o novo gerente." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── LIST USERS (with last_sign_in) ──────────────────────────────────────
+    if (action === "list_users") {
+      // Return list of users with last_sign_in_at from auth admin
+      const { data: authList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const map: Record<string, string | null> = {};
+      (authList?.users || []).forEach((u: any) => { map[u.id] = u.last_sign_in_at || null; });
+      return new Response(JSON.stringify({ success: true, last_sign_in: map }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Ação inválida" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
