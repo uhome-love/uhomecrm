@@ -1,0 +1,156 @@
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Loader2, UserPlus, Search } from "lucide-react";
+import { toast } from "sonner";
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  leadId: string | null;
+  leadNome: string;
+  onDone?: () => void;
+}
+
+interface Corretor {
+  user_id: string;
+  nome: string;
+  equipe: string | null;
+}
+
+export default function FilaCeoRepassarDialog({ open, onOpenChange, leadId, leadNome, onDone }: Props) {
+  const { user } = useAuth();
+  const [corretores, setCorretores] = useState<Corretor[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [selected, setSelected] = useState<string>("");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      setSelected("");
+      setSearch("");
+      return;
+    }
+    setLoading(true);
+    (async () => {
+      const { data, error } = await supabase
+        .from("team_members")
+        .select("user_id, nome, equipe")
+        .eq("status", "ativo")
+        .order("nome");
+      if (!error) setCorretores(((data || []) as any[]).filter((c) => c.user_id));
+      setLoading(false);
+    })();
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return corretores;
+    return corretores.filter((c) => c.nome?.toLowerCase().includes(q) || c.equipe?.toLowerCase().includes(q));
+  }, [corretores, search]);
+
+  const handleConfirm = async () => {
+    if (!leadId || !selected || !user) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("pipeline_leads")
+        .update({
+          corretor_id: selected,
+          aceite_status: "aceito",
+          aceito_em: new Date().toISOString(),
+          motivo_pendencia: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", leadId);
+
+      if (error) throw error;
+
+      const corretorNome = corretores.find((c) => c.user_id === selected)?.nome || "corretor";
+
+      await supabase.from("audit_log").insert({
+        user_id: user.id,
+        modulo: "roleta",
+        acao: "fila_ceo_repasse_manual",
+        descricao: `Repassou lead "${leadNome}" para ${corretorNome}`,
+        depois: { lead_id: leadId, corretor_id: selected },
+      });
+
+      toast.success(`Lead repassado para ${corretorNome}`);
+      onDone?.();
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error("[FilaCeoRepassarDialog]", err);
+      toast.error("Erro ao repassar lead: " + (err?.message || ""));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <UserPlus className="h-4 w-4 text-primary" />
+            Repassar lead manualmente
+          </DialogTitle>
+          <DialogDescription>
+            Escolha o corretor que vai receber <strong>{leadNome || "este lead"}</strong>.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar corretor..."
+              className="pl-8"
+            />
+          </div>
+
+          <div className="max-h-72 overflow-y-auto space-y-1 border border-border rounded-md p-1">
+            {loading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">Nenhum corretor encontrado.</p>
+            ) : (
+              filtered.map((c) => (
+                <button
+                  key={c.user_id}
+                  onClick={() => setSelected(c.user_id)}
+                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-sm text-left transition-colors ${
+                    selected === c.user_id
+                      ? "bg-primary/10 border border-primary/40 text-primary font-medium"
+                      : "hover:bg-muted border border-transparent"
+                  }`}
+                >
+                  <span className="truncate">{c.nome}</span>
+                  {c.equipe && <span className="text-[10px] text-muted-foreground shrink-0">{c.equipe}</span>}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+            Cancelar
+          </Button>
+          <Button onClick={handleConfirm} disabled={!selected || saving} className="gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+            Repassar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
