@@ -1066,8 +1066,13 @@ export default function MinhasTarefas() {
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Lead</label>
               {selectedLeadId ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="secondary" className="text-sm">{selectedLeadNome}</Badge>
+                  {stageTipoSelecionado && (
+                    <Badge variant="outline" className="text-[10px] capitalize">
+                      {stageTipoSelecionado === "negociacao" ? "Em Negociação" : stageTipoSelecionado}
+                    </Badge>
+                  )}
                   <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setSelectedLeadId(null); setSelectedLeadNome(""); setPresetSelecionadoId(null); }}>Trocar</Button>
                 </div>
               ) : (
@@ -1088,9 +1093,15 @@ export default function MinhasTarefas() {
                       ))}
                     </div>
                   )}
+                  {leadSearch.length >= 2 && searchLeads.length === 0 && (
+                    <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
+                      Nenhum lead disponível. Tarefa manual só existe em <span className="text-foreground/80">Qualificação, Aquecimento e Em Negociação</span> — as demais etapas rodam por automação.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
+
 
             {/* Presets contextuais por etapa (Qualificação / Aquecimento / Negociação) */}
             {selectedLeadId && presetsDisponiveis.length > 0 && (
