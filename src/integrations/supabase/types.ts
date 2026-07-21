@@ -1390,6 +1390,33 @@ export type Database = {
         }
         Relationships: []
       }
+      corretor_alocacao: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          created_at: string
+          empreendimentos: string[]
+          observacao: string | null
+          user_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          created_at?: string
+          empreendimentos?: string[]
+          observacao?: string | null
+          user_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          created_at?: string
+          empreendimentos?: string[]
+          observacao?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       corretor_calendar_integrations: {
         Row: {
           access_token: string | null
@@ -10104,6 +10131,20 @@ export type Database = {
           },
         ]
       }
+      v_corretor_empreendimento_performance: {
+        Row: {
+          auth_user_id: string | null
+          dia: string | null
+          empreendimento_id: string | null
+          leads_recebidos: number | null
+          no_shows: number | null
+          vendas: number | null
+          vgv: number | null
+          visitas_agendadas: number | null
+          visitas_realizadas: number | null
+        }
+        Relationships: []
+      }
       v_corretor_roleta_status: {
         Row: {
           corretor_id: string | null
@@ -11556,6 +11597,27 @@ export type Database = {
             }
           }
       rpc_placar_do_dia: { Args: never; Returns: Json }
+      set_corretor_alocacao: {
+        Args: {
+          p_empreendimentos: string[]
+          p_observacao?: string
+          p_user_id: string
+        }
+        Returns: {
+          atualizado_em: string
+          atualizado_por: string | null
+          created_at: string
+          empreendimentos: string[]
+          observacao: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "corretor_alocacao"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       skip_oa_lead: {

@@ -122,6 +122,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "simulador-financiamento": lazyRetry(() => import("@/pages/SimuladorFinanciamento")),
   pdn: lazyRetry(() => import("@/pages/PdnGestor")),
   "presenca-roleta": lazyRetry(() => import("@/pages/PresencaRoleta")),
+  "foco-corretores": lazyRetry(() => import("@/pages/FocoCorretores")),
 };
 
 // ─── ROUTE → TAB CONFIG ──────────────────────────────────────────────────────
@@ -204,6 +205,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/simulador-financiamento": { key: "simulador-financiamento", label: "Simulador Financiamento", icon: "Calculator" },
   "/pdn":                   { key: "pdn",                  label: "PDN",                 icon: "ClipboardList", roles: ["gestor", "admin", "diretor"] },
   "/roleta/presenca":       { key: "presenca-roleta",      label: "Presença",     icon: "CalendarCheck", roles: ["admin", "gestor", "diretor"] },
+  "/foco-corretores":       { key: "foco-corretores",      label: "Foco Corretores",     icon: "Target",        roles: ["admin", "gestor", "diretor"] },
 };
 
 // ─── DYNAMIC ROUTES ──────────────────────────────────────────────────────────
