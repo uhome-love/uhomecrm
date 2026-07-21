@@ -602,6 +602,19 @@ export default function PdnGestor() {
         onClose={() => setQuedaRow(null)}
         onConfirm={(motivo) => { if (quedaRow) marcarQueda(quedaRow, motivo); setQuedaRow(null); }}
       />
+
+      <PdnLeadDrawer
+        row={selectedRow ? (filtered.find(r => r.id === selectedRow.id) ?? selectedRow) : null}
+        onClose={() => setSelectedRow(null)}
+        onSave={handleSave}
+        onUpdateManual={updateManualRow}
+        onRemove={handleRemove}
+        onQueda={setQuedaRow}
+        onReativar={reativarQueda}
+        onMudarEtapa={mudarEtapa}
+        onLimparEtapa={limparEtapaOverride}
+        onAvisar={avisarCorretor}
+      />
     </div>
   );
 }
