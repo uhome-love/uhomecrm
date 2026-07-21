@@ -52,14 +52,6 @@ serve(async (req) => {
       } catch (_) { /* best-effort */ }
     }
 
-    // Verify caller
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Não autorizado");
-    const token = authHeader.replace("Bearer ", "");
-    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
-    const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY!);
-    const { data: { user: caller } } = await anonClient.auth.getUser(token);
-    if (!caller) throw new Error("Não autorizado");
 
     const { data: callerRoles } = await supabase
       .from("user_roles")
