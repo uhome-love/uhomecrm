@@ -385,31 +385,58 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
             <div className="space-y-2">
               <div>
                 <label className="text-xs font-medium text-foreground">Próxima tarefa</label>
-                <p className="text-[10px] text-muted-foreground">(obrigatório para atualizar o lead)</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {hasPresets ? "Escolha um preset da etapa" : "(obrigatório para atualizar o lead)"}
+                </p>
               </div>
-              <div className="flex gap-1.5">
-                {["Ligar", "WhatsApp", "Follow-up"].map(tipo => (
-                  <button
-                    key={tipo}
-                    onClick={() => setTarefaTipo(tipo)}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                    style={{
-                      background: tarefaTipo === tipo ? "hsl(var(--primary))" : "hsl(var(--muted))",
-                      color: tarefaTipo === tipo ? "#fff" : "hsl(var(--foreground))",
-                    }}
-                  >
-                    {tipo === "Ligar" && <Phone className="h-3 w-3 inline mr-1" />}
-                    {tipo === "WhatsApp" && <MessageSquare className="h-3 w-3 inline mr-1" />}
-                    {tipo === "Follow-up" && <CalendarClock className="h-3 w-3 inline mr-1" />}
-                    {tipo}
-                  </button>
-                ))}
-              </div>
+              {hasPresets ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {stagePresets.map((p) => {
+                    const Icon = p.Icon;
+                    const active = selectedPresetId === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => handlePickPreset(p)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-xs font-medium transition-colors inline-flex items-center gap-1 border",
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted border-transparent hover:border-primary/40",
+                        )}
+                      >
+                        <Icon className="h-3 w-3" />
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex gap-1.5">
+                  {["Ligar", "WhatsApp", "Follow-up"].map(tipo => (
+                    <button
+                      key={tipo}
+                      onClick={() => setTarefaTipo(tipo)}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                      style={{
+                        background: tarefaTipo === tipo ? "hsl(var(--primary))" : "hsl(var(--muted))",
+                        color: tarefaTipo === tipo ? "#fff" : "hsl(var(--foreground))",
+                      }}
+                    >
+                      {tipo === "Ligar" && <Phone className="h-3 w-3 inline mr-1" />}
+                      {tipo === "WhatsApp" && <MessageSquare className="h-3 w-3 inline mr-1" />}
+                      {tipo === "Follow-up" && <CalendarClock className="h-3 w-3 inline mr-1" />}
+                      {tipo}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2">
                 <Input type="date" value={tarefaData} onChange={e => setTarefaData(e.target.value)} className="flex-1 text-sm h-9" />
                 <Input type="time" value={tarefaHora} onChange={e => setTarefaHora(e.target.value)} className="w-24 text-sm h-9" />
               </div>
             </div>
+
           </div>
         )}
 
