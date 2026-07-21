@@ -2197,6 +2197,44 @@ export type Database = {
         }
         Relationships: []
       }
+      empreendimento_aliases: {
+        Row: {
+          alias_norm: string
+          alias_raw: string
+          created_at: string
+          created_by: string | null
+          empreendimento_id: string
+          id: string
+          tipo: string
+        }
+        Insert: {
+          alias_norm: string
+          alias_raw: string
+          created_at?: string
+          created_by?: string | null
+          empreendimento_id: string
+          id?: string
+          tipo: string
+        }
+        Update: {
+          alias_norm?: string
+          alias_raw?: string
+          created_at?: string
+          created_by?: string | null
+          empreendimento_id?: string
+          id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empreendimento_aliases_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empreendimento_fichas: {
         Row: {
           atualizado_por: string | null
@@ -2361,6 +2399,47 @@ export type Database = {
           video_url?: string | null
         }
         Relationships: []
+      }
+      empreendimentos_canonicos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          ordem: number
+          segmento_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          segmento_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          segmento_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empreendimentos_canonicos_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "roleta_segmentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       empresa_metas_mensais: {
         Row: {
@@ -6041,6 +6120,7 @@ export type Database = {
           distribuido_em: string | null
           email: string | null
           empreendimento: string | null
+          empreendimento_canonico_id: string | null
           escalation_level: number | null
           estagnado: boolean
           estagnado_aviso_em: string | null
@@ -6139,6 +6219,7 @@ export type Database = {
           distribuido_em?: string | null
           email?: string | null
           empreendimento?: string | null
+          empreendimento_canonico_id?: string | null
           escalation_level?: number | null
           estagnado?: boolean
           estagnado_aviso_em?: string | null
@@ -6237,6 +6318,7 @@ export type Database = {
           distribuido_em?: string | null
           email?: string | null
           empreendimento?: string | null
+          empreendimento_canonico_id?: string | null
           escalation_level?: number | null
           estagnado?: boolean
           estagnado_aviso_em?: string | null
@@ -6312,6 +6394,13 @@ export type Database = {
           visita_amanha_resposta?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pipeline_leads_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pipeline_leads_negocio_id_fkey"
             columns: ["negocio_id"]
@@ -11279,6 +11368,7 @@ export type Database = {
       marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
       monitor_primeiro_contato_v1_coverage: { Args: never; Returns: undefined }
       norm_empreendimento: { Args: { s: string }; Returns: string }
+      normalize_alias: { Args: { input: string }; Returns: string }
       normalize_telefone: { Args: { raw: string }; Returns: string }
       presenca_role_scope: { Args: { _user_id: string }; Returns: string }
       processar_cadencia_sem_contato: {
@@ -11384,6 +11474,17 @@ export type Database = {
           user_id: string
         }[]
       }
+      resolver_empreendimento_canonico: {
+        Args: {
+          p_anuncio: string
+          p_campanha: string
+          p_conjunto: string
+          p_empreendimento: string
+          p_formulario: string
+          p_origem_detalhe: string
+        }
+        Returns: string
+      }
       roleta_corretor_sair: { Args: { p_turno: string }; Returns: undefined }
       roleta_expand_turnos: { Args: { p_turnos: string[] }; Returns: string[] }
       roleta_fechar_dia: { Args: { p_data?: string }; Returns: number }
@@ -11463,6 +11564,7 @@ export type Database = {
         }
         Returns: Json
       }
+      unaccent: { Args: { "": string }; Returns: string }
       upsert_roleta_fila: {
         Args: {
           p_corretor_id: string
