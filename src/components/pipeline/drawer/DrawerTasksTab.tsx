@@ -2,7 +2,7 @@
 // DrawerTasksTab — Aba Tarefas editorial v4
 // Agrupa por prazo: atrasadas / hoje / amanhã / esta semana / próximas
 // ─────────────────────────────────────────────────────────────────
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Pencil, Trash2, Clock, Plus, RotateCw, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
