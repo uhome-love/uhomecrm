@@ -19,16 +19,18 @@ export interface EmpreendimentoCanonico {
   ativo: boolean;
 }
 
-/** Todos os empreendimentos canônicos ativos com segmento. */
-export function useEmpreendimentosCanonicos() {
+/** Empreendimentos canônicos com segmento. Default: só ativos. */
+export function useEmpreendimentosCanonicos(opts: { includeInactive?: boolean } = {}) {
+  const includeInactive = !!opts.includeInactive;
   return useQuery({
-    queryKey: ["foco", "empreendimentos-canonicos"],
+    queryKey: ["foco", "empreendimentos-canonicos", includeInactive ? "all" : "ativos"],
     queryFn: async (): Promise<EmpreendimentoCanonico[]> => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("empreendimentos_canonicos")
         .select("id, nome, segmento_id, ativo, roleta_segmentos(nome)")
-        .eq("ativo", true)
         .order("nome");
+      if (!includeInactive) q = q.eq("ativo", true);
+      const { data, error } = await q;
       if (error) throw error;
       return (data || []).map((r: any) => ({
         id: r.id,
@@ -37,6 +39,54 @@ export function useEmpreendimentosCanonicos() {
         segmento_nome: r.roleta_segmentos?.nome ?? null,
         ativo: r.ativo,
       }));
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Mutation: liga/desliga empreendimento (só CEO/Admin/Diretor). */
+export function useSetEmpreendimentoAtivo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; ativo: boolean }) => {
+      const { error } = await supabase.rpc("set_empreendimento_ativo", {
+        p_empreendimento_id: input.id,
+        p_ativo: input.ativo,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(v.ativo ? "Empreendimento ativado" : "Empreendimento desativado");
+      qc.invalidateQueries({ queryKey: ["foco", "empreendimentos-canonicos"] });
+      qc.invalidateQueries({ queryKey: ["foco", "empreendimentos-com-leads"] });
+    },
+    onError: (e: any) => {
+      const msg = String(e?.message || e);
+      if (msg.toLowerCase().includes("apenas")) toast.error("Apenas CEO/Diretor pode alterar");
+      else toast.error("Erro: " + msg);
+    },
+  });
+}
+
+/** Contagem de leads por empreendimento nos últimos N dias (default 30d). */
+export function useLeadsPorEmpreendimento(days = 30) {
+  return useQuery({
+    queryKey: ["foco", "empreendimentos-com-leads", days],
+    queryFn: async (): Promise<Record<string, number>> => {
+      const since = new Date(Date.now() - days * 86_400_000).toISOString();
+      const { data, error } = await supabase
+        .from("pipeline_leads")
+        .select("empreendimento_canonico_id")
+        .gte("created_at", since)
+        .not("empreendimento_canonico_id", "is", null)
+        .limit(20000);
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const r of data || []) {
+        const k = (r as any).empreendimento_canonico_id as string;
+        if (k) map[k] = (map[k] || 0) + 1;
+      }
+      return map;
     },
     staleTime: 5 * 60_000,
   });
