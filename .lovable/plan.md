@@ -1,61 +1,68 @@
+#  Auditoria do fluxo de criação de tarefas — presets em toda a base
 
-# Nova Tarefa — só leads em etapas com preset
+## Mapa de entradas de criação (`INSERT pipeline_tarefas`)
 
-## Contexto
 
-Hoje o popup "Nova Tarefa" (`/minhas-tarefas`) deixa você escolher **qualquer** lead do corretor pelo nome. Isso permite criar tarefa manual em leads onde não faz sentido operacional:
+| #   | Onde                                              | Contexto                                                                                          | Presets?                                   | Filtro etapa?            |
+| --- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------ |
+| 1   | `MinhasTarefas.tsx` (popup "Nova Tarefa")         | Central de Tarefas — botão ➕                                                                      | ✅                                          | ✅ Q/A/N (feito hoje)     |
+| 2   | `NextActionModal.tsx`                             | Drawer do lead: "Nova tarefa" na aba Tarefas, "Criar tarefa" no Card Próxima Ação, botão "Anotar" | ✅                                          | ✅ por `currentStageTipo` |
+| 3   | `CompletionForm.tsx` (via `TaskCompletionDialog`) | Bloco "Agendar próxima tarefa" ao concluir qualquer tarefa                                        | ✅                                          | ✅                        |
+| 4   | `FocusModeModal.tsx`                              | Modo Foco — usa `TaskCompletionDialog`, herda presets                                             | ✅                                          | ✅                        |
+| 5   | `TarefasHojeLateral.tsx`                          | Widget "Tarefas de hoje" no dashboard — usa `TaskCompletionDialog`, herda                         | ✅                                          | ✅                        |
+| 6   | `WhatsAppFocusFlow.tsx`                           | Fluxo WhatsApp (drawer): passo "agendar próxima tarefa"                                           | ❌ **livre, sem presets**                   | ❌                        |
+| 7   | `CallFocusOverlay.tsx`                            | Fluxo Ligação (drawer): "próximo passo → agendar tarefa"                                          | ❌ **livre, sem presets**                   | ❌                        |
+| 8   | `QuickActionMenu.tsx`                             | "Liguei — não atendeu" cria callback fixo +2h                                                     | Automático (fixo) — sem escolha do usuário | &nbsp;                   |
+| 9   | `CardQuickTaskPopover.tsx`                        | **Não é importado em lugar nenhum — código morto**                                                | ❌                                          | ❌                        |
 
-- **Sem Contato** — tem cadência automática (T1→T5, ligação/WhatsApp/áudio/novidade). Tarefa manual concorre com o motor.
-- **Visita** — tem fluxo automático (confirmar D-1, remarcar +7d no no-show, feedback +48h). Criação manual já é bloqueada em outros pontos.
-- **Contrato** — fluxo de fechamento, sem tarefa manual.
-- **Descarte / Ganho / Arquivado** — fora do pipeline ativo.
 
-Etapas onde tarefa manual **faz sentido** e já têm chips de preset:
+## Diagnóstico
 
-- **Qualificação**
-- **Aquecimento**
-- **Em Negociação**
+- **Coberto (5 pontos):** Central de Tarefas, Drawer do lead, Conclusão de tarefa, Modo Foco, Widget Tarefas de Hoje.
+- **Gap real (2 pontos):** WhatsApp Focus e Call Focus — quando o corretor registra o contato e agenda a próxima tarefa dentro desses fluxos, ele **não recebe os chips de preset da etapa do lead**. Isso quebra a padronização: a mesma "Enviar imóveis" pode virar `follow_up` no CallFocus e `envio_material` na Central, dependendo do caminho que o corretor usar.
+- **Ruído:** `CardQuickTaskPopover.tsx` existe mas não é usado — mantém código legado desalinhado.
+- **Não é gap:** `QuickActionMenu` é fluxo automático (callback fixo +2h para "não atendeu"); não deve receber presets.
 
-Regra fica simétrica: **só aparecem na busca as etapas que têm preset**. Se a etapa tem motor automático, ela não recebe tarefa manual pelo Central de Tarefas.
+## Ações
 
-## Mudanças
+### 1. Deletar código morto
 
-### 1. Filtro na busca de leads (`MinhasTarefas.tsx`, query `lead-search-tarefas`)
+- Remover `src/components/pipeline/CardQuickTaskPopover.tsx` (nenhum import na base).
 
-Ampliar o `select` para trazer `stage_id` + `pipeline_stages.tipo` e filtrar:
+### 2. Presets no WhatsAppFocusFlow
 
-- `arquivado = false`
-- `aceite_status IN ('aceito','pendente','aguardando_aceite')`
-- `pipeline_stages.tipo IN ('qualificacao','aquecimento','negociacao')`
+Passar `stageTipo` do lead como prop (ou buscar via query) e renderizar o mesmo bloco de chips do `NextActionModal` no passo de agendamento. Ao clicar num chip, popular `taskType`, `taskDate`, `taskTime`, `obs`. Se `presets.length === 0`, manter o modo livre atual (etapa sem preset). Sincronizar `flag_status` no update do lead se o preset tiver `syncFlagKey`.
 
-Implementação: buscar 1x os `stage_ids` cujo `tipo` está na lista elegível (cacheado no React Query) e usar `.in('stage_id', elegiveis)` na busca.
+### 3. Presets no CallFocusOverlay
 
-### 2. Badge da etapa no popup
+Mesma mudança do #2 no bloco "agendar tarefa" da fase 3 (`Próximo passo`).
 
-Na linha do lead selecionado (junto do "Trocar"), mostrar um chip pequeno com o nome da etapa (ex.: `Qualificação`). Reforça visualmente por que os presets aparecem.
+### 4. Validação ao vivo (roteiro fixo)
 
-### 3. Empty state explicativo
+Para cada ponto, testar num lead **em Qualificação** (chips visíveis), **em Aquecimento** (chips diferentes), **em Sem Contato** (modo livre / bloqueado quando fizer sentido):
 
-Quando `leadSearch.length >= 2` e a busca retorna vazio, mostrar linha discreta:
+1. **Central de Tarefas** (`/minhas-tarefas`) → ➕ Nova Tarefa → buscar lead → chips renderizam por etapa; leads em Descarte/Visita/Contrato não aparecem.
+2. **Drawer do lead → aba Tarefas** → "Nova tarefa" → NextActionModal com chips.
+3. **Drawer → Card Próxima Ação (vazio)** → "Criar tarefa" → NextActionModal com chips.
+4. **Concluir tarefa** (qualquer origem) → bloco "Agendar próxima tarefa" com chips.
+5. **Modo Foco** → concluir tarefa do lead → chips no fluxo de agendar próxima.
+6. **Widget Dashboard "Tarefas de hoje"** → concluir tarefa direto do widget → chips.
+7. **Drawer → botão WhatsApp** → após enviar, agendar próxima → chips (após implementação).
+8. **Drawer → botão Ligar** → concluir ligação, próximo passo → chips (após implementação).
 
-*"Nenhum lead disponível. Tarefa manual só existe em Qualificação, Aquecimento e Em Negociação — as demais etapas rodam por automação."*
+Cada passo confirma:
 
-## Fora de escopo
+- Chips corretos por etapa (Qualificação: enviar imóveis, busca, alinhar perfil, retomar, outro; Aquecimento: prazos 30/60/90; Em Negociação: proposta enviada, aprovação, correspondente, documentação).
+- Ao clicar o chip → tipo/data/hora/observação preenchidos.
+- `flag_status` do lead atualiza quando o preset tem `syncFlagKey`.
 
-- Não mexer no drawer do lead (as regras por etapa já valem lá dentro).
-- Não mexer em presets nem no formulário — só na seleção do lead.
-- Sem migration; puramente frontend.
+### 5. Fora de escopo
 
-## Validação ao vivo
-
-1. Buscar "Lucas Fontoura" (Descarte) → **não aparece**.
-2. Buscar "Rodrigo Marcon" (Sem Contato) → **não aparece**.
-3. Buscar um lead em **Visita** → **não aparece**.
-4. Buscar um lead em **Qualificação** → aparece; chips de preset renderizam; badge "Qualificação".
-5. Buscar um lead em **Aquecimento** → aparece; chips corretos; badge "Aquecimento".
-6. Buscar um lead em **Em Negociação** → aparece; chips corretos; badge "Em Negociação".
-7. Buscar um arquivado → **não aparece**.
+- Não mexer em `QuickActionMenu` (callback +2h é fixo por design).
+- Não mexer em criação implícita por triggers/cron (visita, cadência sem contato, aquecimento auto).
+- Sem migration.
 
 ## Arquivos afetados
 
-- `src/pages/MinhasTarefas.tsx` (só a query `lead-search-tarefas` + UI do popup Nova Tarefa).
+- **Deletar:** `src/components/pipeline/CardQuickTaskPopover.tsx`
+- **Editar:** `src/components/pipeline/WhatsAppFocusFlow.tsx`, `src/components/pipeline/CallFocusOverlay.tsx`
