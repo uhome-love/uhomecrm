@@ -799,7 +799,10 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 onDeleteTarefa={leadData.deleteTarefa}
                 onReload={leadData.reload}
                 onNovaTarefa={() => setNextActionOpen(true)}
+                autoCompleteTaskId={autoCompleteTaskId}
+                onAutoCompleteConsumed={() => setAutoCompleteTaskId(null)}
               />
+
             </TabsContent>
 
             {/* ===== TAB: HISTÓRICO ===== */}
