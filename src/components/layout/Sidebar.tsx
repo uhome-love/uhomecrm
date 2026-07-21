@@ -97,7 +97,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         
         { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "Usuários",           path: "/central-usuarios",  icon: <UsersRound   size={15} strokeWidth={1.5} /> },
+        { label: "Meu Time",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -161,7 +161,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Operações",
       items: [
         { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "Usuários",           path: "/central-usuarios",  icon: <UsersRound   size={15} strokeWidth={1.5} /> },
+        { label: "Meu Time",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -182,8 +182,8 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Principal",
       items: [
         { label: "Dashboard",          path: "/gerente/dashboard", icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Meu time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
-        { label: "Usuários",           path: "/central-usuarios",  icon: <UsersRound   size={15} strokeWidth={1.5} /> },
+        { label: "Meu Time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
+        
         
       ],
     },
