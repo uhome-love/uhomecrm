@@ -172,7 +172,8 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
 
   const handleSaveTask = async () => {
     if (!user) return;
-    if (hasPresets && !selectedPresetId) {
+    const isVisitaStage = stageTipo === "visita";
+    if (!isVisitaStage && hasPresets && !selectedPresetId) {
       toast.error("Escolha um tipo de tarefa");
       return;
     }
@@ -182,18 +183,21 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
       const titulo = activePreset
         ? activePreset.label
         : `${TASK_TYPES.find(t => t.value === taskType)?.label || taskType} — ${lead.nome}`;
-      await supabase.from("pipeline_tarefas").insert({
-        pipeline_lead_id: lead.id,
-        titulo,
-        descricao: obs || null,
-        tipo: taskType,
-        vence_em: taskDate,
-        hora_vencimento: taskTime || null,
-        prioridade: "media",
-        status: "pendente",
-        created_by: user.id,
-        responsavel_id: user.id,
-      } as any);
+      // Etapa Visita: tarefas são automáticas (visita_auto). Não criar tarefa manual.
+      if (!isVisitaStage) {
+        await supabase.from("pipeline_tarefas").insert({
+          pipeline_lead_id: lead.id,
+          titulo,
+          descricao: obs || null,
+          tipo: taskType,
+          vence_em: taskDate,
+          hora_vencimento: taskTime || null,
+          prioridade: "media",
+          status: "pendente",
+          created_by: user.id,
+          responsavel_id: user.id,
+        } as any);
+      }
 
       // Sync flag_status quando preset carrega status da etapa.
       let flagPatch: Record<string, string> | null = null;
@@ -481,6 +485,12 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
               </div>
 
               {/* Próxima tarefa */}
+              {stageTipo === "visita" ? (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-[11px] text-amber-700 dark:text-amber-300">
+                  <p className="font-semibold mb-0.5">Etapa Visita — tarefas automáticas</p>
+                  <p className="opacity-90">Confirmação, remarcação e feedback são geradas pelo sistema.</p>
+                </div>
+              ) : (
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#52525b", display: "block", marginBottom: 8 }}>
                   📋 Próxima tarefa
@@ -548,6 +558,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
                   <Input type="time" className="h-8 text-[12px] w-28" value={taskTime} onChange={(e) => setTaskTime(e.target.value)} />
                 </div>
               </div>
+              )}
             </div>
           )}
         </div>

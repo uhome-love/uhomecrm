@@ -727,6 +727,7 @@ export default function MinhasTarefas() {
 
   const handleCriarTarefa = async () => {
     if (!user || !selectedLeadId || !novoData) return;
+    if (stageTipoSelecionado === "visita") { toast.error("Etapa Visita: tarefas são automáticas. Não crie tarefa manual."); return; }
     if (isTaskDateTooFar(novoData)) { toast.error(TASK_DATE_TOO_FAR_MSG); return; }
     const { error } = await supabase.from("pipeline_tarefas").insert({
       pipeline_lead_id: selectedLeadId,

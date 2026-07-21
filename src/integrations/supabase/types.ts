@@ -11341,6 +11341,7 @@ export type Database = {
           segmento_id: string
         }[]
       }
+      reconciliar_visitas_vencidas: { Args: never; Returns: number }
       redistribuir_leads_pendentes: {
         Args: { p_segmento_id?: string }
         Returns: Json
