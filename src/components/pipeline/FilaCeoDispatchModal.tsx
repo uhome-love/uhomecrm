@@ -480,31 +480,70 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched,
 
 
             <TabsContent value="novos" className="mt-4">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prévia por segmento</p>
-                {preview.map((p) => (
-                  <div key={p.segmento_nome} className={`flex items-center justify-between p-2.5 rounded-lg border ${SEGMENTO_COLORS[p.segmento_nome] || "bg-muted/50 border-border"}`}>
-                    <div>
-                      <span className="text-sm font-medium">● {p.segmento_nome}</span>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{p.empreendimentos.join(", ")}</p>
-                    </div>
-                    <Badge variant="secondary" className="font-bold">{p.count} leads</Badge>
-                  </div>
-                ))}
-                {unidentifiedCount > 0 && (
-                  <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/40">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Sem segmento</span>
-                    </div>
-                    <Badge variant="secondary" className="font-bold">{unidentifiedCount} leads</Badge>
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prévia por empreendimento</p>
+                {grupos.length === 0 && (
+                  <div className="text-center py-6 text-sm text-muted-foreground">
+                    Nenhum lead novo aguardando distribuição. 🎉
                   </div>
                 )}
+                {grupos.map((g) => {
+                  const isUnident = g.key === UNIDENT_KEY;
+                  return (
+                    <div
+                      key={g.key}
+                      className={`rounded-lg border ${isUnident ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-card"} border-l-[3px] ${isUnident ? "border-l-amber-500" : "border-l-primary"}`}
+                    >
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-border/60">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {isUnident ? (
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                          ) : (
+                            <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                          )}
+                          <span className="text-sm font-semibold truncate">{g.nome}</span>
+                        </div>
+                        <Badge variant="secondary" className="font-bold shrink-0">
+                          {g.leads.length} {g.leads.length === 1 ? "lead" : "leads"}
+                        </Badge>
+                      </div>
+                      <div className="divide-y divide-border/40">
+                        {g.leads.map((l) => (
+                          <div key={l.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                              <span className="text-sm font-medium truncate">{l.nome || "Sem nome"}</span>
+                              {l.origem && (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-normal">
+                                  {l.origem}
+                                </Badge>
+                              )}
+                              {l.motivo_pendencia && (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1.5 gap-0.5 border-amber-500/40 text-amber-700 dark:text-amber-300">
+                                  <PauseCircle className="h-2.5 w-2.5" /> Pausado
+                                </Badge>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 gap-1.5 shrink-0"
+                              onClick={() => setRepasseLead({ id: l.id, nome: l.nome || "Sem nome" })}
+                            >
+                              <UserPlus className="h-3 w-3" />
+                              Repassar
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
                 <p className="text-[10px] text-muted-foreground">
                   💡 Em domingo e feriado a roleta usa Dia Todo. De segunda a sábado, usa turnos normais.
                 </p>
               </div>
             </TabsContent>
+
           </Tabs>
 
           <div className="space-y-5 mt-5 pt-5 border-t border-border">
