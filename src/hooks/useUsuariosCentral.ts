@@ -79,7 +79,7 @@ export function useUsuariosCentral() {
       let list: UsuarioCentralRow[] = (profBasicRes.data || []).map((p: any) => {
         const team = teamByUser.get(p.user_id);
         const gid = team?.gerente_id || null;
-        const admin = adminById.get(p.user_id);
+        const admin = adminByProfileId.get(p.id);
         return {
           user_id: p.user_id,
           profile_id: p.id,
