@@ -151,6 +151,14 @@ export default function DrawerTasksTab({
   const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
   const [showConcluidas, setShowConcluidas] = useState(false);
 
+  // Abre auto-completion vinda do card "Próxima ação" no topo do drawer
+  useEffect(() => {
+    if (!autoCompleteTaskId) return;
+    const t = tarefas.find((x) => x.id === autoCompleteTaskId && x.status === "pendente");
+    if (t) setCompletingTarefa(t);
+    onAutoCompleteConsumed?.();
+  }, [autoCompleteTaskId, tarefas, onAutoCompleteConsumed]);
+
   async function handleCompletionConfirm(payload: CompletionPayload) {
     if (!completingTarefa) return;
     const result = await runTaskCompletion(
