@@ -100,6 +100,27 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editedBody, setEditedBody] = useState("");
 
+  // Presets Fase B — chips por etapa (Qualif/Aquec/Negoc)
+  const stagePresets = useMemo(() => getPresetsForStage(stageTipo), [stageTipo]);
+  const hasPresets = stagePresets.length > 0;
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const selectedPreset = useMemo<TaskPreset | null>(
+    () => stagePresets.find((p) => p.id === selectedPresetId) ?? null,
+    [stagePresets, selectedPresetId],
+  );
+  const freeMode = !hasPresets || selectedPresetId === PRESET_OUTRO_ID;
+
+  const handlePickPreset = (p: TaskPreset) => {
+    setSelectedPresetId(p.id);
+    if (p.id === PRESET_OUTRO_ID) return;
+    const payload = applyPresetToTarefa(p);
+    setTaskType(payload.tipo);
+    setTaskDate(payload.vence_em);
+    setTaskTime(payload.hora_vencimento || "10:00");
+    if (payload.obs && !obs.trim()) setObs(payload.obs);
+  };
+
+
   const nome = lead.nome?.split(" ")[0] || "cliente";
   const emp = lead.empreendimento || "nosso empreendimento";
 
