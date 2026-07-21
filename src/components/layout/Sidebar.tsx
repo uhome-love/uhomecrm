@@ -50,25 +50,22 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Principal",
       items: [
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2     size={15} strokeWidth={1.5} /> },
       ],
     },
     {
       title: "Leads",
       items: [
         { label: "Roleta",             path: "/roleta",            icon: <Target       size={15} strokeWidth={1.5} /> },
-        { label: "Presença",    path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
-        { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
-        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
-{ label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
+        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
+        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
       ],
     },
     {
-      title: "Vendas",
+      title: "Negócios",
       items: [
         { label: "PDN",                path: "/pdn",               icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
@@ -78,12 +75,15 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       ],
     },
     {
-      title: "Performance",
+      title: "Time",
       items: [
+        { label: "Meu Time",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
+        { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
+        { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Performance",        path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
-        { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
         { label: "Performance por Origem", path: "/relatorio-performance-origem", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
-        { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Star         size={15} strokeWidth={1.5} /> },
+        { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
+        { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -94,35 +94,24 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       ],
     },
     {
-      title: "Operações",
-      items: [
-        
-        { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "Meu Time",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
       title: "Ferramentas",
       items: [
         { label: "HOMI CEO",           path: "/homi-ceo",          icon: <Bot          size={15} strokeWidth={1.5} /> },
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
-        { label: "Base HOMI",          path: "/homi/base-conhecimento", icon: <BookOpen     size={15} strokeWidth={1.5} /> },
+        { label: "Base HOMI",          path: "/homi/base-conhecimento", icon: <BookOpen size={15} strokeWidth={1.5} /> },
+        { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
         { label: "Integrações",        path: "/integracoes",       icon: <Plug         size={15} strokeWidth={1.5} /> },
-        
       ],
     },
   ],
 
   // ── DIRETOR / DIRETORA COMERCIAL ───────────────────────────────────────────
-  // Visão executiva semelhante ao CEO (enxerga todas as equipes e dados),
-  // SEM as estruturas exclusivas do CEO: Roleta, Marketing, Reengajamento,
-  // Escala diária, Integrações, HOMI CEO, Base HOMI.
+  // = CEO sem Roleta, Marketing, Reengajamento, HOMI CEO, Base HOMI, Integrações.
   diretor: [
     {
       title: "Principal",
       items: [
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2     size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -130,16 +119,14 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
-        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
-        { label: "Presença",    path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
-        { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
+        { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
       ],
     },
     {
-      title: "Vendas",
+      title: "Negócios",
       items: [
         { label: "PDN",                path: "/pdn",               icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
@@ -149,21 +136,17 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       ],
     },
     {
-      title: "Equipes",
+      title: "Time",
       items: [
-        { label: "Meu time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
-        { label: "Relatórios 1:1",     path: "/relatorios",        icon: <FileText     size={15} strokeWidth={1.5} /> },
+        { label: "Meu Time",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
+        { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
+        { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Performance",        path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
         { label: "Performance por Origem", path: "/relatorio-performance-origem", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
         { label: "Placar do Dia",      path: "/placar-do-dia",     icon: <Award        size={15} strokeWidth={1.5} /> },
+        { label: "Relatórios 1:1",     path: "/relatorios",        icon: <FileText     size={15} strokeWidth={1.5} /> },
         { label: "Gestão WhatsApp",    path: "/gestor/whatsapp-dashboard", icon: <BarChart2 size={15} strokeWidth={1.5} /> },
-      ],
-    },
-    {
-      title: "Operações",
-      items: [
-        { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "Meu Time",           path: "/meu-time",          icon: <UsersRound   size={15} strokeWidth={1.5} /> },
+        { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -173,6 +156,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Materiais",          path: "/materiais",         icon: <FolderOpen   size={15} strokeWidth={1.5} /> },
         { label: "Templates",          path: "/templates-comunicacao", icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
+        { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
       ],
     },
   ],
@@ -184,26 +168,21 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Principal",
       items: [
         { label: "Dashboard",          path: "/gerente/dashboard", icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Meu Time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
-        
-        
       ],
     },
     {
-      title: "Gestão de Leads",
+      title: "Leads",
       items: [
-        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
+        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
-        { label: "Presença",    path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
-        { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
       ],
     },
     {
-      title: "Gestão de Negócios",
+      title: "Negócios",
       items: [
         { label: "PDN",                path: "/pdn",               icon: <ClipboardList size={15} strokeWidth={1.5} /> },
         { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
@@ -213,8 +192,11 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       ],
     },
     {
-      title: "Performance",
+      title: "Time",
       items: [
+        { label: "Meu Time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
+        { label: "Presença",           path: "/roleta/presenca",   icon: <CalendarCheck size={15} strokeWidth={1.5} /> },
+        { label: "Foco Corretores",    path: "/foco-corretores",   icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Performance",        path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
         { label: "Central Relatórios", path: "/central-relatorios", icon: <BarChart2   size={15} strokeWidth={1.5} /> },
       ],
@@ -230,7 +212,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     },
   ],
 
-  // ── CORRETOR ──────────────────────────────────────────────────────────────
   corretor: [
     {
       title: "Principal",
