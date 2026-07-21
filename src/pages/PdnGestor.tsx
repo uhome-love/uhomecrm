@@ -382,7 +382,7 @@ export default function PdnGestor() {
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
       {/* Header */}
-      <div className="sticky top-0 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-background/85 px-4 py-2.5 backdrop-blur md:-mx-6 md:px-6">
+      <div className="sticky top-0 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-2.5 shadow-sm md:-mx-6 md:px-6">
         {/* Header sticky com backdrop-blur — mantém contexto e ações do mês visíveis durante o scroll da planilha. */}
         <div>
           <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
