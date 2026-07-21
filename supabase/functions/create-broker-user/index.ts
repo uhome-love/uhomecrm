@@ -294,6 +294,7 @@ serve(async (req) => {
       const message = teamLinkError
         ? `${baseMessage} (Atenção: vínculo com a equipe falhou — ${teamLinkError}. Vincule manualmente.)`
         : baseMessage;
+      await logAudit("create_user", newUser.user.id, null, { nome, email, role: assignedRole, gerente_id: effectiveGerenteId });
       return new Response(JSON.stringify({
         success: true, user_id: newUser.user.id, team_link_error: teamLinkError, message,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
