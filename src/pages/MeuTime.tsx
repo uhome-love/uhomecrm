@@ -22,8 +22,8 @@ export default function MeuTime() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           {isPrivileged
-            ? "Gerencie todos os usuários do CRM — criação, edição, inativação e exclusão."
-            : "Gerencie os corretores da sua equipe"}
+            ? "Crie, edite, altere perfis, mova entre equipes, inative ou exclua usuários com transferência de dados."
+            : "Gerencie os corretores da sua equipe — criação, edição e transferência de dados."}
         </p>
       </div>
 
