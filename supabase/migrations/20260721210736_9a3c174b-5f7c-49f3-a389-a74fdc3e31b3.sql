@@ -1,0 +1,1 @@
+CREATE POLICY "Gestores e diretores podem ver todos os roles" ON public.user_roles FOR SELECT USING (has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'diretor'::app_role));
