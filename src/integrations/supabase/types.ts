@@ -10631,6 +10631,7 @@ export type Database = {
         }
         Returns: Json
       }
+      credenciar_por_alocacao: { Args: { p_janela: string }; Returns: Json }
       criar_notificacao: {
         Args: {
           p_agrupamento_key?: string
