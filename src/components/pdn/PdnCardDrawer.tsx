@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { PDN_GRUPOS, type PdnGrupo, type PdnRow } from "@/hooks/usePdn";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { formatBRT } from "@/lib/brtTime";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
@@ -13,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Trash2, TrendingDown, RotateCcw, AlertTriangle, Send, Undo2, CheckCircle2 } from "lucide-react";
+import { Trash2, TrendingDown, RotateCcw, AlertTriangle, Send, Undo2, CheckCircle2, Megaphone, ExternalLink } from "lucide-react";
 import type { PdnSavePatch } from "./PdnKanban";
 import { MoneyInput } from "./MoneyInput";
 
@@ -21,6 +23,22 @@ const STATUS_PRESETS = [
   "Aguardando docs", "Em aprovação", "Negociando", "Proposta", "Follow up",
   "Em confecção", "Gerado", "Assinado",
 ];
+
+/**
+ * Hash curto (SHA-1 → 10 chars hex) via Web Crypto. Usado para idempotência
+ * das notas publicadas no histórico do lead (marcador embutido no conteúdo).
+ */
+async function sha1Short(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 10);
+}
+
+type PubField = "observacao" | "proxima_acao";
+
+const FIELD_LABEL: Record<PubField, string> = {
+  observacao: "Observação",
+  proxima_acao: "Próxima ação",
+};
 
 export function PdnCardDrawer({
   row, onClose, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onLimparEtapa, onAvisar,
@@ -51,6 +69,9 @@ export function PdnCardDrawer({
   // Avisar corretor
   const [avisarOpen, setAvisarOpen] = useState(false);
   const [avisoMsg, setAvisoMsg] = useState("");
+  // Publicar no lead — controla estado por campo
+  const [publishing, setPublishing] = useState<PubField | null>(null);
+  const [publishedHash, setPublishedHash] = useState<Record<PubField, string | null>>({ observacao: null, proxima_acao: null });
 
   useEffect(() => {
     if (!row) return;
@@ -67,6 +88,32 @@ export function PdnCardDrawer({
     setCorretor(row.corretor === "—" ? "" : row.corretor);
     setAvisarOpen(false);
     setAvisoMsg("");
+    setPublishedHash({ observacao: null, proxima_acao: null });
+
+    // Pré-carrega hashes já publicados para este lead (últimos 60 dias) para
+    // sinalizar "Publicado ✓" vs "Republicar" no botão.
+    if (row.pipelineLeadId) {
+      (async () => {
+        const { data } = await supabase
+          .from("pipeline_anotacoes")
+          .select("conteudo, created_at")
+          .eq("pipeline_lead_id", row.pipelineLeadId!)
+          .ilike("conteudo", "%[pdn:%")
+          .order("created_at", { ascending: false })
+          .limit(30);
+        const found: Record<PubField, string | null> = { observacao: null, proxima_acao: null };
+        for (const r of data || []) {
+          const c = String((r as any).conteudo || "");
+          for (const f of ["observacao", "proxima_acao"] as PubField[]) {
+            if (found[f]) continue;
+            const re = new RegExp(`\\[pdn:${row.pipelineLeadId}:${f}:([a-f0-9]{6,20})\\]`);
+            const m = c.match(re);
+            if (m) found[f] = m[1];
+          }
+        }
+        setPublishedHash(found);
+      })();
+    }
   }, [row]);
 
   if (!row) return null;
@@ -87,6 +134,100 @@ export function PdnCardDrawer({
     onClose();
   };
 
+  async function publicarNoLead(field: PubField, texto: string) {
+    if (!row?.pipelineLeadId) return;
+    const clean = texto.trim();
+    if (!clean) { toast.info("Escreva algo antes de publicar"); return; }
+    setPublishing(field);
+    try {
+      const hash = await sha1Short(clean);
+      const marker = `[pdn:${row.pipelineLeadId}:${field}:${hash}]`;
+
+      // Idempotência: se já existe nota com o mesmo hash, não duplica.
+      const { data: exists } = await supabase
+        .from("pipeline_anotacoes")
+        .select("id")
+        .eq("pipeline_lead_id", row.pipelineLeadId)
+        .ilike("conteudo", `%${marker}%`)
+        .limit(1);
+      if (exists && exists.length > 0) {
+        setPublishedHash(prev => ({ ...prev, [field]: hash }));
+        toast.info("Este texto já foi publicado no lead");
+        return;
+      }
+
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes?.user?.id;
+      if (!uid) { toast.error("Sessão expirada"); return; }
+
+      // Nome do autor (opcional, best-effort)
+      let autorNome = "Gestor (PDN)";
+      const { data: prof } = await supabase.from("profiles").select("nome").eq("user_id", uid).maybeSingle();
+      if (prof && (prof as any).nome) autorNome = `${(prof as any).nome} (Gestor · PDN)`;
+
+      const conteudo = `[Gestor · PDN] ${FIELD_LABEL[field]}: ${clean}\n\n${marker}`;
+      const { error } = await supabase.from("pipeline_anotacoes").insert({
+        pipeline_lead_id: row.pipelineLeadId,
+        conteudo,
+        autor_id: uid,
+        autor_nome: autorNome,
+        fixada: false,
+      });
+      if (error) { toast.error("Erro ao publicar: " + error.message); return; }
+
+      // Também persiste no overlay (garante que a última edição fica salva)
+      if (field === "observacao") onSave(row, { observacoes: clean });
+      else onSave(row, { proximaAcao: clean, proximaAcaoData: proxData });
+
+      setPublishedHash(prev => ({ ...prev, [field]: hash }));
+      toast.success("Publicado no histórico do lead ✓");
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao publicar no lead");
+    } finally {
+      setPublishing(null);
+    }
+  }
+
+  function PublishButton({ field, texto }: { field: PubField; texto: string }) {
+    if (!row?.pipelineLeadId) return null;
+    const clean = texto.trim();
+    const disabled = !clean || publishing === field;
+    const isBusy = publishing === field;
+    const [localHash, setLocalHash] = useState<string | null>(null);
+    // Recalcula hash local para comparar com o publicado.
+    useEffect(() => {
+      let cancelled = false;
+      if (!clean) { setLocalHash(null); return; }
+      sha1Short(clean).then(h => { if (!cancelled) setLocalHash(h); });
+      return () => { cancelled = true; };
+    }, [clean]);
+    const pubHash = publishedHash[field];
+    const isPublishedSame = pubHash && localHash && pubHash === localHash;
+    const isPublishedDrift = pubHash && localHash && pubHash !== localHash;
+    const label = isBusy
+      ? "Publicando…"
+      : isPublishedSame
+        ? "Publicado no lead ✓"
+        : isPublishedDrift
+          ? "Republicar no lead"
+          : "Publicar no lead";
+    return (
+      <Button
+        type="button"
+        variant={isPublishedSame ? "ghost" : "outline"}
+        size="sm"
+        disabled={disabled}
+        onClick={() => publicarNoLead(field, clean)}
+        className={`h-8 gap-1.5 text-xs ${isPublishedSame ? "text-emerald-600 dark:text-emerald-400" : ""}`}
+        title={`Cria uma nota no histórico do lead com esta ${FIELD_LABEL[field].toLowerCase()}.`}
+      >
+        {isPublishedSame ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Megaphone className="h-3.5 w-3.5" />}
+        {label}
+      </Button>
+    );
+  }
+
   return (
     <Sheet open={!!row} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-md">
@@ -98,6 +239,18 @@ export function PdnCardDrawer({
         </SheetHeader>
 
         <div className="mt-4 space-y-4">
+          {/* Atalho para abrir o lead no pipeline em nova aba */}
+          {!row.isManual && row.pipelineLeadId && (
+            <a
+              href={`/pipeline-leads?lead=${row.pipelineLeadId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+            >
+              <ExternalLink className="h-3 w-3" /> Abrir lead no pipeline
+            </a>
+          )}
+
           {/* Etapa no PDN (interna — não altera o pipeline do corretor) */}
           <div className="space-y-1 rounded-lg border p-3">
             <div className="flex items-center gap-2">
@@ -225,13 +378,22 @@ export function PdnCardDrawer({
           </div>
 
           <div className="space-y-1">
-            <Label>Próxima ação</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Próxima ação</Label>
+              <PublishButton field="proxima_acao" texto={proxAcao} />
+            </div>
             <Input value={proxAcao} onChange={(e) => setProxAcao(e.target.value)} placeholder="O que precisa ser feito…" />
           </div>
 
           <div className="space-y-1">
-            <Label>Observação interna</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Observação interna</Label>
+              <PublishButton field="observacao" texto={obs} />
+            </div>
             <Textarea value={obs} onChange={(e) => setObs(e.target.value)} className="min-h-[90px]" placeholder="Anotações do gestor (uso interno)…" />
+            <p className="text-[11px] text-muted-foreground">
+              "Publicar no lead" grava uma nota no histórico do lead marcada como <span className="font-medium">[Gestor · PDN]</span>. Republicar com o mesmo texto não duplica.
+            </p>
           </div>
 
           {/* Risco manual */}
