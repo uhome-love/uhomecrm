@@ -828,6 +828,16 @@ export default function MinhasTarefas() {
       toast.error("Não foi possível criar a tarefa: " + error.message);
       return;
     }
+    // Se um preset com syncFlag foi selecionado, sincroniza flag_status do lead
+    if (presetSelecionado?.syncFlagKey && presetSelecionado?.syncFlagValue) {
+      const currentFlag = (selectedLeadStage?.flagStatus as Record<string, unknown>) || {};
+      const nextFlag = { ...currentFlag, [presetSelecionado.syncFlagKey]: presetSelecionado.syncFlagValue };
+      const { error: flagErr } = await supabase
+        .from("pipeline_leads")
+        .update({ flag_status: nextFlag } as any)
+        .eq("id", selectedLeadId);
+      if (flagErr) toast.warning("Tarefa criada, mas não consegui atualizar o status da etapa.");
+    }
     toast.success("Tarefa criada ✅");
     setShowNovaTarefa(false);
     setSelectedLeadId(null);
@@ -836,6 +846,7 @@ export default function MinhasTarefas() {
     setNovoObs("");
     setNovoData("");
     setNovoHora("");
+    setPresetSelecionadoId(null);
     invalidateTaskQueries(queryClient, selectedLeadId);
   };
 
