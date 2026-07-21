@@ -265,12 +265,12 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
     <DialogPrimitive.Root open={isOpen} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay
-          style={{ position: 'fixed', inset: 0, zIndex: 99998, backgroundColor: 'rgba(0,0,0,0.5)' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 70 /* Z.focusOverlay */, backgroundColor: 'rgba(0,0,0,0.5)' }}
         />
         <DialogPrimitive.Content
           onOpenAutoFocus={(e) => e.preventDefault()}
           aria-describedby={undefined}
-          style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 99999, backgroundColor: 'white', borderRadius: '16px', width: 'calc(100% - 48px)', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}
+          style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 71 /* Z.focusOverlayContent */, backgroundColor: 'white', borderRadius: '16px', width: 'calc(100% - 48px)', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}
         >
           <DialogPrimitive.Title style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
             Registrar ligação

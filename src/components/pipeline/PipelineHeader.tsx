@@ -156,7 +156,7 @@ export default function PipelineHeader(props: PipelineHeaderProps) {
 
 
   return (
-    <div className="shrink-0 bg-[#f7f7fb] dark:bg-[#141e30] border-b border-[#e8e8f0] dark:border-white/[0.07] sticky top-0 z-40">
+    <div className="shrink-0 bg-[#f7f7fb] dark:bg-[#141e30] border-b border-[#e8e8f0] dark:border-white/[0.07] sticky top-0" style={{ zIndex: 30 /* Z.headerSticky */ }}>
       {/* ── MOBILE HEADER (< md) ── */}
       <div className="md:hidden">
         {/* Line 1: Title + filters + novo */}
