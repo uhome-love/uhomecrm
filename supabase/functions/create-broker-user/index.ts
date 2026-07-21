@@ -342,10 +342,6 @@ serve(async (req) => {
       if (target_user_id === caller.id) throw new Error("Você não pode inativar a si mesmo");
 
       // Check if target is a gerente (has team_members under them)
-      const { data: teamUnder } = await supabase
-        .from("team_members").select("id", { count: "exact", head: true })
-        .eq("gerente_id", target_user_id);
-      const isTargetGerente = (teamUnder as any)?.length !== undefined ? false : true; // count-only response
       const { count: teamCount } = await supabase
         .from("team_members").select("id", { count: "exact", head: true })
         .eq("gerente_id", target_user_id);
