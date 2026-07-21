@@ -756,7 +756,7 @@ function GrupoBloco({
                   <ResizableHead colKey="corretor" width={colWidths.corretor} onResize={onColResize} label="Corretor" sortActive={sortKey === "corretor"} dir={sortDir} onSort={() => onSort("corretor")} />
                   <ResizableHead colKey="status" width={colWidths.status} onResize={onColResize} label="Status" sortActive={sortKey === "status"} dir={sortDir} onSort={() => onSort("status")} />
                   <ResizableHead colKey="obs" width={colWidths.obs} onResize={onColResize} label="Observação" />
-                  <TableHead className="w-[70px]" />
+                  <TableHead className="w-[96px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
