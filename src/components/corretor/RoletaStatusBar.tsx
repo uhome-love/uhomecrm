@@ -248,6 +248,9 @@ export default function RoletaStatusBar() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [credenciamentosPorJanela, setCredenciamentosPorJanela] = useState<Record<string, string>>({});
 
+  const { data: minhaAlocacao = [], isLoading: loadingAlocacao } = useMinhaAlocacao();
+  const alocacaoAtiva = minhaAlocacao.filter((a) => a.ativo);
+
   const nightReqs = useNightRequirements(user?.id, profileId, credModalOpen ? 1 : 0);
 
   // Re-fetch requirements every time the credenciamento modal opens
