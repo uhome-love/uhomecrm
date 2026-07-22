@@ -615,7 +615,7 @@ ${histCtx}
               <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={handleCopy}>
                 <Copy className="h-3.5 w-3.5" /> Copiar tudo
               </Button>
-              <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={() => { setResult(""); setActiveAction(null); setCustomPrompt(""); setObjecao(""); setClientSaid(""); }}>
+              <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={() => { setResult(""); setMateriais([]); setActiveAction(null); setCustomPrompt(""); setObjecao(""); setClientSaid(""); }}>
                 <Sparkles className="h-3.5 w-3.5" /> Nova consulta
               </Button>
             </div>
