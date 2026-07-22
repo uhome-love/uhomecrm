@@ -40,7 +40,7 @@ import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
 import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
-import { fmtMoney as _fmtMoneyUnused } from "@/lib/fmtMoney";
+import { fmtMoney } from "@/lib/fmtMoney";
 import { toast } from "sonner";
 
 // ─── Status: opções fixas (com cores) + livre ─────────────────────────────────
@@ -249,7 +249,7 @@ export default function PdnGestor() {
   useEffect(() => {
     try { sessionStorage.setItem(`pdn:view:${isMobile ? "mobile" : "desktop"}`, view); } catch { /* ignore */ }
   }, [view, isMobile]);
-  const { rows, hiddenRows, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, mudarEtapa, limparEtapaOverride, avisarCorretor, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows, hiddenRows, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, mudarEtapa, limparEtapaOverride, avisarCorretor, descartarLead, inativarLead, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
   const [showOcultos, setShowOcultos] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
@@ -620,10 +620,16 @@ export default function PdnGestor() {
         />
       )}
 
-      <QuedaDialog
+      <PdnQuedaDialog
         row={quedaRow}
         onClose={() => setQuedaRow(null)}
-        onConfirm={(motivo) => { if (quedaRow) marcarQueda(quedaRow, motivo); setQuedaRow(null); }}
+        onConfirm={(action: QuedaAction, motivo: string) => {
+          if (!quedaRow) return;
+          if (action === "descartar") descartarLead(quedaRow, motivo);
+          else if (action === "inativar") inativarLead(quedaRow, motivo);
+          else marcarQueda(quedaRow, motivo);
+          setQuedaRow(null);
+        }}
       />
 
       <PdnLeadDrawer
