@@ -201,6 +201,7 @@ export const ROUTE_TO_TAB: Record<string, TabRouteConfig> = {
   "/central-relatorios":        { key: "report-center",     label: "Central Relatórios",  icon: "BarChart2",     roles: ["admin", "gestor", "corretor", "diretor"], noPadding: true },
   "/relatorio-performance-origem": { key: "relatorio-origem-performance", label: "Performance por Origem", icon: "BarChart2", roles: ["admin", "gestor", "diretor"], noPadding: true },
   "/materiais":             { key: "materiais",            label: "Materiais",           icon: "FolderOpen" },
+  "/materiais/analytics":   { key: "materiais-analytics",  label: "Analytics Materiais", icon: "BarChart3",     roles: ["gestor", "admin", "diretor"] },
   "/intermediacao":         { key: "intermediacao",        label: "Intermediação",       icon: "FileSignature", roles: ["admin", "gestor", "diretor"] },
   "/leads-estagnados":      { key: "leads-estagnados",     label: "Leads Estagnados",    icon: "AlarmClock",    roles: ["admin", "gestor", "diretor"] },
   "/simulador-financiamento": { key: "simulador-financiamento", label: "Simulador Financiamento", icon: "Calculator" },
