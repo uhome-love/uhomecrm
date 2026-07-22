@@ -680,10 +680,10 @@ export default function PdnGestor() {
           count={selectedIds.size}
           onClear={() => setSelectedIds(new Set())}
           onPublish={bulkPublish}
-          onAvisar={bulkAvisar}
           onQueda={bulkQueda}
         />
       )}
+
     </div>
 
   );
