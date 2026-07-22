@@ -456,45 +456,18 @@ export default function PdnGestor() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
-      {/* Header */}
-      <div className="sticky top-0 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-2.5 shadow-sm md:-mx-6 md:px-6">
-        {/* Header sticky com backdrop-blur — mantém contexto e ações do mês visíveis durante o scroll da planilha. */}
-        <div>
-          <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
-            <ClipboardList className="h-5 w-5 text-primary" /> PDN — Plano de Negócios
-          </h1>
-          <p className="text-sm text-muted-foreground">Planilha de gestão do mês, integrada ao pipeline. Status e observações são internos (não aparecem para o corretor).</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={mes} onValueChange={setMes}>
-            <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {monthOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <div className="flex items-center rounded-lg border p-0.5">
-            <Button variant={view === "planilha" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => setView("planilha")}>
-              <TableIcon className="mr-1.5 h-4 w-4" /> Planilha
-            </Button>
-            <Button variant={view === "kanban" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => setView("kanban")}>
-              <LayoutGrid className="mr-1.5 h-4 w-4" /> Kanban
-            </Button>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`mr-1.5 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Atualizar
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportCSV}><Download className="mr-1.5 h-4 w-4" /> Exportar</Button>
-        </div>
-      </div>
+      <PdnHeader
+        mes={mes}
+        monthOptions={monthOptions}
+        onChangeMes={setMes}
+        view={view}
+        onChangeView={setView}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onExport={exportCSV}
+      />
 
-      {/* Resumo — KPIs clicáveis */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <SummaryCard label="VGV Total" value={fmtMoney(resumo.vgvTotal, "short")} accent="text-foreground" icon={<Wallet className="h-4 w-4" />} active={kpiFilter === null} onClick={() => setKpiFilter(null)} />
-        <SummaryCard label="Ganhos" value={fmtMoney(resumo.byGrupo.ganho.vgv, "short")} sub={`${resumo.byGrupo.ganho.count} negócios`} accent="text-emerald-500" icon={<FileSignature className="h-4 w-4" />} active={kpiFilter === "ganho"} onClick={() => toggleKpi("ganho")} />
-        <SummaryCard label="Contrato" value={fmtMoney(resumo.byGrupo.contrato.vgv, "short")} sub={`${resumo.byGrupo.contrato.count} contratos`} accent="text-cyan-500" active={kpiFilter === "contrato"} onClick={() => toggleKpi("contrato")} />
-        <SummaryCard label="Forecast ponderado" value={fmtMoney(resumo.forecast, "short")} accent="text-primary" icon={<TrendingUp className="h-4 w-4" />} active={kpiFilter === "negociacao"} onClick={() => toggleKpi("negociacao")} />
-        <SummaryCard label="Em risco" value={String(resumo.emRisco)} sub="parados +7d" accent="text-amber-500" icon={<AlertTriangle className="h-4 w-4" />} active={kpiFilter === "risco"} onClick={() => toggleKpi("risco")} />
-      </div>
+      <PdnKpiCards resumo={resumo} kpiFilter={kpiFilter} onToggle={(k) => k === null ? setKpiFilter(null) : toggleKpi(k)} />
 
       {/* Toolbar unificada — mesmos filtros para Planilha e Kanban */}
       <PdnToolbar
