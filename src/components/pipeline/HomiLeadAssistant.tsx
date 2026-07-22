@@ -283,6 +283,7 @@ export default function HomiLeadAssistant({
     setLoading(true);
     setActiveAction(actionId);
     setResult("");
+    setMateriais([]);
 
     const action = smartActions.find(a => a.id === actionId);
     const histCtx = buildHistoryContext();
