@@ -77,6 +77,22 @@ function buildMonthOptions(): { value: string; label: string }[] {
 type SortKey = "nome" | "data" | "vgv" | "corretor" | "status";
 type KpiFilter = null | "ganho" | "contrato" | "risco" | "negociacao";
 
+// Regressão de etapa PDN: qual é a etapa anterior de cada grupo (null = não pode regredir)
+const PREV_GRUPO: Record<PdnGrupo, PdnGrupo | null> = {
+  visita_realizada: null,
+  em_negociacao: "visita_realizada",
+  contrato: "em_negociacao",
+  ganho: "contrato",
+  caidos: null,
+};
+const GRUPO_LABEL_UI: Record<PdnGrupo, string> = {
+  visita_realizada: "Visita Realizada",
+  em_negociacao: "Em Negociação",
+  contrato: "Contrato",
+  ganho: "Ganho",
+  caidos: "Caídos",
+};
+
 // ─── Célula editável simples (input com commit no blur) ───────────────────────
 function EditableCell({
   value, onCommit, type = "text", placeholder, className = "",
