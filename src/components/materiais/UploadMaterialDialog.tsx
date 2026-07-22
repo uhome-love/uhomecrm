@@ -85,9 +85,10 @@ export function UploadMaterialDialog({ open, onOpenChange, empreendimentoId }: P
         }
       );
       if (signErr) throw signErr;
-      const { signed_url, storage_path, token } = signData as {
-        signed_url?: string; storage_path: string; token?: string;
+      const { signed_url, path: storage_path, token } = signData as {
+        signed_url?: string; path: string; token?: string;
       };
+      if (!storage_path) throw new Error("Resposta inválida do servidor (path ausente)");
       setProgress(15);
 
       // 2. Upload via storage client (uses returned token when present)
