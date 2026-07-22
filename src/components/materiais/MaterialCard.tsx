@@ -16,9 +16,18 @@ import { LinkFormDialog } from "./LinkFormDialog";
 import { EmpreendimentoFormDialog } from "./EmpreendimentoFormDialog";
 import { GerarLinkDialog } from "./GerarLinkDialog";
 import { UploadMaterialDialog } from "./UploadMaterialDialog";
+import { MaterialPreviewDialog } from "./MaterialPreviewDialog";
 import { useMateriaisMutations } from "@/hooks/useMateriaisMutations";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+
+const PREVIEWABLE = (link: MaterialLink) => {
+  if (!link.storage_path) return false;
+  const m = (link.mime_type || "").toLowerCase();
+  if (m.startsWith("image/") || m.startsWith("video/") || m.startsWith("audio/") || m === "application/pdf") return true;
+  const ext = link.storage_path.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toLowerCase();
+  return !!ext && ["png","jpg","jpeg","webp","gif","avif","mp4","webm","mov","m4v","pdf","mp3","wav","ogg","m4a"].includes(ext);
+};
 
 interface Props {
   empreendimento: MaterialEmpreendimento;
