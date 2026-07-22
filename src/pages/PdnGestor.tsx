@@ -16,6 +16,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -23,11 +24,15 @@ import {
   Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
   ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
   ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
-  RefreshCw, Users, Send, Copy,
+  RefreshCw, Users, Send, Copy, Megaphone,
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
+import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
+import { BulkActionBar } from "@/components/pdn/BulkActionBar";
+import { publicarNoLead } from "@/components/pdn/drawer/publish";
+import { toast } from "sonner";
 
 // ─── Status: opções fixas (com cores) + livre ─────────────────────────────────
 const STATUS_OPTS: { grupo: string; items: string[] }[] = [
@@ -242,6 +247,30 @@ export default function PdnGestor() {
     try { await refreshAll(); } finally { setRefreshing(false); }
   };
 
+  // Visibilidade de colunas (planilha) — persistida por device.
+  const COLS_KEY = `pdn:cols:v1:${isMobile ? "mobile" : "desktop"}`;
+  const [visibleCols, setVisibleCols] = useState<Record<PdnColKey, boolean>>(() => {
+    try {
+      const raw = sessionStorage.getItem(COLS_KEY);
+      return raw ? { ...PDN_DEFAULT_COLS, ...JSON.parse(raw) } : { ...PDN_DEFAULT_COLS };
+    } catch { return { ...PDN_DEFAULT_COLS }; }
+  });
+  useEffect(() => { try { sessionStorage.setItem(COLS_KEY, JSON.stringify(visibleCols)); } catch { /* ignore */ } }, [visibleCols, COLS_KEY]);
+
+  // Seleção múltipla — invalida ao trocar mês/filtro (evita ação em set inconsistente).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  useEffect(() => { setSelectedIds(new Set()); }, [mes, filtroRisco, filtroCorretor, filtroEquipe, kpiFilter]);
+  const toggleSelected = (id: string) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+  const setGroupSelected = (ids: string[], selected: boolean) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    for (const id of ids) selected ? next.add(id) : next.delete(id);
+    return next;
+  });
+
   // Larguras de coluna redimensionáveis (planilha), persistidas por sessão
   const DEFAULT_COL_WIDTHS: Record<string, number> = {
     nome: 160, data: 88, empreendimento: 150, vgv: 110, corretor: 120, status: 130, obs: 200,
@@ -377,6 +406,44 @@ export default function PdnGestor() {
       }))
       .sort((a, b) => b.vgv - a.vgv);
   }, [rows, filtroRisco, filtroEquipe, kpiFilter]);
+
+  // ─── Ações em lote (seleção múltipla) ───────────────────────────────────────
+  const selectedRows = useMemo(
+    () => filtered.filter(r => selectedIds.has(r.id)),
+    [filtered, selectedIds],
+  );
+
+  const bulkPublish = async () => {
+    const alvos = selectedRows.filter(r => r.pipelineLeadId && (r.observacoes || "").trim().length > 0);
+    if (alvos.length === 0) { toast.info("Nenhum selecionado tem observação para publicar"); return; }
+    let ok = 0, skip = 0;
+    for (const r of alvos) {
+      const hash = await publicarNoLead(r.pipelineLeadId as string, "observacao", r.observacoes);
+      if (hash) ok++; else skip++;
+    }
+    toast.success(`Publicado em ${ok} lead${ok !== 1 ? "s" : ""}${skip ? ` · ${skip} pulado(s)` : ""}`);
+  };
+
+  const bulkAvisar = async () => {
+    const alvos = selectedRows.filter(r => !r.isManual && r.corretorAuthId && !r.caiu);
+    if (alvos.length === 0) { toast.info("Nenhum selecionado pode ser avisado"); return; }
+    for (const r of alvos) {
+      const etapa = PDN_GRUPOS.find(g => g.key === r.grupo)?.label || "";
+      avisarCorretor(r, `Atualize o pipeline de ${r.nome} para "${etapa}".`);
+    }
+    toast.success(`${alvos.length} corretor(es) avisados`);
+  };
+
+  const bulkQueda = async (motivo: string) => {
+    for (const r of selectedRows) {
+      if (!r.caiu) marcarQueda(r, motivo);
+    }
+    toast.success(`${selectedRows.length} negócio(s) marcados como caiu`);
+    setSelectedIds(new Set());
+  };
+
+
+
 
 
   return (
@@ -548,7 +615,13 @@ export default function PdnGestor() {
                 onMudarEtapa={mudarEtapa}
                 onAvisar={avisarCorretor}
                 onOpenRow={setSelectedRow}
+                visibleCols={visibleCols}
+                onChangeCols={setVisibleCols}
+                selectedIds={selectedIds}
+                onToggleSelected={toggleSelected}
+                onGroupSelect={setGroupSelected}
               />
+
             );
           })}
         </div>
@@ -616,7 +689,18 @@ export default function PdnGestor() {
         onLimparEtapa={limparEtapaOverride}
         onAvisar={avisarCorretor}
       />
+
+      {view === "planilha" && (
+        <BulkActionBar
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onPublish={bulkPublish}
+          onAvisar={bulkAvisar}
+          onQueda={bulkQueda}
+        />
+      )}
     </div>
+
   );
 }
 
@@ -686,6 +770,7 @@ function GrupoBloco({
   grupo, label, cor, rows, collapsed, onToggleCollapse, extraLabel, sortKey, sortDir, onSort,
   isMobile, colWidths, onColResize, onAdd, onSave, onUpdateManual, onRemove, onQueda, onReativar,
   onMudarEtapa, onAvisar, onOpenRow,
+  visibleCols, onChangeCols, selectedIds, onToggleSelected, onGroupSelect,
 }: {
   grupo: PdnGrupo;
   label: string;
@@ -709,10 +794,27 @@ function GrupoBloco({
   onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
   onAvisar: (row: PdnRow, mensagem: string) => void;
   onOpenRow: (row: PdnRow) => void;
+  visibleCols: Record<PdnColKey, boolean>;
+  onChangeCols: (cols: Record<PdnColKey, boolean>) => void;
+  selectedIds: Set<string>;
+  onToggleSelected: (id: string) => void;
+  onGroupSelect: (ids: string[], selected: boolean) => void;
 }) {
   const isCaidos = grupo === "caidos";
   const subtotal = rows.reduce((s, r) => s + r.vgv, 0);
+  const allSelected = rows.length > 0 && rows.every(r => selectedIds.has(r.id));
+  const someSelected = rows.some(r => selectedIds.has(r.id));
 
+  // Abre o drawer se o clique não veio de um campo editável ou ação (marcados com data-no-row-open).
+  const handleRowClick = (r: PdnRow, e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("[data-no-row-open]")) return;
+    onOpenRow(r);
+  };
+
+  // Ordem das colunas: nome (fixo), data, empreendimento, vgv, corretor, status, obs, ações (fixo).
+  const cols: PdnColKey[] = ["data", "empreendimento", "vgv", "corretor", "status", "obs"];
+  const visibleColCount = 1 + cols.filter(c => visibleCols[c]).length + 1; // nome + ações
+  const emptyColSpan = 1 /*checkbox*/ + visibleColCount;
 
   return (
     <Card className={`overflow-hidden ${isCaidos ? "border-red-500/40" : ""}`}>
@@ -727,8 +829,13 @@ function GrupoBloco({
           <Badge variant={isCaidos ? "destructive" : "secondary"}>{rows.length}</Badge>
           {extraLabel && <span className="text-xs text-muted-foreground">· {extraLabel}</span>}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <span className="text-sm font-semibold" style={{ color: cor }}>{fmtMoney(subtotal, "exact")}</span>
+          {!isMobile && (
+            <span onClick={(e) => e.stopPropagation()}>
+              <ColumnsMenu cols={visibleCols} onChange={onChangeCols} />
+            </span>
+          )}
           {!isCaidos && (
             <span
               role="button"
@@ -748,55 +855,87 @@ function GrupoBloco({
             {rows.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">Nenhum negócio neste grupo.</div>
             ) : rows.map(r => (
-              <MobileCard key={r.id} r={r} onSave={onSave} onUpdateManual={onUpdateManual} onRemove={onRemove} onQueda={onQueda} onReativar={onReativar} onMudarEtapa={onMudarEtapa} onAvisar={onAvisar} onOpenRow={onOpenRow} />
+              <MobileCard
+                key={r.id}
+                r={r}
+                onSave={onSave}
+                onUpdateManual={onUpdateManual}
+                onRemove={onRemove}
+                onQueda={onQueda}
+                onReativar={onReativar}
+                onMudarEtapa={onMudarEtapa}
+                onAvisar={onAvisar}
+                onOpenRow={onOpenRow}
+                selected={selectedIds.has(r.id)}
+                onToggleSelected={() => onToggleSelected(r.id)}
+              />
             ))}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <Table style={{ tableLayout: "fixed", width: "100%", minWidth: 980 }}>
               <colgroup>
+                <col style={{ width: 40 }} />
                 <col style={{ width: colWidths.nome }} />
-                <col style={{ width: colWidths.data }} />
-                <col style={{ width: colWidths.empreendimento }} />
-                <col style={{ width: colWidths.vgv }} />
-                <col style={{ width: colWidths.corretor }} />
-                <col style={{ width: colWidths.status }} />
-                <col style={{ width: colWidths.obs }} />
-                <col style={{ width: 96 }} />
+                {visibleCols.data && <col style={{ width: colWidths.data }} />}
+                {visibleCols.empreendimento && <col style={{ width: colWidths.empreendimento }} />}
+                {visibleCols.vgv && <col style={{ width: colWidths.vgv }} />}
+                {visibleCols.corretor && <col style={{ width: colWidths.corretor }} />}
+                {visibleCols.status && <col style={{ width: colWidths.status }} />}
+                {visibleCols.obs && <col style={{ width: colWidths.obs }} />}
+                <col style={{ width: 120 }} />
               </colgroup>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[40px]">
+                    <Checkbox
+                      checked={allSelected ? true : (someSelected ? "indeterminate" : false)}
+                      onCheckedChange={(v) => onGroupSelect(rows.map(r => r.id), v === true)}
+                      aria-label="Selecionar todos deste grupo"
+                    />
+                  </TableHead>
                   <ResizableHead colKey="nome" width={colWidths.nome} onResize={onColResize} label="Nome" sortActive={sortKey === "nome"} dir={sortDir} onSort={() => onSort("nome")} />
-                  <ResizableHead colKey="data" width={colWidths.data} onResize={onColResize} label="Data" sortActive={sortKey === "data"} dir={sortDir} onSort={() => onSort("data")} />
-                  <ResizableHead colKey="empreendimento" width={colWidths.empreendimento} onResize={onColResize} label="Empreendimento" />
-                  <ResizableHead colKey="vgv" width={colWidths.vgv} onResize={onColResize} label="VGV" sortActive={sortKey === "vgv"} dir={sortDir} onSort={() => onSort("vgv")} />
-                  <ResizableHead colKey="corretor" width={colWidths.corretor} onResize={onColResize} label="Corretor" sortActive={sortKey === "corretor"} dir={sortDir} onSort={() => onSort("corretor")} />
-                  <ResizableHead colKey="status" width={colWidths.status} onResize={onColResize} label="Status" sortActive={sortKey === "status"} dir={sortDir} onSort={() => onSort("status")} />
-                  <ResizableHead colKey="obs" width={colWidths.obs} onResize={onColResize} label="Observação" />
-                  <TableHead className="w-[96px]" />
+                  {visibleCols.data && <ResizableHead colKey="data" width={colWidths.data} onResize={onColResize} label="Data" sortActive={sortKey === "data"} dir={sortDir} onSort={() => onSort("data")} />}
+                  {visibleCols.empreendimento && <ResizableHead colKey="empreendimento" width={colWidths.empreendimento} onResize={onColResize} label="Empreendimento" />}
+                  {visibleCols.vgv && <ResizableHead colKey="vgv" width={colWidths.vgv} onResize={onColResize} label="VGV" sortActive={sortKey === "vgv"} dir={sortDir} onSort={() => onSort("vgv")} />}
+                  {visibleCols.corretor && <ResizableHead colKey="corretor" width={colWidths.corretor} onResize={onColResize} label="Corretor" sortActive={sortKey === "corretor"} dir={sortDir} onSort={() => onSort("corretor")} />}
+                  {visibleCols.status && <ResizableHead colKey="status" width={colWidths.status} onResize={onColResize} label="Status" sortActive={sortKey === "status"} dir={sortDir} onSort={() => onSort("status")} />}
+                  {visibleCols.obs && <ResizableHead colKey="obs" width={colWidths.obs} onResize={onColResize} label="Observação" />}
+                  <TableHead className="w-[120px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="py-6 text-center text-sm text-muted-foreground">Nenhum negócio neste grupo.</TableCell></TableRow>
-                ) : rows.map(r => (
-                  <TableRow key={r.id} className={`${r.emRisco ? "bg-amber-500/5" : ""} ${r.caiu ? "opacity-70" : ""}`}>
-                    <TableCell className="font-medium">
+                  <TableRow><TableCell colSpan={emptyColSpan} className="py-6 text-center text-sm text-muted-foreground">Nenhum negócio neste grupo.</TableCell></TableRow>
+                ) : rows.map(r => {
+                  const selected = selectedIds.has(r.id);
+                  const canPublish = !!r.pipelineLeadId && !!(r.observacoes || "").trim();
+                  return (
+                  <TableRow
+                    key={r.id}
+                    onClick={(e) => handleRowClick(r, e)}
+                    className={`group cursor-pointer ${r.emRisco ? "bg-amber-500/5" : ""} ${selected ? "bg-primary/5" : ""} ${r.caiu ? "opacity-70" : ""} even:bg-muted/10 hover:bg-muted/30`}
+                  >
+                    <TableCell data-no-row-open>
+                      <Checkbox
+                        checked={selected}
+                        onCheckedChange={() => onToggleSelected(r.id)}
+                        aria-label="Selecionar linha"
+                      />
+                    </TableCell>
+                    <TableCell className="py-2 font-medium">
                       {r.isManual ? (
-                        <EditableCell value={r.nome} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { nome: v })} />
+                        <span data-no-row-open>
+                          <EditableCell value={r.nome} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { nome: v })} />
+                        </span>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => onOpenRow(r)}
-                          className="flex w-full items-center gap-1.5 text-left hover:text-primary"
-                          title="Abrir detalhes"
-                        >
+                        <div className="flex w-full items-center gap-1.5 text-left hover:text-primary" title="Abrir detalhes">
                           {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
-                          <span className="truncate underline-offset-2 hover:underline">{r.nome}</span>
+                          <span className="truncate underline-offset-2 group-hover:underline">{r.nome}</span>
                           {r.etapaAjustada && <Badge variant="secondary" className="shrink-0 text-[9px] px-1">ajustada</Badge>}
-                        </button>
+                        </div>
                       )}
-                      <div className="mt-1">
+                      <div className="mt-1" data-no-row-open>
                         <Select value={r.grupo} onValueChange={(v) => onMudarEtapa(r, v as PdnGrupo)}>
                           <SelectTrigger className="h-6 border-transparent bg-transparent px-1 text-[11px] text-muted-foreground hover:border-border">
                             <SelectValue />
@@ -808,43 +947,58 @@ function GrupoBloco({
                       </div>
                     </TableCell>
 
-                    <TableCell className="text-sm text-muted-foreground">
-                      {r.isManual
-                        ? <EditableCell type="date" value={r.data} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { data_visita: v })} />
-                        : (r.data ? formatBRT(r.data, "dd/MM/yy") : "—")}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      <EditableWrapCell
-                        value={r.empreendimento === "—" ? "" : r.empreendimento}
-                        placeholder="Empreendimento…"
-                        onCommit={(v) => r.isManual
-                          ? (r.overrideId && onUpdateManual(r.overrideId, { empreendimento: v }))
-                          : onSave(r, { empreendimento: v })}
-                      />
-                    </TableCell>
-                    <TableCell className="text-sm font-medium">
-                      <MoneyInput
-                        value={r.vgv || 0}
-                        onCommit={(v) => r.isManual
-                          ? (r.overrideId && onUpdateManual(r.overrideId, { vgv: v }))
-                          : onSave(r, { vgv: v })}
-                      />
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {r.isManual
-                        ? <EditableCell value={r.corretor === "—" ? "" : r.corretor} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { corretor: v })} />
-                        : r.corretor}
-                    </TableCell>
-                    <TableCell>
-                      <StatusSelector value={r.status} onChange={(v) => onSave(r, { status: v })} />
-                    </TableCell>
-                    <TableCell>
-                      {r.caiu && r.motivoQueda
-                        ? <div className="text-xs"><span className="font-medium text-red-600 dark:text-red-400">Queda:</span> {r.motivoQueda}</div>
-                        : <ObsSelector value={r.observacoes} onChange={(v) => onSave(r, { observacoes: v })} />}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-0.5">
+                    {visibleCols.data && (
+                      <TableCell className="py-2 text-sm text-muted-foreground" data-no-row-open={r.isManual ? true : undefined}>
+                        {r.isManual
+                          ? <EditableCell type="date" value={r.data} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { data_visita: v })} />
+                          : (r.data ? formatBRT(r.data, "dd/MM/yy") : "—")}
+                      </TableCell>
+                    )}
+                    {visibleCols.empreendimento && (
+                      <TableCell className="py-2 text-sm" data-no-row-open>
+                        <EditableWrapCell
+                          value={r.empreendimento === "—" ? "" : r.empreendimento}
+                          placeholder="Empreendimento…"
+                          onCommit={(v) => r.isManual
+                            ? (r.overrideId && onUpdateManual(r.overrideId, { empreendimento: v }))
+                            : onSave(r, { empreendimento: v })}
+                        />
+                      </TableCell>
+                    )}
+                    {visibleCols.vgv && (
+                      <TableCell className="py-2 text-sm font-medium" data-no-row-open>
+                        <MoneyInput
+                          value={r.vgv || 0}
+                          onCommit={(v) => r.isManual
+                            ? (r.overrideId && onUpdateManual(r.overrideId, { vgv: v }))
+                            : onSave(r, { vgv: v })}
+                        />
+                      </TableCell>
+                    )}
+                    {visibleCols.corretor && (
+                      <TableCell className="py-2 text-sm text-muted-foreground" data-no-row-open={r.isManual ? true : undefined}>
+                        {r.isManual
+                          ? <EditableCell value={r.corretor === "—" ? "" : r.corretor} onCommit={(v) => r.overrideId && onUpdateManual(r.overrideId, { corretor: v })} />
+                          : r.corretor}
+                      </TableCell>
+                    )}
+                    {visibleCols.status && (
+                      <TableCell className="py-2" data-no-row-open>
+                        <StatusSelector value={r.status} onChange={(v) => onSave(r, { status: v })} />
+                      </TableCell>
+                    )}
+                    {visibleCols.obs && (
+                      <TableCell className="py-2" data-no-row-open>
+                        {r.caiu && r.motivoQueda
+                          ? <div className="text-xs"><span className="font-medium text-red-600 dark:text-red-400">Queda:</span> {r.motivoQueda}</div>
+                          : <ObsSelector value={r.observacoes} onChange={(v) => onSave(r, { observacoes: v })} />}
+                      </TableCell>
+                    )}
+                    <TableCell data-no-row-open>
+                      <div className="flex items-center justify-end gap-0.5 opacity-70 transition-opacity group-hover:opacity-100">
+                        {canPublish && (
+                          <RowPublishButton row={r} />
+                        )}
                         {!r.isManual && r.corretorAuthId && !r.caiu && (
                           <AvisarButton row={r} onAvisar={onAvisar} />
                         )}
@@ -863,7 +1017,8 @@ function GrupoBloco({
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -873,7 +1028,31 @@ function GrupoBloco({
   );
 }
 
-function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow }: {
+/** Ícone compacto: publica a observação da linha no histórico do lead (idempotente). */
+function RowPublishButton({ row }: { row: PdnRow }) {
+  const [busy, setBusy] = useState(false);
+  const handle = async () => {
+    if (!row.pipelineLeadId) return;
+    setBusy(true);
+    try { await publicarNoLead(row.pipelineLeadId, "observacao", row.observacoes); }
+    finally { setBusy(false); }
+  };
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-7 w-7 text-muted-foreground hover:text-primary"
+      title="Publicar observação no histórico do lead"
+      disabled={busy}
+      onClick={handle}
+    >
+      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Megaphone className="h-3.5 w-3.5" />}
+    </Button>
+  );
+}
+
+
+function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow, selected, onToggleSelected }: {
   r: PdnRow;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
@@ -883,21 +1062,27 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
   onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
   onAvisar: (row: PdnRow, mensagem: string) => void;
   onOpenRow: (row: PdnRow) => void;
+  selected: boolean;
+  onToggleSelected: () => void;
 }) {
   return (
-    <div className={`space-y-2 p-3 ${r.emRisco ? "bg-amber-500/5" : ""} ${r.caiu ? "opacity-70" : ""}`}>
+    <div className={`space-y-2 p-3 ${r.emRisco ? "bg-amber-500/5" : ""} ${selected ? "bg-primary/5" : ""} ${r.caiu ? "opacity-70" : ""}`}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <button type="button" onClick={() => onOpenRow(r)} className="flex items-center gap-1.5 text-left font-medium hover:text-primary">
-            {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
-            <span className="truncate underline-offset-2 hover:underline">{r.nome}</span>
-          </button>
-          <div className="text-xs text-muted-foreground">
-            {r.empreendimento !== "—" ? r.empreendimento : "Sem empreendimento"} · {r.data ? formatBRT(r.data, "dd/MM/yy") : "—"}
+        <div className="flex min-w-0 items-start gap-2">
+          <Checkbox className="mt-0.5" checked={selected} onCheckedChange={onToggleSelected} aria-label="Selecionar" />
+          <div className="min-w-0">
+            <button type="button" onClick={() => onOpenRow(r)} className="flex items-center gap-1.5 text-left font-medium hover:text-primary">
+              {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
+              <span className="truncate underline-offset-2 hover:underline">{r.nome}</span>
+            </button>
+            <div className="text-xs text-muted-foreground">
+              {r.empreendimento !== "—" ? r.empreendimento : "Sem empreendimento"} · {r.data ? formatBRT(r.data, "dd/MM/yy") : "—"}
+            </div>
           </div>
         </div>
         <div className="text-right text-sm font-semibold">{fmtMoney(r.vgv, "short")}</div>
       </div>
+
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className="text-muted-foreground">{r.corretor}{r.equipe !== "—" ? ` · ${r.equipe}` : ""}</span>
         <StatusSelector value={r.status} onChange={(v) => onSave(r, { status: v })} />

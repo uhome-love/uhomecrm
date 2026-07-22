@@ -1,60 +1,65 @@
-# PDN Unificado — Plano de 8 fases (aprovado)
 
-Objetivo: fazer Planilha (Desktop) e Kanban (Mobile) do PDN "falarem a mesma língua", com paridade total de funções e integração real com o histórico do lead.
+# Fase 2 — Planilha nível SaaS (PDN Gestor)
 
-## Fase 1 — Drawer único e universal (`PdnLeadDrawer`)
-Substitui o drawer antigo com 3 abas:
-- **Contexto do lead:** cabeçalho rico com timeline via `v_lead_timeline`, última observação do corretor, próxima tarefa dele.
-- **Ação do gestor:** observação, prioridade, risco, VGV — cada bloco com botão "Publicar no lead" idempotente por hash SHA-1.
-- **Etapa:** mover entre grupos do PDN, marcar queda, reativar.
+Antes de codar, aqui está o entendimento detalhado da Fase 2 aprovada no plano macro. Só sigo pro build depois do seu OK.
 
-Planilha e Kanban chamam o mesmo drawer. Preserva estado ao salvar.
+## Escopo (o que muda)
 
-## Fase 2 — Planilha nível SaaS
-- Linha inteira clicável abre drawer.
-- Ícones de ação por linha (publicar, marcar queda) no hover.
-- Colunas configuráveis via menu, preferência por device.
-- Seleção múltipla + barra de ação em lote ("Publicar observação no lead em massa").
-- Ordenação por header, densidade compacta, zebra sutil.
+### 1. Linha inteira clicável → abre `PdnLeadDrawer`
+- Hoje só o nome abre o drawer. Vou expandir: qualquer clique fora dos campos editáveis (célula de status, obs, empreendimento, vgv, select de etapa e botões de ação) abre o drawer daquela linha.
+- Implementação: `onClick` na `TableRow` com guard (`event.target.closest('[data-no-row-open]')` — marco os campos editáveis e ações com esse `data-attribute`). Zero risco de clique acidental em input/select.
+- Cursor `cursor-pointer` sutil na linha; hover leve `bg-muted/30`.
 
-## Fase 3 — Kanban nível SaaS
-- Botões rápidos no hover do card (publicar, avisar, marcar queda).
-- Badge "publicado há Xh".
-- Drag com preview de impacto.
-- Colunas colapsáveis, contador de pendentes de publicar.
+### 2. Ícones de ação por linha (hover)
+- Coluna de ações passa a ser "revelada" no hover da linha (opacidade 0 → 100 em `group-hover`). Em mobile continua sempre visível (não usa hover).
+- Sem alterar comportamento dos botões atuais (Avisar / Queda / Reativar / Remover). Só reorganização visual.
+- Adiciono um novo ícone: **📢 Publicar observação no lead** (usa a mesma função `PublishButton` já existente do drawer, versão compacta ícone-only). Só aparece se `r.observacoes` tem conteúdo e ainda não foi publicado (ou hash mudou).
 
-## Fase 4 — Integração bidirecional
-- Publicação em lote com `origem_ref` idempotente.
-- `pipeline_tarefas` com `origem='pdn'` quando a ação tem data.
-- "Avisar corretor" unifica notificação + publicação.
-- Link de volta do lead pro PDN.
+### 3. Colunas configuráveis
+- Menu "Colunas" na toolbar do bloco (ícone `Settings2` ao lado do `+`).
+- Toggle por coluna: Nome (fixo, sempre on), Data, Empreendimento, VGV, Corretor, Status, Observação.
+- Persistência em `sessionStorage` por device (`pdn:cols:v1:{mobile|desktop}`). Sem tocar em banco.
+- Reset "Restaurar padrão".
 
-## Fase 5 — Toolbar unificada
-- Barra de busca (`⌘K` estilo) dentro do PDN.
-- Filtros como chips arredondados.
-- Toggle Planilha/Kanban persistido por role.
-- "Copiar resumo pro WhatsApp".
+### 4. Seleção múltipla + barra de ação em lote
+- Checkbox por linha + checkbox no header (selecionar todos do grupo).
+- Barra flutuante fixa no rodapé quando há seleção: mostra "N selecionados" e ações:
+  - **Publicar observação no lead em massa** (usa o mesmo publish idempotente da Fase 1 — pula linhas sem observação ou já publicadas com mesmo hash).
+  - **Avisar corretor em massa** (reaproveita `avisarCorretor` já existente, mensagem padrão).
+  - **Marcar como caiu em massa** (abre `QuedaDialog` compartilhado com motivo único aplicável a todos).
+- Seleção some ao trocar de filtro/mês (evita ação em set inconsistente).
 
-## Fase 6 — Quebra de arquivo
-- `PdnGestor.tsx` 978 → ~200 linhas.
-- `PdnLeadDrawer` ~300 linhas.
-- Virtualização da planilha a partir de 100 linhas.
+### 5. Ordenação por header (já existe parcialmente) + densidade + zebra
+- Header sortable já existe (Nome/Data/VGV/Corretor/Status). Mantenho.
+- Densidade compacta: `py-2` nas células (hoje é `py-3`). Zebra sutil (`even:bg-muted/10`).
+- Sem mudança em lógica.
 
-## Fase 7 — Permissões e RLS
-- Auditoria de policies em `pdn_entries` e `pipeline_anotacoes`.
-- Nenhuma mudança de schema até essa fase.
-- Idempotência mantida via hash.
+## O que NÃO muda nesta fase
+- Hook `usePdn.ts` — nenhuma nova RPC, nenhuma migration.
+- Kanban (é Fase 3).
+- Drawer (Fase 1, já feito).
+- RLS / permissões (Fase 7).
+- Nenhum arquivo >800 linhas será refatorado agora (Fase 6).
 
-## Fase 8 — Validação ao vivo
-Validação ao vivo em cada fase com lead de teste (sempre Cancelar em leads reais). Nenhuma migration destrutiva.
+## Arquivos afetados
+- `src/pages/PdnGestor.tsx` — adiciona menu de colunas, seleção múltipla, barra de lote, linha clicável, hover reveal.
+- `src/components/pdn/BulkActionBar.tsx` — **novo** (~80 linhas), barra flutuante de seleção.
+- `src/components/pdn/ColumnsMenu.tsx` — **novo** (~60 linhas), popover de configuração de colunas.
+- Reutiliza `PublishButton` existente do drawer para o botão de publicar por linha.
 
-## Decisões fixadas (aprovadas no mockup)
-1. Paridade total Planilha ↔ Kanban.
-2. Publicação disponível em toda parte (drawer, hover, cards, lote).
-3. Drawer com 3 abas (Contexto/Timeline, Ação, Etapa).
-4. Idempotência por hash SHA-1 do conteúdo.
-5. Padrão por device: Desktop = Planilha, Mobile = Kanban (persistido em `sessionStorage`).
+## Riscos e mitigações
+- **Clique em input abrindo drawer** → `data-no-row-open` em todos os campos editáveis + ações.
+- **Barra de lote poluindo mobile** → em mobile a barra aparece só quando `selecionados > 0`, versão compacta.
+- **Colunas ocultas em bloco de "Caídos"** → coluna "Observação" vira "Motivo da queda" (já é hoje), respeita o toggle igual.
 
-## Status
-- **Fase 1:** implementada (`PdnLeadDrawer` com abas Contexto/Ação/Etapa, `PublishButton` idempotente, integração Planilha + Kanban).
-- **Fases 2–8:** pendentes de retomada.
+## Validação (ponta a ponta, no preview, antes de fechar Fase 2)
+1. Clicar em qualquer parte da linha (fora dos campos) abre o drawer certo.
+2. Clicar em Status/Obs/VGV/Empreendimento NÃO abre o drawer (edita inline).
+3. Ocultar coluna VGV → some do header e do corpo, e persiste em reload.
+4. Selecionar 3 linhas → barra aparece com 3 → publicar em massa → verificar `pipeline_anotacoes` sem duplicar (hash idempotente).
+5. Selecionar 2 linhas → "marcar como caiu" em lote → ambas movem pra "Caídos" com o motivo informado.
+6. Mobile: seleção múltipla + barra compacta funcionam.
+
+---
+
+**Confirma que esse é o entendimento correto?** Se sim, sigo para o build. Se quiser ajustar algo (ex: tirar publicar em massa, mudar quais colunas são configuráveis, etc), me diz antes.
