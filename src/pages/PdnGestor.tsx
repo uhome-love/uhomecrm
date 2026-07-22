@@ -1000,28 +1000,8 @@ function GrupoBloco({
   );
 }
 
-/** Ícone compacto: publica a observação da linha no histórico do lead (idempotente). */
-function RowPublishButton({ row }: { row: PdnRow }) {
-  const [busy, setBusy] = useState(false);
-  const handle = async () => {
-    if (!row.pipelineLeadId) return;
-    setBusy(true);
-    try { await publicarNoLead(row.pipelineLeadId, "observacao", row.observacoes); }
-    finally { setBusy(false); }
-  };
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-7 w-7 text-muted-foreground hover:text-primary"
-      title="Publicar observação no histórico do lead"
-      disabled={busy}
-      onClick={handle}
-    >
-      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Megaphone className="h-3.5 w-3.5" />}
-    </Button>
-  );
-}
+
+
 
 
 function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow, selected, onToggleSelected }: {
