@@ -302,7 +302,7 @@ REGRAS DO COPILOTO:
       }
 
       return new Response(
-        JSON.stringify({ content: finalContent, actions: collectedActions, results: collectedResults }),
+        JSON.stringify({ content: finalContent, actions: collectedActions, results: collectedResults, materiais: materiaisSuggestions }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
