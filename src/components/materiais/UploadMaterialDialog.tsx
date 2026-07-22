@@ -117,18 +117,30 @@ export function UploadMaterialDialog({ open, onOpenChange, empreendimentoId }: P
       setProgress(90);
 
       // 3. Insert row in materiais_links
-      const { error: insErr } = await supabase.from("materiais_links" as any).insert({
-        empreendimento_id: empreendimentoId,
-        categoria,
-        titulo: titulo.trim(),
-        url: "",
-        storage_path,
-        mime_type: file.type,
-        size_bytes: file.size,
-        origem: "upload",
-        created_by: user?.id ?? null,
-      } as any);
+      const { data: inserted, error: insErr } = await supabase
+        .from("materiais_links" as any)
+        .insert({
+          empreendimento_id: empreendimentoId,
+          categoria,
+          titulo: titulo.trim(),
+          url: "",
+          storage_path,
+          mime_type: file.type,
+          size_bytes: file.size,
+          origem: "upload",
+          ingest_status: "pending",
+          created_by: user?.id ?? null,
+        } as any)
+        .select("id")
+        .single();
       if (insErr) throw insErr;
+
+      // 4. Fire-and-forget ingest
+      const newId = (inserted as any)?.id;
+      if (newId) {
+        supabase.functions.invoke("materiais-ingest", { body: { material_id: newId } })
+          .catch((e) => console.warn("ingest failed", e));
+      }
 
       setProgress(100);
       qc.invalidateQueries({ queryKey: ["materiais"] });

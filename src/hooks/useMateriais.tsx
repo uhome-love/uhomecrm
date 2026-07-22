@@ -16,6 +16,11 @@ export interface MaterialLink {
   size_bytes?: number | null;
   thumb_url?: string | null;
   origem?: string | null;
+  resumo_ia?: string | null;
+  tags?: string[] | null;
+  ingest_status?: string | null;
+  ingest_error?: string | null;
+  ingested_at?: string | null;
 }
 
 export interface MaterialEmpreendimento {
