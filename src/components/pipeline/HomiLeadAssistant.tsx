@@ -464,7 +464,7 @@ ${histCtx}
                 <Copy className="h-3.5 w-3.5" />
                 Copiar tudo
               </Button>
-              <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={() => { setResult(""); setShowExploreMode(true); }}>
+              <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={() => { setResult(""); setMateriais([]); setShowExploreMode(true); }}>
                 <Sparkles className="h-3.5 w-3.5" />
                 Nova consulta
               </Button>
