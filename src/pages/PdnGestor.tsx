@@ -31,7 +31,8 @@ import {
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
 import { PdnToolbar } from "@/components/pdn/PdnToolbar";
-import { PdnHeader } from "@/components/pdn/PdnHeader";
+import { PdnHeader, type PdnView } from "@/components/pdn/PdnHeader";
+import { PdnMetaMes } from "@/components/pdn/PdnMetaMes";
 import { PdnKpiCards } from "@/components/pdn/PdnKpiCards";
 import { PdnResumoEquipes } from "@/components/pdn/PdnResumoEquipes";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
@@ -232,11 +233,11 @@ export default function PdnGestor() {
   const [selectedRow, setSelectedRow] = useState<PdnRow | null>(null);
   // Padrão por dispositivo: mobile→kanban (foco em 1 coluna), desktop→planilha (densidade p/ gestão).
   // Preferência persistida separadamente para cada form factor.
-  const [view, setView] = useState<"planilha" | "kanban">(() => {
+  const [view, setView] = useState<PdnView>(() => {
     try {
       const isMob = typeof window !== "undefined" && window.innerWidth < 768;
       const key = `pdn:view:${isMob ? "mobile" : "desktop"}`;
-      const saved = sessionStorage.getItem(key) as "planilha" | "kanban" | null;
+      const saved = sessionStorage.getItem(key) as PdnView | null;
       return saved ?? (isMob ? "kanban" : "planilha");
     } catch { return "planilha"; }
   });
@@ -470,32 +471,36 @@ export default function PdnGestor() {
         onExport={exportCSV}
       />
 
-      <PdnKpiCards resumo={resumo} kpiFilter={kpiFilter} onToggle={(k) => k === null ? setKpiFilter(null) : toggleKpi(k)} />
+      {view !== "meta" && (
+        <PdnKpiCards resumo={resumo} kpiFilter={kpiFilter} onToggle={(k) => k === null ? setKpiFilter(null) : toggleKpi(k)} />
+      )}
 
-      {/* Toolbar unificada — mesmos filtros para Planilha e Kanban */}
-      <PdnToolbar
-        filters={{ soRisco: filtroRisco, soNovos: filtroNovos, equipe: filtroEquipe, corretor: filtroCorretor }}
-        setFilters={(patch) => {
-          if (patch.soRisco !== undefined) setFiltroRisco(patch.soRisco);
-          if (patch.soNovos !== undefined) setFiltroNovos(patch.soNovos);
-          if (patch.equipe !== undefined) { setFiltroEquipe(patch.equipe); setFiltroCorretor("todos"); }
-          if (patch.corretor !== undefined) setFiltroCorretor(patch.corretor);
-        }}
-        showEquipeFilter={showEquipeFilter}
-        equipes={equipes}
-        corretores={corretores}
-        hits={filtered.length}
-        vgvHits={filtered.reduce((s, r) => s + r.vgv, 0)}
-        total={rows.length}
-        kpiFilter={kpiFilter}
-        onClearKpi={() => setKpiFilter(null)}
-        hiddenCount={hiddenRows.length}
-        showOcultos={showOcultos}
-        onToggleOcultos={() => setShowOcultos(v => !v)}
-        view={view}
-        showResetLarguras={!isMobile && colsCustomized}
-        onResetLarguras={resetColWidths}
-      />
+      {/* Toolbar unificada — só faz sentido em Planilha/Kanban (não em Meta) */}
+      {view !== "meta" && (
+        <PdnToolbar
+          filters={{ soRisco: filtroRisco, soNovos: filtroNovos, equipe: filtroEquipe, corretor: filtroCorretor }}
+          setFilters={(patch) => {
+            if (patch.soRisco !== undefined) setFiltroRisco(patch.soRisco);
+            if (patch.soNovos !== undefined) setFiltroNovos(patch.soNovos);
+            if (patch.equipe !== undefined) { setFiltroEquipe(patch.equipe); setFiltroCorretor("todos"); }
+            if (patch.corretor !== undefined) setFiltroCorretor(patch.corretor);
+          }}
+          showEquipeFilter={showEquipeFilter}
+          equipes={equipes}
+          corretores={corretores}
+          hits={filtered.length}
+          vgvHits={filtered.reduce((s, r) => s + r.vgv, 0)}
+          total={rows.length}
+          kpiFilter={kpiFilter}
+          onClearKpi={() => setKpiFilter(null)}
+          hiddenCount={hiddenRows.length}
+          showOcultos={showOcultos}
+          onToggleOcultos={() => setShowOcultos(v => !v)}
+          view={view}
+          showResetLarguras={!isMobile && colsCustomized}
+          onResetLarguras={resetColWidths}
+        />
+      )}
 
 
       {/* Negócios removidos da planilha (overlay) — restauráveis, sem afetar o pipeline */}
@@ -548,6 +553,8 @@ export default function PdnGestor() {
         <div className="flex items-center justify-center py-20 text-muted-foreground">
           <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando…
         </div>
+      ) : view === "meta" ? (
+        <PdnMetaMes mes={mes} rows={rows} />
       ) : view === "kanban" ? (
         <PdnKanban
           rows={filtered}
@@ -603,7 +610,7 @@ export default function PdnGestor() {
         </div>
       )}
 
-      {!loading && (
+      {!loading && view !== "meta" && (
         <PdnResumoEquipes
           equipes={resumoEquipes}
           filtroCorretor={filtroCorretor}

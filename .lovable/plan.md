@@ -1,61 +1,55 @@
-# Fase 5 — Toolbar unificada + modularização PDN
+# Fase 6 — Aba "Meta do mês" no PDN
 
-Objetivo: colocar Planilha e Kanban debaixo da MESMA barra de filtros/ações, remover duplicidade (filtros locais do Kanban x filtros da Planilha) e começar a quebrar o `PdnGestor.tsx` (1192 linhas hoje) em blocos coesos.
+Objetivo: dar ao gestor/CEO uma visão de meta vs. realizado do mês, por corretor e no consolidado da empresa, dentro da própria página do PDN. Sem novas tabelas — usa `empresa_metas_mensais` e `corretor_metas_mensais` que já existem.
 
 ## O que muda
 
-### 1. Toolbar única (`PdnToolbar.tsx`)
-Um único componente sticky logo abaixo do header, usado tanto por Planilha quanto por Kanban. Contém:
-- Toggle "Em risco" (já existe global)
-- Filtro Equipe (visível só p/ diretor/admin — mantém regra atual)
-- Filtro Corretor
-- Novo filtro "Novos desde ontem" (hoje só existe no Kanban)
-- Novo filtro "Atualizado hoje" (aproveita `pipeline_leads.updated_at` / `visita_eventos.created_at` <24h) — reutiliza o pulso verde da Fase 4
-- Contador "N negócios · R$ X" à direita
-- Botão "Colunas" (só aparece quando view === planilha)
+### 1. Terceira view no toggle: Planilha / Kanban / **Meta**
+`PdnHeader.tsx` ganha o botão "Meta". Mantém o estado atual do mês selecionado.
 
-O `KanbanToolbar.tsx` (Fase 3) some — filtros ficam globais e a seleção de corretor deixa de ser duplicada.
+### 2. Novo componente `PdnMetaMes.tsx`
+- **Card Empresa (topo)**: meta_vgv (empresa_metas_mensais) vs. realizado (Σ vgv onde grupo='ganho' e !caiu). Progress bar + gap + %.
+- **Grid de corretores**: 1 card por corretor com meta_vgv (editável inline pelo gestor/CEO), realizado (ganhos), em contrato (informativo), gap, %, progress bar.
+- Ordenação padrão: maior gap primeiro (quem precisa de atenção).
+- Corretores sem meta cadastrada aparecem no fim com CTA "Definir meta".
 
-### 2. Estado de filtro elevado
-Move os filtros locais (`filters` do Kanban, `filtroCorretor/Risco/Equipe` da Planilha, `kpiFilter`) para um único hook `usePdnFilters` — persistido em `sessionStorage` por device. Kanban e Planilha consomem o mesmo estado, então trocar de view preserva o que o gestor filtrou.
+### 3. Novo hook `useMetasMes(mes)`
+- `SELECT * FROM empresa_metas_mensais WHERE mes=$1` → 1 linha (ou null).
+- `SELECT user_id, meta_vgv FROM corretor_metas_mensais WHERE mes=$1` → mapa por user_id.
+- `upsertEmpresaMeta(valor)` e `upsertCorretorMeta(user_id, valor)` — RLS já protege (só admin/gerente escreve).
+- Refetch após save (optimistic update leve).
 
-### 3. Extração de componentes do `PdnGestor.tsx`
-Quebra pontual, sem mudar comportamento:
-- `PdnHeader.tsx` — título + selector de mês + toggle Planilha/Kanban + Atualizar + Exportar
-- `PdnKpiCards.tsx` — os 5 cards de resumo (VGV/Ganhos/Contrato/Forecast/Risco) já clicáveis
-- `PdnResumoEquipes.tsx` — o bloco "Resumo por equipe" (colapsável)
-- `PdnToolbar.tsx` — a barra do item 1
+### 4. Cálculo de realizado (por corretor)
+Reaproveita `PdnRow[]` que já vem carregado em `PdnGestor`:
+- realizado = Σ vgv onde `corretorAuthId === user_id`, `grupo==='ganho'`, `!caiu`.
+- contratos = Σ vgv onde `corretorAuthId === user_id`, `grupo==='contrato'`, `!caiu`.
+- Se `corretorAuthId` for null (linha manual), agrupa por nome como fallback.
 
-Meta: `PdnGestor.tsx` cai de ~1192 para <700 linhas. Nenhum arquivo novo passa de 300.
-
-### 4. Badge "atualizado hoje" — reaproveitamento
-A Fase 4 já detecta atualização via realtime; o campo `atualizadoHoje` sai do próprio row (deriva de `updated_at` no `usePdn`). Kanban e planilha usam o mesmo campo.
+### 5. Permissão de edição
+- CEO / admin / diretor: edita meta empresa + qualquer corretor.
+- Gerente: edita só corretores da equipe dele (mesma regra já usada em `showEquipeFilter`).
+- Corretor comum: view-only (aliás essa página inteira já é gestão).
 
 ## Arquivos afetados
 
-- `src/pages/PdnGestor.tsx` — enxuga imports, delega para os 4 componentes novos.
-- `src/components/pdn/PdnHeader.tsx` — novo
-- `src/components/pdn/PdnKpiCards.tsx` — novo
-- `src/components/pdn/PdnResumoEquipes.tsx` — novo
-- `src/components/pdn/PdnToolbar.tsx` — novo
-- `src/hooks/pdn/usePdnFilters.ts` — novo (estado compartilhado + persistência)
-- `src/components/pdn/PdnKanban.tsx` — passa a receber filtros por prop; remove `KanbanToolbar`.
-- `src/components/pdn/kanban/KanbanToolbar.tsx` — deletado.
-- `src/hooks/usePdn.ts` — expõe `atualizadoHoje` no `PdnRow`.
+- `src/hooks/pdn/useMetasMes.ts` — novo.
+- `src/components/pdn/PdnMetaMes.tsx` — novo (< 300 linhas).
+- `src/components/pdn/PdnHeader.tsx` — adiciona 3º toggle "Meta".
+- `src/pages/PdnGestor.tsx` — renderiza `<PdnMetaMes>` quando `view === 'meta'`; some com toolbar/kpi neste modo (toolbar de filtro não faz sentido em Meta).
 
 ## Backend
 
-Nenhuma mudança. Já temos `updated_at` e `visita_eventos.created_at`.
+Zero mudança. Tabelas e RLS já existem.
 
-## Fora de escopo (Fase 6 em diante)
+## Fora de escopo (Fase 7+)
 
-- Permissões finas (diretoria x gerente x CEO) — Fase 7.
-- Nova aba "Meta do mês" no PDN.
+- Permissões finas (gerente x diretoria x CEO) — Fase 7.
+- Alerta automático quando corretor está <50% da meta com poucos dias no mês — Fase 8.
 
 ## Validação ponta-a-ponta
 
-1. Abrir /pdn → toolbar única aparece; toggles funcionam em ambas views.
-2. Filtrar por Corretor na Planilha → trocar para Kanban → mesmo filtro está aplicado.
-3. Marcar "Novos desde ontem" → 2 views mostram só os mesmos ids.
-4. Recarregar página → filtros persistem (session).
-5. `PdnGestor.tsx` compila e passa `wc -l` <700.
+1. Abrir /pdn → botão "Meta" aparece no header ao lado de Planilha/Kanban.
+2. Trocar para "Meta" → card empresa + grid de corretores renderiza; realizado bate com o KPI "Ganhos" da Fase 2.
+3. Editar meta de um corretor → salva; refetch reflete o novo valor sem recarregar.
+4. Trocar mês → recalcula meta e realizado do novo mês.
+5. Typecheck limpo; `PdnMetaMes.tsx` < 300 linhas.
