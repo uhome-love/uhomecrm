@@ -644,22 +644,6 @@ export default function PdnGestor() {
   );
 }
 
-function SummaryCard({ label, value, sub, accent, icon, active, onClick }: {
-  label: string; value: string; sub?: string; accent: string; icon?: React.ReactNode; active?: boolean; onClick?: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-xl border bg-card p-3 text-left transition hover:shadow-sm ${active ? "border-primary ring-1 ring-primary" : "border-border"}`}
-    >
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>{icon && <span className={accent}>{icon}</span>}
-      </div>
-      <div className={`mt-1 text-lg font-bold ${accent}`}>{value}</div>
-      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
-    </button>
-  );
-}
 
 function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort }: {
   colKey: string;
