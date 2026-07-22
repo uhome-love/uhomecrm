@@ -3,10 +3,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  ClipboardList, Download, LayoutGrid, RefreshCw, Table as TableIcon, Target,
+  ClipboardList, Download, LayoutGrid, RefreshCw, Table as TableIcon, Target, Archive,
 } from "lucide-react";
 
-export type PdnView = "planilha" | "kanban" | "meta";
+export type PdnView = "planilha" | "kanban" | "meta" | "arquivados";
 
 export function PdnHeader({
   mes, monthOptions, onChangeMes,
@@ -48,6 +48,9 @@ export function PdnHeader({
           </Button>
           <Button variant={view === "meta" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("meta")}>
             <Target className="mr-1.5 h-4 w-4" /> Meta
+          </Button>
+          <Button variant={view === "arquivados" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => onChangeView("arquivados")}>
+            <Archive className="mr-1.5 h-4 w-4" /> Arquivados
           </Button>
         </div>
         <Button variant="outline" size="sm" onClick={onRefresh} disabled={refreshing}>
