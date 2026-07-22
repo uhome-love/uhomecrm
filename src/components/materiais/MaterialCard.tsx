@@ -9,7 +9,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, ExternalLink, MoreVertical, Pencil, Plus, RefreshCw, Share2, Trash2, Upload } from "lucide-react";
+import { Building2, ExternalLink, MoreVertical, Pencil, Plus, RefreshCw, Share2, Trash2, Upload, Download, Copy, MessageCircle } from "lucide-react";
 import type { MaterialEmpreendimento, MaterialLink } from "@/hooks/useMateriais";
 import { getCategoriaInfo } from "./CategoriaIcon";
 import { LinkFormDialog } from "./LinkFormDialog";
