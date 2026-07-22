@@ -340,6 +340,7 @@ ${histCtx}
 
       const data = await resp.json();
       setResult(data.content || "Sem resposta.");
+      setMateriais(Array.isArray(data.materiais) ? data.materiais : []);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao gerar resposta");
