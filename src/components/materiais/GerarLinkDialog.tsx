@@ -142,10 +142,50 @@ export function GerarLinkDialog({ open, onOpenChange, empreendimento, leadId, le
     setTimeout(() => setCopied(false), 1800);
   };
 
-  const handleWhatsapp = () => {
+  const handleWhatsapp = (customText?: string) => {
     if (!generatedUrl) return;
-    const text = `${titulo || `Materiais de ${empreendimento.nome}`}\n\n${generatedUrl}`;
+    const text = customText
+      ? `${customText}\n\n${generatedUrl}`
+      : `${titulo || `Materiais de ${empreendimento.nome}`}\n\n${generatedUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  const handleGerarIA = async () => {
+    if (!generatedUrl) return;
+    const selectedLinks = empreendimento.links.filter((l) => selected.has(l.id));
+    setIaLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("homi-follow-up-message", {
+        body: {
+          lead_id: leadId ?? null,
+          lead_nome: leadNome ?? null,
+          empreendimento_nome: empreendimento.nome,
+          share_url: generatedUrl,
+          tom: iaTom,
+          materiais: selectedLinks.map((l) => ({
+            titulo: l.titulo,
+            kind: categoriaToKind(l.categoria),
+          })),
+        },
+      });
+      if (error) throw error;
+      const msgs = (data as any)?.mensagens as MensagemIA[] | undefined;
+      if (!msgs || msgs.length === 0) throw new Error("IA não retornou variações");
+      setIaMensagens(msgs);
+      toast.success("Mensagens geradas!");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Falha ao gerar mensagem com IA");
+    } finally {
+      setIaLoading(false);
+    }
+  };
+
+  const handleCopyIA = async (texto: string, idx: number) => {
+    await navigator.clipboard.writeText(`${texto}\n\n${generatedUrl}`);
+    setCopiedIdx(idx);
+    toast.success("Mensagem copiada");
+    setTimeout(() => setCopiedIdx(null), 1800);
   };
 
   return (
