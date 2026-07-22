@@ -916,6 +916,8 @@ export function usePdn(mes: string) {
     mudarEtapa,
     limparEtapaOverride,
     avisarCorretor,
+    descartarLead,
+    inativarLead,
     addManualRow,
     updateManualRow,
     deleteRow,
