@@ -23,7 +23,7 @@ export function PdnHeader({
   onExport: () => void;
 }) {
   return (
-    <div className="sticky top-0 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-2.5 shadow-sm md:-mx-6 md:px-6">
+    <div className="-mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-2.5 shadow-sm md:-mx-6 md:px-6">
       <div>
         <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
           <ClipboardList className="h-5 w-5 text-primary" /> PDN — Plano de Negócios
