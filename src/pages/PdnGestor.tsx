@@ -247,6 +247,30 @@ export default function PdnGestor() {
     try { await refreshAll(); } finally { setRefreshing(false); }
   };
 
+  // Visibilidade de colunas (planilha) — persistida por device.
+  const COLS_KEY = `pdn:cols:v1:${isMobile ? "mobile" : "desktop"}`;
+  const [visibleCols, setVisibleCols] = useState<Record<PdnColKey, boolean>>(() => {
+    try {
+      const raw = sessionStorage.getItem(COLS_KEY);
+      return raw ? { ...PDN_DEFAULT_COLS, ...JSON.parse(raw) } : { ...PDN_DEFAULT_COLS };
+    } catch { return { ...PDN_DEFAULT_COLS }; }
+  });
+  useEffect(() => { try { sessionStorage.setItem(COLS_KEY, JSON.stringify(visibleCols)); } catch { /* ignore */ } }, [visibleCols, COLS_KEY]);
+
+  // Seleção múltipla — invalida ao trocar mês/filtro (evita ação em set inconsistente).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  useEffect(() => { setSelectedIds(new Set()); }, [mes, filtroRisco, filtroCorretor, filtroEquipe, kpiFilter]);
+  const toggleSelected = (id: string) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+  const setGroupSelected = (ids: string[], selected: boolean) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    for (const id of ids) selected ? next.add(id) : next.delete(id);
+    return next;
+  });
+
   // Larguras de coluna redimensionáveis (planilha), persistidas por sessão
   const DEFAULT_COL_WIDTHS: Record<string, number> = {
     nome: 160, data: 88, empreendimento: 150, vgv: 110, corretor: 120, status: 130, obs: 200,
