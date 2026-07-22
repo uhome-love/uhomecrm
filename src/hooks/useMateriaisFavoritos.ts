@@ -12,7 +12,7 @@ export interface MaterialComEmp extends MaterialLink {
 }
 
 const MAT_COLS =
-  "id, empreendimento_id, categoria, tipo, titulo, descricao, url, storage_path, mime_type, file_size, origem, tags, resumo_ia, ingest_status, ingest_error, created_at, updated_at, materiais_empreendimentos(id,nome,logo_url)";
+  "id, empreendimento_id, categoria, tipo, titulo, descricao, url, storage_path, mime_type, file_size, origem, tags, resumo_ia, ingest_status, ingest_error, created_at, updated_at, ordem, materiais_empreendimentos(id,nome,logo_url)";
 
 export function useMaterialFavoritos() {
   const { user } = useAuth();
@@ -20,7 +20,7 @@ export function useMaterialFavoritos() {
     queryKey: ["materiais-favoritos", user?.id],
     queryFn: async () => {
       if (!user?.id) return [] as MaterialComEmp[];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("materiais_favoritos")
         .select(`material_id, created_at, materiais_links!inner(${MAT_COLS})`)
         .eq("user_id", user.id)
@@ -39,7 +39,7 @@ export function useMaterialFavoritoIds() {
     queryKey: ["materiais-favoritos-ids", user?.id],
     queryFn: async () => {
       if (!user?.id) return new Set<string>();
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("materiais_favoritos")
         .select("material_id")
         .eq("user_id", user.id);
@@ -57,7 +57,7 @@ export function useMaterialRecentes() {
     queryKey: ["materiais-recentes", user?.id],
     queryFn: async () => {
       if (!user?.id) return [] as MaterialComEmp[];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("materiais_recentes")
         .select(`material_id, last_at, count, materiais_links!inner(${MAT_COLS})`)
         .eq("user_id", user.id)
@@ -78,14 +78,14 @@ export function useToggleFavorito() {
     mutationFn: async ({ materialId, isFav }: { materialId: string; isFav: boolean }) => {
       if (!user?.id) throw new Error("Sem usuário");
       if (isFav) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("materiais_favoritos")
           .delete()
           .eq("user_id", user.id)
           .eq("material_id", materialId);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("materiais_favoritos")
           .insert({ user_id: user.id, material_id: materialId });
         if (error) throw error;
@@ -102,7 +102,7 @@ export function useToggleFavorito() {
 
 export async function registrarMaterialRecente(materialId: string, acao = "abrir") {
   try {
-    await supabase.rpc("registrar_material_recente", {
+    await (supabase as any).rpc("registrar_material_recente", {
       _material_id: materialId,
       _acao: acao,
     });
