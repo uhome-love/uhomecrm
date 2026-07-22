@@ -49,9 +49,11 @@ function useSharesAnalytics(days: number) {
       if (corretorIds.length) {
         const { data: profs } = await supabase
           .from("profiles")
-          .select("id, nome, email")
-          .in("id", corretorIds);
-        profiles = (profs ?? []) as ProfileLite[];
+          .select("id, user_id, nome, email")
+          .in("user_id", corretorIds);
+        profiles = ((profs ?? []) as any[]).map((p) => ({
+          id: p.user_id, nome: p.nome, email: p.email,
+        }));
       }
       return { shares: list, profiles };
     },
