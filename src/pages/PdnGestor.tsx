@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
+import { PdnToolbar } from "@/components/pdn/PdnToolbar";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
 import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
