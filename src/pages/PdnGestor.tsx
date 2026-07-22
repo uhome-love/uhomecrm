@@ -994,9 +994,31 @@ function GrupoBloco({
                             <TrendingDown className="h-3.5 w-3.5" />
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title={r.isManual ? "Excluir" : "Remover da planilha (não afeta o corretor)"} onClick={() => onRemove(r)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        {(() => {
+                          const prev = PREV_GRUPO[r.grupo];
+                          if (!r.isManual && !r.caiu && prev) {
+                            return (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-amber-600"
+                                title={`Regredir para ${GRUPO_LABEL_UI[prev]} (avisa o corretor)`}
+                                onClick={() => {
+                                  if (window.confirm(`Regredir ${r.nome} de "${GRUPO_LABEL_UI[r.grupo]}" para "${GRUPO_LABEL_UI[prev]}"?\n\nO corretor será notificado da mudança.`)) {
+                                    onMudarEtapa(r, prev);
+                                  }
+                                }}
+                              >
+                                <Undo2 className="h-3.5 w-3.5" />
+                              </Button>
+                            );
+                          }
+                          return (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title={r.isManual ? "Excluir" : "Remover da planilha (não afeta o corretor)"} onClick={() => onRemove(r)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          );
+                        })()}
                       </div>
                     </TableCell>
 
