@@ -204,37 +204,69 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                               <span className="ml-auto text-[10px] text-muted-foreground uppercase">arquivo</span>
                             )}
                           </button>
-                          {canEdit && (
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                              {link.storage_path && (link.ingest_status === "error" || link.ingest_status === "done") && (
+                          <div className="flex items-center gap-0.5">
+                            {/* Ações rápidas — visíveis para todos */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
+                              title="Copiar link"
+                              onClick={() => copyLink(link)}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                            {link.storage_path && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
+                                title="Baixar"
+                                onClick={() => downloadLink(link)}
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-green-600 opacity-60 group-hover:opacity-100 transition-opacity"
+                              title="Enviar no WhatsApp"
+                              onClick={() => shareWhatsapp(link)}
+                            >
+                              <MessageCircle className="h-3.5 w-3.5" />
+                            </Button>
+                            {canEdit && (
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 border-l border-border/60 ml-1 pl-1">
+                                {link.storage_path && (link.ingest_status === "error" || link.ingest_status === "done") && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    title="Reprocessar IA"
+                                    onClick={() => reprocessIngest(link.id)}
+                                  >
+                                    <RefreshCw className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7"
-                                  title="Reprocessar IA"
-                                  onClick={() => reprocessIngest(link.id)}
+                                  onClick={() => setLinkDialog({ open: true, link })}
                                 >
-                                  <RefreshCw className="h-3.5 w-3.5" />
+                                  <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => setLinkDialog({ open: true, link })}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-destructive hover:text-destructive"
-                                onClick={() => setLinkToDelete(link)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => setLinkToDelete(link)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         {(link.tags?.length ?? 0) > 0 && (
                           <div className="flex flex-wrap gap-1 pl-6">
