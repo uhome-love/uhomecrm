@@ -63,6 +63,10 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   };
 
   const openLink = async (link: MaterialLink) => {
+    if (PREVIEWABLE(link)) {
+      setPreviewLink(link);
+      return;
+    }
     const url = await getSignedUrl(link, false);
     if (url) window.open(url, "_blank", "noopener,noreferrer");
   };
