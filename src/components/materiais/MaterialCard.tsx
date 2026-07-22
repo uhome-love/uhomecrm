@@ -344,6 +344,12 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
         empreendimentoId={empreendimento.id}
       />
 
+      <MaterialPreviewDialog
+        open={!!previewLink}
+        onOpenChange={(o) => !o && setPreviewLink(null)}
+        link={previewLink}
+      />
+
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
