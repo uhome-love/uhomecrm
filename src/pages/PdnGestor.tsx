@@ -556,6 +556,14 @@ export default function PdnGestor() {
         </div>
       ) : view === "meta" ? (
         <PdnMetaMes mes={mes} rows={rows} />
+      ) : view === "arquivados" ? (
+        <ArquivadosView
+          hiddenRows={hiddenRows}
+          caidosRows={rows.filter(r => r.grupo === "caidos")}
+          onRestaurar={restaurarRow}
+          onReativar={reativarQueda}
+          onOpen={setSelectedRow}
+        />
       ) : view === "kanban" ? (
         <PdnKanban
           rows={filtered}
