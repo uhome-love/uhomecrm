@@ -11,6 +11,11 @@ export interface MaterialLink {
   ordem: number;
   created_at: string;
   updated_at: string;
+  storage_path?: string | null;
+  mime_type?: string | null;
+  size_bytes?: number | null;
+  thumb_url?: string | null;
+  origem?: string | null;
 }
 
 export interface MaterialEmpreendimento {

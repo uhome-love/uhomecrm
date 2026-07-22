@@ -9,13 +9,16 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, ExternalLink, MoreVertical, Pencil, Plus, Share2, Trash2 } from "lucide-react";
+import { Building2, ExternalLink, MoreVertical, Pencil, Plus, Share2, Trash2, Upload } from "lucide-react";
 import type { MaterialEmpreendimento, MaterialLink } from "@/hooks/useMateriais";
 import { getCategoriaInfo } from "./CategoriaIcon";
 import { LinkFormDialog } from "./LinkFormDialog";
 import { EmpreendimentoFormDialog } from "./EmpreendimentoFormDialog";
 import { GerarLinkDialog } from "./GerarLinkDialog";
+import { UploadMaterialDialog } from "./UploadMaterialDialog";
 import { useMateriaisMutations } from "@/hooks/useMateriaisMutations";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   empreendimento: MaterialEmpreendimento;
@@ -27,10 +30,29 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   const [editEmp, setEditEmp] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [linkDialog, setLinkDialog] = useState<{ open: boolean; link: MaterialLink | null }>({
     open: false, link: null,
   });
   const [linkToDelete, setLinkToDelete] = useState<MaterialLink | null>(null);
+
+  const openLink = async (link: MaterialLink) => {
+    if (link.storage_path) {
+      try {
+        const { data, error } = await supabase.functions.invoke("materiais-signed-read", {
+          body: { storage_path: link.storage_path },
+        });
+        if (error) throw error;
+        const url = (data as any)?.signed_url;
+        if (!url) throw new Error("Sem URL");
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch (e: any) {
+        toast({ title: "Erro ao abrir", description: e.message, variant: "destructive" });
+      }
+    } else if (link.url) {
+      window.open(link.url, "_blank", "noopener,noreferrer");
+    }
+  };
 
   // Group links by categoria
   const grouped = empreendimento.links.reduce((acc, link) => {
@@ -70,6 +92,9 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => setEditEmp(true)}>
                     <Pencil className="h-4 w-4 mr-2" /> Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setUploadOpen(true)}>
+                    <Upload className="h-4 w-4 mr-2" /> Enviar arquivo
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLinkDialog({ open: true, link: null })}>
                     <Plus className="h-4 w-4 mr-2" /> Adicionar link
@@ -113,15 +138,17 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                   <ul className="space-y-1">
                     {links.map((link) => (
                       <li key={link.id} className="group flex items-center gap-2">
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-foreground hover:bg-muted/60 transition-colors min-w-0"
+                        <button
+                          type="button"
+                          onClick={() => openLink(link)}
+                          className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-foreground hover:bg-muted/60 transition-colors min-w-0 text-left"
                         >
                           <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                           <span className="truncate">{link.titulo}</span>
-                        </a>
+                          {link.origem === "upload" && (
+                            <span className="ml-auto text-[10px] text-muted-foreground uppercase">arquivo</span>
+                          )}
+                        </button>
                         {canEdit && (
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                             <Button
@@ -188,6 +215,11 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
         open={shareOpen}
         onOpenChange={setShareOpen}
         empreendimento={empreendimento}
+      />
+      <UploadMaterialDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        empreendimentoId={empreendimento.id}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
