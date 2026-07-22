@@ -4335,6 +4335,41 @@ export type Database = {
           },
         ]
       }
+      materiais_chunks: {
+        Row: {
+          chunk_idx: number
+          content: string
+          created_at: string
+          embedding: string
+          id: string
+          material_id: string
+        }
+        Insert: {
+          chunk_idx: number
+          content: string
+          created_at?: string
+          embedding: string
+          id?: string
+          material_id: string
+        }
+        Update: {
+          chunk_idx?: number
+          content?: string
+          created_at?: string
+          embedding?: string
+          id?: string
+          material_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_chunks_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materiais_empreendimentos: {
         Row: {
           ativo: boolean
@@ -4379,11 +4414,16 @@ export type Database = {
           descricao: string | null
           empreendimento_id: string
           id: string
+          ingest_error: string | null
+          ingest_status: string
+          ingested_at: string | null
           mime_type: string | null
           ordem: number
           origem: string
+          resumo_ia: string | null
           size_bytes: number | null
           storage_path: string | null
+          tags: string[]
           thumb_url: string | null
           titulo: string
           updated_at: string
@@ -4396,11 +4436,16 @@ export type Database = {
           descricao?: string | null
           empreendimento_id: string
           id?: string
+          ingest_error?: string | null
+          ingest_status?: string
+          ingested_at?: string | null
           mime_type?: string | null
           ordem?: number
           origem?: string
+          resumo_ia?: string | null
           size_bytes?: number | null
           storage_path?: string | null
+          tags?: string[]
           thumb_url?: string | null
           titulo: string
           updated_at?: string
@@ -4413,11 +4458,16 @@ export type Database = {
           descricao?: string | null
           empreendimento_id?: string
           id?: string
+          ingest_error?: string | null
+          ingest_status?: string
+          ingested_at?: string | null
           mime_type?: string | null
           ordem?: number
           origem?: string
+          resumo_ia?: string | null
           size_bytes?: number | null
           storage_path?: string | null
+          tags?: string[]
           thumb_url?: string | null
           titulo?: string
           updated_at?: string
@@ -11480,6 +11530,15 @@ export type Database = {
         Returns: string
       }
       marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
+      match_materiais: {
+        Args: { match_count?: number; query_embedding: string }
+        Returns: {
+          chunk_id: string
+          content: string
+          material_id: string
+          similarity: number
+        }[]
+      }
       monitor_primeiro_contato_v1_coverage: { Args: never; Returns: undefined }
       norm_empreendimento: { Args: { s: string }; Returns: string }
       normalize_alias: { Args: { input: string }; Returns: string }
