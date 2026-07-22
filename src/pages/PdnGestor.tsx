@@ -213,6 +213,7 @@ export default function PdnGestor() {
   const monthOptions = useMemo(buildMonthOptions, []);
   const [mes, setMes] = useState(monthOptions[0].value);
   const [filtroRisco, setFiltroRisco] = useState(false);
+  const [filtroNovos, setFiltroNovos] = useState(false);
   const [filtroCorretor, setFiltroCorretor] = useState<string>("todos");
   const [filtroEquipe, setFiltroEquipe] = useState<string>("todas");
   const [sortKey, setSortKey] = useState<SortKey>("data");
