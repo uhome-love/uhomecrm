@@ -4418,6 +4418,51 @@ export type Database = {
           },
         ]
       }
+      materiais_shares: {
+        Row: {
+          assets: Json
+          cliques: number
+          corretor_id: string
+          created_at: string
+          empreendimento_nome: string | null
+          empreendimento_slug: string
+          expires_at: string | null
+          id: string
+          mensagem: string | null
+          titulo: string | null
+          updated_at: string
+          views: number
+        }
+        Insert: {
+          assets?: Json
+          cliques?: number
+          corretor_id: string
+          created_at?: string
+          empreendimento_nome?: string | null
+          empreendimento_slug: string
+          expires_at?: string | null
+          id?: string
+          mensagem?: string | null
+          titulo?: string | null
+          updated_at?: string
+          views?: number
+        }
+        Update: {
+          assets?: Json
+          cliques?: number
+          corretor_id?: string
+          created_at?: string
+          empreendimento_nome?: string | null
+          empreendimento_slug?: string
+          expires_at?: string | null
+          id?: string
+          mensagem?: string | null
+          titulo?: string | null
+          updated_at?: string
+          views?: number
+        }
+        Relationships: []
+      }
       melnick_campaign_analytics: {
         Row: {
           campaign: string
