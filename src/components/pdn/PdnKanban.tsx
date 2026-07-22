@@ -231,9 +231,9 @@ export function PdnKanban({
         count={effectiveSelected.size}
         onClear={() => setSelectedIds(new Set())}
         onPublish={bulkPublish}
-        onAvisar={bulkAvisar}
         onQueda={bulkQueda}
       />
+
     </>
   );
 }
