@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Megaphone, Send, TrendingDown, X, Loader2 } from "lucide-react";
+import { Megaphone, TrendingDown, X, Loader2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -10,22 +10,21 @@ interface Props {
   count: number;
   onClear: () => void;
   onPublish: () => Promise<void> | void;
-  onAvisar: () => Promise<void> | void;
   onQueda: (motivo: string) => Promise<void> | void;
 }
 
 /**
  * Barra flutuante que aparece quando há linhas selecionadas na planilha do PDN.
- * Ações em lote: publicar observação no lead, avisar corretor, marcar como caiu.
+ * Ações em lote: publicar observação (avisa corretor automaticamente) e marcar como caiu.
  */
-export function BulkActionBar({ count, onClear, onPublish, onAvisar, onQueda }: Props) {
-  const [busy, setBusy] = useState<"publish" | "avisar" | null>(null);
+export function BulkActionBar({ count, onClear, onPublish, onQueda }: Props) {
+  const [busy, setBusy] = useState<"publish" | null>(null);
   const [quedaOpen, setQuedaOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
 
   if (count === 0) return null;
 
-  const run = async (kind: "publish" | "avisar", fn: () => Promise<void> | void) => {
+  const run = async (kind: "publish", fn: () => Promise<void> | void) => {
     setBusy(kind);
     try { await fn(); } finally { setBusy(null); }
   };
@@ -39,11 +38,7 @@ export function BulkActionBar({ count, onClear, onPublish, onAvisar, onQueda }: 
           </span>
           <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={!!busy} onClick={() => run("publish", onPublish)}>
             {busy === "publish" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Megaphone className="h-3.5 w-3.5" />}
-            Publicar obs.
-          </Button>
-          <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={!!busy} onClick={() => run("avisar", onAvisar)}>
-            {busy === "avisar" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-            Avisar corretor
+            Publicar e avisar
           </Button>
           <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs text-red-600 hover:text-red-700" disabled={!!busy} onClick={() => { setMotivo(""); setQuedaOpen(true); }}>
             <TrendingDown className="h-3.5 w-3.5" />
@@ -88,3 +83,4 @@ export function BulkActionBar({ count, onClear, onPublish, onAvisar, onQueda }: 
     </>
   );
 }
+
