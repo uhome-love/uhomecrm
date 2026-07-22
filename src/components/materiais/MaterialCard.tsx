@@ -9,11 +9,12 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, ExternalLink, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import { Building2, ExternalLink, MoreVertical, Pencil, Plus, Share2, Trash2 } from "lucide-react";
 import type { MaterialEmpreendimento, MaterialLink } from "@/hooks/useMateriais";
 import { getCategoriaInfo } from "./CategoriaIcon";
 import { LinkFormDialog } from "./LinkFormDialog";
 import { EmpreendimentoFormDialog } from "./EmpreendimentoFormDialog";
+import { GerarLinkDialog } from "./GerarLinkDialog";
 import { useMateriaisMutations } from "@/hooks/useMateriaisMutations";
 
 interface Props {
@@ -25,6 +26,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   const { deleteEmpreendimento, deleteLink } = useMateriaisMutations();
   const [editEmp, setEditEmp] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [linkDialog, setLinkDialog] = useState<{ open: boolean; link: MaterialLink | null }>({
     open: false, link: null,
   });
@@ -147,15 +149,26 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
               );
             })
           )}
-          {canEdit && Object.keys(grouped).length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => setLinkDialog({ open: true, link: null })}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> Adicionar link
-            </Button>
+          {Object.keys(grouped).length > 0 && (
+            <div className="mt-2 flex gap-2">
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={() => setShareOpen(true)}
+                disabled={empreendimento.links.length === 0}
+              >
+                <Share2 className="h-3.5 w-3.5 mr-1.5" /> Gerar link comercial
+              </Button>
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLinkDialog({ open: true, link: null })}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -170,6 +183,11 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
         onOpenChange={(o) => setLinkDialog((s) => ({ ...s, open: o }))}
         empreendimentoId={empreendimento.id}
         link={linkDialog.link}
+      />
+      <GerarLinkDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        empreendimento={empreendimento}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
