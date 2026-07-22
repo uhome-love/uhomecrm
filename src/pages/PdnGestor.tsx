@@ -886,8 +886,8 @@ function GrupoBloco({
                   <TableRow><TableCell colSpan={emptyColSpan} className="py-6 text-center text-sm text-muted-foreground">Nenhum negócio neste grupo.</TableCell></TableRow>
                 ) : rows.map(r => {
                   const selected = selectedIds.has(r.id);
-                  const canPublish = !!r.pipelineLeadId && !!(r.observacoes || "").trim();
                   return (
+
                   <TableRow
                     key={r.id}
                     onClick={(e) => handleRowClick(r, e)}
