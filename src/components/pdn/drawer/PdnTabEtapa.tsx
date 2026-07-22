@@ -55,7 +55,7 @@ export function PdnTabEtapa({
           Marcar em risco
         </label>
         {riscoManual && (
-          <Textarea value={riscoMotivo} onChange={(e) => setRiscoMotivo(e.target.checked ? riscoMotivo : e.target.value)} className="mt-2 min-h-[60px]" placeholder="Motivo do risco…" />
+          <Textarea value={riscoMotivo} onChange={(e) => setRiscoMotivo(e.target.value)} className="mt-2 min-h-[60px]" placeholder="Motivo do risco…" />
         )}
       </div>
 
