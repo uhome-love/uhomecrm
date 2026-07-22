@@ -496,39 +496,31 @@ export default function PdnGestor() {
         <SummaryCard label="Em risco" value={String(resumo.emRisco)} sub="parados +7d" accent="text-amber-500" icon={<AlertTriangle className="h-4 w-4" />} active={kpiFilter === "risco"} onClick={() => toggleKpi("risco")} />
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant={filtroRisco ? "default" : "outline"} size="sm" onClick={() => setFiltroRisco(v => !v)}>
-          <AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Em risco
-        </Button>
-        {showEquipeFilter && (
-          <Select value={filtroEquipe} onValueChange={(v) => { setFiltroEquipe(v); setFiltroCorretor("todos"); }}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Equipe" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas as equipes</SelectItem>
-              {equipes.map(e => <SelectItem key={e} value={e}>Equipe {e}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
-        <Select value={filtroCorretor} onValueChange={setFiltroCorretor}>
-          <SelectTrigger className="w-[190px]"><SelectValue placeholder="Corretor" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os corretores</SelectItem>
-            {corretores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        {kpiFilter && (
-          <Button variant="ghost" size="sm" onClick={() => setKpiFilter(null)}>Limpar recorte</Button>
-        )}
-        {hiddenRows.length > 0 && (
-          <Button variant={showOcultos ? "default" : "outline"} size="sm" onClick={() => setShowOcultos(v => !v)}>
-            {showOcultos ? "Ocultar removidos" : `Mostrar removidos (${hiddenRows.length})`}
-          </Button>
-        )}
-        {view === "planilha" && !isMobile && colsCustomized && (
-          <Button variant="ghost" size="sm" onClick={resetColWidths}>Redefinir larguras</Button>
-        )}
-      </div>
+      {/* Toolbar unificada — mesmos filtros para Planilha e Kanban */}
+      <PdnToolbar
+        filters={{ soRisco: filtroRisco, soNovos: filtroNovos, equipe: filtroEquipe, corretor: filtroCorretor }}
+        setFilters={(patch) => {
+          if (patch.soRisco !== undefined) setFiltroRisco(patch.soRisco);
+          if (patch.soNovos !== undefined) setFiltroNovos(patch.soNovos);
+          if (patch.equipe !== undefined) { setFiltroEquipe(patch.equipe); setFiltroCorretor("todos"); }
+          if (patch.corretor !== undefined) setFiltroCorretor(patch.corretor);
+        }}
+        showEquipeFilter={showEquipeFilter}
+        equipes={equipes}
+        corretores={corretores}
+        hits={filtered.length}
+        vgvHits={filtered.reduce((s, r) => s + r.vgv, 0)}
+        total={rows.length}
+        kpiFilter={kpiFilter}
+        onClearKpi={() => setKpiFilter(null)}
+        hiddenCount={hiddenRows.length}
+        showOcultos={showOcultos}
+        onToggleOcultos={() => setShowOcultos(v => !v)}
+        view={view}
+        showResetLarguras={!isMobile && colsCustomized}
+        onResetLarguras={resetColWidths}
+      />
+
 
       {/* Negócios removidos da planilha (overlay) — restauráveis, sem afetar o pipeline */}
       {showOcultos && hiddenRows.length > 0 && (
