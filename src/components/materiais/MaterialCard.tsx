@@ -138,15 +138,17 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                   <ul className="space-y-1">
                     {links.map((link) => (
                       <li key={link.id} className="group flex items-center gap-2">
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-foreground hover:bg-muted/60 transition-colors min-w-0"
+                        <button
+                          type="button"
+                          onClick={() => openLink(link)}
+                          className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-foreground hover:bg-muted/60 transition-colors min-w-0 text-left"
                         >
                           <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                           <span className="truncate">{link.titulo}</span>
-                        </a>
+                          {link.origem === "upload" && (
+                            <span className="ml-auto text-[10px] text-muted-foreground uppercase">arquivo</span>
+                          )}
+                        </button>
                         {canEdit && (
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                             <Button
