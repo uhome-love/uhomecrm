@@ -93,6 +93,9 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                   <DropdownMenuItem onClick={() => setEditEmp(true)}>
                     <Pencil className="h-4 w-4 mr-2" /> Editar
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setUploadOpen(true)}>
+                    <Upload className="h-4 w-4 mr-2" /> Enviar arquivo
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLinkDialog({ open: true, link: null })}>
                     <Plus className="h-4 w-4 mr-2" /> Adicionar link
                   </DropdownMenuItem>
