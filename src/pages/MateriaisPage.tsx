@@ -5,7 +5,8 @@ import { useMateriais, type MaterialLink, type MaterialEmpreendimento } from "@/
 import { useUserRole } from "@/hooks/useUserRole";
 import { MaterialCard } from "@/components/materiais/MaterialCard";
 import { EmpreendimentoFormDialog } from "@/components/materiais/EmpreendimentoFormDialog";
-import { FolderOpen, Plus, Search, Loader2, Sparkles, X } from "lucide-react";
+import { FolderOpen, Plus, Search, Loader2, Sparkles, X, BarChart3 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -72,9 +73,16 @@ export default function MateriaisPage() {
         icon={<FolderOpen className="h-5 w-5" />}
         actions={
           isGestor && (
-            <Button onClick={() => setNewDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" /> Novo empreendimento
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" asChild>
+                <Link to="/materiais/analytics">
+                  <BarChart3 className="h-4 w-4 mr-2" /> Analytics
+                </Link>
+              </Button>
+              <Button onClick={() => setNewDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" /> Novo empreendimento
+              </Button>
+            </div>
           )
         }
       />
