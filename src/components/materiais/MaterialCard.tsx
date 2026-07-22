@@ -9,7 +9,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, ExternalLink, MoreVertical, Pencil, Plus, RefreshCw, Share2, Trash2, Upload, Download, Copy, MessageCircle } from "lucide-react";
+import { Building2, ExternalLink, MoreVertical, Pencil, Plus, RefreshCw, Share2, Trash2, Upload, Download, Copy, MessageCircle, Star } from "lucide-react";
 import type { MaterialEmpreendimento, MaterialLink } from "@/hooks/useMateriais";
 import { getCategoriaInfo } from "./CategoriaIcon";
 import { LinkFormDialog } from "./LinkFormDialog";
@@ -20,6 +20,12 @@ import { MaterialPreviewDialog } from "./MaterialPreviewDialog";
 import { useMateriaisMutations } from "@/hooks/useMateriaisMutations";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import {
+  useMaterialFavoritoIds,
+  useToggleFavorito,
+  registrarMaterialRecente,
+} from "@/hooks/useMateriaisFavoritos";
+import { cn } from "@/lib/utils";
 
 const PREVIEWABLE = (link: MaterialLink) => {
   if (!link.storage_path) return false;
@@ -36,6 +42,8 @@ interface Props {
 
 export function MaterialCard({ empreendimento, canEdit }: Props) {
   const { deleteEmpreendimento, deleteLink } = useMateriaisMutations();
+  const { data: favIds } = useMaterialFavoritoIds();
+  const toggleFav = useToggleFavorito();
   const [editEmp, setEditEmp] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -63,6 +71,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   };
 
   const openLink = async (link: MaterialLink) => {
+    registrarMaterialRecente(link.id, PREVIEWABLE(link) ? "preview" : "abrir");
     if (PREVIEWABLE(link)) {
       setPreviewLink(link);
       return;
@@ -72,14 +81,13 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   };
 
   const downloadLink = async (link: MaterialLink) => {
+    registrarMaterialRecente(link.id, "download");
     if (!link.storage_path) {
-      // link externo — apenas abre
       if (link.url) window.open(link.url, "_blank", "noopener,noreferrer");
       return;
     }
     const url = await getSignedUrl(link, true);
     if (!url) return;
-    // Força navegação para disparar download com Content-Disposition
     const a = document.createElement("a");
     a.href = url;
     a.rel = "noopener noreferrer";
@@ -91,6 +99,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
     if (!url) return;
     try {
       await navigator.clipboard.writeText(url);
+      registrarMaterialRecente(link.id, "copiar");
       toast({ title: "Link copiado", description: link.storage_path ? "Válido por 10 minutos." : undefined });
     } catch {
       toast({ title: "Não foi possível copiar", variant: "destructive" });
@@ -100,6 +109,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   const shareWhatsapp = async (link: MaterialLink) => {
     const url = await getSignedUrl(link, false);
     if (!url) return;
+    registrarMaterialRecente(link.id, "whatsapp");
     const text = `${link.titulo}\n\n${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   };
@@ -219,6 +229,24 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                             )}
                           </button>
                           <div className="flex items-center gap-0.5">
+                            {/* Favorito */}
+                            {(() => {
+                              const isFav = !!favIds?.has(link.id);
+                              return (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-7 w-7 transition-opacity",
+                                    isFav ? "opacity-100 text-yellow-500" : "opacity-60 group-hover:opacity-100",
+                                  )}
+                                  title={isFav ? "Remover dos favoritos" : "Salvar nos favoritos"}
+                                  onClick={() => toggleFav.mutate({ materialId: link.id, isFav })}
+                                >
+                                  <Star className={cn("h-3.5 w-3.5", isFav && "fill-yellow-500")} />
+                                </Button>
+                              );
+                            })()}
                             {/* Ações rápidas — visíveis para todos */}
                             <Button
                               variant="ghost"
