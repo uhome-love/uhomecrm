@@ -9,13 +9,16 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, ExternalLink, MoreVertical, Pencil, Plus, Share2, Trash2 } from "lucide-react";
+import { Building2, ExternalLink, MoreVertical, Pencil, Plus, Share2, Trash2, Upload } from "lucide-react";
 import type { MaterialEmpreendimento, MaterialLink } from "@/hooks/useMateriais";
 import { getCategoriaInfo } from "./CategoriaIcon";
 import { LinkFormDialog } from "./LinkFormDialog";
 import { EmpreendimentoFormDialog } from "./EmpreendimentoFormDialog";
 import { GerarLinkDialog } from "./GerarLinkDialog";
+import { UploadMaterialDialog } from "./UploadMaterialDialog";
 import { useMateriaisMutations } from "@/hooks/useMateriaisMutations";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   empreendimento: MaterialEmpreendimento;
