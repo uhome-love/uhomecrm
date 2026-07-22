@@ -649,6 +649,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         onEdit={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
       />
 
+      {/* Materiais relevantes para o lead (Fase 5 — Hub de Materiais) */}
+      <LeadMateriaisPanel
+        leadId={lead.id}
+        empreendimento={lead.empreendimento}
+        observacoes={lead.observacoes}
+        origemDetalhe={lead.origem_detalhe}
+        imovelCodigo={lead.imovel_codigo}
+        telefone={lead.telefone}
+      />
+
+
+
 
       {/* Imóvel de interesse (leads do site) */}
       {(lead.imovel_codigo || lead.imovel_url) && (
