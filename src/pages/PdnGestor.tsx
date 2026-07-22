@@ -31,6 +31,9 @@ import {
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
 import { PdnToolbar } from "@/components/pdn/PdnToolbar";
+import { PdnHeader } from "@/components/pdn/PdnHeader";
+import { PdnKpiCards } from "@/components/pdn/PdnKpiCards";
+import { PdnResumoEquipes } from "@/components/pdn/PdnResumoEquipes";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
 import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
@@ -456,45 +459,18 @@ export default function PdnGestor() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
-      {/* Header */}
-      <div className="sticky top-0 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-2.5 shadow-sm md:-mx-6 md:px-6">
-        {/* Header sticky com backdrop-blur — mantém contexto e ações do mês visíveis durante o scroll da planilha. */}
-        <div>
-          <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
-            <ClipboardList className="h-5 w-5 text-primary" /> PDN — Plano de Negócios
-          </h1>
-          <p className="text-sm text-muted-foreground">Planilha de gestão do mês, integrada ao pipeline. Status e observações são internos (não aparecem para o corretor).</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={mes} onValueChange={setMes}>
-            <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {monthOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <div className="flex items-center rounded-lg border p-0.5">
-            <Button variant={view === "planilha" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => setView("planilha")}>
-              <TableIcon className="mr-1.5 h-4 w-4" /> Planilha
-            </Button>
-            <Button variant={view === "kanban" ? "secondary" : "ghost"} size="sm" className="h-8 px-2.5" onClick={() => setView("kanban")}>
-              <LayoutGrid className="mr-1.5 h-4 w-4" /> Kanban
-            </Button>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`mr-1.5 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Atualizar
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportCSV}><Download className="mr-1.5 h-4 w-4" /> Exportar</Button>
-        </div>
-      </div>
+      <PdnHeader
+        mes={mes}
+        monthOptions={monthOptions}
+        onChangeMes={setMes}
+        view={view}
+        onChangeView={setView}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onExport={exportCSV}
+      />
 
-      {/* Resumo — KPIs clicáveis */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <SummaryCard label="VGV Total" value={fmtMoney(resumo.vgvTotal, "short")} accent="text-foreground" icon={<Wallet className="h-4 w-4" />} active={kpiFilter === null} onClick={() => setKpiFilter(null)} />
-        <SummaryCard label="Ganhos" value={fmtMoney(resumo.byGrupo.ganho.vgv, "short")} sub={`${resumo.byGrupo.ganho.count} negócios`} accent="text-emerald-500" icon={<FileSignature className="h-4 w-4" />} active={kpiFilter === "ganho"} onClick={() => toggleKpi("ganho")} />
-        <SummaryCard label="Contrato" value={fmtMoney(resumo.byGrupo.contrato.vgv, "short")} sub={`${resumo.byGrupo.contrato.count} contratos`} accent="text-cyan-500" active={kpiFilter === "contrato"} onClick={() => toggleKpi("contrato")} />
-        <SummaryCard label="Forecast ponderado" value={fmtMoney(resumo.forecast, "short")} accent="text-primary" icon={<TrendingUp className="h-4 w-4" />} active={kpiFilter === "negociacao"} onClick={() => toggleKpi("negociacao")} />
-        <SummaryCard label="Em risco" value={String(resumo.emRisco)} sub="parados +7d" accent="text-amber-500" icon={<AlertTriangle className="h-4 w-4" />} active={kpiFilter === "risco"} onClick={() => toggleKpi("risco")} />
-      </div>
+      <PdnKpiCards resumo={resumo} kpiFilter={kpiFilter} onToggle={(k) => k === null ? setKpiFilter(null) : toggleKpi(k)} />
 
       {/* Toolbar unificada — mesmos filtros para Planilha e Kanban */}
       <PdnToolbar
@@ -627,48 +603,12 @@ export default function PdnGestor() {
         </div>
       )}
 
-      {/* Resumo por corretor, agrupado por equipe (clicável = filtra pelo corretor) */}
-      {!loading && resumoEquipes.length > 0 && (
-        <Card className="p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Users className="h-4 w-4 text-primary" /> Resumo por corretor
-            {filtroCorretor !== "todos" && (
-              <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => setFiltroCorretor("todos")}>
-                Limpar filtro de corretor
-              </Button>
-            )}
-          </div>
-          <div className="space-y-4">
-            {resumoEquipes.map(t => (
-              <div key={t.equipe}>
-                <div className="mb-2 flex items-center justify-between border-b pb-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {t.equipe === "Sem equipe" ? "Sem equipe" : `Equipe ${t.equipe}`} · {t.count} negócio{t.count > 1 ? "s" : ""}
-                  </span>
-                  <span className="text-xs font-semibold text-primary">{fmtMoney(t.vgv, "short")}</span>
-                </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {t.corretores.map(c => {
-                    const active = filtroCorretor === c.nome;
-                    return (
-                      <button
-                        key={c.nome}
-                        onClick={() => setFiltroCorretor(active ? "todos" : c.nome)}
-                        className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left transition hover:shadow-sm ${active ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-muted/30"}`}
-                      >
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium text-foreground">{c.nome}</div>
-                          <div className="text-xs text-muted-foreground">{c.count} negócio{c.count > 1 ? "s" : ""}</div>
-                        </div>
-                        <div className="text-sm font-semibold text-primary">{fmtMoney(c.vgv, "short")}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+      {!loading && (
+        <PdnResumoEquipes
+          equipes={resumoEquipes}
+          filtroCorretor={filtroCorretor}
+          onChangeCorretor={setFiltroCorretor}
+        />
       )}
 
       <QuedaDialog
@@ -704,22 +644,6 @@ export default function PdnGestor() {
   );
 }
 
-function SummaryCard({ label, value, sub, accent, icon, active, onClick }: {
-  label: string; value: string; sub?: string; accent: string; icon?: React.ReactNode; active?: boolean; onClick?: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-xl border bg-card p-3 text-left transition hover:shadow-sm ${active ? "border-primary ring-1 ring-primary" : "border-border"}`}
-    >
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>{icon && <span className={accent}>{icon}</span>}
-      </div>
-      <div className={`mt-1 text-lg font-bold ${accent}`}>{value}</div>
-      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
-    </button>
-  );
-}
 
 function ResizableHead({ colKey, width, onResize, label, sortActive, dir, onSort }: {
   colKey: string;
