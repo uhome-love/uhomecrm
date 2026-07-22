@@ -1,79 +1,100 @@
-# Plano: Landing Page de Materiais por Empreendimento
 
-## Resumo
-Criar uma landing page pública no site da Uhome para o corretor compartilhar com cliente uma **seleção manual de materiais de um empreendimento**. A arquitetura segue o mesmo padrão já validado das **vitrines**: o CRM gera um share via edge function, o site lê do próprio banco e renderiza com dados do corretor + WhatsApp CTA.
+# Fase — Upload nativo de materiais
 
-## Arquitetura
+Hoje o hub só aceita **link** (Drive, YouTube etc). Vamos passar a aceitar
+**upload direto** de foto, vídeo, planta e PDF, ficando dentro da nossa infra
+— sem depender de Drive público, com thumbnails, tamanho controlado e
+compartilhamento estável nos shares comerciais.
+
+## Escopo
+
+Só a página **/materiais** e os componentes do modal de material. Fluxo do
+share comercial (`materiais_shares` + landing no site) continua igual — ele
+passa a receber URLs do nosso storage no lugar de URLs do Drive, sem mudança
+de contrato.
+
+## Mockup do fluxo
+
+```text
+Modal "Novo material" (dentro do empreendimento)
+┌────────────────────────────────────────────────────────┐
+│ Tipo de conteúdo                                       │
+│  ( ) Link externo   (•) Upload de arquivo              │
+│                                                        │
+│  ┌────────────────────────────────────────────────┐    │
+│  │  ⬆  Arraste um arquivo ou clique pra escolher   │    │
+│  │  Foto, vídeo, PDF ou planta · até 200 MB       │    │
+│  └────────────────────────────────────────────────┘    │
+│                                                        │
+│  ▸ hero-casa-tua.mp4  · vídeo · 42 MB   ▓▓▓▓░ 78%     │
+│                                                        │
+│ Título:    [ Vídeo aéreo Casa Tua                    ] │
+│ Categoria: [ Vídeos ▾ ]  (detectada pelo tipo)         │
+│ Descrição: [ opcional                                ] │
+│                                                        │
+│                       [ Cancelar ]  [ Salvar material ]│
+└────────────────────────────────────────────────────────┘
 ```
-CRM (uhomecrm)                              Site Uhome (uhome-vision)
-┌─────────────────────┐                    ┌─────────────────────┐
-│  MateriaisPage      │  create_share      │  materiais_shares   │
-│  corretor seleciona │ ─────────────────► │  (tabela pública)   │
-│  empreendimento +   │  vitrine-bridge    │                     │
-│  links + mensagem   │  service role      │  /materiais/:id     │
-└─────────────────────┘                    │  renderiza landing  │
-                                          └─────────────────────┘
-```
-- O share é gravado no **banco do site** para evitar CORS, latência e dependência de edge function no carregamento da página.
-- Os materiais são persistidos como **snapshot** (nome, logo, categoria, título, URL), não como FK — assim não precisa sincronizar tabela `materiais_links` entre os dois projetos.
 
-## Fases
+Regras do uploader:
+- Toggle **Link externo / Upload** no topo (mantém o fluxo antigo intacto).
+- Aceita: `image/*`, `video/*`, `application/pdf`.
+- Limite **200 MB** por arquivo (soft-cap; barramos no cliente antes de subir).
+- Thumb: gerada no cliente pra imagem (canvas) e vídeo (frame em `00:01`).
+  PDF fica com ícone padrão da categoria.
+- Progresso real usando `xhr.upload.onprogress`.
+- Categoria autodetectada por MIME, editável (Fotos / Vídeos / Plantas /
+  Apresentações / Outros).
 
-### Fase 1 — Fundação (DB + Edge Function)
-**No projeto do site:**
-- Criar tabela `materiais_shares` com: `id`, `created_by`, `corretor_id`, `titulo`, `subtitulo`, `mensagem`, `empreendimento_snapshot` (nome, logo), `materiais_snapshot` (JSONB com categoria, título, URL, ordem), `visualizacoes`, `cliques_whatsapp`, `created_at`.
-- RLS: `SELECT` anônimo permitido, `INSERT/UPDATE/DELETE` apenas via `service_role`.
+Após salvar, o card do material aparece como hoje — só que o "abrir" usa uma
+**signed URL** gerada na hora (10 min de validade), tanto no CRM quanto na
+landing pública.
 
-**No CRM:**
-- Criar edge function `materiais-bridge` (paralela à `vitrine-bridge`) com actions:
-  - `create_share` — autenticada, resolve `profiles` do site por `uhomesales_id` e insere o share.
-  - `get_share` — pública, usada apenas para fallback/diagnóstico.
-  - `track_event` — pública, incrementa `visualizacoes` ou `cliques_whatsapp`.
-- Reutilizar os secrets existentes `UHOMESITE_URL` e `UHOMESITE_SERVICE_KEY`.
+## Plano de execução
 
-### Fase 2 — Geração do link no CRM
-- Adicionar botão **"Compartilhar seleção"** no `MaterialCard` (por empreendimento) e/ou no `MateriaisPage`.
-- Abrir modal de configuração:
-  - Empreendimento pré-selecionado.
-  - Checkboxes para escolher quais materiais/links incluir.
-  - Campos opcionais: título, subtítulo, mensagem personalizada do corretor.
-  - Botão **"Gerar link de compartilhamento"**.
-- Hook `useCreateMateriaisShare` similar a `useCreateVitrine`:
-  - chama `materiais-bridge`;
-  - copia link para clipboard;
-  - retorna URL pública no site.
+**1. Storage (backend)**
+- Bucket **privado** `materiais-uhome` via `storage_create_bucket`.
+- Policies em `storage.objects`:
+  - INSERT/UPDATE/DELETE: qualquer usuário autenticado, restrito a arquivos
+    cujo prefixo é `<auth.uid()>/...` (dono do arquivo).
+  - SELECT: dono + gestores/CEO (pra moderar). Público **nunca** lê direto.
+- Migração aditiva em `materiais_links` (nome mantido pra não quebrar):
+  - `storage_path text` (nulo pra links externos legados)
+  - `mime_type text`, `size_bytes bigint`, `thumb_url text`
+  - `origem text default 'link'` (`'link' | 'upload'`)
 
-### Fase 3 — Landing Page no Site
-**No projeto do site:**
-- Adicionar rota `/materiais/:id` em `AppRoutes.tsx` e lazy page em `lazyPages.ts`.
-- Criar página `MateriaisShare.tsx`:
-  - Busca o share por `id` no Supabase do site.
-  - Hero com nome/logo do empreendimento, título e mensagem do corretor.
-  - Lista de materiais agrupados por categoria (mesmas categorias do CRM: Drive, Apresentação, Tabela, etc.).
-  - Cada material renderiza como card/link com ícone e abre em nova aba.
-  - Bloco do corretor com foto, nome, CRECI e botão **WhatsApp** (igual bloco da Vitrine).
-  - Estados: loading, not found, empty.
-  - Meta tags (title, description, OG) para compartilhamento bonito.
+**2. Edge functions**
+- `materiais-upload-sign` (autenticado): recebe `{empreendimento_ref, filename, mime, size}`,
+  valida MIME/size, devolve `{ path, signed_upload_url }` (usa
+  `storage.from(bucket).createSignedUploadUrl`).
+- `materiais-signed-read` (autenticado): recebe `{ material_id }`, checa
+  permissão via RLS, devolve URL assinada de leitura (10 min).
+- `materiais-share-get` (já existe, público): passa a resolver `storage_path`
+  em URL assinada antes de devolver ao site — nada muda no contrato do
+  frontend do site.
 
-### Fase 4 — Rota de Corretor e Tracking
-- Suportar `/c/:corretorSlug/materiais/:id` para manter o banner "Você está sendo atendido por..." e o WhatsApp direto do corretor.
-- Incrementar `visualizacoes` ao abrir a página.
-- Incrementar `cliques_whatsapp` ao clicar no botão.
+**3. Frontend `/materiais`**
+- Novo componente `UploadMaterialDialog.tsx` com o mockup acima.
+- `useMateriaisMutations.tsx`: nova mutação `criarMaterialUpload` que
+  1) pede signed URL, 2) faz PUT com progresso, 3) gera thumb, 4) insere linha em
+  `materiais_links` com `origem='upload'` e `storage_path`.
+- `MaterialCard.tsx`: pra materiais de upload, abrir via
+  `materiais-signed-read` (não expõe URL direta no HTML).
+- `GerarLinkDialog.tsx`: sem mudança — recebe o mesmo shape de asset.
 
-## Mockup (pré-requisito antes de build)
-Antes de qualquer código, serão gerados 3 mockups para aprovação visual:
-1. **Modal do CRM** — como o corretor seleciona o empreendimento, escolhe os materiais e escreve a mensagem.
-2. **Landing page pública** — como o cliente vê a página no site (desktop e mobile).
-3. **Card do corretor** — foto, nome, CRECI e botão de WhatsApp na landing.
+**4. Validação ponta-a-ponta**
+- Subir 1 foto, 1 vídeo, 1 PDF em Casa Tua.
+- Confirmar thumb, progresso, e abertura via signed URL no CRM.
+- Gerar link comercial e abrir no site — os assets de upload devem carregar
+  igual aos de link externo.
+- Testar sem quebrar nada dos materiais atuais (todos ficam `origem='link'`).
 
-## Perguntas já resolvidas
-- Projeto do site: [Site Uhome](/projects/8ba49a95-26f2-42d4-b8e7-98d251f7e32e).
-- Escopo: menor dificuldade → usar snapshot no banco do site.
-- Seleção: manual pelo corretor.
-- Dados do corretor: sim, com foto, nome e WhatsApp.
+## O que **fica fora** desta fase
 
-## Próximos passos
-1. Você aprova este plano.
-2. Gero os 3 mockups visuais para aprovação.
-3. Após aprovação dos mockups, implemento a Fase 1.
-4. Valido ponta a ponta (CRM → site → WhatsApp CTA) antes de seguir para Fase 2.
+- Ingestão IA (tags/embeddings) — próxima fase.
+- Transcodificação de vídeo (mantemos o arquivo original; se ficar grande demais
+  a gente evolui depois).
+- Editor de imagem/crop dentro do CRM.
+
+Se aprovar, começo pela Fase 1 (bucket + migration) e paro pra você validar
+antes de mexer no frontend.
