@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireApiKey, callAI, withCorsAndErrorHandling } from "../_shared/ai-helpers.ts";
+import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
 
 Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
   // JWT validation
@@ -412,9 +413,23 @@ Responda APENAS com JSON válido, sem markdown, sem explicação:
   "sugestao_etapa": string|null (DEVE ser um nome exato da lista de etapas: ${stagesList})
 }`;
 
+  // ── HOMI ↔ Materiais: injeta materiais relevantes do Hub ──
+  let materiaisSuggestions: any[] = [];
+  try {
+    const searchQuery = [lead.empreendimento, lead.objetivo_cliente, ultima_mensagem]
+      .filter(Boolean).join(" | ");
+    materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
+      limit: 3,
+      empreendimentoNome: lead.empreendimento || undefined,
+    });
+  } catch (e) {
+    console.error("[homi-copilot] materiais context skipped:", e);
+  }
+  const materiaisBlock = formatMateriaisBlock(materiaisSuggestions);
+
   const apiKey = requireApiKey();
   const raw = await callAI(apiKey, [
-    { role: "user", content: prompt },
+    { role: "user", content: prompt + materiaisBlock },
   ], {
     model: "google/gemini-2.5-flash",
     fnName: "homi-copilot",
@@ -429,7 +444,7 @@ Responda APENAS com JSON válido, sem markdown, sem explicação:
 
   try {
     const parsed = JSON.parse(cleaned);
-    return jsonResponse(parsed);
+    return jsonResponse({ ...parsed, materiais: materiaisSuggestions });
   } catch {
     console.error("homi-copilot: failed to parse AI response:", cleaned);
     return jsonResponse({

@@ -8,6 +8,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { loadEnterpriseKnowledge, formatForList, formatForAssistant, createServiceClient } from "../_shared/enterprise-knowledge.ts";
+import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
 import { HOMI_TOOLS, executeHomiTool } from "./homi-tools.ts";
 
 // Generate embedding for RAG search
@@ -197,6 +198,22 @@ Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + r
       ? customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + "\n\nDETALHES:\n" + detailedKnowledge + ragContext
       : systemPrompt;
 
+    // ── HOMI ↔ Materiais: injeta materiais relevantes do Hub ──
+    let materiaisSuggestions: any[] = [];
+    try {
+      if (lastUserMsg) {
+        const searchQuery = [empreendimento, lastUserMsg].filter(Boolean).join(" | ");
+        materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
+          limit: 4,
+          empreendimentoNome: empreendimento,
+        });
+      }
+    } catch (e) {
+      console.error("[homi-chat] materiais context skipped:", e);
+    }
+    const materiaisBlock = formatMateriaisBlock(materiaisSuggestions);
+    const finalSystemPromptWithMateriais = finalSystemPrompt + materiaisBlock;
+
     // ── Copilot mode: function-calling (non-streaming JSON) ──
     if (enableTools) {
       const uid = (_claims.claims as any).sub as string;
@@ -211,7 +228,7 @@ Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + r
       tomorrow.setDate(tomorrow.getDate() + 1);
       const tomorrowStr = tomorrow.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
-      const copilotSystem = finalSystemPrompt + `
+      const copilotSystem = finalSystemPromptWithMateriais + `
 
 VOCÊ É UM COPILOTO COM FERRAMENTAS. Você PODE executar ações no CRM chamando ferramentas:
 - meu_dia: montar o resumo do dia (AGORA / VISITAS / ESFRIANDO) num único cartão
@@ -285,7 +302,7 @@ REGRAS DO COPILOTO:
       }
 
       return new Response(
-        JSON.stringify({ content: finalContent, actions: collectedActions, results: collectedResults }),
+        JSON.stringify({ content: finalContent, actions: collectedActions, results: collectedResults, materiais: materiaisSuggestions }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -299,7 +316,7 @@ REGRAS DO COPILOTO:
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: finalSystemPrompt },
+          { role: "system", content: finalSystemPromptWithMateriais },
           ...messages,
         ],
         stream: shouldStream,
@@ -331,7 +348,7 @@ REGRAS DO COPILOTO:
     // Non-streaming: parse and return JSON
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content || "";
-    return new Response(JSON.stringify({ content }), {
+    return new Response(JSON.stringify({ content, materiais: materiaisSuggestions }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { searchMateriaisForHomi } from '../_shared/materiais-context.ts';
 
 // Gera 3 variações de mensagem de follow-up personalizadas para um lead,
 // usando contexto do CRM (perfil, histórico WhatsApp, motivo de descarte)
@@ -88,9 +89,31 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ── Materiais extras sugeridos por IA (semântico do empreendimento + perfil) ──
+  let materiaisSugeridos: Array<{ titulo: string; empreendimento: string | null; resumo: string }> = [];
+  try {
+    const searchQuery = [body.empreendimento_nome, leadNome, leadContext.slice(0, 400)]
+      .filter(Boolean).join(" | ");
+    const enc = await searchMateriaisForHomi(searchQuery, {
+      limit: 3,
+      empreendimentoNome: body.empreendimento_nome,
+    });
+    materiaisSugeridos = enc.map((m) => ({
+      titulo: m.titulo,
+      empreendimento: m.empreendimento,
+      resumo: (m.resumo_ia || m.snippet || '').slice(0, 200),
+    }));
+  } catch (e) {
+    console.error('[homi-follow-up-message] materiais suggest skipped:', e);
+  }
+
   const materiaisTxt = body.materiais
     .map((m, i) => `${i + 1}. [${m.kind}] ${m.titulo}`)
     .join('\n');
+
+  const materiaisSugeridosTxt = materiaisSugeridos.length
+    ? `\n\nMATERIAIS ADICIONAIS DA BASE (pode mencionar naturalmente se fizerem sentido):\n${materiaisSugeridos.map((m, i) => `${i + 1}. "${m.titulo}"${m.empreendimento ? ` — ${m.empreendimento}` : ''}${m.resumo ? `\n   ${m.resumo}` : ''}`).join('\n')}`
+    : '';
 
   const tomInstrucao = {
     amigavel: 'tom amigável, próximo, sem pressão',
@@ -106,7 +129,7 @@ CONTEXTO:
 - ${tomInstrucao}
 - Materiais que serão compartilhados:
 ${materiaisTxt}
-${body.share_url ? `- Link da landing: ${body.share_url}` : ''}${leadContext}
+${body.share_url ? `- Link da landing: ${body.share_url}` : ''}${leadContext}${materiaisSugeridosTxt}
 
 REGRAS:
 - Cada mensagem: 3 parágrafos no máximo, sob 500 caracteres.
