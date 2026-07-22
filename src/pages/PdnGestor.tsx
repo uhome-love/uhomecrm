@@ -407,6 +407,44 @@ export default function PdnGestor() {
       .sort((a, b) => b.vgv - a.vgv);
   }, [rows, filtroRisco, filtroEquipe, kpiFilter]);
 
+  // ─── Ações em lote (seleção múltipla) ───────────────────────────────────────
+  const selectedRows = useMemo(
+    () => filtered.filter(r => selectedIds.has(r.id)),
+    [filtered, selectedIds],
+  );
+
+  const bulkPublish = async () => {
+    const alvos = selectedRows.filter(r => r.pipelineLeadId && (r.observacoes || "").trim().length > 0);
+    if (alvos.length === 0) { toast.info("Nenhum selecionado tem observação para publicar"); return; }
+    let ok = 0, skip = 0;
+    for (const r of alvos) {
+      const hash = await publicarNoLead(r.pipelineLeadId as string, "observacao", r.observacoes);
+      if (hash) ok++; else skip++;
+    }
+    toast.success(`Publicado em ${ok} lead${ok !== 1 ? "s" : ""}${skip ? ` · ${skip} pulado(s)` : ""}`);
+  };
+
+  const bulkAvisar = async () => {
+    const alvos = selectedRows.filter(r => !r.isManual && r.corretorAuthId && !r.caiu);
+    if (alvos.length === 0) { toast.info("Nenhum selecionado pode ser avisado"); return; }
+    for (const r of alvos) {
+      const etapa = PDN_GRUPOS.find(g => g.key === r.grupo)?.label || "";
+      avisarCorretor(r, `Atualize o pipeline de ${r.nome} para "${etapa}".`);
+    }
+    toast.success(`${alvos.length} corretor(es) avisados`);
+  };
+
+  const bulkQueda = async (motivo: string) => {
+    for (const r of selectedRows) {
+      if (!r.caiu) marcarQueda(r, motivo);
+    }
+    toast.success(`${selectedRows.length} negócio(s) marcados como caiu`);
+    setSelectedIds(new Set());
+  };
+
+
+
+
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
