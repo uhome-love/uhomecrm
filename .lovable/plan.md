@@ -1,124 +1,76 @@
+# Plano: Hub de Materiais Completo + HOMI Inteligente
 
-# Fase 4 — Ingestão IA dos Materiais
+## Entendimento atual
 
-Transformar cada material enviado (PDF, imagem, vídeo, link) em conteúdo pesquisável com tags automáticas + busca semântica. Base para o HOMI usar materiais nas respostas depois.
+O Hub de Materiais já tem base sólida:
+- Cards por empreendimento com upload nativo (foto, vídeo, PDF, link externo).
+- Ingestão IA automática: gera resumo, tags e embeddings semânticos.
+- Busca semântica na página `/materiais`.
+- `homi-assistant` (no drawer do lead) já consulta `materiais_links` e sugere materiais.
+- Analytics de shares gerados por corretores.
+- Signed URLs para leitura segura de arquivos.
+
+O dono do produto decidiu **não prosseguir com link comercial agora** — focar no hub interno, acesso fácil do corretor e no HOMI cada vez mais inteligente sobre os materiais.
 
 ## Objetivo
 
-Quando o gestor sobe um material, a IA lê o arquivo, gera:
-- **Resumo curto** (1-2 frases)
-- **Tags** (ex: `["fachada", "3 dorm", "piscina"]`)
-- **Chunks + embeddings** (vetor 3072) — para busca semântica
+Transformar o Hub de Materiais em uma ferramenta completa para o corretor:
+1. Acessar e consumir materiais rapidamente (baixar, copiar, enviar).
+2. Visualizar previews (imagem, vídeo, PDF) sem sair do CRM.
+3. Ter o HOMI usando esses materiais em todos os pontos de contato (lead, chat, follow-up).
+4. Permitir que corretor salve favoritos e veja histórico recente.
 
-O corretor então pesquisa "planta 3 quartos com suíte" e recebe materiais relevantes de qualquer empreendimento.
+## Fases
 
-## Escopo desta fase
+### Fase 1 — Ações rápidas por material (corretor)
+Adicionar no `MaterialCard` ações diretas para cada link:
+- **Abrir** (já existe).
+- **Baixar** arquivo para enviar no WhatsApp manualmente.
+- **Copiar link** do material (URL assinada temporária).
+- **Compartilhar no WhatsApp** (um único material, não landing page).
 
-Ingestão + busca. **Não** inclui HOMI usar materiais no WhatsApp automaticamente (fase seguinte).
+Tecnica: estender `materiais-signed-read` para aceitar `download=true` (Content-Disposition) e usar o mime_type do arquivo para nome do download.
 
-## Backend
+### Fase 2 — Preview visual de materiais
+Criar um visualizador leve `MaterialPreviewDialog`:
+- Imagem: exibe com zoom.
+- Vídeo: player nativo.
+- PDF: iframe com signed URL.
+- Link externo: abre em nova aba.
 
-### 1. Migração
+No card, mostrar thumbnail gerada automaticamente quando disponível (pós ingestão) ou ícone por categoria.
 
-- Enable `vector` extension.
-- Nova tabela `public.materiais_chunks`:
-  - `material_id` (FK → `materiais_links.id`, cascade)
-  - `chunk_idx` int
-  - `content` text
-  - `embedding` vector(3072)
-  - GRANT + RLS (leitura authenticated; escrita service_role via edge fn)
-  - Index HNSW `halfvec_cosine_ops`
-- Adicionar em `materiais_links`:
-  - `resumo_ia` text
-  - `tags` text[] (default '{}')
-  - `ingest_status` text (`pending` | `processing` | `done` | `error`)
-  - `ingest_error` text
-  - `ingested_at` timestamptz
-- Função `match_materiais(query_embedding, match_count, only_ativos)` retornando `material_id, similarity, content`.
+### Fase 3 — HOMI em todos os assistants
+Hoje só `homi-assistant` usa `_shared/materiais-context.ts`. Estender para:
+- `homi-chat` (chat livre do corretor): injetar bloco de materiais relevantes no system prompt e permitir sugerir material.
+- `homi-copilot` (modo copiloto com ferramentas): adicionar ferramenta `sugerir_material` que busca materiais por contexto e retorna cartão na UI.
+- `homi-follow-up-message` (mensagens de follow-up): quando `lead_id` for informado, buscar materiais semânticos do empreendimento e mencionar o material certo na mensagem (sem depender de seleção manual).
 
-### 2. Edge function `materiais-ingest`
+### Fase 4 — Favoritos e Recentes do corretor
+Criar tabela `materiais_favoritos` (corretor_id, material_id, created_at) e `materiais_recentes` (view log leve).
 
-Input: `{ material_id }`. Passos:
-1. Busca material + storage_path.
-2. Marca `ingest_status='processing'`.
-3. Baixa arquivo (signed URL 5min).
-4. Extrai texto conforme MIME:
-   - **PDF**: envia inline base64 pro Gemini com prompt "extraia texto integral + descreva imagens".
-   - **image/***: Gemini vision → descrição rica (cômodos visíveis, estilo, contexto).
-   - **video/***: usa apenas título/descrição (transcript fica pra fase futura).
-   - **link externo**: usa título + descrição do link.
-5. Gera resumo + tags via `google/gemini-3.6-flash` (tool call estruturado).
-6. Chunks (500-1500 chars) → embeddings via `google/gemini-embedding-001` (batch ≤100).
-7. Insert em `materiais_chunks`, atualiza `materiais_links` (resumo/tags/status=done).
-8. Idempotente: deleta chunks antigos antes.
+No Hub:
+- Aba "Favoritos" com materiais salvos.
+- Aba "Recentes" com últimos materiais abertos.
+- Ícone de estrela no card para salvar/remover favorito.
 
-### 3. Edge function `materiais-search`
+### Fase 5 — Integração no contexto do lead
+No drawer do lead e no painel de WhatsApp, adicionar atalho "Materiais do empreendimento" que abre mini buscador semântico. Quando o corretor clicar, lista os 5 materiais mais relevantes do empreendimento do lead com ações de envio rápido.
 
-Input: `{ query, limit? }` (auth). Retorna materiais rankeados:
-- Embeda query, chama `match_materiais`, agrupa por `material_id` (max similarity), traz metadata + empreendimento.
-- Cache in-memory por query hash (5min) opcional.
+## O que não está no plano (adiado)
+- Landing page pública no site uhome.com.br.
+- Link comercial compartilhável com cliente.
+- Analytics de shares (já existe, mantido como está).
 
-### 4. Trigger de auto-ingest
+## Critério de pronto
+- Corretor consegue abrir, baixar e enviar qualquer material em ≤ 2 cliques.
+- HOMI cita/sugere materiais reais em pelo menos 3 assistants.
+- Preview funciona para imagem, vídeo e PDF sem erro de MIME.
+- Favoritos persistem por corretor e aparecem em aba separada.
 
-Após insert em `materiais_links` com `storage_path` OU `url`, chama `materiais-ingest` via `pg_net` (fire-and-forget).
+## Riscos / Decisões pendentes
+- `homi-chat` usa RAG da base antiga (`buscar_conhecimento` + OpenAI). Pode ser mantido como fallback ou substituído gradualmente pela busca semântica de materiais.
+- Thumbnails: devemos gerar thumb no upload ou apenas depender de ícone por categoria? Sugestão: começar com ícone + preview, thumb como melhoria futura.
 
-## Frontend
-
-### 1. `MaterialCard.tsx`
-- Badge de status ao lado do título: `⏳ Processando`, `✓ IA pronta` (só pra gestor).
-- Chips de tags abaixo do título (max 3 visíveis, "+N" hover).
-- Botão "Reprocessar IA" no menu (canEdit).
-
-### 2. `MateriaisPage.tsx`
-- Barra de busca no topo: "Buscar material por descrição, tag ou conteúdo…"
-- Se query preenchida: substitui grid de empreendimentos por lista rankeada de materiais (score visível como % pequeno).
-- Sem query: comportamento atual.
-
-### 3. `GerarLinkDialog.tsx`
-- Reusa mesma busca semântica dentro do dialog para "Sugerir materiais para este lead" (aparece se lead selecionado tiver observações/perfil).
-
-## Diagrama
-
-```text
-Upload arquivo
-     │
-     ▼
-materiais_links (INSERT) ──trigger──► materiais-ingest (edge)
-                                          │
-                                          ├─► Gemini vision/PDF → texto
-                                          ├─► Gemini flash → resumo + tags
-                                          └─► Gemini embedding-001 → vectors
-                                                    │
-                                                    ▼
-                                          materiais_chunks (INSERT)
-                                          materiais_links UPDATE (resumo, tags, done)
-
-Corretor busca "planta 3 quartos" ──► materiais-search ──► ranking similaridade
-```
-
-## Detalhes técnicos
-
-- Provider: **Lovable AI Gateway**, sem secret novo (usa `LOVABLE_API_KEY`).
-- Modelos: `google/gemini-3.6-flash` (extração+tags), `google/gemini-embedding-001` (vetores 3072).
-- Chunk: 1000 chars, overlap 150.
-- PDFs > 50MB: pula extração de texto, usa só título/descrição pra tags (evita timeout).
-- Vídeos: só metadata nesta fase.
-- Erros ficam em `ingest_error` e visíveis com badge vermelho pro gestor.
-
-## Fora de escopo
-
-- Transcrição de vídeo (Gemini multimodal video seria caro; adiar).
-- HOMI enviar materiais no WhatsApp (próxima fase).
-- Re-ingest automático quando `titulo` muda (só manual).
-
-## Ordem de implementação
-
-1. Migração (tabela chunks + colunas + função match + trigger).
-2. Edge fn `materiais-ingest`.
-3. Edge fn `materiais-search`.
-4. UI: tags + status no card + barra de busca.
-5. Validação ao vivo: subir 1 PDF, 1 foto, verificar tags e busca semântica.
-
----
-
-Confirma que posso implementar tudo assim? Ou quer ajustar algo (ex: incluir vídeo, mudar modelo, escopo menor)?
+## Próxima fase a executar
+Fase 1 — Ações rápidas por material (corretor).

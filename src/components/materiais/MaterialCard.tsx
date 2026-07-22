@@ -9,7 +9,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, ExternalLink, MoreVertical, Pencil, Plus, RefreshCw, Share2, Trash2, Upload } from "lucide-react";
+import { Building2, ExternalLink, MoreVertical, Pencil, Plus, RefreshCw, Share2, Trash2, Upload, Download, Copy, MessageCircle } from "lucide-react";
 import type { MaterialEmpreendimento, MaterialLink } from "@/hooks/useMateriais";
 import { getCategoriaInfo } from "./CategoriaIcon";
 import { LinkFormDialog } from "./LinkFormDialog";
@@ -36,22 +36,58 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   });
   const [linkToDelete, setLinkToDelete] = useState<MaterialLink | null>(null);
 
-  const openLink = async (link: MaterialLink) => {
-    if (link.storage_path) {
-      try {
-        const { data, error } = await supabase.functions.invoke("materiais-signed-read", {
-          body: { storage_path: link.storage_path },
-        });
-        if (error) throw error;
-        const url = (data as any)?.signed_url;
-        if (!url) throw new Error("Sem URL");
-        window.open(url, "_blank", "noopener,noreferrer");
-      } catch (e: any) {
-        toast({ title: "Erro ao abrir", description: e.message, variant: "destructive" });
-      }
-    } else if (link.url) {
-      window.open(link.url, "_blank", "noopener,noreferrer");
+  const getSignedUrl = async (link: MaterialLink, download = false): Promise<string | null> => {
+    if (!link.storage_path) return link.url || null;
+    try {
+      const { data, error } = await supabase.functions.invoke("materiais-signed-read", {
+        body: { storage_path: link.storage_path, material_id: link.id, download, filename: link.titulo },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url || (data as any)?.signed_url;
+      if (!url) throw new Error("Sem URL");
+      return url;
+    } catch (e: any) {
+      toast({ title: "Erro ao obter link", description: e.message, variant: "destructive" });
+      return null;
     }
+  };
+
+  const openLink = async (link: MaterialLink) => {
+    const url = await getSignedUrl(link, false);
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadLink = async (link: MaterialLink) => {
+    if (!link.storage_path) {
+      // link externo — apenas abre
+      if (link.url) window.open(link.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const url = await getSignedUrl(link, true);
+    if (!url) return;
+    // Força navegação para disparar download com Content-Disposition
+    const a = document.createElement("a");
+    a.href = url;
+    a.rel = "noopener noreferrer";
+    a.click();
+  };
+
+  const copyLink = async (link: MaterialLink) => {
+    const url = await getSignedUrl(link, false);
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link copiado", description: link.storage_path ? "Válido por 10 minutos." : undefined });
+    } catch {
+      toast({ title: "Não foi possível copiar", variant: "destructive" });
+    }
+  };
+
+  const shareWhatsapp = async (link: MaterialLink) => {
+    const url = await getSignedUrl(link, false);
+    if (!url) return;
+    const text = `${link.titulo}\n\n${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   };
 
   const reprocessIngest = async (materialId: string) => {
@@ -168,37 +204,69 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                               <span className="ml-auto text-[10px] text-muted-foreground uppercase">arquivo</span>
                             )}
                           </button>
-                          {canEdit && (
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                              {link.storage_path && (link.ingest_status === "error" || link.ingest_status === "done") && (
+                          <div className="flex items-center gap-0.5">
+                            {/* Ações rápidas — visíveis para todos */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
+                              title="Copiar link"
+                              onClick={() => copyLink(link)}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                            {link.storage_path && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
+                                title="Baixar"
+                                onClick={() => downloadLink(link)}
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-green-600 opacity-60 group-hover:opacity-100 transition-opacity"
+                              title="Enviar no WhatsApp"
+                              onClick={() => shareWhatsapp(link)}
+                            >
+                              <MessageCircle className="h-3.5 w-3.5" />
+                            </Button>
+                            {canEdit && (
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 border-l border-border/60 ml-1 pl-1">
+                                {link.storage_path && (link.ingest_status === "error" || link.ingest_status === "done") && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    title="Reprocessar IA"
+                                    onClick={() => reprocessIngest(link.id)}
+                                  >
+                                    <RefreshCw className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7"
-                                  title="Reprocessar IA"
-                                  onClick={() => reprocessIngest(link.id)}
+                                  onClick={() => setLinkDialog({ open: true, link })}
                                 >
-                                  <RefreshCw className="h-3.5 w-3.5" />
+                                  <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => setLinkDialog({ open: true, link })}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-destructive hover:text-destructive"
-                                onClick={() => setLinkToDelete(link)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => setLinkToDelete(link)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         {(link.tags?.length ?? 0) > 0 && (
                           <div className="flex flex-wrap gap-1 pl-6">
