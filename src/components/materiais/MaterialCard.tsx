@@ -44,6 +44,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
     open: false, link: null,
   });
   const [linkToDelete, setLinkToDelete] = useState<MaterialLink | null>(null);
+  const [previewLink, setPreviewLink] = useState<MaterialLink | null>(null);
 
   const getSignedUrl = async (link: MaterialLink, download = false): Promise<string | null> => {
     if (!link.storage_path) return link.url || null;
