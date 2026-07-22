@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
+import { PdnToolbar } from "@/components/pdn/PdnToolbar";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
 import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
@@ -212,6 +213,7 @@ export default function PdnGestor() {
   const monthOptions = useMemo(buildMonthOptions, []);
   const [mes, setMes] = useState(monthOptions[0].value);
   const [filtroRisco, setFiltroRisco] = useState(false);
+  const [filtroNovos, setFiltroNovos] = useState(false);
   const [filtroCorretor, setFiltroCorretor] = useState<string>("todos");
   const [filtroEquipe, setFiltroEquipe] = useState<string>("todas");
   const [sortKey, setSortKey] = useState<SortKey>("data");
@@ -264,7 +266,7 @@ export default function PdnGestor() {
 
   // Seleção múltipla — invalida ao trocar mês/filtro (evita ação em set inconsistente).
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  useEffect(() => { setSelectedIds(new Set()); }, [mes, filtroRisco, filtroCorretor, filtroEquipe, kpiFilter]);
+  useEffect(() => { setSelectedIds(new Set()); }, [mes, filtroRisco, filtroNovos, filtroCorretor, filtroEquipe, kpiFilter]);
   const toggleSelected = (id: string) => setSelectedIds(prev => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -327,6 +329,7 @@ export default function PdnGestor() {
   const filtered = useMemo(() => {
     let list = rows.filter(r => {
       if (filtroRisco && !r.emRisco) return false;
+      if (filtroNovos && !r.novoDesdeOntem) return false;
       if (filtroEquipe !== "todas" && r.equipe !== filtroEquipe) return false;
       if (filtroCorretor !== "todos" && r.corretor !== filtroCorretor) return false;
       if (kpiFilter === "risco" && !r.emRisco) return false;
@@ -346,7 +349,7 @@ export default function PdnGestor() {
       return av > bv ? dir : -dir;
     });
     return list;
-  }, [rows, filtroRisco, filtroEquipe, filtroCorretor, kpiFilter, sortKey, sortDir]);
+  }, [rows, filtroRisco, filtroNovos, filtroEquipe, filtroCorretor, kpiFilter, sortKey, sortDir]);
 
   // Grupos visíveis conforme filtro de KPI
   const gruposVisiveis = useMemo<PdnGrupo[]>(() => {
@@ -493,39 +496,31 @@ export default function PdnGestor() {
         <SummaryCard label="Em risco" value={String(resumo.emRisco)} sub="parados +7d" accent="text-amber-500" icon={<AlertTriangle className="h-4 w-4" />} active={kpiFilter === "risco"} onClick={() => toggleKpi("risco")} />
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant={filtroRisco ? "default" : "outline"} size="sm" onClick={() => setFiltroRisco(v => !v)}>
-          <AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Em risco
-        </Button>
-        {showEquipeFilter && (
-          <Select value={filtroEquipe} onValueChange={(v) => { setFiltroEquipe(v); setFiltroCorretor("todos"); }}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Equipe" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas as equipes</SelectItem>
-              {equipes.map(e => <SelectItem key={e} value={e}>Equipe {e}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
-        <Select value={filtroCorretor} onValueChange={setFiltroCorretor}>
-          <SelectTrigger className="w-[190px]"><SelectValue placeholder="Corretor" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os corretores</SelectItem>
-            {corretores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        {kpiFilter && (
-          <Button variant="ghost" size="sm" onClick={() => setKpiFilter(null)}>Limpar recorte</Button>
-        )}
-        {hiddenRows.length > 0 && (
-          <Button variant={showOcultos ? "default" : "outline"} size="sm" onClick={() => setShowOcultos(v => !v)}>
-            {showOcultos ? "Ocultar removidos" : `Mostrar removidos (${hiddenRows.length})`}
-          </Button>
-        )}
-        {view === "planilha" && !isMobile && colsCustomized && (
-          <Button variant="ghost" size="sm" onClick={resetColWidths}>Redefinir larguras</Button>
-        )}
-      </div>
+      {/* Toolbar unificada — mesmos filtros para Planilha e Kanban */}
+      <PdnToolbar
+        filters={{ soRisco: filtroRisco, soNovos: filtroNovos, equipe: filtroEquipe, corretor: filtroCorretor }}
+        setFilters={(patch) => {
+          if (patch.soRisco !== undefined) setFiltroRisco(patch.soRisco);
+          if (patch.soNovos !== undefined) setFiltroNovos(patch.soNovos);
+          if (patch.equipe !== undefined) { setFiltroEquipe(patch.equipe); setFiltroCorretor("todos"); }
+          if (patch.corretor !== undefined) setFiltroCorretor(patch.corretor);
+        }}
+        showEquipeFilter={showEquipeFilter}
+        equipes={equipes}
+        corretores={corretores}
+        hits={filtered.length}
+        vgvHits={filtered.reduce((s, r) => s + r.vgv, 0)}
+        total={rows.length}
+        kpiFilter={kpiFilter}
+        onClearKpi={() => setKpiFilter(null)}
+        hiddenCount={hiddenRows.length}
+        showOcultos={showOcultos}
+        onToggleOcultos={() => setShowOcultos(v => !v)}
+        view={view}
+        showResetLarguras={!isMobile && colsCustomized}
+        onResetLarguras={resetColWidths}
+      />
+
 
       {/* Negócios removidos da planilha (overlay) — restauráveis, sem afetar o pipeline */}
       {showOcultos && hiddenRows.length > 0 && (

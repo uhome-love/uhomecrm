@@ -7,7 +7,6 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PdnLeadDrawer } from "./drawer/PdnLeadDrawer";
 import { PdnCard } from "./kanban/PdnCard";
-import { KanbanToolbar, type KanbanFilters } from "./kanban/KanbanToolbar";
 import { BulkActionBar } from "./BulkActionBar";
 import { publicarNoLead } from "./drawer/publish";
 
@@ -42,9 +41,6 @@ export function PdnKanban({
   const [dragOver, setDragOver] = useState<PdnGrupo | null>(null);
   const dragRow = useRef<PdnRow | null>(null);
 
-  // Filtros locais do Kanban (não afetam a planilha).
-  const [filters, setFilters] = useState<KanbanFilters>({ soRisco: false, soNovos: false, corretor: "" });
-
   // Seleção múltipla.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const toggleSelected = (id: string) => setSelectedIds(prev => {
@@ -53,30 +49,10 @@ export function PdnKanban({
     return next;
   });
 
-  // Corretores únicos das linhas atuais.
-  const corretores = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const r of rows) {
-      const id = r.corretorAuthId || `nome:${r.corretor}`;
-      if (id && !map.has(id)) map.set(id, r.corretor || "—");
-    }
-    return Array.from(map, ([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome));
-  }, [rows]);
+  // Rows já vêm filtradas (toolbar unificada no PdnGestor).
+  const filteredRows = rows;
 
-  // Aplica filtros do Kanban.
-  const filteredRows = useMemo(() => {
-    return rows.filter(r => {
-      if (filters.soRisco && !r.emRisco) return false;
-      if (filters.soNovos && !r.novoDesdeOntem) return false;
-      if (filters.corretor) {
-        const id = r.corretorAuthId || `nome:${r.corretor}`;
-        if (id !== filters.corretor) return false;
-      }
-      return true;
-    });
-  }, [rows, filters]);
-
-  // Limpa seleção quando o conjunto filtrado muda (evita ações em set inconsistente).
+  // Limpa seleção quando o conjunto de linhas muda.
   const filteredIds = useMemo(() => new Set(filteredRows.map(r => r.id)), [filteredRows]);
   const effectiveSelected = useMemo(() => {
     const next = new Set<string>();
@@ -151,15 +127,8 @@ export function PdnKanban({
 
   return (
     <>
-      <KanbanToolbar
-        filters={filters}
-        setFilters={(f) => { setFilters(f); setSelectedIds(new Set()); }}
-        corretores={corretores}
-        hits={filteredRows.length}
-        total={rows.length}
-      />
-
       <div className="flex gap-3 overflow-x-auto pb-2">
+
         {PDN_GRUPOS.map(g => {
           const list = byGrupo[g.key] || [];
           const subtotal = list.reduce((s, r) => s + r.vgv, 0);
