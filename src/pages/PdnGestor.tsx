@@ -117,20 +117,36 @@ function EditableCell({
   );
 }
 
+// ─── Guarda: evita que o clique/close de um popover inline (Status/Obs/Empr)
+// vaze para a TableRow e abra o drawer sem querer. Ativa por 400ms após close.
+let __pdnSuppressRowOpenUntil = 0;
+function suppressPdnRowOpen() {
+  __pdnSuppressRowOpenUntil = Date.now() + 400;
+}
+export function isPdnRowOpenSuppressed() {
+  return Date.now() < __pdnSuppressRowOpenUntil;
+}
+
 // ─── Seletor de Status (presets + livre) ──────────────────────────────────────
 function StatusSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState("");
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) suppressPdnRowOpen(); }}>
       <PopoverTrigger asChild>
-        <button className="w-full text-left">
+        <button className="w-full text-left" onClick={(e) => e.stopPropagation()}>
           {value
             ? <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${statusChipClass(value)}`}>{value}</span>
             : <span className="text-sm text-muted-foreground">—</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-56 p-2" align="start">
+      <PopoverContent
+        className="w-56 p-2"
+        align="start"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <div className="space-y-2">
           {STATUS_OPTS.map(g => (
             <div key={g.grupo}>
@@ -139,7 +155,7 @@ function StatusSelector({ value, onChange }: { value: string; onChange: (v: stri
                 {g.items.map(s => (
                   <button
                     key={s}
-                    onClick={() => { onChange(s); setOpen(false); }}
+                    onClick={(e) => { e.stopPropagation(); onChange(s); suppressPdnRowOpen(); setOpen(false); }}
                     className={`rounded-md px-2 py-1 text-xs font-medium transition ${value === s ? "ring-2 ring-primary " : ""}${statusChipClass(s)}`}
                   >
                     {s}
@@ -153,12 +169,12 @@ function StatusSelector({ value, onChange }: { value: string; onChange: (v: stri
               value={custom}
               placeholder="Status personalizado…"
               onChange={(e) => setCustom(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && custom.trim()) { onChange(custom.trim()); setCustom(""); setOpen(false); } }}
+              onKeyDown={(e) => { if (e.key === "Enter" && custom.trim()) { onChange(custom.trim()); setCustom(""); suppressPdnRowOpen(); setOpen(false); } }}
               className="h-8"
             />
           </div>
           {value && (
-            <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => { onChange(""); setOpen(false); }}>
+            <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={(e) => { e.stopPropagation(); onChange(""); suppressPdnRowOpen(); setOpen(false); }}>
               Limpar status
             </Button>
           )}
@@ -181,7 +197,7 @@ function ObsSelector({
   const [local, setLocal] = useState(value ?? "");
   const [publishing, setPublishing] = useState(false);
   useEffect(() => { setLocal(value ?? ""); }, [value]);
-  const commit = () => { if (local !== (value ?? "")) onChange(local); setOpen(false); };
+  const commit = () => { if (local !== (value ?? "")) onChange(local); suppressPdnRowOpen(); setOpen(false); };
   const commitAndPublish = async () => {
     if (!pipelineLeadId) return;
     const clean = local.trim();
@@ -190,17 +206,27 @@ function ObsSelector({
     try {
       if (local !== (value ?? "")) onChange(local);
       await publicarNoLead(pipelineLeadId, "observacao", clean, row);
+      suppressPdnRowOpen();
       setOpen(false);
     } finally { setPublishing(false); }
   };
   return (
     <Popover open={open} onOpenChange={(o) => { if (!o && !publishing) commit(); else if (o) setOpen(true); }}>
       <PopoverTrigger asChild>
-        <button className="line-clamp-4 w-full whitespace-pre-wrap break-words text-left text-sm text-muted-foreground hover:text-foreground">
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className="line-clamp-4 w-full whitespace-pre-wrap break-words text-left text-sm text-muted-foreground hover:text-foreground"
+        >
           {value ? value : <span className="text-muted-foreground/60">—</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-2" align="start">
+      <PopoverContent
+        className="w-96 p-2"
+        align="start"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <Textarea
           autoFocus
           value={local}
@@ -213,9 +239,9 @@ function ObsSelector({
             {pipelineLeadId ? "Publicar também avisa o corretor no histórico do lead." : "Sem lead vinculado — só grava no PDN."}
           </p>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={commit} disabled={publishing}>Salvar</Button>
+            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); commit(); }} disabled={publishing}>Salvar</Button>
             {pipelineLeadId && (
-              <Button size="sm" onClick={commitAndPublish} disabled={publishing || !local.trim()}>
+              <Button size="sm" onClick={(e) => { e.stopPropagation(); commitAndPublish(); }} disabled={publishing || !local.trim()}>
                 {publishing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Megaphone className="mr-1 h-3 w-3" />}
                 Salvar e publicar
               </Button>
@@ -237,15 +263,24 @@ function EditableWrapCell({ value, onCommit, placeholder }: {
   const [open, setOpen] = useState(false);
   const [local, setLocal] = useState(value ?? "");
   useEffect(() => { setLocal(value ?? ""); }, [value]);
-  const commit = () => { if (local !== (value ?? "")) onCommit(local); setOpen(false); };
+  const commit = () => { if (local !== (value ?? "")) onCommit(local); suppressPdnRowOpen(); setOpen(false); };
   return (
     <Popover open={open} onOpenChange={(o) => { if (!o) commit(); else setOpen(true); }}>
       <PopoverTrigger asChild>
-        <button className="w-full whitespace-pre-wrap break-words text-left text-sm hover:text-foreground">
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className="w-full whitespace-pre-wrap break-words text-left text-sm hover:text-foreground"
+        >
           {value ? value : <span className="text-muted-foreground/60">{placeholder || "—"}</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-2" align="start">
+      <PopoverContent
+        className="w-72 p-2"
+        align="start"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <Textarea
           autoFocus
           value={local}
@@ -254,12 +289,13 @@ function EditableWrapCell({ value, onCommit, placeholder }: {
           className="min-h-[70px] resize-y text-sm"
         />
         <div className="mt-2 flex justify-end">
-          <Button size="sm" onClick={commit}>Salvar</Button>
+          <Button size="sm" onClick={(e) => { e.stopPropagation(); commit(); }}>Salvar</Button>
         </div>
       </PopoverContent>
     </Popover>
   );
 }
+
 
 export default function PdnGestor() {
   const monthOptions = useMemo(buildMonthOptions, []);
@@ -792,6 +828,7 @@ function GrupoBloco({
 
   // Abre o drawer se o clique não veio de um campo editável ou ação (marcados com data-no-row-open).
   const handleRowClick = (r: PdnRow, e: React.MouseEvent) => {
+    if (isPdnRowOpenSuppressed()) return;
     if ((e.target as HTMLElement).closest("[data-no-row-open]")) return;
     onOpenRow(r);
   };
