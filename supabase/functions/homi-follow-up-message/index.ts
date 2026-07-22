@@ -129,7 +129,7 @@ CONTEXTO:
 - ${tomInstrucao}
 - Materiais que serão compartilhados:
 ${materiaisTxt}
-${body.share_url ? `- Link da landing: ${body.share_url}` : ''}${leadContext}
+${body.share_url ? `- Link da landing: ${body.share_url}` : ''}${leadContext}${materiaisSugeridosTxt}
 
 REGRAS:
 - Cada mensagem: 3 parágrafos no máximo, sob 500 caracteres.
