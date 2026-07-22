@@ -31,7 +31,8 @@ import {
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
 import { PdnToolbar } from "@/components/pdn/PdnToolbar";
-import { PdnHeader } from "@/components/pdn/PdnHeader";
+import { PdnHeader, type PdnView } from "@/components/pdn/PdnHeader";
+import { PdnMetaMes } from "@/components/pdn/PdnMetaMes";
 import { PdnKpiCards } from "@/components/pdn/PdnKpiCards";
 import { PdnResumoEquipes } from "@/components/pdn/PdnResumoEquipes";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
