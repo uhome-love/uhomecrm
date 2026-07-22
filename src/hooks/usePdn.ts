@@ -698,14 +698,39 @@ export function usePdn(mes: string) {
     await loadEntries();
   }, [user, mes, loadEntries]);
 
-  // ── Marcar / reverter queda ("caiu") — só no overlay ─────────────────────────
+  // ── Marcar / reverter queda ("caiu") — overlay + registro na timeline do lead ─
   const marcarQueda = useCallback(async (row: PdnRow, motivo: string) => {
     await saveOverride(row, { caiu: true, motivoQueda: motivo });
-  }, [saveOverride]);
+    if (row.pipelineLeadId && !row.isManual) {
+      try {
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: row.pipelineLeadId,
+          tipo: "pdn_risco",
+          titulo: "PDN: marcado como caiu",
+          descricao: motivo || "Sem motivo informado",
+          status: "concluida",
+          created_by: user?.id ?? null,
+        });
+      } catch { /* não bloqueia o overlay */ }
+    }
+  }, [saveOverride, user]);
 
   const reativarQueda = useCallback(async (row: PdnRow) => {
     await saveOverride(row, { caiu: false, motivoQueda: "" });
-  }, [saveOverride]);
+    if (row.pipelineLeadId && !row.isManual) {
+      try {
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: row.pipelineLeadId,
+          tipo: "pdn_risco",
+          titulo: "PDN: reativado (reverteu queda)",
+          descricao: "",
+          status: "concluida",
+          created_by: user?.id ?? null,
+        });
+      } catch { /* não bloqueia o overlay */ }
+    }
+  }, [saveOverride, user]);
+
 
   // ── Ocultar / restaurar negócio na planilha (só overlay, nunca no pipeline) ────
   const ocultarRow = useCallback(async (row: PdnRow) => {
