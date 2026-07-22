@@ -26,7 +26,7 @@ import {
   Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
   ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
   ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
-  RefreshCw, Users, Send, Copy, Megaphone, Archive,
+  RefreshCw, Users, Send, Copy, Megaphone, Archive, Undo2,
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
