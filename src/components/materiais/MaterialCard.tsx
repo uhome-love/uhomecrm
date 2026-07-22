@@ -54,6 +54,15 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
     }
   };
 
+  const reprocessIngest = async (materialId: string) => {
+    try {
+      await supabase.functions.invoke("materiais-ingest", { body: { material_id: materialId } });
+      toast({ title: "Reprocessando com IA..." });
+    } catch (e: any) {
+      toast({ title: "Erro ao reprocessar", description: e.message, variant: "destructive" });
+    }
+  };
+
   // Group links by categoria
   const grouped = empreendimento.links.reduce((acc, link) => {
     (acc[link.categoria] ??= []).push(link);
