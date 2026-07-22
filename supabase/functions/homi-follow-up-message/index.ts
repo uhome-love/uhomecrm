@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { searchMateriaisForHomi } from '../_shared/materiais-context.ts';
 
 // Gera 3 variações de mensagem de follow-up personalizadas para um lead,
 // usando contexto do CRM (perfil, histórico WhatsApp, motivo de descarte)
