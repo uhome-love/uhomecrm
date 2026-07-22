@@ -85,6 +85,8 @@ export function GerarLinkDialog({ open, onOpenChange, empreendimento, leadId, le
     setMensagem("");
     setGeneratedUrl(null);
     setCopied(false);
+    setIaMensagens(null);
+    setIaTom("amigavel");
   };
 
   const handleClose = (v: boolean) => {
