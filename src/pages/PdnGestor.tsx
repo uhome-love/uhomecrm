@@ -248,6 +248,9 @@ export default function PdnGestor() {
     setRefreshing(true);
     try { await refreshAll(); } finally { setRefreshing(false); }
   };
+  // Realtime: assina mudanças no pipeline e recarrega o PDN (debounced 800ms).
+  usePdnLive(() => { refreshAll(); });
+
 
   // Visibilidade de colunas (planilha) — persistida por device.
   const COLS_KEY = `pdn:cols:v1:${isMobile ? "mobile" : "desktop"}`;
