@@ -4379,7 +4379,12 @@ export type Database = {
           descricao: string | null
           empreendimento_id: string
           id: string
+          mime_type: string | null
           ordem: number
+          origem: string
+          size_bytes: number | null
+          storage_path: string | null
+          thumb_url: string | null
           titulo: string
           updated_at: string
           url: string
@@ -4391,7 +4396,12 @@ export type Database = {
           descricao?: string | null
           empreendimento_id: string
           id?: string
+          mime_type?: string | null
           ordem?: number
+          origem?: string
+          size_bytes?: number | null
+          storage_path?: string | null
+          thumb_url?: string | null
           titulo: string
           updated_at?: string
           url: string
@@ -4403,7 +4413,12 @@ export type Database = {
           descricao?: string | null
           empreendimento_id?: string
           id?: string
+          mime_type?: string | null
           ordem?: number
+          origem?: string
+          size_bytes?: number | null
+          storage_path?: string | null
+          thumb_url?: string | null
           titulo?: string
           updated_at?: string
           url?: string
