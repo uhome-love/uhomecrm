@@ -79,8 +79,8 @@ export function UploadMaterialDialog({ open, onOpenChange, empreendimentoId }: P
           body: {
             empreendimento_id: empreendimentoId,
             filename: file.name,
-            mime_type: file.type,
-            size_bytes: file.size,
+            mime: file.type,
+            size: file.size,
           },
         }
       );
