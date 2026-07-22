@@ -689,7 +689,18 @@ export default function PdnGestor() {
         onLimparEtapa={limparEtapaOverride}
         onAvisar={avisarCorretor}
       />
+
+      {view === "planilha" && (
+        <BulkActionBar
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onPublish={bulkPublish}
+          onAvisar={bulkAvisar}
+          onQueda={bulkQueda}
+        />
+      )}
     </div>
+
   );
 }
 
