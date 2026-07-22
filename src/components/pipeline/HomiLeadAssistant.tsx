@@ -147,6 +147,7 @@ export default function HomiLeadAssistant({
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [result, setResult] = useState("");
+  const [materiais, setMateriais] = useState<any[]>([]);
   const [customPrompt, setCustomPrompt] = useState("");
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [objecao, setObjecao] = useState("");
