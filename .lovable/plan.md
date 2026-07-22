@@ -1,69 +1,61 @@
-# Fase 4 — Integração Bidirecional PDN ↔ Lead
+# Fase 5 — Toolbar unificada + modularização PDN
 
-Objetivo: fazer o PDN "conversar" com o pipeline em tempo real, sem duplicidade. Hoje o PDN já **lê** do pipeline (`negocios`, `pipeline_leads`, `visitas`) e **grava** overlay em `pdn_entries` + publica observação no lead via idempotência SHA-1. Falta o caminho de volta: eventos do lead aparecerem no PDN e mudanças de status do PDN refletirem no lead sem depender de "Publicar".
+Objetivo: colocar Planilha e Kanban debaixo da MESMA barra de filtros/ações, remover duplicidade (filtros locais do Kanban x filtros da Planilha) e começar a quebrar o `PdnGestor.tsx` (1192 linhas hoje) em blocos coesos.
 
 ## O que muda
 
-### 1. Timeline PDN dentro do Drawer do Lead
-No `PdnLeadDrawer` (aba "Contexto"), mostrar as últimas 5 atividades reais do lead vindas de `pipeline_atividades` + `visita_eventos` (visita marcada / realizada / no-show / feedback) em ordem cronológica. Somente leitura — link "Ver tudo no lead" abre o drawer completo do pipeline.
+### 1. Toolbar única (`PdnToolbar.tsx`)
+Um único componente sticky logo abaixo do header, usado tanto por Planilha quanto por Kanban. Contém:
+- Toggle "Em risco" (já existe global)
+- Filtro Equipe (visível só p/ diretor/admin — mantém regra atual)
+- Filtro Corretor
+- Novo filtro "Novos desde ontem" (hoje só existe no Kanban)
+- Novo filtro "Atualizado hoje" (aproveita `pipeline_leads.updated_at` / `visita_eventos.created_at` <24h) — reutiliza o pulso verde da Fase 4
+- Contador "N negócios · R$ X" à direita
+- Botão "Colunas" (só aparece quando view === planilha)
 
-### 2. Badge "atualizado hoje" no card/linha do PDN
-Card do Kanban e linha da planilha ganham um pulso verde discreto quando o lead teve:
-- mudança de `stage_id` nas últimas 24h, ou
-- nova entrada em `visita_eventos` nas últimas 24h, ou
-- observação publicada pelo gestor nas últimas 24h.
+O `KanbanToolbar.tsx` (Fase 3) some — filtros ficam globais e a seleção de corretor deixa de ser duplicada.
 
-Fonte: `pipeline_leads.updated_at` + `visita_eventos.created_at` + `pdn_entries.observacao_updated_at` (já existe).
+### 2. Estado de filtro elevado
+Move os filtros locais (`filters` do Kanban, `filtroCorretor/Risco/Equipe` da Planilha, `kpiFilter`) para um único hook `usePdnFilters` — persistido em `sessionStorage` por device. Kanban e Planilha consomem o mesmo estado, então trocar de view preserva o que o gestor filtrou.
 
-### 3. "Marcar em risco" agora escreve tag no lead
-Hoje `⚠️ Marcar queda` só grava em `pdn_entries.em_risco=true`. Passa a também:
-- inserir uma `pipeline_atividades` com `tipo='pdn_risco'` e o motivo,
-- setar `pipeline_leads.flag_status='em_risco_pdn'` (flag reversível).
+### 3. Extração de componentes do `PdnGestor.tsx`
+Quebra pontual, sem mudar comportamento:
+- `PdnHeader.tsx` — título + selector de mês + toggle Planilha/Kanban + Atualizar + Exportar
+- `PdnKpiCards.tsx` — os 5 cards de resumo (VGV/Ganhos/Contrato/Forecast/Risco) já clicáveis
+- `PdnResumoEquipes.tsx` — o bloco "Resumo por equipe" (colapsável)
+- `PdnToolbar.tsx` — a barra do item 1
 
-Ao desmarcar risco no PDN, limpar a flag e registrar a reversão.
+Meta: `PdnGestor.tsx` cai de ~1192 para <700 linhas. Nenhum arquivo novo passa de 300.
 
-### 4. "Avisar corretor" real
-Substituir o toast placeholder por um insert em `notifications` (tipo `pdn_aviso`) para o `corretor_id` do lead, com deep-link `/pipeline/leads?leadId={id}`. Batch action idem para múltiplos.
-
-### 5. Refetch automático
-Assinar `postgres_changes` de `pipeline_leads` (filtrado por `id IN (...)` da tela) e `visita_eventos` para invalidar a query do PDN. Debounce 800ms para não flushar em cada tecla.
+### 4. Badge "atualizado hoje" — reaproveitamento
+A Fase 4 já detecta atualização via realtime; o campo `atualizadoHoje` sai do próprio row (deriva de `updated_at` no `usePdn`). Kanban e planilha usam o mesmo campo.
 
 ## Arquivos afetados
 
-- `src/components/pdn/PdnLeadDrawer.tsx` — nova seção "Atividade recente" (aba Contexto).
-- `src/hooks/pdn/usePdnLeadTimeline.ts` — **novo**: consulta `pipeline_atividades` + `visita_eventos` limit 5.
-- `src/components/pdn/kanban/PdnCard.tsx` e `src/pages/PdnGestor.tsx` (linha da planilha) — badge "🟢 hoje".
-- `src/lib/pdnActions.ts` — `marcarRisco()` e `avisarCorretor()` atualizados (novos helpers + escrita em `pipeline_atividades` / `notifications`).
-- `src/hooks/pdn/usePdnLive.ts` — **novo**: canal realtime + invalidate.
-- `src/components/pdn/BulkActionBar.tsx` — usar os helpers novos.
+- `src/pages/PdnGestor.tsx` — enxuga imports, delega para os 4 componentes novos.
+- `src/components/pdn/PdnHeader.tsx` — novo
+- `src/components/pdn/PdnKpiCards.tsx` — novo
+- `src/components/pdn/PdnResumoEquipes.tsx` — novo
+- `src/components/pdn/PdnToolbar.tsx` — novo
+- `src/hooks/pdn/usePdnFilters.ts` — novo (estado compartilhado + persistência)
+- `src/components/pdn/PdnKanban.tsx` — passa a receber filtros por prop; remove `KanbanToolbar`.
+- `src/components/pdn/kanban/KanbanToolbar.tsx` — deletado.
+- `src/hooks/usePdn.ts` — expõe `atualizadoHoje` no `PdnRow`.
 
 ## Backend
 
-Sem novas tabelas. Migração mínima:
+Nenhuma mudança. Já temos `updated_at` e `visita_eventos.created_at`.
 
-```sql
--- índice para acelerar timeline por lead
-create index if not exists idx_pipeline_atividades_lead_created
-  on public.pipeline_atividades (lead_id, created_at desc);
+## Fora de escopo (Fase 6 em diante)
 
-create index if not exists idx_visita_eventos_lead_created
-  on public.visita_eventos (lead_id, created_at desc);
-```
-
-Sem alteração de RLS (leituras já permitidas ao gestor via políticas atuais).
-
-## Fora de escopo (fica pra Fase 5/6)
-
-- Toolbar unificada entre Planilha e Kanban.
-- Modularização do `PdnGestor.tsx` (>800 linhas).
-- Permissões finas (diretoria vs gerente).
+- Permissões finas (diretoria x gerente x CEO) — Fase 7.
+- Nova aba "Meta do mês" no PDN.
 
 ## Validação ponta-a-ponta
 
-1. Abrir PDN → Kanban.
-2. Clicar num card recente → drawer mostra "Atividade recente" com 3-5 linhas reais.
-3. Selecionar 2 cards → "⚠️ Marcar queda" → conferir em `pipeline_atividades` (tipo `pdn_risco`) e `pipeline_leads.flag_status`.
-4. Selecionar 2 cards → "📣 Avisar corretor" → conferir `notifications` inseridas.
-5. Trocar stage do lead no pipeline em outra aba → PDN recarrega sozinho e mostra badge "🟢 hoje".
-
-Confirma que é isso que você quer? Se sim, sigo pro build.
+1. Abrir /pdn → toolbar única aparece; toggles funcionam em ambas views.
+2. Filtrar por Corretor na Planilha → trocar para Kanban → mesmo filtro está aplicado.
+3. Marcar "Novos desde ontem" → 2 views mostram só os mesmos ids.
+4. Recarregar página → filtros persistem (session).
+5. `PdnGestor.tsx` compila e passa `wc -l` <700.
