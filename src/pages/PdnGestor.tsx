@@ -1066,7 +1066,7 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
             </div>
           </div>
         </div>
-        <div className="text-right text-sm font-semibold">{fmtMoney(r.vgv, "short")}</div>
+        <div className="text-right text-sm font-semibold">{r.vgv > 0 ? fmtMoney(r.vgv, "short") : "—"}</div>
       </div>
 
       <div className="flex items-center justify-between gap-2 text-xs">
