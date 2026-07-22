@@ -232,11 +232,11 @@ export default function PdnGestor() {
   const [selectedRow, setSelectedRow] = useState<PdnRow | null>(null);
   // Padrão por dispositivo: mobile→kanban (foco em 1 coluna), desktop→planilha (densidade p/ gestão).
   // Preferência persistida separadamente para cada form factor.
-  const [view, setView] = useState<"planilha" | "kanban">(() => {
+  const [view, setView] = useState<PdnView>(() => {
     try {
       const isMob = typeof window !== "undefined" && window.innerWidth < 768;
       const key = `pdn:view:${isMob ? "mobile" : "desktop"}`;
-      const saved = sessionStorage.getItem(key) as "planilha" | "kanban" | null;
+      const saved = sessionStorage.getItem(key) as PdnView | null;
       return saved ?? (isMob ? "kanban" : "planilha");
     } catch { return "planilha"; }
   });
