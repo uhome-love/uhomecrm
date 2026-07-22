@@ -785,13 +785,15 @@ export function useRoleta() {
     return credenciamentos.filter(c => c.status === "pendente").length;
   }, [credenciamentos]);
 
-  // Leads acumulados (simplified: pipeline_leads without corretor from overnight)
+  // Leads acumulados = SOMENTE fila real de distribuição (pendente_distribuicao sem corretor).
+  // Antes a query contava qualquer lead sem corretor, incluindo descartados históricos (lixo).
   const [leadsAcumulados, setLeadsAcumulados] = useState(0);
   useEffect(() => {
     if (!isAdmin) return;
     supabase.from("pipeline_leads")
       .select("id", { count: "exact", head: true })
       .is("corretor_id", null)
+      .eq("aceite_status", "pendente_distribuicao")
       .then(({ count }) => setLeadsAcumulados(count || 0));
   }, [isAdmin]);
 
