@@ -1,81 +1,69 @@
+# Fase 4 — Integração Bidirecional PDN ↔ Lead
 
-# Fase 3 — Kanban nível SaaS (PDN Gestor)
+Objetivo: fazer o PDN "conversar" com o pipeline em tempo real, sem duplicidade. Hoje o PDN já **lê** do pipeline (`negocios`, `pipeline_leads`, `visitas`) e **grava** overlay em `pdn_entries` + publica observação no lead via idempotência SHA-1. Falta o caminho de volta: eventos do lead aparecerem no PDN e mudanças de status do PDN refletirem no lead sem depender de "Publicar".
 
-Entendimento detalhado antes do build. Só sigo depois do seu OK.
+## O que muda
 
-## Estado atual
-- Kanban funciona (drag-and-drop entre etapas, card com nome/empreendimento/VGV/status/próxima ação/risco).
-- Card só abre drawer no clique. Sem seleção, sem ações rápidas, sem filtro dentro do Kanban.
-- Colunas com altura fixa `calc(100vh - 320px)`, largura 290px, scroll horizontal.
-- Colunas de "Caídos" some quando vazia. Demais sempre aparecem.
+### 1. Timeline PDN dentro do Drawer do Lead
+No `PdnLeadDrawer` (aba "Contexto"), mostrar as últimas 5 atividades reais do lead vindas de `pipeline_atividades` + `visita_eventos` (visita marcada / realizada / no-show / feedback) em ordem cronológica. Somente leitura — link "Ver tudo no lead" abre o drawer completo do pipeline.
 
-## O que muda nesta fase
+### 2. Badge "atualizado hoje" no card/linha do PDN
+Card do Kanban e linha da planilha ganham um pulso verde discreto quando o lead teve:
+- mudança de `stage_id` nas últimas 24h, ou
+- nova entrada em `visita_eventos` nas últimas 24h, ou
+- observação publicada pelo gestor nas últimas 24h.
 
-### 1. Header da coluna com WIP e VGV ponderado
-- Além do total bruto que já existe, mostrar **VGV ponderado** (VGV × probabilidade da fase: Visita 30% / Negociação 50% / Contrato 80% / Ganho 100%). Ajuda o gestor a ler forecast de olho.
-- Contador "N novos" e "N em risco" já existem. Reforço visual: `N novos` vira badge azul discreto, `N em risco` vira badge âmbar.
-- Título do grupo ganha ícone da fase (mesmo do sidebar).
+Fonte: `pipeline_leads.updated_at` + `visita_eventos.created_at` + `pdn_entries.observacao_updated_at` (já existe).
 
-### 2. Ações rápidas no card (hover no desktop, sempre visível no mobile)
-- Botão pequeno no canto do card com 3 ações:
-  - **📢 Publicar observação no lead** (mesmo idempotente da Fase 1/2). Só habilita se `r.observacoes` tem conteúdo.
-  - **⚠️ Marcar como caiu** (abre `QuedaDialog`).
-  - **📣 Avisar corretor** (mensagem padrão "Atualize o pipeline de {nome} para {etapa}").
-- Sem sair do Kanban, sem abrir drawer. Zero mudança em `usePdn`.
+### 3. "Marcar em risco" agora escreve tag no lead
+Hoje `⚠️ Marcar queda` só grava em `pdn_entries.em_risco=true`. Passa a também:
+- inserir uma `pipeline_atividades` com `tipo='pdn_risco'` e o motivo,
+- setar `pipeline_leads.flag_status='em_risco_pdn'` (flag reversível).
 
-### 3. Filtros dentro do Kanban (mini-toolbar no topo do Kanban)
-- Hoje os filtros ficam no header da página (só afetam a planilha). No Kanban vou adicionar uma toolbar compacta acima das colunas:
-  - Toggle **"Só em risco"** (filtra `r.emRisco === true`).
-  - Toggle **"Só novos desde ontem"** (`r.novoDesdeOntem`).
-  - Select **Corretor** (mesma lista já usada na planilha).
-- Aplicam-se em cima das `rows` que o Kanban recebe. Sem tocar em `PdnGestor`.
+Ao desmarcar risco no PDN, limpar a flag e registrar a reversão.
 
-### 4. Seleção múltipla no Kanban + barra de ação
-- Checkbox pequeno no canto superior esquerdo do card (só aparece no hover ou quando há seleção ativa).
-- Reaproveita **`BulkActionBar`** criado na Fase 2 (mesmas 3 ações: publicar / avisar / caiu).
-- Seleção zerada ao trocar filtros do Kanban.
+### 4. "Avisar corretor" real
+Substituir o toast placeholder por um insert em `notifications` (tipo `pdn_aviso`) para o `corretor_id` do lead, com deep-link `/pipeline/leads?leadId={id}`. Batch action idem para múltiplos.
 
-### 5. Drop nas mesmas regras + feedback
-- Drop entre etapas → `onMudarEtapa` (já existe).
-- Drop na coluna "Caídos" → abre `QuedaDialog` (já existe).
-- Drop saindo de "Caídos" → `onReativar` (já existe).
-- Adiciono **feedback visual mais forte** durante o drag: outline âmbar no card sendo arrastado, coluna alvo com sombra interna, e um pequeno toast neutro após o drop bem-sucedido ("Movido para {etapa}").
-
-### 6. Empty state útil
-- Coluna vazia hoje mostra só "Vazio". Vou trocar por CTA discreto: "Sem negócios nesta etapa" + botão "Adicionar manual" (só se não for "Caídos").
-
-## O que NÃO muda
-- Hook `usePdn.ts`, migrations, RPC. Zero mudança de banco.
-- Regras de queda/reativação (Fase 4 é integração bidirecional).
-- Drawer (Fase 1) e Planilha (Fase 2).
-- RLS / permissões (Fase 7).
+### 5. Refetch automático
+Assinar `postgres_changes` de `pipeline_leads` (filtrado por `id IN (...)` da tela) e `visita_eventos` para invalidar a query do PDN. Debounce 800ms para não flushar em cada tecla.
 
 ## Arquivos afetados
-- `src/components/pdn/PdnKanban.tsx` — cresce, mas fica <300 linhas. Sem quebrar props (assinatura idêntica).
-- `src/components/pdn/BulkActionBar.tsx` — reutilizado, sem mudança.
-- `src/components/pdn/kanban/PdnCard.tsx` — **novo** (~120 linhas), extrai o `PdnCard` que hoje mora dentro de `PdnKanban.tsx` e ganha ações + checkbox.
-- `src/components/pdn/kanban/KanbanToolbar.tsx` — **novo** (~70 linhas), mini-toolbar de filtros.
-- Reutiliza `QuedaDialog` já existente do `PdnGestor.tsx` (via prop callback `onQueda`).
 
-Nenhum arquivo passa de 800 linhas. `PdnGestor.tsx` já está em 1187 e continua assim — Fase 6 (Modularização) resolve isso separadamente.
+- `src/components/pdn/PdnLeadDrawer.tsx` — nova seção "Atividade recente" (aba Contexto).
+- `src/hooks/pdn/usePdnLeadTimeline.ts` — **novo**: consulta `pipeline_atividades` + `visita_eventos` limit 5.
+- `src/components/pdn/kanban/PdnCard.tsx` e `src/pages/PdnGestor.tsx` (linha da planilha) — badge "🟢 hoje".
+- `src/lib/pdnActions.ts` — `marcarRisco()` e `avisarCorretor()` atualizados (novos helpers + escrita em `pipeline_atividades` / `notifications`).
+- `src/hooks/pdn/usePdnLive.ts` — **novo**: canal realtime + invalidate.
+- `src/components/pdn/BulkActionBar.tsx` — usar os helpers novos.
 
-## Riscos e mitigações
-- **Drag conflitando com checkbox** → checkbox absorve `stopPropagation` + `draggable=false`.
-- **Barra de lote sobrepondo colunas em telas pequenas** → mesma barra da Fase 2, já responsiva.
-- **Filtro do Kanban confundindo com filtro global** → toolbar visualmente distinta (fundo `muted/40`, tag "Kanban" no início).
+## Backend
 
-## Validação (ponta a ponta, no preview)
-1. Card com observação → botão publicar aparece → clico → confere em `pipeline_anotacoes` que não duplica.
-2. Card sem observação → botão publicar desabilitado.
-3. Toggle "Só em risco" → só cards com âmbar ficam.
-4. Filtro por corretor → só cards do corretor selecionado.
-5. Selecionar 3 cards de colunas diferentes → barra de lote com 3 → publicar em massa funciona.
-6. Arrastar card de "Visita" pra "Caídos" → abre QuedaDialog.
-7. Arrastar de "Caídos" pra "Contrato" → reativa como Contrato.
-8. Header mostra VGV bruto E ponderado.
-9. Empty state com CTA "Adicionar manual" funciona.
-10. Mobile: ações do card sempre visíveis, drag funciona (long-press nativo).
+Sem novas tabelas. Migração mínima:
 
----
+```sql
+-- índice para acelerar timeline por lead
+create index if not exists idx_pipeline_atividades_lead_created
+  on public.pipeline_atividades (lead_id, created_at desc);
 
-**Confirma que esse é o entendimento correto?** Se sim, sigo para o build. Se quiser tirar/mudar algo (ex: dispensar VGV ponderado, tirar checkbox do Kanban, deixar filtros só na página), me avisa antes.
+create index if not exists idx_visita_eventos_lead_created
+  on public.visita_eventos (lead_id, created_at desc);
+```
+
+Sem alteração de RLS (leituras já permitidas ao gestor via políticas atuais).
+
+## Fora de escopo (fica pra Fase 5/6)
+
+- Toolbar unificada entre Planilha e Kanban.
+- Modularização do `PdnGestor.tsx` (>800 linhas).
+- Permissões finas (diretoria vs gerente).
+
+## Validação ponta-a-ponta
+
+1. Abrir PDN → Kanban.
+2. Clicar num card recente → drawer mostra "Atividade recente" com 3-5 linhas reais.
+3. Selecionar 2 cards → "⚠️ Marcar queda" → conferir em `pipeline_atividades` (tipo `pdn_risco`) e `pipeline_leads.flag_status`.
+4. Selecionar 2 cards → "📣 Avisar corretor" → conferir `notifications` inseridas.
+5. Trocar stage do lead no pipeline em outra aba → PDN recarrega sozinho e mostra badge "🟢 hoje".
+
+Confirma que é isso que você quer? Se sim, sigo pro build.
