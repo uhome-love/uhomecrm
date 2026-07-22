@@ -219,7 +219,7 @@ export function GerarLinkDialog({ open, onOpenChange, empreendimento, leadId, le
               </p>
             </div>
             <div className="flex gap-2">
-              <Button className="flex-1" onClick={handleWhatsapp}>
+              <Button className="flex-1" onClick={() => handleWhatsapp()}>
                 Enviar no WhatsApp
               </Button>
               <Button variant="outline" onClick={() => window.open(generatedUrl, "_blank")}>
