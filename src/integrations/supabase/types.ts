@@ -4406,6 +4406,35 @@ export type Database = {
         }
         Relationships: []
       }
+      materiais_favoritos: {
+        Row: {
+          created_at: string
+          id: string
+          material_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          material_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          material_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_favoritos_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materiais_links: {
         Row: {
           categoria: string
@@ -4479,6 +4508,41 @@ export type Database = {
             columns: ["empreendimento_id"]
             isOneToOne: false
             referencedRelation: "materiais_empreendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiais_recentes: {
+        Row: {
+          acao: string
+          count: number
+          id: string
+          last_at: string
+          material_id: string
+          user_id: string
+        }
+        Insert: {
+          acao?: string
+          count?: number
+          id?: string
+          last_at?: string
+          material_id: string
+          user_id: string
+        }
+        Update: {
+          acao?: string
+          count?: number
+          id?: string
+          last_at?: string
+          material_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_recentes_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_links"
             referencedColumns: ["id"]
           },
         ]
@@ -11624,6 +11688,10 @@ export type Database = {
       }
       reengajamento_resumo_hoje: { Args: never; Returns: Json }
       registrar_faltas_sabado: { Args: { p_data?: string }; Returns: number }
+      registrar_material_recente: {
+        Args: { _acao?: string; _material_id: string }
+        Returns: undefined
+      }
       rejeitar_lead: {
         Args: { p_corretor_id: string; p_lead_id: string; p_motivo?: string }
         Returns: Json
