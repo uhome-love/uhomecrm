@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Share2, Loader2, ExternalLink } from "lucide-react";
+import { Copy, Check, Share2, Loader2, ExternalLink, Sparkles, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getCategoriaInfo } from "./CategoriaIcon";
