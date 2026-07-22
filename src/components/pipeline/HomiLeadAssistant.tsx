@@ -381,6 +381,47 @@ ${histCtx}
 
   const isActionableSection = (title: string) => /💬|🔄|📞|whatsapp|mensagem|script|ligação/i.test(title);
 
+  // Renderer for AI-suggested materials from Hub
+  const MateriaisSugeridosCard = () => {
+    if (!materiais || materiais.length === 0) return null;
+    return (
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary">
+          <BookOpen className="h-3.5 w-3.5" />
+          Materiais sugeridos pelo HOMI
+        </div>
+        <p className="text-[10px] text-muted-foreground leading-relaxed">
+          Estes materiais da base Uhome podem apoiar o atendimento — abra e gere link comercial para enviar ao cliente.
+        </p>
+        <div className="space-y-1.5">
+          {materiais.slice(0, 4).map((m: any) => {
+            const conf = Math.round((m.similarity || 0) * 100);
+            return (
+              <a
+                key={m.id}
+                href="/materiais"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-start gap-2 rounded-lg border border-border/60 bg-background p-2 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+              >
+                <FileText className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-semibold text-foreground truncate">{m.titulo}</div>
+                  <div className="text-[9px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                    {m.empreendimento && <span className="truncate">{m.empreendimento}</span>}
+                    {m.categoria && <span>· {m.categoria}</span>}
+                    <span className="ml-auto text-primary/70">{conf}%</span>
+                  </div>
+                </div>
+                <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary shrink-0 mt-0.5" />
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   // ═══════════════════════════════════════════════
   // DIRECT MODE — Clean, focused on results only
   // ═══════════════════════════════════════════════
