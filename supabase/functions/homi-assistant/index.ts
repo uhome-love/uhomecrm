@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { loadEnterpriseKnowledge, formatForAssistant, createServiceClient } from "../_shared/enterprise-knowledge.ts";
+import { searchMateriaisForHomi, formatMateriaisBlock } from "../_shared/materiais-context.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -849,6 +850,21 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
     // Append full lead context to prompt for v2 contextual responses
     userPrompt += leadCtx;
 
+    // ── HOMI ↔ Materiais: buscar materiais relevantes e injetar no system prompt ──
+    let materiaisSuggestions: any[] = [];
+    try {
+      const searchQuery = [empreendimento, objetivo, mensagem_cliente, situacao]
+        .filter(Boolean).join(" | ");
+      materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
+        limit: 4,
+        empreendimentoNome: empreendimento,
+      });
+      const block = formatMateriaisBlock(materiaisSuggestions);
+      if (block) systemPrompt += block;
+    } catch (e) {
+      console.error("materiais context skipped:", e);
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -875,7 +891,7 @@ Ajude o corretor com a melhor estratégia para esta situação.`;
     const result = await response.json();
     const content = result.choices?.[0]?.message?.content || "Sem resposta.";
 
-    return new Response(JSON.stringify({ content }), {
+    return new Response(JSON.stringify({ content, materiais: materiaisSuggestions }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
