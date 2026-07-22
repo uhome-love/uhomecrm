@@ -87,14 +87,32 @@ export function PdnLeadDrawer({
     onClose();
   };
 
+  const saveAndPublish = async () => {
+    if (!row.pipelineLeadId) { save(); return; }
+    // salva overlay
+    onSave(row, {
+      status, observacoes: obs, proximaAcao: proxAcao, proximaAcaoData: proxData,
+      prioridade: (prioridade as PdnRow["prioridade"]) || "",
+      riscoManual, riscoMotivo,
+      ...(row.isManual ? {} : { empreendimento: empreend, vgv }),
+    });
+    setPublishing("observacao");
+    try {
+      const hash = await publicarNoLead(row.pipelineLeadId, "observacao", obs, row);
+      if (hash) setPublishedHash(prev => ({ ...prev, observacao: hash }));
+    } finally {
+      setPublishing(null);
+      onClose();
+    }
+  };
+
   const handlePublish = async (field: PubField, texto: string) => {
     if (!row.pipelineLeadId) return;
     setPublishing(field);
     try {
-      const hash = await publicarNoLead(row.pipelineLeadId, field, texto);
+      const hash = await publicarNoLead(row.pipelineLeadId, field, texto, row);
       if (hash) {
         setPublishedHash(prev => ({ ...prev, [field]: hash }));
-        // Persiste no overlay para não perder a última edição.
         if (field === "observacao") onSave(row, { observacoes: texto.trim() });
         else onSave(row, { proximaAcao: texto.trim(), proximaAcaoData: proxData });
       }
@@ -102,6 +120,9 @@ export function PdnLeadDrawer({
       setPublishing(null);
     }
   };
+
+  const canPublish = !!row.pipelineLeadId && !!obs.trim();
+  const publishedSame = publishedHash.observacao && obs.trim().length > 0;
 
   return (
     <Sheet open={!!row} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -156,9 +177,17 @@ export function PdnLeadDrawer({
 
         <div className="mt-3 flex items-center justify-end gap-2 border-t pt-3">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={save}>Salvar</Button>
+          <Button variant="outline" onClick={save} disabled={!!publishing}>Salvar</Button>
+          {canPublish && (
+            <Button onClick={saveAndPublish} disabled={!!publishing}>
+              {publishing === "observacao"
+                ? "Publicando…"
+                : publishedSame ? "Salvar e republicar" : "Salvar e publicar"}
+            </Button>
+          )}
         </div>
       </SheetContent>
     </Sheet>
   );
 }
+
