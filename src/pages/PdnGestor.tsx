@@ -610,7 +610,7 @@ export default function PdnGestor() {
         </div>
       )}
 
-      {!loading && (
+      {!loading && view !== "meta" && (
         <PdnResumoEquipes
           equipes={resumoEquipes}
           filtroCorretor={filtroCorretor}
