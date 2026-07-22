@@ -116,6 +116,7 @@ export const PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
   "gestao-whatsapp": lazyRetry(() => import("@/pages/GestaoWhatsAppDashboard")),
   "report-center": lazyRetry(() => import("@/pages/CentralRelatoriosV2")),
   materiais: lazyRetry(() => import("@/pages/MateriaisPage")),
+  "materiais-analytics": lazyRetry(() => import("@/pages/MateriaisAnalytics")),
   integracoes: lazyRetry(() => import("@/pages/IntegracoesPage")),
   intermediacao: lazyRetry(() => import("@/pages/IntermediacaoPage")),
   "leads-estagnados": lazyRetry(() => import("@/pages/LeadsEstagnados")),
