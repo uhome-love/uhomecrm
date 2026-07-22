@@ -9,7 +9,7 @@ import { parseMoney, formatMoneyInput } from "@/lib/fmtMoney";
 export function MoneyInput({
   value,
   onCommit,
-  placeholder = "R$ 0",
+  placeholder = "—",
   className = "",
   variant = "cell",
 }: {
@@ -20,17 +20,18 @@ export function MoneyInput({
   /** "cell" = transparent inline (planilha); "field" = bordered (drawer/form). */
   variant?: "cell" | "field";
 }) {
-  const [local, setLocal] = useState(formatMoneyInput(value));
+  const displayFor = (v: number) => (v > 0 ? formatMoneyInput(v) : "");
+  const [local, setLocal] = useState(displayFor(value));
   const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    if (!focused) setLocal(formatMoneyInput(value));
+    if (!focused) setLocal(displayFor(value));
   }, [value, focused]);
 
   const commit = () => {
     setFocused(false);
     const parsed = parseMoney(local);
-    setLocal(formatMoneyInput(parsed));
+    setLocal(displayFor(parsed));
     if (parsed !== value) onCommit(parsed);
   };
 

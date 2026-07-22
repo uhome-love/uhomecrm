@@ -76,7 +76,17 @@ export function PdnTabAcao({ row, state }: Props) {
         </div>
         <div className="space-y-1">
           <Label>Próxima ação (data)</Label>
-          <Input type="date" value={proxData} onChange={(e) => setProxData(e.target.value)} />
+          <Input
+            type="date"
+            value={proxData}
+            onChange={(e) => setProxData(e.target.value)}
+            lang="pt-BR"
+            placeholder="dd/mm/aaaa"
+            className="[&::-webkit-datetime-edit]:text-foreground"
+          />
+          {!proxData && (
+            <p className="text-[11px] text-muted-foreground">Formato: dd/mm/aaaa</p>
+          )}
         </div>
       </div>
 

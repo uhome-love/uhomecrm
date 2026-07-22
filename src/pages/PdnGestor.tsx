@@ -26,7 +26,7 @@ import {
   Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
   ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
   ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
-  RefreshCw, Users, Send, Copy, Megaphone, Archive,
+  RefreshCw, Users, Send, Copy, Megaphone, Archive, Undo2,
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
@@ -76,6 +76,22 @@ function buildMonthOptions(): { value: string; label: string }[] {
 
 type SortKey = "nome" | "data" | "vgv" | "corretor" | "status";
 type KpiFilter = null | "ganho" | "contrato" | "risco" | "negociacao";
+
+// Regressão de etapa PDN: qual é a etapa anterior de cada grupo (null = não pode regredir)
+const PREV_GRUPO: Record<PdnGrupo, PdnGrupo | null> = {
+  visita_realizada: null,
+  em_negociacao: "visita_realizada",
+  contrato: "em_negociacao",
+  ganho: "contrato",
+  caidos: null,
+};
+const GRUPO_LABEL_UI: Record<PdnGrupo, string> = {
+  visita_realizada: "Visita Realizada",
+  em_negociacao: "Em Negociação",
+  contrato: "Contrato",
+  ganho: "Ganho",
+  caidos: "Caídos",
+};
 
 // ─── Célula editável simples (input com commit no blur) ───────────────────────
 function EditableCell({
@@ -787,9 +803,12 @@ function GrupoBloco({
 
   return (
     <Card className={`overflow-hidden ${isCaidos ? "border-red-500/40" : ""}`}>
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onToggleCollapse}
-        className={`flex w-full items-center justify-between px-4 py-2.5 ${isCaidos ? "bg-red-500/5" : ""}`}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleCollapse(); } }}
+        className={`flex w-full cursor-pointer items-center justify-between px-4 py-2.5 ${isCaidos ? "bg-red-500/5" : ""}`}
         style={{ borderLeft: `3px solid ${cor}` }}
       >
         <div className="flex items-center gap-2">
@@ -816,7 +835,8 @@ function GrupoBloco({
             </span>
           )}
         </div>
-      </button>
+      </div>
+
 
       {!collapsed && (
         isMobile ? (
@@ -974,9 +994,31 @@ function GrupoBloco({
                             <TrendingDown className="h-3.5 w-3.5" />
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title={r.isManual ? "Excluir" : "Remover da planilha (não afeta o corretor)"} onClick={() => onRemove(r)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        {(() => {
+                          const prev = PREV_GRUPO[r.grupo];
+                          if (!r.isManual && !r.caiu && prev) {
+                            return (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-amber-600"
+                                title={`Regredir para ${GRUPO_LABEL_UI[prev]} (avisa o corretor)`}
+                                onClick={() => {
+                                  if (window.confirm(`Regredir ${r.nome} de "${GRUPO_LABEL_UI[r.grupo]}" para "${GRUPO_LABEL_UI[prev]}"?\n\nO corretor será notificado da mudança.`)) {
+                                    onMudarEtapa(r, prev);
+                                  }
+                                }}
+                              >
+                                <Undo2 className="h-3.5 w-3.5" />
+                              </Button>
+                            );
+                          }
+                          return (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title={r.isManual ? "Excluir" : "Remover da planilha (não afeta o corretor)"} onClick={() => onRemove(r)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          );
+                        })()}
                       </div>
                     </TableCell>
 
@@ -1024,7 +1066,7 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
             </div>
           </div>
         </div>
-        <div className="text-right text-sm font-semibold">{fmtMoney(r.vgv, "short")}</div>
+        <div className="text-right text-sm font-semibold">{r.vgv > 0 ? fmtMoney(r.vgv, "short") : "—"}</div>
       </div>
 
       <div className="flex items-center justify-between gap-2 text-xs">
@@ -1055,9 +1097,31 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
             <TrendingDown className="mr-1 h-3 w-3" /> Caiu
           </Button>
         )}
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title={r.isManual ? "Excluir" : "Remover da planilha"} onClick={() => onRemove(r)}>
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        {(() => {
+          const prev = PREV_GRUPO[r.grupo];
+          if (!r.isManual && !r.caiu && prev) {
+            return (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-amber-600"
+                title={`Regredir para ${GRUPO_LABEL_UI[prev]}`}
+                onClick={() => {
+                  if (window.confirm(`Regredir ${r.nome} de "${GRUPO_LABEL_UI[r.grupo]}" para "${GRUPO_LABEL_UI[prev]}"?\n\nO corretor será notificado.`)) {
+                    onMudarEtapa(r, prev);
+                  }
+                }}
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+              </Button>
+            );
+          }
+          return (
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title={r.isManual ? "Excluir" : "Remover da planilha"} onClick={() => onRemove(r)}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          );
+        })()}
       </div>
     </div>
   );

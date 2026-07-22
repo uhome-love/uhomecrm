@@ -87,7 +87,7 @@ export function PdnCard({
         {r.empreendimento !== "—" ? r.empreendimento : "Sem empreendimento"}
       </div>
       <div className="mt-1.5 flex items-center justify-between pl-5">
-        <span className="text-sm font-semibold text-foreground">{fmtMoney(r.vgv, "short")}</span>
+        <span className="text-sm font-semibold text-foreground">{r.vgv > 0 ? fmtMoney(r.vgv, "short") : "—"}</span>
         {r.status && (
           <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">{r.status}</span>
         )}
