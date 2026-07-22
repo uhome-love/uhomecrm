@@ -1041,7 +1041,7 @@ function RowPublishButton({ row }: { row: PdnRow }) {
 }
 
 
-function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow }: {
+function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow, selected, onToggleSelected }: {
   r: PdnRow;
   onSave: (row: PdnRow, patch: Partial<Pick<PdnRow, "status" | "observacoes" | "proximaAcao" | "empreendimento" | "vgv">>) => void;
   onUpdateManual: (overrideId: string, patch: Record<string, any>) => void;
@@ -1051,21 +1051,27 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
   onMudarEtapa: (row: PdnRow, grupo: PdnGrupo) => void;
   onAvisar: (row: PdnRow, mensagem: string) => void;
   onOpenRow: (row: PdnRow) => void;
+  selected: boolean;
+  onToggleSelected: () => void;
 }) {
   return (
-    <div className={`space-y-2 p-3 ${r.emRisco ? "bg-amber-500/5" : ""} ${r.caiu ? "opacity-70" : ""}`}>
+    <div className={`space-y-2 p-3 ${r.emRisco ? "bg-amber-500/5" : ""} ${selected ? "bg-primary/5" : ""} ${r.caiu ? "opacity-70" : ""}`}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <button type="button" onClick={() => onOpenRow(r)} className="flex items-center gap-1.5 text-left font-medium hover:text-primary">
-            {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
-            <span className="truncate underline-offset-2 hover:underline">{r.nome}</span>
-          </button>
-          <div className="text-xs text-muted-foreground">
-            {r.empreendimento !== "—" ? r.empreendimento : "Sem empreendimento"} · {r.data ? formatBRT(r.data, "dd/MM/yy") : "—"}
+        <div className="flex min-w-0 items-start gap-2">
+          <Checkbox className="mt-0.5" checked={selected} onCheckedChange={onToggleSelected} aria-label="Selecionar" />
+          <div className="min-w-0">
+            <button type="button" onClick={() => onOpenRow(r)} className="flex items-center gap-1.5 text-left font-medium hover:text-primary">
+              {r.emRisco && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
+              <span className="truncate underline-offset-2 hover:underline">{r.nome}</span>
+            </button>
+            <div className="text-xs text-muted-foreground">
+              {r.empreendimento !== "—" ? r.empreendimento : "Sem empreendimento"} · {r.data ? formatBRT(r.data, "dd/MM/yy") : "—"}
+            </div>
           </div>
         </div>
         <div className="text-right text-sm font-semibold">{fmtMoney(r.vgv, "short")}</div>
       </div>
+
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className="text-muted-foreground">{r.corretor}{r.equipe !== "—" ? ` · ${r.equipe}` : ""}</span>
         <StatusSelector value={r.status} onChange={(v) => onSave(r, { status: v })} />
