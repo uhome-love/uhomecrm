@@ -37,7 +37,7 @@ export function MoneyInput({
 
   const base =
     variant === "cell"
-      ? "h-8 w-[130px] border-transparent bg-transparent px-2 tabular-nums hover:border-border focus:border-primary"
+      ? "h-8 w-full border-transparent bg-transparent px-2 tabular-nums hover:border-border focus:border-primary"
       : "tabular-nums";
 
   return (
