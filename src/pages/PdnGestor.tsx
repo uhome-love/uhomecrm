@@ -471,7 +471,9 @@ export default function PdnGestor() {
         onExport={exportCSV}
       />
 
-      <PdnKpiCards resumo={resumo} kpiFilter={kpiFilter} onToggle={(k) => k === null ? setKpiFilter(null) : toggleKpi(k)} />
+      {view !== "meta" && (
+        <PdnKpiCards resumo={resumo} kpiFilter={kpiFilter} onToggle={(k) => k === null ? setKpiFilter(null) : toggleKpi(k)} />
+      )}
 
       {/* Toolbar unificada — só faz sentido em Planilha/Kanban (não em Meta) */}
       {view !== "meta" && (
