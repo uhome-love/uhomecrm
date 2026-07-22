@@ -1,65 +1,81 @@
 
-# Fase 2 — Planilha nível SaaS (PDN Gestor)
+# Fase 3 — Kanban nível SaaS (PDN Gestor)
 
-Antes de codar, aqui está o entendimento detalhado da Fase 2 aprovada no plano macro. Só sigo pro build depois do seu OK.
+Entendimento detalhado antes do build. Só sigo depois do seu OK.
 
-## Escopo (o que muda)
+## Estado atual
+- Kanban funciona (drag-and-drop entre etapas, card com nome/empreendimento/VGV/status/próxima ação/risco).
+- Card só abre drawer no clique. Sem seleção, sem ações rápidas, sem filtro dentro do Kanban.
+- Colunas com altura fixa `calc(100vh - 320px)`, largura 290px, scroll horizontal.
+- Colunas de "Caídos" some quando vazia. Demais sempre aparecem.
 
-### 1. Linha inteira clicável → abre `PdnLeadDrawer`
-- Hoje só o nome abre o drawer. Vou expandir: qualquer clique fora dos campos editáveis (célula de status, obs, empreendimento, vgv, select de etapa e botões de ação) abre o drawer daquela linha.
-- Implementação: `onClick` na `TableRow` com guard (`event.target.closest('[data-no-row-open]')` — marco os campos editáveis e ações com esse `data-attribute`). Zero risco de clique acidental em input/select.
-- Cursor `cursor-pointer` sutil na linha; hover leve `bg-muted/30`.
+## O que muda nesta fase
 
-### 2. Ícones de ação por linha (hover)
-- Coluna de ações passa a ser "revelada" no hover da linha (opacidade 0 → 100 em `group-hover`). Em mobile continua sempre visível (não usa hover).
-- Sem alterar comportamento dos botões atuais (Avisar / Queda / Reativar / Remover). Só reorganização visual.
-- Adiciono um novo ícone: **📢 Publicar observação no lead** (usa a mesma função `PublishButton` já existente do drawer, versão compacta ícone-only). Só aparece se `r.observacoes` tem conteúdo e ainda não foi publicado (ou hash mudou).
+### 1. Header da coluna com WIP e VGV ponderado
+- Além do total bruto que já existe, mostrar **VGV ponderado** (VGV × probabilidade da fase: Visita 30% / Negociação 50% / Contrato 80% / Ganho 100%). Ajuda o gestor a ler forecast de olho.
+- Contador "N novos" e "N em risco" já existem. Reforço visual: `N novos` vira badge azul discreto, `N em risco` vira badge âmbar.
+- Título do grupo ganha ícone da fase (mesmo do sidebar).
 
-### 3. Colunas configuráveis
-- Menu "Colunas" na toolbar do bloco (ícone `Settings2` ao lado do `+`).
-- Toggle por coluna: Nome (fixo, sempre on), Data, Empreendimento, VGV, Corretor, Status, Observação.
-- Persistência em `sessionStorage` por device (`pdn:cols:v1:{mobile|desktop}`). Sem tocar em banco.
-- Reset "Restaurar padrão".
+### 2. Ações rápidas no card (hover no desktop, sempre visível no mobile)
+- Botão pequeno no canto do card com 3 ações:
+  - **📢 Publicar observação no lead** (mesmo idempotente da Fase 1/2). Só habilita se `r.observacoes` tem conteúdo.
+  - **⚠️ Marcar como caiu** (abre `QuedaDialog`).
+  - **📣 Avisar corretor** (mensagem padrão "Atualize o pipeline de {nome} para {etapa}").
+- Sem sair do Kanban, sem abrir drawer. Zero mudança em `usePdn`.
 
-### 4. Seleção múltipla + barra de ação em lote
-- Checkbox por linha + checkbox no header (selecionar todos do grupo).
-- Barra flutuante fixa no rodapé quando há seleção: mostra "N selecionados" e ações:
-  - **Publicar observação no lead em massa** (usa o mesmo publish idempotente da Fase 1 — pula linhas sem observação ou já publicadas com mesmo hash).
-  - **Avisar corretor em massa** (reaproveita `avisarCorretor` já existente, mensagem padrão).
-  - **Marcar como caiu em massa** (abre `QuedaDialog` compartilhado com motivo único aplicável a todos).
-- Seleção some ao trocar de filtro/mês (evita ação em set inconsistente).
+### 3. Filtros dentro do Kanban (mini-toolbar no topo do Kanban)
+- Hoje os filtros ficam no header da página (só afetam a planilha). No Kanban vou adicionar uma toolbar compacta acima das colunas:
+  - Toggle **"Só em risco"** (filtra `r.emRisco === true`).
+  - Toggle **"Só novos desde ontem"** (`r.novoDesdeOntem`).
+  - Select **Corretor** (mesma lista já usada na planilha).
+- Aplicam-se em cima das `rows` que o Kanban recebe. Sem tocar em `PdnGestor`.
 
-### 5. Ordenação por header (já existe parcialmente) + densidade + zebra
-- Header sortable já existe (Nome/Data/VGV/Corretor/Status). Mantenho.
-- Densidade compacta: `py-2` nas células (hoje é `py-3`). Zebra sutil (`even:bg-muted/10`).
-- Sem mudança em lógica.
+### 4. Seleção múltipla no Kanban + barra de ação
+- Checkbox pequeno no canto superior esquerdo do card (só aparece no hover ou quando há seleção ativa).
+- Reaproveita **`BulkActionBar`** criado na Fase 2 (mesmas 3 ações: publicar / avisar / caiu).
+- Seleção zerada ao trocar filtros do Kanban.
 
-## O que NÃO muda nesta fase
-- Hook `usePdn.ts` — nenhuma nova RPC, nenhuma migration.
-- Kanban (é Fase 3).
-- Drawer (Fase 1, já feito).
+### 5. Drop nas mesmas regras + feedback
+- Drop entre etapas → `onMudarEtapa` (já existe).
+- Drop na coluna "Caídos" → abre `QuedaDialog` (já existe).
+- Drop saindo de "Caídos" → `onReativar` (já existe).
+- Adiciono **feedback visual mais forte** durante o drag: outline âmbar no card sendo arrastado, coluna alvo com sombra interna, e um pequeno toast neutro após o drop bem-sucedido ("Movido para {etapa}").
+
+### 6. Empty state útil
+- Coluna vazia hoje mostra só "Vazio". Vou trocar por CTA discreto: "Sem negócios nesta etapa" + botão "Adicionar manual" (só se não for "Caídos").
+
+## O que NÃO muda
+- Hook `usePdn.ts`, migrations, RPC. Zero mudança de banco.
+- Regras de queda/reativação (Fase 4 é integração bidirecional).
+- Drawer (Fase 1) e Planilha (Fase 2).
 - RLS / permissões (Fase 7).
-- Nenhum arquivo >800 linhas será refatorado agora (Fase 6).
 
 ## Arquivos afetados
-- `src/pages/PdnGestor.tsx` — adiciona menu de colunas, seleção múltipla, barra de lote, linha clicável, hover reveal.
-- `src/components/pdn/BulkActionBar.tsx` — **novo** (~80 linhas), barra flutuante de seleção.
-- `src/components/pdn/ColumnsMenu.tsx` — **novo** (~60 linhas), popover de configuração de colunas.
-- Reutiliza `PublishButton` existente do drawer para o botão de publicar por linha.
+- `src/components/pdn/PdnKanban.tsx` — cresce, mas fica <300 linhas. Sem quebrar props (assinatura idêntica).
+- `src/components/pdn/BulkActionBar.tsx` — reutilizado, sem mudança.
+- `src/components/pdn/kanban/PdnCard.tsx` — **novo** (~120 linhas), extrai o `PdnCard` que hoje mora dentro de `PdnKanban.tsx` e ganha ações + checkbox.
+- `src/components/pdn/kanban/KanbanToolbar.tsx` — **novo** (~70 linhas), mini-toolbar de filtros.
+- Reutiliza `QuedaDialog` já existente do `PdnGestor.tsx` (via prop callback `onQueda`).
+
+Nenhum arquivo passa de 800 linhas. `PdnGestor.tsx` já está em 1187 e continua assim — Fase 6 (Modularização) resolve isso separadamente.
 
 ## Riscos e mitigações
-- **Clique em input abrindo drawer** → `data-no-row-open` em todos os campos editáveis + ações.
-- **Barra de lote poluindo mobile** → em mobile a barra aparece só quando `selecionados > 0`, versão compacta.
-- **Colunas ocultas em bloco de "Caídos"** → coluna "Observação" vira "Motivo da queda" (já é hoje), respeita o toggle igual.
+- **Drag conflitando com checkbox** → checkbox absorve `stopPropagation` + `draggable=false`.
+- **Barra de lote sobrepondo colunas em telas pequenas** → mesma barra da Fase 2, já responsiva.
+- **Filtro do Kanban confundindo com filtro global** → toolbar visualmente distinta (fundo `muted/40`, tag "Kanban" no início).
 
-## Validação (ponta a ponta, no preview, antes de fechar Fase 2)
-1. Clicar em qualquer parte da linha (fora dos campos) abre o drawer certo.
-2. Clicar em Status/Obs/VGV/Empreendimento NÃO abre o drawer (edita inline).
-3. Ocultar coluna VGV → some do header e do corpo, e persiste em reload.
-4. Selecionar 3 linhas → barra aparece com 3 → publicar em massa → verificar `pipeline_anotacoes` sem duplicar (hash idempotente).
-5. Selecionar 2 linhas → "marcar como caiu" em lote → ambas movem pra "Caídos" com o motivo informado.
-6. Mobile: seleção múltipla + barra compacta funcionam.
+## Validação (ponta a ponta, no preview)
+1. Card com observação → botão publicar aparece → clico → confere em `pipeline_anotacoes` que não duplica.
+2. Card sem observação → botão publicar desabilitado.
+3. Toggle "Só em risco" → só cards com âmbar ficam.
+4. Filtro por corretor → só cards do corretor selecionado.
+5. Selecionar 3 cards de colunas diferentes → barra de lote com 3 → publicar em massa funciona.
+6. Arrastar card de "Visita" pra "Caídos" → abre QuedaDialog.
+7. Arrastar de "Caídos" pra "Contrato" → reativa como Contrato.
+8. Header mostra VGV bruto E ponderado.
+9. Empty state com CTA "Adicionar manual" funciona.
+10. Mobile: ações do card sempre visíveis, drag funciona (long-press nativo).
 
 ---
 
-**Confirma que esse é o entendimento correto?** Se sim, sigo para o build. Se quiser ajustar algo (ex: tirar publicar em massa, mudar quais colunas são configuráveis, etc), me diz antes.
+**Confirma que esse é o entendimento correto?** Se sim, sigo para o build. Se quiser tirar/mudar algo (ex: dispensar VGV ponderado, tirar checkbox do Kanban, deixar filtros só na página), me avisa antes.
