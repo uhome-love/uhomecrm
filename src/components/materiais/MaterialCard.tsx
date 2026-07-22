@@ -36,22 +36,58 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   });
   const [linkToDelete, setLinkToDelete] = useState<MaterialLink | null>(null);
 
-  const openLink = async (link: MaterialLink) => {
-    if (link.storage_path) {
-      try {
-        const { data, error } = await supabase.functions.invoke("materiais-signed-read", {
-          body: { storage_path: link.storage_path },
-        });
-        if (error) throw error;
-        const url = (data as any)?.signed_url;
-        if (!url) throw new Error("Sem URL");
-        window.open(url, "_blank", "noopener,noreferrer");
-      } catch (e: any) {
-        toast({ title: "Erro ao abrir", description: e.message, variant: "destructive" });
-      }
-    } else if (link.url) {
-      window.open(link.url, "_blank", "noopener,noreferrer");
+  const getSignedUrl = async (link: MaterialLink, download = false): Promise<string | null> => {
+    if (!link.storage_path) return link.url || null;
+    try {
+      const { data, error } = await supabase.functions.invoke("materiais-signed-read", {
+        body: { storage_path: link.storage_path, material_id: link.id, download, filename: link.titulo },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url || (data as any)?.signed_url;
+      if (!url) throw new Error("Sem URL");
+      return url;
+    } catch (e: any) {
+      toast({ title: "Erro ao obter link", description: e.message, variant: "destructive" });
+      return null;
     }
+  };
+
+  const openLink = async (link: MaterialLink) => {
+    const url = await getSignedUrl(link, false);
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadLink = async (link: MaterialLink) => {
+    if (!link.storage_path) {
+      // link externo — apenas abre
+      if (link.url) window.open(link.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const url = await getSignedUrl(link, true);
+    if (!url) return;
+    // Força navegação para disparar download com Content-Disposition
+    const a = document.createElement("a");
+    a.href = url;
+    a.rel = "noopener noreferrer";
+    a.click();
+  };
+
+  const copyLink = async (link: MaterialLink) => {
+    const url = await getSignedUrl(link, false);
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link copiado", description: link.storage_path ? "Válido por 10 minutos." : undefined });
+    } catch {
+      toast({ title: "Não foi possível copiar", variant: "destructive" });
+    }
+  };
+
+  const shareWhatsapp = async (link: MaterialLink) => {
+    const url = await getSignedUrl(link, false);
+    if (!url) return;
+    const text = `${link.titulo}\n\n${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   };
 
   const reprocessIngest = async (materialId: string) => {
