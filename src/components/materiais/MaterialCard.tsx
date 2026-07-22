@@ -214,7 +214,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                             className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-foreground hover:bg-muted/60 transition-colors min-w-0 text-left"
                           >
                             <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                            <span className="truncate">{link.titulo}</span>
+                            <span className="flex-1 min-w-0 break-words line-clamp-2 leading-snug">{link.titulo}</span>
                             {link.ingest_status === "processing" && (
                               <span className="text-[10px] text-muted-foreground" title="Processando IA">⏳</span>
                             )}
