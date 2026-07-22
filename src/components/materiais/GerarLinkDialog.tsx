@@ -46,13 +46,17 @@ function slugify(s: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export function GerarLinkDialog({ open, onOpenChange, empreendimento }: Props) {
+export function GerarLinkDialog({ open, onOpenChange, empreendimento, leadId, leadNome }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [titulo, setTitulo] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [iaLoading, setIaLoading] = useState(false);
+  const [iaTom, setIaTom] = useState<Tom>("amigavel");
+  const [iaMensagens, setIaMensagens] = useState<MensagemIA[] | null>(null);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const grouped = useMemo(() => {
     return empreendimento.links.reduce((acc, l) => {
