@@ -26,7 +26,7 @@ import {
   Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
   ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
   ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
-  RefreshCw, Users, Send, Copy, Megaphone,
+  RefreshCw, Users, Send, Copy, Megaphone, Archive,
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
@@ -38,7 +38,9 @@ import { PdnResumoEquipes } from "@/components/pdn/PdnResumoEquipes";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
 import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
+import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
+import { fmtMoney as _fmtMoneyUnused } from "@/lib/fmtMoney";
 import { toast } from "sonner";
 
 // ─── Status: opções fixas (com cores) + livre ─────────────────────────────────
