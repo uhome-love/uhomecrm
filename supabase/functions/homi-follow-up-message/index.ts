@@ -89,9 +89,31 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ── Materiais extras sugeridos por IA (semântico do empreendimento + perfil) ──
+  let materiaisSugeridos: Array<{ titulo: string; empreendimento: string | null; resumo: string }> = [];
+  try {
+    const searchQuery = [body.empreendimento_nome, leadNome, leadContext.slice(0, 400)]
+      .filter(Boolean).join(" | ");
+    const enc = await searchMateriaisForHomi(searchQuery, {
+      limit: 3,
+      empreendimentoNome: body.empreendimento_nome,
+    });
+    materiaisSugeridos = enc.map((m) => ({
+      titulo: m.titulo,
+      empreendimento: m.empreendimento,
+      resumo: (m.resumo_ia || m.snippet || '').slice(0, 200),
+    }));
+  } catch (e) {
+    console.error('[homi-follow-up-message] materiais suggest skipped:', e);
+  }
+
   const materiaisTxt = body.materiais
     .map((m, i) => `${i + 1}. [${m.kind}] ${m.titulo}`)
     .join('\n');
+
+  const materiaisSugeridosTxt = materiaisSugeridos.length
+    ? `\n\nMATERIAIS ADICIONAIS DA BASE (pode mencionar naturalmente se fizerem sentido):\n${materiaisSugeridos.map((m, i) => `${i + 1}. "${m.titulo}"${m.empreendimento ? ` — ${m.empreendimento}` : ''}${m.resumo ? `\n   ${m.resumo}` : ''}`).join('\n')}`
+    : '';
 
   const tomInstrucao = {
     amigavel: 'tom amigável, próximo, sem pressão',
