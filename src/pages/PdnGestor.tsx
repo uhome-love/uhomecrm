@@ -266,7 +266,7 @@ export default function PdnGestor() {
 
   // Seleção múltipla — invalida ao trocar mês/filtro (evita ação em set inconsistente).
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  useEffect(() => { setSelectedIds(new Set()); }, [mes, filtroRisco, filtroCorretor, filtroEquipe, kpiFilter]);
+  useEffect(() => { setSelectedIds(new Set()); }, [mes, filtroRisco, filtroNovos, filtroCorretor, filtroEquipe, kpiFilter]);
   const toggleSelected = (id: string) => setSelectedIds(prev => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
