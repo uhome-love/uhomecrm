@@ -16,9 +16,18 @@ import { LinkFormDialog } from "./LinkFormDialog";
 import { EmpreendimentoFormDialog } from "./EmpreendimentoFormDialog";
 import { GerarLinkDialog } from "./GerarLinkDialog";
 import { UploadMaterialDialog } from "./UploadMaterialDialog";
+import { MaterialPreviewDialog } from "./MaterialPreviewDialog";
 import { useMateriaisMutations } from "@/hooks/useMateriaisMutations";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+
+const PREVIEWABLE = (link: MaterialLink) => {
+  if (!link.storage_path) return false;
+  const m = (link.mime_type || "").toLowerCase();
+  if (m.startsWith("image/") || m.startsWith("video/") || m.startsWith("audio/") || m === "application/pdf") return true;
+  const ext = link.storage_path.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toLowerCase();
+  return !!ext && ["png","jpg","jpeg","webp","gif","avif","mp4","webm","mov","m4v","pdf","mp3","wav","ogg","m4a"].includes(ext);
+};
 
 interface Props {
   empreendimento: MaterialEmpreendimento;
@@ -35,6 +44,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
     open: false, link: null,
   });
   const [linkToDelete, setLinkToDelete] = useState<MaterialLink | null>(null);
+  const [previewLink, setPreviewLink] = useState<MaterialLink | null>(null);
 
   const getSignedUrl = async (link: MaterialLink, download = false): Promise<string | null> => {
     if (!link.storage_path) return link.url || null;
@@ -53,6 +63,10 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   };
 
   const openLink = async (link: MaterialLink) => {
+    if (PREVIEWABLE(link)) {
+      setPreviewLink(link);
+      return;
+    }
     const url = await getSignedUrl(link, false);
     if (url) window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -328,6 +342,12 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
         open={uploadOpen}
         onOpenChange={setUploadOpen}
         empreendimentoId={empreendimento.id}
+      />
+
+      <MaterialPreviewDialog
+        open={!!previewLink}
+        onOpenChange={(o) => !o && setPreviewLink(null)}
+        link={previewLink}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
