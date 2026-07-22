@@ -615,7 +615,13 @@ export default function PdnGestor() {
                 onMudarEtapa={mudarEtapa}
                 onAvisar={avisarCorretor}
                 onOpenRow={setSelectedRow}
+                visibleCols={visibleCols}
+                onChangeCols={setVisibleCols}
+                selectedIds={selectedIds}
+                onToggleSelected={toggleSelected}
+                onGroupSelect={setGroupSelected}
               />
+
             );
           })}
         </div>
