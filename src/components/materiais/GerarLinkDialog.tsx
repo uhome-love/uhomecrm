@@ -18,7 +18,12 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   empreendimento: MaterialEmpreendimento;
+  leadId?: string | null;
+  leadNome?: string | null;
 }
+
+type Tom = "amigavel" | "consultivo" | "urgencia";
+interface MensagemIA { titulo: string; texto: string; }
 
 const SITE_BASE_URL = "https://uhomesales.com";
 
