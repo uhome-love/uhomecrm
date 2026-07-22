@@ -40,7 +40,6 @@ import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
 import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
-import { fmtMoney } from "@/lib/fmtMoney";
 import { toast } from "sonner";
 
 // ─── Status: opções fixas (com cores) + livre ─────────────────────────────────
