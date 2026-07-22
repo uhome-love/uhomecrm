@@ -349,7 +349,7 @@ export default function PdnGestor() {
       return av > bv ? dir : -dir;
     });
     return list;
-  }, [rows, filtroRisco, filtroEquipe, filtroCorretor, kpiFilter, sortKey, sortDir]);
+  }, [rows, filtroRisco, filtroNovos, filtroEquipe, filtroCorretor, kpiFilter, sortKey, sortDir]);
 
   // Grupos visíveis conforme filtro de KPI
   const gruposVisiveis = useMemo<PdnGrupo[]>(() => {
