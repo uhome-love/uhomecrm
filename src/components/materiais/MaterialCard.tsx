@@ -229,6 +229,24 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                             )}
                           </button>
                           <div className="flex items-center gap-0.5">
+                            {/* Favorito */}
+                            {(() => {
+                              const isFav = !!favIds?.has(link.id);
+                              return (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-7 w-7 transition-opacity",
+                                    isFav ? "opacity-100 text-yellow-500" : "opacity-60 group-hover:opacity-100",
+                                  )}
+                                  title={isFav ? "Remover dos favoritos" : "Salvar nos favoritos"}
+                                  onClick={() => toggleFav.mutate({ materialId: link.id, isFav })}
+                                >
+                                  <Star className={cn("h-3.5 w-3.5", isFav && "fill-yellow-500")} />
+                                </Button>
+                              );
+                            })()}
                             {/* Ações rápidas — visíveis para todos */}
                             <Button
                               variant="ghost"
