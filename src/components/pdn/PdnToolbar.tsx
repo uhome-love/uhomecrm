@@ -24,7 +24,7 @@ interface Props {
   hiddenCount: number;
   showOcultos: boolean;
   onToggleOcultos: () => void;
-  view: "planilha" | "kanban" | "meta";
+  view: "planilha" | "kanban" | "meta" | "arquivados";
   showResetLarguras: boolean;
   onResetLarguras: () => void;
 }
