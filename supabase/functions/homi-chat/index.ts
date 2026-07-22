@@ -228,7 +228,7 @@ Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + r
       tomorrow.setDate(tomorrow.getDate() + 1);
       const tomorrowStr = tomorrow.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
-      const copilotSystem = finalSystemPrompt + `
+      const copilotSystem = finalSystemPromptWithMateriais + `
 
 VOCÊ É UM COPILOTO COM FERRAMENTAS. Você PODE executar ações no CRM chamando ferramentas:
 - meu_dia: montar o resumo do dia (AGORA / VISITAS / ESFRIANDO) num único cartão
