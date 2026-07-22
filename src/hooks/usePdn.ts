@@ -699,6 +699,18 @@ export function usePdn(mes: string) {
       });
       if (error) { toast.error("Erro ao salvar"); return; }
     }
+    // Sync VGV / empreendimento para o negócio real (não bloqueia overlay)
+    if (!row.isManual && row.negocioId && (patch.vgv !== undefined || patch.empreendimento !== undefined)) {
+      const vgvChanged = patch.vgv !== undefined && Number(patch.vgv) !== row.vgv;
+      const empChanged = patch.empreendimento !== undefined && (patch.empreendimento || "") !== (row.empreendimento === "—" ? "" : row.empreendimento);
+      if (vgvChanged || empChanged) {
+        syncNegocioVgvFromPdn(
+          row,
+          vgvChanged ? Number(patch.vgv) : null,
+          empChanged ? (patch.empreendimento || null) : null,
+        ).catch(() => undefined);
+      }
+    }
     await loadEntries();
   }, [user, mes, loadEntries]);
 
