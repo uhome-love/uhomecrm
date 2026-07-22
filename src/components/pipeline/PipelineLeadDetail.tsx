@@ -39,6 +39,7 @@ import DrawerLeadHeader from "./drawer/DrawerLeadHeader";
 import DrawerTimeline from "./drawer/DrawerTimeline";
 import DrawerActionGrid from "./drawer/DrawerActionGrid";
 import DrawerEmpreendimento from "./drawer/DrawerEmpreendimento";
+import LeadMateriaisPanel from "./drawer/LeadMateriaisPanel";
 import DrawerAnotarDialog from "./drawer/DrawerAnotarDialog";
 import DrawerProximaAcao, { parseNextActionType } from "./drawer/DrawerProximaAcao";
 import PartnershipDialog from "./PartnershipDialog";
@@ -648,6 +649,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         diasDesdeUltimoContato={daysSinceLastAction}
         onEdit={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
       />
+
+      {/* Materiais relevantes para o lead (Fase 5 — Hub de Materiais) */}
+      <LeadMateriaisPanel
+        leadId={lead.id}
+        empreendimento={lead.empreendimento}
+        observacoes={lead.observacoes}
+        origemDetalhe={lead.origem_detalhe}
+        imovelCodigo={lead.imovel_codigo}
+        telefone={lead.telefone}
+      />
+
+
 
 
       {/* Imóvel de interesse (leads do site) */}
