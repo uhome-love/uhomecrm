@@ -137,36 +137,67 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                   </div>
                   <ul className="space-y-1">
                     {links.map((link) => (
-                      <li key={link.id} className="group flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openLink(link)}
-                          className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-foreground hover:bg-muted/60 transition-colors min-w-0 text-left"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                          <span className="truncate">{link.titulo}</span>
-                          {link.origem === "upload" && (
-                            <span className="ml-auto text-[10px] text-muted-foreground uppercase">arquivo</span>
+                      <li key={link.id} className="group flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openLink(link)}
+                            className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-foreground hover:bg-muted/60 transition-colors min-w-0 text-left"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{link.titulo}</span>
+                            {link.ingest_status === "processing" && (
+                              <span className="text-[10px] text-muted-foreground" title="Processando IA">⏳</span>
+                            )}
+                            {link.ingest_status === "error" && canEdit && (
+                              <span className="text-[10px] text-destructive" title={link.ingest_error ?? "Erro"}>⚠</span>
+                            )}
+                            {link.ingest_status === "done" && (link.tags?.length ?? 0) > 0 && (
+                              <span className="text-[10px] text-primary" title="IA pronta">✨</span>
+                            )}
+                            {link.origem === "upload" && (
+                              <span className="ml-auto text-[10px] text-muted-foreground uppercase">arquivo</span>
+                            )}
+                          </button>
+                          {canEdit && (
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                              {link.storage_path && (link.ingest_status === "error" || link.ingest_status === "done") && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  title="Reprocessar IA"
+                                  onClick={() => reprocessIngest(link.id)}
+                                >
+                                  <RefreshCw className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => setLinkDialog({ open: true, link })}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                onClick={() => setLinkToDelete(link)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           )}
-                        </button>
-                        {canEdit && (
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => setLinkDialog({ open: true, link })}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => setLinkToDelete(link)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                        </div>
+                        {(link.tags?.length ?? 0) > 0 && (
+                          <div className="flex flex-wrap gap-1 pl-6">
+                            {link.tags!.slice(0, 4).map((t) => (
+                              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                                {t}
+                              </span>
+                            ))}
                           </div>
                         )}
                       </li>
