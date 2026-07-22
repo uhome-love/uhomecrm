@@ -3,6 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
+import {
+  syncPipelineStageFromPdn, syncNegocioVgvFromPdn,
+  discardLeadFromPdn, inactivateLeadFromPdn,
+} from "@/lib/pdnSyncEngine";
 
 // ─── Grupos / status do PDN ──────────────────────────────────────────────────
 export type PdnGrupo = "visita_realizada" | "em_negociacao" | "contrato" | "ganho" | "caidos";
@@ -750,7 +754,7 @@ export function usePdn(mes: string) {
     await saveOverride(row, { vgv });
   }, [saveOverride]);
 
-  // ── Mudar etapa no PDN (só overlay, NUNCA no pipeline do corretor) ────────────
+  // ── Mudar etapa no PDN — AGORA sincroniza com o pipeline real ────────────────
   const mudarEtapa = useCallback(async (row: PdnRow, grupo: PdnGrupo) => {
     if (grupo === "caidos") { await saveOverride(row, { caiu: true }); return; }
     if (row.isManual && row.overrideId) {
@@ -759,12 +763,34 @@ export function usePdn(mes: string) {
       await loadEntries();
       return;
     }
-    // Linha do pipeline: grava grupo_override. Se a etapa escolhida == etapa natural, limpa o override.
-    await saveOverride(row, {
-      grupoOverride: grupo === row.grupoOrigem ? null : grupo,
-      caiu: false,
-    });
-  }, [saveOverride, loadEntries]);
+    // Linha do pipeline: escreve NO pipeline real + limpa override (fica alinhado)
+    if (row.pipelineLeadId) {
+      const ok = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null);
+      if (!ok) return;
+      await saveOverride(row, { grupoOverride: null, caiu: false });
+      await Promise.all([loadDeals(), loadEntries()]);
+      return;
+    }
+    // Fallback (sem pipeline): grava overlay
+    await saveOverride(row, { grupoOverride: grupo === row.grupoOrigem ? null : grupo, caiu: false });
+  }, [saveOverride, loadEntries, loadDeals, user?.id]);
+
+  // ── Descartar (reengajável) via PDN → altera lead real ────────────────────────
+  const descartarLead = useCallback(async (row: PdnRow, motivo: string) => {
+    const ok = await discardLeadFromPdn(row, motivo, user?.id ?? null);
+    if (!ok) return;
+    await saveOverride(row, { caiu: true, motivoQueda: motivo || "Descartado via PDN" });
+    await Promise.all([loadDeals(), loadEntries()]);
+  }, [user?.id, saveOverride, loadDeals, loadEntries]);
+
+  // ── Inativar definitivo via PDN → arquiva lead real ───────────────────────────
+  const inativarLead = useCallback(async (row: PdnRow, motivo: string) => {
+    const ok = await inactivateLeadFromPdn(row, motivo);
+    if (!ok) return;
+    await saveOverride(row, { caiu: true, motivoQueda: motivo || "Inativado via PDN", oculto: true });
+    await Promise.all([loadDeals(), loadEntries()]);
+  }, [saveOverride, loadDeals, loadEntries]);
+
 
   const limparEtapaOverride = useCallback(async (row: PdnRow) => {
     await saveOverride(row, { grupoOverride: null });
