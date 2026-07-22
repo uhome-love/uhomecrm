@@ -444,7 +444,7 @@ Responda APENAS com JSON válido, sem markdown, sem explicação:
 
   try {
     const parsed = JSON.parse(cleaned);
-    return jsonResponse(parsed);
+    return jsonResponse({ ...parsed, materiais: materiaisSuggestions });
   } catch {
     console.error("homi-copilot: failed to parse AI response:", cleaned);
     return jsonResponse({
