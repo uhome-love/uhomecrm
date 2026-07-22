@@ -828,6 +828,7 @@ function GrupoBloco({
 
   // Abre o drawer se o clique não veio de um campo editável ou ação (marcados com data-no-row-open).
   const handleRowClick = (r: PdnRow, e: React.MouseEvent) => {
+    if (isPdnRowOpenSuppressed()) return;
     if ((e.target as HTMLElement).closest("[data-no-row-open]")) return;
     onOpenRow(r);
   };
