@@ -216,6 +216,11 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
         onOpenChange={setShareOpen}
         empreendimento={empreendimento}
       />
+      <UploadMaterialDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        empreendimentoId={empreendimento.id}
+      />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
