@@ -1051,10 +1051,9 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
       {r.caiu && r.motivoQueda ? (
         <div className="rounded-md bg-red-500/5 px-2 py-1 text-xs"><span className="font-medium text-red-600 dark:text-red-400">Queda:</span> {r.motivoQueda}</div>
       ) : (
-        <ObsSelector value={r.observacoes} onChange={(v) => onSave(r, { observacoes: v })} />
+        <ObsSelector value={r.observacoes} pipelineLeadId={r.pipelineLeadId} row={r} onChange={(v) => onSave(r, { observacoes: v })} />
       )}
       <div className="flex items-center justify-end gap-1">
-        {!r.isManual && r.corretorAuthId && !r.caiu && <AvisarButton row={r} onAvisar={onAvisar} mobile />}
         {r.caiu ? (
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onReativar(r)}>
             <RotateCcw className="mr-1 h-3 w-3" /> Reativar
@@ -1071,6 +1070,7 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
     </div>
   );
 }
+
 
 function AvisarButton({ row, onAvisar, mobile }: { row: PdnRow; onAvisar: (row: PdnRow, mensagem: string) => void; mobile?: boolean }) {
   const [open, setOpen] = useState(false);
