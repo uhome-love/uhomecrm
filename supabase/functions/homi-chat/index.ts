@@ -348,7 +348,7 @@ REGRAS DO COPILOTO:
     // Non-streaming: parse and return JSON
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content || "";
-    return new Response(JSON.stringify({ content }), {
+    return new Response(JSON.stringify({ content, materiais: materiaisSuggestions }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
