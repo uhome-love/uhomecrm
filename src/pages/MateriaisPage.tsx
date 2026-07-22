@@ -73,9 +73,16 @@ export default function MateriaisPage() {
         icon={<FolderOpen className="h-5 w-5" />}
         actions={
           isGestor && (
-            <Button onClick={() => setNewDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" /> Novo empreendimento
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" asChild>
+                <Link to="/materiais/analytics">
+                  <BarChart3 className="h-4 w-4 mr-2" /> Analytics
+                </Link>
+              </Button>
+              <Button onClick={() => setNewDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" /> Novo empreendimento
+              </Button>
+            </div>
           )
         }
       />
