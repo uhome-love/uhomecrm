@@ -30,10 +30,29 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   const [editEmp, setEditEmp] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [linkDialog, setLinkDialog] = useState<{ open: boolean; link: MaterialLink | null }>({
     open: false, link: null,
   });
   const [linkToDelete, setLinkToDelete] = useState<MaterialLink | null>(null);
+
+  const openLink = async (link: MaterialLink) => {
+    if (link.storage_path) {
+      try {
+        const { data, error } = await supabase.functions.invoke("materiais-signed-read", {
+          body: { storage_path: link.storage_path },
+        });
+        if (error) throw error;
+        const url = (data as any)?.signed_url;
+        if (!url) throw new Error("Sem URL");
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch (e: any) {
+        toast({ title: "Erro ao abrir", description: e.message, variant: "destructive" });
+      }
+    } else if (link.url) {
+      window.open(link.url, "_blank", "noopener,noreferrer");
+    }
+  };
 
   // Group links by categoria
   const grouped = empreendimento.links.reduce((acc, link) => {
