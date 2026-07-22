@@ -40,6 +40,29 @@ Deno.serve(async (req) => {
         return json({ error: 'expired' }, 410);
       }
 
+      // Resolve storage_path -> signed URL (10min) para assets de upload
+      const assets = Array.isArray(share.assets) ? share.assets : [];
+      const BUCKET = 'materiais-uhome';
+      const EXPIRES = 600;
+      for (const a of assets) {
+        const sp = a?.storage_path as string | undefined;
+        if (sp) {
+          const { data: signed } = await service.storage
+            .from(BUCKET)
+            .createSignedUrl(sp, EXPIRES);
+          if (signed?.signedUrl) a.url = signed.signedUrl;
+        }
+        // Thumbs em storage também podem precisar (mesmo bucket)
+        const tp = a?.thumb_storage_path as string | undefined;
+        if (tp) {
+          const { data: signedThumb } = await service.storage
+            .from(BUCKET)
+            .createSignedUrl(tp, EXPIRES);
+          if (signedThumb?.signedUrl) a.thumb = signedThumb.signedUrl;
+        }
+      }
+      share.assets = assets;
+
       let corretor: {
         id: string;
         nome: string | null;
