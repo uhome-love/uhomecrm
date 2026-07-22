@@ -42,6 +42,8 @@ interface Props {
 
 export function MaterialCard({ empreendimento, canEdit }: Props) {
   const { deleteEmpreendimento, deleteLink } = useMateriaisMutations();
+  const { data: favIds } = useMaterialFavoritoIds();
+  const toggleFav = useToggleFavorito();
   const [editEmp, setEditEmp] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
