@@ -198,6 +198,22 @@ Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + r
       ? customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + "\n\nDETALHES:\n" + detailedKnowledge + ragContext
       : systemPrompt;
 
+    // ── HOMI ↔ Materiais: injeta materiais relevantes do Hub ──
+    let materiaisSuggestions: any[] = [];
+    try {
+      if (lastUserMsg) {
+        const searchQuery = [empreendimento, lastUserMsg].filter(Boolean).join(" | ");
+        materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
+          limit: 4,
+          empreendimentoNome: empreendimento,
+        });
+      }
+    } catch (e) {
+      console.error("[homi-chat] materiais context skipped:", e);
+    }
+    const materiaisBlock = formatMateriaisBlock(materiaisSuggestions);
+    const finalSystemPromptWithMateriais = finalSystemPrompt + materiaisBlock;
+
     // ── Copilot mode: function-calling (non-streaming JSON) ──
     if (enableTools) {
       const uid = (_claims.claims as any).sub as string;
