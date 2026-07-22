@@ -610,6 +610,7 @@ ${histCtx}
                 <ReactMarkdown>{result}</ReactMarkdown>
               </div>
             )}
+            <MateriaisSugeridosCard />
             <div className="flex gap-2 pt-1">
               <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={handleCopy}>
                 <Copy className="h-3.5 w-3.5" /> Copiar tudo
