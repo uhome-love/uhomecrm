@@ -968,17 +968,11 @@ function GrupoBloco({
                       <TableCell className="py-2" data-no-row-open>
                         {r.caiu && r.motivoQueda
                           ? <div className="text-xs"><span className="font-medium text-red-600 dark:text-red-400">Queda:</span> {r.motivoQueda}</div>
-                          : <ObsSelector value={r.observacoes} onChange={(v) => onSave(r, { observacoes: v })} />}
+                          : <ObsSelector value={r.observacoes} pipelineLeadId={r.pipelineLeadId} row={r} onChange={(v) => onSave(r, { observacoes: v })} />}
                       </TableCell>
                     )}
                     <TableCell data-no-row-open>
                       <div className="flex items-center justify-end gap-0.5 opacity-70 transition-opacity group-hover:opacity-100">
-                        {canPublish && (
-                          <RowPublishButton row={r} />
-                        )}
-                        {!r.isManual && r.corretorAuthId && !r.caiu && (
-                          <AvisarButton row={r} onAvisar={onAvisar} />
-                        )}
                         {r.caiu ? (
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-emerald-600" title="Reativar" onClick={() => onReativar(r)}>
                             <RotateCcw className="h-3.5 w-3.5" />
@@ -993,6 +987,7 @@ function GrupoBloco({
                         </Button>
                       </div>
                     </TableCell>
+
                   </TableRow>
                   );
                 })}
