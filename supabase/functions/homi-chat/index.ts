@@ -316,7 +316,7 @@ REGRAS DO COPILOTO:
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: finalSystemPrompt },
+          { role: "system", content: finalSystemPromptWithMateriais },
           ...messages,
         ],
         stream: shouldStream,
