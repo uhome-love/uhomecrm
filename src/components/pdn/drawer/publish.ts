@@ -7,6 +7,8 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { notifyBrokerOfPdnPublish } from "@/lib/pdnSyncEngine";
+import type { PdnRow } from "@/hooks/usePdn";
 
 export type PubField = "observacao" | "proxima_acao";
 
@@ -53,7 +55,7 @@ export async function loadPublishedHashes(pipelineLeadId: string): Promise<Recor
  * Publica uma nota `[Gestor · PDN]` no histórico do lead. Retorna o hash publicado
  * (novo ou pré-existente) ou `null` em caso de falha.
  */
-export async function publicarNoLead(pipelineLeadId: string, field: PubField, texto: string): Promise<string | null> {
+export async function publicarNoLead(pipelineLeadId: string, field: PubField, texto: string, row?: PdnRow): Promise<string | null> {
   const clean = texto.trim();
   if (!clean) {
     toast.info("Escreva algo antes de publicar");
@@ -99,6 +101,7 @@ export async function publicarNoLead(pipelineLeadId: string, field: PubField, te
       return null;
     }
     toast.success("Publicado no histórico do lead ✓");
+    if (row) { notifyBrokerOfPdnPublish(row, field).catch(() => undefined); }
     return hash;
   } catch (e) {
     console.error(e);

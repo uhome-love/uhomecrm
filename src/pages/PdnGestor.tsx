@@ -26,7 +26,7 @@ import {
   Download, Plus, Trash2, AlertTriangle, TrendingUp, FileSignature,
   ClipboardList, Loader2, ChevronDown, ChevronRight, ArrowUp, ArrowDown,
   ArrowUpDown, TrendingDown, RotateCcw, Wallet, LayoutGrid, Table as TableIcon,
-  RefreshCw, Users, Send, Copy, Megaphone,
+  RefreshCw, Users, Send, Copy, Megaphone, Archive,
 } from "lucide-react";
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
@@ -38,6 +38,7 @@ import { PdnResumoEquipes } from "@/components/pdn/PdnResumoEquipes";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
 import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
+import { PdnQuedaDialog, type QuedaAction } from "@/components/pdn/PdnQuedaDialog";
 import { publicarNoLead } from "@/components/pdn/drawer/publish";
 import { toast } from "sonner";
 
@@ -247,7 +248,7 @@ export default function PdnGestor() {
   useEffect(() => {
     try { sessionStorage.setItem(`pdn:view:${isMobile ? "mobile" : "desktop"}`, view); } catch { /* ignore */ }
   }, [view, isMobile]);
-  const { rows, hiddenRows, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, mudarEtapa, limparEtapaOverride, avisarCorretor, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
+  const { rows, hiddenRows, resumo, duplicados, loading, refreshAll, saveOverride, marcarQueda, reativarQueda, ocultarRow, restaurarRow, mudarEtapa, limparEtapaOverride, avisarCorretor, descartarLead, inativarLead, addManualRow, updateManualRow, deleteRow } = usePdn(mes);
   const [showOcultos, setShowOcultos] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
@@ -555,6 +556,14 @@ export default function PdnGestor() {
         </div>
       ) : view === "meta" ? (
         <PdnMetaMes mes={mes} rows={rows} />
+      ) : view === "arquivados" ? (
+        <ArquivadosView
+          hiddenRows={hiddenRows}
+          caidosRows={rows.filter(r => r.grupo === "caidos")}
+          onRestaurar={restaurarRow}
+          onReativar={reativarQueda}
+          onOpen={setSelectedRow}
+        />
       ) : view === "kanban" ? (
         <PdnKanban
           rows={filtered}
@@ -618,10 +627,16 @@ export default function PdnGestor() {
         />
       )}
 
-      <QuedaDialog
+      <PdnQuedaDialog
         row={quedaRow}
         onClose={() => setQuedaRow(null)}
-        onConfirm={(motivo) => { if (quedaRow) marcarQueda(quedaRow, motivo); setQuedaRow(null); }}
+        onConfirm={(action: QuedaAction, motivo: string) => {
+          if (!quedaRow) return;
+          if (action === "descartar") descartarLead(quedaRow, motivo);
+          else if (action === "inativar") inativarLead(quedaRow, motivo);
+          else marcarQueda(quedaRow, motivo);
+          setQuedaRow(null);
+        }}
       />
 
       <PdnLeadDrawer
@@ -1085,34 +1100,56 @@ function AvisarButton({ row, onAvisar, mobile }: { row: PdnRow; onAvisar: (row: 
 }
 
 
-function QuedaDialog({ row, onClose, onConfirm }: {
-  row: PdnRow | null;
-  onClose: () => void;
-  onConfirm: (motivo: string) => void;
+function ArquivadosView({
+  hiddenRows, caidosRows, onRestaurar, onReativar, onOpen,
+}: {
+  hiddenRows: PdnRow[];
+  caidosRows: PdnRow[];
+  onRestaurar: (r: PdnRow) => void;
+  onReativar: (r: PdnRow) => void;
+  onOpen: (r: PdnRow) => void;
 }) {
-  const [motivo, setMotivo] = useState("");
-  useEffect(() => { setMotivo(""); }, [row]);
+  const groups = [
+    { title: "Caídos / Descartados / Inativados", rows: caidosRows, action: "reativar" as const },
+    { title: "Removidos da planilha", rows: hiddenRows, action: "restaurar" as const },
+  ];
+  const total = caidosRows.length + hiddenRows.length;
+  if (total === 0) {
+    return (
+      <Card className="border-dashed py-16 text-center text-sm text-muted-foreground">
+        <Archive className="mx-auto mb-2 h-6 w-6 opacity-50" />
+        Nenhum negócio arquivado neste mês.
+      </Card>
+    );
+  }
   return (
-    <Dialog open={!!row} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Marcar negócio como caiu</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          Isso move <span className="font-medium text-foreground">{row?.nome}</span> para a seção "Caídos" apenas no PDN. O pipeline do corretor não é alterado.
-        </p>
-        <Textarea
-          autoFocus
-          value={motivo}
-          placeholder="Motivo da queda (ex.: desistiu, sem crédito, comprou em outro lugar)…"
-          onChange={(e) => setMotivo(e.target.value)}
-          className="min-h-[90px]"
-        />
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button variant="destructive" onClick={() => onConfirm(motivo.trim())}>Confirmar queda</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <div className="space-y-5">
+      {groups.map(g => g.rows.length > 0 && (
+        <Card key={g.title} className="p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <Archive className="h-4 w-4" /> {g.title} <Badge variant="outline">{g.rows.length}</Badge>
+          </div>
+          <div className="space-y-1.5">
+            {g.rows.map(r => (
+              <div key={r.id} className="flex items-center justify-between gap-2 rounded-md border bg-muted/20 px-3 py-2 text-sm">
+                <button className="min-w-0 text-left hover:text-primary" onClick={() => onOpen(r)}>
+                  <span className="font-medium">{r.nome}</span>
+                  <span className="text-muted-foreground"> · {r.empreendimento !== "—" ? r.empreendimento : "sem empreendimento"} · {fmtMoney(r.vgv, "short")} · {r.corretor}</span>
+                  {r.motivoQueda && <div className="text-xs text-red-600 dark:text-red-400">Motivo: {r.motivoQueda}</div>}
+                </button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => g.action === "reativar" ? onReativar(r) : onRestaurar(r)}
+                >
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> {g.action === "reativar" ? "Reativar" : "Restaurar"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ))}
+    </div>
   );
 }
+
