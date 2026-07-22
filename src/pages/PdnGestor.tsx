@@ -152,34 +152,65 @@ function StatusSelector({ value, onChange }: { value: string; onChange: (v: stri
   );
 }
 
-// ─── Observação multilinha (popover com textarea) ─────────────────────────────
-function ObsSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+// ─── Observação multilinha (popover com textarea + salvar/publicar) ───────────
+function ObsSelector({
+  value, onChange, pipelineLeadId, row,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  pipelineLeadId?: string | null;
+  row?: PdnRow;
+}) {
   const [open, setOpen] = useState(false);
   const [local, setLocal] = useState(value ?? "");
+  const [publishing, setPublishing] = useState(false);
   useEffect(() => { setLocal(value ?? ""); }, [value]);
   const commit = () => { if (local !== (value ?? "")) onChange(local); setOpen(false); };
+  const commitAndPublish = async () => {
+    if (!pipelineLeadId) return;
+    const clean = local.trim();
+    if (!clean) { toast.info("Escreva algo antes de publicar"); return; }
+    setPublishing(true);
+    try {
+      if (local !== (value ?? "")) onChange(local);
+      await publicarNoLead(pipelineLeadId, "observacao", clean, row);
+      setOpen(false);
+    } finally { setPublishing(false); }
+  };
   return (
-    <Popover open={open} onOpenChange={(o) => { if (!o) commit(); else setOpen(true); }}>
+    <Popover open={open} onOpenChange={(o) => { if (!o && !publishing) commit(); else if (o) setOpen(true); }}>
       <PopoverTrigger asChild>
         <button className="line-clamp-4 w-full whitespace-pre-wrap break-words text-left text-sm text-muted-foreground hover:text-foreground">
           {value ? value : <span className="text-muted-foreground/60">—</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-2" align="start">
+      <PopoverContent className="w-96 p-2" align="start">
         <Textarea
           autoFocus
           value={local}
-          placeholder="Anotações do gestor (uso interno)…"
+          placeholder="Anotações do gestor…"
           onChange={(e) => setLocal(e.target.value)}
           className="min-h-[120px] resize-y text-sm"
         />
-        <div className="mt-2 flex justify-end">
-          <Button size="sm" onClick={commit}>Salvar</Button>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <p className="text-[11px] text-muted-foreground">
+            {pipelineLeadId ? "Publicar também avisa o corretor no histórico do lead." : "Sem lead vinculado — só grava no PDN."}
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={commit} disabled={publishing}>Salvar</Button>
+            {pipelineLeadId && (
+              <Button size="sm" onClick={commitAndPublish} disabled={publishing || !local.trim()}>
+                {publishing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Megaphone className="mr-1 h-3 w-3" />}
+                Salvar e publicar
+              </Button>
+            )}
+          </div>
         </div>
       </PopoverContent>
     </Popover>
   );
 }
+
 
 // ─── Célula editável com quebra de linha (empreendimento) ─────────────────────
 function EditableWrapCell({ value, onCommit, placeholder }: {
