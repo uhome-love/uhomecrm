@@ -9,7 +9,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, ExternalLink, MoreVertical, Pencil, Plus, RefreshCw, Share2, Trash2, Upload, Download, Copy, MessageCircle } from "lucide-react";
+import { Building2, ExternalLink, MoreVertical, Pencil, Plus, RefreshCw, Share2, Trash2, Upload, Download, Copy, MessageCircle, Star } from "lucide-react";
 import type { MaterialEmpreendimento, MaterialLink } from "@/hooks/useMateriais";
 import { getCategoriaInfo } from "./CategoriaIcon";
 import { LinkFormDialog } from "./LinkFormDialog";
@@ -20,6 +20,12 @@ import { MaterialPreviewDialog } from "./MaterialPreviewDialog";
 import { useMateriaisMutations } from "@/hooks/useMateriaisMutations";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import {
+  useMaterialFavoritoIds,
+  useToggleFavorito,
+  registrarMaterialRecente,
+} from "@/hooks/useMateriaisFavoritos";
+import { cn } from "@/lib/utils";
 
 const PREVIEWABLE = (link: MaterialLink) => {
   if (!link.storage_path) return false;
