@@ -329,6 +329,7 @@ export default function PdnGestor() {
   const filtered = useMemo(() => {
     let list = rows.filter(r => {
       if (filtroRisco && !r.emRisco) return false;
+      if (filtroNovos && !r.novoDesdeOntem) return false;
       if (filtroEquipe !== "todas" && r.equipe !== filtroEquipe) return false;
       if (filtroCorretor !== "todos" && r.corretor !== filtroCorretor) return false;
       if (kpiFilter === "risco" && !r.emRisco) return false;
