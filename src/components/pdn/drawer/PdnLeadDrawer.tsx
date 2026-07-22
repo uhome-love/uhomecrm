@@ -50,6 +50,10 @@ export function PdnLeadDrawer({
   const [publishedHash, setPublishedHash] = useState<Record<PubField, string | null>>({ observacao: null, proxima_acao: null });
   const [tab, setTab] = useState<string>(defaultTab);
 
+  // Só reseta o estado quando o lead efetivamente mudar (id diferente).
+  // Sem isso, toda atualização de dados (realtime/refresh) recria o objeto row
+  // e faz o drawer "pular" de aba e resetar campos que o usuário está editando.
+  const rowId = row?.id ?? null;
   useEffect(() => {
     if (!row) return;
     setStatus(row.status || "");
@@ -68,7 +72,8 @@ export function PdnLeadDrawer({
     if (row.pipelineLeadId) {
       loadPublishedHashes(row.pipelineLeadId).then(setPublishedHash).catch(() => undefined);
     }
-  }, [row, defaultTab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowId, defaultTab]);
 
   if (!row) return null;
 
