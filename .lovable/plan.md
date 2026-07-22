@@ -1,43 +1,60 @@
+# PDN Unificado — Plano de 8 fases (aprovado)
 
-# Auditoria ao vivo — Foco Corretores + Roleta (21/07 noite)
+Objetivo: fazer Planilha (Desktop) e Kanban (Mobile) do PDN "falarem a mesma língua", com paridade total de funções e integração real com o histórico do lead.
 
-Rodei consultas diretas no banco para validar cada peça do fluxo novo. Resumo por camada:
+## Fase 1 — Drawer único e universal (`PdnLeadDrawer`)
+Substitui o drawer antigo com 3 abas:
+- **Contexto do lead:** cabeçalho rico com timeline via `v_lead_timeline`, última observação do corretor, próxima tarefa dele.
+- **Ação do gestor:** observação, prioridade, risco, VGV — cada bloco com botão "Publicar no lead" idempotente por hash SHA-1.
+- **Etapa:** mover entre grupos do PDN, marcar queda, reativar.
 
-## 1. Credenciamentos de hoje
-- Manhã: 13 aprovados, 1 saiu
-- Tarde: 9 aprovados, 1 saiu
-- Noturna: **5 aprovados**, 0 pendentes, 0 legacy
-- **Nenhum credenciamento pendente sem aprovação do CEO** — regra de aprovação manual voltou a valer corretamente.
+Planilha e Kanban chamam o mesmo drawer. Preserva estado ao salvar.
 
-## 2. Noturna — segmentos derivados da alocação (spot-check)
-| Corretor | Empreendimentos alocados | Segmentos derivados |
-|---|---|---|
-| Anderson Amaral | 3 empreend. | S1 Moradia + S4 MCMV |
-| Andressa Madril | 2 empreend. | S1 Moradia + S4 MCMV |
-| Rafaela Campos | 2 empreend. | S2 Investimento + S3 Alto Padrão |
-| Rafaela Sandin | 2 empreend. | S2 Investimento |
-| Thalia de Oliveira | 3 empreend. | S1 Moradia |
+## Fase 2 — Planilha nível SaaS
+- Linha inteira clicável abre drawer.
+- Ícones de ação por linha (publicar, marcar queda) no hover.
+- Colunas configuráveis via menu, preferência por device.
+- Seleção múltipla + barra de ação em lote ("Publicar observação no lead em massa").
+- Ordenação por header, densidade compacta, zebra sutil.
 
-Segmentos batem 100% com os empreendimentos que o gestor selecionou em Foco Corretores. Fluxo novo funcionando ponta a ponta.
+## Fase 3 — Kanban nível SaaS
+- Botões rápidos no hover do card (publicar, avisar, marcar queda).
+- Badge "publicado há Xh".
+- Drag com preview de impacto.
+- Colunas colapsáveis, contador de pendentes de publicar.
 
-## 3. Fila ativa
-- Manhã: 18 corretores · Tarde: 13 · Noturna: 9
-- Fila noturna já inclui os 5 credenciados aprovados + carry-over válido.
+## Fase 4 — Integração bidirecional
+- Publicação em lote com `origem_ref` idempotente.
+- `pipeline_tarefas` com `origem='pdn'` quando a ação tem data.
+- "Avisar corretor" unifica notificação + publicação.
+- Link de volta do lead pro PDN.
 
-## 4. Distribuição hoje
-- 59 leads aceitos, 11 expirados, 1 aguardando
-- Apenas **1 lead** em Fila CEO por `no_broker_available` (nenhum bloqueio por empreendimento pausado)
-- Distribuição espalhada entre 15 corretores diferentes — round-robin saudável.
+## Fase 5 — Toolbar unificada
+- Barra de busca (`⌘K` estilo) dentro do PDN.
+- Filtros como chips arredondados.
+- Toggle Planilha/Kanban persistido por role.
+- "Copiar resumo pro WhatsApp".
 
-## 5. Pontos de atenção (nada crítico)
-- 11 distribuições expiradas hoje (~15% do total): dentro do normal, mas vale monitorar por corretor amanhã.
-- 182 leads históricos sem `corretor_id` (base antiga, não afeta operação atual).
+## Fase 6 — Quebra de arquivo
+- `PdnGestor.tsx` 978 → ~200 linhas.
+- `PdnLeadDrawer` ~300 linhas.
+- Virtualização da planilha a partir de 100 linhas.
 
-## Conclusão
-Fluxo novo (Foco → Credenciamento por Alocação → Fila → Distribuição → Fila CEO) está operando como projetado. **Nenhuma correção de código necessária agora.**
+## Fase 7 — Permissões e RLS
+- Auditoria de policies em `pdn_entries` e `pipeline_anotacoes`.
+- Nenhuma mudança de schema até essa fase.
+- Idempotência mantida via hash.
 
-## Próximos passos sugeridos (opcional)
-1. Amanhã de manhã, revisar taxa de expiração por corretor.
-2. Publicar mensagem no grupo confirmando que a noturna rodou 100% no formato novo.
+## Fase 8 — Validação ao vivo
+Validação ao vivo em cada fase com lead de teste (sempre Cancelar em leads reais). Nenhuma migration destrutiva.
 
-Se quiser que eu implemente algo (ex.: painel de expirações por corretor, alerta automático), me diga e eu monto plano separado.
+## Decisões fixadas (aprovadas no mockup)
+1. Paridade total Planilha ↔ Kanban.
+2. Publicação disponível em toda parte (drawer, hover, cards, lote).
+3. Drawer com 3 abas (Contexto/Timeline, Ação, Etapa).
+4. Idempotência por hash SHA-1 do conteúdo.
+5. Padrão por device: Desktop = Planilha, Mobile = Kanban (persistido em `sessionStorage`).
+
+## Status
+- **Fase 1:** implementada (`PdnLeadDrawer` com abas Contexto/Ação/Etapa, `PublishButton` idempotente, integração Planilha + Kanban).
+- **Fases 2–8:** pendentes de retomada.
