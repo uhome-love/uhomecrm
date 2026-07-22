@@ -1,14 +1,11 @@
-import { useState } from "react";
 import { fmtMoney } from "@/lib/fmtMoney";
 import { formatBRT } from "@/lib/brtTime";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  AlertTriangle, Sparkles, Flame, CalendarClock, Megaphone, Send, TrendingDown, Loader2,
+  AlertTriangle, Sparkles, Flame, CalendarClock, TrendingDown,
 } from "lucide-react";
 import type { PdnRow } from "@/hooks/usePdn";
-import { publicarNoLead } from "@/components/pdn/drawer/publish";
-import { toast } from "sonner";
 
 const PRIORIDADE_META: Record<string, { label: string; cls: string }> = {
   alta: { label: "Alta", cls: "bg-red-500/15 text-red-600 dark:text-red-400" },
@@ -29,39 +26,13 @@ interface Props {
 }
 
 export function PdnCard({
-  r, etapaLabel, selected, onToggleSelected, onClick, onDragStart, onDragEnd, onQueda, onAvisar,
+  r, selected, onToggleSelected, onClick, onDragStart, onDragEnd, onQueda,
 }: Props) {
   const prio = r.prioridade ? PRIORIDADE_META[r.prioridade] : null;
-  const [publishing, setPublishing] = useState(false);
-
-  const canPublish = !!r.pipelineLeadId && !!(r.observacoes || "").trim();
-
-  const handlePublish = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!canPublish || !r.pipelineLeadId) return;
-    setPublishing(true);
-    try {
-      const hash = await publicarNoLead(r.pipelineLeadId, "observacao", r.observacoes);
-      if (hash) toast.success("Observação publicada no lead");
-      else toast.info("Nada novo para publicar");
-    } finally {
-      setPublishing(false);
-    }
-  };
 
   const handleQueda = (e: React.MouseEvent) => {
     e.stopPropagation();
     onQueda(r);
-  };
-
-  const handleAvisar = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (r.isManual || !r.corretorAuthId || r.caiu) {
-      toast.info("Corretor não pode ser avisado neste card");
-      return;
-    }
-    onAvisar(r, `Atualize o pipeline de ${r.nome} para "${etapaLabel}".`);
-    toast.success("Corretor avisado");
   };
 
   return (
@@ -74,7 +45,6 @@ export function PdnCard({
         r.emRisco ? "border-amber-500/40" : "border-border"
       } ${r.caiu ? "opacity-70" : ""} ${selected ? "ring-2 ring-primary/60" : ""}`}
     >
-      {/* Checkbox — no hover ou quando selecionado */}
       <div
         className={`absolute left-1.5 top-1.5 z-10 rounded-md bg-background/95 p-0.5 shadow-sm transition-opacity ${
           selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -90,33 +60,11 @@ export function PdnCard({
         />
       </div>
 
-      {/* Ações — hover no desktop, sempre visíveis no mobile via touch */}
-      <div
-        className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-md bg-background/95 p-0.5 shadow-sm opacity-0 transition-opacity group-hover:opacity-100 md:group-hover:opacity-100"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-primary"
-          disabled={!canPublish || publishing}
-          onClick={handlePublish}
-          title={canPublish ? "Publicar obs. no lead" : "Sem observação para publicar"}
+      {!r.caiu && (
+        <div
+          className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-md bg-background/95 p-0.5 shadow-sm opacity-0 transition-opacity group-hover:opacity-100"
+          onClick={(e) => e.stopPropagation()}
         >
-          {publishing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Megaphone className="h-3 w-3" />}
-        </Button>
-        {!r.isManual && !r.caiu && r.corretorAuthId && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-muted-foreground hover:text-primary"
-            onClick={handleAvisar}
-            title="Avisar corretor"
-          >
-            <Send className="h-3 w-3" />
-          </Button>
-        )}
-        {!r.caiu && (
           <Button
             variant="ghost"
             size="icon"
@@ -126,10 +74,10 @@ export function PdnCard({
           >
             <TrendingDown className="h-3 w-3" />
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="flex items-start justify-between gap-2 pr-14 pl-5">
+      <div className="flex items-start justify-between gap-2 pr-8 pl-5">
         <span className="line-clamp-1 text-sm font-medium text-foreground">{r.nome}</span>
         {r.novoDesdeOntem && (
           <span title="Novo desde ontem"><Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" /></span>

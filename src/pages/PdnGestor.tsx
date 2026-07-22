@@ -152,34 +152,65 @@ function StatusSelector({ value, onChange }: { value: string; onChange: (v: stri
   );
 }
 
-// ─── Observação multilinha (popover com textarea) ─────────────────────────────
-function ObsSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+// ─── Observação multilinha (popover com textarea + salvar/publicar) ───────────
+function ObsSelector({
+  value, onChange, pipelineLeadId, row,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  pipelineLeadId?: string | null;
+  row?: PdnRow;
+}) {
   const [open, setOpen] = useState(false);
   const [local, setLocal] = useState(value ?? "");
+  const [publishing, setPublishing] = useState(false);
   useEffect(() => { setLocal(value ?? ""); }, [value]);
   const commit = () => { if (local !== (value ?? "")) onChange(local); setOpen(false); };
+  const commitAndPublish = async () => {
+    if (!pipelineLeadId) return;
+    const clean = local.trim();
+    if (!clean) { toast.info("Escreva algo antes de publicar"); return; }
+    setPublishing(true);
+    try {
+      if (local !== (value ?? "")) onChange(local);
+      await publicarNoLead(pipelineLeadId, "observacao", clean, row);
+      setOpen(false);
+    } finally { setPublishing(false); }
+  };
   return (
-    <Popover open={open} onOpenChange={(o) => { if (!o) commit(); else setOpen(true); }}>
+    <Popover open={open} onOpenChange={(o) => { if (!o && !publishing) commit(); else if (o) setOpen(true); }}>
       <PopoverTrigger asChild>
         <button className="line-clamp-4 w-full whitespace-pre-wrap break-words text-left text-sm text-muted-foreground hover:text-foreground">
           {value ? value : <span className="text-muted-foreground/60">—</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-2" align="start">
+      <PopoverContent className="w-96 p-2" align="start">
         <Textarea
           autoFocus
           value={local}
-          placeholder="Anotações do gestor (uso interno)…"
+          placeholder="Anotações do gestor…"
           onChange={(e) => setLocal(e.target.value)}
           className="min-h-[120px] resize-y text-sm"
         />
-        <div className="mt-2 flex justify-end">
-          <Button size="sm" onClick={commit}>Salvar</Button>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <p className="text-[11px] text-muted-foreground">
+            {pipelineLeadId ? "Publicar também avisa o corretor no histórico do lead." : "Sem lead vinculado — só grava no PDN."}
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={commit} disabled={publishing}>Salvar</Button>
+            {pipelineLeadId && (
+              <Button size="sm" onClick={commitAndPublish} disabled={publishing || !local.trim()}>
+                {publishing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Megaphone className="mr-1 h-3 w-3" />}
+                Salvar e publicar
+              </Button>
+            )}
+          </div>
         </div>
       </PopoverContent>
     </Popover>
   );
 }
+
 
 // ─── Célula editável com quebra de linha (empreendimento) ─────────────────────
 function EditableWrapCell({ value, onCommit, placeholder }: {
@@ -431,21 +462,13 @@ export default function PdnGestor() {
     if (alvos.length === 0) { toast.info("Nenhum selecionado tem observação para publicar"); return; }
     let ok = 0, skip = 0;
     for (const r of alvos) {
-      const hash = await publicarNoLead(r.pipelineLeadId as string, "observacao", r.observacoes);
+      const hash = await publicarNoLead(r.pipelineLeadId as string, "observacao", r.observacoes, r);
       if (hash) ok++; else skip++;
     }
-    toast.success(`Publicado em ${ok} lead${ok !== 1 ? "s" : ""}${skip ? ` · ${skip} pulado(s)` : ""}`);
+    toast.success(`Publicado e avisado em ${ok} lead${ok !== 1 ? "s" : ""}${skip ? ` · ${skip} pulado(s)` : ""}`);
   };
 
-  const bulkAvisar = async () => {
-    const alvos = selectedRows.filter(r => !r.isManual && r.corretorAuthId && !r.caiu);
-    if (alvos.length === 0) { toast.info("Nenhum selecionado pode ser avisado"); return; }
-    for (const r of alvos) {
-      const etapa = PDN_GRUPOS.find(g => g.key === r.grupo)?.label || "";
-      avisarCorretor(r, `Atualize o pipeline de ${r.nome} para "${etapa}".`);
-    }
-    toast.success(`${alvos.length} corretor(es) avisados`);
-  };
+
 
   const bulkQueda = async (motivo: string) => {
     for (const r of selectedRows) {
@@ -657,10 +680,10 @@ export default function PdnGestor() {
           count={selectedIds.size}
           onClear={() => setSelectedIds(new Set())}
           onPublish={bulkPublish}
-          onAvisar={bulkAvisar}
           onQueda={bulkQueda}
         />
       )}
+
     </div>
 
   );
@@ -855,8 +878,8 @@ function GrupoBloco({
                   <TableRow><TableCell colSpan={emptyColSpan} className="py-6 text-center text-sm text-muted-foreground">Nenhum negócio neste grupo.</TableCell></TableRow>
                 ) : rows.map(r => {
                   const selected = selectedIds.has(r.id);
-                  const canPublish = !!r.pipelineLeadId && !!(r.observacoes || "").trim();
                   return (
+
                   <TableRow
                     key={r.id}
                     onClick={(e) => handleRowClick(r, e)}
@@ -937,17 +960,11 @@ function GrupoBloco({
                       <TableCell className="py-2" data-no-row-open>
                         {r.caiu && r.motivoQueda
                           ? <div className="text-xs"><span className="font-medium text-red-600 dark:text-red-400">Queda:</span> {r.motivoQueda}</div>
-                          : <ObsSelector value={r.observacoes} onChange={(v) => onSave(r, { observacoes: v })} />}
+                          : <ObsSelector value={r.observacoes} pipelineLeadId={r.pipelineLeadId} row={r} onChange={(v) => onSave(r, { observacoes: v })} />}
                       </TableCell>
                     )}
                     <TableCell data-no-row-open>
                       <div className="flex items-center justify-end gap-0.5 opacity-70 transition-opacity group-hover:opacity-100">
-                        {canPublish && (
-                          <RowPublishButton row={r} />
-                        )}
-                        {!r.isManual && r.corretorAuthId && !r.caiu && (
-                          <AvisarButton row={r} onAvisar={onAvisar} />
-                        )}
                         {r.caiu ? (
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-emerald-600" title="Reativar" onClick={() => onReativar(r)}>
                             <RotateCcw className="h-3.5 w-3.5" />
@@ -962,6 +979,7 @@ function GrupoBloco({
                         </Button>
                       </div>
                     </TableCell>
+
                   </TableRow>
                   );
                 })}
@@ -974,28 +992,8 @@ function GrupoBloco({
   );
 }
 
-/** Ícone compacto: publica a observação da linha no histórico do lead (idempotente). */
-function RowPublishButton({ row }: { row: PdnRow }) {
-  const [busy, setBusy] = useState(false);
-  const handle = async () => {
-    if (!row.pipelineLeadId) return;
-    setBusy(true);
-    try { await publicarNoLead(row.pipelineLeadId, "observacao", row.observacoes); }
-    finally { setBusy(false); }
-  };
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-7 w-7 text-muted-foreground hover:text-primary"
-      title="Publicar observação no histórico do lead"
-      disabled={busy}
-      onClick={handle}
-    >
-      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Megaphone className="h-3.5 w-3.5" />}
-    </Button>
-  );
-}
+
+
 
 
 function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, onMudarEtapa, onAvisar, onOpenRow, selected, onToggleSelected }: {
@@ -1045,10 +1043,9 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
       {r.caiu && r.motivoQueda ? (
         <div className="rounded-md bg-red-500/5 px-2 py-1 text-xs"><span className="font-medium text-red-600 dark:text-red-400">Queda:</span> {r.motivoQueda}</div>
       ) : (
-        <ObsSelector value={r.observacoes} onChange={(v) => onSave(r, { observacoes: v })} />
+        <ObsSelector value={r.observacoes} pipelineLeadId={r.pipelineLeadId} row={r} onChange={(v) => onSave(r, { observacoes: v })} />
       )}
       <div className="flex items-center justify-end gap-1">
-        {!r.isManual && r.corretorAuthId && !r.caiu && <AvisarButton row={r} onAvisar={onAvisar} mobile />}
         {r.caiu ? (
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onReativar(r)}>
             <RotateCcw className="mr-1 h-3 w-3" /> Reativar
@@ -1066,38 +1063,8 @@ function MobileCard({ r, onSave, onUpdateManual, onRemove, onQueda, onReativar, 
   );
 }
 
-function AvisarButton({ row, onAvisar, mobile }: { row: PdnRow; onAvisar: (row: PdnRow, mensagem: string) => void; mobile?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const etapa = PDN_GRUPOS.find(g => g.key === row.grupo)?.label || "";
-  const [msg, setMsg] = useState("");
-  useEffect(() => { if (open) setMsg(`Atualize o pipeline de ${row.nome} para "${etapa}".`); }, [open]);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        {mobile ? (
-          <Button variant="outline" size="sm" className="h-7 text-xs">
-            <Send className="mr-1 h-3 w-3" /> Avisar{row.avisadoEm ? " ✓" : ""}
-          </Button>
-        ) : (
-          <Button variant="ghost" size="icon" className={`h-7 w-7 ${row.avisadoEm ? "text-emerald-600" : "text-muted-foreground hover:text-primary"}`} title={row.avisadoEm ? `Avisado ${formatBRT(row.avisadoEm, "dd/MM HH:mm")}` : "Avisar corretor"}>
-            <Send className="h-3.5 w-3.5" />
-          </Button>
-        )}
-      </PopoverTrigger>
-      <PopoverContent className="w-72 p-2" align="end">
-        <div className="mb-1 text-xs font-medium text-foreground">Avisar {row.corretor}</div>
-        <Textarea value={msg} onChange={(e) => setMsg(e.target.value)} className="min-h-[70px] text-sm" />
-        <div className="mt-2 flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button size="sm" onClick={() => { onAvisar(row, msg.trim()); setOpen(false); }}>
-            <Send className="mr-1.5 h-3.5 w-3.5" /> Enviar
-          </Button>
-        </div>
-        {row.avisadoEm && <div className="mt-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">Último aviso: {formatBRT(row.avisadoEm, "dd/MM HH:mm")}</div>}
-      </PopoverContent>
-    </Popover>
-  );
-}
+
+
 
 
 function ArquivadosView({

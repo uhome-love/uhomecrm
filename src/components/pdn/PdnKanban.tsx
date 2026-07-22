@@ -101,20 +101,10 @@ export function PdnKanban({
     if (alvos.length === 0) { toast.info("Nenhum selecionado tem observação para publicar"); return; }
     let ok = 0, skip = 0;
     for (const r of alvos) {
-      const hash = await publicarNoLead(r.pipelineLeadId as string, "observacao", r.observacoes);
+      const hash = await publicarNoLead(r.pipelineLeadId as string, "observacao", r.observacoes, r);
       if (hash) ok++; else skip++;
     }
-    toast.success(`Publicado em ${ok} lead${ok !== 1 ? "s" : ""}${skip ? ` · ${skip} pulado(s)` : ""}`);
-  };
-
-  const bulkAvisar = async () => {
-    const alvos = selectedRows.filter(r => !r.isManual && r.corretorAuthId && !r.caiu);
-    if (alvos.length === 0) { toast.info("Nenhum selecionado pode ser avisado"); return; }
-    for (const r of alvos) {
-      const etapa = PDN_GRUPOS.find(g => g.key === r.grupo)?.label || "";
-      onAvisar(r, `Atualize o pipeline de ${r.nome} para "${etapa}".`);
-    }
-    toast.success(`${alvos.length} corretor(es) avisados`);
+    toast.success(`Publicado e avisado em ${ok} lead${ok !== 1 ? "s" : ""}${skip ? ` · ${skip} pulado(s)` : ""}`);
   };
 
   const bulkQueda = async (motivo: string) => {
@@ -124,6 +114,7 @@ export function PdnKanban({
     toast.success(`${selectedRows.length} negócio(s) marcados como caiu`);
     setSelectedIds(new Set());
   };
+
 
   return (
     <>
@@ -240,9 +231,9 @@ export function PdnKanban({
         count={effectiveSelected.size}
         onClear={() => setSelectedIds(new Set())}
         onPublish={bulkPublish}
-        onAvisar={bulkAvisar}
         onQueda={bulkQueda}
       />
+
     </>
   );
 }
