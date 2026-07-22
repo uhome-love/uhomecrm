@@ -31,6 +31,9 @@ import {
 import { PdnKanban } from "@/components/pdn/PdnKanban";
 import { PdnLeadDrawer } from "@/components/pdn/drawer/PdnLeadDrawer";
 import { PdnToolbar } from "@/components/pdn/PdnToolbar";
+import { PdnHeader } from "@/components/pdn/PdnHeader";
+import { PdnKpiCards } from "@/components/pdn/PdnKpiCards";
+import { PdnResumoEquipes } from "@/components/pdn/PdnResumoEquipes";
 import { MoneyInput } from "@/components/pdn/MoneyInput";
 import { ColumnsMenu, PDN_DEFAULT_COLS, type PdnColKey } from "@/components/pdn/ColumnsMenu";
 import { BulkActionBar } from "@/components/pdn/BulkActionBar";
