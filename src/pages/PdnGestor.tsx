@@ -787,9 +787,12 @@ function GrupoBloco({
 
   return (
     <Card className={`overflow-hidden ${isCaidos ? "border-red-500/40" : ""}`}>
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onToggleCollapse}
-        className={`flex w-full items-center justify-between px-4 py-2.5 ${isCaidos ? "bg-red-500/5" : ""}`}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleCollapse(); } }}
+        className={`flex w-full cursor-pointer items-center justify-between px-4 py-2.5 ${isCaidos ? "bg-red-500/5" : ""}`}
         style={{ borderLeft: `3px solid ${cor}` }}
       >
         <div className="flex items-center gap-2">
@@ -816,7 +819,8 @@ function GrupoBloco({
             </span>
           )}
         </div>
-      </button>
+      </div>
+
 
       {!collapsed && (
         isMobile ? (
