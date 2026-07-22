@@ -7,7 +7,6 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PdnLeadDrawer } from "./drawer/PdnLeadDrawer";
 import { PdnCard } from "./kanban/PdnCard";
-import { KanbanToolbar, type KanbanFilters } from "./kanban/KanbanToolbar";
 import { BulkActionBar } from "./BulkActionBar";
 import { publicarNoLead } from "./drawer/publish";
 
