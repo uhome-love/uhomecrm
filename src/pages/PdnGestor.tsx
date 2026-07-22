@@ -473,30 +473,32 @@ export default function PdnGestor() {
 
       <PdnKpiCards resumo={resumo} kpiFilter={kpiFilter} onToggle={(k) => k === null ? setKpiFilter(null) : toggleKpi(k)} />
 
-      {/* Toolbar unificada — mesmos filtros para Planilha e Kanban */}
-      <PdnToolbar
-        filters={{ soRisco: filtroRisco, soNovos: filtroNovos, equipe: filtroEquipe, corretor: filtroCorretor }}
-        setFilters={(patch) => {
-          if (patch.soRisco !== undefined) setFiltroRisco(patch.soRisco);
-          if (patch.soNovos !== undefined) setFiltroNovos(patch.soNovos);
-          if (patch.equipe !== undefined) { setFiltroEquipe(patch.equipe); setFiltroCorretor("todos"); }
-          if (patch.corretor !== undefined) setFiltroCorretor(patch.corretor);
-        }}
-        showEquipeFilter={showEquipeFilter}
-        equipes={equipes}
-        corretores={corretores}
-        hits={filtered.length}
-        vgvHits={filtered.reduce((s, r) => s + r.vgv, 0)}
-        total={rows.length}
-        kpiFilter={kpiFilter}
-        onClearKpi={() => setKpiFilter(null)}
-        hiddenCount={hiddenRows.length}
-        showOcultos={showOcultos}
-        onToggleOcultos={() => setShowOcultos(v => !v)}
-        view={view}
-        showResetLarguras={!isMobile && colsCustomized}
-        onResetLarguras={resetColWidths}
-      />
+      {/* Toolbar unificada — só faz sentido em Planilha/Kanban (não em Meta) */}
+      {view !== "meta" && (
+        <PdnToolbar
+          filters={{ soRisco: filtroRisco, soNovos: filtroNovos, equipe: filtroEquipe, corretor: filtroCorretor }}
+          setFilters={(patch) => {
+            if (patch.soRisco !== undefined) setFiltroRisco(patch.soRisco);
+            if (patch.soNovos !== undefined) setFiltroNovos(patch.soNovos);
+            if (patch.equipe !== undefined) { setFiltroEquipe(patch.equipe); setFiltroCorretor("todos"); }
+            if (patch.corretor !== undefined) setFiltroCorretor(patch.corretor);
+          }}
+          showEquipeFilter={showEquipeFilter}
+          equipes={equipes}
+          corretores={corretores}
+          hits={filtered.length}
+          vgvHits={filtered.reduce((s, r) => s + r.vgv, 0)}
+          total={rows.length}
+          kpiFilter={kpiFilter}
+          onClearKpi={() => setKpiFilter(null)}
+          hiddenCount={hiddenRows.length}
+          showOcultos={showOcultos}
+          onToggleOcultos={() => setShowOcultos(v => !v)}
+          view={view}
+          showResetLarguras={!isMobile && colsCustomized}
+          onResetLarguras={resetColWidths}
+        />
+      )}
 
 
       {/* Negócios removidos da planilha (overlay) — restauráveis, sem afetar o pipeline */}
