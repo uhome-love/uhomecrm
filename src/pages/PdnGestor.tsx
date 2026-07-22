@@ -1,5 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { usePdn, PDN_GRUPOS, type PdnGrupo, type PdnRow } from "@/hooks/usePdn";
+import { usePdnLive } from "@/hooks/pdn/usePdnLive";
+
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { fmtMoney } from "@/lib/fmtMoney";
