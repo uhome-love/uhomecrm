@@ -127,15 +127,8 @@ export function PdnKanban({
 
   return (
     <>
-      <KanbanToolbar
-        filters={filters}
-        setFilters={(f) => { setFilters(f); setSelectedIds(new Set()); }}
-        corretores={corretores}
-        hits={filteredRows.length}
-        total={rows.length}
-      />
-
       <div className="flex gap-3 overflow-x-auto pb-2">
+
         {PDN_GRUPOS.map(g => {
           const list = byGrupo[g.key] || [];
           const subtotal = list.reduce((s, r) => s + r.vgv, 0);
