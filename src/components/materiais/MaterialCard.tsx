@@ -71,6 +71,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   };
 
   const openLink = async (link: MaterialLink) => {
+    registrarMaterialRecente(link.id, PREVIEWABLE(link) ? "preview" : "abrir");
     if (PREVIEWABLE(link)) {
       setPreviewLink(link);
       return;
@@ -80,14 +81,13 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   };
 
   const downloadLink = async (link: MaterialLink) => {
+    registrarMaterialRecente(link.id, "download");
     if (!link.storage_path) {
-      // link externo — apenas abre
       if (link.url) window.open(link.url, "_blank", "noopener,noreferrer");
       return;
     }
     const url = await getSignedUrl(link, true);
     if (!url) return;
-    // Força navegação para disparar download com Content-Disposition
     const a = document.createElement("a");
     a.href = url;
     a.rel = "noopener noreferrer";
@@ -99,6 +99,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
     if (!url) return;
     try {
       await navigator.clipboard.writeText(url);
+      registrarMaterialRecente(link.id, "copiar");
       toast({ title: "Link copiado", description: link.storage_path ? "Válido por 10 minutos." : undefined });
     } catch {
       toast({ title: "Não foi possível copiar", variant: "destructive" });
@@ -108,6 +109,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   const shareWhatsapp = async (link: MaterialLink) => {
     const url = await getSignedUrl(link, false);
     if (!url) return;
+    registrarMaterialRecente(link.id, "whatsapp");
     const text = `${link.titulo}\n\n${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   };
