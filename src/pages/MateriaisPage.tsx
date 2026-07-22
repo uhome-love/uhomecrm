@@ -5,7 +5,8 @@ import { useMateriais, type MaterialLink, type MaterialEmpreendimento } from "@/
 import { useUserRole } from "@/hooks/useUserRole";
 import { MaterialCard } from "@/components/materiais/MaterialCard";
 import { EmpreendimentoFormDialog } from "@/components/materiais/EmpreendimentoFormDialog";
-import { FolderOpen, Plus, Search, Loader2, Sparkles, X } from "lucide-react";
+import { FolderOpen, Plus, Search, Loader2, Sparkles, X, BarChart3 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
