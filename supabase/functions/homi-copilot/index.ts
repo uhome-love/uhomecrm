@@ -413,9 +413,23 @@ Responda APENAS com JSON válido, sem markdown, sem explicação:
   "sugestao_etapa": string|null (DEVE ser um nome exato da lista de etapas: ${stagesList})
 }`;
 
+  // ── HOMI ↔ Materiais: injeta materiais relevantes do Hub ──
+  let materiaisSuggestions: any[] = [];
+  try {
+    const searchQuery = [lead.empreendimento, lead.objetivo_cliente, ultima_mensagem]
+      .filter(Boolean).join(" | ");
+    materiaisSuggestions = await searchMateriaisForHomi(searchQuery, {
+      limit: 3,
+      empreendimentoNome: lead.empreendimento || undefined,
+    });
+  } catch (e) {
+    console.error("[homi-copilot] materiais context skipped:", e);
+  }
+  const materiaisBlock = formatMateriaisBlock(materiaisSuggestions);
+
   const apiKey = requireApiKey();
   const raw = await callAI(apiKey, [
-    { role: "user", content: prompt },
+    { role: "user", content: prompt + materiaisBlock },
   ], {
     model: "google/gemini-2.5-flash",
     fnName: "homi-copilot",
