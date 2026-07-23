@@ -122,38 +122,53 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header do painel */}
-      <div className="flex items-start gap-4 pb-4 border-b border-border/60">
+      {/* Header do painel — compacto */}
+      <div className="flex items-center gap-3 pb-2.5 mb-2.5 border-b border-border/60">
         {empreendimento.logo_url ? (
           <img
             src={empreendimento.logo_url}
             alt={empreendimento.nome}
-            className="h-16 w-16 rounded-lg object-cover border border-border/60 flex-shrink-0"
+            className="h-10 w-10 rounded-md object-cover border border-border/60 flex-shrink-0"
           />
         ) : (
-          <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-            <Building2 className="h-7 w-7 text-muted-foreground" />
+          <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+            <Building2 className="h-5 w-5 text-muted-foreground" />
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-foreground text-2xl leading-tight">{empreendimento.nome}</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {empreendimento.links.length} {empreendimento.links.length === 1 ? "material disponível" : "materiais disponíveis"}
+          <h2 className="font-semibold text-foreground text-lg leading-tight truncate">{empreendimento.nome}</h2>
+          <p className="text-xs text-muted-foreground">
+            {empreendimento.links.length} {empreendimento.links.length === 1 ? "material" : "materiais"}
           </p>
         </div>
+        {empreendimento.links.length > 0 && (
+          <>
+            <Button variant="outline" size="sm" className="h-8 hidden sm:inline-flex" onClick={copyAllLinks}>
+              <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar todos
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-primary border-primary/40 hover:bg-primary/10 hidden sm:inline-flex"
+              onClick={() => setFollowUp({ open: true, materiais: empreendimento.links })}
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Follow-up IA
+            </Button>
+          </>
+        )}
         <Button
           variant="ghost"
           size="icon"
-          className={cn("h-9 w-9", isFav && "text-yellow-500")}
+          className={cn("h-8 w-8", isFav && "text-yellow-500")}
           title={isFav ? "Remover dos favoritos" : "Favoritar empreendimento"}
           onClick={() => toggleFavEmp.mutate({ empreendimentoId: empreendimento.id, isFav })}
         >
-          <Star className={cn("h-5 w-5", isFav && "fill-yellow-500")} />
+          <Star className={cn("h-4 w-4", isFav && "fill-yellow-500")} />
         </Button>
         {canEdit && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -179,7 +194,7 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
       </div>
 
       {/* Grid de materiais */}
-      <div className="flex-1 py-4">
+      <div className="flex-1">
         {empreendimento.links.length === 0 ? (
           <div className="py-16 text-center text-sm text-muted-foreground">
             Nenhum material cadastrado para este empreendimento.
@@ -195,7 +210,7 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5">
             {empreendimento.links.map((link) => (
               <MaterialItem
                 key={link.id}
