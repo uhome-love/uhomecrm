@@ -172,8 +172,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
 
   const handleSaveTask = async () => {
     if (!user) return;
-    const isVisitaStage = stageTipo === "visita";
-    if (!isVisitaStage && hasPresets && !selectedPresetId) {
+    if (hasPresets && !selectedPresetId) {
       toast.error("Escolha um tipo de tarefa");
       return;
     }
@@ -183,21 +182,21 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
       const titulo = activePreset
         ? activePreset.label
         : `${TASK_TYPES.find(t => t.value === taskType)?.label || taskType} — ${lead.nome}`;
-      // Etapa Visita: tarefas são automáticas (visita_auto). Não criar tarefa manual.
-      if (!isVisitaStage) {
-        await supabase.from("pipeline_tarefas").insert({
-          pipeline_lead_id: lead.id,
-          titulo,
-          descricao: obs || null,
-          tipo: taskType,
-          vence_em: taskDate,
-          hora_vencimento: taskTime || null,
-          prioridade: "media",
-          status: "pendente",
-          created_by: user.id,
-          responsavel_id: user.id,
-        } as any);
-      }
+      // Em Visita: presets manuais coexistem com automação da Agenda
+      // (confirmar/reagendar/feedback continuam sendo criados automaticamente).
+      await supabase.from("pipeline_tarefas").insert({
+        pipeline_lead_id: lead.id,
+        titulo,
+        descricao: obs || null,
+        tipo: taskType,
+        vence_em: taskDate,
+        hora_vencimento: taskTime || null,
+        prioridade: "media",
+        status: "pendente",
+        created_by: user.id,
+        responsavel_id: user.id,
+      } as any);
+
 
       // Sync flag_status quando preset carrega status da etapa.
       let flagPatch: Record<string, string> | null = null;

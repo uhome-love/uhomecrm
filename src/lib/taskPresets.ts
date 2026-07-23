@@ -172,6 +172,48 @@ const NEGOCIACAO_PRESETS: TaskPreset[] = [
   },
 ];
 
+/** Visita: presets manuais que NÃO conflitam com o fluxo automático da agenda
+ * (confirmar_visita, reagendar_visita, feedback_visita são criados pela agenda). */
+const VISITA_PRESETS: TaskPreset[] = [
+  {
+    id: "visita_ligar",
+    label: "Ligar",
+    Icon: Phone,
+    tipo: "ligacao",
+    prazoDias: 1,
+    horaDefault: "10:00",
+    obsSugerida: "Ligar para o cliente.",
+  },
+  {
+    id: "visita_whatsapp",
+    label: "WhatsApp",
+    Icon: MessageCircle,
+    tipo: "whatsapp",
+    prazoDias: 1,
+    horaDefault: "10:00",
+    obsSugerida: "Enviar mensagem no WhatsApp.",
+  },
+  {
+    id: "visita_enviar_material",
+    label: "Enviar material",
+    Icon: Send,
+    tipo: "email",
+    prazoDias: 1,
+    horaDefault: "10:00",
+    obsSugerida: "Enviar material/opções ao cliente.",
+  },
+
+  {
+    id: "visita_follow_up",
+    label: "Follow-up",
+    Icon: ClipboardList,
+    tipo: "follow_up",
+    prazoDias: 2,
+    horaDefault: "10:00",
+    obsSugerida: "Retomar contato com o cliente.",
+  },
+];
+
 /** Chip "Outro" — vira modo livre no popup (input manual + status pill). */
 export const PRESET_OUTRO_ID = "__outro__";
 
@@ -193,10 +235,13 @@ export function getPresetsForStage(stageTipo?: string | null): TaskPreset[] {
       return [...AQUECIMENTO_PRESETS, PRESET_OUTRO];
     case "negociacao":
       return [...NEGOCIACAO_PRESETS, PRESET_OUTRO];
+    case "visita":
+      return [...VISITA_PRESETS, PRESET_OUTRO];
     default:
       return [];
   }
 }
+
 
 /** Aplica o preset ao payload NovaTarefaPayload, mantendo campos manualmente editáveis. */
 export function applyPresetToTarefa(preset: TaskPreset): NovaTarefaPayload {
