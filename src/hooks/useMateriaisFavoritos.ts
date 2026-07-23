@@ -12,7 +12,7 @@ export interface MaterialComEmp extends MaterialLink {
 }
 
 const MAT_COLS =
-  "id, empreendimento_id, categoria, tipo, titulo, descricao, url, storage_path, mime_type, file_size, origem, tags, resumo_ia, ingest_status, ingest_error, created_at, updated_at, ordem, materiais_empreendimentos(id,nome,logo_url)";
+  "id, empreendimento_id, categoria, titulo, descricao, url, storage_path, mime_type, size_bytes, origem, tags, resumo_ia, ingest_status, ingest_error, created_at, updated_at, ordem, materiais_empreendimentos(id,nome,logo_url)";
 
 /** IDs de empreendimentos favoritos do usuário. */
 export function useEmpreendimentoFavoritoIds() {
