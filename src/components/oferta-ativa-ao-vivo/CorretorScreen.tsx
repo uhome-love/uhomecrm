@@ -45,14 +45,14 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
         open={showOnboarding}
         firstTime
         filters={ms.filters}
-        onSave={(f) => { ms.setFilters(f); ms.setOnboarded(true); ms.proximoLead(undefined); }}
+        onSave={(f) => { ms.setFilters(f); ms.setOnboarded(true); ms.clearNoLeads(); ms.proximoLead(undefined); }}
         onClose={() => { setShowOnboarding(false); ms.setOnboarded(true); }}
       />
       {/* Editar filtros posterior */}
       <OnboardingModal
         open={editFiltersOpen}
         filters={ms.filters}
-        onSave={(f) => { ms.setFilters(f); ms.setCurrent(null); ms.proximoLead(undefined); }}
+        onSave={(f) => { ms.setFilters(f); ms.setCurrent(null); ms.clearNoLeads(); ms.proximoLead(undefined); setEditFiltersOpen(false); }}
         onClose={() => setEditFiltersOpen(false)}
       />
 
