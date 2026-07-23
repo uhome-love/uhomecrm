@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Loader2, Users, Trophy, AlertTriangle, PhoneCall, Sparkles, CalendarCheck2 } from "lucide-react";
+import { Loader2, Users, Trophy, AlertTriangle, PhoneCall, Sparkles, CalendarCheck2, Hand } from "lucide-react";
 import { formatBRT } from "@/lib/brtTime";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const STATUS_META: Record<string, { label: string; dot: string }> = {
   online:  { label: "Online",  dot: "bg-success-500" },
@@ -28,6 +29,25 @@ export function PainelAoVivo({ sessaoId }: { sessaoId: string }) {
   const parts = useMutiraoParticipantes(sessaoId);
   const rank = useMutiraoRanking(sessaoId);
   const canScope = isGestor || isAdmin || isDiretor;
+  const canPoke = isAdmin || isDiretor || isGestor;
+  const [pokingId, setPokingId] = useState<string | null>(null);
+
+  const cutucar = async (corretorProfileId: string, nome: string) => {
+    if (pokingId) return;
+    setPokingId(corretorProfileId);
+    try {
+      const { data, error } = await supabase.functions.invoke("oferta-ativa-cutucar", {
+        body: { corretor_profile_id: corretorProfileId, sessao_id: sessaoId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Cutucada enviada para ${nome} 👋`);
+    } catch (e: any) {
+      toast.error(e?.message || "Não foi possível cutucar");
+    } finally {
+      setPokingId(null);
+    }
+  };
 
   const { data: myProfile } = useQuery({
     queryKey: ["oa-live-my-profile", user?.id],
@@ -93,41 +113,73 @@ export function PainelAoVivo({ sessaoId }: { sessaoId: string }) {
               <p className="text-center text-xs text-muted-foreground py-6">Ninguém aqui ainda.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {filtered.map((p) => {
-                  const status = STATUS_META[p.status_online] ?? STATUS_META.offline;
-                  return (
-                    <div
-                      key={p.corretor_id}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border bg-background hover:bg-muted/40 transition-colors"
-                    >
-                      <div className="relative shrink-0">
-                        <Avatar className="h-9 w-9">
-                          {p.foto_url && <AvatarImage src={p.foto_url} alt={p.nome} />}
-                          <AvatarFallback className="text-xs">{(p.nome || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className={cn(
-                              "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-card",
-                              status.dot,
-                            )} />
-                          </TooltipTrigger>
-                          <TooltipContent>{status.label}</TooltipContent>
-                        </Tooltip>
+                {(() => {
+                  // marca low-perf: bottom 1/3 por pontos OU ocioso; ignora quem tem 0 (recém-entrou)
+                  const sorted = [...filtered].sort((a, b) => a.pontos - b.pontos);
+                  const cutoff = sorted[Math.max(0, Math.floor(filtered.length / 3) - 1)]?.pontos ?? 0;
+                  return filtered.map((p) => {
+                    const status = STATUS_META[p.status_online] ?? STATUS_META.offline;
+                    const isLow = filtered.length >= 3 && (p.status_online === "ocioso" || p.pontos <= cutoff);
+                    const poking = pokingId === p.corretor_id;
+                    return (
+                      <div
+                        key={p.corretor_id}
+                        className={cn(
+                          "flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-colors",
+                          isLow
+                            ? "border-warning-500/40 bg-warning-500/[0.06] hover:bg-warning-500/10"
+                            : "border-border bg-background hover:bg-muted/40",
+                        )}
+                      >
+                        <div className="relative shrink-0">
+                          <Avatar className="h-9 w-9">
+                            {p.foto_url && <AvatarImage src={p.foto_url} alt={p.nome} />}
+                            <AvatarFallback className="text-xs">{(p.nome || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className={cn(
+                                "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-card",
+                                status.dot,
+                              )} />
+                            </TooltipTrigger>
+                            <TooltipContent>{status.label}</TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate text-foreground">{p.nome}</p>
+                          <p className="text-[11px] text-muted-foreground tabular-nums">
+                            {p.ligacoes} lig · {p.aproveitamentos} ap · {p.visitas} vis · <span className="font-semibold text-foreground">{p.pontos}</span> pts
+                          </p>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                          {p.ultima_acao_at ? formatBRT(p.ultima_acao_at, "HH:mm") : "—"}
+                        </span>
+                        {canPoke && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant={isLow ? "default" : "outline"}
+                                className="h-7 w-7 p-0 shrink-0"
+                                disabled={poking}
+                                onClick={() => cutucar(p.corretor_id, p.nome)}
+                                aria-label={`Cutucar ${p.nome}`}
+                              >
+                                {poking
+                                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  : <Hand className="w-3.5 h-3.5" />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Cutucar com aviso motivacional</TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate text-foreground">{p.nome}</p>
-                        <p className="text-[11px] text-muted-foreground tabular-nums">
-                          {p.ligacoes} lig · {p.aproveitamentos} ap · {p.visitas} vis · <span className="font-semibold text-foreground">{p.pontos}</span> pts
-                        </p>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                        {p.ultima_acao_at ? formatBRT(p.ultima_acao_at, "HH:mm") : "—"}
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
+
             )}
           </div>
         </div>
