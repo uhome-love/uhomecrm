@@ -147,12 +147,15 @@ export function PainelAoVivo({ sessaoId }: { sessaoId: string }) {
                   <div className="flex items-center gap-2 text-xs">
                     <span className="w-5 text-center">{i < 3 ? MEDALS[i] : <span className="text-muted-foreground font-semibold">{i + 1}</span>}</span>
                     <span className="flex-1 truncate font-medium text-foreground">{e.equipe}</span>
-                    <span className="text-muted-foreground">{e.corretores} corr</span>
-                    <span className="w-14 text-right font-bold tabular-nums text-foreground">{e.pontos} pts</span>
+                    <span className="text-muted-foreground shrink-0">{e.corretores} corr</span>
+                    <span className="w-14 text-right tabular-nums text-muted-foreground shrink-0">{e.ligacoes} lig</span>
+                    <span className="w-14 text-right tabular-nums text-muted-foreground shrink-0">{e.visitas} vis</span>
+                    <span className="w-16 text-right font-bold tabular-nums text-foreground shrink-0">{e.pontos} pts</span>
                   </div>
                   <Progress value={(e.pontos / maxEqPts) * 100} className="h-1.5" />
                 </div>
               ))}
+
             </div>
           </div>
 
