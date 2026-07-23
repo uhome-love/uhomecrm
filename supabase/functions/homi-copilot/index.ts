@@ -21,10 +21,58 @@ Deno.serve(withCorsAndErrorHandling("homi-copilot", async (req) => {
     return errorResponse("Unauthorized", 401);
   }
 
-  const { lead_id, ultima_mensagem } = await req.json();
+  const reqBody = await req.json();
+  const { lead_id, ultima_mensagem, mode, pipeline_lead_id } = reqBody;
+
+  // ── MODO: dossie_oferta (Mutirão Inteligente) ──
+  if (mode === "dossie_oferta") {
+    const pid = pipeline_lead_id || lead_id;
+    if (!pid) return errorResponse("pipeline_lead_id é obrigatório", 400);
+
+    const sbAdminD = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: pl, error: plErr } = await sbAdminD
+      .from("pipeline_leads")
+      .select("nome, empreendimento, motivo_descarte, reengajamento_status, stage_changed_at, lead_score, lead_temperatura, origem, campanha, objetivo_cliente, bairro_regiao, forma_pagamento, observacoes")
+      .eq("id", pid)
+      .maybeSingle();
+    if (plErr || !pl) return errorResponse("Lead não encontrado", 404);
+
+    const diasDesc = pl.stage_changed_at
+      ? Math.max(0, Math.floor((Date.now() - new Date(pl.stage_changed_at).getTime()) / 86_400_000))
+      : null;
+
+    const prompt = `Você é HOMI, assistente da Uhome Imóveis. Gere um DOSSIÊ RÁPIDO (máx 5 linhas, direto) sobre o lead abaixo para o corretor abordar num mutirão de reativação. Foque em: o que aconteceu, temperatura provável e melhor gancho de abordagem.
+
+Lead: ${pl.nome || "Sem nome"}
+Empreendimento: ${pl.empreendimento || "N/D"}
+Motivo do descarte: ${pl.motivo_descarte || "N/D"}
+Status reengajamento: ${pl.reengajamento_status || "N/D"}
+Dias desde o descarte: ${diasDesc ?? "N/D"}
+Temperatura (score): ${pl.lead_temperatura || "N/D"}${pl.lead_score != null ? ` (${pl.lead_score})` : ""}
+Origem/Campanha: ${pl.origem || "N/D"} / ${pl.campanha || "N/D"}
+Objetivo: ${pl.objetivo_cliente || "N/D"}
+Região: ${pl.bairro_regiao || "N/D"}
+Pagamento: ${pl.forma_pagamento || "N/D"}
+Observações: ${pl.observacoes || "N/D"}
+
+Responda em texto puro, sem markdown, 3-5 linhas, começando pelo diagnóstico e terminando com o gancho de abordagem.`;
+
+    const apiKey = requireApiKey();
+    const raw = await callAI(apiKey, [{ role: "user", content: prompt }], {
+      model: "google/gemini-2.5-flash",
+      fnName: "homi-copilot-dossie",
+      temperature: 0.5,
+    });
+    return jsonResponse({ texto: raw.trim() });
+  }
+
   if (!lead_id || !ultima_mensagem) {
     return errorResponse("lead_id e ultima_mensagem são obrigatórios", 400);
   }
+
 
   // Admin client for broader queries
   const sbAdmin = createClient(
