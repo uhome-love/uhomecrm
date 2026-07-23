@@ -25,10 +25,12 @@ export function LeadCard({
   ms,
   onSemInteresse,
   onAgendarVisita,
+  onOpenFilters,
 }: {
   ms: ReturnType<typeof useMutiraoSession>;
   onSemInteresse: () => void;
   onAgendarVisita: () => void;
+  onOpenFilters?: () => void;
 }) {
   const [dossie, setDossie] = useState<string | null>(null);
   const [dossieLoading, setDossieLoading] = useState(false);
