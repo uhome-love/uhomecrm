@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Loader2, Users, Trophy, AlertTriangle, PhoneCall, Sparkles, CalendarCheck2 } from "lucide-react";
+import { Loader2, Users, Trophy, AlertTriangle, PhoneCall, Sparkles, CalendarCheck2, Hand } from "lucide-react";
 import { formatBRT } from "@/lib/brtTime";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const STATUS_META: Record<string, { label: string; dot: string }> = {
   online:  { label: "Online",  dot: "bg-success-500" },
