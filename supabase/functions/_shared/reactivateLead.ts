@@ -114,12 +114,19 @@ export async function reactivateLead(
     .eq("id", pipeline_lead_id);
   if (upErr) return { ok: false, error: upErr.message };
 
-  await admin.from("pipeline_atividades").insert({
+  // Log da reativação em pipeline_atividades.
+  // Schema exige: titulo NOT NULL, status válido, created_by=auth.users.id.
+  // Antes essa insert falhava silenciosamente (usava coluna corretor_id inexistente).
+  const { error: atvErr } = await admin.from("pipeline_atividades").insert({
     pipeline_lead_id,
-    corretor_id: corretor_profile_id,
     tipo: "ligacao",
+    titulo: "Lead reaproveitado — Oferta Ativa",
     descricao: "Reaproveitado — Oferta Ativa / Lista Inteligente de Descartados",
+    status: "concluida",
+    created_by: corretor_auth_id,
+    responsavel_id: corretor_auth_id,
   });
+  if (atvErr) console.warn("[reactivateLead] atividade log falhou:", atvErr.message);
 
   return { ok: true, gerente_auth_id: gerenteAuthId };
 }
