@@ -196,9 +196,15 @@ export function LeadCard({
             <BaldeIcon className="w-3.5 h-3.5" />
             {balde.label}
           </span>
-          {lead.dias_desde_descarte != null && (
-            <span className="text-xs font-medium opacity-80">Descartado há {lead.dias_desde_descarte}d</span>
-          )}
+          {(() => {
+            // Calcula dias BRT no client (evita off-by-one de tz na RPC)
+            const src = lead.stage_changed_at ?? null;
+            if (!src) return null;
+            const brtOffsetMs = -3 * 60 * 60 * 1000;
+            const toBrtDay = (d: Date) => Math.floor((d.getTime() + brtOffsetMs) / 86_400_000);
+            const dias = Math.max(0, toBrtDay(new Date()) - toBrtDay(new Date(src)));
+            return <span className="text-xs font-medium opacity-80">Descartado há {dias}d</span>;
+          })()}
         </div>
 
         <div className="p-5 space-y-5">
