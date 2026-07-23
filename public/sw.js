@@ -2,8 +2,8 @@
 // Strategy: Stale-While-Revalidate for app shell so the app ALWAYS opens,
 // even on flaky 4G/Wi-Fi or when launched from the home screen offline.
 
-const APP_SHELL_CACHE = "uhomesales-shell-v8";
-const IMAGE_CACHE = "uhomesales-images-v8";
+const APP_SHELL_CACHE = "uhomesales-shell-v9";
+const IMAGE_CACHE = "uhomesales-images-v9";
 
 let _currentVersion = null;
 
