@@ -53,7 +53,7 @@ export function PainelAoVivo({ sessaoId }: { sessaoId: string }) {
 
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
-          {(role === "gestor" || role === "admin" || role === "diretor") && (
+          {(isGestor || isAdmin || isDiretor) && (
             <>
               <Button size="sm" variant={scope === "time" ? "default" : "outline"} onClick={() => setScope("time")}>Minha equipe</Button>
               <Button size="sm" variant={scope === "todos" ? "default" : "outline"} onClick={() => setScope("todos")}>Toda a Uhome</Button>
