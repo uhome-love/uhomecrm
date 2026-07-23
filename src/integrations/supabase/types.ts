@@ -11979,12 +11979,30 @@ export type Database = {
           balde: string
           bucket_order: number
           empreendimento_id: string
+          empreendimento_nome: string
+          empreendimento_segmento_id: string
           id: string
+          lead_campanha: string
+          lead_created_at: string
+          lead_dias_desde_descarte: number
+          lead_email: string
+          lead_empreendimento_raw: string
+          lead_motivo_descarte: string
+          lead_nome: string
+          lead_origem: string
+          lead_reengajamento_status: string
+          lead_score: number
+          lead_stage_changed_at: string
+          lead_telefone: string
+          lead_telefone_normalizado: string
+          lead_temperatura: string
           locked_until: string
           motivo_descarte_raw: string
           pipeline_lead_id: string
           reengajamento_status_raw: string
+          segmento_cor: string
           segmento_id: string
+          segmento_nome: string
         }[]
       }
       presenca_role_scope: { Args: { _user_id: string }; Returns: string }
