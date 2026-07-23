@@ -11,26 +11,32 @@ export function ScriptCollapsible({ lead }: { lead: LeadOferta | null }) {
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const [contexto, setContexto] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function gerar() {
     if (!lead) return;
     setLoading(true);
     try {
+      const empreendimento = lead.empreendimento_canonico?.nome ?? lead.empreendimento_raw ?? "N/D";
+      const situacao_lead = lead.motivo_descarte
+        ? `Lead descartado (${lead.dias_desde_descarte ?? "?"}d) — motivo: ${lead.motivo_descarte}`
+        : `Lead descartado há ${lead.dias_desde_descarte ?? "?"} dias`;
+
       const { data, error } = await supabase.functions.invoke("generate-script", {
         body: {
-          contexto: "oferta_ativa_mutirao",
-          lead_nome: lead.nome,
-          empreendimento: lead.empreendimento_canonico?.nome ?? lead.empreendimento_raw,
-          segmento: lead.segmento?.nome,
-          motivo_descarte: lead.motivo_descarte,
-          dias_descarte: lead.dias_desde_descarte,
+          tipo: "ligacao",
+          empreendimento,
+          situacao_lead,
+          objetivo: "Reativar lead descartado no Mutirão Inteligente",
+          prompt_personalizado: contexto.trim() || undefined,
         },
       });
       if (error) throw error;
-      const s = (data as any)?.script || (data as any)?.texto || "";
+      const s = (data as any)?.content || (data as any)?.script || (data as any)?.texto || "";
       setText(s);
     } catch (e: any) {
+      console.error("[generate-script]", e);
       toast.error("Erro ao gerar script — cole manualmente.");
     } finally {
       setLoading(false);
@@ -48,6 +54,13 @@ export function ScriptCollapsible({ lead }: { lead: LeadOferta | null }) {
       </button>
       {open && (
         <div className="px-4 pb-3 space-y-2">
+          <Textarea
+            value={contexto}
+            onChange={(e) => setContexto(e.target.value)}
+            placeholder="Contexto (opcional): descreva a intenção — ex.: 'reativar leads de Casa Tua com a novidade de casas decoradas à venda; script objetivo e curto'"
+            rows={2}
+            className="text-xs"
+          />
           <div className="flex gap-2">
             <Button size="sm" onClick={gerar} disabled={loading || !lead}>
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}

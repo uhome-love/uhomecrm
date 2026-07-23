@@ -106,8 +106,32 @@ export function LeadCard({
     playSoundFanfare();
   };
 
+  // ─── Skeleton durante transição (puxar/pular) ───
+  if (!ms.current && ms.proximoLeadPending && !ms.noLeadsReason) {
+    return (
+      <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-card animate-fade-in">
+        <div className="px-4 py-2 border-b border-border">
+          <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+        </div>
+        <div className="p-5 space-y-5">
+          <div className="space-y-2">
+            <div className="h-7 w-2/3 rounded bg-muted animate-pulse" />
+            <div className="h-4 w-40 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="flex gap-1.5">
+            <div className="h-6 w-32 rounded bg-muted animate-pulse" />
+            <div className="h-6 w-24 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="h-20 w-full rounded-lg bg-muted animate-pulse" />
+          <div className="h-10 w-full rounded bg-muted animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   // ─── Empty state ───
   if (!ms.current || !lead) {
+
     const noLeads = !!ms.noLeadsReason;
     const hasFilters = (ms.filters.empreendimento_ids.length + ms.filters.segmento_ids.length) > 0;
     return (
