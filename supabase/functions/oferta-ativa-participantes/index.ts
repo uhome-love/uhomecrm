@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     const { data: parts, error } = await admin
       .from("oferta_ativa_participantes")
       .select(
-        "id, corretor_id, gerente_id, equipe_text, status_online, ultima_acao_at, ultimo_heartbeat_at, ligacoes_count, aproveitamentos_count, visitas_count, pontos, profiles:corretor_id(nome, foto_url)",
+        "id, corretor_id, gerente_id, equipe_text, status_online, ultima_acao_at, ultimo_heartbeat_at, ligacoes_count, aproveitamentos_count, visitas_count, pontos, profiles:corretor_id(nome, avatar_url)",
       )
       .eq("sessao_id", sessao_id);
     if (error) return errorResponse(error.message, 500);
