@@ -23,6 +23,9 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
   const [editFiltersOpen, setEditFiltersOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(!ms.onboarded);
 
+  // Reabre onboarding se onboarded voltar a false (Finalizar e sair)
+  useEffect(() => { if (!ms.onboarded) setShowOnboarding(true); }, [ms.onboarded]);
+
   // Cronômetro fim da sessão
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -42,14 +45,14 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
         open={showOnboarding}
         firstTime
         filters={ms.filters}
-        onSave={(f) => { ms.setFilters(f); ms.setOnboarded(true); ms.proximoLead(undefined); }}
+        onSave={(f) => { ms.setFilters(f); ms.setOnboarded(true); ms.clearNoLeads(); ms.proximoLead(undefined); }}
         onClose={() => { setShowOnboarding(false); ms.setOnboarded(true); }}
       />
       {/* Editar filtros posterior */}
       <OnboardingModal
         open={editFiltersOpen}
         filters={ms.filters}
-        onSave={(f) => { ms.setFilters(f); ms.setCurrent(null); ms.proximoLead(undefined); }}
+        onSave={(f) => { ms.setFilters(f); ms.setCurrent(null); ms.clearNoLeads(); ms.proximoLead(undefined); setEditFiltersOpen(false); }}
         onClose={() => setEditFiltersOpen(false)}
       />
 
@@ -79,7 +82,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
             <Timer className="w-3.5 h-3.5" />
             {hh}:{mm}:{ss}
           </div>
-          <Button size="sm" variant="ghost" onClick={() => nav("/corretor")}>
+          <Button size="sm" variant="ghost" onClick={() => { ms.resetCorretor(); setShowOnboarding(true); }}>
             <X className="w-4 h-4 mr-1" /> Finalizar e sair
           </Button>
         </div>
@@ -93,6 +96,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
             ms={ms}
             onSemInteresse={() => setSemInteresseOpen(true)}
             onAgendarVisita={() => setVisitaOpen(true)}
+            onOpenFilters={() => setEditFiltersOpen(true)}
           />
           <ScriptCollapsible lead={ms.current?.lead ?? null} />
         </div>
