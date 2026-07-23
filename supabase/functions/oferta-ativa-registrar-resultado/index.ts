@@ -161,6 +161,7 @@ Deno.serve(async (req) => {
       const targetStage = resultado === "visita_agendada" ? VISITA_STAGE_ID : NOVO_LEAD_STAGE_ID;
       const react = await reactivateLead(admin, {
         pipeline_lead_id,
+        corretor_auth_id: meuAuthId,
         corretor_profile_id: meuProfileId,
         target_stage_id: targetStage,
       });
@@ -194,20 +195,30 @@ Deno.serve(async (req) => {
 
       // Visita
       if (resultado === "visita_agendada" && visita_payload) {
+        // Busca dados canônicos do lead para fallback
+        const { data: leadRow } = await admin
+          .from("pipeline_leads")
+          .select("nome, telefone")
+          .eq("id", pipeline_lead_id)
+          .maybeSingle();
+
         const { data: vIns, error: vErr } = await admin
           .from("visitas")
           .insert({
             pipeline_lead_id,
-            corretor_id: meuProfileId,
+            corretor_id: meuAuthId, // auth.users.id — RLS/triggers exigem
+            gerente_id: react.gerente_auth_id ?? null,
+            tipo: "lead",
             data_visita: visita_payload.data_visita ?? visita_payload.data ?? null,
             hora_visita: visita_payload.hora_visita ?? visita_payload.hora ?? null,
             empreendimento: visita_payload.empreendimento ?? null,
-            nome_cliente: visita_payload.nome_cliente ?? null,
-            telefone: visita_payload.telefone ?? null,
+            nome_cliente: visita_payload.nome_cliente ?? leadRow?.nome ?? "Cliente",
+            telefone: visita_payload.telefone ?? leadRow?.telefone ?? null,
             local_visita: visita_payload.local_visita ?? null,
             status: "marcada",
             origem: "oferta_ativa",
             observacoes: visita_payload.observacoes ?? null,
+            responsavel_visita: visita_payload.responsavel_visita ?? "proprio_corretor",
             created_by: userId,
           })
           .select("id")
