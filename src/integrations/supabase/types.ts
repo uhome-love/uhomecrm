@@ -5160,6 +5160,140 @@ export type Database = {
           },
         ]
       }
+      oferta_ativa_fila: {
+        Row: {
+          balde: string
+          bucket_order: number
+          claimed_by: string | null
+          claimed_until: string | null
+          cooldown_ate: string | null
+          created_at: string
+          empreendimento_id: string | null
+          id: string
+          locked_by: string | null
+          locked_until: string | null
+          motivo_descarte_raw: string | null
+          pipeline_lead_id: string
+          reengajamento_status_raw: string | null
+          segmento_id: string | null
+          sessao_id: string
+          ultimo_corretor_id: string | null
+          ultimo_oferecido_em: string | null
+          updated_at: string
+        }
+        Insert: {
+          balde: string
+          bucket_order?: number
+          claimed_by?: string | null
+          claimed_until?: string | null
+          cooldown_ate?: string | null
+          created_at?: string
+          empreendimento_id?: string | null
+          id?: string
+          locked_by?: string | null
+          locked_until?: string | null
+          motivo_descarte_raw?: string | null
+          pipeline_lead_id: string
+          reengajamento_status_raw?: string | null
+          segmento_id?: string | null
+          sessao_id: string
+          ultimo_corretor_id?: string | null
+          ultimo_oferecido_em?: string | null
+          updated_at?: string
+        }
+        Update: {
+          balde?: string
+          bucket_order?: number
+          claimed_by?: string | null
+          claimed_until?: string | null
+          cooldown_ate?: string | null
+          created_at?: string
+          empreendimento_id?: string | null
+          id?: string
+          locked_by?: string | null
+          locked_until?: string | null
+          motivo_descarte_raw?: string | null
+          pipeline_lead_id?: string
+          reengajamento_status_raw?: string | null
+          segmento_id?: string | null
+          sessao_id?: string
+          ultimo_corretor_id?: string | null
+          ultimo_oferecido_em?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_fila_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "roleta_segmentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_sessao_id_fkey"
+            columns: ["sessao_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_sessoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_ultimo_corretor_id_fkey"
+            columns: ["ultimo_corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_fila_ultimo_corretor_id_fkey"
+            columns: ["ultimo_corretor_id"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
       oferta_ativa_leads: {
         Row: {
           cadastrado_jetimob: boolean
@@ -5255,6 +5389,74 @@ export type Database = {
           },
         ]
       }
+      oferta_ativa_ligacoes: {
+        Row: {
+          corretor_id: string
+          created_at: string
+          id: string
+          motivo_perda: string | null
+          observacao: string | null
+          pipeline_lead_id: string
+          pontos: number
+          prospecto: Json | null
+          resultado: string
+          sessao_id: string
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string
+          id?: string
+          motivo_perda?: string | null
+          observacao?: string | null
+          pipeline_lead_id: string
+          pontos?: number
+          prospecto?: Json | null
+          resultado: string
+          sessao_id: string
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string
+          id?: string
+          motivo_perda?: string | null
+          observacao?: string | null
+          pipeline_lead_id?: string
+          pontos?: number
+          prospecto?: Json | null
+          resultado?: string
+          sessao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_ligacoes_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_ligacoes_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_ligacoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_ligacoes_sessao_id_fkey"
+            columns: ["sessao_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_sessoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oferta_ativa_listas: {
         Row: {
           campanha: string | null
@@ -5311,6 +5513,208 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "roleta_segmentos"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      oferta_ativa_metas: {
+        Row: {
+          corretor_id: string
+          created_at: string
+          id: string
+          meta_aproveitamentos: number
+          meta_ligacoes: number
+          meta_visitas: number
+          sessao_id: string
+          updated_at: string
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string
+          id?: string
+          meta_aproveitamentos?: number
+          meta_ligacoes?: number
+          meta_visitas?: number
+          sessao_id: string
+          updated_at?: string
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string
+          id?: string
+          meta_aproveitamentos?: number
+          meta_ligacoes?: number
+          meta_visitas?: number
+          sessao_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_metas_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_metas_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_metas_sessao_id_fkey"
+            columns: ["sessao_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_sessoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oferta_ativa_participantes: {
+        Row: {
+          aproveitamentos_count: number
+          corretor_id: string
+          created_at: string
+          equipe_text: string | null
+          gerente_id: string | null
+          id: string
+          ligacoes_count: number
+          meta_aproveitamentos: number
+          meta_ligacoes: number
+          meta_visitas: number
+          pontos: number
+          sessao_id: string
+          status_online: string
+          ultima_acao_at: string | null
+          ultimo_heartbeat_at: string | null
+          updated_at: string
+          visitas_count: number
+        }
+        Insert: {
+          aproveitamentos_count?: number
+          corretor_id: string
+          created_at?: string
+          equipe_text?: string | null
+          gerente_id?: string | null
+          id?: string
+          ligacoes_count?: number
+          meta_aproveitamentos?: number
+          meta_ligacoes?: number
+          meta_visitas?: number
+          pontos?: number
+          sessao_id: string
+          status_online?: string
+          ultima_acao_at?: string | null
+          ultimo_heartbeat_at?: string | null
+          updated_at?: string
+          visitas_count?: number
+        }
+        Update: {
+          aproveitamentos_count?: number
+          corretor_id?: string
+          created_at?: string
+          equipe_text?: string | null
+          gerente_id?: string | null
+          id?: string
+          ligacoes_count?: number
+          meta_aproveitamentos?: number
+          meta_ligacoes?: number
+          meta_visitas?: number
+          pontos?: number
+          sessao_id?: string
+          status_online?: string
+          ultima_acao_at?: string | null
+          ultimo_heartbeat_at?: string | null
+          updated_at?: string
+          visitas_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_participantes_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_participantes_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_participantes_gerente_id_fkey"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_participantes_gerente_id_fkey"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_participantes_sessao_id_fkey"
+            columns: ["sessao_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_sessoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oferta_ativa_sessoes: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          data: string
+          fim_at: string
+          id: string
+          inicio_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          data: string
+          fim_at: string
+          id?: string
+          inicio_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          fim_at?: string
+          id?: string
+          inicio_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_sessoes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_sessoes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_checkpoint_daily"
+            referencedColumns: ["profile_id"]
           },
         ]
       }
@@ -11559,6 +11963,11 @@ export type Database = {
       norm_empreendimento: { Args: { s: string }; Returns: string }
       normalize_alias: { Args: { input: string }; Returns: string }
       normalize_telefone: { Args: { raw: string }; Returns: string }
+      oa_ao_vivo_is_gestor_of: {
+        Args: { _profile_id: string }
+        Returns: boolean
+      }
+      oa_ao_vivo_my_profile_id: { Args: never; Returns: string }
       presenca_role_scope: { Args: { _user_id: string }; Returns: string }
       processar_cadencia_sem_contato: {
         Args: never
