@@ -104,6 +104,8 @@ const FAILURE_REASON_LABELS: Record<string, string> = {
   all_brokers_exhausted: "já passaram por todos os corretores (timeout/rejeição)",
   no_fila_active: "sem corretores na fila/janela selecionada",
   no_broker_available: "sem corretor elegível disponível",
+  sem_alocado_produto: "sem corretor alocado ativo neste produto",
+  empreendimento_inativo: "empreendimento inativo",
   lead_not_found: "lead não encontrado",
   already_assigned: "lead já atribuído",
   rpc_error: "erro interno na distribuição",
