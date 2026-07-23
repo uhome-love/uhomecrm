@@ -5,135 +5,138 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { BarChart3, ArrowLeft, Eye, MousePointerClick, Share2, TrendingUp, Loader2, Search } from "lucide-react";
+import { BarChart3, ArrowLeft, Copy, Download, Eye, Sparkles, Loader2, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-interface ShareRow {
-  id: string;
-  corretor_id: string;
-  empreendimento_slug: string;
-  empreendimento_nome: string | null;
-  titulo: string | null;
-  assets: any[];
-  views: number;
-  cliques: number;
-  created_at: string;
-  expires_at: string | null;
+interface RecenteRow {
+  user_id: string;
+  material_id: string;
+  acao: string;
+  last_at: string;
+  count: number;
+  materiais_links: {
+    id: string;
+    titulo: string;
+    categoria: string;
+    materiais_empreendimentos?: { nome: string } | null;
+  } | null;
 }
 
 interface ProfileLite { id: string; nome: string | null; email: string | null; }
 
-function useSharesAnalytics(days: number) {
+function useUsageAnalytics(days: number) {
   return useQuery({
-    queryKey: ["materiais", "analytics", days],
+    queryKey: ["materiais", "usage", days],
     queryFn: async () => {
       const since = new Date(Date.now() - days * 86400_000).toISOString();
-      const { data: shares, error } = await supabase
-        .from("materiais_shares" as any)
-        .select("*")
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(1000);
+      const { data, error } = await (supabase as any)
+        .from("materiais_recentes")
+        .select(
+          "user_id, material_id, acao, last_at, count, materiais_links!inner(id, titulo, categoria, materiais_empreendimentos(nome))"
+        )
+        .gte("last_at", since)
+        .order("last_at", { ascending: false })
+        .limit(1500);
       if (error) throw error;
 
-      const list = (shares ?? []) as unknown as ShareRow[];
-      const corretorIds = Array.from(new Set(list.map((s) => s.corretor_id)));
+      const rows = (data ?? []) as RecenteRow[];
+      const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
 
       let profiles: ProfileLite[] = [];
-      if (corretorIds.length) {
+      if (userIds.length) {
         const { data: profs } = await supabase
           .from("profiles")
           .select("id, user_id, nome, email")
-          .in("user_id", corretorIds);
+          .in("user_id", userIds);
         profiles = ((profs ?? []) as any[]).map((p) => ({
           id: p.user_id, nome: p.nome, email: p.email,
         }));
       }
-      return { shares: list, profiles };
+      return { rows, profiles };
     },
     staleTime: 60_000,
   });
 }
 
+const ACAO_LABEL: Record<string, { label: string; icon: any }> = {
+  copiar: { label: "Copiar", icon: Copy },
+  download: { label: "Download", icon: Download },
+  preview: { label: "Preview", icon: Eye },
+  abrir: { label: "Abrir", icon: Eye },
+  followup: { label: "Follow-up IA", icon: Sparkles },
+  whatsapp: { label: "WhatsApp", icon: Sparkles },
+};
+
 export default function MateriaisAnalytics() {
   const [days, setDays] = useState(30);
   const [search, setSearch] = useState("");
-  const { data, isLoading } = useSharesAnalytics(days);
+  const { data, isLoading } = useUsageAnalytics(days);
 
-  const shares = data?.shares ?? [];
-  const profByCorretor = useMemo(
+  const rows = data?.rows ?? [];
+  const profByUser = useMemo(
     () => Object.fromEntries((data?.profiles ?? []).map((p) => [p.id, p])),
     [data]
   );
 
   const totals = useMemo(() => {
-    const totalShares = shares.length;
-    const totalViews = shares.reduce((a, s) => a + (s.views ?? 0), 0);
-    const totalCliques = shares.reduce((a, s) => a + (s.cliques ?? 0), 0);
-    const zero = shares.filter((s) => (s.views ?? 0) === 0).length;
-    return {
-      totalShares,
-      totalViews,
-      totalCliques,
-      taxaAbertura: totalShares ? Math.round(((totalShares - zero) / totalShares) * 100) : 0,
-    };
-  }, [shares]);
+    const totalAcoes = rows.reduce((a, r) => a + (r.count ?? 1), 0);
+    const totalCopiar = rows.filter((r) => r.acao === "copiar").reduce((a, r) => a + (r.count ?? 1), 0);
+    const totalDownload = rows.filter((r) => r.acao === "download").reduce((a, r) => a + (r.count ?? 1), 0);
+    const totalFollowUp = rows.filter((r) => r.acao === "followup").reduce((a, r) => a + (r.count ?? 1), 0);
+    return { totalAcoes, totalCopiar, totalDownload, totalFollowUp };
+  }, [rows]);
 
   const topCorretores = useMemo(() => {
-    const map = new Map<string, { nome: string; shares: number; views: number; cliques: number }>();
-    for (const s of shares) {
-      const p = profByCorretor[s.corretor_id];
+    const map = new Map<string, { nome: string; acoes: number }>();
+    for (const r of rows) {
+      const p = profByUser[r.user_id];
       const nome = p?.nome || p?.email || "—";
-      const cur = map.get(s.corretor_id) ?? { nome, shares: 0, views: 0, cliques: 0 };
-      cur.shares++;
-      cur.views += s.views ?? 0;
-      cur.cliques += s.cliques ?? 0;
-      map.set(s.corretor_id, cur);
+      const cur = map.get(r.user_id) ?? { nome, acoes: 0 };
+      cur.acoes += r.count ?? 1;
+      map.set(r.user_id, cur);
     }
-    return Array.from(map.values()).sort((a, b) => b.views - a.views).slice(0, 10);
-  }, [shares, profByCorretor]);
+    return Array.from(map.values()).sort((a, b) => b.acoes - a.acoes).slice(0, 10);
+  }, [rows, profByUser]);
 
-  const topEmpreendimentos = useMemo(() => {
-    const map = new Map<string, { nome: string; shares: number; views: number; cliques: number }>();
-    for (const s of shares) {
-      const key = s.empreendimento_slug;
-      const cur = map.get(key) ?? {
-        nome: s.empreendimento_nome || s.empreendimento_slug,
-        shares: 0, views: 0, cliques: 0,
+  const topMateriais = useMemo(() => {
+    const map = new Map<string, { titulo: string; empreendimento: string; acoes: number }>();
+    for (const r of rows) {
+      if (!r.materiais_links) continue;
+      const cur = map.get(r.material_id) ?? {
+        titulo: r.materiais_links.titulo,
+        empreendimento: r.materiais_links.materiais_empreendimentos?.nome ?? "—",
+        acoes: 0,
       };
-      cur.shares++;
-      cur.views += s.views ?? 0;
-      cur.cliques += s.cliques ?? 0;
-      map.set(key, cur);
+      cur.acoes += r.count ?? 1;
+      map.set(r.material_id, cur);
     }
-    return Array.from(map.values()).sort((a, b) => b.views - a.views).slice(0, 10);
-  }, [shares]);
+    return Array.from(map.values()).sort((a, b) => b.acoes - a.acoes).slice(0, 10);
+  }, [rows]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return shares;
-    return shares.filter((s) => {
-      const p = profByCorretor[s.corretor_id];
+    if (!q) return rows;
+    return rows.filter((r) => {
+      const p = profByUser[r.user_id];
       return (
-        (s.titulo ?? "").toLowerCase().includes(q) ||
-        (s.empreendimento_nome ?? "").toLowerCase().includes(q) ||
+        (r.materiais_links?.titulo ?? "").toLowerCase().includes(q) ||
+        (r.materiais_links?.materiais_empreendimentos?.nome ?? "").toLowerCase().includes(q) ||
         (p?.nome ?? "").toLowerCase().includes(q) ||
         (p?.email ?? "").toLowerCase().includes(q)
       );
     });
-  }, [shares, search, profByCorretor]);
+  }, [rows, search, profByUser]);
 
   return (
     <div className="container max-w-7xl mx-auto py-6 space-y-6">
       <PageHeader
         title="Analytics de Materiais"
-        subtitle="Performance dos links comerciais gerados pelos corretores."
+        subtitle="Uso dos materiais do Hub pelos corretores (copiar, download, follow-up IA)."
         icon={<BarChart3 className="h-5 w-5" />}
         actions={
           <Button variant="outline" size="sm" asChild>
@@ -164,36 +167,23 @@ export default function MateriaisAnalytics() {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <KpiCard icon={Share2} label="Links gerados" value={totals.totalShares} />
-            <KpiCard icon={Eye} label="Visualizações" value={totals.totalViews} />
-            <KpiCard icon={MousePointerClick} label="Cliques em assets" value={totals.totalCliques} />
-            <KpiCard icon={TrendingUp} label="Taxa de abertura" value={`${totals.taxaAbertura}%`} />
+            <KpiCard icon={BarChart3} label="Total de ações" value={totals.totalAcoes} />
+            <KpiCard icon={Copy} label="Copiar link" value={totals.totalCopiar} />
+            <KpiCard icon={Download} label="Downloads" value={totals.totalDownload} />
+            <KpiCard icon={Sparkles} label="Follow-ups IA" value={totals.totalFollowUp} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Top corretores</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-base">Top corretores</CardTitle></CardHeader>
               <CardContent className="p-0">
-                <RankTable
-                  headerLabel="Corretor"
-                  rows={topCorretores}
-                  emptyMsg="Nenhum share no período."
-                />
+                <RankTable rows={topCorretores.map((r) => ({ label: r.nome, sub: null, valor: r.acoes }))} emptyMsg="Sem uso no período." />
               </CardContent>
             </Card>
-
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Top empreendimentos</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-base">Top materiais</CardTitle></CardHeader>
               <CardContent className="p-0">
-                <RankTable
-                  headerLabel="Empreendimento"
-                  rows={topEmpreendimentos}
-                  emptyMsg="Nenhum share no período."
-                />
+                <RankTable rows={topMateriais.map((r) => ({ label: r.titulo, sub: r.empreendimento, valor: r.acoes }))} emptyMsg="Sem uso no período." />
               </CardContent>
             </Card>
           </div>
@@ -201,13 +191,11 @@ export default function MateriaisAnalytics() {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <CardTitle className="text-base">
-                  Todos os shares ({filtered.length})
-                </CardTitle>
+                <CardTitle className="text-base">Atividade recente ({filtered.length})</CardTitle>
                 <div className="relative w-full sm:w-72">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por corretor, título..."
+                    placeholder="Buscar por corretor, material..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-9 h-9"
@@ -217,9 +205,7 @@ export default function MateriaisAnalytics() {
             </CardHeader>
             <CardContent className="p-0">
               {filtered.length === 0 ? (
-                <div className="py-10 text-center text-sm text-muted-foreground">
-                  Nenhum share no período selecionado.
-                </div>
+                <div className="py-10 text-center text-sm text-muted-foreground">Sem atividade no período.</div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
@@ -227,45 +213,36 @@ export default function MateriaisAnalytics() {
                       <TableRow>
                         <TableHead>Data</TableHead>
                         <TableHead>Corretor</TableHead>
+                        <TableHead>Material</TableHead>
                         <TableHead>Empreendimento</TableHead>
-                        <TableHead>Título</TableHead>
-                        <TableHead className="text-right">Assets</TableHead>
-                        <TableHead className="text-right">Views</TableHead>
-                        <TableHead className="text-right">Cliques</TableHead>
-                        <TableHead>Ações</TableHead>
+                        <TableHead>Ação</TableHead>
+                        <TableHead className="text-right">Qtd</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filtered.slice(0, 200).map((s) => {
-                        const p = profByCorretor[s.corretor_id];
+                      {filtered.slice(0, 200).map((r) => {
+                        const p = profByUser[r.user_id];
                         const nome = p?.nome || p?.email || "—";
-                        const url = `${window.location.origin}/m/${s.id}`;
+                        const acaoInfo = ACAO_LABEL[r.acao] ?? { label: r.acao, icon: Eye };
+                        const AIcon = acaoInfo.icon;
                         return (
-                          <TableRow key={s.id}>
+                          <TableRow key={`${r.user_id}-${r.material_id}-${r.acao}`}>
                             <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                              {format(new Date(s.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
+                              {format(new Date(r.last_at), "dd/MM/yy HH:mm", { locale: ptBR })}
                             </TableCell>
                             <TableCell className="text-sm">{nome}</TableCell>
-                            <TableCell className="text-sm">{s.empreendimento_nome ?? s.empreendimento_slug}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground max-w-[240px] truncate">
-                              {s.titulo ?? "—"}
+                            <TableCell className="text-sm max-w-[280px] truncate">
+                              {r.materiais_links?.titulo ?? "—"}
                             </TableCell>
-                            <TableCell className="text-right text-xs">
-                              <Badge variant="secondary">{Array.isArray(s.assets) ? s.assets.length : 0}</Badge>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {r.materiais_links?.materiais_empreendimentos?.nome ?? "—"}
                             </TableCell>
-                            <TableCell className="text-right font-medium">{s.views}</TableCell>
-                            <TableCell className="text-right font-medium">{s.cliques}</TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(url);
-                                }}
-                              >
-                                Copiar link
-                              </Button>
+                            <TableCell className="text-sm">
+                              <span className="inline-flex items-center gap-1 text-xs">
+                                <AIcon className="h-3 w-3" /> {acaoInfo.label}
+                              </span>
                             </TableCell>
+                            <TableCell className="text-right text-sm font-medium">{r.count ?? 1}</TableCell>
                           </TableRow>
                         );
                       })}
@@ -295,15 +272,7 @@ function KpiCard({ icon: Icon, label, value }: { icon: any; label: string; value
   );
 }
 
-function RankTable({
-  headerLabel,
-  rows,
-  emptyMsg,
-}: {
-  headerLabel: string;
-  rows: { nome: string; shares: number; views: number; cliques: number }[];
-  emptyMsg: string;
-}) {
+function RankTable({ rows, emptyMsg }: { rows: { label: string; sub: string | null; valor: number }[]; emptyMsg: string }) {
   if (rows.length === 0) {
     return <div className="py-8 text-center text-sm text-muted-foreground">{emptyMsg}</div>;
   }
@@ -311,19 +280,18 @@ function RankTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>{headerLabel}</TableHead>
-          <TableHead className="text-right">Shares</TableHead>
-          <TableHead className="text-right">Views</TableHead>
-          <TableHead className="text-right">Cliques</TableHead>
+          <TableHead>Nome</TableHead>
+          <TableHead className="text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.map((r, i) => (
-          <TableRow key={`${r.nome}-${i}`}>
-            <TableCell className="text-sm">{r.nome}</TableCell>
-            <TableCell className="text-right text-sm">{r.shares}</TableCell>
-            <TableCell className="text-right text-sm font-medium">{r.views}</TableCell>
-            <TableCell className="text-right text-sm font-medium">{r.cliques}</TableCell>
+          <TableRow key={`${r.label}-${i}`}>
+            <TableCell className="text-sm">
+              {r.label}
+              {r.sub && <span className="block text-xs text-muted-foreground">{r.sub}</span>}
+            </TableCell>
+            <TableCell className="text-right text-sm font-medium">{r.valor}</TableCell>
           </TableRow>
         ))}
       </TableBody>

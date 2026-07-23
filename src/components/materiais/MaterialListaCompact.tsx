@@ -1,17 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Copy, Download, MessageCircle, Star, Loader2 } from "lucide-react";
+import { ExternalLink, Copy, Download, Loader2 } from "lucide-react";
 import type { MaterialComEmp } from "@/hooks/useMateriaisFavoritos";
-import {
-  useToggleFavorito,
-  useMaterialFavoritoIds,
-  registrarMaterialRecente,
-} from "@/hooks/useMateriaisFavoritos";
+import { registrarMaterialRecente } from "@/hooks/useMateriaisFavoritos";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { getCategoriaInfo } from "./CategoriaIcon";
 import { MaterialPreviewDialog } from "./MaterialPreviewDialog";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 
 const PREVIEWABLE = (link: MaterialComEmp) => {
   if (!link.storage_path) return false;
@@ -28,8 +23,6 @@ interface Props {
 }
 
 export function MaterialListaCompact({ items, loading, emptyLabel }: Props) {
-  const { data: favIds } = useMaterialFavoritoIds();
-  const toggleFav = useToggleFavorito();
   const [previewLink, setPreviewLink] = useState<MaterialComEmp | null>(null);
 
   const getSignedUrl = async (link: MaterialComEmp, download = false): Promise<string | null> => {
@@ -67,12 +60,6 @@ export function MaterialListaCompact({ items, loading, emptyLabel }: Props) {
     if (!url) return;
     const a = document.createElement("a"); a.href = url; a.rel = "noopener noreferrer"; a.click();
   };
-  const shareWhatsapp = async (link: MaterialComEmp) => {
-    const url = await getSignedUrl(link, false);
-    if (!url) return;
-    registrarMaterialRecente(link.id, "whatsapp");
-    window.open(`https://wa.me/?text=${encodeURIComponent(`${link.titulo}\n\n${url}`)}`, "_blank", "noopener,noreferrer");
-  };
 
   if (loading) {
     return (
@@ -95,7 +82,6 @@ export function MaterialListaCompact({ items, loading, emptyLabel }: Props) {
         {items.map((m) => {
           const info = getCategoriaInfo(m.categoria);
           const Icon = info.icon;
-          const isFav = !!favIds?.has(m.id);
           return (
             <div key={m.id} className="group flex items-center gap-2 p-2.5 rounded-lg border border-border/60 bg-card hover:bg-muted/40 transition-colors">
               <div className="h-8 w-8 rounded bg-muted flex items-center justify-center flex-shrink-0">
@@ -112,11 +98,6 @@ export function MaterialListaCompact({ items, loading, emptyLabel }: Props) {
                 </p>
               </button>
               <div className="flex items-center gap-0.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7", isFav && "text-yellow-500")}
-                  title={isFav ? "Remover" : "Favoritar"}
-                  onClick={() => toggleFav.mutate({ materialId: m.id, isFav })}>
-                  <Star className={cn("h-3.5 w-3.5", isFav && "fill-yellow-500")} />
-                </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7" title="Copiar" onClick={() => copyLink(m)}>
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
@@ -125,9 +106,6 @@ export function MaterialListaCompact({ items, loading, emptyLabel }: Props) {
                     <Download className="h-3.5 w-3.5" />
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" title="WhatsApp" onClick={() => shareWhatsapp(m)}>
-                  <MessageCircle className="h-3.5 w-3.5" />
-                </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7" title="Abrir" onClick={() => openLink(m)}>
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Button>

@@ -1,39 +1,32 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, ExternalLink, MoreVertical, Pencil, Plus, RefreshCw, Share2, Trash2, Upload, Download, Copy, MessageCircle, Star } from "lucide-react";
+import {
+  Building2, MoreVertical, Pencil, Plus, Trash2, Upload, Star, Copy, Sparkles,
+} from "lucide-react";
 import type { MaterialEmpreendimento, MaterialLink } from "@/hooks/useMateriais";
-import { getCategoriaInfo } from "./CategoriaIcon";
 import { LinkFormDialog } from "./LinkFormDialog";
 import { EmpreendimentoFormDialog } from "./EmpreendimentoFormDialog";
-import { GerarLinkDialog } from "./GerarLinkDialog";
 import { UploadMaterialDialog } from "./UploadMaterialDialog";
 import { MaterialPreviewDialog } from "./MaterialPreviewDialog";
+import { MaterialItem, isPreviewable } from "./MaterialItem";
+import { FollowUpMaterialDialog } from "./FollowUpMaterialDialog";
 import { useMateriaisMutations } from "@/hooks/useMateriaisMutations";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
-  useMaterialFavoritoIds,
-  useToggleFavorito,
   registrarMaterialRecente,
+  useEmpreendimentoFavoritoIds,
+  useToggleEmpreendimentoFavorito,
 } from "@/hooks/useMateriaisFavoritos";
 import { cn } from "@/lib/utils";
-
-const PREVIEWABLE = (link: MaterialLink) => {
-  if (!link.storage_path) return false;
-  const m = (link.mime_type || "").toLowerCase();
-  if (m.startsWith("image/") || m.startsWith("video/") || m.startsWith("audio/") || m === "application/pdf") return true;
-  const ext = link.storage_path.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toLowerCase();
-  return !!ext && ["png","jpg","jpeg","webp","gif","avif","mp4","webm","mov","m4v","pdf","mp3","wav","ogg","m4a"].includes(ext);
-};
 
 interface Props {
   empreendimento: MaterialEmpreendimento;
@@ -42,17 +35,21 @@ interface Props {
 
 export function MaterialCard({ empreendimento, canEdit }: Props) {
   const { deleteEmpreendimento, deleteLink } = useMateriaisMutations();
-  const { data: favIds } = useMaterialFavoritoIds();
-  const toggleFav = useToggleFavorito();
+  const { data: favEmpIds } = useEmpreendimentoFavoritoIds();
+  const toggleFavEmp = useToggleEmpreendimentoFavorito();
+  const isFav = !!favEmpIds?.has(empreendimento.id);
+
   const [editEmp, setEditEmp] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [linkDialog, setLinkDialog] = useState<{ open: boolean; link: MaterialLink | null }>({
     open: false, link: null,
   });
   const [linkToDelete, setLinkToDelete] = useState<MaterialLink | null>(null);
   const [previewLink, setPreviewLink] = useState<MaterialLink | null>(null);
+  const [followUp, setFollowUp] = useState<{ open: boolean; materiais: MaterialLink[] }>({
+    open: false, materiais: [],
+  });
 
   const getSignedUrl = async (link: MaterialLink, download = false): Promise<string | null> => {
     if (!link.storage_path) return link.url || null;
@@ -71,11 +68,8 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
   };
 
   const openLink = async (link: MaterialLink) => {
-    registrarMaterialRecente(link.id, PREVIEWABLE(link) ? "preview" : "abrir");
-    if (PREVIEWABLE(link)) {
-      setPreviewLink(link);
-      return;
-    }
+    registrarMaterialRecente(link.id, isPreviewable(link) ? "preview" : "abrir");
+    if (isPreviewable(link)) { setPreviewLink(link); return; }
     const url = await getSignedUrl(link, false);
     if (url) window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -89,9 +83,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
     const url = await getSignedUrl(link, true);
     if (!url) return;
     const a = document.createElement("a");
-    a.href = url;
-    a.rel = "noopener noreferrer";
-    a.click();
+    a.href = url; a.rel = "noopener noreferrer"; a.click();
   };
 
   const copyLink = async (link: MaterialLink) => {
@@ -106,12 +98,18 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
     }
   };
 
-  const shareWhatsapp = async (link: MaterialLink) => {
-    const url = await getSignedUrl(link, false);
-    if (!url) return;
-    registrarMaterialRecente(link.id, "whatsapp");
-    const text = `${link.titulo}\n\n${url}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+  const copyAllLinks = async () => {
+    const lines: string[] = [`*${empreendimento.nome}*`, ""];
+    for (const link of empreendimento.links) {
+      const url = await getSignedUrl(link, false);
+      if (url) lines.push(`• ${link.titulo}\n  ${url}`);
+    }
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      toast({ title: `${empreendimento.links.length} links copiados` });
+    } catch {
+      toast({ title: "Não foi possível copiar", variant: "destructive" });
+    }
   };
 
   const reprocessIngest = async (materialId: string) => {
@@ -123,16 +121,10 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
     }
   };
 
-  // Group links by categoria
-  const grouped = empreendimento.links.reduce((acc, link) => {
-    (acc[link.categoria] ??= []).push(link);
-    return acc;
-  }, {} as Record<string, MaterialLink[]>);
-
   return (
     <>
-      <Card className="flex flex-col">
-        <CardHeader className="pb-3">
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3 border-b border-border/40">
           <div className="flex items-start gap-3">
             {empreendimento.logo_url ? (
               <img
@@ -146,11 +138,21 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-foreground truncate">{empreendimento.nome}</h3>
+              <h3 className="font-semibold text-foreground text-lg leading-tight">{empreendimento.nome}</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {empreendimento.links.length} {empreendimento.links.length === 1 ? "material" : "materiais"}
               </p>
             </div>
+            {/* Favoritar empreendimento */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-8 w-8", isFav && "text-yellow-500")}
+              title={isFav ? "Remover dos favoritos" : "Favoritar empreendimento"}
+              onClick={() => toggleFavEmp.mutate({ empreendimentoId: empreendimento.id, isFav })}
+            >
+              <Star className={cn("h-4 w-4", isFav && "fill-yellow-500")} />
+            </Button>
             {canEdit && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -179,9 +181,10 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
             )}
           </div>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col gap-3">
-          {Object.keys(grouped).length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
+
+        <CardContent className="p-4">
+          {empreendimento.links.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
               Nenhum material cadastrado.
               {canEdit && (
                 <Button
@@ -195,153 +198,39 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
               )}
             </div>
           ) : (
-            Object.entries(grouped).map(([cat, links]) => {
-              const info = getCategoriaInfo(cat);
-              const Icon = info.icon;
-              return (
-                <div key={cat} className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    <Icon className="h-3.5 w-3.5" />
-                    <span>{info.label}</span>
-                  </div>
-                  <ul className="space-y-1">
-                    {links.map((link) => (
-                      <li key={link.id} className="group flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openLink(link)}
-                            className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-foreground hover:bg-muted/60 transition-colors min-w-0 text-left"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                            <span className="flex-1 min-w-0 break-words line-clamp-2 leading-snug">{link.titulo}</span>
-                            {link.ingest_status === "processing" && (
-                              <span className="text-[10px] text-muted-foreground" title="Processando IA">⏳</span>
-                            )}
-                            {link.ingest_status === "error" && canEdit && (
-                              <span className="text-[10px] text-destructive" title={link.ingest_error ?? "Erro"}>⚠</span>
-                            )}
-                            {link.ingest_status === "done" && (link.tags?.length ?? 0) > 0 && (
-                              <span className="text-[10px] text-primary" title="IA pronta">✨</span>
-                            )}
-                            {link.origem === "upload" && (
-                              <span className="ml-auto text-[10px] text-muted-foreground uppercase">arquivo</span>
-                            )}
-                          </button>
-                          <div className="flex items-center gap-0.5">
-                            {/* Favorito */}
-                            {(() => {
-                              const isFav = !!favIds?.has(link.id);
-                              return (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className={cn(
-                                    "h-7 w-7 transition-opacity",
-                                    isFav ? "opacity-100 text-yellow-500" : "opacity-60 group-hover:opacity-100",
-                                  )}
-                                  title={isFav ? "Remover dos favoritos" : "Salvar nos favoritos"}
-                                  onClick={() => toggleFav.mutate({ materialId: link.id, isFav })}
-                                >
-                                  <Star className={cn("h-3.5 w-3.5", isFav && "fill-yellow-500")} />
-                                </Button>
-                              );
-                            })()}
-                            {/* Ações rápidas — visíveis para todos */}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
-                              title="Copiar link"
-                              onClick={() => copyLink(link)}
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </Button>
-                            {link.storage_path && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
-                                title="Baixar"
-                                onClick={() => downloadLink(link)}
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-green-600 opacity-60 group-hover:opacity-100 transition-opacity"
-                              title="Enviar no WhatsApp"
-                              onClick={() => shareWhatsapp(link)}
-                            >
-                              <MessageCircle className="h-3.5 w-3.5" />
-                            </Button>
-                            {canEdit && (
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 border-l border-border/60 ml-1 pl-1">
-                                {link.storage_path && (link.ingest_status === "error" || link.ingest_status === "done") && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    title="Reprocessar IA"
-                                    onClick={() => reprocessIngest(link.id)}
-                                  >
-                                    <RefreshCw className="h-3.5 w-3.5" />
-                                  </Button>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => setLinkDialog({ open: true, link })}
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-destructive hover:text-destructive"
-                                  onClick={() => setLinkToDelete(link)}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        {(link.tags?.length ?? 0) > 0 && (
-                          <div className="flex flex-wrap gap-1 pl-6">
-                            {link.tags!.slice(0, 4).map((t) => (
-                              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {empreendimento.links.map((link) => (
+                <MaterialItem
+                  key={link.id}
+                  link={link}
+                  canEdit={canEdit}
+                  onCopy={() => copyLink(link)}
+                  onDownload={() => downloadLink(link)}
+                  onOpen={() => openLink(link)}
+                  onFollowUp={() => setFollowUp({ open: true, materiais: [link] })}
+                  onEdit={canEdit ? () => setLinkDialog({ open: true, link }) : undefined}
+                  onDelete={canEdit ? () => setLinkToDelete(link) : undefined}
+                  onReprocess={canEdit ? () => reprocessIngest(link.id) : undefined}
+                />
+              ))}
+            </div>
           )}
-          {Object.keys(grouped).length > 0 && (
-            <div className="mt-2 flex gap-2">
+
+          {empreendimento.links.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-border/40 flex flex-col sm:flex-row gap-2">
+              <Button variant="default" size="sm" className="flex-1" onClick={copyAllLinks}>
+                <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar todos os links
+              </Button>
               <Button
+                variant="outline"
                 size="sm"
-                className="flex-1"
-                onClick={() => setShareOpen(true)}
-                disabled={empreendimento.links.length === 0}
+                className="flex-1 text-primary border-primary/40 hover:bg-primary/10"
+                onClick={() => setFollowUp({ open: true, materiais: empreendimento.links })}
               >
-                <Share2 className="h-3.5 w-3.5 mr-1.5" /> Gerar link comercial
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Gerar follow-up com IA
               </Button>
               {canEdit && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setLinkDialog({ open: true, link: null })}
-                >
+                <Button variant="outline" size="sm" onClick={() => setLinkDialog({ open: true, link: null })}>
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
               )}
@@ -361,21 +250,21 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
         empreendimentoId={empreendimento.id}
         link={linkDialog.link}
       />
-      <GerarLinkDialog
-        open={shareOpen}
-        onOpenChange={setShareOpen}
-        empreendimento={empreendimento}
-      />
       <UploadMaterialDialog
         open={uploadOpen}
         onOpenChange={setUploadOpen}
         empreendimentoId={empreendimento.id}
       />
-
       <MaterialPreviewDialog
         open={!!previewLink}
         onOpenChange={(o) => !o && setPreviewLink(null)}
         link={previewLink}
+      />
+      <FollowUpMaterialDialog
+        open={followUp.open}
+        onOpenChange={(o) => setFollowUp((s) => ({ ...s, open: o }))}
+        empreendimentoNome={empreendimento.nome}
+        materiais={followUp.materiais}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
@@ -401,7 +290,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
       <AlertDialog open={!!linkToDelete} onOpenChange={(o) => !o && setLinkToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir link?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir material?</AlertDialogTitle>
             <AlertDialogDescription>
               "{linkToDelete?.titulo}" será removido permanentemente.
             </AlertDialogDescription>

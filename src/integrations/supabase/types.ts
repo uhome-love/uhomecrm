@@ -2468,6 +2468,32 @@ export type Database = {
           },
         ]
       }
+      empreendimentos_favoritos: {
+        Row: {
+          created_at: string
+          empreendimento_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          empreendimento_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          empreendimento_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empreendimentos_favoritos_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_empreendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresa_metas_mensais: {
         Row: {
           created_at: string
@@ -4406,35 +4432,6 @@ export type Database = {
         }
         Relationships: []
       }
-      materiais_favoritos: {
-        Row: {
-          created_at: string
-          id: string
-          material_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          material_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          material_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "materiais_favoritos_material_id_fkey"
-            columns: ["material_id"]
-            isOneToOne: false
-            referencedRelation: "materiais_links"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       materiais_links: {
         Row: {
           categoria: string
@@ -4546,51 +4543,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      materiais_shares: {
-        Row: {
-          assets: Json
-          cliques: number
-          corretor_id: string
-          created_at: string
-          empreendimento_nome: string | null
-          empreendimento_slug: string
-          expires_at: string | null
-          id: string
-          mensagem: string | null
-          titulo: string | null
-          updated_at: string
-          views: number
-        }
-        Insert: {
-          assets?: Json
-          cliques?: number
-          corretor_id: string
-          created_at?: string
-          empreendimento_nome?: string | null
-          empreendimento_slug: string
-          expires_at?: string | null
-          id?: string
-          mensagem?: string | null
-          titulo?: string | null
-          updated_at?: string
-          views?: number
-        }
-        Update: {
-          assets?: Json
-          cliques?: number
-          corretor_id?: string
-          created_at?: string
-          empreendimento_nome?: string | null
-          empreendimento_slug?: string
-          expires_at?: string | null
-          id?: string
-          mensagem?: string | null
-          titulo?: string | null
-          updated_at?: string
-          views?: number
-        }
-        Relationships: []
       }
       melnick_campaign_analytics: {
         Row: {
