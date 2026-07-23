@@ -35,6 +35,16 @@ Deno.serve(async (req) => {
       const sessao_id: string | undefined = body?.sessao_id;
       if (!sessao_id) return errorResponse("sessao_id required", 400);
 
+      // Só corretor pode se auto-inscrever no ranking (bloqueia admin/diretor/gestor/rh)
+      const { data: rolesMe } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      const meRoles = new Set((rolesMe ?? []).map((r: any) => r.role));
+      if (!meRoles.has("corretor")) {
+        return jsonResponse({ ok: true, skipped: "not_corretor" });
+      }
+
       const { data: teamRow } = await admin
         .from("team_members")
         .select("gerente_id, equipe")
@@ -76,13 +86,21 @@ Deno.serve(async (req) => {
     const { data: parts, error } = await admin
       .from("oferta_ativa_participantes")
       .select(
-        "id, corretor_id, gerente_id, equipe_text, status_online, ultima_acao_at, ultimo_heartbeat_at, ligacoes_count, aproveitamentos_count, visitas_count, pontos, profiles:corretor_id(nome, avatar_url)",
+        "id, corretor_id, gerente_id, equipe_text, status_online, ultima_acao_at, ultimo_heartbeat_at, ligacoes_count, aproveitamentos_count, visitas_count, pontos, profiles:corretor_id(nome, avatar_url, user_id)",
       )
       .eq("sessao_id", sessao_id);
     if (error) return errorResponse(error.message, 500);
 
+    // Filtra apenas corretores (via user_roles)
+    const userIds = (parts ?? []).map((p: any) => p.profiles?.user_id).filter(Boolean);
+    const { data: rolesRows } = userIds.length
+      ? await admin.from("user_roles").select("user_id, role").in("user_id", userIds).eq("role", "corretor")
+      : { data: [] as any[] };
+    const corretorUserIds = new Set((rolesRows ?? []).map((r: any) => r.user_id));
+    const filteredParts = (parts ?? []).filter((p: any) => corretorUserIds.has(p.profiles?.user_id));
+
     const now = Date.now();
-    const enriched = (parts ?? []).map((p: any) => {
+    const enriched = filteredParts.map((p: any) => {
       const lastAction = p.ultima_acao_at ? new Date(p.ultima_acao_at).getTime() : 0;
       const lastHb = p.ultimo_heartbeat_at ? new Date(p.ultimo_heartbeat_at).getTime() : 0;
       const minSinceHb = lastHb ? (now - lastHb) / 60000 : Infinity;
