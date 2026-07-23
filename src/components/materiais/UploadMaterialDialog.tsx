@@ -21,14 +21,8 @@ interface Props {
   empreendimentoId: string;
 }
 
-const CATEGORIAS = [
-  { value: "fotos", label: "Fotos" },
-  { value: "videos", label: "Vídeos" },
-  { value: "plantas", label: "Plantas" },
-  { value: "tabela", label: "Tabela de preços" },
-  { value: "book", label: "Book / Apresentação" },
-  { value: "outros", label: "Outros" },
-];
+import { CATEGORIAS } from "./CategoriaIcon";
+
 
 const MAX_SIZE_MB = 200;
 
@@ -45,12 +39,12 @@ export function UploadMaterialDialog({ open, onOpenChange, empreendimentoId }: P
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [titulo, setTitulo] = useState("");
-  const [categoria, setCategoria] = useState("fotos");
+  const [categoria, setCategoria] = useState<string>("imagens");
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
 
   const reset = () => {
-    setFile(null); setTitulo(""); setCategoria("fotos"); setProgress(0); setUploading(false);
+    setFile(null); setTitulo(""); setCategoria("imagens"); setProgress(0); setUploading(false);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -62,9 +56,10 @@ export function UploadMaterialDialog({ open, onOpenChange, empreendimentoId }: P
     }
     setFile(f);
     if (!titulo) setTitulo(f.name.replace(/\.[^.]+$/, ""));
-    if (f.type.startsWith("image/")) setCategoria("fotos");
+    if (f.type.startsWith("image/")) setCategoria("imagens");
     else if (f.type.startsWith("video/")) setCategoria("videos");
-    else if (f.type === "application/pdf") setCategoria("plantas");
+    else if (f.type === "application/pdf") setCategoria("apresentacao_book");
+
   };
 
   const upload = async () => {

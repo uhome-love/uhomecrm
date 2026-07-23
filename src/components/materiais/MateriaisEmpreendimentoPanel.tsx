@@ -26,7 +26,7 @@ import {
   useEmpreendimentoFavoritoIds,
   useToggleEmpreendimentoFavorito,
 } from "@/hooks/useMateriaisFavoritos";
-import { getCategoriaInfo } from "./CategoriaIcon";
+import { getCategoriaInfo, getCategoriaOrder } from "./CategoriaIcon";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -231,11 +231,11 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
               onCopy={copyLink}
               onDownload={downloadLink}
               onOpen={openLink}
-              onFollowUp={(link) => setFollowUp({ open: true, preSelectedIds: [link.id] })}
               onEdit={(link) => setLinkDialog({ open: true, link })}
               onDelete={(link) => setLinkToDelete(link)}
               onReprocess={(link) => reprocessIngest(link.id)}
             />
+
           </>
         )}
       </div>
@@ -391,14 +391,13 @@ function KindFilterBar({
 
 // ---------- Lista agrupada por categoria ----------
 function GroupedMaterialList({
-  links, canEdit, onCopy, onDownload, onOpen, onFollowUp, onEdit, onDelete, onReprocess,
+  links, canEdit, onCopy, onDownload, onOpen, onEdit, onDelete, onReprocess,
 }: {
   links: MaterialLink[];
   canEdit: boolean;
   onCopy: (l: MaterialLink) => void;
   onDownload: (l: MaterialLink) => void;
   onOpen: (l: MaterialLink) => void;
-  onFollowUp: (l: MaterialLink) => void;
   onEdit: (l: MaterialLink) => void;
   onDelete: (l: MaterialLink) => void;
   onReprocess: (l: MaterialLink) => void;
@@ -410,10 +409,10 @@ function GroupedMaterialList({
       if (!m.has(key)) m.set(key, []);
       m.get(key)!.push(l);
     }
-    // Ordem: alfabética pelo label da categoria
+    // Ordem canônica do catálogo (CATEGORIAS)
     return Array.from(m.entries())
-      .map(([key, items]) => ({ key, info: getCategoriaInfo(key), items }))
-      .sort((a, b) => a.info.label.localeCompare(b.info.label));
+      .map(([key, items]) => ({ key, info: getCategoriaInfo(key), order: getCategoriaOrder(key), items }))
+      .sort((a, b) => a.order - b.order);
   }, [links]);
 
   if (links.length === 0) {
@@ -447,13 +446,13 @@ function GroupedMaterialList({
                   onCopy={() => onCopy(link)}
                   onDownload={() => onDownload(link)}
                   onOpen={() => onOpen(link)}
-                  onFollowUp={() => onFollowUp(link)}
                   onEdit={canEdit ? () => onEdit(link) : undefined}
                   onDelete={canEdit ? () => onDelete(link) : undefined}
                   onReprocess={canEdit ? () => onReprocess(link) : undefined}
                 />
               ))}
             </div>
+
           </section>
         );
       })}

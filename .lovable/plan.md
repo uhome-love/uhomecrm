@@ -1,108 +1,108 @@
-## Viabilidade de thumbnails automáticas
+# Plano: Redesign do Hub de Materiais (Marketplace Uhome)
 
-Conferi o código atual e a arquitetura disponível. O resultado é:
+## Objetivo
+Transformar a página `/materiais` em um marketplace funcional e visualmente organizado para corretores, onde o principal é baixar/visualizar materiais rapidamente, com categorias padronizadas e preview em popup.
 
-- **Imagens**: já funcionam. A `MaterialItem.tsx` gera uma signed URL do Storage e renderiza a imagem real no card. ✅
-- **Vídeos**: extrair thumbnail automática exige ffmpeg, que não está disponível nativamente no Supabase Edge Functions (Deno). Precisaria de serviço externo/worker adicional. ❌
-- **PDFs**: renderizar a primeira página em imagem exige bibliotecas pesadas de PDF no Deno. ❌
-- **Links externos**: sem serviço de screenshot externo, não há preview automático. ❌
-- **Áudio**: não existe preview visual nativo viável. ❌
+## Etapa 1 — Mockup de aprovação (antes de código)
+Entregar 2 mockups em HTML estático para o Lucas aprovar:
 
-A coluna `thumb_url` existe em `materiais_links`, mas nunca é preenchida. Upload manual de capa seria possível, mas não é automático.
+- **Mockup A — Desktop (1280px):** layout em lista, sidebar de empreendimentos, painel principal com categorias colapsáveis e ações primárias de download/preview.
+- **Mockup B — Mobile (440px):** mesma lista compacta, botões principais adaptados para touch e menu de ações secundárias.
 
-**Conclusão**: thumbnails automáticas para vídeo/PDF/links/áudio não são viáveis no ambiente atual. Vamos seguir o plano B: **visualização em lista**.
+Criar em `/tmp/materiais-mockup.html` e apresentar visualmente (screenshot).
 
----
+## Etapa 2 — Padronização das categorias
 
-## Plano: Hub de Materiais em Lista + Follow-up IA com seleção de materiais
+### 2.1 Novo catálogo único (frontend + backend)
+Substituir as categorias fragmentadas (há duas listas diferentes em `CategoriaIcon.tsx` e `UploadMaterialDialog.tsx`) por um catálogo único:
 
-### Objetivo
-Trocar o grid de cards por uma lista densa, organizada por categoria, com ações de atalho sempre visíveis. O follow-up com IA passa a permitir escolher um material específico, vários ou todos do empreendimento, e a IA gera a mensagem com base no conteúdo daquele(s) material(is).
+| value | label |
+|-------|-------|
+| `apresentacao_book` | Apresentação - Book |
+| `drive_construtora` | Drive Construtora |
+| `tabela` | Tabela |
+| `disponibilidade` | Disponibilidade |
+| `imagens` | Imagens |
+| `videos` | Vídeos |
+| `script_atendimento` | Script de Atendimento |
+| `anuncio_no_ar` | Anúncio no Ar |
+| `whatsapp_responsavel` | Whatsapp do responsável |
+| `outros` | Outros |
 
----
+### 2.2 Backfill dos dados existentes
+Migration SQL para consolidar categorias antigas no novo catálogo:
+- `book` → `apresentacao_book`
+- `apresentacao` → `apresentacao_book`
+- `tabela_vendas` → `tabela`
+- `material_atendimento` → `script_atendimento`
+- `fotos` → `imagens` (quando houver)
+- `videos` → `videos` (quando houver)
+- `plantas` → `outros` ou manter (a definir com Lucas)
 
-### Parte 1 — Layout em lista
+## Etapa 3 — Reorganização dos botões de ação
 
-1. **Novo componente `MaterialListItem.tsx`**
-   - Linha horizontal com: ícone colorido do tipo, título em até 2 linhas, meta (extensão/tamanho), badge de categoria.
-   - Ações de atalho à direita: **Copiar**, **Baixar/Abrir**, **Follow-up IA**.
-   - Mobile: ações secundárias entram em menu de 3 pontos para não cortar.
-   - Hover: fundo leve e destaque nas ações.
+### 3.1 Em cada linha de material (`MaterialItem.tsx`)
+- **Botão principal (default):**
+  - Se `storage_path` existir e for previewable (PDF, imagem, vídeo, áudio): **Abrir/Preview** (ícone de olho ou play). Clica e abre `MaterialPreviewDialog`.
+  - Se `storage_path` existir e NÃO for previewable: **Download**.
+  - Se for link externo (sem `storage_path`): **Abrir link**.
+- **Botão secundário (outline):** Copiar (link assinado ou URL externa).
+- **Remover** o botão de Follow-up IA individual por material.
 
-2. **Agrupamento por categoria no painel do empreendimento**
-   - Grupos dobráveis (`Collapsible`) com título e contador.
-   - Ordem fixa: Drive da construtora, Apresentação, Tabela de vendas, Disponibilidade, Script de vendas, Material de atendimento, Outros.
+### 3.2 No header do empreendimento (`MateriaisEmpreendimentoPanel.tsx`)
+- Manter **Copiar todos** (todos os links do empreendimento).
+- Manter **Follow-up IA** ao lado de "Copiar todos", mas agora ele abre o diálogo com **todos os materiais do empreendimento pré-selecionados** (já implementado assim hoje).
+- Remover o botão de Follow-up IA de cada linha.
 
-3. **Filtro rápido por tipo de mídia**
-   - Chips: Todos, Imagens, Vídeos, PDFs, Links, Áudio.
+### 3.3 Ações de gestão (editar/excluir)
+- Manter no menu "3 pontos" (só visível para quem pode editar) ou expandir no hover.
+- Manter no menu mobile.
 
-4. **Preview inline só para imagens**
-   - Miniatura quadrada pequena (48x48) quando for imagem.
-   - Demais tipos usam ícone — sem área de preview vazia.
+## Etapa 4 — Preview em popup para downloads
 
-5. **Remover o grid de h-32 vazio**
-   - A lista elimina o espaço atual que aparece vazio para links, PDFs, áudio e vídeo.
+### 4.1 Integrar `MaterialPreviewDialog`
+Ao clicar no botão principal de um material com `storage_path` previewable:
+- Abrir `MaterialPreviewDialog` (já existente, renderiza imagem, vídeo, PDF e áudio).
+- Contabilizar ação como `preview` no analytics.
 
-6. **Ações em massa no cabeçalho do empreendimento**
-   - Manter "Copiar todos" e "Follow-up IA (todos)".
+### 4.2 Ajuste no `MaterialPreviewDialog`
+- Botão principal do header: **Download** (quando houver `storage_path`).
+- Botão secundário: **Abrir em nova aba**.
+- Manter fallback para link externo e arquivos não previewable.
 
-### Arquivos alterados — Parte 1
-- `src/components/materiais/MaterialItem.tsx` → refatorar para layout em lista.
-- `src/components/materiais/MateriaisEmpreendimentoPanel.tsx` → lista agrupada por categoria + filtros de tipo.
-- `src/components/materiais/MaterialPreviewDialog.tsx` → mantido inalterado (preview em modal continua útil).
-- `src/components/materiais/CategoriaIcon.tsx` → aproveitar cores/ícones existentes.
+## Etapa 5 — Ajustes nos formulários de cadastro
 
----
+### 5.1 `UploadMaterialDialog.tsx`
+- Substituir a lista de categorias atual pela lista padronizada.
+- Auto-detectar categoria pelo tipo de arquivo:
+  - Imagem → `imagens`
+  - Vídeo → `videos`
+  - PDF → `apresentacao_book` (default, usuário pode trocar)
 
-### Parte 2 — Follow-up IA com seleção de material
+### 5.2 `LinkFormDialog.tsx`
+- Usar o mesmo catálogo padronizado de `CategoriaIcon.tsx`.
 
-Atualmente o botão de "Follow-up IA" gera uma mensagem genérica com base no contexto do empreendimento. O dono do produto quer que o corretor possa **escolher** o(s) material(is) base.
+## Etapa 6 — Validação ao vivo
+- Testar no preview logado (CEO/gestor e corretor).
+- Verificar:
+  - Categorias aparecem padronizadas.
+  - Botão principal abre preview/download conforme tipo.
+  - Botão Copiar funciona.
+  - Follow-up IA funciona pelo header do empreendimento.
+  - Mobile não corta botões.
+  - Formulários de upload/link têm categorias corretas.
 
-1. **Novo componente `SelecionarMateriaisDialog.tsx`**
-   - Abre ao clicar em "Follow-up IA" no cabeçalho do empreendimento ou em "Follow-up IA" de uma linha.
-   - Mostra a lista de materiais daquele empreendimento com checkboxes.
-   - Opções: Selecionar um, vários, ou "Selecionar todos".
-   - Campo opcional: "Para quem é o follow-up?" (lead, cliente, corretor) — pode ser simplesmente um textarea de contexto.
+## Arquivos que serão alterados
+- `src/components/materiais/CategoriaIcon.tsx` (catálogo único)
+- `src/components/materiais/MaterialItem.tsx` (botões)
+- `src/components/materiais/MateriaisEmpreendimentoPanel.tsx` (header, remove IA por linha)
+- `src/components/materiais/MaterialPreviewDialog.tsx` (ajuste de botões)
+- `src/components/materiais/UploadMaterialDialog.tsx` (categorias)
+- `src/components/materiais/LinkFormDialog.tsx` (categorias)
+- `src/components/materiais/FollowUpMaterialDialog.tsx` (sem mudanças, já atende)
+- Migration SQL para backfill de categorias antigas
 
-2. **Atualizar `homi-follow-up-message` edge function**
-   - Receber opcionalmente `material_ids: string[]`.
-   - Se receber ids, buscar os chunks/resumo_ia/tags dos materiais selecionados em `materiais_links` e `materiais_chunks`.
-   - Incluir o conteúdo extraído no contexto do prompt para gerar mensagem específica sobre o material.
-   - Se não receber ids, manter comportamento atual (contexto geral do empreendimento).
-
-3. **Ajustar hook de chamada no frontend**
-   - `useMateriaisFavoritos` ou hook similar que chama `homi-follow-up-message` passando `material_ids`.
-
-4. **Fluxos de uso**
-   - **Cabeçalho do empreendimento**: "Follow-up IA" → abre seleção com todos pré-selecionados (pode desmarcar).
-   - **Linha individual**: "Follow-up IA" → abre seleção com apenas aquele material pré-selecionado.
-   - **Resultado**: mensagem de WhatsApp pronta, com referência natural ao(s) material(is) escolhido(s), ex.: "Olá! Segue o book de apresentação do Casa Tua que comentei...".
-
-### Arquivos alterados — Parte 2
-- `supabase/functions/homi-follow-up-message/index.ts` → aceitar `material_ids` e injetar contexto dos materiais.
-- `src/components/materiais/SelecionarMateriaisDialog.tsx` → novo.
-- `src/components/materiais/MaterialListItem.tsx` → chamar diálogo de seleção.
-- `src/components/materiais/MateriaisEmpreendimentoPanel.tsx` → chamar diálogo de seleção no cabeçalho.
-- `src/hooks/useMateriaisFavoritos.ts` ou hook de follow-up → passar `material_ids`.
-
----
-
-### Fora de escopo (mantido como está)
-- Upload de materiais.
-- Extração de texto/IA do HOMI para a base de conhecimento.
-- Analytics e favoritos por empreendimento.
-- Permissões (quem edita/exclui).
-- Thumbnails automáticas para vídeo/PDF (não viável).
-
----
-
-### Critério de validação
-- Abrir `/materiais` e ver uma lista compacta, sem cards grandes vazios.
-- Títulos longos visíveis em 2 linhas.
-- Botões de Copiar, Baixar/Abrir e Follow-up IA acessíveis sem cortar em 1378px e mobile.
-- Categorias agrupadas e dobráveis.
-- Filtro por tipo funcionar.
-- Clicar em Follow-up IA abre o diálogo de seleção.
-- Selecionar 1 material, vários ou todos funciona.
-- Mensagem gerada pela IA faz referência ao conteúdo do material escolhido.
-- Nenhuma regressão nos modais de preview.
+## Dúvidas para aprovação
+1. **Mockup:** devo gerar o mockup agora e você aprova antes de codificar?
+2. **Planta:** a categoria `plantas` (upload) deve virar `imagens` ou `outros`?
+3. **Categoria default de PDF:** PDF sem nome específico entra como `apresentacao_book` ou `outros` por padrão?
