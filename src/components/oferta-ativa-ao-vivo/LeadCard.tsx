@@ -247,23 +247,7 @@ export function LeadCard({
           </div>
 
 
-          {/* Dossiê */}
-          <div className="rounded-lg border border-border bg-muted/40 p-3.5">
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <Sparkles className="w-3.5 h-3.5 text-primary" /> Dossiê rápido
-              </p>
-              {!dossie && (
-                <Button size="sm" variant="ghost" onClick={gerarDossie} disabled={dossieLoading} className="h-7 -my-1">
-                  {dossieLoading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                  Gerar com IA
-                </Button>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-              {dossie ?? "Peça à IA um resumo do lead e a melhor abordagem em 3 segundos."}
-            </p>
-          </div>
+
 
           {/* Zona de ação: ligar */}
           <div className="flex items-center gap-2">
