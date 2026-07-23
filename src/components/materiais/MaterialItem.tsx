@@ -4,7 +4,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
-  Download, Copy, Sparkles, ExternalLink, Pencil, Trash2, RefreshCw, MoreVertical,
+  Download, Copy, ExternalLink, Pencil, Trash2, RefreshCw, MoreVertical, Eye,
   Image as ImageIcon, Video as VideoIcon, FileText, Music, Link2,
 } from "lucide-react";
 import type { MaterialLink } from "@/hooks/useMateriais";
@@ -75,7 +75,6 @@ interface Props {
   canEdit: boolean;
   onCopy: () => void;
   onDownload: () => void;
-  onFollowUp: () => void;
   onOpen: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -87,7 +86,6 @@ export function MaterialItem({
   canEdit,
   onCopy,
   onDownload,
-  onFollowUp,
   onOpen,
   onEdit,
   onDelete,
@@ -98,6 +96,7 @@ export function MaterialItem({
   const kindMeta = KIND_META[kind];
   const KindIcon = kindMeta.icon;
   const hasFile = !!link.storage_path;
+  const previewable = isPreviewable(link);
   const [thumb, setThumb] = useState<string | null>(null);
 
   // Thumbnail somente para imagens.
@@ -128,17 +127,25 @@ export function MaterialItem({
   metaParts.push(info.label);
   const metaLine = metaParts.filter(Boolean).join(" · ");
 
+  // Botão principal: Abrir (preview) > Baixar > Abrir link externo.
+  const primary = previewable
+    ? { label: "Abrir", icon: Eye, onClick: onOpen, title: "Pré-visualizar" }
+    : hasFile
+    ? { label: "Baixar", icon: Download, onClick: onDownload, title: "Baixar arquivo" }
+    : { label: "Abrir link", icon: ExternalLink, onClick: onOpen, title: "Abrir link externo" };
+  const PrimaryIcon = primary.icon;
+
   return (
     <div className="group flex items-center gap-3 px-3 py-2 rounded-lg border border-transparent hover:border-border/60 hover:bg-muted/40 transition-colors">
       {/* Thumbnail / ícone */}
       <button
         type="button"
-        onClick={onOpen}
+        onClick={primary.onClick}
         className={cn(
           "relative h-12 w-12 flex-shrink-0 rounded-md overflow-hidden flex items-center justify-center",
           kindMeta.bg,
         )}
-        title={isPreviewable(link) ? "Pré-visualizar" : "Abrir"}
+        title={primary.title}
       >
         {thumb ? (
           <img src={thumb} alt={link.titulo} className="h-full w-full object-cover" loading="lazy" />
@@ -150,7 +157,7 @@ export function MaterialItem({
       {/* Título + meta */}
       <button
         type="button"
-        onClick={onOpen}
+        onClick={primary.onClick}
         className="flex-1 min-w-0 text-left"
       >
         <h4 className="font-medium text-sm text-foreground leading-snug line-clamp-2">
@@ -167,25 +174,11 @@ export function MaterialItem({
 
       {/* Ações — desktop */}
       <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
-        <Button size="sm" variant="default" className="h-8 text-xs" onClick={onCopy}>
-          <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar
+        <Button size="sm" variant="default" className="h-8 text-xs" onClick={primary.onClick} title={primary.title}>
+          <PrimaryIcon className="h-3.5 w-3.5 mr-1.5" /> {primary.label}
         </Button>
-        {hasFile ? (
-          <Button variant="outline" size="icon" className="h-8 w-8" title="Baixar" onClick={onDownload}>
-            <Download className="h-3.5 w-3.5" />
-          </Button>
-        ) : (
-          <Button variant="outline" size="icon" className="h-8 w-8" title="Abrir link" onClick={onOpen}>
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Button>
-        )}
-        <Button
-          variant="outline" size="icon"
-          className="h-8 w-8 text-primary border-primary/40 hover:bg-primary/10"
-          title="Gerar mensagem de follow-up com IA"
-          onClick={onFollowUp}
-        >
-          <Sparkles className="h-3.5 w-3.5" />
+        <Button variant="outline" size="icon" className="h-8 w-8" title="Copiar link" onClick={onCopy}>
+          <Copy className="h-3.5 w-3.5" />
         </Button>
         {canEdit && (
           <DropdownMenu>
@@ -195,6 +188,11 @@ export function MaterialItem({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {previewable && hasFile && (
+                <DropdownMenuItem onClick={onDownload}>
+                  <Download className="h-3.5 w-3.5 mr-2" /> Baixar
+                </DropdownMenuItem>
+              )}
               {onReprocess && link.storage_path && (link.ingest_status === "error" || link.ingest_status === "done") && (
                 <DropdownMenuItem onClick={onReprocess}>
                   <RefreshCw className="h-3.5 w-3.5 mr-2" /> Reprocessar IA
@@ -218,10 +216,10 @@ export function MaterialItem({
         )}
       </div>
 
-      {/* Ações — mobile (só copiar + menu) */}
+      {/* Ações — mobile */}
       <div className="flex sm:hidden items-center gap-1 flex-shrink-0">
-        <Button size="sm" variant="default" className="h-8 text-xs" onClick={onCopy}>
-          <Copy className="h-3.5 w-3.5" />
+        <Button size="sm" variant="default" className="h-8 text-xs" onClick={primary.onClick} title={primary.title}>
+          <PrimaryIcon className="h-3.5 w-3.5" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -230,18 +228,14 @@ export function MaterialItem({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {hasFile ? (
+            <DropdownMenuItem onClick={onCopy}>
+              <Copy className="h-3.5 w-3.5 mr-2" /> Copiar link
+            </DropdownMenuItem>
+            {previewable && hasFile && (
               <DropdownMenuItem onClick={onDownload}>
                 <Download className="h-3.5 w-3.5 mr-2" /> Baixar
               </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem onClick={onOpen}>
-                <ExternalLink className="h-3.5 w-3.5 mr-2" /> Abrir link
-              </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={onFollowUp} className="text-primary">
-              <Sparkles className="h-3.5 w-3.5 mr-2" /> Follow-up IA
-            </DropdownMenuItem>
             {canEdit && (
               <>
                 <DropdownMenuSeparator />
