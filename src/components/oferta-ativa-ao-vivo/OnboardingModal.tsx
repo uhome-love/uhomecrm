@@ -74,29 +74,34 @@ export function OnboardingModal({ open, onClose, filters, onSave, firstTime }: P
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Filter className="w-4 h-4" />
-                <p className="text-sm font-semibold">Segmentos (opcional)</p>
+                <p className="text-sm font-semibold">Segmentos (opcional — múltipla escolha)</p>
                 {segSel.length > 0 && <Badge variant="secondary">{segSel.length}</Badge>}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {segmentos.map((s) => {
-                  const on = segSel.includes(s.id);
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => setSegSel((cur) => toggle(cur, s.id))}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition ${on ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}
-                    >
-                      {s.nome}
-                    </button>
-                  );
-                })}
-              </div>
+              {segmentos.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Carregando segmentos…</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 rounded-lg border border-border p-2">
+                  {segmentos.map((s) => {
+                    const on = segSel.includes(s.id);
+                    return (
+                      <label
+                        key={s.id}
+                        className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                      >
+                        <Checkbox checked={on} onCheckedChange={() => setSegSel((cur) => toggle(cur, s.id))} />
+                        <span className="truncate">{s.nome}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">Sem seleção = todos os segmentos.</p>
             </div>
 
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Filter className="w-4 h-4" />
-                <p className="text-sm font-semibold">Empreendimentos (opcional)</p>
+                <p className="text-sm font-semibold">Empreendimentos (opcional — múltipla escolha)</p>
                 {empSel.length > 0 && <Badge variant="secondary">{empSel.length}</Badge>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-1 max-h-64 overflow-y-auto rounded-lg border border-border p-2">
