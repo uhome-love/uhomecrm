@@ -24,10 +24,12 @@ export interface LeadOferta {
   motivo_descarte: string | null;
   reengajamento_status: string | null;
   dias_desde_descarte: number | null;
+  stage_changed_at: string | null;
   score: number | null;
   score_temperatura: string | null;
   created_at: string | null;
 }
+
 
 export interface ProximoLeadResult {
   ok: boolean;

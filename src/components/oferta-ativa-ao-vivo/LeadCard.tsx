@@ -76,14 +76,16 @@ export function LeadCard({
         body: { mode: "dossie_oferta", pipeline_lead_id: lead.id },
       });
       if (error) throw error;
-      const texto = (data as any)?.texto || (data as any)?.mensagem || "Sem insights disponíveis.";
+      const texto = (data as any)?.texto || (data as any)?.mensagem || (data as any)?.sugestao_resposta || "Sem insights disponíveis.";
       setDossie(texto);
-    } catch {
+    } catch (e) {
+      console.error("[dossie]", e);
       setDossie("Não consegui gerar o dossiê agora. Use o script como base.");
     } finally {
       setDossieLoading(false);
     }
   }
+
 
   const copyPhone = () => {
     if (!lead?.telefone) return;
@@ -235,17 +237,8 @@ export function LeadCard({
                 <TooltipContent className="max-w-xs">{lead.motivo_descarte}</TooltipContent>
               </Tooltip>
             )}
-            {lead.campanha && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge variant="outline" className="h-6 max-w-[200px] truncate">
-                    Campanha: {lead.campanha}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">{lead.campanha}</TooltipContent>
-              </Tooltip>
-            )}
           </div>
+
 
           {/* Dossiê */}
           <div className="rounded-lg border border-border bg-muted/40 p-3.5">
