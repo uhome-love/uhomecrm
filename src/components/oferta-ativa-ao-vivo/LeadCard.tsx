@@ -9,7 +9,6 @@ import {
   Search, Flame,
 } from "lucide-react";
 import type { useMutiraoSession } from "@/hooks/useMutiraoSession";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { playSoundSuccess, playSoundFanfare, getCelebrationEnabled } from "@/lib/celebrations";
 
