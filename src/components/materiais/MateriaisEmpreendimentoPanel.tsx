@@ -331,3 +331,132 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
     </div>
   );
 }
+
+// ---------- Filtro por tipo de mídia ----------
+const KIND_CHIPS: Array<{ key: MediaKind; label: string; icon: any }> = [
+  { key: "image", label: "Imagens", icon: ImageIcon },
+  { key: "video", label: "Vídeos", icon: VideoIcon },
+  { key: "pdf",   label: "PDFs",    icon: FileText },
+  { key: "audio", label: "Áudios",  icon: Music },
+  { key: "link",  label: "Links",   icon: Link2 },
+  { key: "other", label: "Outros",  icon: Files },
+];
+
+function KindFilterBar({
+  links, active, onChange,
+}: { links: MaterialLink[]; active: MediaKind | "all"; onChange: (k: MediaKind | "all") => void }) {
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: links.length };
+    for (const l of links) {
+      const k = getMediaKind(l);
+      c[k] = (c[k] || 0) + 1;
+    }
+    return c;
+  }, [links]);
+
+  const visibleChips = KIND_CHIPS.filter((c) => (counts[c.key] || 0) > 0);
+  if (visibleChips.length <= 1) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5 mb-3">
+      <button
+        onClick={() => onChange("all")}
+        className={cn(
+          "px-2.5 py-1 rounded-full text-xs font-medium border transition-colors",
+          active === "all"
+            ? "bg-primary text-primary-foreground border-primary"
+            : "bg-background text-muted-foreground border-border hover:border-primary/50",
+        )}
+      >
+        Todos <span className="opacity-70">({counts.all})</span>
+      </button>
+      {visibleChips.map(({ key, label, icon: Icon }) => (
+        <button
+          key={key}
+          onClick={() => onChange(key)}
+          className={cn(
+            "px-2.5 py-1 rounded-full text-xs font-medium border transition-colors flex items-center gap-1.5",
+            active === key
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background text-muted-foreground border-border hover:border-primary/50",
+          )}
+        >
+          <Icon className="h-3 w-3" />
+          {label} <span className="opacity-70">({counts[key]})</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ---------- Lista agrupada por categoria ----------
+function GroupedMaterialList({
+  links, canEdit, onCopy, onDownload, onOpen, onFollowUp, onEdit, onDelete, onReprocess,
+}: {
+  links: MaterialLink[];
+  canEdit: boolean;
+  onCopy: (l: MaterialLink) => void;
+  onDownload: (l: MaterialLink) => void;
+  onOpen: (l: MaterialLink) => void;
+  onFollowUp: (l: MaterialLink) => void;
+  onEdit: (l: MaterialLink) => void;
+  onDelete: (l: MaterialLink) => void;
+  onReprocess: (l: MaterialLink) => void;
+}) {
+  const grupos = useMemo(() => {
+    const m = new Map<string, MaterialLink[]>();
+    for (const l of links) {
+      const key = l.categoria || "outros";
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(l);
+    }
+    // Ordem: alfabética pelo label da categoria
+    return Array.from(m.entries())
+      .map(([key, items]) => ({ key, info: getCategoriaInfo(key), items }))
+      .sort((a, b) => a.info.label.localeCompare(b.info.label));
+  }, [links]);
+
+  if (links.length === 0) {
+    return (
+      <div className="py-10 text-center text-sm text-muted-foreground">
+        Nenhum material nesse filtro.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {grupos.map(({ key, info, items }) => {
+        const Icon = info.icon;
+        return (
+          <section key={key}>
+            <header className="flex items-center gap-2 mb-1.5 px-1">
+              <Icon className={cn("h-3.5 w-3.5", info.color)} />
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {info.label}
+              </h3>
+              <span className="text-[11px] text-muted-foreground/70">({items.length})</span>
+              <div className="flex-1 h-px bg-border/60 ml-1" />
+            </header>
+            <div className="rounded-lg border border-border/50 divide-y divide-border/50 bg-card/40">
+              {items.map((link) => (
+                <MaterialItem
+                  key={link.id}
+                  link={link}
+                  canEdit={canEdit}
+                  onCopy={() => onCopy(link)}
+                  onDownload={() => onDownload(link)}
+                  onOpen={() => onOpen(link)}
+                  onFollowUp={() => onFollowUp(link)}
+                  onEdit={canEdit ? () => onEdit(link) : undefined}
+                  onDelete={canEdit ? () => onDelete(link) : undefined}
+                  onReprocess={canEdit ? () => onReprocess(link) : undefined}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
