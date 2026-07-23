@@ -15,7 +15,7 @@ const META: Record<string, { icon: any; color: string }> = {
   oa_level_up:    { icon: Gem,            color: "text-purple-500" },
 };
 
-export function FeedPanel({ sessaoId }: { sessaoId: string | null }) {
+export function FeedPanel({ sessaoId, paused }: { sessaoId: string | null; paused?: boolean }) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,6 +36,8 @@ export function FeedPanel({ sessaoId }: { sessaoId: string | null }) {
       setLoading(false);
     })();
 
+    if (paused) return () => { mounted = false; };
+
     const ch = supabase
       .channel(`mutirao-feed-${sessaoId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "pulse_events" }, (payload: any) => {
@@ -46,7 +48,7 @@ export function FeedPanel({ sessaoId }: { sessaoId: string | null }) {
       })
       .subscribe();
     return () => { mounted = false; supabase.removeChannel(ch); };
-  }, [sessaoId]);
+  }, [sessaoId, paused]);
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">

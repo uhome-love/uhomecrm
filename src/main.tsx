@@ -55,12 +55,26 @@ if ("serviceWorker" in navigator && !isInIframe && !isPreviewHost) {
         updateViaCache: "none",
       });
 
-      // Check for updates a cada 5 minutos
-      setInterval(() => reg.update(), 5 * 60 * 1000);
+      // Helper: só recarrega se NÃO estiver em ligação ativa no Mutirão.
+      const applyUpdate = () => {
+        if ((window as any).__uhomeInCall === true) {
+          (window as any).__uhomePendingReload = true;
+          return;
+        }
+        window.location.reload();
+      };
+
+      // Check for updates a cada 5 minutos — pula durante ligação ativa.
+      setInterval(() => {
+        if ((window as any).__uhomeInCall === true) return;
+        reg.update();
+      }, 5 * 60 * 1000);
 
       // Re-checa quando volta para a aba
       document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") reg.update();
+        if (document.visibilityState === "visible" && (window as any).__uhomeInCall !== true) {
+          reg.update();
+        }
       });
 
       reg.addEventListener("updatefound", () => {
@@ -68,13 +82,27 @@ if ("serviceWorker" in navigator && !isInIframe && !isPreviewHost) {
         if (!newWorker) return;
         newWorker.addEventListener("statechange", () => {
           if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            if ((window as any).__uhomeInCall === true) {
+              (window as any).__uhomePendingReload = true;
+              return;
+            }
             newWorker.postMessage("skipWaiting");
           }
         });
       });
 
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        window.location.reload();
+        applyUpdate();
+      });
+
+      // Mensagem enviada pelo SW quando detecta version.json novo (não força mais reload).
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data?.type === "NEW_VERSION_AVAILABLE") {
+          (window as any).__uhomePendingReload = true;
+          try {
+            window.dispatchEvent(new CustomEvent("uhome:pending-reload", { detail: event.data }));
+          } catch {}
+        }
       });
     } catch {
       // ignore
