@@ -431,7 +431,7 @@ function GroupedMaterialList({
         return (
           <section key={key}>
             <header className="flex items-center gap-2 mb-1.5 px-1">
-              <Icon className={cn("h-3.5 w-3.5", info.color)} />
+              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {info.label}
               </h3>
