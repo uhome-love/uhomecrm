@@ -1,13 +1,19 @@
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMateriais, type MaterialLink } from "@/hooks/useMateriais";
 import { useUserRole } from "@/hooks/useUserRole";
-import { MaterialCard } from "@/components/materiais/MaterialCard";
+import { MateriaisSidebar } from "@/components/materiais/MateriaisSidebar";
+import { MateriaisEmpreendimentoPanel } from "@/components/materiais/MateriaisEmpreendimentoPanel";
 import { MaterialListaCompact } from "@/components/materiais/MaterialListaCompact";
 import { EmpreendimentoFormDialog } from "@/components/materiais/EmpreendimentoFormDialog";
-import { FolderOpen, Plus, Search, Loader2, Sparkles, X, BarChart3, Star, Clock } from "lucide-react";
+import {
+  FolderOpen, Plus, Search, Loader2, Sparkles, X, BarChart3,
+  Clock, Menu, Building2,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,14 +33,51 @@ interface SemanticResult extends MaterialLink {
 export default function MateriaisPage() {
   const { data: empreendimentos = [], isLoading } = useMateriais();
   const { isGestor } = useUserRole();
-  const [tab, setTab] = useState<"todos" | "favoritos" | "recentes">("todos");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTab] = useState<"todos" | "recentes">(
+    (searchParams.get("tab") as any) === "recentes" ? "recentes" : "todos",
+  );
   const [search, setSearch] = useState("");
   const [newDialog, setNewDialog] = useState(false);
   const [semanticResults, setSemanticResults] = useState<SemanticResult[] | null>(null);
   const [semanticLoading, setSemanticLoading] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const { data: favEmpIds } = useEmpreendimentoFavoritoIds();
   const { data: recentes = [], isLoading: loadingRec } = useMaterialRecentes();
+
+  // Empreendimento selecionado via URL (?emp=ID)
+  const selectedId = searchParams.get("emp");
+  const selected = useMemo(
+    () => empreendimentos.find((e) => e.id === selectedId) ?? null,
+    [empreendimentos, selectedId],
+  );
+
+  // Auto-selecionar o primeiro se nada selecionado
+  useEffect(() => {
+    if (tab !== "todos") return;
+    if (!empreendimentos.length) return;
+    if (!selectedId || !empreendimentos.some((e) => e.id === selectedId)) {
+      const next = new URLSearchParams(searchParams);
+      next.set("emp", empreendimentos[0].id);
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empreendimentos, tab]);
+
+  const handleSelect = (id: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("emp", id);
+    setSearchParams(next, { replace: true });
+    setMobileNavOpen(false);
+  };
+
+  const handleTabChange = (v: string) => {
+    setTab(v as any);
+    const next = new URLSearchParams(searchParams);
+    if (v === "todos") next.delete("tab"); else next.set("tab", v);
+    setSearchParams(next, { replace: true });
+  };
 
   const runSemantic = async () => {
     const q = search.trim();
@@ -58,30 +101,13 @@ export default function MateriaisPage() {
 
   const clearSemantic = () => setSemanticResults(null);
 
-  useEffect(() => { if (semanticResults) setSemanticResults(null); // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (semanticResults) setSemanticResults(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return empreendimentos;
-    return empreendimentos
-      .map((e) => ({
-        ...e,
-        links: e.links.filter(
-          (l) => l.titulo.toLowerCase().includes(q) || l.descricao?.toLowerCase().includes(q)
-            || l.tags?.some((t) => t.toLowerCase().includes(q)),
-        ),
-      }))
-      .filter((e) => e.nome.toLowerCase().includes(q) || e.links.length > 0);
-  }, [empreendimentos, search]);
-
-  const favoritos = useMemo(
-    () => empreendimentos.filter((e) => favEmpIds?.has(e.id)),
-    [empreendimentos, favEmpIds],
-  );
-
   return (
-    <div className="container max-w-7xl mx-auto py-6 space-y-6">
+    <div className="container max-w-[1400px] mx-auto py-6 space-y-4">
       <PageHeader
         title="Materiais"
         subtitle="Hub de drives, apresentações e scripts por empreendimento."
@@ -102,28 +128,23 @@ export default function MateriaisPage() {
         }
       />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="space-y-4">
+      <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="todos">
-            <FolderOpen className="h-3.5 w-3.5 mr-1.5" /> Todos
-          </TabsTrigger>
-          <TabsTrigger value="favoritos">
-            <Star className="h-3.5 w-3.5 mr-1.5" /> Favoritos
-            {favoritos.length > 0 && (
-              <span className="ml-1.5 text-[10px] px-1.5 rounded bg-muted">{favoritos.length}</span>
-            )}
+            <FolderOpen className="h-3.5 w-3.5 mr-1.5" /> Empreendimentos
           </TabsTrigger>
           <TabsTrigger value="recentes">
             <Clock className="h-3.5 w-3.5 mr-1.5" /> Recentes
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="todos" className="space-y-6">
+        <TabsContent value="todos" className="space-y-4">
+          {/* Busca global */}
           <div className="flex gap-2 max-w-2xl">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por título, tag, empreendimento ou descrição..."
+                placeholder="Buscar material por título, tag ou descrição..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") runSemantic(); }}
@@ -160,7 +181,17 @@ export default function MateriaisPage() {
                     const info = getCategoriaInfo(r.categoria);
                     const Icon = info.icon;
                     return (
-                      <div key={r.id} className="p-4 rounded-xl border border-border/60 bg-card space-y-2">
+                      <button
+                        type="button"
+                        key={r.id}
+                        onClick={() => {
+                          if (r.materiais_empreendimentos?.id) {
+                            handleSelect(r.materiais_empreendimentos.id);
+                            clearSemantic();
+                          }
+                        }}
+                        className="p-4 rounded-xl border border-border/60 bg-card space-y-2 text-left hover:border-primary/40 hover:shadow-sm transition-all"
+                      >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <p className="text-xs text-muted-foreground">
@@ -175,16 +206,7 @@ export default function MateriaisPage() {
                         {r.snippet && (
                           <p className="text-xs text-muted-foreground line-clamp-2">{r.snippet}...</p>
                         )}
-                        {(r.tags?.length ?? 0) > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {r.tags!.slice(0, 5).map((t) => (
-                              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -194,7 +216,7 @@ export default function MateriaisPage() {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : empreendimentos.length === 0 ? (
             <div className="border border-dashed border-border/60 rounded-xl py-16 text-center">
               <FolderOpen className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
               <h3 className="font-medium text-foreground">Nenhum material cadastrado</h3>
@@ -210,27 +232,56 @@ export default function MateriaisPage() {
               )}
             </div>
           ) : (
-            <div className="space-y-4">
-              {filtered.map((emp) => (
-                <MaterialCard key={emp.id} empreendimento={emp} canEdit={isGestor} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+            <div className="border border-border/60 rounded-xl overflow-hidden bg-card">
+              <div className="flex" style={{ minHeight: "calc(100vh - 340px)" }}>
+                {/* Sidebar desktop */}
+                <aside className="hidden md:block w-[280px] flex-shrink-0">
+                  <MateriaisSidebar
+                    empreendimentos={empreendimentos}
+                    selectedId={selectedId}
+                    onSelect={handleSelect}
+                    favIds={favEmpIds}
+                  />
+                </aside>
 
-        <TabsContent value="favoritos" className="space-y-4">
-          {!favEmpIds ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                {/* Painel principal */}
+                <main className="flex-1 min-w-0 p-4 sm:p-6 overflow-x-auto">
+                  {/* Mobile trigger */}
+                  <div className="md:hidden mb-4">
+                    <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+                      <SheetTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full justify-start">
+                          <Menu className="h-4 w-4 mr-2" />
+                          <Building2 className="h-4 w-4 mr-2" />
+                          {selected ? selected.nome : "Escolher empreendimento"}
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="left" className="p-0 w-[300px]">
+                        <SheetHeader className="px-4 py-3 border-b border-border/60">
+                          <SheetTitle>Empreendimentos</SheetTitle>
+                        </SheetHeader>
+                        <div className="h-[calc(100%-56px)]">
+                          <MateriaisSidebar
+                            empreendimentos={empreendimentos}
+                            selectedId={selectedId}
+                            onSelect={handleSelect}
+                            favIds={favEmpIds}
+                          />
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  </div>
+
+                  {selected ? (
+                    <MateriaisEmpreendimentoPanel empreendimento={selected} canEdit={isGestor} />
+                  ) : (
+                    <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
+                      Selecione um empreendimento na lista ao lado.
+                    </div>
+                  )}
+                </main>
+              </div>
             </div>
-          ) : favoritos.length === 0 ? (
-            <div className="border border-dashed border-border/60 rounded-xl py-12 text-center text-sm text-muted-foreground">
-              Você ainda não favoritou nenhum empreendimento. Clique na ⭐ no topo de um empreendimento para salvá-lo aqui.
-            </div>
-          ) : (
-            favoritos.map((emp) => (
-              <MaterialCard key={emp.id} empreendimento={emp} canEdit={isGestor} />
-            ))
           )}
         </TabsContent>
 
