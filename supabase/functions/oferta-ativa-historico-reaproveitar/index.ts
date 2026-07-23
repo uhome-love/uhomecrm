@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
         metadata: { sessao_id, pipeline_lead_id, pontos: 4, balde: null, via: "historico" },
       });
 
-      return jsonResponse({ ok: true, reactivated: true });
+      return jsonResponse({ ok: true, reactivated: true, target_stage_name: "Novo Lead", pipeline_lead_id });
     }
 
     // ─── Ação padrão: list ───

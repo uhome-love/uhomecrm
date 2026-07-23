@@ -57,9 +57,13 @@ export function HistoricoPanel({ sessaoId, paused }: { sessaoId: string | null; 
     },
     onSuccess: (data: any) => {
       if (data?.error === "DUPLICATE_ACTIVE") {
-        toast.error("Lead já foi atribuído a outro corretor.");
+        toast.error("Este lead já foi aproveitado por outro corretor.");
       } else if (data?.ok) {
-        toast.success("Lead reaproveitado — está no seu pipeline agora.");
+        const stage = data?.target_stage_name ?? "Novo Lead";
+        toast.success(`Lead aproveitado — foi para o seu pipeline na etapa ${stage}`, {
+          description: "Localize-o no pipeline para dar sequência.",
+          duration: 6000,
+        });
       }
       refetch();
       qc.invalidateQueries({ queryKey: ["mutirao", "ranking"] });
