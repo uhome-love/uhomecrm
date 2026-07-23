@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCorretorIds } from "@/hooks/useCorretorIds";
 
 export type Balde = "verde_hot" | "verde" | "amarelo";
 export type Resultado = "pulado" | "nao_atendeu" | "sem_interesse" | "aproveitado" | "visita_agendada";
@@ -42,11 +43,17 @@ export interface ProximoLeadResult {
   prefetch?: boolean;
 }
 
-const STORAGE_KEY_FILTERS = "mutirao:filters";
-const STORAGE_KEY_ONBOARDED = "mutirao:onboarded";
+const STORAGE_KEY_FILTERS_BASE = "mutirao:filters";
+const STORAGE_KEY_ONBOARDED_BASE = "mutirao:onboarded";
 
 export function useMutiraoSession() {
   const qc = useQueryClient();
+  const { profileId, authId } = useCorretorIds();
+  // Escopa as chaves de localStorage por corretor para evitar vazamento de estado
+  // entre usuários que compartilham o mesmo navegador.
+  const scopeKey = profileId ?? authId ?? null;
+  const filtersKey = scopeKey ? `${STORAGE_KEY_FILTERS_BASE}:${scopeKey}` : null;
+  const onboardedKey = scopeKey ? `${STORAGE_KEY_ONBOARDED_BASE}:${scopeKey}` : null;
 
   // Sessão ao vivo
   const sessaoQ = useQuery({
@@ -70,24 +77,43 @@ export function useMutiraoSession() {
 
   const sessaoId = sessaoQ.data?.id ?? null;
 
-  // Filtros persistidos
-  const [filters, setFiltersState] = useState<{ empreendimento_ids: string[]; segmento_ids: string[] }>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY_FILTERS) || "") || { empreendimento_ids: [], segmento_ids: [] };
-    } catch {
-      return { empreendimento_ids: [], segmento_ids: [] };
-    }
+  // Filtros persistidos (escopados por corretor)
+  const [filters, setFiltersState] = useState<{ empreendimento_ids: string[]; segmento_ids: string[] }>({
+    empreendimento_ids: [],
+    segmento_ids: [],
   });
-  const setFilters = useCallback((f: typeof filters) => {
-    setFiltersState(f);
-    localStorage.setItem(STORAGE_KEY_FILTERS, JSON.stringify(f));
-  }, []);
+  const [onboarded, setOnboardedState] = useState<boolean>(false);
 
-  const [onboarded, setOnboardedState] = useState<boolean>(() => localStorage.getItem(STORAGE_KEY_ONBOARDED) === "1");
+  // Carrega estado do localStorage assim que o scopeKey (corretor) for resolvido.
+  useEffect(() => {
+    if (!filtersKey || !onboardedKey) return;
+    try {
+      const raw = localStorage.getItem(filtersKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.empreendimento_ids) && Array.isArray(parsed.segmento_ids)) {
+          setFiltersState(parsed);
+        } else {
+          setFiltersState({ empreendimento_ids: [], segmento_ids: [] });
+        }
+      } else {
+        setFiltersState({ empreendimento_ids: [], segmento_ids: [] });
+      }
+    } catch {
+      setFiltersState({ empreendimento_ids: [], segmento_ids: [] });
+    }
+    setOnboardedState(localStorage.getItem(onboardedKey) === "1");
+  }, [filtersKey, onboardedKey]);
+
+  const setFilters = useCallback((f: { empreendimento_ids: string[]; segmento_ids: string[] }) => {
+    setFiltersState(f);
+    if (filtersKey) localStorage.setItem(filtersKey, JSON.stringify(f));
+  }, [filtersKey]);
+
   const setOnboarded = useCallback((v: boolean) => {
     setOnboardedState(v);
-    if (v) localStorage.setItem(STORAGE_KEY_ONBOARDED, "1");
-  }, []);
+    if (onboardedKey && v) localStorage.setItem(onboardedKey, "1");
+  }, [onboardedKey]);
 
   // Lead atual (client-side state). fila_id vazio = preview otimista (lock ainda não confirmou).
   const [current, setCurrent] = useState<{ fila_id: string; balde: Balde; lead: LeadOferta; locked_until?: string } | null>(null);
@@ -305,7 +331,7 @@ export function useMutiraoSession() {
       setNoLeadsReason(null);
       setFilters({ empreendimento_ids: [], segmento_ids: [] });
       setOnboardedState(false);
-      localStorage.removeItem(STORAGE_KEY_ONBOARDED);
+      if (onboardedKey) localStorage.removeItem(onboardedKey);
     },
   };
 }

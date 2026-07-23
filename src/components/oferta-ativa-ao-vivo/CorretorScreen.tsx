@@ -117,13 +117,15 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
           </div>
 
           <div className="min-w-0 space-y-3">
-            <RankingPanel sessaoId={ms.sessaoId} />
-            <FeedPanel sessaoId={ms.sessaoId} />
-            <Tabs defaultValue="meta" className="w-full">
-              <TabsList className="grid grid-cols-2 w-full">
+            <Tabs defaultValue="ranking" className="w-full">
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="ranking">🏆 Ranking</TabsTrigger>
                 <TabsTrigger value="meta">🎯 Meta</TabsTrigger>
                 <TabsTrigger value="historico">🕘 Histórico</TabsTrigger>
               </TabsList>
+              <TabsContent value="ranking" className="mt-2">
+                <RankingPanel sessaoId={ms.sessaoId} />
+              </TabsContent>
               <TabsContent value="meta" className="mt-2">
                 <MetaPanel sessaoId={ms.sessaoId} />
               </TabsContent>
@@ -131,6 +133,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
                 <HistoricoPanel sessaoId={ms.sessaoId} />
               </TabsContent>
             </Tabs>
+            <FeedPanel sessaoId={ms.sessaoId} />
           </div>
         </div>
 

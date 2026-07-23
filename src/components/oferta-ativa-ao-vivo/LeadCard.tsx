@@ -9,7 +9,6 @@ import {
   Search, Flame,
 } from "lucide-react";
 import type { useMutiraoSession } from "@/hooks/useMutiraoSession";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { playSoundSuccess, playSoundFanfare, getCelebrationEnabled } from "@/lib/celebrations";
 
@@ -51,8 +50,6 @@ export function LeadCard({
   onAgendarVisita: () => void;
   onOpenFilters?: () => void;
 }) {
-  const [dossie, setDossie] = useState<string | null>(null);
-  const [dossieLoading, setDossieLoading] = useState(false);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -60,31 +57,11 @@ export function LeadCard({
     return () => clearInterval(i);
   }, []);
 
-  useEffect(() => { setDossie(null); }, [ms.current?.lead.id]);
-
   const lead = ms.current?.lead;
 
   const callSeconds = ms.callStart
     ? Math.floor(((ms.callEnd ?? Date.now()) - ms.callStart) / 1000)
     : 0;
-
-  async function gerarDossie() {
-    if (!lead) return;
-    setDossieLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("homi-copilot", {
-        body: { mode: "dossie_oferta", pipeline_lead_id: lead.id },
-      });
-      if (error) throw error;
-      const texto = (data as any)?.texto || (data as any)?.mensagem || (data as any)?.sugestao_resposta || "Sem insights disponíveis.";
-      setDossie(texto);
-    } catch (e) {
-      console.error("[dossie]", e);
-      setDossie("Não consegui gerar o dossiê agora. Use o script como base.");
-    } finally {
-      setDossieLoading(false);
-    }
-  }
 
 
   const copyPhone = () => {
@@ -270,23 +247,7 @@ export function LeadCard({
           </div>
 
 
-          {/* Dossiê */}
-          <div className="rounded-lg border border-border bg-muted/40 p-3.5">
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <Sparkles className="w-3.5 h-3.5 text-primary" /> Dossiê rápido
-              </p>
-              {!dossie && (
-                <Button size="sm" variant="ghost" onClick={gerarDossie} disabled={dossieLoading} className="h-7 -my-1">
-                  {dossieLoading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                  Gerar com IA
-                </Button>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-              {dossie ?? "Peça à IA um resumo do lead e a melhor abordagem em 3 segundos."}
-            </p>
-          </div>
+
 
           {/* Zona de ação: ligar */}
           <div className="flex items-center gap-2">

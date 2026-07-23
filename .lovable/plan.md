@@ -1,108 +1,42 @@
-# Plano: Redesign do Hub de Materiais (Marketplace Uhome)
+Plano: 3 ajustes frontend no `/oferta-ativa-ao-vivo` (tela do corretor)
 
-## Objetivo
-Transformar a página `/materiais` em um marketplace funcional e visualmente organizado para corretores, onde o principal é baixar/visualizar materiais rapidamente, com categorias padronizadas e preview em popup.
+Escopo: somente frontend. Sem migrations, sem alterações no RPC `oferta_ativa_lock_next_lead`, sem edge functions.
 
-## Etapa 1 — Mockup de aprovação (antes de código)
-Entregar 2 mockups em HTML estático para o Lucas aprovar:
+### 1) Escopar localStorage por corretor (`src/hooks/useMutiraoSession.ts`)
 
-- **Mockup A — Desktop (1280px):** layout em lista, sidebar de empreendimentos, painel principal com categorias colapsáveis e ações primárias de download/preview.
-- **Mockup B — Mobile (440px):** mesma lista compacta, botões principais adaptados para touch e menu de ações secundárias.
+Problema: as chaves `mutirao:filters` e `mutirao:onboarded` são globais por navegador, então um corretor que usa o mesmo navegador herda o estado de outro.
 
-Criar em `/tmp/materiais-mockup.html` e apresentar visualmente (screenshot).
+Ajustes:
+- Importar `useCorretorIds` e usar `profileId` como sufixo das chaves.
+- Substituir chaves estáticas por chaves dinâmicas: `mutirao:filters:${profileId}` e `mutirao:onboarded:${profileId}`.
+- Carregar filtros/onboarding de `localStorage` somente após `profileId` ser resolvido.
+- Atualizar `setFilters`, `setOnboarded` e `resetCorretor` para ler/gravar/remover a chave correta do usuário logado.
+- Resultado: corretor novo (ou em navegador compartilhado) abre com onboarding visível e filtros vazios.
 
-## Etapa 2 — Padronização das categorias
+### 2) Reorganizar coluna direita (`src/components/oferta-ativa-ao-vivo/CorretorScreen.tsx`)
 
-### 2.1 Novo catálogo único (frontend + backend)
-Substituir as categorias fragmentadas (há duas listas diferentes em `CategoriaIcon.tsx` e `UploadMaterialDialog.tsx`) por um catálogo único:
+Atualmente a coluna direita mostra Ranking + Feed fixos e, abaixo, abas Meta/Histórico.
 
-| value | label |
-|-------|-------|
-| `apresentacao_book` | Apresentação - Book |
-| `drive_construtora` | Drive Construtora |
-| `tabela` | Tabela |
-| `disponibilidade` | Disponibilidade |
-| `imagens` | Imagens |
-| `videos` | Vídeos |
-| `script_atendimento` | Script de Atendimento |
-| `anuncio_no_ar` | Anúncio no Ar |
-| `whatsapp_responsavel` | Whatsapp do responsável |
-| `outros` | Outros |
+Ajustes:
+- Criar uma única barra de abas com três opções: `Ranking`, `Meta`, `Histórico` (default: `Ranking`).
+- Cada aba renderiza seu respectivo painel (`RankingPanel`, `MetaPanel`, `HistoricoPanel`).
+- Manter o `FeedPanel` (Celebrações) sempre visível logo abaixo das abas.
+- Nenhuma mudança de props ou de dados nos painéis reutilizados.
 
-### 2.2 Backfill dos dados existentes
-Migration SQL para consolidar categorias antigas no novo catálogo:
-- `book` → `apresentacao_book`
-- `apresentacao` → `apresentacao_book`
-- `tabela_vendas` → `tabela`
-- `material_atendimento` → `script_atendimento`
-- `fotos` → `imagens` (quando houver)
-- `videos` → `videos` (quando houver)
-- `plantas` → `outros` ou manter (a definir com Lucas)
+### 3) Remover o bloco "Dossiê rápido" com IA (`src/components/oferta-ativa-ao-vivo/LeadCard.tsx`)
 
-## Etapa 3 — Reorganização dos botões de ação
+Problema: a IA está inventando valores (ex.: "R$297.000,00") que não existem no banco.
 
-### 3.1 Em cada linha de material (`MaterialItem.tsx`)
-- **Botão principal (default):**
-  - Se `storage_path` existir e for previewable (PDF, imagem, vídeo, áudio): **Abrir/Preview** (ícone de olho ou play). Clica e abre `MaterialPreviewDialog`.
-  - Se `storage_path` existir e NÃO for previewable: **Download**.
-  - Se for link externo (sem `storage_path`): **Abrir link**.
-- **Botão secundário (outline):** Copiar (link assinado ou URL externa).
-- **Remover** o botão de Follow-up IA individual por material.
+Ajustes:
+- Remover estados `dossie`, `dossieLoading` e a função `gerarDossie`.
+- Remover a chamada à edge function `oferta-ativa-dossie`/`homi-copilot` usada no dossiê.
+- Remover o bloco de UI "Dossiê rápido" do card.
+- Manter os dados factuais: nome, telefone, empreendimento, segmento, "Descartado há Xd" e motivo de descarte.
+- Remover importações de ícones/componentes que deixarem de ser usados após a remoção.
 
-### 3.2 No header do empreendimento (`MateriaisEmpreendimentoPanel.tsx`)
-- Manter **Copiar todos** (todos os links do empreendimento).
-- Manter **Follow-up IA** ao lado de "Copiar todos", mas agora ele abre o diálogo com **todos os materiais do empreendimento pré-selecionados** (já implementado assim hoje).
-- Remover o botão de Follow-up IA de cada linha.
+---
 
-### 3.3 Ações de gestão (editar/excluir)
-- Manter no menu "3 pontos" (só visível para quem pode editar) ou expandir no hover.
-- Manter no menu mobile.
-
-## Etapa 4 — Preview em popup para downloads
-
-### 4.1 Integrar `MaterialPreviewDialog`
-Ao clicar no botão principal de um material com `storage_path` previewable:
-- Abrir `MaterialPreviewDialog` (já existente, renderiza imagem, vídeo, PDF e áudio).
-- Contabilizar ação como `preview` no analytics.
-
-### 4.2 Ajuste no `MaterialPreviewDialog`
-- Botão principal do header: **Download** (quando houver `storage_path`).
-- Botão secundário: **Abrir em nova aba**.
-- Manter fallback para link externo e arquivos não previewable.
-
-## Etapa 5 — Ajustes nos formulários de cadastro
-
-### 5.1 `UploadMaterialDialog.tsx`
-- Substituir a lista de categorias atual pela lista padronizada.
-- Auto-detectar categoria pelo tipo de arquivo:
-  - Imagem → `imagens`
-  - Vídeo → `videos`
-  - PDF → `apresentacao_book` (default, usuário pode trocar)
-
-### 5.2 `LinkFormDialog.tsx`
-- Usar o mesmo catálogo padronizado de `CategoriaIcon.tsx`.
-
-## Etapa 6 — Validação ao vivo
-- Testar no preview logado (CEO/gestor e corretor).
-- Verificar:
-  - Categorias aparecem padronizadas.
-  - Botão principal abre preview/download conforme tipo.
-  - Botão Copiar funciona.
-  - Follow-up IA funciona pelo header do empreendimento.
-  - Mobile não corta botões.
-  - Formulários de upload/link têm categorias corretas.
-
-## Arquivos que serão alterados
-- `src/components/materiais/CategoriaIcon.tsx` (catálogo único)
-- `src/components/materiais/MaterialItem.tsx` (botões)
-- `src/components/materiais/MateriaisEmpreendimentoPanel.tsx` (header, remove IA por linha)
-- `src/components/materiais/MaterialPreviewDialog.tsx` (ajuste de botões)
-- `src/components/materiais/UploadMaterialDialog.tsx` (categorias)
-- `src/components/materiais/LinkFormDialog.tsx` (categorias)
-- `src/components/materiais/FollowUpMaterialDialog.tsx` (sem mudanças, já atende)
-- Migration SQL para backfill de categorias antigas
-
-## Dúvidas para aprovação
-1. **Mockup:** devo gerar o mockup agora e você aprova antes de codificar?
-2. **Planta:** a categoria `plantas` (upload) deve virar `imagens` ou `outros`?
-3. **Categoria default de PDF:** PDF sem nome específico entra como `apresentacao_book` ou `outros` por padrão?
+Validação:
+- Testar login com dois corretores diferentes no mesmo navegador: cada um deve ter filtros/onboarding independentes.
+- Verificar no preview que a coluna direita exibe as abas Ranking/Meta/Histórico com o Feed sempre abaixo.
+- Confirmar que o card do lead não exibe mais o bloco de dossiê nem botão "Gerar com IA".
