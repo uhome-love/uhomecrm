@@ -334,142 +334,169 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
           </div>
         </div>
 
-        {/* Corpo */}
-        <div style={{ display: "flex", gap: 10, padding: "10px 20px", flex: 1, minHeight: 0, overflow: "hidden" }}>
-          {/* Esquerda: cards de equipes + ranking */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
-            {/* Equipes */}
-            {equipes.length > 0 && (
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(equipes.length, 3)}, 1fr)`, gap: 10, flex: "0 0 auto" }}>
-                {equipes.slice(0, 3).map((e: any, i: number) => {
-                  const st = equipeStyle(e.equipe, i);
-                  const isLider = liderEquipe && e.equipe === liderEquipe.equipe && e.visitas > 0;
-                  const bateuMeta = e.visitas >= META_EQUIPE;
-                  return (
-                    <div key={e.equipe ?? i} className={[isLider ? "glow-leader" : "", bateuMeta ? "festa-card" : ""].filter(Boolean).join(" ")} style={{
-                      "--glow-color": `${st.cor}66`, "--glow-color-strong": `${st.cor}cc`,
-                      background: bateuMeta ? `linear-gradient(135deg, ${st.cor}33, #0d0d20, ${st.cor}22)` : "#0d0d20",
-                      border: `2px solid ${bateuMeta ? st.cor + "88" : st.cor + "44"}`,
-                      borderRadius: 16, padding: "10px 14px", position: "relative", overflow: "hidden",
-                      boxShadow: bateuMeta ? `0 0 30px ${st.cor}44` : "none",
-                    } as any}>
-                      <div style={{ position: "absolute", top: 8, right: 10, fontSize: 22, opacity: i === 0 ? 1 : 0.5 }}>
-                        {i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 24 }}>{st.emoji}</span>
-                        <h2 style={{ fontSize: "clamp(14px, 2vw, 20px)", letterSpacing: 2, textTransform: "uppercase", margin: 0, color: st.cor }}>{e.equipe ?? "Sem equipe"}</h2>
-                      </div>
-                      <div style={{ fontSize: "clamp(36px, 6vw, 64px)", fontWeight: 900, color: st.cor, lineHeight: 1, letterSpacing: -2, textShadow: `0 0 40px ${st.cor}66`, margin: "4px 0" }}>{e.visitas}</div>
-                      <div style={{ fontSize: 10, letterSpacing: 2, color: "#ffffff55", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 6 }}>
-                        {e.ligacoes} lig · {e.aproveitamentos} aprov · <span style={{ color: "#F59E0B" }}>{e.pontos} pts</span>
-                      </div>
-                      <ProgressBar valor={e.visitas} meta={META_EQUIPE} cor={st.cor} />
-                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "#ffffff44", fontFamily: "monospace", letterSpacing: 1 }}>
-                        <span>META: {META_EQUIPE}</span>
-                        <span>{bateuMeta ? "✅ CONCLUÍDA" : `FALTAM: ${META_EQUIPE - e.visitas}`}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+        {/* Corpo: Esquerda (equipes horizontais) + Direita (ranking corretores) */}
+        <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr", gap: 12, padding: "10px 20px 6px", flex: 1, minHeight: 0, overflow: "hidden" }}>
+          {/* Esquerda: 3 equipes empilhadas em linhas horizontais */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+            {equipes.length === 0 && (
+              <div style={{ color: "#ffffff33", fontSize: 14, fontFamily: "monospace", textAlign: "center", marginTop: 40 }}>Aguardando equipes…</div>
             )}
-
-            {/* Ranking individual */}
-            <div style={{ flex: 1, minHeight: 0, background: "#0a0a18", border: "1px solid #ffffff14", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-              <div style={{ fontSize: "clamp(12px, 1.5vw, 15px)", letterSpacing: 4, textTransform: "uppercase", color: "#F59E0B", marginBottom: 10, textAlign: "center", fontWeight: 900, flexShrink: 0 }}>
-                🏅 Ranking dos Corretores
-              </div>
-              <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 4 }}>
-                {corretores.length === 0 && (
-                  <div style={{ color: "#ffffff33", fontSize: 12, fontFamily: "monospace", textAlign: "center", marginTop: 20 }}>Aguardando corretores entrarem…</div>
-                )}
-                {corretores.slice(0, 10).map((c: any, i: number) => {
-                  const st = equipeStyle(c.equipe, i);
-                  const isFlash = flashCorretor === c.corretor_id;
-                  return (
-                    <div key={c.corretor_id} className={isFlash ? "row-flash" : ""} style={{
-                      display: "flex", alignItems: "center", gap: 12,
-                      padding: "8px 10px", borderRadius: 10,
-                      background: i === 0 ? "#1a1400" : "#0d0d14",
-                      border: `1px solid ${i === 0 ? "#F59E0B66" : st.cor + "33"}`,
-                    }}>
-                      <div style={{ fontSize: 22, width: 36, textAlign: "center" }}>{i < 3 ? medalhas[i] : <span style={{ fontFamily: "'Bebas Neue', sans-serif", color: "#ffffff77" }}>{i + 1}º</span>}</div>
-                      {c.foto_url ? (
-                        <img src={c.foto_url} alt={c.nome} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}66` }} />
-                      ) : (
-                        <div style={{ width: 34, height: 34, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}66`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: st.cor }}>
-                          {(c.nome || "?").slice(0, 1)}
-                        </div>
-                      )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {c.nome}
-                        </div>
-                        <div style={{ fontFamily: "monospace", fontSize: 10, color: "#ffffff55", letterSpacing: 1 }}>
-                          {c.equipe ? <span style={{ color: st.cor }}>{c.equipe}</span> : <span>—</span>} · {c.ligacoes} lig
-                        </div>
-                      </div>
-                      <div style={{ textAlign: "center", minWidth: 56 }}>
-                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, lineHeight: 1, color: "#22c55e" }}>{c.visitas}</div>
-                        <div style={{ fontSize: 8, letterSpacing: 2, color: "#ffffff55", fontFamily: "monospace" }}>VIS</div>
-                      </div>
-                      <div style={{ textAlign: "center", minWidth: 64 }}>
-                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, lineHeight: 1, color: "#F59E0B", textShadow: "0 0 20px #F59E0B66" }}>{c.pontos}</div>
-                        <div style={{ fontSize: 8, letterSpacing: 2, color: "#ffffff55", fontFamily: "monospace" }}>PTS</div>
-                      </div>
+            {equipes.slice(0, 3).map((e: any, i: number) => {
+              const st = equipeStyle(e.equipe, i);
+              const isLider = liderEquipe && e.equipe === liderEquipe.equipe && e.visitas > 0;
+              const bateuMeta = e.visitas >= META_EQUIPE;
+              const pct = Math.min((e.visitas / META_EQUIPE) * 100, 100);
+              // Foto do líder da equipe (primeiro corretor daquela equipe no ranking)
+              const lider = corretores.find((c: any) => c.equipe === e.equipe);
+              return (
+                <div key={e.equipe ?? i} className={[isLider ? "glow-leader" : "", bateuMeta ? "festa-card" : ""].filter(Boolean).join(" ")} style={{
+                  "--glow-color": `${st.cor}66`, "--glow-color-strong": `${st.cor}cc`,
+                  flex: 1, minHeight: 0,
+                  background: bateuMeta ? `linear-gradient(135deg, ${st.cor}33, #0d0d20, ${st.cor}22)` : `linear-gradient(90deg, ${st.cor}22 0%, #0d0d20 40%)`,
+                  border: `2px solid ${st.cor}66`,
+                  borderRadius: 16, padding: "10px 16px", position: "relative", overflow: "hidden",
+                  display: "grid", gridTemplateColumns: "auto auto 1fr auto auto auto 1.2fr", alignItems: "center", gap: 14,
+                  boxShadow: bateuMeta ? `0 0 30px ${st.cor}66` : `0 0 20px ${st.cor}22`,
+                } as any}>
+                  {/* Rank badge grande */}
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(48px, 6vw, 88px)", lineHeight: 0.85, color: st.cor, textShadow: `0 0 30px ${st.cor}aa`, minWidth: 60, textAlign: "center" }}>
+                    {i + 1}<span style={{ fontSize: "0.4em", verticalAlign: "super" }}>º</span>
+                  </div>
+                  {/* Foto do líder */}
+                  {lider?.foto_url ? (
+                    <img src={lider.foto_url} alt={lider.nome} style={{ width: 68, height: 68, borderRadius: "50%", objectFit: "cover", border: `3px solid ${st.cor}`, boxShadow: `0 0 20px ${st.cor}66` }} />
+                  ) : (
+                    <div style={{ width: 68, height: 68, borderRadius: "50%", background: st.cor + "33", border: `3px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: st.cor }}>
+                      {(lider?.nome || e.equipe || "?").slice(0, 1)}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  )}
+                  {/* Nome + equipe */}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(22px, 2.8vw, 40px)", letterSpacing: 2, color: st.cor, lineHeight: 1, textShadow: `0 0 20px ${st.cor}66`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {(lider?.nome || e.equipe || "—").toUpperCase()}
+                    </div>
+                    <div style={{ fontSize: 11, letterSpacing: 3, color: "#ffffff88", textTransform: "uppercase", fontFamily: "monospace", marginTop: 2 }}>
+                      Equipe {e.equipe ?? "—"}
+                    </div>
+                  </div>
+                  {/* Stats: Ligações */}
+                  <Stat label="Ligações" value={e.ligacoes} icon="📞" cor={st.cor} />
+                  {/* Stats: Aprovações (aproveitamentos) */}
+                  <Stat label="Aprovações" value={e.aproveitamentos} icon="✅" cor={st.cor} />
+                  {/* Stats: Pontos */}
+                  <Stat label="Pontos" value={e.pontos} icon="🏆" cor="#F59E0B" />
+                  {/* Progresso da meta */}
+                  <div style={{ minWidth: 120 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                      <span style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace" }}>Progresso da meta</span>
+                      <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: bateuMeta ? "#22c55e" : st.cor, lineHeight: 1 }}>{Math.round(pct)}%</span>
+                    </div>
+                    <ProgressBar valor={e.visitas} meta={META_EQUIPE} cor={bateuMeta ? "#22c55e" : st.cor} />
+                    <div style={{ fontSize: 9, color: "#ffffff55", fontFamily: "monospace", letterSpacing: 1, marginTop: 3, textAlign: "right" }}>
+                      {bateuMeta ? "✅ META BATIDA" : `${e.visitas} DE ${META_EQUIPE} VISITAS`}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Direita: feed ao vivo */}
-          <div className="placar-feed-lateral" style={{ width: 300, flexShrink: 0, background: "#0a0a18", border: "1px solid #ffffff14", borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
-            <style>{`@media (max-width: 1024px) { .placar-feed-lateral { display: none !important; } }`}</style>
-            <div style={{ fontSize: "clamp(12px, 1.5vw, 15px)", letterSpacing: 3, textTransform: "uppercase", color: "#F59E0B", marginBottom: 12, textAlign: "center", fontWeight: 900, flexShrink: 0 }}>
-              ⚡ Últimas conquistas
+          {/* Direita: Ranking dos Corretores */}
+          <div style={{ background: "#0a0a18", border: "1px solid #ffffff14", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+            <div style={{ fontSize: "clamp(13px, 1.4vw, 17px)", letterSpacing: 4, textTransform: "uppercase", color: "#F59E0B", marginBottom: 10, textAlign: "center", fontWeight: 900, flexShrink: 0, textShadow: "0 0 20px #F59E0B66" }}>
+              🏅 Ranking dos Corretores
             </div>
-            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 6 }}>
-              {feed.length === 0 ? (
-                <div style={{ color: "#ffffff33", fontSize: 11, fontFamily: "monospace", textAlign: "center", marginTop: 20 }}>Nenhuma ação ainda</div>
-              ) : (
-                feed.map((v, i) => {
-                  const visita = v.tipo === "visita_agendada";
-                  const cor = visita ? "#22c55e" : "#F59E0B";
-                  return (
-                    <div key={`${v.corretor}-${v.hora}-${i}`} style={{
-                      display: "flex", alignItems: "flex-start", gap: 8, padding: "6px 8px",
-                      background: i === 0 ? "#ffffff08" : "transparent", borderRadius: 8,
-                      border: i === 0 ? `1px solid ${cor}44` : "1px solid transparent",
-                      animation: i === 0 ? "slideDown 0.4s ease-out" : "none",
-                    }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: cor, boxShadow: `0 0 8px ${cor}`, flexShrink: 0, marginTop: 6 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, color: "#fff", fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1, fontWeight: 700 }}>
-                          {v.corretor} <span style={{ color: cor }}>{visita ? "🎯" : "⚡"}</span>
-                        </div>
-                        {(v.cliente || v.empreendimento) && (
-                          <div style={{ fontSize: 10, color: "#ffffff77", fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {[v.cliente, v.empreendimento].filter(Boolean).join(" · ")}
-                          </div>
-                        )}
-                        <div style={{ fontSize: 9, color: "#ffffff44", fontFamily: "monospace", letterSpacing: 1, textTransform: "uppercase" }}>
-                          {visita ? "Visita marcada" : "Aproveitou lead"}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 10, color: "#ffffff55", fontFamily: "monospace", fontWeight: 700, letterSpacing: 1 }}>{v.hora}</div>
-                    </div>
-                  );
-                })
+            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 5 }}>
+              {corretores.length === 0 && (
+                <div style={{ color: "#ffffff33", fontSize: 12, fontFamily: "monospace", textAlign: "center", marginTop: 20 }}>Aguardando corretores…</div>
               )}
+              {corretores.slice(0, 8).map((c: any, i: number) => {
+                const st = equipeStyle(c.equipe, i);
+                const isFlash = flashCorretor === c.corretor_id;
+                return (
+                  <div key={c.corretor_id} className={isFlash ? "row-flash" : ""} style={{
+                    display: "grid", gridTemplateColumns: "36px 40px 1fr auto", alignItems: "center", gap: 10,
+                    padding: "6px 10px", borderRadius: 10,
+                    background: i === 0 ? "#1a1400" : "#0d0d14",
+                    border: `1px solid ${i === 0 ? "#F59E0B66" : st.cor + "22"}`,
+                  }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: i === 0 ? "#F59E0B" : "#ffffff88", textAlign: "center", lineHeight: 1 }}>
+                      {i + 1}<span style={{ fontSize: "0.55em", verticalAlign: "super" }}>º</span>
+                    </div>
+                    {c.foto_url ? (
+                      <img src={c.foto_url} alt={c.nome} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}` }} />
+                    ) : (
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: st.cor }}>
+                        {(c.nome || "?").slice(0, 1)}
+                      </div>
+                    )}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {(c.nome || "—").split(" ")[0].toUpperCase()}
+                      </div>
+                      <div style={{ fontFamily: "monospace", fontSize: 9, color: st.cor, letterSpacing: 1, textTransform: "uppercase", marginTop: 2 }}>
+                        Equipe {c.equipe ?? "—"}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "center", minWidth: 50 }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, lineHeight: 1, color: "#F59E0B", textShadow: "0 0 15px #F59E0B66" }}>{c.pontos}</div>
+                      <div style={{ fontSize: 8, letterSpacing: 2, color: "#ffffff55", fontFamily: "monospace" }}>PONTOS</div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
+        {/* Últimas Conquistas — faixa horizontal na base */}
+        <div style={{ padding: "6px 20px 10px", flexShrink: 0 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "auto repeat(4, 1fr)", gap: 10, background: "#0a0a18", border: "1px solid #ffffff14", borderRadius: 14, padding: "10px 14px", alignItems: "stretch" }}>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", paddingRight: 14, borderRight: "1px solid #ffffff14", minWidth: 130 }}>
+              <div style={{ fontSize: "clamp(13px, 1.4vw, 18px)", letterSpacing: 3, color: "#F59E0B", textTransform: "uppercase", fontWeight: 900, textShadow: "0 0 20px #F59E0B66", lineHeight: 1 }}>Últimas</div>
+              <div style={{ fontSize: "clamp(13px, 1.4vw, 18px)", letterSpacing: 3, color: "#F59E0B", textTransform: "uppercase", fontWeight: 900, textShadow: "0 0 20px #F59E0B66", lineHeight: 1 }}>Conquistas</div>
+              <div style={{ fontSize: 22, marginTop: 4 }}>🏆</div>
+            </div>
+            {feed.length === 0 && (
+              <div style={{ gridColumn: "span 4", color: "#ffffff33", fontSize: 12, fontFamily: "monospace", textAlign: "center", alignSelf: "center" }}>Nenhuma conquista ainda — bora fechar!</div>
+            )}
+            {feed.slice(0, 4).map((v, i) => {
+              const visita = v.tipo === "visita_agendada";
+              const cor = visita ? "#22c55e" : "#F59E0B";
+              const corr = corretores.find((c: any) => (c.nome || "").split(" ")[0] === v.corretor);
+              const st = equipeStyle(corr?.equipe, i);
+              return (
+                <div key={`${v.corretor}-${v.hora}-${i}`} style={{
+                  display: "flex", alignItems: "center", gap: 10, padding: "4px 6px",
+                  borderLeft: i === 0 ? `3px solid ${cor}` : "3px solid transparent",
+                  animation: i === 0 ? "slideDown 0.4s ease-out" : "none",
+                }}>
+                  {corr?.foto_url ? (
+                    <img src={corr.foto_url} alt={v.corretor} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: `2px solid ${st.cor}` }} />
+                  ) : (
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: st.cor + "22", border: `2px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: st.cor, flexShrink: 0 }}>
+                      {(v.corretor || "?").slice(0, 1)}
+                    </div>
+                  )}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, color: st.cor, lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {(v.corretor || "").toUpperCase()}
+                    </div>
+                    <div style={{ fontFamily: "monospace", fontSize: 10, color: "#ffffffbb", letterSpacing: 1, textTransform: "uppercase", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {visita ? "Marcou uma visita" : "Aproveitou um lead"}
+                    </div>
+                    <div style={{ fontFamily: "monospace", fontSize: 10, color: cor, letterSpacing: 1, marginTop: 2, fontWeight: 700 }}>
+                      {v.hora}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Footer */}
-        <div style={{ textAlign: "center", padding: "4px 24px 8px", color: "#ffffff33", fontSize: 9, fontFamily: "monospace", letterSpacing: 2, flexShrink: 0 }}>
+        <div style={{ textAlign: "center", padding: "2px 24px 6px", color: "#ffffff33", fontSize: 9, fontFamily: "monospace", letterSpacing: 2, flexShrink: 0 }}>
           <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#22c55e", marginRight: 6, animation: "pulse 1.5s infinite" }} />
           AO VIVO · MUTIRÃO INTELIGENTE · {corretores.length} CORRETOR{corretores.length === 1 ? "" : "ES"} NO PLACAR
         </div>
