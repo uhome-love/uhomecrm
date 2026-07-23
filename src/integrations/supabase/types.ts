@@ -11968,6 +11968,25 @@ export type Database = {
         Returns: boolean
       }
       oa_ao_vivo_my_profile_id: { Args: never; Returns: string }
+      oferta_ativa_lock_next_lead: {
+        Args: {
+          p_corretor_id: string
+          p_empreendimento_ids?: string[]
+          p_segmento_ids?: string[]
+          p_sessao_id: string
+        }
+        Returns: {
+          balde: string
+          bucket_order: number
+          empreendimento_id: string
+          id: string
+          locked_until: string
+          motivo_descarte_raw: string
+          pipeline_lead_id: string
+          reengajamento_status_raw: string
+          segmento_id: string
+        }[]
+      }
       presenca_role_scope: { Args: { _user_id: string }; Returns: string }
       processar_cadencia_sem_contato: {
         Args: never
