@@ -63,6 +63,15 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
                 {formatBRT(ms.sessao.inicio_at, "HH:mm")} → {formatBRT(ms.sessao.fim_at, "HH:mm")}
               </span>
             )}
+            {inCall && (
+              <Badge
+                variant="outline"
+                className="hidden sm:inline-flex items-center gap-1 border-primary/40 bg-primary/5 text-primary text-[10px] font-semibold uppercase tracking-wide"
+              >
+                <ShieldCheck className="w-3 h-3" />
+                Modo foco — atualizações pausadas
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -96,6 +105,19 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
           </div>
         </div>
 
+        {/* Banner de atualização pendente — só aparece FORA de ligação ativa */}
+        {pendingReload && !inCall && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2 text-sm">
+            <span className="text-foreground">
+              Nova versão do CRM disponível. Você pode atualizar agora — nada em andamento será perdido.
+            </span>
+            <Button size="sm" onClick={applyPendingReload} className="gap-1.5">
+              <RefreshCw className="w-3.5 h-3.5" />
+              Atualizar agora
+            </Button>
+          </div>
+        )}
+
         {/* Grid principal — Ranking + Feed + Meta + Histórico visíveis ao mesmo tempo */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] gap-3">
           <div className="space-y-3 min-w-0">
@@ -116,7 +138,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
                 <TabsTrigger value="historico">🕘 Histórico</TabsTrigger>
               </TabsList>
               <TabsContent value="ranking" className="mt-2">
-                <RankingPanel sessaoId={ms.sessaoId} />
+                <RankingPanel sessaoId={ms.sessaoId} paused={inCall} />
               </TabsContent>
               <TabsContent value="meta" className="mt-2">
                 <MetaPanel sessaoId={ms.sessaoId} />
@@ -126,10 +148,10 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
                 className="mt-2 data-[state=inactive]:hidden"
                 forceMount
               >
-                <HistoricoPanel sessaoId={ms.sessaoId} />
+                <HistoricoPanel sessaoId={ms.sessaoId} paused={inCall} />
               </TabsContent>
             </Tabs>
-            <FeedPanel sessaoId={ms.sessaoId} />
+            <FeedPanel sessaoId={ms.sessaoId} paused={inCall} />
           </div>
         </div>
 
