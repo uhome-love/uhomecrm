@@ -186,6 +186,7 @@ export function useMutiraoSession() {
       visita_payload?: any;
     }) => {
       if (!sessaoId || !current) throw new Error("Sem lead ativo");
+      if (!current.fila_id) throw new Error("Aguardando lock do lead");
       const { data, error } = await supabase.functions.invoke("oferta-ativa-registrar-resultado", {
         body: {
           sessao_id: sessaoId,
@@ -208,10 +209,8 @@ export function useMutiraoSession() {
       qc.invalidateQueries({ queryKey: ["mutirao", "historico"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "reaproveitar"] });
       if (data?.bateu_meta) toast.success("🏆 Você bateu uma meta!");
-      // Auto-next
-      setCurrent(null);
-      setCallState("idle");
-      setTimeout(() => proximoLeadM.mutate(), 250);
+      // Auto-next — preview otimista com o prefetched (se existir) enquanto o lock roda.
+      applyOptimisticAndFetch();
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao registrar resultado"),
   });
@@ -222,9 +221,32 @@ export function useMutiraoSession() {
   const pularM = useMutation({
     mutationFn: async () => {
       if (!current) return;
+      if (!current.fila_id) {
+        toast.info("Aguardando confirmação do lead atual…");
+        return;
+      }
       await registrarM.mutateAsync({ resultado: "pulado", observacao: "[Pulado sem ligar]" });
     },
   });
+
+  // Aplica o preview otimista (do prefetched) e dispara o lock real em paralelo.
+  const applyOptimisticAndFetch = useCallback(() => {
+    const pf = prefetchedRef.current;
+    if (pf) {
+      setCurrent({ fila_id: "", balde: pf.balde, lead: pf.lead });
+      setLockConfirmed(false);
+      setCallState("idle");
+      setCallStart(null);
+      setCallEnd(null);
+      setPrefetched(null);
+      prefetchedRef.current = null;
+    } else {
+      setCurrent(null);
+      setLockConfirmed(false);
+      setCallState("idle");
+    }
+    proximoLeadM.mutate();
+  }, [proximoLeadM]);
 
   // Heartbeat 30s
   const hbTimerRef = useRef<number | null>(null);
