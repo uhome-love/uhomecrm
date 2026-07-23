@@ -1,8 +1,8 @@
-// oferta-ativa-proximo-lead — Fase 1 (fix: aceita ultimo_corretor_id nulo no UPDATE de lock)
+// oferta-ativa-proximo-lead — Fase 2: usa RPC atômica oferta_ativa_lock_next_lead.
 // Corretor. Faz lock atômico do próximo lead elegível da fila. verify_jwt=true.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
@@ -28,8 +28,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const sessao_id: string | undefined = body?.sessao_id;
-    const empreendimento_ids: string[] | undefined = body?.empreendimento_ids;
-    const segmento_ids: string[] | undefined = body?.segmento_ids;
+    const empreendimento_ids: string[] = Array.isArray(body?.empreendimento_ids) ? body.empreendimento_ids : [];
+    const segmento_ids: string[] = Array.isArray(body?.segmento_ids) ? body.segmento_ids : [];
     if (!sessao_id) return errorResponse("sessao_id required", 400);
 
     // Sessão ao vivo + dentro da janela
@@ -76,63 +76,25 @@ Deno.serve(async (req) => {
         { onConflict: "sessao_id,corretor_id" },
       );
 
-    // Seleciona candidato via RPC atômica se existir; senão via loop com FOR UPDATE.
-    // Estratégia: buscar top N candidatos, tentar UPDATE atômico com filtros de disponibilidade.
-    const nowIso = new Date().toISOString();
-    let query = admin
-      .from("oferta_ativa_fila")
-      .select("id, pipeline_lead_id, balde, bucket_order")
-      .eq("sessao_id", sessao_id)
-      .or(`locked_by.is.null,locked_until.lte.${nowIso}`)
-      .or(`claimed_by.is.null,claimed_until.lte.${nowIso}`)
-      .or(`cooldown_ate.is.null,cooldown_ate.lte.${nowIso}`)
-      .or(`ultimo_corretor_id.is.null,ultimo_corretor_id.neq.${meuProfileId}`)
-      .order("bucket_order", { ascending: true })
-      .order("created_at", { ascending: true })
-      .limit(20);
-    if (empreendimento_ids?.length) query = query.in("empreendimento_id", empreendimento_ids);
-    if (segmento_ids?.length) query = query.in("segmento_id", segmento_ids);
+    // Lock atômico via RPC (SELECT ... FOR UPDATE SKIP LOCKED + UPDATE + RETURNING)
+    const { data: rpcRows, error: rpcErr } = await admin.rpc("oferta_ativa_lock_next_lead", {
+      p_sessao_id: sessao_id,
+      p_corretor_id: meuProfileId,
+      p_empreendimento_ids: empreendimento_ids,
+      p_segmento_ids: segmento_ids,
+    });
+    if (rpcErr) return errorResponse(rpcErr.message, 500);
 
-    const { data: candidatos, error: qErr } = await query;
-    if (qErr) return errorResponse(qErr.message, 500);
-    if (!candidatos || candidatos.length === 0) {
+    const acquired = Array.isArray(rpcRows) && rpcRows.length > 0 ? rpcRows[0] as any : null;
+    if (!acquired) {
       return jsonResponse({ ok: true, lead: null, reason: "fila_vazia" });
     }
 
-    // Tenta lock atômico via update condicional (só se ainda disponível)
-    const lockUntilIso = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    let acquired: any = null;
-    for (const cand of candidatos) {
-      // filtro: ultimo_corretor <> eu (JS-side pois o OR em PostgREST não suporta bem esse caso combinado)
-      const nowIso2 = new Date().toISOString();
-      const { data: upd, error: uErr } = await admin
-        .from("oferta_ativa_fila")
-        .update({
-          locked_by: meuProfileId,
-          locked_until: lockUntilIso,
-          ultimo_oferecido_em: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", cand.id)
-        .or(`ultimo_corretor_id.is.null,ultimo_corretor_id.neq.${meuProfileId}`) // aceita NULL (sem dono anterior)
-        .or(`locked_by.is.null,locked_until.lte.${nowIso2}`)
-        .select("id, pipeline_lead_id, balde, bucket_order, empreendimento_id, segmento_id, motivo_descarte_raw, reengajamento_status_raw")
-        .maybeSingle();
-      if (uErr) continue;
-      if (upd) {
-        acquired = upd;
-        break;
-      }
-    }
-    if (!acquired) {
-      return jsonResponse({ ok: true, lead: null, reason: "sem_leads_disponiveis" });
-    }
-
-    // Busca dados do lead
+    // Busca dados do lead (colunas corretas: lead_score / lead_temperatura)
     const { data: lead } = await admin
       .from("pipeline_leads")
       .select(
-        "id, nome, telefone, telefone_normalizado, email, empreendimento, campanha, origem, motivo_descarte, reengajamento_status, stage_changed_at, score, score_temperatura, created_at",
+        "id, nome, telefone, telefone_normalizado, email, empreendimento, campanha, origem, motivo_descarte, reengajamento_status, stage_changed_at, lead_score, lead_temperatura, created_at",
       )
       .eq("id", acquired.pipeline_lead_id)
       .maybeSingle();
@@ -165,7 +127,7 @@ Deno.serve(async (req) => {
       fila_id: acquired.id,
       balde: acquired.balde,
       bucket_order: acquired.bucket_order,
-      locked_until: lockUntilIso,
+      locked_until: acquired.locked_until,
       lead: {
         id: lead?.id,
         nome: lead?.nome,
@@ -180,8 +142,8 @@ Deno.serve(async (req) => {
         motivo_descarte: lead?.motivo_descarte,
         reengajamento_status: lead?.reengajamento_status,
         dias_desde_descarte: diasDescarte,
-        score: lead?.score,
-        score_temperatura: lead?.score_temperatura,
+        score: (lead as any)?.lead_score ?? null,
+        score_temperatura: (lead as any)?.lead_temperatura ?? null,
         created_at: lead?.created_at,
       },
     });
