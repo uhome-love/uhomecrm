@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
           "id, nome, telefone, telefone_normalizado, empreendimento, motivo_descarte, tipo_descarte, reengajamento_status, corretor_id, corretor_anterior_id, stage_changed_at",
         )
         .eq("stage_id", DESCARTE_STAGE_ID)
-        .eq("arquivado", false)
+        // NOTE: NÃO filtrar arquivado — cron arquiva descartes após 24h, mas eles seguem elegíveis para oferta ativa
         .not("telefone_normalizado", "is", null)
         .gte("stage_changed_at", cutoffIso)
         .order("stage_changed_at", { ascending: false })
@@ -233,21 +233,26 @@ Deno.serve(async (req) => {
     }
 
     // 6) Insere em lotes (ON CONFLICT DO NOTHING via upsert com ignoreDuplicates)
-    let inserted = 0;
+    const classified = rows.length;
     for (let i = 0; i < rows.length; i += 500) {
       const batch = rows.slice(i, i + 500);
-      const { data, error } = await admin
+      const { error } = await admin
         .from("oferta_ativa_fila")
-        .upsert(batch, { onConflict: "sessao_id,pipeline_lead_id", ignoreDuplicates: true })
-        .select("id");
+        .upsert(batch, { onConflict: "sessao_id,pipeline_lead_id", ignoreDuplicates: true });
       if (error) return errorResponse(`insert fila failed: ${error.message}`, 500);
-      inserted += data?.length ?? 0;
     }
+
+    // Conta total real na fila da sessão (fonte de verdade — evita "0 inseridos" do upsert com ignoreDuplicates)
+    const { count: filaTotal } = await admin
+      .from("oferta_ativa_fila")
+      .select("id", { count: "exact", head: true })
+      .eq("sessao_id", sessao_id);
 
     return jsonResponse({
       ok: true,
       candidates: candidates.length,
-      inserted,
+      classified,
+      inserted: filaTotal ?? classified,
       skipped_red: skippedRed,
       skipped_dup: skippedDup,
       skipped_cooldown: skippedCooldown,
