@@ -57,40 +57,69 @@ async function notifyBroker(
   }
 }
 
+// Formata erro do Supabase para toast + console
+function fmtErr(prefix: string, err: any): string {
+  const parts = [err?.code, err?.message, err?.details, err?.hint].filter(Boolean);
+  const msg = parts.join(" · ") || "erro desconhecido";
+  console.error(`[pdnSync] ${prefix}`, { code: err?.code, message: err?.message, details: err?.details, hint: err?.hint, raw: err });
+  return `${prefix}: ${msg}`;
+}
+
+// Resolve o pipeline_lead_id de uma linha da PDN — cobre linhas que só têm negocio_id.
+async function resolvePipelineLeadId(row: PdnRow): Promise<string | null> {
+  if (row.pipelineLeadId) return row.pipelineLeadId;
+  if (!row.negocioId) return null;
+  const { data: neg, error } = await supabase
+    .from("negocios")
+    .select("pipeline_lead_id")
+    .eq("id", row.negocioId)
+    .maybeSingle();
+  if (error) {
+    console.error("[pdnSync] falha resolvendo pipeline_lead_id do negócio", error);
+    return null;
+  }
+  return (neg?.pipeline_lead_id as string | undefined) || null;
+}
+
 // ── 1) Sincroniza etapa PDN → pipeline_leads + negocios ──────────────────────
 export async function syncPipelineStageFromPdn(
   row: PdnRow,
   grupo: Exclude<PdnGrupo, "caidos">,
   userId: string | null,
-): Promise<{ negocioId: string | null } | null> {
-  if (!row.pipelineLeadId) return null;
+): Promise<{ negocioId: string | null; pipelineLeadId: string | null } | null> {
+  const pipelineLeadId = await resolvePipelineLeadId(row);
+  if (!pipelineLeadId) {
+    toast.error("Este item não está vinculado a um lead do pipeline");
+    return null;
+  }
   const nowIso = new Date().toISOString();
   const stageTipo = GRUPO_TO_STAGE_TIPO[grupo];
 
   // resolve stage_id destino
-  const { data: stageRow } = await supabase
+  const { data: stageRow, error: stageErr } = await supabase
     .from("pipeline_stages")
     .select("id, tipo, ordem")
     .eq("pipeline_tipo", "leads")
     .eq("tipo", stageTipo)
     .maybeSingle();
-  if (!stageRow?.id) {
-    toast.error(`Etapa "${GRUPO_LABEL[grupo]}" não encontrada no pipeline`);
+  if (stageErr || !stageRow?.id) {
+    toast.error(fmtErr(`Etapa "${GRUPO_LABEL[grupo]}" não encontrada`, stageErr || { message: "sem stage_id" }));
     return null;
   }
 
   // estado atual do lead
-  const { data: leadAtual } = await supabase
+  const { data: leadAtual, error: leadReadErr } = await supabase
     .from("pipeline_leads")
-    .select("id, stage_id, negocio_id, corretor_id, nome, flag_status")
-    .eq("id", row.pipelineLeadId)
+    .select("id, stage_id, negocio_id, corretor_id, nome, flag_status, arquivado")
+    .eq("id", pipelineLeadId)
     .maybeSingle();
-  if (!leadAtual) {
-    toast.error("Lead não encontrado no pipeline");
+  if (leadReadErr || !leadAtual) {
+    toast.error(fmtErr("Lead não encontrado", leadReadErr || { message: "sem lead" }));
     return null;
   }
 
   const oldStageId = (leadAtual as any).stage_id as string | undefined;
+  const isArquivado = !!(leadAtual as any).arquivado;
   let negocioId = (leadAtual as any).negocio_id as string | null;
 
   const updatePayload: Record<string, unknown> = {
@@ -100,6 +129,12 @@ export async function syncPipelineStageFromPdn(
   if (oldStageId !== stageRow.id) {
     updatePayload.stage_id = stageRow.id;
     updatePayload.stage_changed_at = nowIso;
+  }
+  // Desarquiva/limpa descarte quando o gestor traz o lead de volta pra jornada.
+  if (isArquivado) {
+    updatePayload.arquivado = false;
+    updatePayload.motivo_descarte = null;
+    updatePayload.tipo_descarte = null;
   }
   // Flag específica p/ visita realizada
   if (grupo === "visita_realizada") {
@@ -127,7 +162,7 @@ export async function syncPipelineStageFromPdn(
       .from("negocios")
       .insert({
         nome_cliente: (leadAtual as any).nome || row.nome || "Sem nome",
-        pipeline_lead_id: row.pipelineLeadId,
+        pipeline_lead_id: pipelineLeadId,
         corretor_id: corretorProfileId,
         gerente_id: gerenteProfileId,
         empreendimento: row.empreendimento && row.empreendimento !== "—" ? row.empreendimento : null,
@@ -139,33 +174,32 @@ export async function syncPipelineStageFromPdn(
       .select("id")
       .single();
     if (negErr) {
-      console.error("[pdnSync] erro criando negócio", negErr);
-      toast.error("Erro ao criar negócio");
+      toast.error(fmtErr("Erro ao criar negócio", negErr));
       return null;
     }
     negocioId = (neg?.id as string | undefined) || null;
     if (negocioId) updatePayload.negocio_id = negocioId;
   } else if (needsNegocio && negocioId) {
-    // atualiza fase / data_assinatura
+    // atualiza fase / data_assinatura + reativa se estava arquivado
     const fase = GRUPO_TO_FASE[grupo];
-    const negPatch: Record<string, unknown> = { updated_at: nowIso };
+    const negPatch: Record<string, unknown> = { updated_at: nowIso, status: "ativo" };
     if (fase) negPatch.fase = fase;
     if (grupo === "ganho") {
       negPatch.data_assinatura = new Date().toISOString().slice(0, 10);
-      // VGV final quando marca ganho
       if (row.vgv > 0) negPatch.vgv_final = row.vgv;
     }
-    await supabase.from("negocios").update(negPatch as any).eq("id", negocioId);
+    const { error: negUpdErr } = await supabase.from("negocios").update(negPatch as any).eq("id", negocioId);
+    if (negUpdErr) console.warn("[pdnSync] update negócio falhou (não bloqueia)", negUpdErr);
   }
 
   // 2) Update pipeline_lead
+  console.info("[pdnSync] atualizando lead", { pipelineLeadId, updatePayload });
   const { error: leadErr } = await supabase
     .from("pipeline_leads")
     .update(updatePayload as any)
-    .eq("id", row.pipelineLeadId);
+    .eq("id", pipelineLeadId);
   if (leadErr) {
-    console.error("[pdnSync] erro atualizando lead", leadErr);
-    toast.error("Você não tem permissão para alterar este lead");
+    toast.error(fmtErr("Erro ao mover lead no pipeline", leadErr));
     return null;
   }
 
@@ -174,7 +208,7 @@ export async function syncPipelineStageFromPdn(
     supabase
       .from("pipeline_historico")
       .insert({
-        pipeline_lead_id: row.pipelineLeadId,
+        pipeline_lead_id: pipelineLeadId,
         stage_anterior_id: oldStageId,
         stage_novo_id: stageRow.id,
         movido_por: userId,
@@ -185,14 +219,14 @@ export async function syncPipelineStageFromPdn(
 
   // 4) Notificação automática para o corretor
   await notifyBroker(
-    row,
+    { ...row, pipelineLeadId, negocioId },
     `PDN: etapa alterada para ${GRUPO_LABEL[grupo]}`,
     `Gestor moveu ${row.nome} para "${GRUPO_LABEL[grupo]}".`,
     "pdn_etapa",
   );
 
   toast.success(`${row.nome}: pipeline atualizado para ${GRUPO_LABEL[grupo]}`);
-  return { negocioId };
+  return { negocioId, pipelineLeadId };
 }
 
 // ── 2) Sincroniza VGV / empreendimento PDN → negocios ────────────────────────
