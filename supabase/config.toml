@@ -173,3 +173,6 @@ verify_jwt = false
 
 [functions.jetimob-sync-catalog]
 verify_jwt = false
+
+[functions.oferta-ativa-popular-fila]
+verify_jwt = false
