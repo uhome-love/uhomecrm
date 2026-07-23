@@ -69,16 +69,41 @@ Deno.serve(async (req) => {
       .select("id, sessao_id, pipeline_lead_id, locked_by, locked_until, ultimo_corretor_id")
       .eq("id", fila_id)
       .maybeSingle();
-    if (!filaRow) return errorResponse("fila_id inválido", 404);
-    if (filaRow.pipeline_lead_id !== pipeline_lead_id) {
-      return errorResponse("fila/lead mismatch", 400);
+    // LEAD_GONE: fila já foi removida (outro corretor aproveitou / sem_interesse / admin resetou).
+    // Retorna 200 com code para o cliente avançar suavemente sem toast de erro.
+    if (!filaRow) {
+      console.warn("[registrar-resultado] LEAD_GONE fila removida", { fila_id, pipeline_lead_id, corretor: meuProfileId, resultado });
+      return jsonResponse({
+        ok: false,
+        code: "LEAD_GONE",
+        reason: "Este lead não está mais disponível na fila. Buscando o próximo…",
+      });
     }
-    if (filaRow.locked_by !== meuProfileId) {
-      return errorResponse("lock não pertence a você", 409);
+    if (filaRow.pipeline_lead_id !== pipeline_lead_id) {
+      console.warn("[registrar-resultado] LEAD_GONE mismatch", { fila_id, esperado: pipeline_lead_id, atual: filaRow.pipeline_lead_id });
+      return jsonResponse({
+        ok: false,
+        code: "LEAD_GONE",
+        reason: "Este lead foi substituído. Buscando o próximo…",
+      });
+    }
+    if (filaRow.locked_by && filaRow.locked_by !== meuProfileId) {
+      console.warn("[registrar-resultado] LOCK_TAKEN", { fila_id, locked_by: filaRow.locked_by, meu: meuProfileId });
+      return jsonResponse({
+        ok: false,
+        code: "LEAD_GONE",
+        reason: "Este lead já está com outro corretor. Buscando o próximo…",
+      });
     }
     if (filaRow.locked_until && new Date(filaRow.locked_until) < new Date()) {
-      return errorResponse("lock expirado", 409);
+      console.warn("[registrar-resultado] LOCK_EXPIRED", { fila_id, locked_until: filaRow.locked_until });
+      return jsonResponse({
+        ok: false,
+        code: "LEAD_GONE",
+        reason: "Seu tempo com este lead expirou. Buscando o próximo…",
+      });
     }
+
 
     // ─── 1) Insere ligação ───
     const pontos = PONTOS[resultado];
