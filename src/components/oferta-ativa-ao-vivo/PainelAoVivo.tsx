@@ -185,8 +185,10 @@ export function PainelAoVivo({ sessaoId }: { sessaoId: string }) {
                       <AvatarFallback className="text-[10px]">{(c.nome || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <span className={cn("text-sm truncate flex-1", isMe && "font-semibold text-foreground")}>{c.nome}</span>
-                    <span className="text-[11px] text-muted-foreground shrink-0">{c.visitas} vis</span>
-                    <span className="text-sm font-bold tabular-nums w-14 text-right text-foreground">{c.pontos} pts</span>
+                    <span className="text-[11px] text-muted-foreground shrink-0 w-12 text-right tabular-nums">{c.ligacoes} lig</span>
+                    <span className="text-[11px] text-muted-foreground shrink-0 w-12 text-right tabular-nums">{c.visitas} vis</span>
+                    <span className="text-sm font-bold tabular-nums w-14 text-right text-foreground shrink-0">{c.pontos} pts</span>
+
                   </div>
                 );
               })}
