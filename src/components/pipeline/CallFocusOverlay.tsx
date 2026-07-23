@@ -182,8 +182,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
 
   const handleSalvar = async () => {
     if (!user?.id) return;
-    const isVisitaStage = stageTipo === "visita";
-    if (!isVisitaStage && hasPresets && !selectedPresetId) {
+    if (hasPresets && !selectedPresetId) {
       toast.error("Escolha um tipo de tarefa");
       return;
     }
@@ -218,8 +217,9 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
         } as any)
         .eq("id", lead.id);
 
-      // Etapa Visita: tarefas são automáticas (visita_auto). Não criar tarefa manual.
-      if (!isVisitaStage && tarefaTipo && tarefaData) {
+      // Cria tarefa manual — em Visita usamos presets seguros que não conflitam
+      // com o fluxo automático (confirmar/reagendar/feedback são da Agenda).
+      if (tarefaTipo && tarefaData) {
         const venceEm = new Date(`${tarefaData}T${tarefaHora}:00`);
         const titulo = activePreset ? activePreset.label : `${tarefaTipo} — ${lead.nome}`;
         await supabase.from("pipeline_tarefas").insert({
@@ -232,6 +232,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
           responsavel_id: user.id,
         });
       }
+
 
       if (novaEtapaSelecionada) {
         const targetStage = availableStages.find(s => s.tipo === novaEtapaSelecionada);
