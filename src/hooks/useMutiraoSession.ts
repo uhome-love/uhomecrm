@@ -147,21 +147,35 @@ export function useMutiraoSession() {
     },
     onSuccess: (data) => {
       if (data?.ok && data.lead && data.fila_id) {
-        setCurrent({ fila_id: data.fila_id, balde: (data.balde ?? "verde") as Balde, lead: data.lead, locked_until: data.locked_until });
+        setCurrent((prev) => {
+          // Se o preview otimista já está exibindo o mesmo lead, apenas confirma o lock (evita re-render/piscada).
+          if (prev && prev.lead.id === data.lead!.id) {
+            return { fila_id: data.fila_id!, balde: (data.balde ?? prev.balde) as Balde, lead: data.lead!, locked_until: data.locked_until };
+          }
+          // Lead diferente (o prefetched já foi pego por outro corretor) — troca pelo que o lock retornou.
+          return { fila_id: data.fila_id!, balde: (data.balde ?? "verde") as Balde, lead: data.lead!, locked_until: data.locked_until };
+        });
+        setLockConfirmed(true);
         setNoLeadsReason(null);
         setCallState("idle");
         setCallStart(null);
         setCallEnd(null);
         setPrefetched(null);
-        // Dispara prefetch do PRÓXIMO em background (5s depois)
-        setTimeout(() => { prefetchNext(); }, 5000);
+        // Dispara prefetch do PRÓXIMO em background (~1s depois)
+        setTimeout(() => { prefetchNext(); }, 1000);
       } else {
         setCurrent(null);
+        setLockConfirmed(false);
         setPrefetched(null);
         setNoLeadsReason(data?.reason === "fila_vazia" ? "fila_vazia" : "sem_filtros_match");
       }
     },
-    onError: (e: any) => toast.error(e?.message || "Erro ao buscar próximo lead"),
+    onError: (e: any) => {
+      // Rollback do preview otimista se o lock falhou.
+      setLockConfirmed(false);
+      setCurrent(null);
+      toast.error(e?.message || "Erro ao buscar próximo lead");
+    },
   });
 
   const registrarM = useMutation({
