@@ -1,55 +1,108 @@
-Objetivo: transformar a página de Materiais em um hub denso, onde os cards de material dominem a tela, reduzindo a altura ocupada por menus, buscas duplicadas e bordas.
+## Viabilidade de thumbnails automáticas
 
-Escopo: alterações apenas de layout/CSS/estrutura de componentes. Nenhuma mudança de regra de negócio, banco ou edge function.
+Conferi o código atual e a arquitetura disponível. O resultado é:
 
-Arquivos envolvidos:
-- src/pages/MateriaisPage.tsx
-- src/components/materiais/MateriaisSidebar.tsx
-- src/components/materiais/MateriaisEmpreendimentoPanel.tsx
-- src/components/materiais/MaterialItem.tsx
-- src/components/materiais/MaterialPreviewDialog.tsx (caso o preview seja afetado por z-index/overlay)
+- **Imagens**: já funcionam. A `MaterialItem.tsx` gera uma signed URL do Storage e renderiza a imagem real no card. ✅
+- **Vídeos**: extrair thumbnail automática exige ffmpeg, que não está disponível nativamente no Supabase Edge Functions (Deno). Precisaria de serviço externo/worker adicional. ❌
+- **PDFs**: renderizar a primeira página em imagem exige bibliotecas pesadas de PDF no Deno. ❌
+- **Links externos**: sem serviço de screenshot externo, não há preview automático. ❌
+- **Áudio**: não existe preview visual nativo viável. ❌
 
-1. Header compacto e unificado
-   - Remover subtítulo abaixo do título (ou torná-lo tooltip/toggle).
-   - Título "Materiais", botão "Analytics" e "Novo empreendimento" ficam em uma única linha.
-   - No mobile, "Analytics" + "Novo" entram em um único DropdownMenu de ações para liberar largura.
+A coluna `thumb_url` existe em `materiais_links`, mas nunca é preenchida. Upload manual de capa seria possível, mas não é automático.
 
-2. Barra de navegação única (horizontal, anexada ao header)
-   - Abas "Empreendimentos" / "Recentes" + busca global em uma linha compartilhada.
-   - A busca global passa a filtrar tanto materiais quanto empreendimentos (mesmo campo, um placeholder só).
-   - Botão "Buscar com IA" vira ícone de ação ao lado do input para economizar espaço.
+**Conclusão**: thumbnails automáticas para vídeo/PDF/links/áudio não são viáveis no ambiente atual. Vamos seguir o plano B: **visualização em lista**.
 
-3. Sidebar de empreendimentos enxuta
-   - Remover a busca interna da sidebar; a busca global já cumpre o papel.
-   - Reduzir padding e largura mínima (ex: 240px).
-   - Destacar visualmente o empreendimento selecionado com uma borda lateral de destaque (indigo) em vez de card destacado.
-   - Favoritos continuam no topo da lista, sem label separado com espaçamento extra.
+---
 
-4. Painel principal ocupando mais tela
-   - Remover o wrapper `border rounded-xl` que cria duas bordas consecutivas.
-   - Reduzir padding do `main` (de p-4 sm:p-6 para p-3 ou p-2).
-   - Aumentar o grid de materiais conforme a largura: 4 colunas em 1280px, 5 em 1600px, 2 colunas em tablet, 1 coluna em mobile.
-   - Cards de material ocupam mais altura do viewport (thumbnail maior, área de ação otimizada).
+## Plano: Hub de Materiais em Lista + Follow-up IA com seleção de materiais
 
-5. Ações do card sem corte em telas pequenas
-   - No mobile: ações secundárias (download, abrir, IA) entram em um menu de 3 pontos; botão primário "Copiar" mantém-se visível.
-   - No desktop: mantém as ações rápidas, mas com ícones menores e padding ajustado para evitar overflow.
-   - Garantir `min-width: 0` em todos os containers para truncamento correto de texto.
+### Objetivo
+Trocar o grid de cards por uma lista densa, organizada por categoria, com ações de atalho sempre visíveis. O follow-up com IA passa a permitir escolher um material específico, vários ou todos do empreendimento, e a IA gera a mensagem com base no conteúdo daquele(s) material(is).
 
-6. Mobile-first adjustments
-   - Header empilhado: título + dropdown de ações.
-   - Botão de empreendimento no mobile fica sticky acima do conteúdo, liberando área de scroll.
-   - Aba "Recentes" mantém lista compacta, mas com a mesma densidade do painel principal.
+---
 
-7. Validação visual
-   - Após implementar, capturar screenshots em:
-     a) 1378x797 (viewport atual do usuário)
-     b) 1920x1080
-     c) 390x844 (mobile)
-   - Verificar se materiais aparecem no topo 1/3 da tela em desktop e se não há botões cortados no mobile.
+### Parte 1 — Layout em lista
 
-Critérios de aceitação:
-- Materiais começam a ser visíveis nos primeiros 35% da altura da tela em desktop.
-- Nenhum botão cortado ou texto truncado em mobile 390px.
-- Sidebar e busca global não duplicam funções.
-- Sem regressão na pré-visualização de materiais (modal de imagem/vídeo/PDF continua funcionando).
+1. **Novo componente `MaterialListItem.tsx`**
+   - Linha horizontal com: ícone colorido do tipo, título em até 2 linhas, meta (extensão/tamanho), badge de categoria.
+   - Ações de atalho à direita: **Copiar**, **Baixar/Abrir**, **Follow-up IA**.
+   - Mobile: ações secundárias entram em menu de 3 pontos para não cortar.
+   - Hover: fundo leve e destaque nas ações.
+
+2. **Agrupamento por categoria no painel do empreendimento**
+   - Grupos dobráveis (`Collapsible`) com título e contador.
+   - Ordem fixa: Drive da construtora, Apresentação, Tabela de vendas, Disponibilidade, Script de vendas, Material de atendimento, Outros.
+
+3. **Filtro rápido por tipo de mídia**
+   - Chips: Todos, Imagens, Vídeos, PDFs, Links, Áudio.
+
+4. **Preview inline só para imagens**
+   - Miniatura quadrada pequena (48x48) quando for imagem.
+   - Demais tipos usam ícone — sem área de preview vazia.
+
+5. **Remover o grid de h-32 vazio**
+   - A lista elimina o espaço atual que aparece vazio para links, PDFs, áudio e vídeo.
+
+6. **Ações em massa no cabeçalho do empreendimento**
+   - Manter "Copiar todos" e "Follow-up IA (todos)".
+
+### Arquivos alterados — Parte 1
+- `src/components/materiais/MaterialItem.tsx` → refatorar para layout em lista.
+- `src/components/materiais/MateriaisEmpreendimentoPanel.tsx` → lista agrupada por categoria + filtros de tipo.
+- `src/components/materiais/MaterialPreviewDialog.tsx` → mantido inalterado (preview em modal continua útil).
+- `src/components/materiais/CategoriaIcon.tsx` → aproveitar cores/ícones existentes.
+
+---
+
+### Parte 2 — Follow-up IA com seleção de material
+
+Atualmente o botão de "Follow-up IA" gera uma mensagem genérica com base no contexto do empreendimento. O dono do produto quer que o corretor possa **escolher** o(s) material(is) base.
+
+1. **Novo componente `SelecionarMateriaisDialog.tsx`**
+   - Abre ao clicar em "Follow-up IA" no cabeçalho do empreendimento ou em "Follow-up IA" de uma linha.
+   - Mostra a lista de materiais daquele empreendimento com checkboxes.
+   - Opções: Selecionar um, vários, ou "Selecionar todos".
+   - Campo opcional: "Para quem é o follow-up?" (lead, cliente, corretor) — pode ser simplesmente um textarea de contexto.
+
+2. **Atualizar `homi-follow-up-message` edge function**
+   - Receber opcionalmente `material_ids: string[]`.
+   - Se receber ids, buscar os chunks/resumo_ia/tags dos materiais selecionados em `materiais_links` e `materiais_chunks`.
+   - Incluir o conteúdo extraído no contexto do prompt para gerar mensagem específica sobre o material.
+   - Se não receber ids, manter comportamento atual (contexto geral do empreendimento).
+
+3. **Ajustar hook de chamada no frontend**
+   - `useMateriaisFavoritos` ou hook similar que chama `homi-follow-up-message` passando `material_ids`.
+
+4. **Fluxos de uso**
+   - **Cabeçalho do empreendimento**: "Follow-up IA" → abre seleção com todos pré-selecionados (pode desmarcar).
+   - **Linha individual**: "Follow-up IA" → abre seleção com apenas aquele material pré-selecionado.
+   - **Resultado**: mensagem de WhatsApp pronta, com referência natural ao(s) material(is) escolhido(s), ex.: "Olá! Segue o book de apresentação do Casa Tua que comentei...".
+
+### Arquivos alterados — Parte 2
+- `supabase/functions/homi-follow-up-message/index.ts` → aceitar `material_ids` e injetar contexto dos materiais.
+- `src/components/materiais/SelecionarMateriaisDialog.tsx` → novo.
+- `src/components/materiais/MaterialListItem.tsx` → chamar diálogo de seleção.
+- `src/components/materiais/MateriaisEmpreendimentoPanel.tsx` → chamar diálogo de seleção no cabeçalho.
+- `src/hooks/useMateriaisFavoritos.ts` ou hook de follow-up → passar `material_ids`.
+
+---
+
+### Fora de escopo (mantido como está)
+- Upload de materiais.
+- Extração de texto/IA do HOMI para a base de conhecimento.
+- Analytics e favoritos por empreendimento.
+- Permissões (quem edita/exclui).
+- Thumbnails automáticas para vídeo/PDF (não viável).
+
+---
+
+### Critério de validação
+- Abrir `/materiais` e ver uma lista compacta, sem cards grandes vazios.
+- Títulos longos visíveis em 2 linhas.
+- Botões de Copiar, Baixar/Abrir e Follow-up IA acessíveis sem cortar em 1378px e mobile.
+- Categorias agrupadas e dobráveis.
+- Filtro por tipo funcionar.
+- Clicar em Follow-up IA abre o diálogo de seleção.
+- Selecionar 1 material, vários ou todos funciona.
+- Mensagem gerada pela IA faz referência ao conteúdo do material escolhido.
+- Nenhuma regressão nos modais de preview.

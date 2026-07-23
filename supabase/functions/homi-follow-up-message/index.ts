@@ -11,6 +11,8 @@ interface Payload {
   lead_nome?: string | null;
   empreendimento_nome: string;
   materiais: Array<{ titulo: string; kind: string }>;
+  /** IDs dos materiais selecionados — quando presente, a IA usa o conteúdo real (resumo_ia/tags/descrição). */
+  material_ids?: string[];
   share_url?: string | null;
   tom?: 'amigavel' | 'consultivo' | 'urgencia';
 }
@@ -107,8 +109,38 @@ Deno.serve(async (req) => {
     console.error('[homi-follow-up-message] materiais suggest skipped:', e);
   }
 
-  const materiaisTxt = body.materiais
-    .map((m, i) => `${i + 1}. [${m.kind}] ${m.titulo}`)
+  // ── Conteúdo real dos materiais selecionados (resumo_ia + tags + descrição) ──
+  let materiaisDetalhados: Array<{ titulo: string; kind: string; resumo: string; tags: string[] }> = [];
+  if (Array.isArray(body.material_ids) && body.material_ids.length > 0) {
+    try {
+      const admin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      );
+      const { data: mats } = await admin
+        .from('materiais_links')
+        .select('id, titulo, categoria, descricao, resumo_ia, tags')
+        .in('id', body.material_ids);
+      if (mats?.length) {
+        materiaisDetalhados = mats.map((m: any) => ({
+          titulo: m.titulo,
+          kind: m.categoria || 'material',
+          resumo: (m.resumo_ia || m.descricao || '').toString().slice(0, 500),
+          tags: Array.isArray(m.tags) ? m.tags.slice(0, 6) : [],
+        }));
+      }
+    } catch (e) {
+      console.error('[homi-follow-up-message] material_ids fetch skipped:', e);
+    }
+  }
+
+  const materiaisTxt = (materiaisDetalhados.length > 0 ? materiaisDetalhados : body.materiais.map((m) => ({ titulo: m.titulo, kind: m.kind, resumo: '', tags: [] as string[] })))
+    .map((m, i) => {
+      const extras: string[] = [];
+      if (m.tags?.length) extras.push(`   Tags: ${m.tags.join(', ')}`);
+      if (m.resumo) extras.push(`   Resumo: ${m.resumo}`);
+      return `${i + 1}. [${m.kind}] ${m.titulo}${extras.length ? '\n' + extras.join('\n') : ''}`;
+    })
     .join('\n');
 
   const materiaisSugeridosTxt = materiaisSugeridos.length

@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, Sparkles, ExternalLink, Pencil, Trash2, RefreshCw } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Download, Copy, Sparkles, ExternalLink, Pencil, Trash2, RefreshCw, MoreVertical,
+  Image as ImageIcon, Video as VideoIcon, FileText, Music, Link2,
+} from "lucide-react";
 import type { MaterialLink } from "@/hooks/useMateriais";
 import { getCategoriaInfo } from "./CategoriaIcon";
 import { cn } from "@/lib/utils";
@@ -20,6 +26,40 @@ export const isVideo = (link: MaterialLink) => {
   if (m.startsWith("video/")) return true;
   const ext = link.storage_path?.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toLowerCase();
   return !!ext && ["mp4", "webm", "mov", "m4v"].includes(ext);
+};
+
+export const isPdf = (link: MaterialLink) => {
+  if ((link.mime_type || "").toLowerCase() === "application/pdf") return true;
+  return link.storage_path?.toLowerCase().endsWith(".pdf") ?? false;
+};
+
+export const isAudio = (link: MaterialLink) => {
+  const m = (link.mime_type || "").toLowerCase();
+  if (m.startsWith("audio/")) return true;
+  const ext = link.storage_path?.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toLowerCase();
+  return !!ext && ["mp3", "wav", "ogg", "m4a"].includes(ext);
+};
+
+export const isExternalLink = (link: MaterialLink) => !link.storage_path;
+
+export type MediaKind = "image" | "video" | "pdf" | "audio" | "link" | "other";
+
+export function getMediaKind(link: MaterialLink): MediaKind {
+  if (isImage(link)) return "image";
+  if (isVideo(link)) return "video";
+  if (isPdf(link)) return "pdf";
+  if (isAudio(link)) return "audio";
+  if (isExternalLink(link)) return "link";
+  return "other";
+}
+
+const KIND_META: Record<MediaKind, { label: string; icon: any; color: string; bg: string }> = {
+  image: { label: "Imagem", icon: ImageIcon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  video: { label: "Vídeo",  icon: VideoIcon, color: "text-rose-600",    bg: "bg-rose-500/10" },
+  pdf:   { label: "PDF",    icon: FileText,  color: "text-red-600",     bg: "bg-red-500/10" },
+  audio: { label: "Áudio",  icon: Music,     color: "text-purple-600",  bg: "bg-purple-500/10" },
+  link:  { label: "Link",   icon: Link2,     color: "text-blue-600",    bg: "bg-blue-500/10" },
+  other: { label: "Arquivo",icon: FileText,  color: "text-muted-foreground", bg: "bg-muted" },
 };
 
 export const isPreviewable = (link: MaterialLink) => {
@@ -54,11 +94,13 @@ export function MaterialItem({
   onReprocess,
 }: Props) {
   const info = getCategoriaInfo(link.categoria);
-  const Icon = info.icon;
+  const kind = getMediaKind(link);
+  const kindMeta = KIND_META[kind];
+  const KindIcon = kindMeta.icon;
   const hasFile = !!link.storage_path;
   const [thumb, setThumb] = useState<string | null>(null);
 
-  // Thumbnail para imagens (URL assinada rápida).
+  // Thumbnail somente para imagens.
   useEffect(() => {
     let alive = true;
     if (isImage(link) && link.storage_path) {
@@ -69,136 +111,159 @@ export function MaterialItem({
           });
           const url = (data as any)?.url || (data as any)?.signed_url;
           if (alive && url) setThumb(url);
-        } catch {
-          /* fallback ícone */
-        }
+        } catch { /* fallback ícone */ }
       })();
     }
     return () => { alive = false; };
   }, [link.id]);
 
-  const metaLine = (() => {
-    const parts: string[] = [];
-    const ext = link.storage_path?.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toUpperCase();
-    if (ext) parts.push(ext);
-    else if (link.mime_type) parts.push(link.mime_type.split("/")[1]?.toUpperCase() ?? "");
-    else if (!link.storage_path && link.url) parts.push("LINK");
-    if (link.size_bytes) {
-      const kb = link.size_bytes / 1024;
-      parts.push(kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`);
-    }
-    return parts.filter(Boolean).join(" · ");
-  })();
+  const metaParts: string[] = [];
+  const ext = link.storage_path?.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toUpperCase();
+  if (ext) metaParts.push(ext);
+  else if (!hasFile) metaParts.push("LINK");
+  if (link.size_bytes) {
+    const kb = link.size_bytes / 1024;
+    metaParts.push(kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`);
+  }
+  metaParts.push(info.label);
+  const metaLine = metaParts.filter(Boolean).join(" · ");
 
   return (
-    <div className="group rounded-xl border border-border/60 bg-card overflow-hidden hover:border-primary/40 hover:shadow-sm transition-all flex flex-col">
-      {/* Thumbnail */}
+    <div className="group flex items-center gap-3 px-3 py-2 rounded-lg border border-transparent hover:border-border/60 hover:bg-muted/40 transition-colors">
+      {/* Thumbnail / ícone */}
       <button
         type="button"
         onClick={onOpen}
-        className="relative h-32 w-full bg-muted/40 flex items-center justify-center overflow-hidden"
+        className={cn(
+          "relative h-12 w-12 flex-shrink-0 rounded-md overflow-hidden flex items-center justify-center",
+          kindMeta.bg,
+        )}
+        title={isPreviewable(link) ? "Pré-visualizar" : "Abrir"}
       >
         {thumb ? (
           <img src={thumb} alt={link.titulo} className="h-full w-full object-cover" loading="lazy" />
-        ) : isVideo(link) ? (
-          <div className="flex items-center justify-center">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Icon className="h-5 w-5 text-primary" />
-            </div>
-          </div>
         ) : (
-          <Icon className="h-8 w-8 text-muted-foreground/60" />
-        )}
-        {/* chip categoria */}
-        <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide bg-background/90 backdrop-blur text-foreground border border-border/60">
-          {info.label}
-        </span>
-        {link.ingest_status === "processing" && (
-          <span className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded bg-background/80 text-muted-foreground" title="Processando IA">⏳ IA</span>
-        )}
-        {link.ingest_status === "done" && (link.tags?.length ?? 0) > 0 && (
-          <span className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Indexado pelo HOMI">✨ HOMI</span>
+          <KindIcon className={cn("h-5 w-5", kindMeta.color)} />
         )}
       </button>
 
-      {/* Corpo */}
-      <div className="p-3 flex-1 flex flex-col gap-2">
-        <div>
-          <h4 className="font-semibold text-sm text-foreground leading-snug line-clamp-2 min-h-[2.5rem]">
-            {link.titulo}
-          </h4>
-          {metaLine && (
-            <p className="text-[11px] text-muted-foreground mt-1">{metaLine}</p>
+      {/* Título + meta */}
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex-1 min-w-0 text-left"
+      >
+        <h4 className="font-medium text-sm text-foreground leading-snug line-clamp-2">
+          {link.titulo}
+        </h4>
+        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+          {metaLine}
+          {link.ingest_status === "processing" && <span className="ml-1.5">· ⏳ IA</span>}
+          {link.ingest_status === "done" && (link.tags?.length ?? 0) > 0 && (
+            <span className="ml-1.5 text-primary">· ✨ HOMI</span>
           )}
-        </div>
+        </p>
+      </button>
 
-        {/* Ações principais */}
-        <div className="flex items-center gap-1.5 mt-auto pt-1">
-          <Button
-            size="sm"
-            className="flex-1 h-8 text-xs"
-            onClick={onCopy}
-          >
-            <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar
+      {/* Ações — desktop */}
+      <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
+        <Button size="sm" variant="default" className="h-8 text-xs" onClick={onCopy}>
+          <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar
+        </Button>
+        {hasFile ? (
+          <Button variant="outline" size="icon" className="h-8 w-8" title="Baixar" onClick={onDownload}>
+            <Download className="h-3.5 w-3.5" />
           </Button>
-          {hasFile ? (
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              title="Baixar"
-              onClick={onDownload}
-            >
-              <Download className="h-3.5 w-3.5" />
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              title="Abrir link"
-              onClick={onOpen}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 text-primary border-primary/40 hover:bg-primary/10"
-            title="Gerar mensagem de follow-up com IA"
-            onClick={onFollowUp}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
+        ) : (
+          <Button variant="outline" size="icon" className="h-8 w-8" title="Abrir link" onClick={onOpen}>
+            <ExternalLink className="h-3.5 w-3.5" />
           </Button>
-        </div>
-
-        {/* Gestão */}
-        {canEdit && (
-          <div className="flex items-center gap-0.5 pt-1 -mb-1 border-t border-border/40 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            {onReprocess && link.storage_path && (link.ingest_status === "error" || link.ingest_status === "done") && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" title="Reprocessar IA" onClick={onReprocess}>
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {onEdit && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar" onClick={onEdit}>
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {onDelete && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn("h-7 w-7 text-destructive hover:text-destructive ml-auto")}
-                title="Excluir"
-                onClick={onDelete}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
         )}
+        <Button
+          variant="outline" size="icon"
+          className="h-8 w-8 text-primary border-primary/40 hover:bg-primary/10"
+          title="Gerar mensagem de follow-up com IA"
+          onClick={onFollowUp}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+        </Button>
+        {canEdit && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreVertical className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {onReprocess && link.storage_path && (link.ingest_status === "error" || link.ingest_status === "done") && (
+                <DropdownMenuItem onClick={onReprocess}>
+                  <RefreshCw className="h-3.5 w-3.5 mr-2" /> Reprocessar IA
+                </DropdownMenuItem>
+              )}
+              {onEdit && (
+                <DropdownMenuItem onClick={onEdit}>
+                  <Pencil className="h-3.5 w-3.5 mr-2" /> Editar
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      {/* Ações — mobile (só copiar + menu) */}
+      <div className="flex sm:hidden items-center gap-1 flex-shrink-0">
+        <Button size="sm" variant="default" className="h-8 text-xs" onClick={onCopy}>
+          <Copy className="h-3.5 w-3.5" />
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {hasFile ? (
+              <DropdownMenuItem onClick={onDownload}>
+                <Download className="h-3.5 w-3.5 mr-2" /> Baixar
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={onOpen}>
+                <ExternalLink className="h-3.5 w-3.5 mr-2" /> Abrir link
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={onFollowUp} className="text-primary">
+              <Sparkles className="h-3.5 w-3.5 mr-2" /> Follow-up IA
+            </DropdownMenuItem>
+            {canEdit && (
+              <>
+                <DropdownMenuSeparator />
+                {onReprocess && link.storage_path && (link.ingest_status === "error" || link.ingest_status === "done") && (
+                  <DropdownMenuItem onClick={onReprocess}>
+                    <RefreshCw className="h-3.5 w-3.5 mr-2" /> Reprocessar IA
+                  </DropdownMenuItem>
+                )}
+                {onEdit && (
+                  <DropdownMenuItem onClick={onEdit}>
+                    <Pencil className="h-3.5 w-3.5 mr-2" /> Editar
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
