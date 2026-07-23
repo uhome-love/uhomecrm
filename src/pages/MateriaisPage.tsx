@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { getCategoriaInfo } from "@/components/materiais/CategoriaIcon";
 import {
-  useMaterialFavoritos,
+  useEmpreendimentoFavoritoIds,
   useMaterialRecentes,
 } from "@/hooks/useMateriaisFavoritos";
 
@@ -33,7 +33,7 @@ export default function MateriaisPage() {
   const [semanticResults, setSemanticResults] = useState<SemanticResult[] | null>(null);
   const [semanticLoading, setSemanticLoading] = useState(false);
 
-  const { data: favoritos = [], isLoading: loadingFav } = useMaterialFavoritos();
+  const { data: favEmpIds } = useEmpreendimentoFavoritoIds();
   const { data: recentes = [], isLoading: loadingRec } = useMaterialRecentes();
 
   const runSemantic = async () => {
@@ -74,6 +74,11 @@ export default function MateriaisPage() {
       }))
       .filter((e) => e.nome.toLowerCase().includes(q) || e.links.length > 0);
   }, [empreendimentos, search]);
+
+  const favoritos = useMemo(
+    () => empreendimentos.filter((e) => favEmpIds?.has(e.id)),
+    [empreendimentos, favEmpIds],
+  );
 
   return (
     <div className="container max-w-7xl mx-auto py-6 space-y-6">
@@ -118,7 +123,7 @@ export default function MateriaisPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por título, tag ou descrição..."
+                placeholder="Buscar por título, tag, empreendimento ou descrição..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") runSemantic(); }}
@@ -161,7 +166,7 @@ export default function MateriaisPage() {
                             <p className="text-xs text-muted-foreground">
                               {r.materiais_empreendimentos?.nome} • <Icon className="inline h-3 w-3" /> {info.label}
                             </p>
-                            <h3 className="font-medium text-foreground truncate">{r.titulo}</h3>
+                            <h3 className="font-medium text-foreground">{r.titulo}</h3>
                           </div>
                           <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary flex-shrink-0">
                             {Math.round(r.similarity * 100)}%
@@ -205,7 +210,7 @@ export default function MateriaisPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-4">
               {filtered.map((emp) => (
                 <MaterialCard key={emp.id} empreendimento={emp} canEdit={isGestor} />
               ))}
@@ -213,12 +218,20 @@ export default function MateriaisPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="favoritos">
-          <MaterialListaCompact
-            items={favoritos}
-            loading={loadingFav}
-            emptyLabel="Você ainda não tem materiais favoritos. Clique na ⭐ em qualquer material para salvá-lo aqui."
-          />
+        <TabsContent value="favoritos" className="space-y-4">
+          {!favEmpIds ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          ) : favoritos.length === 0 ? (
+            <div className="border border-dashed border-border/60 rounded-xl py-12 text-center text-sm text-muted-foreground">
+              Você ainda não favoritou nenhum empreendimento. Clique na ⭐ no topo de um empreendimento para salvá-lo aqui.
+            </div>
+          ) : (
+            favoritos.map((emp) => (
+              <MaterialCard key={emp.id} empreendimento={emp} canEdit={isGestor} />
+            ))
+          )}
         </TabsContent>
 
         <TabsContent value="recentes">

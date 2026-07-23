@@ -1,5 +1,5 @@
 /**
- * Fase 4 — Favoritos e Recentes por corretor no Hub de Materiais.
+ * Favoritos por EMPREENDIMENTO (não mais por material individual) + Recentes.
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,40 +14,51 @@ export interface MaterialComEmp extends MaterialLink {
 const MAT_COLS =
   "id, empreendimento_id, categoria, tipo, titulo, descricao, url, storage_path, mime_type, file_size, origem, tags, resumo_ia, ingest_status, ingest_error, created_at, updated_at, ordem, materiais_empreendimentos(id,nome,logo_url)";
 
-export function useMaterialFavoritos() {
+/** IDs de empreendimentos favoritos do usuário. */
+export function useEmpreendimentoFavoritoIds() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["materiais-favoritos", user?.id],
+    queryKey: ["empreendimentos-favoritos-ids", user?.id],
     queryFn: async () => {
-      if (!user?.id) return [] as MaterialComEmp[];
+      if (!user?.id) return new Set<string>();
       const { data, error } = await (supabase as any)
-        .from("materiais_favoritos")
-        .select(`material_id, created_at, materiais_links!inner(${MAT_COLS})`)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .from("empreendimentos_favoritos")
+        .select("empreendimento_id")
+        .eq("user_id", user.id);
       if (error) throw error;
-      return ((data ?? []) as any[]).map((r) => r.materiais_links as MaterialComEmp);
+      return new Set<string>(((data ?? []) as any[]).map((r) => r.empreendimento_id));
     },
     enabled: !!user?.id,
     staleTime: 30_000,
   });
 }
 
-export function useMaterialFavoritoIds() {
+/** Toggle favorito de um empreendimento inteiro. */
+export function useToggleEmpreendimentoFavorito() {
   const { user } = useAuth();
-  return useQuery({
-    queryKey: ["materiais-favoritos-ids", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return new Set<string>();
-      const { data, error } = await (supabase as any)
-        .from("materiais_favoritos")
-        .select("material_id")
-        .eq("user_id", user.id);
-      if (error) throw error;
-      return new Set<string>(((data ?? []) as any[]).map((r) => r.material_id));
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ empreendimentoId, isFav }: { empreendimentoId: string; isFav: boolean }) => {
+      if (!user?.id) throw new Error("Sem usuário");
+      if (isFav) {
+        const { error } = await (supabase as any)
+          .from("empreendimentos_favoritos")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("empreendimento_id", empreendimentoId);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any)
+          .from("empreendimentos_favoritos")
+          .insert({ user_id: user.id, empreendimento_id: empreendimentoId });
+        if (error) throw error;
+      }
     },
-    enabled: !!user?.id,
-    staleTime: 30_000,
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["empreendimentos-favoritos-ids"] });
+      toast({ title: vars.isFav ? "Removido dos favoritos" : "Empreendimento favoritado" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 }
 
@@ -68,35 +79,6 @@ export function useMaterialRecentes() {
     },
     enabled: !!user?.id,
     staleTime: 15_000,
-  });
-}
-
-export function useToggleFavorito() {
-  const { user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ materialId, isFav }: { materialId: string; isFav: boolean }) => {
-      if (!user?.id) throw new Error("Sem usuário");
-      if (isFav) {
-        const { error } = await (supabase as any)
-          .from("materiais_favoritos")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("material_id", materialId);
-        if (error) throw error;
-      } else {
-        const { error } = await (supabase as any)
-          .from("materiais_favoritos")
-          .insert({ user_id: user.id, material_id: materialId });
-        if (error) throw error;
-      }
-    },
-    onSuccess: (_d, vars) => {
-      qc.invalidateQueries({ queryKey: ["materiais-favoritos"] });
-      qc.invalidateQueries({ queryKey: ["materiais-favoritos-ids"] });
-      toast({ title: vars.isFav ? "Removido dos favoritos" : "Salvo nos favoritos" });
-    },
-    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 }
 
