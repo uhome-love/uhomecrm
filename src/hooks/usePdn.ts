@@ -775,11 +775,28 @@ export function usePdn(mes: string) {
       await loadEntries();
       return;
     }
-    // Linha do pipeline: escreve NO pipeline real + limpa override (fica alinhado)
-    if (row.pipelineLeadId) {
-      const ok = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null);
-      if (!ok) return;
-      await saveOverride(row, { grupoOverride: null, caiu: false });
+    // Linha do pipeline (ou só com negocio_id): escreve NO pipeline real + alinha overlay
+    if (row.pipelineLeadId || row.negocioId) {
+      const result = await syncPipelineStageFromPdn(row, grupo, user?.id ?? null);
+      if (!result) return;
+      // Sincroniza a pdn_entry existente com a nova etapa e garante o vínculo com o lead real
+      if (row.overrideId) {
+        const patch: Record<string, unknown> = {
+          situacao: grupo,
+          grupo_override: null,
+          caiu: false,
+          motivo_queda: null,
+          updated_at: new Date().toISOString(),
+        };
+        if (result.pipelineLeadId && !row.pipelineLeadId) {
+          patch.pipeline_lead_id = result.pipelineLeadId;
+        }
+        if (result.negocioId && !row.negocioId) {
+          patch.negocio_id = result.negocioId;
+        }
+        const { error } = await supabase.from("pdn_entries").update(patch).eq("id", row.overrideId);
+        if (error) console.warn("[usePdn] sincronizar pdn_entry falhou", error);
+      }
       await Promise.all([loadDeals(), loadEntries()]);
       return;
     }
