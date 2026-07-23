@@ -331,7 +331,7 @@ export function useMutiraoSession() {
       setNoLeadsReason(null);
       setFilters({ empreendimento_ids: [], segmento_ids: [] });
       setOnboardedState(false);
-      localStorage.removeItem(STORAGE_KEY_ONBOARDED);
+      if (onboardedKey) localStorage.removeItem(onboardedKey);
     },
   };
 }
