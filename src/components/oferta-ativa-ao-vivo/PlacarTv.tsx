@@ -335,9 +335,9 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         </div>
 
         {/* Corpo: Esquerda (equipes horizontais) + Direita (ranking corretores) */}
-        <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr", gap: 12, padding: "10px 20px 6px", flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2.2fr) minmax(0, 1fr)", gap: 12, padding: "10px 20px 6px", flex: 1, minHeight: 0, overflow: "hidden" }}>
           {/* Esquerda: 3 equipes empilhadas em linhas horizontais */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0, minWidth: 0 }}>
             {equipes.length === 0 && (
               <div style={{ color: "#ffffff33", fontSize: 14, fontFamily: "monospace", textAlign: "center", marginTop: 40 }}>Aguardando equipes…</div>
             )}
@@ -351,48 +351,48 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
               return (
                 <div key={e.equipe ?? i} className={[isLider ? "glow-leader" : "", bateuMeta ? "festa-card" : ""].filter(Boolean).join(" ")} style={{
                   "--glow-color": `${st.cor}66`, "--glow-color-strong": `${st.cor}cc`,
-                  flex: 1, minHeight: 0,
+                  flex: 1, minHeight: 0, minWidth: 0,
                   background: bateuMeta ? `linear-gradient(135deg, ${st.cor}33, #0d0d20, ${st.cor}22)` : `linear-gradient(90deg, ${st.cor}22 0%, #0d0d20 40%)`,
                   border: `2px solid ${st.cor}66`,
-                  borderRadius: 16, padding: "10px 16px", position: "relative", overflow: "hidden",
-                  display: "grid", gridTemplateColumns: "auto auto 1fr auto auto auto 1.2fr", alignItems: "center", gap: 14,
+                  borderRadius: 16, padding: "8px 12px", position: "relative", overflow: "hidden",
+                  display: "grid", gridTemplateColumns: "auto auto minmax(0, 1fr) auto auto auto minmax(90px, 1fr)", alignItems: "center", gap: 8,
                   boxShadow: bateuMeta ? `0 0 30px ${st.cor}66` : `0 0 20px ${st.cor}22`,
                 } as any}>
                   {/* Rank badge grande */}
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(48px, 6vw, 88px)", lineHeight: 0.85, color: st.cor, textShadow: `0 0 30px ${st.cor}aa`, minWidth: 60, textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(40px, 4.5vw, 72px)", lineHeight: 0.85, color: st.cor, textShadow: `0 0 30px ${st.cor}aa`, minWidth: 44, textAlign: "center" }}>
                     {i + 1}<span style={{ fontSize: "0.4em", verticalAlign: "super" }}>º</span>
                   </div>
                   {/* Escudo da equipe */}
-                  <div style={{ width: 68, height: 68, borderRadius: 14, background: `linear-gradient(135deg, ${st.cor}55, ${st.cor}22)`, border: `3px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, boxShadow: `0 0 20px ${st.cor}66` }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 12, background: `linear-gradient(135deg, ${st.cor}55, ${st.cor}22)`, border: `3px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, boxShadow: `0 0 20px ${st.cor}66`, flexShrink: 0 }}>
                     {st.emoji}
                   </div>
                   {/* Nome da equipe + tamanho */}
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 10, letterSpacing: 4, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 2 }}>
+                    <div style={{ fontSize: 9, letterSpacing: 3, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 2 }}>
                       Equipe
                     </div>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(26px, 3.2vw, 46px)", letterSpacing: 2, color: st.cor, lineHeight: 1, textShadow: `0 0 20px ${st.cor}66`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase" }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(22px, 2.6vw, 38px)", letterSpacing: 2, color: st.cor, lineHeight: 1, textShadow: `0 0 20px ${st.cor}66`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase" }}>
                       {e.equipe ?? "—"}
                     </div>
-                    <div style={{ fontSize: 10, letterSpacing: 2, color: "#ffffff66", textTransform: "uppercase", fontFamily: "monospace", marginTop: 3 }}>
+                    <div style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff66", textTransform: "uppercase", fontFamily: "monospace", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {e.corretores ?? 0} corretor{(e.corretores ?? 0) === 1 ? "" : "es"}
                     </div>
                   </div>
                   {/* Stats: Ligações */}
                   <Stat label="Ligações" value={e.ligacoes} icon="📞" cor={st.cor} />
                   {/* Stats: Aprovações (aproveitamentos) */}
-                  <Stat label="Aprovações" value={e.aproveitamentos} icon="✅" cor={st.cor} />
+                  <Stat label="Aprov." value={e.aproveitamentos} icon="✅" cor={st.cor} />
                   {/* Stats: Pontos */}
                   <Stat label="Pontos" value={e.pontos} icon="🏆" cor="#F59E0B" />
                   {/* Progresso da meta */}
-                  <div style={{ minWidth: 120 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-                      <span style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace" }}>Progresso da meta</span>
-                      <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: bateuMeta ? "#22c55e" : st.cor, lineHeight: 1 }}>{Math.round(pct)}%</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4, gap: 6 }}>
+                      <span style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Meta</span>
+                      <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: bateuMeta ? "#22c55e" : st.cor, lineHeight: 1 }}>{Math.round(pct)}%</span>
                     </div>
                     <ProgressBar valor={e.visitas} meta={META_EQUIPE} cor={bateuMeta ? "#22c55e" : st.cor} />
-                    <div style={{ fontSize: 9, color: "#ffffff55", fontFamily: "monospace", letterSpacing: 1, marginTop: 3, textAlign: "right" }}>
-                      {bateuMeta ? "✅ META BATIDA" : `${e.visitas} DE ${META_EQUIPE} VISITAS`}
+                    <div style={{ fontSize: 9, color: "#ffffff55", fontFamily: "monospace", letterSpacing: 1, marginTop: 3, textAlign: "right", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {bateuMeta ? "✅ META BATIDA" : `${e.visitas}/${META_EQUIPE} VISITAS`}
                     </div>
                   </div>
                 </div>
@@ -517,7 +517,7 @@ function KPI({ label, value, cor, big }: any) {
 
 function Stat({ label, value, icon, cor }: any) {
   return (
-    <div style={{ textAlign: "center", minWidth: 74, padding: "0 6px", borderLeft: "1px solid #ffffff10" }}>
+    <div style={{ textAlign: "center", minWidth: 58, padding: "0 4px", borderLeft: "1px solid #ffffff10" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6 }}>
         <span style={{ fontSize: 16 }}>{icon}</span>
         <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(24px, 2.6vw, 38px)", color: cor, lineHeight: 1, textShadow: `0 0 15px ${cor}66` }}>{value}</span>
