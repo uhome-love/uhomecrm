@@ -114,12 +114,13 @@ export function useMutiraoSession() {
     onSuccess: (data) => {
       if (data?.ok && data.lead && data.fila_id) {
         setCurrent({ fila_id: data.fila_id, balde: (data.balde ?? "verde") as Balde, lead: data.lead, locked_until: data.locked_until });
+        setNoLeadsReason(null);
         setCallState("idle");
         setCallStart(null);
         setCallEnd(null);
       } else {
         setCurrent(null);
-        toast.info(data?.reason === "fila_vazia" ? "Fila vazia por enquanto" : "Sem leads disponíveis com esses filtros");
+        setNoLeadsReason(data?.reason === "fila_vazia" ? "fila_vazia" : "sem_filtros_match");
       }
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao buscar próximo lead"),
