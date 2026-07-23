@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
           "id, nome, telefone, telefone_normalizado, empreendimento, motivo_descarte, tipo_descarte, reengajamento_status, corretor_id, corretor_anterior_id, stage_changed_at",
         )
         .eq("stage_id", DESCARTE_STAGE_ID)
-        .eq("arquivado", false)
+        // NOTE: NÃO filtrar arquivado — cron arquiva descartes após 24h, mas eles seguem elegíveis para oferta ativa
         .not("telefone_normalizado", "is", null)
         .gte("stage_changed_at", cutoffIso)
         .order("stage_changed_at", { ascending: false })
