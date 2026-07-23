@@ -207,7 +207,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                   onCopy={() => copyLink(link)}
                   onDownload={() => downloadLink(link)}
                   onOpen={() => openLink(link)}
-                  onFollowUp={() => setFollowUp({ open: true, preSelectedIds: [link.id] })}
+                  
                   onEdit={canEdit ? () => setLinkDialog({ open: true, link }) : undefined}
                   onDelete={canEdit ? () => setLinkToDelete(link) : undefined}
                   onReprocess={canEdit ? () => reprocessIngest(link.id) : undefined}
