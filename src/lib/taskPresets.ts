@@ -197,11 +197,12 @@ const VISITA_PRESETS: TaskPreset[] = [
     id: "visita_enviar_material",
     label: "Enviar material",
     Icon: Send,
-    tipo: "enviar_material",
+    tipo: "email",
     prazoDias: 1,
     horaDefault: "10:00",
     obsSugerida: "Enviar material/opções ao cliente.",
   },
+
   {
     id: "visita_follow_up",
     label: "Follow-up",
