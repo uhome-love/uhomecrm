@@ -1,20 +1,24 @@
-// oferta-ativa-registrar-resultado — Fase 1
+// oferta-ativa-registrar-resultado — Fase 2 (gamificação + Pular real + cooldown 2h)
 // Registra resultado da ligação, atualiza fila/participantes e reativa lead quando aplicável.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/auth.ts";
+import { reactivateLead, VISITA_STAGE_ID, NOVO_LEAD_STAGE_ID } from "../_shared/reactivateLead.ts";
 
-const NOVO_LEAD_STAGE_ID = "d3843b2f-2fa1-4c31-9129-4eb0ed21f019";
-const VISITA_STAGE_ID = "a857139f-c419-4e37-ae17-5f5e70b21172";
-const DESCARTE_STAGE_ID = "1dd66c25-3848-4053-9f66-82e902989b4d";
+// Cooldown do "não atendeu" — 2h (era 1h)
+const COOLDOWN_MS_NAO_ATENDEU = 2 * 60 * 60 * 1000;
 
 const PONTOS: Record<string, number> = {
+  pulado: 0,
   nao_atendeu: 1,
   sem_interesse: 1,
   aproveitado: 4,
   visita_agendada: 10,
 };
+
+// Patamares de "level up" (celebração no feed) por pontos acumulados na sessão
+const LEVEL_THRESHOLDS = [10, 25, 50, 100];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCors();
@@ -61,7 +65,7 @@ Deno.serve(async (req) => {
     // Confere lock
     const { data: filaRow } = await admin
       .from("oferta_ativa_fila")
-      .select("id, sessao_id, pipeline_lead_id, locked_by, locked_until")
+      .select("id, sessao_id, pipeline_lead_id, locked_by, locked_until, ultimo_corretor_id")
       .eq("id", fila_id)
       .maybeSingle();
     if (!filaRow) return errorResponse("fila_id inválido", 404);
@@ -75,8 +79,9 @@ Deno.serve(async (req) => {
       return errorResponse("lock expirado", 409);
     }
 
-    // 1) Insere ligação
+    // ─── 1) Insere ligação ───
     const pontos = PONTOS[resultado];
+    const contaLigacao = resultado !== "pulado"; // pular não conta ligação
     const { data: ligIns, error: ligErr } = await admin
       .from("oferta_ativa_ligacoes")
       .insert({
@@ -92,20 +97,23 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (ligErr) return errorResponse(`insert ligacao: ${ligErr.message}`, 500);
 
-    // 2) Atualiza participante (aggregate counters)
+    // ─── 2) Atualiza participante (aggregate counters). Pular não incrementa nada. ───
     const { data: partRow } = await admin
       .from("oferta_ativa_participantes")
       .select("id, ligacoes_count, aproveitamentos_count, visitas_count, pontos, meta_ligacoes, meta_aproveitamentos, meta_visitas")
       .eq("sessao_id", sessao_id)
       .eq("corretor_id", meuProfileId)
       .maybeSingle();
-    if (partRow) {
+
+    const pontosAntes = partRow?.pontos ?? 0;
+    let newPontos = pontosAntes;
+    if (partRow && contaLigacao) {
       const newLig = (partRow.ligacoes_count ?? 0) + 1;
       const newAprov =
         (partRow.aproveitamentos_count ?? 0) +
         (resultado === "aproveitado" || resultado === "visita_agendada" ? 1 : 0);
       const newVis = (partRow.visitas_count ?? 0) + (resultado === "visita_agendada" ? 1 : 0);
-      const newPontos = (partRow.pontos ?? 0) + pontos;
+      newPontos = (partRow.pontos ?? 0) + pontos;
       await admin
         .from("oferta_ativa_participantes")
         .update({
@@ -120,94 +128,68 @@ Deno.serve(async (req) => {
         .eq("id", partRow.id);
     }
 
-    // 3) Atualiza fila conforme resultado
+    // ─── 3) Atualiza fila conforme resultado ───
     let dedupHitId: string | null = null;
     let reactivated = false;
     let visitaId: string | null = null;
 
-    if (resultado === "nao_atendeu") {
+    if (resultado === "pulado") {
+      // Solta o lock. NÃO seta cooldown_ate. NÃO toca ultimo_corretor_id (guarda o descartador).
+      // O RPC oferta_ativa_lock_next_lead já exclui leads que o corretor pulou nesta sessão.
       await admin
         .from("oferta_ativa_fila")
         .update({
           locked_by: null,
           locked_until: null,
-          cooldown_ate: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", fila_id);
+    } else if (resultado === "nao_atendeu") {
+      await admin
+        .from("oferta_ativa_fila")
+        .update({
+          locked_by: null,
+          locked_until: null,
+          cooldown_ate: new Date(Date.now() + COOLDOWN_MS_NAO_ATENDEU).toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("id", fila_id);
     } else if (resultado === "sem_interesse") {
       await admin.from("oferta_ativa_fila").delete().eq("id", fila_id);
     } else if (resultado === "aproveitado" || resultado === "visita_agendada") {
-      // DEDUP: existe ativo com mesmo telefone_normalizado?
-      const { data: leadRow } = await admin
-        .from("pipeline_leads")
-        .select("id, telefone_normalizado")
-        .eq("id", pipeline_lead_id)
-        .maybeSingle();
-      const phone = leadRow?.telefone_normalizado ?? null;
-      if (phone) {
-        const { data: dupRows } = await admin
-          .from("pipeline_leads")
-          .select("id")
-          .eq("telefone_normalizado", phone)
-          .neq("id", pipeline_lead_id)
-          .neq("stage_id", DESCARTE_STAGE_ID)
-          .eq("arquivado", false)
-          .neq("aceite_status", "descartado")
-          .limit(1);
-        if (dupRows && dupRows.length > 0) {
-          dedupHitId = dupRows[0].id;
-          // rollback: apaga ligacao inserida para não contar
-          if (ligIns?.id) await admin.from("oferta_ativa_ligacoes").delete().eq("id", ligIns.id);
-          // reverte participante
-          if (partRow) {
-            await admin
-              .from("oferta_ativa_participantes")
-              .update({
-                ligacoes_count: partRow.ligacoes_count ?? 0,
-                aproveitamentos_count: partRow.aproveitamentos_count ?? 0,
-                visitas_count: partRow.visitas_count ?? 0,
-                pontos: partRow.pontos ?? 0,
-              })
-              .eq("id", partRow.id);
-          }
-          // libera lock
-          await admin
-            .from("oferta_ativa_fila")
-            .update({ locked_by: null, locked_until: null })
-            .eq("id", fila_id);
-          return jsonResponse(
-            { ok: false, error: "DUPLICATE_ACTIVE", duplicate_lead_id: dedupHitId },
-            409,
-          );
-        }
-      }
-
-      // Reativa lead
       const targetStage = resultado === "visita_agendada" ? VISITA_STAGE_ID : NOVO_LEAD_STAGE_ID;
-      const { error: upLeadErr } = await admin
-        .from("pipeline_leads")
-        .update({
-          arquivado: false,
-          aceite_status: "aceito",
-          corretor_id: meuProfileId,
-          motivo_descarte: null,
-          tipo_descarte: null,
-          reengajamento_status: null,
-          stage_id: targetStage,
-          stage_changed_at: new Date().toISOString(),
-        })
-        .eq("id", pipeline_lead_id);
-      if (upLeadErr) return errorResponse(`reativar lead: ${upLeadErr.message}`, 500);
-      reactivated = true;
-
-      // Registra atividade
-      await admin.from("pipeline_atividades").insert({
+      const react = await reactivateLead(admin, {
         pipeline_lead_id,
-        corretor_id: meuProfileId,
-        tipo: "ligacao",
-        descricao: "Reaproveitado — Oferta Ativa / Lista Inteligente de Descartados",
+        corretor_profile_id: meuProfileId,
+        target_stage_id: targetStage,
       });
+
+      if (!react.ok && react.duplicate_lead_id) {
+        dedupHitId = react.duplicate_lead_id;
+        // rollback
+        if (ligIns?.id) await admin.from("oferta_ativa_ligacoes").delete().eq("id", ligIns.id);
+        if (partRow) {
+          await admin
+            .from("oferta_ativa_participantes")
+            .update({
+              ligacoes_count: partRow.ligacoes_count ?? 0,
+              aproveitamentos_count: partRow.aproveitamentos_count ?? 0,
+              visitas_count: partRow.visitas_count ?? 0,
+              pontos: partRow.pontos ?? 0,
+            })
+            .eq("id", partRow.id);
+        }
+        await admin
+          .from("oferta_ativa_fila")
+          .update({ locked_by: null, locked_until: null })
+          .eq("id", fila_id);
+        return jsonResponse(
+          { ok: false, error: "DUPLICATE_ACTIVE", duplicate_lead_id: dedupHitId },
+          409,
+        );
+      }
+      if (!react.ok) return errorResponse(react.error ?? "reativar lead falhou", 500);
+      reactivated = true;
 
       // Visita
       if (resultado === "visita_agendada" && visita_payload) {
@@ -232,7 +214,6 @@ Deno.serve(async (req) => {
         if (vErr) console.warn("[registrar-resultado] visita insert:", vErr.message);
         visitaId = vIns?.id ?? null;
 
-        // Fallback: garante que stage é Visita caso trigger não tenha movido
         await admin
           .from("pipeline_leads")
           .update({ stage_id: VISITA_STAGE_ID })
@@ -244,35 +225,89 @@ Deno.serve(async (req) => {
       await admin.from("oferta_ativa_fila").delete().eq("id", fila_id);
     }
 
-    // 4) pulse_events
-    const pulseTipo =
-      resultado === "visita_agendada"
-        ? "oa_visita"
-        : resultado === "aproveitado"
-        ? "oa_aproveitado"
-        : "oa_ligacao";
-    await admin.from("pulse_events").insert({
-      tipo: pulseTipo,
-      corretor_id: meuProfileId,
-      titulo: `${prof.nome ?? "Corretor"} — ${resultado}`,
-      descricao: observacao ?? null,
-      metadata: { sessao_id, pipeline_lead_id, pontos, balde: null },
-    });
+    // ─── 4) Pulse events (celebrações) ───
+    // Só publica evento para resultados relevantes; pular não vira feed.
+    if (resultado === "aproveitado" || resultado === "visita_agendada") {
+      const pulseTipo = resultado === "visita_agendada" ? "oa_visita" : "oa_aproveitado";
+      await admin.from("pulse_events").insert({
+        tipo: pulseTipo,
+        corretor_id: meuProfileId,
+        titulo: `${prof.nome ?? "Corretor"} ${resultado === "visita_agendada" ? "agendou uma visita" : "aproveitou um lead"}`,
+        descricao: observacao ?? null,
+        metadata: { sessao_id, pipeline_lead_id, pontos, balde: null },
+      });
+    }
 
-    // 5) Ranking snapshot
+    // Meta batida
+    const bateuMeta =
+      partRow && contaLigacao &&
+      ((partRow.meta_ligacoes > 0 && (partRow.ligacoes_count + 1) === partRow.meta_ligacoes) ||
+        (resultado === "visita_agendada" &&
+          partRow.meta_visitas > 0 &&
+          (partRow.visitas_count + 1) === partRow.meta_visitas) ||
+        ((resultado === "aproveitado" || resultado === "visita_agendada") &&
+          partRow.meta_aproveitamentos > 0 &&
+          (partRow.aproveitamentos_count + 1) === partRow.meta_aproveitamentos));
+    if (bateuMeta) {
+      await admin.from("pulse_events").insert({
+        tipo: "oa_meta_batida",
+        corretor_id: meuProfileId,
+        titulo: `${prof.nome ?? "Corretor"} bateu uma meta! 🏆`,
+        descricao: null,
+        metadata: { sessao_id, pipeline_lead_id },
+      });
+    }
+
+    // Level up (cruzou patamar de pontos)
+    if (contaLigacao) {
+      const crossed = LEVEL_THRESHOLDS.find((t) => pontosAntes < t && newPontos >= t);
+      if (crossed) {
+        await admin.from("pulse_events").insert({
+          tipo: "oa_level_up",
+          corretor_id: meuProfileId,
+          titulo: `${prof.nome ?? "Corretor"} atingiu ${crossed} pts 💎`,
+          descricao: null,
+          metadata: { sessao_id, level: crossed },
+        });
+      }
+    }
+
+    // Streak: 3+ aproveitamentos/visitas consecutivos
+    if (resultado === "aproveitado" || resultado === "visita_agendada") {
+      const { data: last3 } = await admin
+        .from("oferta_ativa_ligacoes")
+        .select("resultado")
+        .eq("sessao_id", sessao_id)
+        .eq("corretor_id", meuProfileId)
+        .in("resultado", ["nao_atendeu", "sem_interesse", "aproveitado", "visita_agendada"])
+        .order("created_at", { ascending: false })
+        .limit(5);
+      const streak = (() => {
+        let n = 0;
+        for (const r of last3 ?? []) {
+          if (r.resultado === "aproveitado" || r.resultado === "visita_agendada") n++;
+          else break;
+        }
+        return n;
+      })();
+      if (streak >= 3) {
+        await admin.from("pulse_events").insert({
+          tipo: "oa_streak",
+          corretor_id: meuProfileId,
+          titulo: `${prof.nome ?? "Corretor"} está em chamas! 🔥 x${streak}`,
+          descricao: null,
+          metadata: { sessao_id, streak },
+        });
+      }
+    }
+
+    // ─── 5) Ranking snapshot ───
     const { data: rankRows } = await admin
       .from("oferta_ativa_participantes")
       .select("corretor_id, pontos, ligacoes_count, aproveitamentos_count, visitas_count")
       .eq("sessao_id", sessao_id)
       .order("pontos", { ascending: false })
       .limit(10);
-
-    const bateuMeta =
-      partRow &&
-      ((partRow.meta_ligacoes > 0 && (partRow.ligacoes_count + 1) >= partRow.meta_ligacoes) ||
-        (resultado === "visita_agendada" &&
-          partRow.meta_visitas > 0 &&
-          (partRow.visitas_count + 1) >= partRow.meta_visitas));
 
     return jsonResponse({
       ok: true,
