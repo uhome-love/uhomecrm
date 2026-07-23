@@ -156,7 +156,7 @@ export function useMutiraoSession() {
       // Auto-next
       setCurrent(null);
       setCallState("idle");
-      setTimeout(() => proximoLeadM.mutate(), 250);
+      setTimeout(() => proximoLeadM.mutate(undefined), 250);
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao registrar resultado"),
   });
