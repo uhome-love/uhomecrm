@@ -29,7 +29,7 @@ interface HistoricoItem {
   motivo_indisponivel: string | null;
 }
 
-export function HistoricoPanel({ sessaoId }: { sessaoId: string | null }) {
+export function HistoricoPanel({ sessaoId, paused }: { sessaoId: string | null; paused?: boolean }) {
   const qc = useQueryClient();
 
   const { data, isLoading, refetch } = useQuery({
@@ -43,7 +43,7 @@ export function HistoricoPanel({ sessaoId }: { sessaoId: string | null }) {
       if (error) throw error;
       return data as { ok: boolean; itens: HistoricoItem[] };
     },
-    refetchInterval: 60_000,
+    refetchInterval: paused ? false : 60_000,
   });
 
   const aproveitarM = useMutation({
