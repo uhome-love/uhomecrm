@@ -49,7 +49,26 @@ Deno.serve(async (req) => {
     const { data: parts, error } = await query;
     if (error) return errorResponse(error.message, 500);
 
+    // Filtro: só corretores aparecem no ranking (exclui admin/diretor/gestor/rh/backoffice)
+    const partIds = Array.from(new Set((parts ?? []).map((p: any) => p.corretor_id).filter(Boolean)));
+    let corretorIds = new Set<string>();
+    if (partIds.length > 0) {
+      const { data: profs } = await admin
+        .from("profiles")
+        .select("id, user_id")
+        .in("id", partIds);
+      const userIds = (profs ?? []).map((p: any) => p.user_id).filter(Boolean);
+      const { data: rolesRows } = await admin
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", userIds)
+        .eq("role", "corretor");
+      const corretorUserIds = new Set((rolesRows ?? []).map((r: any) => r.user_id));
+      corretorIds = new Set((profs ?? []).filter((p: any) => corretorUserIds.has(p.user_id)).map((p: any) => p.id));
+    }
+
     const corretores = (parts ?? [])
+      .filter((p: any) => corretorIds.has(p.corretor_id))
       .map((p: any) => ({
         corretor_id: p.corretor_id,
         nome: p.profiles?.nome ?? "—",
