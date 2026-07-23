@@ -15,9 +15,10 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export function PainelAoVivo({ sessaoId }: { sessaoId: string }) {
-  const { role } = useUserRole();
+  const { isGestor, isAdmin, isDiretor, hasRole } = useUserRole();
   const { user } = useAuth();
-  const [scope, setScope] = useState<"time" | "todos">(role === "gestor" ? "time" : "todos");
+  const isOnlyGestor = hasRole("gestor") && !isAdmin && !isDiretor;
+  const [scope, setScope] = useState<"time" | "todos">(isOnlyGestor ? "time" : "todos");
   const parts = useMutiraoParticipantes(sessaoId);
   const rank = useMutiraoRanking(sessaoId);
 
