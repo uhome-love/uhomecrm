@@ -1,60 +1,41 @@
-# Plano de correção — Mutirão Inteligente ao Vivo
+## Contexto
 
-## Auditoria executada (ponta a ponta, perfil Adriana corretora)
+Auditoria ponta a ponta do `/oferta-ativa-ao-vivo` executada para as visões de CEO, gestor e corretor. Foram identificados **2 bloqueios críticos** que impedem o uso seguro às 10h:
 
-Foram inspecionados: 16 arquivos frontend (hooks, telas, cards, popups, painéis), 5 edge functions e a RPC `oferta_ativa_lock_next_lead` no banco. Também foi executado um teste automatizado via Playwright com a sessão de Adriana no preview, simulando: onboarding, puxar lead, iniciar ligação, "Não atendeu", auto-next e navegação entre abas.
+1. **Ação "Pular" falha com erro 500** — a edge function `oferta-ativa-registrar-resultado` tenta inserir `resultado='pulado'` na tabela `oferta_ativa_ligacoes`, mas a `CHECK` constraint da coluna só aceita `aproveitado`, `nao_atendeu`, `sem_interesse`, `visita_agendada`. Resultado: toast "Edge Function returned a non-2xx status code" e o corretor fica travado no lead atual.
+2. **Não existe URL dedicada `/placar-tv` para a TV da empresa** — o botão "Placar TV" abre `/oferta-ativa-ao-vivo?view=tv`, que renderiza dentro do `AppLayout` com sidebar visível. Para uso em TV/externo é necessária uma rota limpa sem o chrome do CRM.
 
-### Resultado do teste ao vivo
-- Onboarding abriu corretamente com filtros multi-select e contagens de fila por empreendimento/segmento.
-- Lead card carregou com lock confirmado, botão "Ligar agora" habilitado corretamente após `lockConfirmed=true`.
-- Ligação iniciou, encerrou e "Não atendeu" foi registrado. Pontuação refletiu no ranking (Adriana: 1 ligação, 1 pt).
-- Próximo lead apareceu automaticamente com preview otimista + lock rodando em paralelo.
-- Ranking, Meta, Feed e histórico renderizaram. Abas de gestão/admin NÃO aparecem para corretora (validado via DOM).
+O Painel Ao Vivo, Ranking, Onboarding, Filtros multi-select, Configurações e Placar TV (dentro da aba) renderizam corretamente.
 
-## Bugs e fragilidades encontrados
+## Escopo de correção
 
-### 1. CRÍTICO — Corretor pode acumular vários locks ativos (risco de travar a fila)
-A RPC `oferta_ativa_lock_next_lead` não verifica se o corretor já possui um lock válido antes de conceder um novo. Com isso, cada chamada a "Puxar próximo lead" cria um lock adicional. Atualmente Adriana tem 5 locks ativos na sessão ao vivo. Cada lock mantém um lead fora da fila por até 15 minutos, reduzindo a fila disponível para todos os corretores. Se o corretor recarregar a página ou puxar sem registrar, os locks antigos permanecem.
+### 1. Migration — adicionar `pulado` ao resultado de `oferta_ativa_ligacoes`
 
-### 2. MÉDIO — Histórico mostra spinner prolongado ao abrir a aba
-O `HistoricoPanel` é montado/desenmontado pelo `TabsContent` do shadcn a cada troca de aba. A query de histórico é refeita do zero a cada montagem, e o componente fica em `isLoading` até a resposta da edge function. Em teste rápido, a aba ficou no spinner. A edge function responde corretamente, então o problema é a remontagem + falta de prefetch.
+- Remover e recriar a `CHECK` constraint `oferta_ativa_ligacoes_resultado_check` incluindo `'pulado'` no array permitido.
+- A ação de pular é registrada como uma linha na tabela de ligações com `contaLigacao=false` (já implementado na edge function), mas precisa ser permitida pelo schema.
 
-### 3. MÉDIO — Timer de 1s no `CorretorScreen` causa re-render global a cada segundo
-O `setTick` a cada 1s dispara re-render de todo o `CorretorScreen`, incluindo `LeadCard`, painéis e modais. Não causa bug funcional, mas desperdiça ciclos e pode piorar a experiência durante chamadas.
+### 2. Nova rota `/placar-tv` (página dedicada para TV)
 
-### 4. BAIXO — Locks órfãos da sessão atual
-Os 5 locks ativos da Adriana precisam ser limpos (backfill) para liberar a fila antes do horário de pico.
+- Criar `src/pages/PlacarTv.tsx` que busca a sessão ao vivo atual (`status='ao_vivo'`, `inicio_at <= now <= fim_at`) e renderiza o componente `PlacarTv` já existente.
+- Adicionar rota `<Route path="/placar-tv" />` em `src/App.tsx` **dentro do ProtectedRoute** (mantém segurança — a TV precisará estar logada com um usuário do CRM).
+- A página não usa `AppLayout`; é fullscreen, sem sidebar, ideal para projeção externa.
+- Atualizar o botão "📺 Placar TV" em `src/pages/OfertaAtivaAoVivo.tsx` para apontar para `/placar-tv` em vez de `/oferta-ativa-ao-vivo?view=tv`.
 
-## Plano de correção
+## Arquivos que serão alterados
 
-### Fase 1 — Integridade da fila (backend, prioridade máxima)
+- Migration: `add_pulado_to_oa_ligacoes_resultado`
+- `src/App.tsx` — adicionar rota `/placar-tv`
+- `src/pages/PlacarTv.tsx` — novo arquivo
+- `src/pages/OfertaAtivaAoVivo.tsx` — atualizar URL do botão Placar TV
 
-1. Alterar a RPC `public.oferta_ativa_lock_next_lead` para, quando `p_lock=true`, verificar se o corretor já possui um lock válido (`locked_by = p_corretor_id AND locked_until > now()`). Se existir, retornar o lead já bloqueado em vez de criar um novo lock.
-2. Ajustar a edge function `oferta-ativa-proximo-lead` se necessário para tratar o retorno do lock existente (dados já populados, funciona sem mudanças).
-3. Criar migration com a alteração da RPC.
-4. Backfill: limpar locks `locked_by = '42a8402e...' AND sessao_id = '197f054f...'` para descongestionar a fila imediatamente.
+## Como validar ao vivo
 
-### Fase 2 — UX do histórico (frontend)
+1. CEO: abrir `/oferta-ativa-ao-vivo` → Painel Ao Vivo deve continuar mostrando corretores e rankings.
+2. Corretor: iniciar onboarding, pegar lead, clicar em **Pular** — deve trocar de lead sem erro.
+3. Corretor: clicar em **Não atendeu** — deve liberar o lead e aplicar cooldown (já funcionando).
+4. CEO/Gestor: clicar em **📺 Placar TV** — deve abrir `/placar-tv` em nova aba, fullscreen, sem sidebar, com ranking atualizado.
+5. Placar TV: aguardar novo resultado "visita_agendada" para confirmar o flash/efeito sonoro.
 
-1. No `CorretorScreen`, adicionar `forceMount` ao `TabsContent` do histórico (ou fazer prefetch assim que o ranking/participantes carregarem) para que a query já tenha dados quando o corretor clicar na aba.
-2. Garantir que `HistoricoPanel` invalide a query ao registrar um resultado (já faz parcialmente; validar se a queryKey bate exatamente).
+## Nota de segurança
 
-### Fase 3 — Performance do timer (frontend)
-
-1. Extrair o timer do `CorretorScreen` para um componente `MutiraoTimer` pequeno, isolado, que re-renderize apenas a barra de contagem regressiva.
-
-### Fase 4 — Validação ao vivo
-
-1. Reexecutar o teste Playwright com Adriana: puxar 2 leads consecutivamente sem registrar e confirmar que só existe 1 lock ativo.
-2. Verificar se o histórico carrega imediatamente ao abrir a aba.
-3. Validar que ranking, feed, meta e onboarding continuam funcionando.
-
-## Escopo
-
-- Apenas `/oferta-ativa-ao-vivo` e seus componentes/edge functions.
-- Não altera outras áreas do CRM.
-- Não altera lógica de pontuação, gamificação ou layout visual.
-
-## Não requer mockup
-
-As mudanças são técnicas (backend e otimização de re-render). Nenhuma alteração visual significativa no card, ranking ou painel.
+A rota `/placar-tv` será protegida (requer login). Se o objetivo for exibição em uma TV sem usuário logado, precisaremos discutir uma conta fixa de serviço ou tornar a edge function de ranking anônima — isso é uma decisão de segurança que não tomaremos sem aprovação.
