@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     let query = admin
       .from("oferta_ativa_participantes")
       .select(
-        "corretor_id, gerente_id, equipe_text, pontos, ligacoes_count, aproveitamentos_count, visitas_count, status_online, ultima_acao_at, profiles:corretor_id(nome, foto_url)",
+        "corretor_id, gerente_id, equipe_text, pontos, ligacoes_count, aproveitamentos_count, visitas_count, status_online, ultima_acao_at, profiles:corretor_id(nome, avatar_url)",
       )
       .eq("sessao_id", sessao_id);
 
