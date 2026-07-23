@@ -50,8 +50,6 @@ export function LeadCard({
   onAgendarVisita: () => void;
   onOpenFilters?: () => void;
 }) {
-  const [dossie, setDossie] = useState<string | null>(null);
-  const [dossieLoading, setDossieLoading] = useState(false);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -59,31 +57,11 @@ export function LeadCard({
     return () => clearInterval(i);
   }, []);
 
-  useEffect(() => { setDossie(null); }, [ms.current?.lead.id]);
-
   const lead = ms.current?.lead;
 
   const callSeconds = ms.callStart
     ? Math.floor(((ms.callEnd ?? Date.now()) - ms.callStart) / 1000)
     : 0;
-
-  async function gerarDossie() {
-    if (!lead) return;
-    setDossieLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("homi-copilot", {
-        body: { mode: "dossie_oferta", pipeline_lead_id: lead.id },
-      });
-      if (error) throw error;
-      const texto = (data as any)?.texto || (data as any)?.mensagem || (data as any)?.sugestao_resposta || "Sem insights disponíveis.";
-      setDossie(texto);
-    } catch (e) {
-      console.error("[dossie]", e);
-      setDossie("Não consegui gerar o dossiê agora. Use o script como base.");
-    } finally {
-      setDossieLoading(false);
-    }
-  }
 
 
   const copyPhone = () => {
