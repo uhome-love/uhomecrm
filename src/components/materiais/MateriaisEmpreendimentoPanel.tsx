@@ -196,7 +196,7 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
         )}
       </div>
 
-      {/* Grid de materiais */}
+      {/* Lista agrupada por categoria + filtros por tipo */}
       <div className="flex-1">
         {empreendimento.links.length === 0 ? (
           <div className="py-16 text-center text-sm text-muted-foreground">
@@ -213,22 +213,30 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5">
-            {empreendimento.links.map((link) => (
-              <MaterialItem
-                key={link.id}
-                link={link}
-                canEdit={canEdit}
-                onCopy={() => copyLink(link)}
-                onDownload={() => downloadLink(link)}
-                onOpen={() => openLink(link)}
-                onFollowUp={() => setFollowUp({ open: true, materiais: [link] })}
-                onEdit={canEdit ? () => setLinkDialog({ open: true, link }) : undefined}
-                onDelete={canEdit ? () => setLinkToDelete(link) : undefined}
-                onReprocess={canEdit ? () => reprocessIngest(link.id) : undefined}
-              />
-            ))}
-          </div>
+          <>
+            {/* Chips de filtro por tipo de mídia */}
+            <KindFilterBar
+              links={empreendimento.links}
+              active={kindFilter}
+              onChange={setKindFilter}
+            />
+
+            <GroupedMaterialList
+              links={
+                kindFilter === "all"
+                  ? empreendimento.links
+                  : empreendimento.links.filter((l) => getMediaKind(l) === kindFilter)
+              }
+              canEdit={canEdit}
+              onCopy={copyLink}
+              onDownload={downloadLink}
+              onOpen={openLink}
+              onFollowUp={(link) => setFollowUp({ open: true, preSelectedIds: [link.id] })}
+              onEdit={(link) => setLinkDialog({ open: true, link })}
+              onDelete={(link) => setLinkToDelete(link)}
+              onReprocess={(link) => reprocessIngest(link.id)}
+            />
+          </>
         )}
       </div>
 
@@ -242,7 +250,7 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
             variant="outline"
             size="sm"
             className="text-primary border-primary/40 hover:bg-primary/10"
-            onClick={() => setFollowUp({ open: true, materiais: empreendimento.links })}
+            onClick={() => setFollowUp({ open: true, preSelectedIds: empreendimento.links.map((l) => l.id) })}
           >
             <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Gerar follow-up com IA
           </Button>
@@ -274,7 +282,8 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
         open={followUp.open}
         onOpenChange={(o) => setFollowUp((s) => ({ ...s, open: o }))}
         empreendimentoNome={empreendimento.nome}
-        materiais={followUp.materiais}
+        todosMateriais={empreendimento.links}
+        preSelectedIds={followUp.preSelectedIds}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
