@@ -97,7 +97,8 @@ self.addEventListener("fetch", (e) => {
   }
 });
 
-// ── Version check: detect new deploys and force update ──
+// ── Version check: detect new deploys and NOTIFY clients (não força reload) ──
+// O client decide quando aplicar (respeita "modo foco" durante ligação no Mutirão).
 async function checkForUpdate() {
   try {
     const res = await fetch("/version.json?t=" + Date.now(), { cache: "no-store" });
@@ -111,7 +112,9 @@ async function checkForUpdate() {
       _currentVersion = data.v;
       await caches.delete(APP_SHELL_CACHE);
       const allClients = await clients.matchAll({ type: "window" });
-      allClients.forEach((client) => client.navigate(client.url));
+      allClients.forEach((client) => {
+        try { client.postMessage({ type: "NEW_VERSION_AVAILABLE", version: data.v }); } catch {}
+      });
     }
   } catch {
     // Ignore — never break the app due to version check failure
