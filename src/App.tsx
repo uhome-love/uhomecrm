@@ -58,6 +58,7 @@ const ImovelPage = lazyRetry(() => import("./pages/ImovelPage"));
 const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
+const PlacarTvPage = lazyRetry(() => import("./pages/PlacarTvPage"));
 const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"));
 const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"));
 const TelemetriaRede = lazyRetry(() => import("./pages/admin/TelemetriaRede"));
@@ -105,6 +106,7 @@ const App = () => (
               <Route path="/privacidade" element={<Suspense fallback={<PageLoader />}><PrivacidadePage /></Suspense>} />
               <Route path="/casatua" element={<Suspense fallback={<PageLoader />}><CasaTuaLanding /></Suspense>} />
               <Route path="/placar-do-dia" element={<Suspense fallback={<PageLoader />}><PlacarDoDia /></Suspense>} />
+              <Route path="/placar-tv" element={<ProtectedRoute><Suspense fallback={<PageLoader />}><PlacarTvPage /></Suspense></ProtectedRoute>} />
               <Route path="/oauth/google/callback" element={<Suspense fallback={<PageLoader />}><OAuthGoogleCallback /></Suspense>} />
               <Route path="/diagnostico-rede" element={<Suspense fallback={<PageLoader />}><DiagnosticoRede /></Suspense>} />
               <Route path="/ceo/telemetria-rede" element={<Suspense fallback={<PageLoader />}><TelemetriaRede /></Suspense>} />

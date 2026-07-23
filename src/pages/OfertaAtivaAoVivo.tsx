@@ -74,7 +74,7 @@ export default function OfertaAtivaAoVivo() {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => window.open(`/oferta-ativa-ao-vivo?view=tv`, "_blank")}
+          onClick={() => window.open(`/placar-tv`, "_blank")}
         >
           📺 Placar TV
         </Button>
