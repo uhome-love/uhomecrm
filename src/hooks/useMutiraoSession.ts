@@ -297,6 +297,7 @@ export function useMutiraoSession() {
     endCall,
     resetCorretor: () => {
       setCurrent(null);
+      setLockConfirmed(false);
       setPrefetched(null);
       setCallState("idle");
       setCallStart(null);
