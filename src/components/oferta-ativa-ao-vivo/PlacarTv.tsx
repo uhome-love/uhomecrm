@@ -517,7 +517,7 @@ function KPI({ label, value, cor, big }: any) {
 
 function Stat({ label, value, icon, cor }: any) {
   return (
-    <div style={{ textAlign: "center", minWidth: 74, padding: "0 6px", borderLeft: "1px solid #ffffff10" }}>
+    <div style={{ textAlign: "center", minWidth: 58, padding: "0 4px", borderLeft: "1px solid #ffffff10" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6 }}>
         <span style={{ fontSize: 16 }}>{icon}</span>
         <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(24px, 2.6vw, 38px)", color: cor, lineHeight: 1, textShadow: `0 0 15px ${cor}66` }}>{value}</span>
