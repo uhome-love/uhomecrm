@@ -154,6 +154,28 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 4b) Mapeia auth.users.id (pipeline_leads.corretor_id) → profiles.id (FK da fila)
+    const authIds = Array.from(
+      new Set(
+        candidates
+          .flatMap((c) => [c.corretor_id, c.corretor_anterior_id])
+          .filter(Boolean),
+      ),
+    ) as string[];
+    const authToProfile = new Map<string, string>();
+    if (authIds.length) {
+      for (let i = 0; i < authIds.length; i += 500) {
+        const batch = authIds.slice(i, i + 500);
+        const { data } = await admin
+          .from("profiles")
+          .select("id, auth_user_id")
+          .in("auth_user_id", batch);
+        (data ?? []).forEach((r: any) => {
+          if (r.auth_user_id) authToProfile.set(r.auth_user_id, r.id);
+        });
+      }
+    }
+
     // 5) Classifica e monta insert rows
     let skippedRed = 0;
     let skippedDup = 0;
@@ -199,7 +221,10 @@ Deno.serve(async (req) => {
         pipeline_lead_id: c.id,
         balde,
         bucket_order,
-        ultimo_corretor_id: c.corretor_id ?? c.corretor_anterior_id ?? null,
+        ultimo_corretor_id:
+          (c.corretor_id && authToProfile.get(c.corretor_id)) ||
+          (c.corretor_anterior_id && authToProfile.get(c.corretor_anterior_id)) ||
+          null,
         empreendimento_id: aliasMatch?.empreendimento_id ?? null,
         segmento_id: aliasMatch?.segmento_id ?? null,
         motivo_descarte_raw: motivo || null,
