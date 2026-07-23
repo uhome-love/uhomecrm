@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { formatBRT, secondsUntil } from "@/lib/brtTime";
+import { formatBRT } from "@/lib/brtTime";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Timer, X, Filter } from "lucide-react";
+import { X, Filter } from "lucide-react";
 import { LeadCard } from "./LeadCard";
 import { RankingPanel } from "./RankingPanel";
 import { MetaPanel } from "./MetaPanel";
@@ -13,6 +13,7 @@ import { HistoricoPanel } from "./HistoricoPanel";
 import { ScriptCollapsible } from "./ScriptCollapsible";
 import { SemInteressePopup } from "./SemInteressePopup";
 import { OnboardingModal } from "./OnboardingModal";
+import { MutiraoTimer } from "./MutiraoTimer";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import type { useMutiraoSession } from "@/hooks/useMutiraoSession";
 
@@ -24,16 +25,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
 
   useEffect(() => { if (!ms.onboarded) setShowOnboarding(true); }, [ms.onboarded]);
 
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const i = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(i);
-  }, []);
   const fimAt = ms.sessao?.fim_at;
-  const secLeft = fimAt ? Math.max(0, Math.floor(secondsUntil(fimAt) ?? 0)) : 0;
-  const hh = Math.floor(secLeft / 3600).toString().padStart(2, "0");
-  const mm = Math.floor((secLeft % 3600) / 60).toString().padStart(2, "0");
-  const ss = (secLeft % 60).toString().padStart(2, "0");
 
   const filterCount = ms.filters.empreendimento_ids.length + ms.filters.segmento_ids.length;
 
