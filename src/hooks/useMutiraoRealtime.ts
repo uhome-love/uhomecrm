@@ -73,7 +73,7 @@ export function useMutiraoParticipantes(sessao_id: string | null) {
       // Query direta (RLS já permite leitura escopada)
       const { data, error } = await supabase
         .from("oferta_ativa_participantes")
-        .select("corretor_id, gerente_id, equipe_text, status_online, ultima_acao_at, ultimo_heartbeat_at, ligacoes_count, aproveitamentos_count, visitas_count, pontos, profiles:corretor_id(nome, foto_url)")
+        .select("corretor_id, gerente_id, equipe_text, status_online, ultima_acao_at, ultimo_heartbeat_at, ligacoes_count, aproveitamentos_count, visitas_count, pontos, profiles:corretor_id(nome, avatar_url)")
         .eq("sessao_id", sessao_id!);
       if (error) throw error;
       const now = Date.now();
@@ -88,7 +88,7 @@ export function useMutiraoParticipantes(sessao_id: string | null) {
         return {
           corretor_id: p.corretor_id,
           nome: p.profiles?.nome ?? "—",
-          foto_url: p.profiles?.foto_url ?? null,
+          foto_url: p.profiles?.avatar_url ?? null,
           gerente_id: p.gerente_id,
           equipe: p.equipe_text,
           status_online: status,
