@@ -79,9 +79,15 @@ export function MaterialItem({
 
   const metaLine = (() => {
     const parts: string[] = [];
-    if (link.tipo) parts.push(link.tipo.toUpperCase());
-    if (link.file_size) parts.push(`${Math.round(link.file_size / 1024)} KB`);
-    return parts.join(" · ");
+    const ext = link.storage_path?.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toUpperCase();
+    if (ext) parts.push(ext);
+    else if (link.mime_type) parts.push(link.mime_type.split("/")[1]?.toUpperCase() ?? "");
+    else if (!link.storage_path && link.url) parts.push("LINK");
+    if (link.size_bytes) {
+      const kb = link.size_bytes / 1024;
+      parts.push(kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`);
+    }
+    return parts.filter(Boolean).join(" · ");
   })();
 
   return (

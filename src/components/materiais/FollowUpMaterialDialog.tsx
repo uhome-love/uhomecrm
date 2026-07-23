@@ -36,7 +36,7 @@ export function FollowUpMaterialDialog({ open, onOpenChange, empreendimentoNome,
           empreendimento_nome: empreendimentoNome,
           materiais: materiais.map((m) => ({
             titulo: m.titulo,
-            kind: m.categoria || m.tipo || "material",
+            kind: m.categoria || "material",
           })),
           tom,
         },
