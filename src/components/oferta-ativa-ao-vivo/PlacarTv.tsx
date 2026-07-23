@@ -335,9 +335,9 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
         </div>
 
         {/* Corpo: Esquerda (equipes horizontais) + Direita (ranking corretores) */}
-        <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr", gap: 12, padding: "10px 20px 6px", flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2.2fr) minmax(0, 1fr)", gap: 12, padding: "10px 20px 6px", flex: 1, minHeight: 0, overflow: "hidden" }}>
           {/* Esquerda: 3 equipes empilhadas em linhas horizontais */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0, minWidth: 0 }}>
             {equipes.length === 0 && (
               <div style={{ color: "#ffffff33", fontSize: 14, fontFamily: "monospace", textAlign: "center", marginTop: 40 }}>Aguardando equipes…</div>
             )}
