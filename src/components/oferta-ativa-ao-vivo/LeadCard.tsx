@@ -76,14 +76,16 @@ export function LeadCard({
         body: { mode: "dossie_oferta", pipeline_lead_id: lead.id },
       });
       if (error) throw error;
-      const texto = (data as any)?.texto || (data as any)?.mensagem || "Sem insights disponíveis.";
+      const texto = (data as any)?.texto || (data as any)?.mensagem || (data as any)?.sugestao_resposta || "Sem insights disponíveis.";
       setDossie(texto);
-    } catch {
+    } catch (e) {
+      console.error("[dossie]", e);
       setDossie("Não consegui gerar o dossiê agora. Use o script como base.");
     } finally {
       setDossieLoading(false);
     }
   }
+
 
   const copyPhone = () => {
     if (!lead?.telefone) return;
@@ -104,8 +106,32 @@ export function LeadCard({
     playSoundFanfare();
   };
 
+  // ─── Skeleton durante transição (puxar/pular) ───
+  if (!ms.current && ms.proximoLeadPending && !ms.noLeadsReason) {
+    return (
+      <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-card animate-fade-in">
+        <div className="px-4 py-2 border-b border-border">
+          <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+        </div>
+        <div className="p-5 space-y-5">
+          <div className="space-y-2">
+            <div className="h-7 w-2/3 rounded bg-muted animate-pulse" />
+            <div className="h-4 w-40 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="flex gap-1.5">
+            <div className="h-6 w-32 rounded bg-muted animate-pulse" />
+            <div className="h-6 w-24 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="h-20 w-full rounded-lg bg-muted animate-pulse" />
+          <div className="h-10 w-full rounded bg-muted animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   // ─── Empty state ───
   if (!ms.current || !lead) {
+
     const noLeads = !!ms.noLeadsReason;
     const hasFilters = (ms.filters.empreendimento_ids.length + ms.filters.segmento_ids.length) > 0;
     return (
@@ -170,9 +196,15 @@ export function LeadCard({
             <BaldeIcon className="w-3.5 h-3.5" />
             {balde.label}
           </span>
-          {lead.dias_desde_descarte != null && (
-            <span className="text-xs font-medium opacity-80">Descartado há {lead.dias_desde_descarte}d</span>
-          )}
+          {(() => {
+            // Calcula dias BRT no client (evita off-by-one de tz na RPC)
+            const src = lead.stage_changed_at ?? null;
+            if (!src) return null;
+            const brtOffsetMs = -3 * 60 * 60 * 1000;
+            const toBrtDay = (d: Date) => Math.floor((d.getTime() + brtOffsetMs) / 86_400_000);
+            const dias = Math.max(0, toBrtDay(new Date()) - toBrtDay(new Date(src)));
+            return <span className="text-xs font-medium opacity-80">Descartado há {dias}d</span>;
+          })()}
         </div>
 
         <div className="p-5 space-y-5">
@@ -235,17 +267,8 @@ export function LeadCard({
                 <TooltipContent className="max-w-xs">{lead.motivo_descarte}</TooltipContent>
               </Tooltip>
             )}
-            {lead.campanha && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge variant="outline" className="h-6 max-w-[200px] truncate">
-                    Campanha: {lead.campanha}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">{lead.campanha}</TooltipContent>
-              </Tooltip>
-            )}
           </div>
+
 
           {/* Dossiê */}
           <div className="rounded-lg border border-border bg-muted/40 p-3.5">
