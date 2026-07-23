@@ -207,7 +207,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                   onCopy={() => copyLink(link)}
                   onDownload={() => downloadLink(link)}
                   onOpen={() => openLink(link)}
-                  onFollowUp={() => setFollowUp({ open: true, materiais: [link] })}
+                  onFollowUp={() => setFollowUp({ open: true, preSelectedIds: [link.id] })}
                   onEdit={canEdit ? () => setLinkDialog({ open: true, link }) : undefined}
                   onDelete={canEdit ? () => setLinkToDelete(link) : undefined}
                   onReprocess={canEdit ? () => reprocessIngest(link.id) : undefined}
@@ -225,7 +225,7 @@ export function MaterialCard({ empreendimento, canEdit }: Props) {
                 variant="outline"
                 size="sm"
                 className="flex-1 text-primary border-primary/40 hover:bg-primary/10"
-                onClick={() => setFollowUp({ open: true, materiais: empreendimento.links })}
+                onClick={() => setFollowUp({ open: true, preSelectedIds: empreendimento.links.map((l) => l.id) })}
               >
                 <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Gerar follow-up com IA
               </Button>
