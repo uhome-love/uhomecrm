@@ -83,10 +83,24 @@ function Confetti({ active }: { active: boolean }) {
 
 interface FeedItem { corretor: string; hora: string; tipo: "aproveitado" | "visita_agendada"; empreendimento?: string | null; cliente?: string | null; }
 
-export function PlacarTv({ sessaoId }: { sessaoId: string | null }) {
-  const rank = useMutiraoRanking(sessaoId);
+interface OverrideData {
+  corretores: any[];
+  equipes: any[];
+  feed?: any[];
+}
+
+export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; overrideData?: OverrideData }) {
+  const isPublic = !!overrideData;
+  const rankAuth = useMutiraoRanking(isPublic ? null : sessaoId);
+  const rank = isPublic
+    ? { data: { corretores: overrideData!.corretores ?? [], equipes: overrideData!.equipes ?? [] } }
+    : rankAuth;
   const [relogio, setRelogio] = useState(new Date());
-  const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [feed, setFeed] = useState<FeedItem[]>(() =>
+    (overrideData?.feed ?? []).map((f: any) => ({
+      corretor: f.corretor, hora: f.hora, tipo: f.tipo, cliente: f.cliente, empreendimento: f.empreendimento,
+    }))
+  );
   const [announcement, setAnnouncement] = useState<any>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const prevPontosRef = useRef<Record<string, number>>({});
@@ -96,6 +110,7 @@ export function PlacarTv({ sessaoId }: { sessaoId: string | null }) {
     return Number.isFinite(s) && s > 0 ? s : DEFAULT_META_EMPRESA;
   });
   const isAdminMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("admin") === "true";
+
 
   function tocarSom(tipo: "visita" | "aproveitado" = "visita") {
     try {
