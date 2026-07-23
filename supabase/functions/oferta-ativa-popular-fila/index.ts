@@ -221,7 +221,10 @@ Deno.serve(async (req) => {
         pipeline_lead_id: c.id,
         balde,
         bucket_order,
-        ultimo_corretor_id: c.corretor_id ?? c.corretor_anterior_id ?? null,
+        ultimo_corretor_id:
+          (c.corretor_id && authToProfile.get(c.corretor_id)) ||
+          (c.corretor_anterior_id && authToProfile.get(c.corretor_anterior_id)) ||
+          null,
         empreendimento_id: aliasMatch?.empreendimento_id ?? null,
         segmento_id: aliasMatch?.segmento_id ?? null,
         motivo_descarte_raw: motivo || null,
