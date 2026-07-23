@@ -12,7 +12,7 @@ import {
   Trophy, GraduationCap, Lightbulb, Layers,
   Building2, Wallet, ListTodo, Database,
   BarChart2, GitBranch, Award, BellRing,
-  UserCheck, Clock, LineChart, PieChart, Link2, Smartphone, FolderOpen, Plug, RefreshCw, Activity, FileSignature, AlarmClock, Calculator, CalendarCheck,
+  UserCheck, Clock, LineChart, PieChart, Link2, Smartphone, FolderOpen, Plug, RefreshCw, Activity, FileSignature, AlarmClock, Calculator, CalendarCheck, Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -59,6 +59,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
+        { label: "⚡ Mutirão ao vivo",   path: "/oferta-ativa-ao-vivo", icon: <Radio        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
       ],
@@ -119,6 +120,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
+        { label: "⚡ Mutirão ao vivo",   path: "/oferta-ativa-ao-vivo", icon: <Radio        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
@@ -174,6 +176,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
+        { label: "⚡ Mutirão ao vivo",   path: "/oferta-ativa-ao-vivo", icon: <Radio        size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
         { label: "Leads estagnados",   path: "/leads-estagnados",  icon: <AlarmClock   size={15} strokeWidth={1.5} /> },
       ],
@@ -230,6 +233,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Oferta ativa",       path: "/corretor/call",     icon: <Phone        size={15} strokeWidth={1.5} /> },
+        { label: "⚡ Mutirão ao vivo",   path: "/oferta-ativa-ao-vivo", icon: <Radio        size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
       ],
     },
