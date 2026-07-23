@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { X, Filter } from "lucide-react";
+import { X, Filter, RefreshCw, ShieldCheck } from "lucide-react";
 import { LeadCard } from "./LeadCard";
 import { RankingPanel } from "./RankingPanel";
 import { MetaPanel } from "./MetaPanel";
@@ -15,6 +15,7 @@ import { SemInteressePopup } from "./SemInteressePopup";
 import { OnboardingModal } from "./OnboardingModal";
 import { MutiraoTimer } from "./MutiraoTimer";
 import VisitaForm from "@/components/visitas/VisitaForm";
+import { useMutiraoUpdateGuard } from "@/hooks/useMutiraoUpdateGuard";
 import type { useMutiraoSession } from "@/hooks/useMutiraoSession";
 
 export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession> }) {
@@ -24,6 +25,8 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
   const [showOnboarding, setShowOnboarding] = useState(!ms.onboarded);
 
   useEffect(() => { if (!ms.onboarded) setShowOnboarding(true); }, [ms.onboarded]);
+
+  const { pendingReload, applyPendingReload, inCall } = useMutiraoUpdateGuard(ms.callState);
 
   const fimAt = ms.sessao?.fim_at;
 
