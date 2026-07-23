@@ -229,25 +229,20 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
         )}
       </div>
 
-      {/* Footer com ações agregadas */}
+      {/* Footer com ações agregadas — só mobile (no desktop ficam no header) */}
       {empreendimento.links.length > 0 && (
-        <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row gap-2">
-          <Button variant="default" size="sm" className="flex-1" onClick={copyAllLinks}>
+        <div className="pt-3 mt-3 border-t border-border/60 flex flex-col gap-2 sm:hidden">
+          <Button variant="default" size="sm" onClick={copyAllLinks}>
             <Copy className="h-3.5 w-3.5 mr-1.5" /> Copiar todos os links
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 text-primary border-primary/40 hover:bg-primary/10"
+            className="text-primary border-primary/40 hover:bg-primary/10"
             onClick={() => setFollowUp({ open: true, materiais: empreendimento.links })}
           >
             <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Gerar follow-up com IA
           </Button>
-          {canEdit && (
-            <Button variant="outline" size="sm" onClick={() => setLinkDialog({ open: true, link: null })}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> Adicionar
-            </Button>
-          )}
         </div>
       )}
 
