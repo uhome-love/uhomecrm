@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCorretorIds } from "@/hooks/useCorretorIds";
 
 export type Balde = "verde_hot" | "verde" | "amarelo";
 export type Resultado = "pulado" | "nao_atendeu" | "sem_interesse" | "aproveitado" | "visita_agendada";
