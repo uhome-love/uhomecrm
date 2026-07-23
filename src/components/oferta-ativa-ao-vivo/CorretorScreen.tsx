@@ -76,10 +76,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
                 </Badge>
               )}
             </Button>
-            <div className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 h-8 text-sm font-mono tabular-nums text-foreground">
-              <Timer className="w-3.5 h-3.5 text-muted-foreground" />
-              {hh}:{mm}:{ss}
-            </div>
+            <MutiraoTimer fimAt={fimAt} />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
