@@ -153,7 +153,7 @@ export function LeadCard({
               )}
               <Button
                 size="lg" variant="outline"
-                onClick={() => { ms.clearNoLeads(); ms.proximoLead(undefined); }}
+                onClick={() => { ms.clearNoLeads(); ms.proximoLead(); }}
                 disabled={ms.proximoLeadPending}
               >
                 {ms.proximoLeadPending && <Loader2 className="animate-spin" />}
@@ -167,7 +167,7 @@ export function LeadCard({
             <p className="text-sm text-muted-foreground mb-5">
               Vamos pescar um lead descartado com alta chance de reativação.
             </p>
-            <Button size="lg" onClick={() => ms.proximoLead(undefined)} disabled={ms.proximoLeadPending}>
+            <Button size="lg" onClick={() => ms.proximoLead()} disabled={ms.proximoLeadPending}>
               {ms.proximoLeadPending ? <Loader2 className="animate-spin" /> : <Sparkles />}
               Puxar próximo lead
             </Button>
