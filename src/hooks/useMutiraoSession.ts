@@ -89,12 +89,15 @@ export function useMutiraoSession() {
     if (v) localStorage.setItem(STORAGE_KEY_ONBOARDED, "1");
   }, []);
 
-  // Lead atual (client-side state)
+  // Lead atual (client-side state). fila_id vazio = preview otimista (lock ainda não confirmou).
   const [current, setCurrent] = useState<{ fila_id: string; balde: Balde; lead: LeadOferta; locked_until?: string } | null>(null);
+  const [lockConfirmed, setLockConfirmed] = useState(false);
   const [noLeadsReason, setNoLeadsReason] = useState<string | null>(null);
 
   // Prévia do próximo lead (prefetch — sem lock). Só para exibição.
   const [prefetched, setPrefetched] = useState<{ balde: Balde; lead: LeadOferta } | null>(null);
+  const prefetchedRef = useRef<{ balde: Balde; lead: LeadOferta } | null>(null);
+  useEffect(() => { prefetchedRef.current = prefetched; }, [prefetched]);
 
   // Chamada de ligação (client timer)
   const [callState, setCallState] = useState<"idle" | "in_call" | "ended">("idle");
@@ -122,6 +125,13 @@ export function useMutiraoSession() {
       }
     } catch { /* silent */ }
   }, [sessaoId]);
+
+  // Aquece a edge function e já deixa o primeiro lead pronto assim que a sessão existe e o corretor estiver onboarded.
+  useEffect(() => {
+    if (sessaoId && onboarded) {
+      prefetchNext();
+    }
+  }, [sessaoId, onboarded, prefetchNext]);
 
   const proximoLeadM = useMutation({
     mutationFn: async () => {
