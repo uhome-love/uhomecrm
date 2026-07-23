@@ -13,13 +13,16 @@ interface Props {
   filters: { empreendimento_ids: string[]; segmento_ids: string[] };
   onSave: (f: { empreendimento_ids: string[]; segmento_ids: string[] }) => void;
   firstTime?: boolean;
+  sessaoId?: string | null;
 }
 
-export function OnboardingModal({ open, onClose, filters, onSave, firstTime }: Props) {
+export function OnboardingModal({ open, onClose, filters, onSave, firstTime, sessaoId }: Props) {
   const [empreendimentos, setEmpreendimentos] = useState<{ id: string; nome: string }[]>([]);
   const [segmentos, setSegmentos] = useState<{ id: string; nome: string }[]>([]);
   const [empSel, setEmpSel] = useState<string[]>(filters.empreendimento_ids);
   const [segSel, setSegSel] = useState<string[]>(filters.segmento_ids);
+  const [empCounts, setEmpCounts] = useState<Record<string, number>>({});
+  const [segCounts, setSegCounts] = useState<Record<string, number>>({});
 
   // Ressincroniza seleção com filtros vindos de fora quando reabre
   useEffect(() => {
@@ -34,10 +37,27 @@ export function OnboardingModal({ open, onClose, filters, onSave, firstTime }: P
       setEmpreendimentos((e.data ?? []) as any);
       setSegmentos((s.data ?? []) as any);
     })();
-  }, [open]);
+    // Contagem por sessão
+    if (sessaoId) {
+      supabase.functions
+        .invoke("oferta-ativa-onboarding-counts", { body: { sessao_id: sessaoId } })
+        .then(({ data, error }) => {
+          if (error || !data) return;
+          const ec: Record<string, number> = {};
+          (data as any).empreendimentos?.forEach((r: any) => { ec[r.id] = r.count; });
+          const sc: Record<string, number> = {};
+          (data as any).segmentos?.forEach((r: any) => { sc[r.id] = r.count; });
+          setEmpCounts(ec);
+          setSegCounts(sc);
+        })
+        .catch(() => {});
+    }
+  }, [open, sessaoId]);
 
   const toggle = (arr: string[], id: string) =>
     arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
+
+  const fmt = (n: number) => n.toLocaleString("pt-BR");
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -83,13 +103,16 @@ export function OnboardingModal({ open, onClose, filters, onSave, firstTime }: P
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 rounded-lg border border-border p-2">
                   {segmentos.map((s) => {
                     const on = segSel.includes(s.id);
+                    const count = segCounts[s.id] ?? 0;
+                    const dim = count === 0;
                     return (
                       <label
                         key={s.id}
-                        className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                        className={`flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-muted cursor-pointer ${dim ? "opacity-50" : ""}`}
                       >
                         <Checkbox checked={on} onCheckedChange={() => setSegSel((cur) => toggle(cur, s.id))} />
-                        <span className="truncate">{s.nome}</span>
+                        <span className="truncate flex-1">{s.nome}</span>
+                        <span className="text-xs text-muted-foreground tabular-nums">({fmt(count)})</span>
                       </label>
                     );
                   })}
@@ -107,10 +130,13 @@ export function OnboardingModal({ open, onClose, filters, onSave, firstTime }: P
               <div className="grid grid-cols-1 md:grid-cols-2 gap-1 max-h-64 overflow-y-auto rounded-lg border border-border p-2">
                 {empreendimentos.map((e) => {
                   const on = empSel.includes(e.id);
+                  const count = empCounts[e.id] ?? 0;
+                  const dim = count === 0;
                   return (
-                    <label key={e.id} className="flex items-center gap-2 text-sm px-2 py-1 rounded hover:bg-muted cursor-pointer">
+                    <label key={e.id} className={`flex items-center gap-2 text-sm px-2 py-1 rounded hover:bg-muted cursor-pointer ${dim ? "opacity-50" : ""}`}>
                       <Checkbox checked={on} onCheckedChange={() => setEmpSel((cur) => toggle(cur, e.id))} />
-                      <span className="truncate">{e.nome}</span>
+                      <span className="truncate flex-1">{e.nome}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">({fmt(count)})</span>
                     </label>
                   );
                 })}
