@@ -88,6 +88,7 @@ export function useMutiraoSession() {
 
   // Lead atual (client-side state)
   const [current, setCurrent] = useState<{ fila_id: string; balde: Balde; lead: LeadOferta; locked_until?: string } | null>(null);
+  const [noLeadsReason, setNoLeadsReason] = useState<string | null>(null);
 
   // Chamada de ligação (client timer)
   const [callState, setCallState] = useState<"idle" | "in_call" | "ended">("idle");
