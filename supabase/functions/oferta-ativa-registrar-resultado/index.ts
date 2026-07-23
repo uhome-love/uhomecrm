@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!prof) return errorResponse("profile not found", 404);
     const meuProfileId = prof.id as string;
+    const meuAuthId = userId; // auth.users.id — usado em pipeline_leads e visitas
 
     const body = await req.json().catch(() => ({}));
     const {
