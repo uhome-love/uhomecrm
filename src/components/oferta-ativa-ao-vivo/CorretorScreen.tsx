@@ -96,6 +96,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
             ms={ms}
             onSemInteresse={() => setSemInteresseOpen(true)}
             onAgendarVisita={() => setVisitaOpen(true)}
+            onOpenFilters={() => setEditFiltersOpen(true)}
           />
           <ScriptCollapsible lead={ms.current?.lead ?? null} />
         </div>
