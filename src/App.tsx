@@ -58,6 +58,7 @@ const ImovelPage = lazyRetry(() => import("./pages/ImovelPage"));
 const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const CasaTuaLanding = lazyRetry(() => import("./pages/CasaTuaLanding"));
 const PlacarDoDia = lazyRetry(() => import("./pages/PlacarDoDia"));
+const PlacarTvPage = lazyRetry(() => import("./pages/PlacarTvPage"));
 const OAuthGoogleCallback = lazyRetry(() => import("./pages/OAuthGoogleCallback"));
 const DiagnosticoRede = lazyRetry(() => import("./pages/admin/DiagnosticoRede"));
 const TelemetriaRede = lazyRetry(() => import("./pages/admin/TelemetriaRede"));
