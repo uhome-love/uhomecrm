@@ -78,17 +78,43 @@ export function LeadCard({
   };
 
   if (!ms.current || !lead) {
+    const noLeads = !!ms.noLeadsReason;
+    const hasFilters = (ms.filters.empreendimento_ids.length + ms.filters.segmento_ids.length) > 0;
     return (
       <div className="rounded-2xl border border-border p-8 text-center bg-card">
         <Sparkles className="w-10 h-10 mx-auto mb-3 text-primary" />
-        <p className="text-lg font-semibold mb-3">Pronto para começar?</p>
-        <p className="text-sm text-muted-foreground mb-4">
-          Vamos pescar um lead descartado com alta chance de reativação.
-        </p>
-        <Button size="lg" onClick={() => ms.proximoLead(undefined)} disabled={ms.proximoLeadPending}>
-          {ms.proximoLeadPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-          Puxar próximo lead
-        </Button>
+        {noLeads ? (
+          <>
+            <p className="text-lg font-semibold mb-2">Sem leads disponíveis com esses filtros</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              {hasFilters
+                ? "Nenhum lead na fila corresponde aos empreendimentos/segmentos escolhidos ou já estão em cooldown."
+                : "A fila está temporariamente vazia. Tente novamente em instantes."}
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              {onOpenFilters && (
+                <Button size="lg" onClick={onOpenFilters}>
+                  Trocar seleção
+                </Button>
+              )}
+              <Button size="lg" variant="outline" onClick={() => { ms.clearNoLeads(); ms.proximoLead(undefined); }} disabled={ms.proximoLeadPending}>
+                {ms.proximoLeadPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Tentar de novo
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-lg font-semibold mb-3">Pronto para começar?</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Vamos pescar um lead descartado com alta chance de reativação.
+            </p>
+            <Button size="lg" onClick={() => ms.proximoLead(undefined)} disabled={ms.proximoLeadPending}>
+              {ms.proximoLeadPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+              Puxar próximo lead
+            </Button>
+          </>
+        )}
       </div>
     );
   }
