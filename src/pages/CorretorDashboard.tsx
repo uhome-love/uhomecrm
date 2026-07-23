@@ -67,6 +67,10 @@ export default function CorretorDashboard() {
       <CelebrationOverlay achievement={newlyUnlocked} onDismiss={dismissCelebration} />
       <OnboardingWidget />
 
+      {/* CTA Mutirão Inteligente (aparece quando ao vivo ou janela típica) */}
+      <MutiraoPulseBanner />
+
+
       {/* 1. Saudação HOMI (gradient inline — intocado) */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div
