@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!prof) return errorResponse("profile not found", 404);
     const meuProfileId = prof.id as string;
+    const meuAuthId = userId;
 
     const body = await req.json().catch(() => ({}));
     const action: string = body?.action ?? "list";
@@ -44,6 +45,7 @@ Deno.serve(async (req) => {
 
       const react = await reactivateLead(admin, {
         pipeline_lead_id,
+        corretor_auth_id: meuAuthId,
         corretor_profile_id: meuProfileId,
         target_stage_id: NOVO_LEAD_STAGE_ID,
       });
