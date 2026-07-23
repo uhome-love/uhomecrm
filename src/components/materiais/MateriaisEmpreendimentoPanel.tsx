@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -9,13 +9,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Building2, MoreVertical, Pencil, Plus, Trash2, Upload, Star, Copy, Sparkles,
+  Image as ImageIcon, Video as VideoIcon, FileText, Music, Link2, Files,
 } from "lucide-react";
 import type { MaterialEmpreendimento, MaterialLink } from "@/hooks/useMateriais";
 import { LinkFormDialog } from "./LinkFormDialog";
 import { EmpreendimentoFormDialog } from "./EmpreendimentoFormDialog";
 import { UploadMaterialDialog } from "./UploadMaterialDialog";
 import { MaterialPreviewDialog } from "./MaterialPreviewDialog";
-import { MaterialItem, isPreviewable } from "./MaterialItem";
+import { MaterialItem, isPreviewable, getMediaKind, type MediaKind } from "./MaterialItem";
 import { FollowUpMaterialDialog } from "./FollowUpMaterialDialog";
 import { useMateriaisMutations } from "@/hooks/useMateriaisMutations";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ import {
   useEmpreendimentoFavoritoIds,
   useToggleEmpreendimentoFavorito,
 } from "@/hooks/useMateriaisFavoritos";
+import { getCategoriaInfo } from "./CategoriaIcon";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -46,9 +48,10 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
   });
   const [linkToDelete, setLinkToDelete] = useState<MaterialLink | null>(null);
   const [previewLink, setPreviewLink] = useState<MaterialLink | null>(null);
-  const [followUp, setFollowUp] = useState<{ open: boolean; materiais: MaterialLink[] }>({
-    open: false, materiais: [],
+  const [followUp, setFollowUp] = useState<{ open: boolean; preSelectedIds: string[] }>({
+    open: false, preSelectedIds: [],
   });
+  const [kindFilter, setKindFilter] = useState<MediaKind | "all">("all");
 
   const getSignedUrl = async (link: MaterialLink, download = false): Promise<string | null> => {
     if (!link.storage_path) return link.url || null;
@@ -150,7 +153,7 @@ export function MateriaisEmpreendimentoPanel({ empreendimento, canEdit }: Props)
               variant="outline"
               size="sm"
               className="h-8 text-primary border-primary/40 hover:bg-primary/10 hidden sm:inline-flex"
-              onClick={() => setFollowUp({ open: true, materiais: empreendimento.links })}
+              onClick={() => setFollowUp({ open: true, preSelectedIds: empreendimento.links.map((l) => l.id) })}
             >
               <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Follow-up IA
             </Button>
