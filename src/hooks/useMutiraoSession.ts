@@ -89,12 +89,15 @@ export function useMutiraoSession() {
     if (v) localStorage.setItem(STORAGE_KEY_ONBOARDED, "1");
   }, []);
 
-  // Lead atual (client-side state)
+  // Lead atual (client-side state). fila_id vazio = preview otimista (lock ainda não confirmou).
   const [current, setCurrent] = useState<{ fila_id: string; balde: Balde; lead: LeadOferta; locked_until?: string } | null>(null);
+  const [lockConfirmed, setLockConfirmed] = useState(false);
   const [noLeadsReason, setNoLeadsReason] = useState<string | null>(null);
 
   // Prévia do próximo lead (prefetch — sem lock). Só para exibição.
   const [prefetched, setPrefetched] = useState<{ balde: Balde; lead: LeadOferta } | null>(null);
+  const prefetchedRef = useRef<{ balde: Balde; lead: LeadOferta } | null>(null);
+  useEffect(() => { prefetchedRef.current = prefetched; }, [prefetched]);
 
   // Chamada de ligação (client timer)
   const [callState, setCallState] = useState<"idle" | "in_call" | "ended">("idle");
@@ -123,6 +126,13 @@ export function useMutiraoSession() {
     } catch { /* silent */ }
   }, [sessaoId]);
 
+  // Aquece a edge function e já deixa o primeiro lead pronto assim que a sessão existe e o corretor estiver onboarded.
+  useEffect(() => {
+    if (sessaoId && onboarded) {
+      prefetchNext();
+    }
+  }, [sessaoId, onboarded, prefetchNext]);
+
   const proximoLeadM = useMutation({
     mutationFn: async () => {
       if (!sessaoId) throw new Error("Nenhuma sessão ao vivo agora");
@@ -137,21 +147,35 @@ export function useMutiraoSession() {
     },
     onSuccess: (data) => {
       if (data?.ok && data.lead && data.fila_id) {
-        setCurrent({ fila_id: data.fila_id, balde: (data.balde ?? "verde") as Balde, lead: data.lead, locked_until: data.locked_until });
+        setCurrent((prev) => {
+          // Se o preview otimista já está exibindo o mesmo lead, apenas confirma o lock (evita re-render/piscada).
+          if (prev && prev.lead.id === data.lead!.id) {
+            return { fila_id: data.fila_id!, balde: (data.balde ?? prev.balde) as Balde, lead: data.lead!, locked_until: data.locked_until };
+          }
+          // Lead diferente (o prefetched já foi pego por outro corretor) — troca pelo que o lock retornou.
+          return { fila_id: data.fila_id!, balde: (data.balde ?? "verde") as Balde, lead: data.lead!, locked_until: data.locked_until };
+        });
+        setLockConfirmed(true);
         setNoLeadsReason(null);
         setCallState("idle");
         setCallStart(null);
         setCallEnd(null);
         setPrefetched(null);
-        // Dispara prefetch do PRÓXIMO em background (5s depois)
-        setTimeout(() => { prefetchNext(); }, 5000);
+        // Dispara prefetch do PRÓXIMO em background (~1s depois)
+        setTimeout(() => { prefetchNext(); }, 1000);
       } else {
         setCurrent(null);
+        setLockConfirmed(false);
         setPrefetched(null);
         setNoLeadsReason(data?.reason === "fila_vazia" ? "fila_vazia" : "sem_filtros_match");
       }
     },
-    onError: (e: any) => toast.error(e?.message || "Erro ao buscar próximo lead"),
+    onError: (e: any) => {
+      // Rollback do preview otimista se o lock falhou.
+      setLockConfirmed(false);
+      setCurrent(null);
+      toast.error(e?.message || "Erro ao buscar próximo lead");
+    },
   });
 
   const registrarM = useMutation({
@@ -162,6 +186,7 @@ export function useMutiraoSession() {
       visita_payload?: any;
     }) => {
       if (!sessaoId || !current) throw new Error("Sem lead ativo");
+      if (!current.fila_id) throw new Error("Aguardando lock do lead");
       const { data, error } = await supabase.functions.invoke("oferta-ativa-registrar-resultado", {
         body: {
           sessao_id: sessaoId,
@@ -184,10 +209,8 @@ export function useMutiraoSession() {
       qc.invalidateQueries({ queryKey: ["mutirao", "historico"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "reaproveitar"] });
       if (data?.bateu_meta) toast.success("🏆 Você bateu uma meta!");
-      // Auto-next
-      setCurrent(null);
-      setCallState("idle");
-      setTimeout(() => proximoLeadM.mutate(), 250);
+      // Auto-next — preview otimista com o prefetched (se existir) enquanto o lock roda.
+      applyOptimisticAndFetch();
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao registrar resultado"),
   });
@@ -198,9 +221,32 @@ export function useMutiraoSession() {
   const pularM = useMutation({
     mutationFn: async () => {
       if (!current) return;
+      if (!current.fila_id) {
+        toast.info("Aguardando confirmação do lead atual…");
+        return;
+      }
       await registrarM.mutateAsync({ resultado: "pulado", observacao: "[Pulado sem ligar]" });
     },
   });
+
+  // Aplica o preview otimista (do prefetched) e dispara o lock real em paralelo.
+  const applyOptimisticAndFetch = useCallback(() => {
+    const pf = prefetchedRef.current;
+    if (pf) {
+      setCurrent({ fila_id: "", balde: pf.balde, lead: pf.lead });
+      setLockConfirmed(false);
+      setCallState("idle");
+      setCallStart(null);
+      setCallEnd(null);
+      setPrefetched(null);
+      prefetchedRef.current = null;
+    } else {
+      setCurrent(null);
+      setLockConfirmed(false);
+      setCallState("idle");
+    }
+    proximoLeadM.mutate();
+  }, [proximoLeadM]);
 
   // Heartbeat 30s
   const hbTimerRef = useRef<number | null>(null);
@@ -235,8 +281,9 @@ export function useMutiraoSession() {
     setOnboarded,
     current,
     setCurrent,
+    lockConfirmed,
     prefetched,
-    proximoLead: (() => { proximoLeadM.mutate(); }),
+    proximoLead: applyOptimisticAndFetch,
     proximoLeadPending: proximoLeadM.isPending,
     noLeadsReason,
     clearNoLeads: () => setNoLeadsReason(null),
@@ -250,6 +297,7 @@ export function useMutiraoSession() {
     endCall,
     resetCorretor: () => {
       setCurrent(null);
+      setLockConfirmed(false);
       setPrefetched(null);
       setCallState("idle");
       setCallStart(null);
