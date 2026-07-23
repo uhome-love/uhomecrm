@@ -17,16 +17,19 @@ interface Props {
 
 export function OnboardingModal({ open, onClose, filters, onSave, firstTime }: Props) {
   const [empreendimentos, setEmpreendimentos] = useState<{ id: string; nome: string }[]>([]);
-  const [segmentos, setSegmentos] = useState<{ id: string; nome: string; cor: string | null }[]>([]);
+  const [segmentos, setSegmentos] = useState<{ id: string; nome: string }[]>([]);
   const [empSel, setEmpSel] = useState<string[]>(filters.empreendimento_ids);
   const [segSel, setSegSel] = useState<string[]>(filters.segmento_ids);
 
+  // Ressincroniza seleção com filtros vindos de fora quando reabre
   useEffect(() => {
     if (!open) return;
+    setEmpSel(filters.empreendimento_ids);
+    setSegSel(filters.segmento_ids);
     (async () => {
       const [e, s] = await Promise.all([
         supabase.from("empreendimentos_canonicos").select("id, nome").order("nome"),
-        supabase.from("roleta_segmentos").select("id, nome, cor").order("nome"),
+        supabase.from("roleta_segmentos").select("id, nome").eq("ativo", true).order("nome"),
       ]);
       setEmpreendimentos((e.data ?? []) as any);
       setSegmentos((s.data ?? []) as any);
