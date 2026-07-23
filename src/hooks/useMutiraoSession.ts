@@ -205,6 +205,8 @@ export function useMutiraoSession() {
     setCurrent,
     proximoLead: proximoLeadM.mutate,
     proximoLeadPending: proximoLeadM.isPending,
+    noLeadsReason,
+    clearNoLeads: () => setNoLeadsReason(null),
     registrar: registrarM.mutateAsync,
     registrarPending: registrarM.isPending,
     pular: pularM.mutate,
@@ -213,5 +215,15 @@ export function useMutiraoSession() {
     callEnd,
     startCall,
     endCall,
+    resetCorretor: () => {
+      setCurrent(null);
+      setCallState("idle");
+      setCallStart(null);
+      setCallEnd(null);
+      setNoLeadsReason(null);
+      setFilters({ empreendimento_ids: [], segmento_ids: [] });
+      setOnboardedState(false);
+      localStorage.removeItem(STORAGE_KEY_ONBOARDED);
+    },
   };
 }
