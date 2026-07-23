@@ -259,6 +259,12 @@ export function useMutiraoSession() {
       qc.invalidateQueries({ queryKey: ["mutirao", "participantes"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "historico"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "reaproveitar"] });
+      if (data?.reactivated && data?.target_stage_name) {
+        toast.success(`Lead aproveitado — foi para o seu pipeline na etapa ${data.target_stage_name}`, {
+          description: "Localize-o no pipeline para dar sequência.",
+          duration: 6000,
+        });
+      }
       if (data?.bateu_meta) toast.success("🏆 Você bateu uma meta!");
       // Auto-next — preview otimista com o prefetched (se existir) enquanto o lock roda.
       applyOptimisticAndFetch();

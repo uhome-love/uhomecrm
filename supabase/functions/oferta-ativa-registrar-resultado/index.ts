@@ -346,6 +346,10 @@ Deno.serve(async (req) => {
       .order("pontos", { ascending: false })
       .limit(10);
 
+    const targetStageName =
+      resultado === "visita_agendada" ? "Visita" :
+      resultado === "aproveitado" ? "Novo Lead" : null;
+
     return jsonResponse({
       ok: true,
       reactivated,
@@ -353,6 +357,8 @@ Deno.serve(async (req) => {
       pontos,
       bateu_meta: !!bateuMeta,
       ranking_top10: rankRows ?? [],
+      target_stage_name: targetStageName,
+      pipeline_lead_id: reactivated ? pipeline_lead_id : null,
     });
   } catch (e) {
     console.error("[registrar-resultado] erro:", e);
