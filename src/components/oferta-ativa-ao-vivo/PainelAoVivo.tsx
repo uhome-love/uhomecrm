@@ -29,6 +29,25 @@ export function PainelAoVivo({ sessaoId }: { sessaoId: string }) {
   const parts = useMutiraoParticipantes(sessaoId);
   const rank = useMutiraoRanking(sessaoId);
   const canScope = isGestor || isAdmin || isDiretor;
+  const canPoke = isAdmin || isDiretor || isGestor;
+  const [pokingId, setPokingId] = useState<string | null>(null);
+
+  const cutucar = async (corretorProfileId: string, nome: string) => {
+    if (pokingId) return;
+    setPokingId(corretorProfileId);
+    try {
+      const { data, error } = await supabase.functions.invoke("oferta-ativa-cutucar", {
+        body: { corretor_profile_id: corretorProfileId, sessao_id: sessaoId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Cutucada enviada para ${nome} 👋`);
+    } catch (e: any) {
+      toast.error(e?.message || "Não foi possível cutucar");
+    } finally {
+      setPokingId(null);
+    }
+  };
 
   const { data: myProfile } = useQuery({
     queryKey: ["oa-live-my-profile", user?.id],
