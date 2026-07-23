@@ -1,67 +1,70 @@
-# Plano: Correção do fluxo de regredir negócio na PDN
+# Correção: erro "Edge Function returned a non-2xx status code" ao registrar "Não atendeu" no Mutirão ao Vivo
 
-## Contexto / Diagnóstico
+## Diagnóstico confirmado
 
-O gestor Bruno tentou regredir um negócio na PDN (planilha de negócios do gestor) e recebeu o toast genérico: **"Você não tem permissão para alterar este lead"**. A investigação mostra que o erro é engolido pela mensagem fixa de `pdnSyncEngine.ts`; a causa real pode ser outra (trigger, RLS, payload inválido, etc.).
+O erro aconteceu por volta das 11:57 BRT (14:57 UTC) quando o corretor Ebert Silva clicou em **Não atendeu** no card do Mutirão. A mensagem exibida foi genérica: **"Edge Function returned a non-2xx status code"**, dentro da área de script do card.
 
-Situações identificadas no banco hoje:
-1. **pdn_entry desatualizada**: Andressa Kieffer aparece na PDN como "Em Negociação" (pdn_entry `situacao = em_negociacao`), mas o lead real do pipeline está em **Visita**. A pdn_entry foi criada vinculada ao `negocio_id` e não ao `pipeline_lead_id`, então o botão de regredir não consegue mover o lead real.
-2. **Regressão sem desbloquear lead**: se o lead estiver arquivado/descartado, o `syncPipelineStageFromPdn` apenas troca `stage_id`, mas mantém `arquivado = true` e `motivo_descarte`, deixando o lead invisível na operação.
-3. **Logs insuficientes**: a mensagem de erro fixa impede saber se o problema é RLS, trigger, coluna obrigatória, etc.
+Causa raiz identificada: **estado stale + concorrência**. O lead que Ebert tinha na tela já não existia mais na fila `oferta_ativa_fila` no momento do clique. A fila pode ter sido removida/alterada por um aproveitamento de outro corretor, por um pulo, ou por uma atualização de cooldown. O backend `oferta-ativa-registrar-resultado` retorna **404 "fila not found"**, mas o cliente `useMutiraoSession.ts` não extrai o corpo da resposta de erro, então o Supabase Functions exibe a mensagem genérica.
 
-## Escopo de mudanças
+A tabela `oferta_ativa_ligacoes` mostra que Ebert conseguiu registrar resultados em outros horários (15:01 e 15:03 UTC), portanto o erro é intermitente e condicionado à concorrência/fila removida.
 
-### 1. Logging real no `pdnSyncEngine.ts`
-- Trocar o toast genérico por uma mensagem que mostre o **código + message** reais do Supabase no console e, em ambiente de debug, no toast.
-- Logar payload enviado e IDs envolvidos para facilitar rastreamento.
-- Garantir que falhas de `negocios` e `pipeline_leads` sejam reportadas separadamente.
+## O que será alterado
 
-### 2. Regressão robusta: desenvolver leads arquivados/descartados
-- Em `syncPipelineStageFromPdn`, quando `oldStageId !== stageRow.id` e o lead estiver `arquivado = true`, incluir no `updatePayload`:
-  - `arquivado: false`
-  - `motivo_descarte: null`
-  - `tipo_descarte: null`
-- Isso permite que um lead descartado/inativado seja reativado ao regredir na PDN.
+### 1. Backend — tratar "lead já sumiu da fila" como caso esperado
 
-### 3. Resolver `pipeline_lead_id` a partir do `negocio_id` quando necessário
-- Se a linha da PDN tem `negocio_id` mas `pipeline_lead_id` é null, buscar `negocios.pipeline_lead_id` e usar esse ID no `syncPipelineStageFromPdn`.
-- Atualizar a pdn_entry para preencher o `pipeline_lead_id` vinculado após a operação.
+Em `supabase/functions/oferta-ativa-registrar-resultado/index.ts`, quando a fila (`fila_id`) não for encontrada, o endpoint retornará **HTTP 200** com:
 
-### 4. Sincronizar `situacao` da pdn_entry com a nova etapa real
-- Quando o gestor move o lead via PDN, após o `syncPipelineStageFromPdn`, atualizar a pdn_entries para:
-  - `situacao = <novo_grupo>` (ex: `visita_realizada`)
-  - `grupo_override = null`
-  - `caiu = false`
-- Isso evita que a PDN continue mostrando a etapa antiga depois do movimento.
-- Ajustar `trg_pdn_mirror_pipeline_lead` para também atualizar `situacao` quando o lead é movido **fora** da PDN, mantendo o overlay alinhado.
+```json
+{
+  "ok": false,
+  "code": "LEAD_GONE",
+  "reason": "Este lead não está mais disponível na fila. Buscando o próximo..."
+}
+```
 
-### 5. Remover botão de regredir quando não há lead real vinculável
-- Se `row.pipelineLeadId` é null e não conseguimos resolver via `negocio_id`, o botão de regredir não deve aparecer (apenas "Remover da planilha").
-- Adicionar tooltip explicando que a linha não está vinculada a um lead real.
+Isso diferencia erros de concorrência (esperados) de erros reais de autenticação/lock (404/409/500). Mantém-se 404/409 quando o lock não pertence ao corretor ou quando há parâmetros inválidos.
 
-### 6. Validação no preview
-- Reproduzir o fluxo com o usuário logado como gestor/admin.
-- Confirmar que regredir de "Em Negociação" → "Visita Realizada" funciona sem toast de erro.
-- Confirmar que a pdn_entry atualiza a etapa exibida.
-- Confirmar que leads arquivados/descartados ressurgem na operação após regredir.
+### 2. Frontend — interpretar `LEAD_GONE` como "avançar para o próximo"
 
-## Arquivos que serão alterados
+Em `src/hooks/useMutiraoSession.ts`, a mutation `registrarM` passará a tratar o código `LEAD_GONE` como sucesso parcial:
 
-- `src/lib/pdnSyncEngine.ts` — logs, desbloqueio de arquivado, resolução via negocio_id.
-- `src/hooks/usePdn.ts` — atualização de `situacao` na pdn_entry após mudança de etapa.
-- `src/pages/PdnGestor.tsx` — esconder botão de regredir quando não houver lead resolvido.
-- Migration: `supabase/migrations/...` — extender `trg_pdn_mirror_pipeline_lead` para atualizar `situacao`.
+- Não exibir toast de erro.
+- Invalidar queries de ranking/participantes/histórico.
+- Chamar `applyOptimisticAndFetch()` para buscar o próximo lead automaticamente.
 
-## Riscos / Decisões
+Para outros erros, o código tentará extrair a mensagem real do corpo da resposta (`error.context?.json()`) antes de cair na mensagem genérica do Supabase Functions.
 
-- **RLS**: A política de gestor já permite atualizar leads da equipe. Não será alterada; a correção foca em payload e referência correta.
-- **Dados legados**: pdn_entries antigas vinculadas só a negocio_id serão corrigidas no primeiro uso (resolver pipeline_lead_id) e via trigger.
-- **Sincronização automática**: o trigger atualizará pdn_entries de outros gestores quando o lead mudar fora da PDN; isso é desejado para manter a planilha fiel ao pipeline real.
+### 3. Frontend — impedir ação sobre lock não confirmado
 
-## Validação esperada
+Em `src/components/oferta-ativa-ao-vivo/LeadCard.tsx`, os botões de ação (incluindo **Não atendeu**) já respeitam `lockConfirmed`, mas será reforçado:
 
-- Toast de sucesso aparece ao regredir.
-- Lead real muda de etapa no pipeline.
-- pdn_entry reflete a nova etapa.
-- Não há mais toast de "permissão" em cenários válidos.
-- Se o erro real persistir, os logs mostrarão o código/message do Supabase para a próxima investigação.
+- Se o lock ainda não estiver confirmado (`lockConfirmed === false`), o botão mostrará spinner/desabilitado e exibirá tooltip "Aguardando lock do lead...".
+- Quando o backend informar `LEAD_GONE`, o card transitará automaticamente para o próximo lead, sem exigir novo clique do corretor.
+
+### 4. Backend — logs detalhados para auditoria
+
+Adicionar `console.error` estruturado em `oferta-ativa-registrar-resultado` para cada caminho de erro, incluindo `fila_id`, `corretor_id`, `sessao_id`, e resultado. Isso permitirá rastrear futuras ocorrências sem depender de inferência.
+
+## Validação ponta a ponta
+
+1. Criar/ativar uma sessão de teste em ambiente de preview (usando a aba Configurações).
+2. Popular a fila com leads de teste.
+3. Simular o fluxo:
+   - Corretor A abre o Mutirão e recebe lead X.
+   - Corretor B (ou admin) remove o lead X da fila (aproveitamento/pulo).
+   - Corretor A clica em **Não atendeu**.
+   - Esperado: mensagem informativa "Lead não está mais disponível. Buscando o próximo..." e avanço automático, sem toast de erro genérico.
+4. Verificar que o ranking, histórico e participantes continuam atualizando normalmente.
+
+## Arquivos que serão editados
+
+- `supabase/functions/oferta-ativa-registrar-resultado/index.ts`
+- `src/hooks/useMutiraoSession.ts`
+- `src/components/oferta-ativa-ao-vivo/LeadCard.tsx` (reforço de guarda e mensagem)
+
+## Riscos / cuidados
+
+- Não alterar o fluxo normal de registro de resultado (ligação, sem interesse, aproveitado, visita).
+- Manter o comportamento de `pulado` e `sem_interesse`.
+- Garantir que o refresh automático do Service Worker não interfira na experiência durante a ligação (já há `useMutiraoUpdateGuard`).
+- Não exibir o alerta como erro crítico para o corretor; tratar como "lead já foi pego por outro".

@@ -221,7 +221,24 @@ export function useMutiraoSession() {
           ...payload,
         },
       });
-      if (error) throw error;
+      if (error) {
+        // FunctionsHttpError esconde o corpo — tenta extrair a mensagem real.
+        let realMsg = error.message || "Erro ao registrar resultado";
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.json === "function") {
+            const parsed = await ctx.json();
+            if (parsed?.error) realMsg = parsed.error;
+            else if (parsed?.reason) realMsg = parsed.reason;
+          } else if (ctx && typeof ctx.text === "function") {
+            const t = await ctx.text();
+            if (t) realMsg = t;
+          }
+        } catch { /* ignore */ }
+        const err = new Error(realMsg);
+        (err as any).cause = error;
+        throw err;
+      }
       if ((data as any)?.error === "DUPLICATE_ACTIVE") {
         toast.error("Lead já ativo em outro pipeline. Nada foi duplicado.");
         return data;
@@ -230,6 +247,14 @@ export function useMutiraoSession() {
     },
     onSuccess: (data: any) => {
       if (data?.error === "DUPLICATE_ACTIVE") return;
+      // LEAD_GONE: concorrência esperada — apenas informa e avança.
+      if (data?.code === "LEAD_GONE") {
+        toast.info(data?.reason || "Este lead não está mais disponível. Buscando o próximo…");
+        qc.invalidateQueries({ queryKey: ["mutirao", "ranking"] });
+        qc.invalidateQueries({ queryKey: ["mutirao", "participantes"] });
+        applyOptimisticAndFetch();
+        return;
+      }
       qc.invalidateQueries({ queryKey: ["mutirao", "ranking"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "participantes"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "historico"] });
@@ -240,6 +265,7 @@ export function useMutiraoSession() {
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao registrar resultado"),
   });
+
 
   // Pular: envia resultado='pulado'. Backend solta o lock, não seta cooldown,
   // NÃO toca ultimo_corretor_id (mantém o descartador). O RPC exclui o lead do

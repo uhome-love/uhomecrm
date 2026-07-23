@@ -156,7 +156,7 @@ export function LeadCard({
 
   const balde = BALDE_META[(ms.current.balde as BaldeKey)] ?? BALDE_META.verde;
   const BaldeIcon = balde.icon;
-  const resultBtnsDisabled = ms.callState !== "ended";
+  const resultBtnsDisabled = ms.callState !== "ended" || !ms.lockConfirmed;
 
   return (
     <TooltipProvider delayDuration={200}>
