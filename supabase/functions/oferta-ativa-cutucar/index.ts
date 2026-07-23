@@ -65,8 +65,8 @@ serve(async (req) => {
     const { data: quem } = await admin.from("profiles").select("nome").eq("user_id", requesterAuthId).maybeSingle();
     const quemNome = quem?.nome || "CEO";
 
-    // Rate limit: 1 cutucada por corretor a cada 3 minutos
-    const desde = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+    // Rate limit: 1 cutucada por corretor a cada 30 segundos
+    const desde = new Date(Date.now() - 30 * 1000).toISOString();
     const { data: recente } = await admin
       .from("notifications")
       .select("id")
@@ -75,7 +75,7 @@ serve(async (req) => {
       .gte("created_at", desde)
       .limit(1);
     if (recente && recente.length > 0) {
-      return new Response(JSON.stringify({ error: "Aguarde alguns minutos antes de cutucar novamente esse corretor." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Aguarde alguns segundos antes de cutucar novamente esse corretor." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const mensagem = mensagemCustom || MENSAGENS_MOTIVACIONAIS[Math.floor(Math.random() * MENSAGENS_MOTIVACIONAIS.length)];
