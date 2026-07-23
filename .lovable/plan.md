@@ -1,41 +1,61 @@
-## Contexto
+# Plano: Corrigir `/placar-tv` para funcionar sem login
 
-Auditoria ponta a ponta do `/oferta-ativa-ao-vivo` executada para as visões de CEO, gestor e corretor. Foram identificados **2 bloqueios críticos** que impedem o uso seguro às 10h:
+## Problema confirmado
+- A rota `/placar-tv` está pública, mas a busca pela sessão ativa em `PlacarTvPage.tsx` usa `supabase.from("oferta_ativa_sessoes")` — tabela que só permite `SELECT` para usuários autenticados.
+- Quando a página é aberta sem login (ou com sessão ausente), o PostgREST devolve `[]` (200 OK) por causa do RLS, e a tela mostra **"Nenhum Mutirão ao vivo agora"** mesmo havendo uma sessão `ao_vivo` no banco.
+- Reproduzido no preview: a query `oferta_ativa_sessoes?status=eq.ao_vivo&inicio_at=lte...&fim_at=gte...` retorna `[]` com o ambiente deslogado, enquanto o mesmo SQL direto no banco retorna a sessão ativa.
 
-1. **Ação "Pular" falha com erro 500** — a edge function `oferta-ativa-registrar-resultado` tenta inserir `resultado='pulado'` na tabela `oferta_ativa_ligacoes`, mas a `CHECK` constraint da coluna só aceita `aproveitado`, `nao_atendeu`, `sem_interesse`, `visita_agendada`. Resultado: toast "Edge Function returned a non-2xx status code" e o corretor fica travado no lead atual.
-2. **Não existe URL dedicada `/placar-tv` para a TV da empresa** — o botão "Placar TV" abre `/oferta-ativa-ao-vivo?view=tv`, que renderiza dentro do `AppLayout` com sidebar visível. Para uso em TV/externo é necessária uma rota limpa sem o chrome do CRM.
+## Diagnóstico
+A página pública precisa de dados públicos. O `/placar-do-dia` já usa esse padrão: uma função `SECURITY DEFINER` (`rpc_placar_do_dia`) com `GRANT EXECUTE TO anon`. O Mutirão TV precisa do mesmo padrão para sessão, ranking e feed.
 
-O Painel Ao Vivo, Ranking, Onboarding, Filtros multi-select, Configurações e Placar TV (dentro da aba) renderizam corretamente.
+## O que será construído
 
-## Escopo de correção
+### 1. Backend — RPC pública `rpc_placar_mutirao`
+- Nova função `public.rpc_placar_mutirao(p_sessao_id uuid DEFAULT NULL)`:
+  - `SECURITY DEFINER`, `STABLE`, `search_path = public`.
+  - Se `p_sessao_id` for nulo, descobre a sessão ativa (`status='ao_vivo'`, `inicio_at <= now()`, `fim_at >= now()`).
+  - Retorna `jsonb` com: `sessao`, `corretores`, `equipes`, `feed`.
+  - `corretores`: só `role='corretor'` (regra já aplicada no ranking; manter aqui), com nome, avatar, equipe, pontos, ligações, aproveitamentos, visitas.
+  - `equipes`: agregação por equipe.
+  - `feed`: últimas 12 ligações da sessão com `resultado IN ('visita_agendada','aproveitado')`, incluindo corretor, tipo, hora, cliente e empreendimento.
+- `GRANT EXECUTE ON FUNCTION public.rpc_placar_mutirao TO anon, authenticated, service_role;`.
+- Nenhum dado pessoal sensível (e-mails, telefones completos) será exposto; feed só exibe o que já aparece no placar TV.
 
-### 1. Migration — adicionar `pulado` ao resultado de `oferta_ativa_ligacoes`
+### 2. Frontend — `PlacarTvPage.tsx`
+- Substituir a query direta `supabase.from("oferta_ativa_sessoes")` por `supabase.rpc("rpc_placar_mutirao")`.
+- Adicionar estados distintos:
+  - **Carregando**: spinner fullscreen.
+  - **Erro**: tela de erro vermelha com a mensagem (não confundir com "sem sessão").
+  - **Sem sessão**: manter a mensagem atual "Nenhum Mutirão ao vivo agora" quando a RPC devolver `sessao=null`.
+- Passar os dados (`sessao`, `corretores`, `equipes`, `feed`) para o componente `PlacarTv`.
 
-- Remover e recriar a `CHECK` constraint `oferta_ativa_ligacoes_resultado_check` incluindo `'pulado'` no array permitido.
-- A ação de pular é registrada como uma linha na tabela de ligações com `contaLigacao=false` (já implementado na edge function), mas precisa ser permitida pelo schema.
+### 3. Frontend — `PlacarTv.tsx`
+- Adicionar props opcionais `initialData` para permitir uso com dados pré-carregados pela página pública.
+- Quando `initialData` estiver presente, usar os dados da RPC e fazer polling a cada 15s (igual ao Placar do Dia).
+- Quando `initialData` não estiver presente (uso autenticado dentro de `/oferta-ativa-ao-vivo?view=tv`), manter o comportamento atual com `useMutiraoRanking` e realtime.
+- O feed continua sendo alimentado por novos eventos; no modo público, o polling atualiza o ranking/feed sem depender de realtime anon.
 
-### 2. Nova rota `/placar-tv` (página dedicada para TV)
+### 4. Cache / Service Worker
+- Bumper a versão em `public/version.json` e no Service Worker (`public/sw.js`) para garantir que PCs/TVs que já abriram o CRM recebam o novo bundle e não fiquem presos na versão quebra.
 
-- Criar `src/pages/PlacarTv.tsx` que busca a sessão ao vivo atual (`status='ao_vivo'`, `inicio_at <= now <= fim_at`) e renderiza o componente `PlacarTv` já existente.
-- Adicionar rota `<Route path="/placar-tv" />` em `src/App.tsx` **dentro do ProtectedRoute** (mantém segurança — a TV precisará estar logada com um usuário do CRM).
-- A página não usa `AppLayout`; é fullscreen, sem sidebar, ideal para projeção externa.
-- Atualizar o botão "📺 Placar TV" em `src/pages/OfertaAtivaAoVivo.tsx` para apontar para `/placar-tv` em vez de `/oferta-ativa-ao-vivo?view=tv`.
+### 5. Validação
+- Teste automatizado com Playwright:
+  - Abrir `/placar-tv` sem autenticação e confirmar que o placar do mutirão ativo aparece.
+  - Abrir `/placar-tv` autenticado e confirmar que também funciona.
+  - Verificar que não aparecem Lucas/CEO/admin no ranking (apenas corretores).
+  - Verificar que a tela "Nenhum Mutirão" só aparece quando não há sessão ativa.
 
-## Arquivos que serão alterados
+## Arquivos envolvidos
+- `supabase/migrations/...` (novo migration)
+- `src/pages/PlacarTvPage.tsx`
+- `src/components/oferta-ativa-ao-vivo/PlacarTv.tsx`
+- `public/version.json`
+- `public/sw.js`
 
-- Migration: `add_pulado_to_oa_ligacoes_resultado`
-- `src/App.tsx` — adicionar rota `/placar-tv`
-- `src/pages/PlacarTv.tsx` — novo arquivo
-- `src/pages/OfertaAtivaAoVivo.tsx` — atualizar URL do botão Placar TV
+## Riscos / mitigações
+- **Segurança**: a RPC é `SECURITY DEFINER`, então roda com poder do dono, mas só expõe dados agregados do mutirão. Nenhum e-mail/telefone completo de leads será retornado.
+- **Performance**: a RPC roda a cada 15s no TV; é leve (SELECT indexado em sessão + participantes + ligações).
+- **Cache antigo**: resolvido com bump de versão do SW + `?_recover=1` como fallback para TVs já abertas.
 
-## Como validar ao vivo
-
-1. CEO: abrir `/oferta-ativa-ao-vivo` → Painel Ao Vivo deve continuar mostrando corretores e rankings.
-2. Corretor: iniciar onboarding, pegar lead, clicar em **Pular** — deve trocar de lead sem erro.
-3. Corretor: clicar em **Não atendeu** — deve liberar o lead e aplicar cooldown (já funcionando).
-4. CEO/Gestor: clicar em **📺 Placar TV** — deve abrir `/placar-tv` em nova aba, fullscreen, sem sidebar, com ranking atualizado.
-5. Placar TV: aguardar novo resultado "visita_agendada" para confirmar o flash/efeito sonoro.
-
-## Nota de segurança
-
-A rota `/placar-tv` será protegida (requer login). Se o objetivo for exibição em uma TV sem usuário logado, precisaremos discutir uma conta fixa de serviço ou tornar a edge function de ranking anônima — isso é uma decisão de segurança que não tomaremos sem aprovação.
+## Não incluído nesta fase
+- Novos recursos visuais (som, atalhos, etc.). Foco apenas em fazer o placar carregar corretamente sem login.

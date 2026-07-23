@@ -83,10 +83,24 @@ function Confetti({ active }: { active: boolean }) {
 
 interface FeedItem { corretor: string; hora: string; tipo: "aproveitado" | "visita_agendada"; empreendimento?: string | null; cliente?: string | null; }
 
-export function PlacarTv({ sessaoId }: { sessaoId: string | null }) {
-  const rank = useMutiraoRanking(sessaoId);
+interface OverrideData {
+  corretores: any[];
+  equipes: any[];
+  feed?: any[];
+}
+
+export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; overrideData?: OverrideData }) {
+  const isPublic = !!overrideData;
+  const rankAuth = useMutiraoRanking(isPublic ? null : sessaoId);
+  const rank = isPublic
+    ? { data: { corretores: overrideData!.corretores ?? [], equipes: overrideData!.equipes ?? [] } }
+    : rankAuth;
   const [relogio, setRelogio] = useState(new Date());
-  const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [feed, setFeed] = useState<FeedItem[]>(() =>
+    (overrideData?.feed ?? []).map((f: any) => ({
+      corretor: f.corretor, hora: f.hora, tipo: f.tipo, cliente: f.cliente, empreendimento: f.empreendimento,
+    }))
+  );
   const [announcement, setAnnouncement] = useState<any>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const prevPontosRef = useRef<Record<string, number>>({});
@@ -96,6 +110,7 @@ export function PlacarTv({ sessaoId }: { sessaoId: string | null }) {
     return Number.isFinite(s) && s > 0 ? s : DEFAULT_META_EMPRESA;
   });
   const isAdminMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("admin") === "true";
+
 
   function tocarSom(tipo: "visita" | "aproveitado" = "visita") {
     try {
@@ -120,22 +135,20 @@ export function PlacarTv({ sessaoId }: { sessaoId: string | null }) {
     return () => clearInterval(iv);
   }, []);
 
-  // Realtime: escuta ligações da sessão para feed + celebração + som
+  // Realtime: só no modo autenticado (público usa polling da RPC)
   useEffect(() => {
-    if (!sessaoId) return;
+    if (isPublic || !sessaoId) return;
     const ch = supabase
       .channel(`placar-tv-mutirao-${sessaoId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "oferta_ativa_ligacoes", filter: `sessao_id=eq.${sessaoId}` },
         async (payload: any) => {
           const row = payload.new;
           if (row.resultado !== "visita_agendada" && row.resultado !== "aproveitado") return;
-          // Resolve nome do corretor
           const corretores = rank.data?.corretores ?? [];
           const corr = corretores.find((c: any) => c.corretor_id === row.corretor_id);
           const nomeCompleto = corr?.nome ?? "Corretor";
           const primeiroNome = nomeCompleto.split(" ")[0];
 
-          // Tenta buscar visita p/ empreendimento/cliente
           let empreendimento: string | null = null; let cliente: string | null = null;
           if (row.resultado === "visita_agendada") {
             const { data: v } = await supabase.from("visitas").select("empreendimento, nome_cliente").eq("pipeline_lead_id", row.pipeline_lead_id).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -153,7 +166,35 @@ export function PlacarTv({ sessaoId }: { sessaoId: string | null }) {
         })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [sessaoId, rank.data]);
+  }, [isPublic, sessaoId, rank.data]);
+
+  // Modo público: sincroniza feed vindo da RPC e dispara celebração para novas conquistas
+  const prevFeedKeysRef = useRef<Set<string>>(new Set((overrideData?.feed ?? []).map((f: any) => `${f.corretor_id}-${f.created_at}`)));
+  useEffect(() => {
+    if (!isPublic || !overrideData?.feed) return;
+    const items: FeedItem[] = overrideData.feed.map((f: any) => ({
+      corretor: f.corretor, hora: f.hora, tipo: f.tipo, cliente: f.cliente, empreendimento: f.empreendimento,
+    }));
+    setFeed(items);
+    // Detecta novas entradas para tocar som + celebração
+    const currentKeys = new Set<string>();
+    const novos: any[] = [];
+    for (const f of overrideData.feed) {
+      const k = `${f.corretor_id}-${f.created_at}`;
+      currentKeys.add(k);
+      if (!prevFeedKeysRef.current.has(k)) novos.push(f);
+    }
+    if (prevFeedKeysRef.current.size > 0 && novos.length > 0) {
+      const f = novos[0];
+      const corr = (overrideData.corretores ?? []).find((c: any) => c.corretor_id === f.corretor_id);
+      setAnnouncement({ nome: f.corretor, cliente: f.cliente, empreendimento: f.empreendimento, tipo: f.tipo, cor: equipeStyle(corr?.equipe, 0).cor, key: Date.now() });
+      tocarSom(f.tipo === "visita_agendada" ? "visita" : "aproveitado");
+      setFlashCorretor(f.corretor_id);
+      setTimeout(() => setAnnouncement(null), 4200);
+      setTimeout(() => setFlashCorretor(null), 2000);
+    }
+    prevFeedKeysRef.current = currentKeys;
+  }, [isPublic, overrideData]);
 
   // Detecta subida de pontos p/ animar
   useEffect(() => {
@@ -167,6 +208,7 @@ export function PlacarTv({ sessaoId }: { sessaoId: string | null }) {
       prevPontosRef.current[c.corretor_id] = c.pontos;
     });
   }, [rank.data]);
+
 
   const equipes = (rank.data?.equipes ?? []).slice().sort((a: any, b: any) => b.visitas - a.visitas || b.pontos - a.pontos);
   const corretores = (rank.data?.corretores ?? []).slice().sort((a: any, b: any) => b.pontos - a.pontos);
