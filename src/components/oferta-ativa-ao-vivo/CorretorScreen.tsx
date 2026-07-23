@@ -3,17 +3,16 @@ import { formatBRT, secondsUntil } from "@/lib/brtTime";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Timer, X, Filter, Trophy, Target, Megaphone, Rewind } from "lucide-react";
+import { Timer, X, Filter } from "lucide-react";
 import { LeadCard } from "./LeadCard";
 import { RankingPanel } from "./RankingPanel";
 import { MetaPanel } from "./MetaPanel";
 import { FeedPanel } from "./FeedPanel";
-import { ReaproveitarPanel } from "./ReaproveitarPanel";
+import { HistoricoPanel } from "./HistoricoPanel";
 import { ScriptCollapsible } from "./ScriptCollapsible";
 import { SemInteressePopup } from "./SemInteressePopup";
 import { OnboardingModal } from "./OnboardingModal";
 import VisitaForm from "@/components/visitas/VisitaForm";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { useMutiraoSession } from "@/hooks/useMutiraoSession";
 
 export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession> }) {
@@ -45,14 +44,14 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
           firstTime
           sessaoId={ms.sessaoId}
           filters={ms.filters}
-          onSave={(f) => { ms.setFilters(f); ms.setOnboarded(true); ms.clearNoLeads(); ms.proximoLead(undefined); }}
+          onSave={(f) => { ms.setFilters(f); ms.setOnboarded(true); ms.clearNoLeads(); ms.proximoLead(); }}
           onClose={() => { setShowOnboarding(false); ms.setOnboarded(true); }}
         />
         <OnboardingModal
           open={editFiltersOpen}
           sessaoId={ms.sessaoId}
           filters={ms.filters}
-          onSave={(f) => { ms.setFilters(f); ms.setCurrent(null); ms.clearNoLeads(); ms.proximoLead(undefined); setEditFiltersOpen(false); }}
+          onSave={(f) => { ms.setFilters(f); ms.setCurrent(null); ms.clearNoLeads(); ms.proximoLead(); setEditFiltersOpen(false); }}
           onClose={() => setEditFiltersOpen(false)}
         />
 
@@ -104,7 +103,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
           </div>
         </div>
 
-        {/* Grid principal */}
+        {/* Grid principal — Ranking + Feed + Meta + Histórico visíveis ao mesmo tempo */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] gap-3">
           <div className="space-y-3 min-w-0">
             <LeadCard
@@ -116,21 +115,11 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
             <ScriptCollapsible lead={ms.current?.lead ?? null} />
           </div>
 
-          <div className="min-w-0">
-            <Tabs defaultValue="ranking" className="w-full">
-              <TabsList className="grid grid-cols-4 w-full h-9">
-                <TabsTrigger value="ranking" className="gap-1.5 text-xs"><Trophy className="w-3.5 h-3.5" />Ranking</TabsTrigger>
-                <TabsTrigger value="meta" className="gap-1.5 text-xs"><Target className="w-3.5 h-3.5" />Meta</TabsTrigger>
-                <TabsTrigger value="feed" className="gap-1.5 text-xs"><Megaphone className="w-3.5 h-3.5" />Feed</TabsTrigger>
-                <TabsTrigger value="reap" className="gap-1.5 text-xs"><Rewind className="w-3.5 h-3.5" />Reap.</TabsTrigger>
-              </TabsList>
-              <TabsContent value="ranking" className="mt-2"><RankingPanel sessaoId={ms.sessaoId} /></TabsContent>
-              <TabsContent value="meta" className="mt-2"><MetaPanel sessaoId={ms.sessaoId} /></TabsContent>
-              <TabsContent value="feed" className="mt-2"><FeedPanel sessaoId={ms.sessaoId} /></TabsContent>
-              <TabsContent value="reap" className="mt-2">
-                <ReaproveitarPanel sessaoId={ms.sessaoId} onReabrir={() => ms.proximoLead(undefined)} />
-              </TabsContent>
-            </Tabs>
+          <div className="min-w-0 space-y-3">
+            <RankingPanel sessaoId={ms.sessaoId} />
+            <FeedPanel sessaoId={ms.sessaoId} />
+            <MetaPanel sessaoId={ms.sessaoId} />
+            <HistoricoPanel sessaoId={ms.sessaoId} />
           </div>
         </div>
 

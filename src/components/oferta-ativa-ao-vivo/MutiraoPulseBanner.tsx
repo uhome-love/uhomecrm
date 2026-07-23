@@ -1,30 +1,33 @@
 /**
  * MutiraoPulseBanner — CTA grande no dashboard do corretor.
  * Pulsa na quinta-feira entre 10h e 21h BRT (janela típica do mutirão).
+ * Mostra a janela real da sessão ao vivo em BRT quando existir.
  */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Radio, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { brtMinutesOfDay } from "@/lib/brtTime";
+import { brtMinutesOfDay, formatBRT } from "@/lib/brtTime";
 
 export function MutiraoPulseBanner() {
   const nav = useNavigate();
-  const [live, setLive] = useState(false);
+  const [sessao, setSessao] = useState<{ inicio_at: string; fim_at: string } | null>(null);
 
   useEffect(() => {
     let mounted = true;
     async function check() {
       const nowIso = new Date().toISOString();
       const { data } = await supabase.from("oferta_ativa_sessoes")
-        .select("id").eq("status", "ao_vivo")
+        .select("inicio_at, fim_at").eq("status", "ao_vivo")
         .lte("inicio_at", nowIso).gte("fim_at", nowIso).limit(1);
-      if (mounted) setLive((data ?? []).length > 0);
+      if (mounted) setSessao((data ?? [])[0] ?? null);
     }
     check();
     const i = setInterval(check, 60_000);
     return () => { mounted = false; clearInterval(i); };
   }, []);
+
+  const live = !!sessao;
 
   // Pulsa se sessão ao vivo OU janela típica (quinta 10h-21h BRT)
   const dow = new Date().toLocaleDateString("en-US", { weekday: "long", timeZone: "America/Sao_Paulo" });
@@ -34,6 +37,10 @@ export function MutiraoPulseBanner() {
   const pulse = live || inWindow;
 
   if (!pulse && !live) return null;
+
+  const janela = sessao
+    ? `Hoje das ${formatBRT(sessao.inicio_at, "HH:mm")} às ${formatBRT(sessao.fim_at, "HH:mm")} — entre agora`
+    : "Prepare-se — a fila abre já já";
 
   return (
     <button
@@ -49,7 +56,7 @@ export function MutiraoPulseBanner() {
           {live ? "🔴 MUTIRÃO INTELIGENTE AO VIVO" : "⚡ Mutirão Inteligente"}
         </p>
         <p className="text-sm text-white/80">
-          {live ? "Entre agora e reative leads descartados com a fila da IA" : "Prepare-se — a fila abre já já"}
+          {janela}
         </p>
       </div>
       <div className="px-3 py-1.5 rounded-full bg-white/20 text-sm font-semibold">Entrar →</div>

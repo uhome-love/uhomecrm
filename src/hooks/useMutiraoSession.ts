@@ -1,6 +1,6 @@
 /**
  * useMutiraoSession — hook central do "Mutirão Inteligente" (Oferta Ativa Ao Vivo).
- * Cuida da sessão ao vivo, próximo lead, lock, resultados e heartbeat.
+ * Cuida da sessão ao vivo, próximo lead, lock, resultados, heartbeat e prefetch.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export type Balde = "verde_hot" | "verde" | "amarelo";
-export type Resultado = "nao_atendeu" | "sem_interesse" | "aproveitado" | "visita_agendada";
+export type Resultado = "pulado" | "nao_atendeu" | "sem_interesse" | "aproveitado" | "visita_agendada";
 
 export interface LeadOferta {
   id: string;
@@ -39,6 +39,7 @@ export interface ProximoLeadResult {
   bucket_order?: number;
   locked_until?: string;
   reason?: string;
+  prefetch?: boolean;
 }
 
 const STORAGE_KEY_FILTERS = "mutirao:filters";
@@ -92,18 +93,39 @@ export function useMutiraoSession() {
   const [current, setCurrent] = useState<{ fila_id: string; balde: Balde; lead: LeadOferta; locked_until?: string } | null>(null);
   const [noLeadsReason, setNoLeadsReason] = useState<string | null>(null);
 
+  // Prévia do próximo lead (prefetch — sem lock). Só para exibição.
+  const [prefetched, setPrefetched] = useState<{ balde: Balde; lead: LeadOferta } | null>(null);
+
   // Chamada de ligação (client timer)
   const [callState, setCallState] = useState<"idle" | "in_call" | "ended">("idle");
   const [callStart, setCallStart] = useState<number | null>(null);
   const [callEnd, setCallEnd] = useState<number | null>(null);
 
+  const filtersRef = useRef(filters);
+  useEffect(() => { filtersRef.current = filters; }, [filters]);
+
+  // ─── Prefetch: espia o próximo lead SEM lock ───
+  const prefetchNext = useCallback(async () => {
+    if (!sessaoId) return;
+    try {
+      const body: any = {
+        sessao_id: sessaoId,
+        empreendimento_ids: filtersRef.current.empreendimento_ids.length ? filtersRef.current.empreendimento_ids : undefined,
+        segmento_ids: filtersRef.current.segmento_ids.length ? filtersRef.current.segmento_ids : undefined,
+        prefetch: true,
+      };
+      const { data } = await supabase.functions.invoke<ProximoLeadResult>("oferta-ativa-proximo-lead", { body });
+      if (data?.ok && data.lead) {
+        setPrefetched({ balde: (data.balde ?? "verde") as Balde, lead: data.lead });
+      } else {
+        setPrefetched(null);
+      }
+    } catch { /* silent */ }
+  }, [sessaoId]);
+
   const proximoLeadM = useMutation({
-    mutationFn: async (opts?: { skipCurrent?: boolean }) => {
+    mutationFn: async () => {
       if (!sessaoId) throw new Error("Nenhuma sessão ao vivo agora");
-      // Se pulando, primeiro libera o lock atual como nao_atendeu silencioso? Requisito: "não repete pro corretor"
-      // -> tratamos como pular: chamamos registrar-resultado skip via 'nao_atendeu' — mas isso conta ligação.
-      // Mais correto: apenas soltar o lock e marcar ultimo_corretor_id como já eu (para evitar repetição).
-      // Implementação: chamamos edge com body {sessao_id, ..., filtros}. Skip trata no client removendo o current e liberando lock via update direto.
       const body: any = {
         sessao_id: sessaoId,
         empreendimento_ids: filters.empreendimento_ids.length ? filters.empreendimento_ids : undefined,
@@ -120,8 +142,12 @@ export function useMutiraoSession() {
         setCallState("idle");
         setCallStart(null);
         setCallEnd(null);
+        setPrefetched(null);
+        // Dispara prefetch do PRÓXIMO em background (5s depois)
+        setTimeout(() => { prefetchNext(); }, 5000);
       } else {
         setCurrent(null);
+        setPrefetched(null);
         setNoLeadsReason(data?.reason === "fila_vazia" ? "fila_vazia" : "sem_filtros_match");
       }
     },
@@ -155,22 +181,24 @@ export function useMutiraoSession() {
       if (data?.error === "DUPLICATE_ACTIVE") return;
       qc.invalidateQueries({ queryKey: ["mutirao", "ranking"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "participantes"] });
+      qc.invalidateQueries({ queryKey: ["mutirao", "historico"] });
       qc.invalidateQueries({ queryKey: ["mutirao", "reaproveitar"] });
       if (data?.bateu_meta) toast.success("🏆 Você bateu uma meta!");
       // Auto-next
       setCurrent(null);
       setCallState("idle");
-      setTimeout(() => proximoLeadM.mutate(undefined), 250);
+      setTimeout(() => proximoLeadM.mutate(), 250);
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao registrar resultado"),
   });
 
-  // Pular: libera lock via update direto (o próprio corretor detém o lock; RLS permite update em fila? Não — fila só service_role).
-  // Alternativa: chamamos registrar-resultado com nao_atendeu, o cooldown de 1h evita repetição a curto prazo.
+  // Pular: envia resultado='pulado'. Backend solta o lock, não seta cooldown,
+  // NÃO toca ultimo_corretor_id (mantém o descartador). O RPC exclui o lead do
+  // pulador nesta sessão.
   const pularM = useMutation({
     mutationFn: async () => {
       if (!current) return;
-      await registrarM.mutateAsync({ resultado: "nao_atendeu", observacao: "[Pulado sem ligar]" });
+      await registrarM.mutateAsync({ resultado: "pulado", observacao: "[Pulado sem ligar]" });
     },
   });
 
@@ -207,7 +235,8 @@ export function useMutiraoSession() {
     setOnboarded,
     current,
     setCurrent,
-    proximoLead: proximoLeadM.mutate,
+    prefetched,
+    proximoLead: (() => { proximoLeadM.mutate(); }),
     proximoLeadPending: proximoLeadM.isPending,
     noLeadsReason,
     clearNoLeads: () => setNoLeadsReason(null),
@@ -221,6 +250,7 @@ export function useMutiraoSession() {
     endCall,
     resetCorretor: () => {
       setCurrent(null);
+      setPrefetched(null);
       setCallState("idle");
       setCallStart(null);
       setCallEnd(null);

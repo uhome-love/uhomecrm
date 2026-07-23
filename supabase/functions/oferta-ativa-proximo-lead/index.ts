@@ -1,4 +1,6 @@
 // oferta-ativa-proximo-lead — RPC estendida (lock + dados do lead + emp/segmento em 1 chamada).
+// Suporta modo prefetch (prefetch=true): usa o mesmo RPC com p_lock=false, apenas espia o próximo lead
+// sem travar. O lock real acontece no clique do corretor com prefetch=false (default).
 // Corretor. verify_jwt=true.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -21,6 +23,7 @@ Deno.serve(async (req) => {
     const sessao_id: string | undefined = body?.sessao_id;
     const empreendimento_ids: string[] = Array.isArray(body?.empreendimento_ids) ? body.empreendimento_ids : [];
     const segmento_ids: string[] = Array.isArray(body?.segmento_ids) ? body.segmento_ids : [];
+    const prefetch: boolean = body?.prefetch === true;
     if (!sessao_id) return errorResponse("sessao_id required", 400);
 
     // profile + sessão + team em paralelo
@@ -42,44 +45,48 @@ Deno.serve(async (req) => {
       return errorResponse("sessao fora da janela", 409);
     }
 
-    // Heartbeat participante (fire-and-forget, não bloqueia lock)
-    const teamRow = teamRes.data;
-    (async () => {
-      let gerenteProfileId: string | null = null;
-      if (teamRow?.gerente_id) {
-        const { data: gp } = await admin.from("profiles").select("id").eq("user_id", teamRow.gerente_id).maybeSingle();
-        gerenteProfileId = gp?.id ?? null;
-      }
-      await admin.from("oferta_ativa_participantes").upsert(
-        {
-          sessao_id,
-          corretor_id: meuProfileId,
-          gerente_id: gerenteProfileId,
-          equipe_text: teamRow?.equipe ?? null,
-          status_online: "online",
-          ultimo_heartbeat_at: new Date().toISOString(),
-          ultima_acao_at: new Date().toISOString(),
-        },
-        { onConflict: "sessao_id,corretor_id" },
-      );
-    })().catch(() => {});
+    // Heartbeat participante (não no prefetch, para não gerar tráfego duplicado)
+    if (!prefetch) {
+      const teamRow = teamRes.data;
+      (async () => {
+        let gerenteProfileId: string | null = null;
+        if (teamRow?.gerente_id) {
+          const { data: gp } = await admin.from("profiles").select("id").eq("user_id", teamRow.gerente_id).maybeSingle();
+          gerenteProfileId = gp?.id ?? null;
+        }
+        await admin.from("oferta_ativa_participantes").upsert(
+          {
+            sessao_id,
+            corretor_id: meuProfileId,
+            gerente_id: gerenteProfileId,
+            equipe_text: teamRow?.equipe ?? null,
+            status_online: "online",
+            ultimo_heartbeat_at: new Date().toISOString(),
+            ultima_acao_at: new Date().toISOString(),
+          },
+          { onConflict: "sessao_id,corretor_id" },
+        );
+      })().catch(() => {});
+    }
 
-    // Lock atômico via RPC estendida (retorna lead + emp + segmento numa chamada)
+    // Lock atômico via RPC estendida — p_lock=false quando prefetch, sem travar a fila.
     const { data: rpcRows, error: rpcErr } = await admin.rpc("oferta_ativa_lock_next_lead", {
       p_sessao_id: sessao_id,
       p_corretor_id: meuProfileId,
       p_empreendimento_ids: empreendimento_ids,
       p_segmento_ids: segmento_ids,
+      p_lock: !prefetch,
     });
     if (rpcErr) return errorResponse(rpcErr.message, 500);
 
     const r = Array.isArray(rpcRows) && rpcRows.length > 0 ? (rpcRows[0] as any) : null;
     if (!r) {
-      return jsonResponse({ ok: true, lead: null, reason: "fila_vazia" });
+      return jsonResponse({ ok: true, lead: null, reason: "fila_vazia", prefetch });
     }
 
     return jsonResponse({
       ok: true,
+      prefetch,
       fila_id: r.id,
       balde: r.balde,
       bucket_order: r.bucket_order,

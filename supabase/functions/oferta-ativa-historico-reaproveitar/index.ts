@@ -1,10 +1,16 @@
-// oferta-ativa-historico-reaproveitar — Fase 1
-// Lista leads que o corretor logado marcou como 'nao_atendeu' nas últimas 24h
-// e que ainda não viraram aproveitado/visita, para permitir reabrir.
+// oferta-ativa-historico-reaproveitar — Fase 2
+// Lista TODAS as interações do corretor (ligações, pulos, aproveitamentos, visitas)
+// na sessão nas últimas 24h, com status de disponibilidade para o botão "Aproveitar".
+// Disponibilidade usa o MESMO dedup por telefone_normalizado do registrar-resultado.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/auth.ts";
+import {
+  reactivateLead,
+  NOVO_LEAD_STAGE_ID,
+  DESCARTE_STAGE_ID,
+} from "../_shared/reactivateLead.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCors();
@@ -26,14 +32,52 @@ Deno.serve(async (req) => {
     if (!prof) return errorResponse("profile not found", 404);
     const meuProfileId = prof.id as string;
 
-    const urlObj = new URL(req.url);
-    const sessao_id = urlObj.searchParams.get("sessao_id") ??
-      (await req.json().catch(() => ({})))?.sessao_id;
+    const body = await req.json().catch(() => ({}));
+    const action: string = body?.action ?? "list";
+    const sessao_id: string | undefined = body?.sessao_id;
     if (!sessao_id) return errorResponse("sessao_id required", 400);
 
+    // ─── Ação: aproveitar um item do histórico ───
+    if (action === "aproveitar") {
+      const pipeline_lead_id: string | undefined = body?.pipeline_lead_id;
+      if (!pipeline_lead_id) return errorResponse("pipeline_lead_id required", 400);
+
+      const react = await reactivateLead(admin, {
+        pipeline_lead_id,
+        corretor_profile_id: meuProfileId,
+        target_stage_id: NOVO_LEAD_STAGE_ID,
+      });
+      if (!react.ok && react.duplicate_lead_id) {
+        return jsonResponse(
+          { ok: false, error: "DUPLICATE_ACTIVE", duplicate_lead_id: react.duplicate_lead_id },
+          409,
+        );
+      }
+      if (!react.ok) return errorResponse(react.error ?? "reativar lead falhou", 500);
+
+      // Remove da fila se ainda estiver lá
+      await admin
+        .from("oferta_ativa_fila")
+        .delete()
+        .eq("sessao_id", sessao_id)
+        .eq("pipeline_lead_id", pipeline_lead_id);
+
+      // Registra evento no feed
+      const { data: profNome } = await admin.from("profiles").select("nome").eq("id", meuProfileId).maybeSingle();
+      await admin.from("pulse_events").insert({
+        tipo: "oa_aproveitado",
+        corretor_id: meuProfileId,
+        titulo: `${profNome?.nome ?? "Corretor"} aproveitou pelo histórico`,
+        descricao: null,
+        metadata: { sessao_id, pipeline_lead_id, pontos: 4, balde: null, via: "historico" },
+      });
+
+      return jsonResponse({ ok: true, reactivated: true });
+    }
+
+    // ─── Ação padrão: list ───
     const cutoffIso = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
 
-    // Pega todas ligações minhas na sessão nas últimas 24h
     const { data: ligs, error } = await admin
       .from("oferta_ativa_ligacoes")
       .select("id, pipeline_lead_id, resultado, observacao, created_at")
@@ -43,49 +87,62 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: false });
     if (error) return errorResponse(error.message, 500);
 
-    // Filtra: manter último resultado por lead; só listar quando último foi nao_atendeu
+    if (!ligs || ligs.length === 0) return jsonResponse({ ok: true, itens: [] });
+
+    // Mantém último resultado por lead (o mais recente)
     const byLead = new Map<string, any>();
-    for (const l of ligs ?? []) {
+    for (const l of ligs) {
       if (!byLead.has(l.pipeline_lead_id)) byLead.set(l.pipeline_lead_id, l);
     }
-    const naoAtendeu = Array.from(byLead.values()).filter(
-      (l) => l.resultado === "nao_atendeu",
-    );
+    const itensLig = Array.from(byLead.values());
 
-    if (naoAtendeu.length === 0) return jsonResponse({ ok: true, itens: [] });
-
-    // Enriquece com pipeline_lead + fila (para saber se ainda está disponível)
-    const leadIds = naoAtendeu.map((l) => l.pipeline_lead_id);
+    const leadIds = itensLig.map((l) => l.pipeline_lead_id);
     const { data: leads } = await admin
       .from("pipeline_leads")
-      .select("id, nome, telefone, empreendimento, motivo_descarte")
+      .select("id, nome, telefone, telefone_normalizado, empreendimento, motivo_descarte")
       .in("id", leadIds);
     const leadMap = new Map((leads ?? []).map((l: any) => [l.id, l]));
 
-    const { data: filaRows } = await admin
-      .from("oferta_ativa_fila")
-      .select("id, pipeline_lead_id, cooldown_ate, locked_by, locked_until")
-      .eq("sessao_id", sessao_id)
-      .in("pipeline_lead_id", leadIds);
-    const filaMap = new Map((filaRows ?? []).map((f: any) => [f.pipeline_lead_id, f]));
+    // Dedup por telefone: leads ATIVOS (não arquivado, fora do descarte) com mesmo phone
+    const phones = (leads ?? [])
+      .map((l: any) => l.telefone_normalizado)
+      .filter((p): p is string => !!p);
+    let duplicateSet = new Set<string>(); // set de telefone_normalizado com duplicata ativa
+    if (phones.length > 0) {
+      const { data: dupRows } = await admin
+        .from("pipeline_leads")
+        .select("id, telefone_normalizado")
+        .in("telefone_normalizado", phones)
+        .neq("stage_id", DESCARTE_STAGE_ID)
+        .eq("arquivado", false)
+        .neq("aceite_status", "descartado");
+      // Um telefone tem "outro" ativo se existir registro com telefone_normalizado que NÃO é o próprio lead do histórico
+      const ownIdByPhone = new Map<string, string>();
+      for (const l of leads ?? []) {
+        if (l.telefone_normalizado) ownIdByPhone.set(l.telefone_normalizado, l.id);
+      }
+      for (const d of dupRows ?? []) {
+        const owner = ownIdByPhone.get(d.telefone_normalizado);
+        if (d.id !== owner) duplicateSet.add(d.telefone_normalizado);
+      }
+    }
 
-    const itens = naoAtendeu.map((l) => {
+    const itens = itensLig.map((l) => {
       const lead = leadMap.get(l.pipeline_lead_id);
-      const fila = filaMap.get(l.pipeline_lead_id);
-      const cooldownAtiva = fila?.cooldown_ate && new Date(fila.cooldown_ate) > new Date();
+      const phone = lead?.telefone_normalizado ?? null;
+      const jaAtribuido = !!(phone && duplicateSet.has(phone));
       return {
         ligacao_id: l.id,
-        fila_id: fila?.id ?? null,
         pipeline_lead_id: l.pipeline_lead_id,
         nome: lead?.nome ?? "—",
         telefone: lead?.telefone ?? null,
         empreendimento: lead?.empreendimento ?? null,
         motivo_descarte: lead?.motivo_descarte ?? null,
+        resultado: l.resultado,
         observacao: l.observacao,
         ligacao_em: l.created_at,
-        na_fila: !!fila,
-        pode_reabrir: !!fila && !cooldownAtiva,
-        cooldown_ate: fila?.cooldown_ate ?? null,
+        pode_aproveitar: !jaAtribuido,
+        motivo_indisponivel: jaAtribuido ? "ja_atribuido" : null,
       };
     });
 
