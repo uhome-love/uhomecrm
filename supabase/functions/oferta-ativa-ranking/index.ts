@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     let query = admin
       .from("oferta_ativa_participantes")
       .select(
-        "corretor_id, gerente_id, equipe_text, pontos, ligacoes_count, aproveitamentos_count, visitas_count, status_online, ultima_acao_at, profiles:corretor_id(nome, foto_url)",
+        "corretor_id, gerente_id, equipe_text, pontos, ligacoes_count, aproveitamentos_count, visitas_count, status_online, ultima_acao_at, profiles:corretor_id(nome, avatar_url)",
       )
       .eq("sessao_id", sessao_id);
 
@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       .map((p: any) => ({
         corretor_id: p.corretor_id,
         nome: p.profiles?.nome ?? "—",
-        foto_url: p.profiles?.foto_url ?? null,
+        foto_url: p.profiles?.avatar_url ?? null,
         gerente_id: p.gerente_id,
         equipe: p.equipe_text,
         pontos: p.pontos ?? 0,
