@@ -1865,9 +1865,13 @@ export type Database = {
           acao: string
           corretor_id: string
           created_at: string
+          empreendimento_canonico_id: string | null
           id: string
           motivo_rejeicao: string | null
           pipeline_lead_id: string
+          pool: string | null
+          pool_size: number | null
+          recebidos_no_produto: number | null
           segmento_id: string | null
           tempo_resposta_seg: number | null
         }
@@ -1875,9 +1879,13 @@ export type Database = {
           acao?: string
           corretor_id: string
           created_at?: string
+          empreendimento_canonico_id?: string | null
           id?: string
           motivo_rejeicao?: string | null
           pipeline_lead_id: string
+          pool?: string | null
+          pool_size?: number | null
+          recebidos_no_produto?: number | null
           segmento_id?: string | null
           tempo_resposta_seg?: number | null
         }
@@ -1885,9 +1893,13 @@ export type Database = {
           acao?: string
           corretor_id?: string
           created_at?: string
+          empreendimento_canonico_id?: string | null
           id?: string
           motivo_rejeicao?: string | null
           pipeline_lead_id?: string
+          pool?: string | null
+          pool_size?: number | null
+          recebidos_no_produto?: number | null
           segmento_id?: string | null
           tempo_resposta_seg?: number | null
         }
