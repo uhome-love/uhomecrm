@@ -362,21 +362,20 @@ export function PlacarTv({ sessaoId, overrideData }: { sessaoId: string | null; 
                   <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(48px, 6vw, 88px)", lineHeight: 0.85, color: st.cor, textShadow: `0 0 30px ${st.cor}aa`, minWidth: 60, textAlign: "center" }}>
                     {i + 1}<span style={{ fontSize: "0.4em", verticalAlign: "super" }}>º</span>
                   </div>
-                  {/* Foto do líder */}
-                  {lider?.foto_url ? (
-                    <img src={lider.foto_url} alt={lider.nome} style={{ width: 68, height: 68, borderRadius: "50%", objectFit: "cover", border: `3px solid ${st.cor}`, boxShadow: `0 0 20px ${st.cor}66` }} />
-                  ) : (
-                    <div style={{ width: 68, height: 68, borderRadius: "50%", background: st.cor + "33", border: `3px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: st.cor }}>
-                      {(lider?.nome || e.equipe || "?").slice(0, 1)}
-                    </div>
-                  )}
-                  {/* Nome + equipe */}
+                  {/* Escudo da equipe */}
+                  <div style={{ width: 68, height: 68, borderRadius: 14, background: `linear-gradient(135deg, ${st.cor}55, ${st.cor}22)`, border: `3px solid ${st.cor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, boxShadow: `0 0 20px ${st.cor}66` }}>
+                    {st.emoji}
+                  </div>
+                  {/* Nome da equipe + tamanho */}
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(22px, 2.8vw, 40px)", letterSpacing: 2, color: st.cor, lineHeight: 1, textShadow: `0 0 20px ${st.cor}66`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {(lider?.nome || e.equipe || "—").toUpperCase()}
+                    <div style={{ fontSize: 10, letterSpacing: 4, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 2 }}>
+                      Equipe
                     </div>
-                    <div style={{ fontSize: 11, letterSpacing: 3, color: "#ffffff88", textTransform: "uppercase", fontFamily: "monospace", marginTop: 2 }}>
-                      Equipe {e.equipe ?? "—"}
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(26px, 3.2vw, 46px)", letterSpacing: 2, color: st.cor, lineHeight: 1, textShadow: `0 0 20px ${st.cor}66`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase" }}>
+                      {e.equipe ?? "—"}
+                    </div>
+                    <div style={{ fontSize: 10, letterSpacing: 2, color: "#ffffff66", textTransform: "uppercase", fontFamily: "monospace", marginTop: 3 }}>
+                      {e.corretores ?? 0} corretor{(e.corretores ?? 0) === 1 ? "" : "es"}
                     </div>
                   </div>
                   {/* Stats: Ligações */}
