@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 
 export default function OfertaAtivaAoVivo() {
   const { user } = useAuth();
-  const { role, isLoading: roleLoading } = useUserRole();
+  const { isGestor, isAdmin, isDiretor, loading: roleLoading } = useUserRole();
   const [params, setParams] = useSearchParams();
   const view = params.get("view");
   const ms = useMutiraoSession();
@@ -33,8 +33,8 @@ export default function OfertaAtivaAoVivo() {
   }
   if (!user) return <Navigate to="/auth" replace />;
 
-  const isManagerish = role === "gestor" || role === "admin" || role === "diretor";
-  const isAdmin = role === "admin" || role === "diretor";
+  const isManagerish = isGestor || isAdmin || isDiretor;
+  const isAdminScope = isAdmin || isDiretor;
 
   // Placar TV (fullscreen)
   if (view === "tv" && isManagerish) {
