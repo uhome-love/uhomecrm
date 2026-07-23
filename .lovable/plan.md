@@ -1,124 +1,55 @@
-Plano: Reorganização do Hub de Materiais — Marketplace com Sidebar
+Objetivo: transformar a página de Materiais em um hub denso, onde os cards de material dominem a tela, reduzindo a altura ocupada por menus, buscas duplicadas e bordas.
 
-Objetivo
---------
-Transformar a página `/materiais` de uma lista vertical de cards enormes em uma experiência de marketplace moderna: **sidebar fixo à esquerda com todos os empreendimentos**, **área principal direita mostrando apenas os materiais do empreendimento selecionado**, mantendo a pré-visualização em modal central como está hoje.
+Escopo: alterações apenas de layout/CSS/estrutura de componentes. Nenhuma mudança de regra de negócio, banco ou edge function.
 
-Motivo
-------
-O card atual exibe logo, nome, grid de 4 colunas e footer de ações para cada empreendimento. Com 9+ empreendimentos a página fica longa e cansativa. Com 20+ fica impraticável. A navegação por sidebar resolve isso porque:
-- O corretor vê todos os empreendimentos numa coluna compacta.
-- Clica em um empreendimento e o painel direito carrega seus materiais.
-- O header e a busca da lista ficam sempre acessíveis.
+Arquivos envolvidos:
+- src/pages/MateriaisPage.tsx
+- src/components/materiais/MateriaisSidebar.tsx
+- src/components/materiais/MateriaisEmpreendimentoPanel.tsx
+- src/components/materiais/MaterialItem.tsx
+- src/components/materiais/MaterialPreviewDialog.tsx (caso o preview seja afetado por z-index/overlay)
 
-Decisões já alinhadas com o usuário
------------------------------------
-- Visualização dos materiais: **área principal fixa** (painel direito).
-- Pré-visualização do material: **manter modal central** (imagem/vídeo/PDF/áudio).
-- Layout principal: **sidebar fixa** (recomendado como o formato mais adequado para marketplace moderno com muitos empreendimentos).
+1. Header compacto e unificado
+   - Remover subtítulo abaixo do título (ou torná-lo tooltip/toggle).
+   - Título "Materiais", botão "Analytics" e "Novo empreendimento" ficam em uma única linha.
+   - No mobile, "Analytics" + "Novo" entram em um único DropdownMenu de ações para liberar largura.
 
-O que será feito
-----------------
+2. Barra de navegação única (horizontal, anexada ao header)
+   - Abas "Empreendimentos" / "Recentes" + busca global em uma linha compartilhada.
+   - A busca global passa a filtrar tanto materiais quanto empreendimentos (mesmo campo, um placeholder só).
+   - Botão "Buscar com IA" vira ícone de ação ao lado do input para economizar espaço.
 
-### 1. Novo layout de página (`MateriaisPage.tsx`)
-- Substituir a pilha vertical de `MaterialCard` por uma estrutura de duas colunas:
-  - **Sidebar esquerda** (~280-320px, responsivo): lista scrollável de empreendimentos.
-  - **Área principal direita** (flex-1): mostra o empreendimento selecionado.
-- Usar o componente shadcn `Sidebar` já existente em `src/components/ui/sidebar.tsx`.
-- Adicionar `SidebarProvider` e `SidebarTrigger` no header local da página (sem alterar o layout global do app).
-- Em mobile (< md), a sidebar vira um **drawer deslizante** ou botão de filtro, abrindo por cima da área principal.
+3. Sidebar de empreendimentos enxuta
+   - Remover a busca interna da sidebar; a busca global já cumpre o papel.
+   - Reduzir padding e largura mínima (ex: 240px).
+   - Destacar visualmente o empreendimento selecionado com uma borda lateral de destaque (indigo) em vez de card destacado.
+   - Favoritos continuam no topo da lista, sem label separado com espaçamento extra.
 
-### 2. Sidebar de empreendimentos (novo componente)
-Criar `src/components/materiais/MateriaisSidebar.tsx`:
-- Lista cada empreendimento como item de menu com:
-  - Logo quadrada (40x40) com fallback em ícone `Building2`.
-  - Nome do empreendimento (truncado se necessário, mas com tooltip/title completo).
-  - Badge com a contagem de materiais.
-  - Indicador de favorito (⭐) se o empreendimento está nos favoritos do corretor.
-- Search/filter dentro da sidebar para filtrar por nome.
-- Estado ativo destacado (primary color ou background muted).
-- Scroll independente da sidebar para não perder a lista ao rolar materiais.
-- Favoritos podem aparecer fixos no topo, depois a lista completa (ou abas dentro da sidebar: Todos / Favoritos / Recentes).
+4. Painel principal ocupando mais tela
+   - Remover o wrapper `border rounded-xl` que cria duas bordas consecutivas.
+   - Reduzir padding do `main` (de p-4 sm:p-6 para p-3 ou p-2).
+   - Aumentar o grid de materiais conforme a largura: 4 colunas em 1280px, 5 em 1600px, 2 colunas em tablet, 1 coluna em mobile.
+   - Cards de material ocupam mais altura do viewport (thumbnail maior, área de ação otimizada).
 
-### 3. Área principal de empreendimento selecionado
-Criar `src/components/materiais/MateriaisEmpreendimentoPanel.tsx` (ou refatorar `MaterialCard` para esse papel):
-- Header do painel:
-  - Logo grande + nome do empreendimento.
-  - Badge de contagem + botão de favoritar.
-  - Ações de gestão (editar, adicionar material, adicionar link, excluir empreendimento) — visíveis apenas para gestores.
-- Grid de materiais: manter o `MaterialItem` atual, com thumbnail, categoria, título, ações (Copiar, Download/Abrir, Follow-up IA).
-- Footer do painel:
-  - "Copiar todos os links".
-  - "Gerar follow-up com IA" (considerando todos os materiais do empreendimento).
-- Empty state: se o empreendimento selecionado não tiver materiais, mostrar ilustração e CTA.
+5. Ações do card sem corte em telas pequenas
+   - No mobile: ações secundárias (download, abrir, IA) entram em um menu de 3 pontos; botão primário "Copiar" mantém-se visível.
+   - No desktop: mantém as ações rápidas, mas com ícones menores e padding ajustado para evitar overflow.
+   - Garantir `min-width: 0` em todos os containers para truncamento correto de texto.
 
-### 4. Estado de seleção
-- Selecionar automaticamente o primeiro empreendimento ao carregar a página.
-- Persistir o empreendimento selecionado na URL como query param `?emp=ID`, permitindo compartilhar link direto para um empreendimento.
-- Sincronizar a sidebar com o param da URL: ao abrir `/materiais?emp=XYZ`, o painel direito já abre nesse empreendimento.
+6. Mobile-first adjustments
+   - Header empilhado: título + dropdown de ações.
+   - Botão de empreendimento no mobile fica sticky acima do conteúdo, liberando área de scroll.
+   - Aba "Recentes" mantém lista compacta, mas com a mesma densidade do painel principal.
 
-### 5. Abas Todos / Favoritos / Recentes
-- As abas atuais viram filtros da sidebar ou seletor no topo da página:
-  - "Todos" → lista todos os empreendimentos na sidebar.
-  - "Favoritos" → sidebar mostra apenas empreendimentos favoritos.
-  - "Recentes" → painel direito mostra uma lista compacta de materiais recentes (sem sidebar, ou sidebar com uma lista fixa de recentes por empreendimento).
-- A aba "Recentes" pode ficar como uma visão especial sem sidebar, exibindo `MaterialListaCompact` em tela cheia.
+7. Validação visual
+   - Após implementar, capturar screenshots em:
+     a) 1378x797 (viewport atual do usuário)
+     b) 1920x1080
+     c) 390x844 (mobile)
+   - Verificar se materiais aparecem no topo 1/3 da tela em desktop e se não há botões cortados no mobile.
 
-### 6. Pré-visualização
-- Não alterar o fluxo atual: `MaterialPreviewDialog` continua abrindo em modal central via `materiais-signed-read`.
-- Thumbnail continua sendo carregada com URL assinada no `MaterialItem`.
-
-### 7. Mobile e responsivo
-- Desktop: sidebar fixa à esquerda, painel à direita.
-- Tablet: sidebar colapsável (shadcn `collapsible="icon"`), mostrando só logos; expandir mostra nome.
-- Mobile: sidebar escondida, botão "Empreendimentos" abre drawer/bottom sheet com a lista.
-- Grid de materiais: 1 coluna em mobile, 2 em tablet, 3-4 em desktop.
-
-### 8. Analytics e outros ajustes
-- `MateriaisAnalytics.tsx`: continua funcionando normalmente, sem impacto estrutural.
-- Remover ações duplicadas: se a sidebar tiver favorito, mantê-lo também no header do painel para clareza.
-- Garantir que a busca textual continue buscando por empreendimento e material.
-- A busca com IA (`materiais-search`) pode continuar listando resultados em uma seção especial, ou abrir o empreendimento do primeiro resultado.
-
-Arquivos afetados
------------------
-- `src/pages/MateriaisPage.tsx` — reestruturação principal.
-- `src/components/materiais/MaterialCard.tsx` — refatorar para `MateriaisEmpreendimentoPanel` ou reduzir a área principal.
-- `src/components/materiais/MaterialItem.tsx` — sem mudanças estruturais, apenas ajustes de grid responsivo.
-- `src/components/materiais/MaterialPreviewDialog.tsx` — sem mudanças.
-- `src/components/materiais/MaterialListaCompact.tsx` — ajuste para aba Recentes.
-- Novo `src/components/materiais/MateriaisSidebar.tsx`.
-- Possível novo `src/components/materiais/MateriaisEmpreendimentoPanel.tsx`.
-- `src/hooks/useMateriais.tsx` — sem mudanças.
-- `src/hooks/useMateriaisFavoritos.ts` — sem mudanças.
-
-Mockup
-------
-```text
-┌──────────────────────────────────────────────────────────────┐
-│  Materiais              [Novo empreendimento] [Analytics]      │
-├───────────────┬──────────────────────────────────────────────┤
-│  🔍 Buscar    │  [Logo] Casa Tua          ⭐  [Editar] [⋮]    │
-│               │  7 materiais                                 │
-│  ⭐ Favoritos  │                                              │
-│  ─────────────┤  ┌────────┐ ┌────────┐ ┌────────┐           │
-│  [Logo] Casa  │  │Drive   │ │Fotos   │ │Book    │ ...        │
-│  Tua     (7)  │  │Copiar ✓│ │Copiar ✓│ │Copiar ✓│            │
-│  [Logo] Casa  │  └────────┘ └────────┘ └────────┘           │
-│  Verde  (12)  │                                              │
-│  [Logo] Lake  │  [Copiar todos] [✨ Follow-up IA] [+]       │
-│  Baikal  (3)  │                                              │
-│               │                                              │
-└───────────────┴──────────────────────────────────────────────┘
-```
-
-Critérios de pronto
--------------------
-- [ ] Sidebar lista todos os empreendimentos com logo + nome + contagem.
-- [ ] Clicar em um empreendimento carrega seus materiais no painel direito.
-- [ ] URL reflete o empreendimento selecionado (`?emp=ID`).
-- [ ] Preview de material continua funcionando em modal central.
-- [ ] Mobile: navegação de empreendimentos via drawer/bottom sheet acessível.
-- [ ] Favoritos, Recentes e Busca com IA funcionam no novo layout.
-- [ ] Typecheck e build passam sem erros.
-- [ ] Validação ao vivo no preview.
+Critérios de aceitação:
+- Materiais começam a ser visíveis nos primeiros 35% da altura da tela em desktop.
+- Nenhum botão cortado ou texto truncado em mobile 390px.
+- Sidebar e busca global não duplicam funções.
+- Sem regressão na pré-visualização de materiais (modal de imagem/vídeo/PDF continua funcionando).

@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useMateriais, type MaterialLink } from "@/hooks/useMateriais";
 import { useUserRole } from "@/hooks/useUserRole";
 import { MateriaisSidebar } from "@/components/materiais/MateriaisSidebar";
@@ -12,10 +15,9 @@ import { MaterialListaCompact } from "@/components/materiais/MaterialListaCompac
 import { EmpreendimentoFormDialog } from "@/components/materiais/EmpreendimentoFormDialog";
 import {
   FolderOpen, Plus, Search, Loader2, Sparkles, X, BarChart3,
-  Clock, Menu, Building2,
+  Clock, Menu, Building2, MoreVertical,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { getCategoriaInfo } from "@/components/materiais/CategoriaIcon";
@@ -46,14 +48,12 @@ export default function MateriaisPage() {
   const { data: favEmpIds } = useEmpreendimentoFavoritoIds();
   const { data: recentes = [], isLoading: loadingRec } = useMaterialRecentes();
 
-  // Empreendimento selecionado via URL (?emp=ID)
   const selectedId = searchParams.get("emp");
   const selected = useMemo(
     () => empreendimentos.find((e) => e.id === selectedId) ?? null,
     [empreendimentos, selectedId],
   );
 
-  // Auto-selecionar o primeiro se nada selecionado
   useEffect(() => {
     if (tab !== "todos") return;
     if (!empreendimentos.length) return;
@@ -107,60 +107,88 @@ export default function MateriaisPage() {
   }, [search]);
 
   return (
-    <div className="container max-w-[1400px] mx-auto py-6 space-y-4">
-      <PageHeader
-        title="Materiais"
-        subtitle="Hub de drives, apresentações e scripts por empreendimento."
-        icon={<FolderOpen className="h-5 w-5" />}
-        actions={
-          isGestor && (
-            <div className="flex gap-2">
-              <Button variant="outline" asChild>
+    <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-4 py-3 space-y-3">
+      {/* Header compacto — título + ações + abas + busca em duas linhas */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <FolderOpen className="h-5 w-5 text-primary flex-shrink-0" />
+          <h1 className="text-xl font-semibold truncate">Materiais</h1>
+        </div>
+
+        {isGestor && (
+          <div className="ml-auto flex items-center gap-2">
+            {/* Desktop: botões separados */}
+            <div className="hidden sm:flex items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
                 <Link to="/materiais/analytics">
-                  <BarChart3 className="h-4 w-4 mr-2" /> Analytics
+                  <BarChart3 className="h-4 w-4 mr-1.5" /> Analytics
                 </Link>
               </Button>
-              <Button onClick={() => setNewDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" /> Novo empreendimento
+              <Button size="sm" onClick={() => setNewDialog(true)}>
+                <Plus className="h-4 w-4 mr-1.5" /> Novo empreendimento
               </Button>
             </div>
-          )
-        }
-      />
+            {/* Mobile: dropdown */}
+            <div className="sm:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/materiais/analytics">
+                      <BarChart3 className="h-4 w-4 mr-2" /> Analytics
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setNewDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" /> Novo empreendimento
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        )}
+      </div>
 
-      <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="todos">
-            <FolderOpen className="h-3.5 w-3.5 mr-1.5" /> Empreendimentos
-          </TabsTrigger>
-          <TabsTrigger value="recentes">
-            <Clock className="h-3.5 w-3.5 mr-1.5" /> Recentes
-          </TabsTrigger>
-        </TabsList>
+      {/* Barra unificada: abas + busca única */}
+      <Tabs value={tab} onValueChange={handleTabChange} className="space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <TabsList className="h-9 self-start">
+            <TabsTrigger value="todos" className="h-7 px-3 text-xs">
+              <FolderOpen className="h-3.5 w-3.5 mr-1.5" /> Empreendimentos
+            </TabsTrigger>
+            <TabsTrigger value="recentes" className="h-7 px-3 text-xs">
+              <Clock className="h-3.5 w-3.5 mr-1.5" /> Recentes
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="todos" className="space-y-4">
-          {/* Busca global */}
-          <div className="flex gap-2 max-w-2xl">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
-                placeholder="Buscar material por título, tag ou descrição..."
+                placeholder="Buscar material ou empreendimento..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") runSemantic(); }}
-                className="pl-9"
+                className="pl-8 h-9 text-sm"
               />
             </div>
             <Button
               variant="outline"
+              size="icon"
+              className="h-9 w-9 flex-shrink-0 text-primary border-primary/40 hover:bg-primary/10"
+              title="Buscar com IA"
               onClick={runSemantic}
               disabled={semanticLoading || search.trim().length < 3}
             >
-              {semanticLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              Buscar com IA
+              {semanticLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             </Button>
           </div>
+        </div>
 
+        <TabsContent value="todos" className="space-y-3 mt-0">
           {semanticResults !== null ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -176,7 +204,7 @@ export default function MateriaisPage() {
                   Nada relevante encontrado. Tente outras palavras.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {semanticResults.map((r) => {
                     const info = getCategoriaInfo(r.categoria);
                     const Icon = info.icon;
@@ -190,21 +218,21 @@ export default function MateriaisPage() {
                             clearSemantic();
                           }
                         }}
-                        className="p-4 rounded-xl border border-border/60 bg-card space-y-2 text-left hover:border-primary/40 hover:shadow-sm transition-all"
+                        className="p-3 rounded-xl border border-border/60 bg-card space-y-1.5 text-left hover:border-primary/40 hover:shadow-sm transition-all"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-[11px] text-muted-foreground truncate">
                               {r.materiais_empreendimentos?.nome} • <Icon className="inline h-3 w-3" /> {info.label}
                             </p>
-                            <h3 className="font-medium text-foreground">{r.titulo}</h3>
+                            <h3 className="font-medium text-sm text-foreground line-clamp-2">{r.titulo}</h3>
                           </div>
-                          <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary flex-shrink-0">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary flex-shrink-0">
                             {Math.round(r.similarity * 100)}%
                           </span>
                         </div>
                         {r.snippet && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">{r.snippet}...</p>
+                          <p className="text-[11px] text-muted-foreground line-clamp-2">{r.snippet}...</p>
                         )}
                       </button>
                     );
@@ -232,60 +260,60 @@ export default function MateriaisPage() {
               )}
             </div>
           ) : (
-            <div className="border border-border/60 rounded-xl overflow-hidden bg-card">
-              <div className="flex" style={{ minHeight: "calc(100vh - 340px)" }}>
-                {/* Sidebar desktop */}
-                <aside className="hidden md:block w-[280px] flex-shrink-0">
-                  <MateriaisSidebar
-                    empreendimentos={empreendimentos}
-                    selectedId={selectedId}
-                    onSelect={handleSelect}
-                    favIds={favEmpIds}
-                  />
-                </aside>
+            <div className="flex gap-3" style={{ minHeight: "calc(100vh - 200px)" }}>
+              {/* Sidebar desktop — mais estreita, sem borda dupla */}
+              <aside className="hidden md:block w-[220px] flex-shrink-0 border border-border/60 rounded-lg overflow-hidden">
+                <MateriaisSidebar
+                  empreendimentos={empreendimentos}
+                  selectedId={selectedId}
+                  onSelect={handleSelect}
+                  favIds={favEmpIds}
+                  filterText={search}
+                />
+              </aside>
 
-                {/* Painel principal */}
-                <main className="flex-1 min-w-0 p-4 sm:p-6 overflow-x-auto">
-                  {/* Mobile trigger */}
-                  <div className="md:hidden mb-4">
-                    <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-                      <SheetTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full justify-start">
-                          <Menu className="h-4 w-4 mr-2" />
-                          <Building2 className="h-4 w-4 mr-2" />
-                          {selected ? selected.nome : "Escolher empreendimento"}
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent side="left" className="p-0 w-[300px]">
-                        <SheetHeader className="px-4 py-3 border-b border-border/60">
-                          <SheetTitle>Empreendimentos</SheetTitle>
-                        </SheetHeader>
-                        <div className="h-[calc(100%-56px)]">
-                          <MateriaisSidebar
-                            empreendimentos={empreendimentos}
-                            selectedId={selectedId}
-                            onSelect={handleSelect}
-                            favIds={favEmpIds}
-                          />
-                        </div>
-                      </SheetContent>
-                    </Sheet>
+              {/* Painel principal — sem wrapper com borda extra */}
+              <main className="flex-1 min-w-0">
+                {/* Mobile trigger */}
+                <div className="md:hidden mb-2">
+                  <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start">
+                        <Menu className="h-4 w-4 mr-2" />
+                        <Building2 className="h-4 w-4 mr-2" />
+                        <span className="truncate">{selected ? selected.nome : "Escolher empreendimento"}</span>
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="p-0 w-[280px]">
+                      <SheetHeader className="px-4 py-3 border-b border-border/60">
+                        <SheetTitle>Empreendimentos</SheetTitle>
+                      </SheetHeader>
+                      <div className="h-[calc(100%-56px)]">
+                        <MateriaisSidebar
+                          empreendimentos={empreendimentos}
+                          selectedId={selectedId}
+                          onSelect={handleSelect}
+                          favIds={favEmpIds}
+                          filterText={search}
+                        />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+
+                {selected ? (
+                  <MateriaisEmpreendimentoPanel empreendimento={selected} canEdit={isGestor} />
+                ) : (
+                  <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
+                    Selecione um empreendimento.
                   </div>
-
-                  {selected ? (
-                    <MateriaisEmpreendimentoPanel empreendimento={selected} canEdit={isGestor} />
-                  ) : (
-                    <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
-                      Selecione um empreendimento na lista ao lado.
-                    </div>
-                  )}
-                </main>
-              </div>
+                )}
+              </main>
             </div>
           )}
         </TabsContent>
 
-        <TabsContent value="recentes">
+        <TabsContent value="recentes" className="mt-0">
           <MaterialListaCompact
             items={recentes}
             loading={loadingRec}
