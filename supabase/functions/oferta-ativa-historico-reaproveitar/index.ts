@@ -103,27 +103,24 @@ Deno.serve(async (req) => {
       .in("id", leadIds);
     const leadMap = new Map((leads ?? []).map((l: any) => [l.id, l]));
 
-    // Dedup por telefone: leads ATIVOS (não arquivado, fora do descarte) com mesmo phone
+    // Dedup por telefone: existe OUTRO lead ATIVO (arquivado=false, fora do descarte)
+    // com o mesmo telefone_normalizado? Ignora a própria linha descartada (mesmo id).
+    // Sem telefone_normalizado → tratado como disponível.
+    const leadIdSet = new Set<string>((leads ?? []).map((l: any) => l.id));
     const phones = (leads ?? [])
       .map((l: any) => l.telefone_normalizado)
       .filter((p): p is string => !!p);
-    let duplicateSet = new Set<string>(); // set de telefone_normalizado com duplicata ativa
+    const duplicateSet = new Set<string>();
     if (phones.length > 0) {
       const { data: dupRows } = await admin
         .from("pipeline_leads")
         .select("id, telefone_normalizado")
         .in("telefone_normalizado", phones)
         .neq("stage_id", DESCARTE_STAGE_ID)
-        .eq("arquivado", false)
-        .neq("aceite_status", "descartado");
-      // Um telefone tem "outro" ativo se existir registro com telefone_normalizado que NÃO é o próprio lead do histórico
-      const ownIdByPhone = new Map<string, string>();
-      for (const l of leads ?? []) {
-        if (l.telefone_normalizado) ownIdByPhone.set(l.telefone_normalizado, l.id);
-      }
+        .eq("arquivado", false);
       for (const d of dupRows ?? []) {
-        const owner = ownIdByPhone.get(d.telefone_normalizado);
-        if (d.id !== owner) duplicateSet.add(d.telefone_normalizado);
+        if (leadIdSet.has(d.id)) continue; // ignora a(s) própria(s) linha(s) do histórico
+        if (d.telefone_normalizado) duplicateSet.add(d.telefone_normalizado);
       }
     }
 

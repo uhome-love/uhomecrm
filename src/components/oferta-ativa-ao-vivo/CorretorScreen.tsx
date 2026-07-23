@@ -3,6 +3,7 @@ import { formatBRT, secondsUntil } from "@/lib/brtTime";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Timer, X, Filter } from "lucide-react";
 import { LeadCard } from "./LeadCard";
 import { RankingPanel } from "./RankingPanel";
@@ -118,8 +119,18 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
           <div className="min-w-0 space-y-3">
             <RankingPanel sessaoId={ms.sessaoId} />
             <FeedPanel sessaoId={ms.sessaoId} />
-            <MetaPanel sessaoId={ms.sessaoId} />
-            <HistoricoPanel sessaoId={ms.sessaoId} />
+            <Tabs defaultValue="meta" className="w-full">
+              <TabsList className="grid grid-cols-2 w-full">
+                <TabsTrigger value="meta">🎯 Meta</TabsTrigger>
+                <TabsTrigger value="historico">🕘 Histórico</TabsTrigger>
+              </TabsList>
+              <TabsContent value="meta" className="mt-2">
+                <MetaPanel sessaoId={ms.sessaoId} />
+              </TabsContent>
+              <TabsContent value="historico" className="mt-2">
+                <HistoricoPanel sessaoId={ms.sessaoId} />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
 
