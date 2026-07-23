@@ -11,7 +11,12 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary-600",
         destructive: "bg-danger-500 text-white hover:bg-danger-700",
+        success: "bg-success-500 text-success-foreground hover:bg-success-700",
+        warning: "bg-warning-500 text-warning-foreground hover:bg-warning-700",
         outline: "border border-border bg-background text-foreground hover:bg-neutral-50",
+        "outline-success": "border border-success-500/40 bg-background text-success-700 hover:bg-success-50 dark:text-success-500 dark:hover:bg-success-500/10",
+        "outline-warning": "border border-warning-500/40 bg-background text-warning-700 hover:bg-warning-50 dark:text-warning-500 dark:hover:bg-warning-500/10",
+        "outline-destructive": "border border-danger-500/40 bg-background text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10",
         secondary: "bg-muted text-secondary-foreground hover:bg-neutral-200",
         ghost: "hover:bg-muted hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
