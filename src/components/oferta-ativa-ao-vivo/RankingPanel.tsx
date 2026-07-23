@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
-export function RankingPanel({ sessaoId }: { sessaoId: string | null }) {
-  const { data, isLoading } = useMutiraoRanking(sessaoId);
+export function RankingPanel({ sessaoId, paused }: { sessaoId: string | null; paused?: boolean }) {
+  const { data, isLoading } = useMutiraoRanking(sessaoId, paused);
   const { user } = useAuth();
   const { data: myProfileId } = useQuery({
     queryKey: ["rank-my-profile", user?.id],

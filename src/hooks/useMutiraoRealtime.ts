@@ -34,7 +34,7 @@ export interface RankingResp {
   }[];
 }
 
-export function useMutiraoRanking(sessao_id: string | null) {
+export function useMutiraoRanking(sessao_id: string | null, paused: boolean = false) {
   const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["mutirao", "ranking", sessao_id],
@@ -46,11 +46,11 @@ export function useMutiraoRanking(sessao_id: string | null) {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 15_000,
+    refetchInterval: paused ? false : 15_000,
   });
 
   useEffect(() => {
-    if (!sessao_id) return;
+    if (!sessao_id || paused) return;
     const ch = supabase
       .channel(`mutirao-part-${sessao_id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "oferta_ativa_participantes", filter: `sessao_id=eq.${sessao_id}` },
@@ -59,7 +59,7 @@ export function useMutiraoRanking(sessao_id: string | null) {
         () => qc.invalidateQueries({ queryKey: ["mutirao", "ranking", sessao_id] }))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [sessao_id, qc]);
+  }, [sessao_id, qc, paused]);
 
   return q;
 }
