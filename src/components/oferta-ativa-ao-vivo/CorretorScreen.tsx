@@ -44,6 +44,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
       <OnboardingModal
         open={showOnboarding}
         firstTime
+        sessaoId={ms.sessaoId}
         filters={ms.filters}
         onSave={(f) => { ms.setFilters(f); ms.setOnboarded(true); ms.clearNoLeads(); ms.proximoLead(undefined); }}
         onClose={() => { setShowOnboarding(false); ms.setOnboarded(true); }}
@@ -51,6 +52,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
       {/* Editar filtros posterior */}
       <OnboardingModal
         open={editFiltersOpen}
+        sessaoId={ms.sessaoId}
         filters={ms.filters}
         onSave={(f) => { ms.setFilters(f); ms.setCurrent(null); ms.clearNoLeads(); ms.proximoLead(undefined); setEditFiltersOpen(false); }}
         onClose={() => setEditFiltersOpen(false)}

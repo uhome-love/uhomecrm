@@ -1,4 +1,4 @@
-// oferta-ativa-proximo-lead — Fase 1
+// oferta-ativa-proximo-lead — Fase 1 (fix: aceita ultimo_corretor_id nulo no UPDATE de lock)
 // Corretor. Faz lock atômico do próximo lead elegível da fila. verify_jwt=true.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
