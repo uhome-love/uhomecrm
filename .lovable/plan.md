@@ -1,61 +1,47 @@
-# Plano: Corrigir `/placar-tv` para funcionar sem login
+Diagnóstico confirmado nas queries e logs:
 
-## Problema confirmado
-- A rota `/placar-tv` está pública, mas a busca pela sessão ativa em `PlacarTvPage.tsx` usa `supabase.from("oferta_ativa_sessoes")` — tabela que só permite `SELECT` para usuários autenticados.
-- Quando a página é aberta sem login (ou com sessão ausente), o PostgREST devolve `[]` (200 OK) por causa do RLS, e a tela mostra **"Nenhum Mutirão ao vivo agora"** mesmo havendo uma sessão `ao_vivo` no banco.
-- Reproduzido no preview: a query `oferta_ativa_sessoes?status=eq.ao_vivo&inicio_at=lte...&fim_at=gte...` retorna `[]` com o ambiente deslogado, enquanto o mesmo SQL direto no banco retorna a sessão ativa.
+1. Lead "Tamiris" (aproveitada por Eliezer no Mutirão) foi salva em `pipeline_leads.corretor_id` com o `profiles.id` (7519c22e...) em vez de `auth.users.id` (cd3bd7ae...). A RLS do pipeline exige `corretor_id = auth.uid()`, então Eliezer não enxerga o lead em "Novo Lead".
 
-## Diagnóstico
-A página pública precisa de dados públicos. O `/placar-do-dia` já usa esse padrão: uma função `SECURITY DEFINER` (`rpc_placar_do_dia`) com `GRANT EXECUTE TO anon`. O Mutirão TV precisa do mesmo padrão para sessão, ranking e feed.
+2. Visita da Andrea (agendada por Rafaela no Mutirão) não foi inserida. O log da edge function `oferta-ativa-registrar-resultado` mostra: `null value in column "user_id" of relation "notifications"`. Causas:
+   - `visitas.corretor_id` está sendo preenchido com `profiles.id` (015f5dbf...), mas triggers/notificações esperam `auth.users.id`.
+   - `visitas.gerente_id` não está sendo resolvido pela edge function, fica null, e o trigger `notify_visita_criada` tenta notificar o gerente com `user_id` null, causando rollback da transação inteira.
+   - `visitas.tipo` (NOT NULL) não está sendo enviado no insert.
 
-## O que será construído
+O que será corrigido
 
-### 1. Backend — RPC pública `rpc_placar_mutirao`
-- Nova função `public.rpc_placar_mutirao(p_sessao_id uuid DEFAULT NULL)`:
-  - `SECURITY DEFINER`, `STABLE`, `search_path = public`.
-  - Se `p_sessao_id` for nulo, descobre a sessão ativa (`status='ao_vivo'`, `inicio_at <= now()`, `fim_at >= now()`).
-  - Retorna `jsonb` com: `sessao`, `corretores`, `equipes`, `feed`.
-  - `corretores`: só `role='corretor'` (regra já aplicada no ranking; manter aqui), com nome, avatar, equipe, pontos, ligações, aproveitamentos, visitas.
-  - `equipes`: agregação por equipe.
-  - `feed`: últimas 12 ligações da sessão com `resultado IN ('visita_agendada','aproveitado')`, incluindo corretor, tipo, hora, cliente e empreendimento.
-- `GRANT EXECUTE ON FUNCTION public.rpc_placar_mutirao TO anon, authenticated, service_role;`.
-- Nenhum dado pessoal sensível (e-mails, telefones completos) será exposto; feed só exibe o que já aparece no placar TV.
+1. **Edge function `supabase/functions/oferta-ativa-registrar-resultado/index.ts`**
+   - Usar `auth.users.id` (`userId`) em `visitas.corretor_id` e em `pipeline_leads.corretor_id` (via `reactivateLead`).
+   - Resolver `visitas.gerente_id` a partir de `team_members` do corretor antes do insert.
+   - Enviar `tipo: "lead"` no insert de `visitas`.
+   - Garantir fallback de `nome_cliente` para o nome do lead quando não vier no payload.
+   - Após o insert, invalidar queries relevantes no frontend (já existe no hook, mas confirmar).
 
-### 2. Frontend — `PlacarTvPage.tsx`
-- Substituir a query direta `supabase.from("oferta_ativa_sessoes")` por `supabase.rpc("rpc_placar_mutirao")`.
-- Adicionar estados distintos:
-  - **Carregando**: spinner fullscreen.
-  - **Erro**: tela de erro vermelha com a mensagem (não confundir com "sem sessão").
-  - **Sem sessão**: manter a mensagem atual "Nenhum Mutirão ao vivo agora" quando a RPC devolver `sessao=null`.
-- Passar os dados (`sessao`, `corretores`, `equipes`, `feed`) para o componente `PlacarTv`.
+2. **Helper `supabase/functions/_shared/reactivateLead.ts`**
+   - Alterar a API para receber `auth_user_id` e `profile_id` separadamente.
+   - Atualizar `pipeline_leads.corretor_id` com `auth_user_id` (conforme mapa canônico de IDs).
+   - Resolver e gravar `gerente_id` no lead quando aplicável.
+   - Manter `profile_id` para uso em tabelas que exigem `profiles.id` (ex.: `oferta_ativa_participantes`, eventos pulse).
 
-### 3. Frontend — `PlacarTv.tsx`
-- Adicionar props opcionais `initialData` para permitir uso com dados pré-carregados pela página pública.
-- Quando `initialData` estiver presente, usar os dados da RPC e fazer polling a cada 15s (igual ao Placar do Dia).
-- Quando `initialData` não estiver presente (uso autenticado dentro de `/oferta-ativa-ao-vivo?view=tv`), manter o comportamento atual com `useMutiraoRanking` e realtime.
-- O feed continua sendo alimentado por novos eventos; no modo público, o polling atualiza o ranking/feed sem depender de realtime anon.
+3. **Edge function `supabase/functions/oferta-ativa-historico-reaproveitar/index.ts`**
+   - Passar `auth_user_id` para o `reactivateLead` corrigido.
 
-### 4. Cache / Service Worker
-- Bumper a versão em `public/version.json` e no Service Worker (`public/sw.js`) para garantir que PCs/TVs que já abriram o CRM recebam o novo bundle e não fiquem presos na versão quebra.
+4. **Backfill dos dados afetados (hoje)**
+   - Atualizar `pipeline_leads.corretor_id` do lead Tamiris de `profiles.id` para `auth.users.id` do Eliezer.
+   - Recriar a visita perdida da Andrea (Rafaela) com os dados disponíveis no lead e na ligação, preenchendo `tipo`, `corretor_id`, `gerente_id` corretamente.
+   - Reexecutar triggers de tarefas automáticas de visita para a Andrea (se necessário, inserir tarefa manualmente).
+   - Verificar se há outras visitas/alterações recentes do Mutirão com `corretor_id` = `profiles.id` e corrigir.
 
-### 5. Validação
-- Teste automatizado com Playwright:
-  - Abrir `/placar-tv` sem autenticação e confirmar que o placar do mutirão ativo aparece.
-  - Abrir `/placar-tv` autenticado e confirmar que também funciona.
-  - Verificar que não aparecem Lucas/CEO/admin no ranking (apenas corretores).
-  - Verificar que a tela "Nenhum Mutirão" só aparece quando não há sessão ativa.
+5. **Validação ponta a ponta**
+   - Testar no preview: Eliezer acessa "Novo Lead" e visualiza Tamiris.
+   - Testar no preview: Rafaela agenda visita via Mutirão e a visita aparece em "Agenda de Visitas" e o lead avança para etapa Visita no pipeline.
+   - Verificar notificações e tarefas automáticas geradas.
 
-## Arquivos envolvidos
-- `supabase/migrations/...` (novo migration)
-- `src/pages/PlacarTvPage.tsx`
-- `src/components/oferta-ativa-ao-vivo/PlacarTv.tsx`
-- `public/version.json`
-- `public/sw.js`
+Arquivos alterados
+- `supabase/functions/_shared/reactivateLead.ts`
+- `supabase/functions/oferta-ativa-registrar-resultado/index.ts`
+- `supabase/functions/oferta-ativa-historico-reaproveitar/index.ts`
 
-## Riscos / mitigações
-- **Segurança**: a RPC é `SECURITY DEFINER`, então roda com poder do dono, mas só expõe dados agregados do mutirão. Nenhum e-mail/telefone completo de leads será retornado.
-- **Performance**: a RPC roda a cada 15s no TV; é leve (SELECT indexado em sessão + participantes + ligações).
-- **Cache antigo**: resolvido com bump de versão do SW + `?_recover=1` como fallback para TVs já abertas.
-
-## Não incluído nesta fase
-- Novos recursos visuais (som, atalhos, etc.). Foco apenas em fazer o placar carregar corretamente sem login.
+Backfill (via insert tool, não migration)
+- `UPDATE pipeline_leads SET corretor_id = '<auth_user_id>', gerente_id = '<gerente_id>' WHERE id = '1c36f796-9140-4b64-9f19-e53f825b2a61';`
+- `INSERT INTO visitas (...tipo, corretor_id, gerente_id...) VALUES (...)` para recriar a visita da Andrea.
+- Revisão e correção de outras linhas recentes do Mutirão se encontradas.
