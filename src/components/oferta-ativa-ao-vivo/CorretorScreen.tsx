@@ -23,6 +23,9 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
   const [editFiltersOpen, setEditFiltersOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(!ms.onboarded);
 
+  // Reabre onboarding se onboarded voltar a false (Finalizar e sair)
+  useEffect(() => { if (!ms.onboarded) setShowOnboarding(true); }, [ms.onboarded]);
+
   // Cronômetro fim da sessão
   const [tick, setTick] = useState(0);
   useEffect(() => {
