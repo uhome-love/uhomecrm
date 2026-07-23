@@ -70,12 +70,37 @@ export function useMutiraoParticipantes(sessao_id: string | null) {
     queryKey: ["mutirao", "participantes", sessao_id],
     enabled: !!sessao_id,
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke(`oferta-ativa-participantes?sessao_id=${sessao_id}`, {
-        method: "GET" as any,
-      } as any);
-      // fallback: usar fetch direto via functions.invoke não suporta GET fácil; usamos POST list route? Já temos GET no code — usaremos supabase.functions.invoke com method GET não roda; fallback: chamar via url.
+      // Query direta (RLS já permite leitura escopada)
+      const { data, error } = await supabase
+        .from("oferta_ativa_participantes")
+        .select("corretor_id, gerente_id, equipe_text, status_online, ultima_acao_at, ultimo_heartbeat_at, ligacoes_count, aproveitamentos_count, visitas_count, pontos, profiles:corretor_id(nome, foto_url)")
+        .eq("sessao_id", sessao_id!);
       if (error) throw error;
-      return data as { ok: boolean; participantes: Participante[] };
+      const now = Date.now();
+      const enriched: Participante[] = (data ?? []).map((p: any) => {
+        const lastHb = p.ultimo_heartbeat_at ? new Date(p.ultimo_heartbeat_at).getTime() : 0;
+        const lastAct = p.ultima_acao_at ? new Date(p.ultima_acao_at).getTime() : 0;
+        const minHb = lastHb ? (now - lastHb) / 60000 : Infinity;
+        const minAct = lastAct ? (now - lastAct) / 60000 : Infinity;
+        let status = "offline";
+        if (minHb <= 2 && minAct <= 10) status = "online";
+        else if (minHb <= 2) status = "ocioso";
+        return {
+          corretor_id: p.corretor_id,
+          nome: p.profiles?.nome ?? "—",
+          foto_url: p.profiles?.foto_url ?? null,
+          gerente_id: p.gerente_id,
+          equipe: p.equipe_text,
+          status_online: status,
+          ultima_acao_at: p.ultima_acao_at,
+          ultimo_heartbeat_at: p.ultimo_heartbeat_at,
+          ligacoes: p.ligacoes_count ?? 0,
+          aproveitamentos: p.aproveitamentos_count ?? 0,
+          visitas: p.visitas_count ?? 0,
+          pontos: p.pontos ?? 0,
+        };
+      });
+      return { ok: true, participantes: enriched };
     },
     refetchInterval: 20_000,
   });
