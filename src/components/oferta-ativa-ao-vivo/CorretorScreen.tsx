@@ -82,7 +82,7 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
             <Timer className="w-3.5 h-3.5" />
             {hh}:{mm}:{ss}
           </div>
-          <Button size="sm" variant="ghost" onClick={() => nav("/corretor")}>
+          <Button size="sm" variant="ghost" onClick={() => { ms.resetCorretor(); setShowOnboarding(true); }}>
             <X className="w-4 h-4 mr-1" /> Finalizar e sair
           </Button>
         </div>
