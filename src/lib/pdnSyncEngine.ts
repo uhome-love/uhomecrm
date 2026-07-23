@@ -122,6 +122,12 @@ export async function syncPipelineStageFromPdn(
   const isArquivado = !!(leadAtual as any).arquivado;
   let negocioId = (leadAtual as any).negocio_id as string | null;
 
+  // Detecta regressão para etapa anterior ao "Em Negociação" (ordem<5).
+  // A trigger BEFORE UPDATE `trg_clear_negocio_on_stage_regress` limpa
+  // NEW.negocio_id e arquiva o negócio automaticamente.
+  const destinoOrdem = (stageRow as any).ordem as number | null;
+  const isRegressao = grupo === "visita_realizada" && destinoOrdem != null && destinoOrdem < 5;
+
   const updatePayload: Record<string, unknown> = {
     ultima_acao_at: nowIso,
     updated_at: nowIso,
@@ -143,8 +149,8 @@ export async function syncPipelineStageFromPdn(
     updatePayload.flag_status = flag;
   }
 
-  // 1) Cria negócio se necessário (em_negociacao/contrato/ganho)
-  const needsNegocio = grupo === "em_negociacao" || grupo === "contrato" || grupo === "ganho";
+  // 1) Cria/atualiza negócio SOMENTE quando avançando (não em regressão).
+  const needsNegocio = !isRegressao && (grupo === "em_negociacao" || grupo === "contrato" || grupo === "ganho");
   if (needsNegocio && !negocioId) {
     // resolve profile ids
     const authId = (leadAtual as any).corretor_id as string | null;
@@ -192,16 +198,27 @@ export async function syncPipelineStageFromPdn(
     if (negUpdErr) console.warn("[pdnSync] update negócio falhou (não bloqueia)", negUpdErr);
   }
 
-  // 2) Update pipeline_lead
-  console.info("[pdnSync] atualizando lead", { pipelineLeadId, updatePayload });
+  // 2) Update pipeline_lead — o trigger trg_clear_negocio_on_stage_regress
+  //    zera NEW.negocio_id e arquiva o negócio quando é regressão.
+  console.info("[pdnSync] atualizando lead", { pipelineLeadId, grupo, isRegressao, updatePayload });
   const { error: leadErr } = await supabase
     .from("pipeline_leads")
     .update(updatePayload as any)
     .eq("id", pipelineLeadId);
   if (leadErr) {
-    toast.error(fmtErr("Erro ao mover lead no pipeline", leadErr));
+    // Mensagem específica p/ RLS
+    const msg = (leadErr as any)?.message || "";
+    if ((leadErr as any)?.code === "42501" || /row-level security|policy/i.test(msg)) {
+      toast.error(`Sem permissão para alterar este lead. Verifique se ${row.nome} está na sua equipe.`);
+      console.error("[pdnSync] RLS bloqueou update", { pipelineLeadId, corretor_id: (leadAtual as any).corretor_id, userId, err: leadErr });
+    } else {
+      toast.error(fmtErr("Erro ao mover lead no pipeline", leadErr));
+    }
     return null;
   }
+
+  // Se regrediu, o trigger zerou o negocio_id; reflete no retorno.
+  if (isRegressao) negocioId = null;
 
   // 3) Histórico de movimentação
   if (updatePayload.stage_id && oldStageId) {
@@ -212,7 +229,7 @@ export async function syncPipelineStageFromPdn(
         stage_anterior_id: oldStageId,
         stage_novo_id: stageRow.id,
         movido_por: userId,
-        observacao: `Movido pelo gestor via PDN: ${GRUPO_LABEL[grupo]}`,
+        observacao: `Movido pelo gestor via PDN: ${GRUPO_LABEL[grupo]}${isRegressao ? " (regressão)" : ""}`,
       } as any)
       .then(() => undefined, () => undefined);
   }
@@ -228,6 +245,7 @@ export async function syncPipelineStageFromPdn(
   toast.success(`${row.nome}: pipeline atualizado para ${GRUPO_LABEL[grupo]}`);
   return { negocioId, pipelineLeadId };
 }
+
 
 // ── 2) Sincroniza VGV / empreendimento PDN → negocios ────────────────────────
 export async function syncNegocioVgvFromPdn(
