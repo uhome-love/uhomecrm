@@ -515,3 +515,15 @@ function KPI({ label, value, cor, big }: any) {
     </div>
   );
 }
+
+function Stat({ label, value, icon, cor }: any) {
+  return (
+    <div style={{ textAlign: "center", minWidth: 74, padding: "0 6px", borderLeft: "1px solid #ffffff10" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6 }}>
+        <span style={{ fontSize: 16 }}>{icon}</span>
+        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(24px, 2.6vw, 38px)", color: cor, lineHeight: 1, textShadow: `0 0 15px ${cor}66` }}>{value}</span>
+      </div>
+      <div style={{ fontSize: 9, letterSpacing: 2, color: "#ffffff77", textTransform: "uppercase", fontFamily: "monospace", marginTop: 3 }}>{label}</div>
+    </div>
+  );
+}
