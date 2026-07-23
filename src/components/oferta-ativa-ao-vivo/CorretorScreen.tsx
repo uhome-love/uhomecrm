@@ -118,7 +118,11 @@ export function CorretorScreen({ ms }: { ms: ReturnType<typeof useMutiraoSession
               <TabsContent value="meta" className="mt-2">
                 <MetaPanel sessaoId={ms.sessaoId} />
               </TabsContent>
-              <TabsContent value="historico" className="mt-2" forceMount>
+              <TabsContent
+                value="historico"
+                className="mt-2 data-[state=inactive]:hidden"
+                forceMount
+              >
                 <HistoricoPanel sessaoId={ms.sessaoId} />
               </TabsContent>
             </Tabs>
