@@ -191,19 +191,19 @@ export default function DrawerTasksTab({
             {countProximas} próxima{countProximas !== 1 ? "s" : ""}
           </div>
         </div>
-        {isVisitaStage ? (
-          <div className="text-[11px] text-primary font-medium bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 max-w-[220px] leading-snug">
-            🏠 Fluxo fixo pela Agenda de Visitas
-          </div>
-        ) : (
-          <button
-            onClick={onNovaTarefa}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
-          >
-            <Plus className="h-3.5 w-3.5" /> Nova tarefa
-          </button>
-        )}
+        <button
+          onClick={onNovaTarefa}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium flex items-center gap-1.5"
+        >
+          <Plus className="h-3.5 w-3.5" /> Nova tarefa
+        </button>
       </div>
+
+      {isVisitaStage && (
+        <div className="mx-7 mt-4 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] leading-snug text-primary">
+          🏠 <strong>Etapa Visita:</strong> confirmação, remarcação e feedback são criados automaticamente pela Agenda. Você pode agendar contatos/follow-ups manualmente à vontade.
+        </div>
+      )}
 
       {/* Skeleton de carregamento — evita flash de "Nenhuma tarefa pendente" */}
       {loading && tarefas.length === 0 ? (
@@ -228,18 +228,17 @@ export default function DrawerTasksTab({
           </div>
           <div className="text-xs text-zinc-500 max-w-xs mx-auto mb-5 leading-relaxed">
             {isVisitaStage
-              ? "Etapa Visita: a próxima tarefa é criada automaticamente pela Agenda (confirmação D-1, reagendar após no-show, feedback após realizada)."
+              ? "Etapa Visita: as tarefas de confirmação, remarcação e feedback são criadas automaticamente pela Agenda. Se precisar, agende um contato/follow-up manual."
               : "Este lead está em dia. Crie uma tarefa de follow-up pra manter o ritmo de contato."}
           </div>
-          {!isVisitaStage && (
-            <button
-              onClick={onNovaTarefa}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5"
-            >
-              <Plus className="h-3.5 w-3.5" /> Criar tarefa
-            </button>
-          )}
+          <button
+            onClick={onNovaTarefa}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5"
+          >
+            <Plus className="h-3.5 w-3.5" /> Criar tarefa
+          </button>
         </div>
+
       ) : (
         <div className="px-7 pt-4">
           {GROUPS.map(g => {
