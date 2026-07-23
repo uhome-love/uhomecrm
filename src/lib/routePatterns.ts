@@ -14,6 +14,7 @@ export const PUBLIC_ROUTES: string[] = [
   "/visita/:token",
   "/indica/:codigo",
   "/vitrine/:id",
+  "/placar-tv",
   "/imovel/:codigo",
 ];
 
