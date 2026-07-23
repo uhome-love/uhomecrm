@@ -168,10 +168,10 @@ Deno.serve(async (req) => {
         const batch = authIds.slice(i, i + 500);
         const { data } = await admin
           .from("profiles")
-          .select("id, auth_user_id")
-          .in("auth_user_id", batch);
+          .select("id, user_id")
+          .in("user_id", batch);
         (data ?? []).forEach((r: any) => {
-          if (r.auth_user_id) authToProfile.set(r.auth_user_id, r.id);
+          if (r.user_id) authToProfile.set(r.user_id, r.id);
         });
       }
     }
