@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
       return {
         corretor_id: p.corretor_id,
         nome: p.profiles?.nome ?? "—",
-        foto_url: p.profiles?.foto_url ?? null,
+        foto_url: p.profiles?.avatar_url ?? null,
         gerente_id: p.gerente_id,
         equipe: p.equipe_text,
         status_online: derived,
