@@ -24,6 +24,7 @@ import ConquistasKpis from "@/components/corretor/ConquistasKpis";
 import CaminhosCards from "@/components/corretor/CaminhosCards";
 import TarefasHojeLateral from "@/components/corretor/TarefasHojeLateral";
 // WidgetProdutividadeCorretor removido — métricas não estavam funcionais.
+import { MutiraoPulseBanner } from "@/components/oferta-ativa-ao-vivo/MutiraoPulseBanner";
 
 export default function CorretorDashboard() {
   const { user } = useAuth();
@@ -65,6 +66,10 @@ export default function CorretorDashboard() {
     <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto pb-10">
       <CelebrationOverlay achievement={newlyUnlocked} onDismiss={dismissCelebration} />
       <OnboardingWidget />
+
+      {/* CTA Mutirão Inteligente (aparece quando ao vivo ou janela típica) */}
+      <MutiraoPulseBanner />
+
 
       {/* 1. Saudação HOMI (gradient inline — intocado) */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
