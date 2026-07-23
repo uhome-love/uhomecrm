@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", cand.id)
-        .neq("ultimo_corretor_id", meuProfileId) // permanent owner exclusion (null passa pois neq(null)=null → não filtra, mas nulos raros aqui)
+        .or(`ultimo_corretor_id.is.null,ultimo_corretor_id.neq.${meuProfileId}`) // aceita NULL (sem dono anterior)
         .or(`locked_by.is.null,locked_until.lte.${nowIso2}`)
         .select("id, pipeline_lead_id, balde, bucket_order, empreendimento_id, segmento_id, motivo_descarte_raw, reengajamento_status_raw")
         .maybeSingle();
