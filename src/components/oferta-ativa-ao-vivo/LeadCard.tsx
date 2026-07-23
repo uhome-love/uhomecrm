@@ -291,9 +291,24 @@ export function LeadCard({
           {/* Zona de ação: ligar */}
           <div className="flex items-center gap-2">
             {ms.callState === "idle" && (
-              <Button size="lg" className="flex-1 font-semibold shadow-sm" onClick={ms.startCall}>
-                <Phone /> Ligar agora
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex-1">
+                    <Button
+                      size="lg"
+                      className="w-full font-semibold shadow-sm"
+                      onClick={ms.startCall}
+                      disabled={!ms.lockConfirmed}
+                    >
+                      {ms.lockConfirmed ? <Phone /> : <Loader2 className="animate-spin" />}
+                      {ms.lockConfirmed ? "Ligar agora" : "Reservando lead…"}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!ms.lockConfirmed && (
+                  <TooltipContent>Aguardando confirmação do lock para evitar dois corretores no mesmo lead</TooltipContent>
+                )}
+              </Tooltip>
             )}
             {ms.callState === "in_call" && (
               <div className="flex-1 flex items-center gap-3 rounded-md border-2 border-primary bg-primary/5 px-4 h-10">
@@ -314,7 +329,7 @@ export function LeadCard({
                 </span>
               </div>
             )}
-            <Button size="lg" variant="outline" onClick={() => ms.pular()} disabled={ms.registrarPending}>
+            <Button size="lg" variant="outline" onClick={() => ms.pular()} disabled={ms.registrarPending || !ms.lockConfirmed}>
               <SkipForward /> Pular
             </Button>
           </div>
