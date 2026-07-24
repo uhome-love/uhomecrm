@@ -5476,12 +5476,14 @@ export type Database = {
           created_at: string
           criado_por: string
           empreendimento: string
+          empreendimento_canonico_id: string | null
           id: string
           max_tentativas: number
           nome: string
           origem: string | null
           segmento_id: string | null
           status: string
+          tipo: string
           total_leads: number
           ultima_higienizacao_at: string | null
           updated_at: string
@@ -5492,12 +5494,14 @@ export type Database = {
           created_at?: string
           criado_por: string
           empreendimento: string
+          empreendimento_canonico_id?: string | null
           id?: string
           max_tentativas?: number
           nome: string
           origem?: string | null
           segmento_id?: string | null
           status?: string
+          tipo?: string
           total_leads?: number
           ultima_higienizacao_at?: string | null
           updated_at?: string
@@ -5508,17 +5512,26 @@ export type Database = {
           created_at?: string
           criado_por?: string
           empreendimento?: string
+          empreendimento_canonico_id?: string | null
           id?: string
           max_tentativas?: number
           nome?: string
           origem?: string | null
           segmento_id?: string | null
           status?: string
+          tipo?: string
           total_leads?: number
           ultima_higienizacao_at?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_listas_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "oferta_ativa_listas_segmento_id_fkey"
             columns: ["segmento_id"]
