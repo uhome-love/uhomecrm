@@ -469,6 +469,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       alertas_busca: {
@@ -860,6 +867,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_clicks_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -1911,6 +1925,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "distribuicao_historico_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       email_campaign_recipients: {
@@ -1985,6 +2006,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaign_recipients_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -2125,6 +2153,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
           {
             foreignKeyName: "email_events_recipient_id_fkey"
@@ -2928,6 +2963,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ia_call_results_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       imoveis_interesse: {
@@ -2981,6 +3023,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imoveis_interesse_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -3263,6 +3312,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lead_cadencia_sem_contato_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       lead_imoveis_indicados: {
@@ -3297,6 +3353,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_imoveis_indicados_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -3341,6 +3404,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_imovel_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -3434,6 +3504,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lead_nurturing_sequences_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       lead_nurturing_state: {
@@ -3495,6 +3572,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_nurturing_state_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -3624,6 +3708,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lead_property_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       lead_property_matches: {
@@ -3667,6 +3758,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_property_matches_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
           {
             foreignKeyName: "lead_property_matches_property_id_fkey"
@@ -3770,6 +3868,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lead_property_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       lead_property_searches: {
@@ -3813,6 +3918,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_property_searches_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -3941,6 +4053,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -4823,6 +4942,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_negocios_lead_id_proposto"
+            columns: ["lead_id_proposto"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       negocios_atividades: {
@@ -5277,6 +5403,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "oferta_ativa_fila_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
             foreignKeyName: "oferta_ativa_fila_segmento_id_fkey"
             columns: ["segmento_id"]
             isOneToOne: false
@@ -5459,6 +5592,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_ligacoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
           {
             foreignKeyName: "oferta_ativa_ligacoes_sessao_id_fkey"
@@ -6390,6 +6530,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "perfil_interesse_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       pipeline_anotacoes: {
@@ -6427,6 +6574,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_anotacoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -6490,6 +6644,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pipeline_atividades_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       pipeline_comissoes: {
@@ -6530,6 +6691,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_comissoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -6608,6 +6776,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pipeline_historico_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
+          {
             foreignKeyName: "pipeline_historico_stage_anterior_id_fkey"
             columns: ["stage_anterior_id"]
             isOneToOne: false
@@ -6667,6 +6842,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_lead_sequencias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
           {
             foreignKeyName: "pipeline_lead_sequencias_sequencia_id_fkey"
@@ -7112,6 +7294,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       pipeline_playbook_tarefas: {
@@ -7470,6 +7659,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_tarefas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -9289,6 +9485,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "site_events_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       system_flags: {
@@ -9664,6 +9867,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "visita_amanha_disparos_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: true
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       visita_eventos: {
@@ -9713,6 +9923,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visita_eventos_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
           {
             foreignKeyName: "visita_eventos_visita_id_fkey"
@@ -9906,6 +10123,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       vitrine_interacoes: {
@@ -10077,6 +10301,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "voice_call_logs_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       voice_campaigns: {
@@ -10178,6 +10409,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "waba_send_guards_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       whatsapp_ai_log: {
@@ -10233,6 +10471,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_ai_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -10420,6 +10665,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "whatsapp_campaign_sends_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       whatsapp_instancias: {
@@ -10534,6 +10786,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_mensagens_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -10723,6 +10982,36 @@ export type Database = {
         }
         Relationships: []
       }
+      v_descartes_recentes_90d: {
+        Row: {
+          descartado_em: string | null
+          email: string | null
+          empreendimento_canonico_id: string | null
+          empreendimento_nome: string | null
+          nome: string | null
+          origem: string | null
+          pipeline_lead_id: string | null
+          segmento_id: string | null
+          segmento_nome: string | null
+          telefone: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_leads_empreendimento_canonico_id_fkey"
+            columns: ["empreendimento_canonico_id"]
+            isOneToOne: false
+            referencedRelation: "empreendimentos_canonicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_leads_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_segmentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_kpi_disponibilidade: {
         Row: {
           auth_user_id: string | null
@@ -10774,6 +11063,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_historico_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
@@ -10944,6 +11240,13 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
+          },
         ]
       }
       v_ultimo_marketing_por_telefone: {
@@ -10979,6 +11282,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_descartes_recentes_90d"
+            referencedColumns: ["pipeline_lead_id"]
           },
         ]
       }
